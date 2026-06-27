@@ -1,0 +1,138 @@
+{
+  "site": {
+    "name": "Hallelujah Home Church",
+    "englishName": "Hallelujah Home Church",
+    "nav": {
+      "home": "Home",
+      "about": "About",
+      "literatureMinistry": "Literature Ministry",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu"
+    },
+    "language": "Language",
+    "social": {
+      "youtube": "YouTube",
+      "facebook": "Facebook"
+    }
+  },
+  "home": {
+    "heroTitle": "Love begins at home",
+    "heroSubtitle": "Building families in love and growing in truth",
+    "newsTitle": "Latest News",
+    "moreNews": "View all",
+    "weeklyTitle": "Weekly Bulletin",
+    "downloadWeekly": "Download bulletin",
+    "videosTitle": "Kingdom Joy",
+    "videosSubtitle": "Worship through music and let life be lit by love",
+    "watchMore": "Watch more videos",
+    "aboutTitle": "About Us",
+    "aboutBody": "Hallelujah Home Church values family, worship, and truth, building relationships of love, forming mature disciples, and sharing the gospel with more people.",
+    "aboutCta": "Meet us",
+    "locationsTitle": "Locations",
+    "mapLink": "View map"
+  },
+  "about": {
+    "heroTitle": "About Us",
+    "heroSubtitle": "Unity and mission",
+    "historyIntro": "From the vision of family altars, the home church has walked step by step into mission, formation, and pastoral care. This timeline preserves key moments as a readable story of life passed on.",
+    "vision": {
+      "intro": "The home church vision begins with life multiplying through relationships: one to three, three to twelve, twelve to seventy, and then to the harvest God prepares. Church is not first a building; it is a people who carry witness, formation, and blessing wherever they go.",
+      "imageAlt": "Congregation in prayer",
+      "actionsImageAlt": "Four ministry actions",
+      "sections": [
+        {
+          "eyebrow": "One Vision",
+          "title": "Unity and Mission",
+          "body": "Home Church is built to bring people into unity with God and one another in Christ, and to carry God's love outward as a blessing to the people around us."
+        },
+        {
+          "eyebrow": "Two Goals",
+          "title": "Mission for Chinese communities, Chinese communities for mission",
+          "body": "The vision reaches Chinese-speaking communities wherever they are, not as a political or geographic idea, but as a call to carry the gospel with shared heritage, responsibility, and love."
+        },
+        {
+          "eyebrow": "Three Practices",
+          "title": "Shared life, love and equipping, anointing passed on",
+          "cards": [
+            {
+              "title": "Shared life",
+              "body": "A community where people can be honest, received, supported, and built together as the body of Christ."
+            },
+            {
+              "title": "Love and equipping",
+              "body": "Building one another in love and helping each saint serve from the right place."
+            },
+            {
+              "title": "Anointing passed on",
+              "body": "Every person is formed by spiritual parents and learns to raise spiritual children for the mission entrusted by God."
+            }
+          ]
+        },
+        {
+          "eyebrow": "Four Convictions",
+          "title": "Mission, Spirit-filled theology, team ministry, discipleship",
+          "cards": [
+            {
+              "title": "Mission-led",
+              "body": "Formation serves mission, equipping people to live as spiritual parents and as salt and light."
+            },
+            {
+              "title": "Spirit-filled theology",
+              "body": "God's word is lived and experienced as people are filled by the Spirit day by day."
+            },
+            {
+              "title": "Team ministry",
+              "body": "The church is the body of Christ, where gifts and callings become visible through service and connection."
+            },
+            {
+              "title": "Discipleship",
+              "body": "Disciples follow pastors, pastors follow Paul, and Paul follows Christ, so formation can continue across generations."
+            }
+          ]
+        }
+      ]
+    },
+    "history": {
+      "scripture": [
+        {
+          "lines": [
+            "Listen to me, you islands; hear this, you distant nations: Before I was born the Lord called me; from my mother’s womb he has spoken my name. He made my mouth like a sharpened sword, in the shadow of his hand he hid me; he made me into a polished arrow and concealed me in his quiver. He said to me, “You are my servant, Israel, in whom I will display my splendor.”"
+          ],
+          "cite": "Isaiah 49:1-3 NIV"
+        },
+        {
+          "lines": [
+            "And now the Lord says— he who formed me in the womb to be his servant to bring Jacob back to him and gather Israel to himself, for I am honored in the eyes of the Lord and my God has been my strength— he says: “It is too small a thing for you to be my servant to restore the tribes of Jacob and bring back those of Israel I have kept. I will also make you a light for the Gentiles, that my salvation may reach to the ends of the earth.”"
+          ],
+          "cite": "Isaiah 49:5-6 NIV"
+        }
+      ],
+      "imageAlt": "Black-and-white illustration of a child looking toward light",
+      "intro": "From the vision of family altars, the home church has walked step by step into mission, formation, and pastoral care. This timeline preserves key moments as a readable story of life passed on.",
+      "title": "Church History"
+    }
+  },
+  "literatureMinistry": {
+    "heroTitle": "Literature Ministry",
+    "heroSubtitle": "Bulletins, messages, and written records for formation",
+    "eyebrow": "Weekly Bulletin",
+    "archiveTitle": "Bulletin downloads",
+    "archiveIntro": "Weekly bulletins are available in Traditional Chinese, Simplified Chinese, and English for reading and sharing.",
+    "latestLabel": "Latest bulletin",
+    "allIssuesTitle": "History",
+    "paginationNote": "Sorted newest first",
+    "paginationLabel": "Bulletin pagination",
+    "previousPage": "Previous",
+    "nextPage": "Next",
+    "pageLabel": "Page",
+    "versionLabels": {
+      "zh-Hant": "Traditional",
+      "zh-Hans": "Simplified",
+      "en": "English"
+    }
+  },
+  "root": {
+    "title": "Choose language",
+    "description": "Choose the language version you want to browse."
+  }
+}

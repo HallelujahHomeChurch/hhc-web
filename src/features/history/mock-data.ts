@@ -1,0 +1,95 @@
+import type {LocalizedRecord} from '@/i18n/locales';
+import type {HistoryTimelinePayload} from './types';
+
+export const historyByLocale: LocalizedRecord<HistoryTimelinePayload> = {
+  'zh-Hant': {
+    events: [
+      {date: '1984年', body: '曾英欽醫師夫婦在韓國百年宣教特會，從神領受建造家庭祭壇的異象。'},
+      {date: '1989年5月6日', body: '曾英欽醫師夫婦被按立為台灣第一個帶職事奉的牧師。'},
+      {date: '1990年9月2日', body: '哈利路亞家教會獻堂。'},
+      {date: '1993年12月', body: '首次進入中國宣教禾場，一直到如今。'},
+      {date: '1999年7月', body: '成立哈利路亞聖經書院。'},
+      {date: '1999年10月', body: '租借鴻霖大廈地下室作為教會使用。'},
+      {date: '2003年7月', body: '開始多媒體網路事工。'},
+      {date: '2003年11月', body: '成立中華民國社團法人哈利路亞社區關懷協會。'},
+      {date: '2004年10月', body: '租借開平高中作主日崇拜場地。'},
+      {date: '2005年5月', body: '按立蕭媛姊妹為哈利路亞家教會傳道人。'},
+      {date: '2006年2月', body: '租借中國文化大學教育推廣中心作主日崇拜場地。'},
+      {date: '2006年6月', body: '成立哈利路亞國際神學院。'},
+      {date: '2007年10月', body: '按立徐國峰夫婦為哈利路亞家教會傳道人。'},
+      {date: '2009年10月', body: '按立許中平夫婦、黃弘夫婦為哈利路亞家教會傳道人。'},
+      {date: '2011年1月31日', body: '賣掉使用了20年的總部，牧師的家。'},
+      {date: '2011年2月18日', body: '信心買下仁愛路三段29號B1作為新會堂。'},
+      {date: '2011年3月2日', body: '曾英欽牧師於滁州禾場心肌梗塞，經歷死裡復活。'},
+      {date: '2011年5月', body: '開始裝修。'},
+      {date: '2011年8月', body: '禱告會開始使用。'},
+      {date: '2011年10月16日', body: '主日敬拜第一次啟用。'},
+      {date: '2012年1月1日', body: '哈利路亞家教會新會堂獻堂。'},
+      {date: '2012年2月20日', body: '哈利路亞曾英欽診所申請通過。'},
+      {date: '2013年1月', body: '社區活動開展。'},
+      {date: '2014年3月1日', body: '家教會廿年中國宣教特會。'},
+      {date: '2014年3月1日', body: '按立國峰夫婦、中平夫婦、黃弘夫婦為牧師。'},
+      {date: '同日', body: '按立丁章豪為傳道人，差派趙彥樺為宣教士前往緬甸。', continued: true}
+    ]
+  },
+  'zh-Hans': {
+    events: [
+      {date: '1984年', body: '曾英钦医师夫妇在韩国百年宣教特会，从神领受建造家庭祭坛的异象。'},
+      {date: '1989年5月6日', body: '曾英钦医师夫妇被按立为台湾第一个带职事奉的牧师。'},
+      {date: '1990年9月2日', body: '哈利路亚家教会献堂。'},
+      {date: '1993年12月', body: '首次进入中国宣教禾场，一直到如今。'},
+      {date: '1999年7月', body: '成立哈利路亚圣经书院。'},
+      {date: '1999年10月', body: '租借鸿霖大厦地下室作为教会使用。'},
+      {date: '2003年7月', body: '开始多媒体网络事工。'},
+      {date: '2003年11月', body: '成立中华民国社团法人哈利路亚社区关怀协会。'},
+      {date: '2004年10月', body: '租借开平高中作主日崇拜场地。'},
+      {date: '2005年5月', body: '按立萧美姊妹为哈利路亚家教会传道人。'},
+      {date: '2006年2月', body: '租借中国文化大学教育推广中心作主日崇拜场地。'},
+      {date: '2006年6月', body: '成立哈利路亚国际神学院。'},
+      {date: '2007年10月', body: '按立徐国峰夫妇为哈利路亚家教会传道人。'},
+      {date: '2009年10月', body: '按立许中平夫妇、黄弘夫妇为哈利路亚家教会传道人。'},
+      {date: '2011年1月31日', body: '卖掉使用了20年的总部，牧师的家。'},
+      {date: '2011年2月18日', body: '信心买下仁爱路三段29号B1作为新会堂。'},
+      {date: '2011年3月2日', body: '曾英钦牧师于滁州禾场心肌梗塞，经历死里复活。'},
+      {date: '2011年5月', body: '开始装修。'},
+      {date: '2011年8月', body: '祷告会开始使用。'},
+      {date: '2011年10月16日', body: '主日敬拜第一次启用。'},
+      {date: '2012年1月1日', body: '哈利路亚家教会新会堂献堂。'},
+      {date: '2012年2月20日', body: '哈利路亚曾英钦诊所申请通过。'},
+      {date: '2013年1月', body: '社区活动开展。'},
+      {date: '2014年3月1日', body: '家教会廿年中国宣教特会。'},
+      {date: '2014年3月1日', body: '按立国峰夫妇、中平夫妇、黄弘夫妇为牧师。'},
+      {date: '同日', body: '按立丁章豪为传道人，差派赵彦桦为宣教士前往缅甸。', continued: true}
+    ]
+  },
+  en: {
+    events: [
+      {date: '1984', body: 'Dr. Tseng and his wife received the vision to build family altars at a centennial mission gathering in Korea.'},
+      {date: 'May 6, 1989', body: 'Dr. Tseng and his wife were ordained as Taiwan’s first bivocational pastors.'},
+      {date: 'September 2, 1990', body: 'Hallelujah Home Church was dedicated.'},
+      {date: 'December 1993', body: 'The church first entered the China mission field and has continued until today.'},
+      {date: 'July 1999', body: 'Hallelujah Bible College was established.'},
+      {date: 'October 1999', body: 'The church rented the basement of Honglin Building for gatherings.'},
+      {date: 'July 2003', body: 'The multimedia and online ministry began.'},
+      {date: 'November 2003', body: 'Hallelujah Community Care Association was established.'},
+      {date: 'October 2004', body: 'Sunday worship moved to Kai Ping Culinary School.'},
+      {date: 'May 2005', body: 'Sister Hsiao Yuan was ordained as a minister of Hallelujah Home Church.'},
+      {date: 'February 2006', body: 'Sunday worship moved to the Chinese Culture University extension campus.'},
+      {date: 'June 2006', body: 'Hallelujah International Theological Seminary was established.'},
+      {date: 'October 2007', body: 'Hsu Kuo-feng and his wife were ordained as ministers.'},
+      {date: 'October 2009', body: 'Hsu Chung-ping and Huang Hung and their wives were ordained as ministers.'},
+      {date: 'January 31, 2011', body: 'The church sold the headquarters that had served for twenty years.'},
+      {date: 'February 18, 2011', body: 'By faith, the church purchased the B1 meeting place on Renai Road.'},
+      {date: 'March 2, 2011', body: 'Pastor Tseng suffered a heart attack in Chuzhou and experienced restoration from death.'},
+      {date: 'May 2011', body: 'Renovation began.'},
+      {date: 'August 2011', body: 'Prayer meetings began using the new space.'},
+      {date: 'October 16, 2011', body: 'Sunday worship was held there for the first time.'},
+      {date: 'January 1, 2012', body: 'The new meeting place was dedicated.'},
+      {date: 'February 20, 2012', body: 'Hallelujah Tseng Ying-chin Clinic was approved.'},
+      {date: 'January 2013', body: 'Community activities began.'},
+      {date: 'March 1, 2014', body: 'The church held its twentieth anniversary China mission conference.'},
+      {date: 'March 1, 2014', body: 'Kuo-feng, Chung-ping, and Huang Hung and their wives were ordained as pastors.'},
+      {date: 'Same day', body: 'Ting Chang-hao was ordained as a minister, and Chao Yen-hua was sent as a missionary to Myanmar.', continued: true}
+    ]
+  }
+};

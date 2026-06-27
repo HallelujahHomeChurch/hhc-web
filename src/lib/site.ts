@@ -1,0 +1,12 @@
+export const siteConfig = {
+  name: '哈利路亞家教會',
+  url: 'https://example.com',
+  defaultOgImage: '/opengraph-image',
+  social: {
+    youtube: 'https://youtube.com/@hhc33?si=SR2rSIVOTFX2dCmw',
+    facebook: 'https://www.facebook.com/www.alive.org.tw/?locale=zh_TW'
+  },
+  music: {
+    youtube: 'https://youtube.com/@gkpmusic777?si=JqJyfjM8FCmWD5MY'
+  }
+} as const;

@@ -1,0 +1,820 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>關於我們 | 哈利路亞家教會</title>
+  <link rel="shortcut icon" href="src/imagesfile/HHC-Icon2.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cream: #fbf5eb;
+      --paper: #fffdf9;
+      --gold: #e4a43a;
+      --rose: #cf685f;
+      --blue: #bddfe3;
+      --teal: #3a7e7a;
+      --ink: #372d2b;
+      --muted: #746c67;
+      --line: #eee3d7;
+      --panel: #f8f0e7;
+      --panel-border: rgb(232 217 203 / 86%);
+      --panel-shadow: inset 0 1px 0 rgb(255 255 255 / 58%);
+      --shadow: 0 20px 50px rgb(76 50 28 / 12%);
+      font-family: "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--cream); color: var(--ink); }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+
+    a:focus-visible {
+      outline: 2px solid var(--rose);
+      outline-offset: 4px;
+    }
+
+    .shell {
+      width: min(100% - 48px, 1110px);
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgb(255 253 249 / 92%);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgb(238 227 215 / 70%);
+    }
+
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      min-height: 76px;
+    }
+
+    .logo,
+    .footer-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 44px;
+      min-width: max-content;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      flex: 0 0 auto;
+    }
+
+    .brand-mark img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .brand-copy {
+      display: grid;
+      gap: 2px;
+      line-height: 1.04;
+    }
+
+    .brand-copy strong {
+      color: #403832;
+      font-size: 19px;
+      font-weight: 500;
+      letter-spacing: .02em;
+    }
+
+    .brand-copy small {
+      color: #6f6660;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+
+    .nav {
+      margin-left: auto;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .nav a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      padding: 0 4px;
+      color: var(--ink);
+      font-weight: 800;
+      letter-spacing: .02em;
+    }
+
+    .nav a:hover,
+    .nav a:focus-visible {
+      color: var(--rose);
+    }
+
+    .hero {
+      position: relative;
+      min-height: clamp(430px, 56vw, 610px);
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgb(255 253 249 / 86%) 0 46%, rgb(255 253 249 / 44%) 68%, rgb(255 253 249 / 14%)),
+        url("src/imagesfile/banner/banner03.jpg") center / cover,
+        var(--paper);
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      min-height: clamp(430px, 56vw, 610px);
+      padding: 70px 0 88px;
+    }
+
+    .hero-copy {
+      max-width: 590px;
+      padding-top: 34px;
+    }
+
+    h1 {
+      margin: 0;
+      color: #8f2e22;
+      font-family: "LXGW WenKai TC", "BiauKai", "DFKai-SB", "Kaiti TC", serif;
+      font-size: clamp(54px, 8vw, 96px);
+      font-weight: 400;
+      line-height: 1.08;
+      letter-spacing: .08em;
+    }
+
+    .hero-copy p {
+      margin: 22px 0 0;
+      color: #6f352c;
+      font-size: clamp(18px, 2.1vw, 26px);
+      font-weight: 600;
+      letter-spacing: .06em;
+    }
+
+    .content {
+      padding: 40px 0 52px;
+      background: linear-gradient(180deg, var(--cream), #fffaf4);
+    }
+
+    .card {
+      border: 1px solid rgb(238 227 215 / 80%);
+      border-radius: 16px;
+      background: rgb(255 253 249 / 88%);
+      box-shadow: var(--shadow);
+    }
+
+    .vision-content {
+      padding: 34px 38px;
+      font-size: 18px;
+      line-height: 2;
+    }
+
+    .intro {
+      margin: 0 0 34px;
+    }
+
+    .part {
+      padding: 30px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .part-head {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .part-kicker {
+      color: var(--rose);
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 0;
+      color: var(--ink);
+      font-size: 28px;
+      line-height: 1.2;
+    }
+
+    .part p {
+      margin: 0;
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 2;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .vision-image {
+      overflow: hidden;
+      padding: 12px;
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      background: var(--panel);
+      box-shadow: var(--panel-shadow);
+    }
+
+    .vision-image img {
+      width: 100%;
+      height: 100%;
+      border-radius: 10px;
+      object-fit: cover;
+    }
+
+    .vision-photo img {
+      aspect-ratio: 4 / 3;
+    }
+
+    .vision-gallery {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .vision-gallery img:first-child {
+      grid-column: 1 / -1;
+      aspect-ratio: 16 / 9;
+    }
+
+    .vision-gallery img:not(:first-child) {
+      aspect-ratio: 16 / 10;
+    }
+
+    .principles {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 0;
+    }
+
+    .principle {
+      padding: 20px;
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      background: var(--panel);
+      box-shadow: var(--panel-shadow);
+    }
+
+    .principle strong {
+      display: block;
+      margin-bottom: 10px;
+      color: #b64e45;
+      font-size: 18px;
+    }
+
+    .principle p {
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.8;
+    }
+
+    .four-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .four-list li {
+      padding: 20px;
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      background: var(--panel);
+      box-shadow: var(--panel-shadow);
+      color: var(--muted);
+      line-height: 1.85;
+    }
+
+    .four-list strong {
+      display: block;
+      margin-bottom: 8px;
+      color: #b64e45;
+      font-size: 18px;
+    }
+
+    .history-content {
+      margin-top: 28px;
+      padding: 34px 38px;
+      overflow: hidden;
+    }
+
+    .history-cover {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
+      align-items: center;
+      gap: 30px;
+      overflow: hidden;
+      padding: clamp(24px, 4vw, 44px);
+      margin-bottom: 34px;
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      background: var(--panel);
+      box-shadow: var(--panel-shadow);
+    }
+
+    .history-cover img {
+      width: 100%;
+      max-height: 430px;
+      object-fit: contain;
+      mix-blend-mode: multiply;
+    }
+
+    .history-scripture {
+      display: grid;
+      gap: 28px;
+      color: #9a3d18;
+      font-family: "LXGW WenKai TC", "BiauKai", "DFKai-SB", "Kaiti TC", serif;
+      font-size: clamp(16px, 1.55vw, 20px);
+      line-height: 1.8;
+      letter-spacing: .04em;
+    }
+
+    .history-scripture blockquote {
+      margin: 0;
+    }
+
+    .history-scripture cite {
+      display: block;
+      margin-top: 8px;
+      font-size: clamp(13px, .72em, 14px);
+      font-style: normal;
+      text-align: center;
+    }
+
+    .history-intro {
+      max-width: 760px;
+      margin: 0 0 34px;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.9;
+    }
+
+    .era {
+      padding: 42px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .era-head {
+      display: block;
+      margin-bottom: 28px;
+    }
+
+    .history-title {
+      color: #8f2e22;
+      font-family: "LXGW WenKai TC", "BiauKai", "DFKai-SB", "Kaiti TC", serif;
+      font-size: clamp(42px, 6vw, 76px);
+      font-weight: 400;
+      line-height: 1.08;
+      letter-spacing: .06em;
+    }
+
+    .timeline {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px 54px;
+      margin: 0;
+      padding: 6px 0;
+      list-style: none;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(var(--rose), var(--teal));
+      transform: translateX(-1px);
+      opacity: .55;
+    }
+
+    .event {
+      position: relative;
+      display: block;
+      padding: 22px 24px;
+      border: 1px solid rgb(238 227 215 / 82%);
+      border-radius: 16px;
+      background:
+        linear-gradient(135deg, rgb(255 253 249 / 96), rgb(248 240 231 / 82));
+      box-shadow: 0 14px 34px rgb(76 50 28 / 9%);
+    }
+
+    .event::before {
+      content: "";
+      position: absolute;
+      top: 30px;
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: var(--rose);
+      box-shadow: 0 0 0 6px #fff6ee;
+    }
+
+    .event:nth-child(odd) {
+      grid-column: 1;
+      transform: translateY(10px);
+    }
+
+    .event:nth-child(even) {
+      grid-column: 2;
+      transform: translateY(54px);
+    }
+
+    .event:nth-child(odd)::before {
+      right: -34px;
+    }
+
+    .event:nth-child(even)::before {
+      left: -34px;
+      background: var(--teal);
+    }
+
+    .date {
+      display: inline-flex;
+      margin-bottom: 10px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      background: #fbefd9;
+      color: #8f2e22;
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .event p {
+      margin: 0;
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.8;
+    }
+
+    .event.continued {
+      background: #fffaf4;
+    }
+
+    .event.continued .date {
+      color: var(--muted);
+    }
+
+    .footer {
+      border-top: 1px solid var(--line);
+      background: #fbefd9;
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      min-height: 86px;
+    }
+
+    .footer-logo .brand-mark {
+      width: 36px;
+      height: 36px;
+    }
+
+    .footer-logo .brand-copy strong { font-size: 17px; }
+
+    .footer-logo .brand-copy small { font-size: 8px; }
+
+    .footer-nav {
+      display: flex;
+      justify-content: center;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .footer-nav a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+    }
+
+    .socials {
+      display: flex;
+      gap: 10px;
+    }
+
+    .social-link {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--panel-border);
+      border-radius: 999px;
+      background: var(--panel);
+      color: #7a423b;
+      transition: background .18s ease, border-color .18s ease, color .18s ease;
+    }
+
+    .social-link:hover,
+    .social-link:focus-visible {
+      background: var(--rose);
+      border-color: var(--rose);
+      color: white;
+    }
+
+    .social-link svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    .social-link.social-youtube svg {
+      width: 26px;
+      height: 19px;
+    }
+
+    .social-link.social-youtube .play {
+      fill: var(--panel);
+    }
+
+    .social-link.social-youtube:hover .play,
+    .social-link.social-youtube:focus-visible .play {
+      fill: var(--rose);
+    }
+
+    @media (max-width: 900px) {
+      .two-col,
+      .principles {
+        grid-template-columns: 1fr;
+      }
+
+      .four-list {
+        grid-template-columns: 1fr;
+      }
+
+      .history-cover {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .timeline {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        padding-left: 18px;
+      }
+
+      .timeline::before {
+        left: 3px;
+      }
+
+      .event {
+        grid-column: 1 !important;
+        transform: none !important;
+      }
+
+      .event::before,
+      .event:nth-child(odd)::before,
+      .event:nth-child(even)::before {
+        left: -21px;
+        right: auto;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .shell { width: min(100% - 28px, 1110px); }
+      .topbar-inner { min-height: 68px; }
+      .brand-mark {
+        width: 36px;
+        height: 36px;
+      }
+      .brand-copy strong { font-size: 17px; }
+      .brand-copy small { font-size: 8px; }
+      .hero-inner { padding: 46px 0 64px; }
+      .hero-copy { padding-top: 0; }
+      h1 { letter-spacing: .03em; }
+      .vision-content,
+      .history-content { padding: 24px 20px; }
+      .history-cover {
+        gap: 20px;
+        padding: 22px;
+      }
+      .history-scripture {
+        gap: 18px;
+        font-size: 16px;
+        line-height: 1.7;
+        letter-spacing: .02em;
+      }
+      .footer-inner {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 22px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <a class="logo" href="index.html" aria-label="哈利路亞家教會首頁">
+        <span class="brand-mark" aria-hidden="true">
+          <img src="src/imagesfile/logo-icon.png" alt="">
+        </span>
+        <span class="brand-copy">
+          <strong>哈利路亞家教會</strong>
+          <small>Hallelujah Home Church</small>
+        </span>
+      </a>
+      <nav class="nav" aria-label="主要導覽">
+        <a href="about.html">關於我們</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="page-title">
+      <div class="shell hero-inner">
+        <div class="hero-copy">
+          <h1 id="page-title">關於我們</h1>
+          <p>合一與宣教</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="content">
+      <article class="shell card vision-content">
+        <p class="intro">從1個人帶出3個人、3個人帶出12個人、12個人帶出70個人、70個人就準備進入神所預備的禾場，然後到馬可樓的120個人就能用福音引爆整個世界，並在生養中帶出一代代生命的傳承，這就是福音，也是個人和教會真正的價值。建立教會不是蓋教堂，乃是走到哪，都能為主作榮耀的見證。</p>
+
+        <section class="part" aria-labelledby="vision-title">
+          <div class="part-head">
+            <span class="part-kicker">一個異象</span>
+            <h2 id="vision-title">合一與宣教</h2>
+          </div>
+          <div class="two-col">
+            <p>家教會建造的主旨就是使人與神、與人都在基督裡合一，把神的愛更多的宣揚出去，成為周遭人群的祝福。</p>
+            <div class="vision-image vision-photo">
+              <img src="src/imagesfile/about/vision-unity-prayer.png" alt="禱告中的會眾">
+            </div>
+          </div>
+        </section>
+
+        <section class="part" aria-labelledby="goals-title">
+          <div class="part-head">
+            <span class="part-kicker">二個目標</span>
+            <h2 id="goals-title">宣教為中國，中國為宣教</h2>
+          </div>
+          <p>「China」指的不是地理上的中國，乃是凡有中國人的地方，也與政治、經濟、地理位置無關，乃與同是炎黃子孫有關。神揀選中華兒女，在末後世代承接福音的最後一棒；全世界華人都要聯結起來，一同還福音的債，為主打那美好的仗。</p>
+        </section>
+
+        <section class="part" aria-labelledby="actions-title">
+          <div class="part-head">
+            <span class="part-kicker">三個行動</span>
+            <h2 id="actions-title">共同生活，愛與成全，恩膏傳承</h2>
+          </div>
+          <div class="principles">
+            <article class="principle">
+              <strong>共同生活</strong>
+              <p>不需戴面具，每個人赤裸敞開，彼此接納、互相扶持，一同建造基督的身體。</p>
+            </article>
+            <article class="principle">
+              <strong>愛與成全</strong>
+              <p>在愛中建立彼此，並將聖徒放在正確的位置上來服事神。</p>
+            </article>
+            <article class="principle">
+              <strong>恩膏傳承</strong>
+              <p>每個人上有屬靈的父母，下有屬靈的孩子，一同完成神所託付的使命。</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="part" aria-labelledby="convictions-title">
+          <div class="part-head">
+            <span class="part-kicker">四個行動</span>
+            <h2 id="convictions-title">宣教主導，靈恩神學，團隊事奉，門徒訓練</h2>
+          </div>
+          <div class="two-col">
+            <ul class="four-list">
+              <li><strong>宣教主導</strong>各樣建造都是為了宣教，裝備每一個人成為屬靈父母，將信仰落實在生活中作光作鹽。</li>
+              <li><strong>靈恩神學</strong>在生活中經歷神話語的實在，天天被聖靈充滿，活出神的性情與樣式。</li>
+              <li><strong>團隊事奉</strong>教會是耶穌基督的身體，恩賜與職份在生命服事與肢體連結中顯明。</li>
+              <li><strong>門徒訓練</strong>門徒效法牧者，牧者效法保羅，如同保羅效法基督，使恩膏與傳承延續。</li>
+            </ul>
+            <div class="vision-image vision-gallery" aria-label="四個行動照片">
+              <img src="src/imagesfile/about/vision-actions-space.png" alt="教會空間">
+              <img src="src/imagesfile/about/vision-actions-worship.png" alt="敬拜服事">
+              <img src="src/imagesfile/about/vision-actions-community.png" alt="共同生活">
+            </div>
+          </div>
+        </section>
+      </article>
+
+      <article class="shell card history-content">
+        <div class="history-cover">
+          <div class="history-scripture">
+            <blockquote>
+              眾海島啊，當聽我言！遠方的眾民哪，留心而聽！<br>
+              自我出胎，耶和華就選召我；自出母腹，他就提我的名。<br>
+              他使我的口如快刀，將我藏在他手蔭之下；<br>
+              又使我成為磨亮的箭，將我藏在他箭袋之中；<br>
+              對我說：你是我的僕人以色列；我必因你得榮耀。
+              <cite>《以賽亞書四十九章1-3節》</cite>
+            </blockquote>
+            <blockquote>
+              耶和華從我出胎，造就我作他的僕人，<br>
+              要使雅各歸向他，使以色列到他那裏聚集。<br>
+              原來耶和華看我為尊貴；我的神也成為我的力量。<br>
+              現在他說：你作我的僕人，使雅各眾支派復興，<br>
+              使以色列中得保全的歸回尚為小事，<br>
+              我還要使你作外邦人的光，叫你施行我的救恩，直到地極。
+              <cite>《以賽亞書四十九章5-6節》</cite>
+            </blockquote>
+          </div>
+          <img src="src/imagesfile/about/process-illustration.png" alt="孩子仰望光的黑白插畫">
+        </div>
+        <p class="history-intro">從家庭祭壇的異象開始，家教會一步一步走進宣教、建造與牧養的旅程。這條時間線保留重要節點，讓沿革成為可閱讀的生命傳承。</p>
+
+        <section class="era" aria-labelledby="history-main-title">
+          <div class="era-head">
+            <h2 class="history-title" id="history-main-title">家教會沿革</h2>
+          </div>
+          <ol class="timeline">
+            <li class="event"><time class="date">1984年</time><p>曾英欽醫師夫婦在韓國百年宣教特會，從神領受建造家庭祭壇的異象。</p></li>
+            <li class="event"><time class="date">1989年5月6日</time><p>曾英欽醫師夫婦被按立為台灣第一個帶職事奉的牧師。</p></li>
+            <li class="event"><time class="date">1990年9月2日</time><p>哈利路亞家教會獻堂。</p></li>
+            <li class="event"><time class="date">1993年12月</time><p>首次進入中國宣教禾場，一直到如今。</p></li>
+            <li class="event"><time class="date">1999年7月</time><p>成立哈利路亞聖經書院。</p></li>
+            <li class="event"><time class="date">1999年10月</time><p>租借鴻霖大廈地下室作為教會使用。</p></li>
+            <li class="event"><time class="date">2003年7月</time><p>開始多媒體網路事工。</p></li>
+            <li class="event"><time class="date">2003年11月</time><p>成立中華民國社團法人哈利路亞社區關懷協會。</p></li>
+            <li class="event"><time class="date">2004年10月</time><p>租借開平高中作主日崇拜場地。</p></li>
+            <li class="event"><time class="date">2005年5月</time><p>按立蕭媛姊妹為哈利路亞家教會傳道人。</p></li>
+            <li class="event"><time class="date">2006年2月</time><p>租借中國文化大學教育推廣中心作主日崇拜場地。</p></li>
+            <li class="event"><time class="date">2006年6月</time><p>成立哈利路亞國際神學院。</p></li>
+            <li class="event"><time class="date">2007年10月</time><p>按立徐國峰夫婦為哈利路亞家教會傳道人。</p></li>
+            <li class="event"><time class="date">2009年10月</time><p>按立許中平夫婦、黃弘夫婦為哈利路亞家教會傳道人。</p></li>
+            <li class="event"><time class="date">2011年1月31日</time><p>賣掉使用了20年的總部，牧師的家。</p></li>
+            <li class="event"><time class="date">2011年2月18日</time><p>信心買下仁愛路三段29號B1作為新會堂。</p></li>
+            <li class="event"><time class="date">2011年3月2日</time><p>曾英欽牧師於滁州禾場心肌梗塞，經歷死裡復活。</p></li>
+            <li class="event"><time class="date">2011年5月</time><p>開始裝修。</p></li>
+            <li class="event"><time class="date">2011年8月</time><p>禱告會開始使用。</p></li>
+            <li class="event"><time class="date">2011年10月16日</time><p>主日敬拜第一次啟用。</p></li>
+            <li class="event"><time class="date">2012年1月1日</time><p>哈利路亞家教會新會堂獻堂。</p></li>
+            <li class="event"><time class="date">2012年2月20日</time><p>哈利路亞曾英欽診所申請通過。</p></li>
+            <li class="event"><time class="date">2013年1月</time><p>社區活動開展。</p></li>
+            <li class="event"><time class="date">2014年3月1日</time><p>家教會廿年中國宣教特會。</p></li>
+            <li class="event"><time class="date">2014年3月1日</time><p>按立國峰夫婦、中平夫婦、黃弘夫婦為牧師。</p></li>
+            <li class="event continued"><time class="date">同日</time><p>按立丁章豪為傳道人，差派趙彥樺為宣教士前往緬甸。</p></li>
+          </ol>
+        </section>
+      </article>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="shell footer-inner">
+      <a class="footer-logo" href="index.html">
+        <span class="brand-mark" aria-hidden="true">
+          <img src="src/imagesfile/logo-icon.png" alt="">
+        </span>
+        <span class="brand-copy">
+          <strong>哈利路亞家教會</strong>
+          <small>Hallelujah Home Church</small>
+        </span>
+      </a>
+      <div class="socials" aria-label="社群">
+        <a class="social-link social-youtube" href="#" aria-label="YouTube">
+          <svg viewBox="0 0 28 20" aria-hidden="true">
+            <path d="M26.9 4.1a3.3 3.3 0 0 0-2.3-2.3C22.6 1.3 14 1.3 14 1.3s-8.6 0-10.6.5a3.3 3.3 0 0 0-2.3 2.3A34 34 0 0 0 .6 10a34 34 0 0 0 .5 5.9 3.3 3.3 0 0 0 2.3 2.3c2 .5 10.6.5 10.6.5s8.6 0 10.6-.5a3.3 3.3 0 0 0 2.3-2.3 34 34 0 0 0 .5-5.9 34 34 0 0 0-.5-5.9Z"/>
+            <path class="play" d="M11.4 13.8V6.2l6.7 3.8-6.7 3.8Z"/>
+          </svg>
+        </a>
+        <a class="social-link facebook" href="#" aria-label="Facebook">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M14.3 8.1V6.6c0-.7.5-.9 1-.9h2.5V2.1L14.4 2c-3.4 0-4.2 2-4.2 4.1v2H7.5V12h2.7v10h4.1V12h3.1l.5-3.9h-3.6Z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
