@@ -6,6 +6,7 @@ import {AboutHero} from '@/components/about/AboutHero';
 import {SiteFooter} from '@/components/layout/SiteFooter';
 import {SiteHeader} from '@/components/layout/SiteHeader';
 import {WeeklyArchive} from '@/components/literature-ministry/WeeklyArchive';
+import {Reveal} from '@/components/ui/Reveal';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
@@ -56,9 +57,11 @@ export default async function LiteratureMinistryPage({params}: LiteratureMinistr
       <main>
         <AboutHero title={messages.literatureMinistry.heroTitle} subtitle={messages.literatureMinistry.heroSubtitle} />
         <div className="bg-[linear-gradient(180deg,var(--color-cream),#fffaf4)] py-10 pb-14">
-          <Suspense fallback={null}>
-            <WeeklyArchive locale={locale} messages={messages.literatureMinistry} />
-          </Suspense>
+          <Reveal>
+            <Suspense fallback={null}>
+              <WeeklyArchive locale={locale} messages={messages.literatureMinistry} />
+            </Suspense>
+          </Reveal>
         </div>
       </main>
       <SiteFooter locale={locale} pathname={`/${locale}/literature-ministry`} />

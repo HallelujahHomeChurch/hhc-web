@@ -6,6 +6,7 @@ import {HistoryTimeline} from '@/components/about/HistoryTimeline';
 import {VisionContent} from '@/components/about/VisionContent';
 import {SiteFooter} from '@/components/layout/SiteFooter';
 import {SiteHeader} from '@/components/layout/SiteHeader';
+import {Reveal} from '@/components/ui/Reveal';
 import {getHistoryTimeline} from '@/features/history/api';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
@@ -58,8 +59,12 @@ export default async function AboutPage({params}: AboutPageProps) {
       <main>
           <AboutHero title={messages.about.heroTitle} subtitle={messages.about.heroSubtitle} />
         <div className="bg-[linear-gradient(180deg,var(--color-cream),#fffaf4)] py-10 pb-14">
-          <VisionContent content={messages.about.vision} />
-          <HistoryTimeline content={messages.about.history} timeline={timeline} />
+          <Reveal>
+            <VisionContent content={messages.about.vision} />
+          </Reveal>
+          <Reveal delay={80}>
+            <HistoryTimeline content={messages.about.history} timeline={timeline} />
+          </Reveal>
         </div>
       </main>
       <SiteFooter locale={locale} pathname={`/${locale}/about`} />
