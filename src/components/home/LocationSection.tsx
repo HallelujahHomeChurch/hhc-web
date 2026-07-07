@@ -9,7 +9,7 @@ type LocationSectionProps = {
 export function LocationSection({title, mapLabel, items}: LocationSectionProps) {
   return (
     <section className="shell mt-7" aria-labelledby="locations-title">
-      <h2 id="locations-title" className="mb-4 w-max border-b-[3px] border-teal text-[25px] font-bold text-teal">
+      <h2 id="locations-title" className="mb-4 w-max border-b-[3px] border-teal text-[25px] font-semibold text-teal">
         {title}
       </h2>
       <div className="grid grid-cols-2 gap-5 max-[900px]:grid-cols-1">
@@ -19,7 +19,7 @@ export function LocationSection({title, mapLabel, items}: LocationSectionProps) 
               ⌂
             </div>
             <div>
-              <h3 className="mb-1.5 text-lg font-bold">{item.name}</h3>
+              <h3 className="mb-1.5 text-lg font-semibold">{item.name}</h3>
               <p className="mb-2.5 text-sm leading-relaxed text-muted">{item.address}</p>
               <a className="inline-flex min-h-11 items-center text-[13px] font-extrabold text-muted hover:text-rose" href={item.mapHref} target="_blank" rel="noreferrer">
                 ⌖ {mapLabel}

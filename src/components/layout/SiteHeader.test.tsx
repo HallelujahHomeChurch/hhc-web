@@ -20,7 +20,16 @@ describe('SiteHeader', () => {
 
     expect(aboutLink).toHaveAttribute('href', '/zh-Hant/about');
     expect(literatureMinistryLink).toHaveAttribute('href', '/zh-Hant/literature-ministry');
+    expect(aboutLink).toHaveAttribute('aria-current', 'page');
+    expect(aboutLink).toHaveAttribute('data-active', 'true');
+    expect(aboutLink.className).toContain('font-semibold');
+    expect(aboutLink.className).not.toContain('font-extrabold');
     expect(aboutLink.className).toContain('hover:text-primary');
+    expect(aboutLink.className).toContain('hover:after:scale-x-100');
+    expect(aboutLink.className).toContain('after:inset-x-0');
+    expect(aboutLink.className).toContain('after:bottom-0');
+    expect(aboutLink.className).toContain('data-[active=true]:after:scale-x-100');
+    expect(aboutLink.className).toContain('max-[620px]:after:hidden');
   });
 
   it('toggles the mobile navigation menu', async () => {

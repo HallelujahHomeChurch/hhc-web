@@ -16,7 +16,7 @@ export function NewsSection({title, moreLabel, items}: NewsSectionProps) {
   return (
     <div className="min-w-0">
       <div className="mb-5 flex items-center justify-between gap-5">
-        <h2 className="m-0 text-2xl font-bold tracking-[0.03em] text-ink">{title}</h2>
+        <h2 className="m-0 text-2xl font-semibold tracking-[0.03em] text-ink">{title}</h2>
         <a className="inline-flex min-h-11 items-center text-sm font-extrabold text-rose" href="#">
           {moreLabel}
         </a>
@@ -32,7 +32,7 @@ export function NewsSection({title, moreLabel, items}: NewsSectionProps) {
                 style={{backgroundImage: placeholders[index % placeholders.length]}}
               />
               <span>
-                <h3 className="mb-2 text-lg font-bold leading-[1.45]">{item.title}</h3>
+                <h3 className="mb-2 text-lg font-semibold leading-[1.45]">{item.title}</h3>
                 <p className="mb-3 text-sm leading-relaxed text-muted">{item.summary}</p>
                 <span className="text-[13px] font-bold text-muted">● {item.date}</span>
               </span>

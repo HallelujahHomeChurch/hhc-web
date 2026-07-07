@@ -13,7 +13,7 @@ export function VideoSection({title, subtitle, ctaLabel, channelHref, items}: Vi
   return (
     <section className="shell mt-7 grid grid-cols-[230px_repeat(3,minmax(0,1fr))] gap-3.5 rounded-2xl border border-line/80 bg-paper/90 p-3.5 shadow-warm max-[900px]:grid-cols-1" aria-label={title}>
       <div className="px-1.5 py-3">
-        <h2 className="mb-3 text-[25px] font-bold text-teal">{title}</h2>
+        <h2 className="mb-3 text-[25px] font-semibold text-teal">{title}</h2>
         <p className="mb-5 leading-[1.7] text-ink">{subtitle}</p>
         <div className="mb-4">
           <Button href={channelHref} target="_blank">{ctaLabel}</Button>
@@ -39,7 +39,7 @@ export function VideoSection({title, subtitle, ctaLabel, channelHref, items}: Vi
             backgroundSize: '100% 100%, auto 118%'
           }}
         >
-          <span className="absolute inset-x-3 bottom-3 rounded-lg px-2.5 py-2 font-extrabold text-white">{item.title}</span>
+          <span className="absolute inset-x-3 bottom-3 rounded-lg px-2.5 py-2 font-semibold text-white">{item.title}</span>
         </a>
       ))}
     </section>

@@ -20,5 +20,8 @@ describe('SiteFooter', () => {
     expect(container.querySelector('select')).not.toBeInTheDocument();
     expect(screen.getByRole('link', {name: 'YouTube'})).toHaveAttribute('href', siteConfig.social.youtube);
     expect(screen.getByRole('link', {name: 'Facebook'})).toHaveAttribute('href', siteConfig.social.facebook);
+    expect(screen.getByText(/社團法人中華民國哈利路亞社區關懷協會/)).toBeInTheDocument();
+    expect(screen.getByRole('link', {name: '隱私權保護政策'})).toHaveAttribute('href', '/zh-Hant/privacy-policy');
+    expect(screen.getByRole('link', {name: '使用條款'})).toHaveAttribute('href', '/zh-Hant/terms-of-use');
   });
 });

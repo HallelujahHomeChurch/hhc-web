@@ -10,6 +10,11 @@
       "closeMenu": "Close menu"
     },
     "language": "Language",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfUse": "Terms of Use",
+    "legalNavigation": "Legal information",
+    "copyrightHolder": "Hallelujah Community Care Association, R.O.C.",
+    "allRightsReserved": "All rights reserved.",
     "social": {
       "youtube": "YouTube",
       "facebook": "Facebook"
@@ -20,8 +25,8 @@
     "heroSubtitle": "Building families in love and growing in truth",
     "newsTitle": "Latest News",
     "moreNews": "View all",
-    "weeklyTitle": "Weekly Bulletin",
-    "downloadWeekly": "Download bulletin",
+    "weeklyTitle": "Weekly Paper",
+    "downloadWeekly": "Download weekly paper",
     "videosTitle": "Kingdom Joy",
     "videosSubtitle": "Worship through music and let life be lit by love",
     "watchMore": "Watch more videos",
@@ -114,14 +119,14 @@
   },
   "literatureMinistry": {
     "heroTitle": "Literature Ministry",
-    "heroSubtitle": "Bulletins, messages, and written records for formation",
-    "eyebrow": "Weekly Bulletin",
-    "archiveTitle": "Bulletin downloads",
-    "archiveIntro": "Weekly bulletins are available in Traditional Chinese, Simplified Chinese, and English for reading and sharing.",
-    "latestLabel": "Latest bulletin",
+    "heroSubtitle": "Weekly papers, messages, and written records for formation",
+    "eyebrow": "Weekly Paper",
+    "archiveTitle": "Weekly paper downloads",
+    "archiveIntro": "Weekly papers are available in Traditional Chinese, Simplified Chinese, and English for reading and sharing.",
+    "latestLabel": "Latest weekly paper",
     "allIssuesTitle": "History",
     "paginationNote": "Sorted newest first",
-    "paginationLabel": "Bulletin pagination",
+    "paginationLabel": "Weekly paper pagination",
     "previousPage": "Previous",
     "nextPage": "Next",
     "pageLabel": "Page",
@@ -130,6 +135,126 @@
       "zh-Hans": "Simplified",
       "en": "English"
     }
+  },
+  "privacyPolicy": {
+    "heroTitle": "Privacy Policy",
+    "heroSubtitle": "",
+    "updatedAtLabel": "Last updated",
+    "updatedAt": "June 29, 2026",
+    "intro": "Welcome to the Hallelujah Home Church website (this website). To help you use the services and information on this website with confidence, this Privacy Policy explains how this website protects your rights and handles personal information. Please read the following terms carefully.",
+    "sections": [
+      {
+        "title": "Scope and data controller",
+        "body": [
+          "This policy applies to the public pages and online services provided by this website. This website is provided and maintained by Hallelujah Community Care Association, R.O.C.",
+          "If this website links to third-party websites, video platforms, social platforms, or map services, those services are governed by their own privacy policies."
+        ]
+      },
+      {
+        "title": "Information we may collect",
+        "body": [
+          "When you contact us through a form, email, or event registration, we may collect your name, contact details, registration details, message content, and other information needed to respond to your request.",
+          "When you browse this website, servers or third-party services may generate necessary technical data, such as IP address, browser information, device type, access time, browsing and click records, and error logs."
+        ]
+      },
+      {
+        "title": "How we use information",
+        "body": [
+          "We use information only as needed for church administration, event communication, pastoral care, responding to inquiries, website operations, security, and service improvement.",
+          "Browsing and click records are mainly used for internal analysis of traffic, content quality, and service experience, not to identify specific individuals for advertising tracking.",
+          "We do not sell your personal information or provide it to unrelated third parties for marketing unless required by law, needed to protect rights, or authorized by your consent."
+        ]
+      },
+      {
+        "title": "Retention period, region, recipients, and methods",
+        "body": [
+          "We use information during the period needed for the collection purpose, legal requirements, or church administrative record retention.",
+          "The region of use is limited to where this website, church administration, and service providers operate. Recipients may include the association, entrusted service providers, and authorities legally entitled to request information.",
+          "Methods of use may include electronic processing, manual contact, event administration, website operations, security management, statistical analysis, and other necessary methods permitted by law."
+        ]
+      },
+      {
+        "title": "Vendors and third-party services",
+        "body": [
+          "To provide hosting, forms, email, video, maps, or security maintenance, we may engage service providers to process information within the necessary scope.",
+          "We require service providers to keep information confidential, use appropriate security measures, and process information only for the entrusted purpose. We may provide necessary information when required by law, judicial or competent authorities, rights protection, or harm prevention."
+        ]
+      },
+      {
+        "title": "Cookies",
+        "body": [
+          "This website may use necessary cookies to remember your language preference, such as hhc_locale. These cookies provide website functions you request and are not used for advertising tracking.",
+          "You can refuse or delete cookies through your browser settings, but some language preferences or website functions may not be saved correctly.",
+          "If we later add analytics, advertising, or other non-essential tracking tools, we will update this policy and provide any required choice or consent mechanism under applicable law."
+        ]
+      },
+      {
+        "title": "Retention and protection",
+        "body": [
+          "We retain information only for as long as needed to fulfill the collection purpose, meet legal obligations, or maintain church administrative records.",
+          "We use reasonable technical and organizational measures to protect information. No internet transmission is completely secure, so please avoid submitting unnecessary sensitive information through public forms."
+        ]
+      },
+      {
+        "title": "Your rights and contact",
+        "body": [
+          "You may request access, copies, correction, supplementation, deletion, or the suspension of collection, processing, or use of your personal information as allowed by applicable law.",
+          "If you do not provide necessary information, we may be unable to respond to inquiries, complete event registration, provide related services, or save your language preference.",
+          "If you have questions about this policy or how your personal information is handled, please contact us through the church contact information provided on this website."
+        ]
+      }
+    ]
+  },
+  "termsOfUse": {
+    "heroTitle": "Terms of Use",
+    "heroSubtitle": "",
+    "updatedAtLabel": "Last updated",
+    "updatedAt": "June 29, 2026",
+    "intro": "By using this website, you agree to these terms. This website mainly provides church information, service content, weekly paper downloads, and related resources.",
+    "sections": [
+      {
+        "title": "Website content",
+        "body": [
+          "The content on this website is provided for general information, faith formation, and church ministry use. We try to keep information accurate, but event times, locations, downloads, and external links may change.",
+          "If website information differs from official church announcements, the latest church announcement or response from the church contact window should prevail."
+        ]
+      },
+      {
+        "title": "Intellectual property",
+        "body": [
+          "Unless otherwise stated, text, images, design, weekly papers, media, and other content on this website are owned by Hallelujah Community Care Association, R.O.C. or the relevant rights holders.",
+          "You may read, download, and share public content for personal, family, or non-commercial church use. Without permission, you may not use content commercially, create derivative works, sublicense it, or remove rights notices."
+        ]
+      },
+      {
+        "title": "Use restrictions",
+        "body": [
+          "You may not use this website in a way that interferes with its operation, attempts unauthorized access, distributes malicious code, impersonates others, or violates applicable law.",
+          "If you submit messages, registration details, or other content, you are responsible for making sure it is accurate, lawful, and does not infringe the rights of others."
+        ]
+      },
+      {
+        "title": "Third-party services and links",
+        "body": [
+          "This website may link to YouTube, Facebook, maps, or other third-party services. Those services are governed by their own terms and policies, and this website does not control their content or data handling.",
+          "Before using third-party services, you should review their terms, privacy policies, and security settings."
+        ]
+      },
+      {
+        "title": "Disclaimer",
+        "body": [
+          "The content on this website is not legal, medical, financial, or other professional advice. If you need professional help, please seek advice from a qualified professional.",
+          "We will make reasonable efforts to handle service interruptions or delays caused by network issues, maintenance, third-party service failures, or force majeure, but we do not guarantee uninterrupted website availability."
+        ]
+      },
+      {
+        "title": "Changes to these terms",
+        "body": [
+          "We may update these terms based on website services, legal requirements, or church ministry needs. Updated terms will be posted on this page and take effect when posted.",
+          "If you continue using this website after the terms are updated, you are deemed to agree to the updated terms."
+        ]
+      }
+    ]
   },
   "root": {
     "title": "Choose language",

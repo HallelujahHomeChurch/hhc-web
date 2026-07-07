@@ -1,4 +1,5 @@
 import type {Metadata} from 'next';
+import {inter, notoSansSC, notoSansTC} from './fonts';
 import {defaultLocale} from '@/i18n/locales';
 import './globals.css';
 
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang={defaultLocale}>
-      <body>{children}</body>
+      <body className={`${inter.variable} ${notoSansTC.variable} ${notoSansSC.variable}`}>{children}</body>
     </html>
   );
 }

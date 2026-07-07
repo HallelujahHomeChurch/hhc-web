@@ -13,8 +13,8 @@ export function WeeklyCard({weekly, ctaLabel}: WeeklyCardProps) {
         <div className="mx-auto mb-6 grid size-28 place-items-center rounded-full bg-[#f4d8d4] text-5xl text-[#b64e45]" aria-hidden="true">
           ▤
         </div>
-        <p className="mb-1 text-[21px] font-bold text-primary">{weekly.date}</p>
-        <h3 id="weekly-title" className="mb-1 text-[21px] font-bold text-ink">
+        <p className="mb-1 text-[21px] font-semibold text-primary">{weekly.date}</p>
+        <h3 id="weekly-title" className="mb-1 text-[21px] font-semibold text-ink">
           {weekly.title}
         </h3>
         <p className="mb-6 text-[15px] text-ink">{weekly.subtitle}</p>
