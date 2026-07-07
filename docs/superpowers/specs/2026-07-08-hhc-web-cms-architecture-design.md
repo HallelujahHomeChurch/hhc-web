@@ -25,7 +25,7 @@ Public domains:
 
 API paths:
 
-- `https://www.alive.org.tw/api/public/*`: public read APIs.
+- `https://www.alive.org.tw/api/*`: non-account APIs, using feature-based paths instead of a fixed `/api/public/*` prefix.
 - `https://www.alive.org.tw/api/admin/*`: protected CMS/admin APIs.
 - `https://www.alive.org.tw/api/assets/*`: asset upload, metadata, and download routes.
 - `https://www.alive.org.tw/api/line/webhook/*`: LINE webhook routes, unauthenticated by JWT but method-limited and signature-validated by the LINE service.
@@ -48,8 +48,7 @@ Use a modular microservice architecture with a small set of Go services:
 - `api-gateway`: first gate for public ingress, routing, rate limits, CORS, local JWT verification, and trusted identity header injection.
 - `account-api`: account domain only; OIDC/OAuth2 login, token issuance, user/account APIs, roles/claims source, and JWKS/public key publication.
 - `hhc-web-api`: main website backend/BFF used by `www.alive.org.tw` pages; it serves public read APIs and composes data from domain services.
-- `content-api`: CMS-owned content domain for news, pages, videos, locations, history, and legal pages.
-- `bulletin-api`: weekly bulletin issue/version domain.
+- `cms-api`: CMS source of truth for news, pages, videos, locations, history, legal pages, weekly bulletins, draft/publish state, and admin writes.
 - `asset-api`: generic asset service for files, images, PDFs, thumbnails, private group files, and future app cloud-folder objects.
 - `notification-api`: internal notification command service; email is one delivery channel.
 - `audit-log`: append-only audit/event record capability, implemented either as a small service or shared module plus dedicated schema in Phase 1.
@@ -86,7 +85,7 @@ Gateway validation:
 
 Gateway route policy:
 
-- `/api/public/*`: no JWT required, method/rate/CORS controlled.
+- Public website feature routes such as `/api/home`, `/api/news`, `/api/bulletins`, `/api/pages/*`, `/api/videos`, `/api/locations`, and `/api/sitemap-data`: no JWT required, method/rate/CORS controlled.
 - `/api/admin/*`: bearer JWT required, CMS role/scope required.
 - `/api/assets/public/*`: no JWT for public published assets, cacheable.
 - `/api/assets/protected/*`: bearer JWT required.
@@ -156,7 +155,7 @@ Core asset fields:
 
 - `asset_id`
 - `namespace`: examples `cms.weekly.pdf`, `cms.news.cover`, `cms.page.image`, `line.group.file`, `desktop.cloud-folder.object`
-- `owner_service`: examples `bulletin-api`, `content-api`, `hhc-line-function-bot`, `desktop-sync-api`
+- `owner_service`: examples `cms-api`, `hhc-line-function-bot`, `desktop-sync-api`
 - `owner_type`
 - `owner_id`
 - `purpose`: examples `cover`, `attachment`, `pdf`, `thumbnail`, `folder-object`
@@ -180,12 +179,12 @@ Access model:
 - `restricted`: only listed subjects can access, such as a LINE group, admin role, app client, or specific user.
 - `private`: only owning service or creator can access unless explicitly granted.
 
-The asset service should not query every consumer service on download. Instead, consumer services update asset visibility/grants when domain state changes. Example: when a news article is published, `content-api` grants public read for its cover image; when unpublished, it revokes public read.
+The asset service should not query every consumer service on download. Instead, consumer services update asset visibility/grants when domain state changes. Example: when a news article is published, `cms-api` grants public read for its cover image; when unpublished, it revokes public read.
 
 Examples:
 
-- Weekly bulletin: `bulletin-api` creates issue/version, asks `asset-api` for upload, requires PDF MIME type, stores `asset_id`, grants public read only when version is published.
-- News image: `content-api` owns the news article and cover-image relationship, stores `asset_id`, grants public read only when article is published.
+- Weekly bulletin: the bulletin module inside `cms-api` creates issue/version, asks `asset-api` for upload, requires PDF MIME type, stores `asset_id`, and grants public read only when the version is published.
+- News image: the news module inside `cms-api` owns the article and cover-image relationship, stores `asset_id`, and grants public read only when the article is published.
 - LINE group file: `hhc-line-function-bot` stores group context and asks `asset-api` to create `line.group.file` assets with restricted access to that group or service account.
 - Desktop cloud folder: a future desktop sync service owns folder paths and versions; `asset-api` stores object bytes and restricted/private access grants.
 
@@ -197,9 +196,9 @@ Asset workers:
 - Normalize image derivatives.
 - Mark blocked assets as unavailable before public download.
 
-## Content And CMS Architecture
+## CMS API Architecture
 
-`content-api` owns CMS content that is not a weekly bulletin:
+`cms-api` owns CMS-managed website data:
 
 - News.
 - Public pages.
@@ -208,6 +207,7 @@ Asset workers:
 - Locations.
 - Legal pages.
 - Site settings that belong to public content.
+- Weekly bulletin issues and language versions.
 
 All CMS content follows:
 
@@ -228,13 +228,19 @@ Shared fields:
 - Created/updated user.
 - Created/updated timestamp.
 
-`content-api` does not store file bytes. It stores asset references such as `cover_asset_id` or rich-content asset embeds.
+`cms-api` does not store file bytes. It stores asset references such as `cover_asset_id`, `pdf_asset_id`, or rich-content asset embeds.
 
 Admin preview should read draft content through protected admin APIs. Public pages only read published projections.
 
-## Bulletin Architecture
+Bulletins are a module inside `cms-api` in the first release, not a separate microservice.
 
-`bulletin-api` is separate from generic content because weekly bulletins have a stable church workflow:
+Reasoning:
+
+- Bulletins are managed by the same CMS/admin console.
+- They use the same roles, audit model, draft/publish concept, asset integration, and PostgreSQL dependency.
+- Splitting now would add deployment, API, auth, and cache invalidation overhead without a separate owner or scaling need.
+
+The bulletin module owns:
 
 - Issue date.
 - One or more language versions.
@@ -242,22 +248,18 @@ Admin preview should read draft content through protected admin APIs. Public pag
 - Latest issue query.
 - History pagination by issue date.
 - Replacement history/audit.
-
-`bulletin-api` owns:
-
-- Issue records.
-- Locale version records.
 - Publish/unpublish state.
-- Ordering and latest selection.
 - Validation that bulletin assets are clean PDFs.
 
-`asset-api` owns only the PDF object, metadata, scan, visibility, and download policy.
+Extract bulletins into a separate `bulletin-api` only if they later gain an independent team/owner, substantially different lifecycle, heavy traffic/write scaling, external consumers, or deployment cadence that would make a separate service worth the operational cost.
+
+`asset-api` still owns only the PDF object, metadata, scan, visibility, and download policy.
 
 ## HHC Web API
 
 `hhc-web-api` is the main website backend. It is the public read model/BFF for `hhc-web` and prevents the website frontend from knowing the internal service split.
 
-It is not the source of truth for CMS content, bulletins, or assets. Those remain owned by `content-api`, `bulletin-api`, and `asset-api`.
+It is not the source of truth for CMS content, bulletins, or assets. Those remain owned by `cms-api` and `asset-api`.
 
 It serves:
 
@@ -273,7 +275,7 @@ It serves:
 
 It only returns published content and public asset references. It can cache Redis projections by locale and content type.
 
-When content or bulletin publish state changes, the owning service invalidates or refreshes the public projection.
+When CMS publish state changes, `cms-api` invalidates or refreshes the public projection.
 
 ## Notification And Email
 
@@ -342,7 +344,7 @@ Later workspace target:
 - `packages/i18n`: locale constants and helpers.
 - `packages/ui`: shared UI only where real reuse exists.
 
-The public site keeps current user-facing routes and component contracts where practical. Feature APIs move from mock data to `www.alive.org.tw/api/public/*`.
+The public site keeps current user-facing routes and component contracts where practical. Feature APIs move from mock data to feature-based routes under `www.alive.org.tw/api/*`.
 
 The admin console lives at `admin.alive.org.tw` and calls `www.alive.org.tw/api/admin/*` with bearer tokens.
 
@@ -364,8 +366,7 @@ Admin APIs are not CDN-cacheable. Public API responses may have short CDN TTLs w
 
 PostgreSQL schema ownership:
 
-- `content`: content records and draft/publish state.
-- `bulletin`: weekly issues and versions.
+- `cms`: content records, weekly issues/versions, and draft/publish state.
 - `asset`: asset metadata, bindings, grants, processing state.
 - `hhc_web`: optional main-site read projections.
 - `notification`: templates, send queue, delivery status.

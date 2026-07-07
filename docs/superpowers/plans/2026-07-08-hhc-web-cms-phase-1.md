@@ -17,14 +17,14 @@
 - Do not call `account-api` for per-request API token verification.
 - `api-gateway` verifies bearer JWTs locally from cached JWKS and injects sanitized `X-HHC-*` identity headers.
 - CMS v1 uses draft/publish, not approval workflow.
-- LINE bot workflows are out of scope, but `asset-api` and public/content APIs must remain reusable by LINE bot later.
+- LINE bot workflows are out of scope, but `asset-api` and CMS/main-site APIs must remain reusable by LINE bot later.
 - Azure is the default cloud; avoid Azure-specific business logic in domain services.
 
 ---
 
 ## Phase Boundary
 
-This Phase 1 plan does not build the full church platform. It establishes gateway security, API routing, reusable asset handling, content/bulletin contracts, notification/email direction, and frontend integration foundations. Later phases can add activity registration, member/pastoral data, groups, donations, full notifications, search, and LINE bot workflows.
+This Phase 1 plan does not build the full church platform. It establishes gateway security, API routing, reusable asset handling, CMS contracts, notification/email direction, and frontend integration foundations. Later phases can add activity registration, member/pastoral data, groups, donations, full notifications, search, and LINE bot workflows.
 
 ## Task 1: Extend `api-gateway` With Local JWT Verification And Domain Routing
 
@@ -81,7 +81,7 @@ This Phase 1 plan does not build the full church platform. It establishes gatewa
 - [ ] Add verifier unit tests covering valid token, expired token, wrong audience, wrong issuer, missing role, missing scope, stale JWKS fallback, and unknown `kid`.
 - [ ] Add `conf.d/common/auth.conf` with localhost `auth_request` wiring and response-header capture from the verifier.
 - [ ] Add `conf.d/api/hhc.conf` route groups on `www.alive.org.tw`:
-  - `/api/public/*` unauthenticated, read-only.
+  - Public website feature routes such as `/api/home`, `/api/news`, `/api/bulletins`, `/api/pages/*`, `/api/videos`, `/api/locations`, and `/api/sitemap-data` are unauthenticated and read-only.
   - `/api/admin/*` authenticated, requires CMS role/scope.
   - `/api/assets/public/*` unauthenticated, public published assets only.
   - `/api/assets/protected/*` authenticated.
@@ -109,7 +109,7 @@ This Phase 1 plan does not build the full church platform. It establishes gatewa
 
 **Interfaces:**
 
-- Public API base path: `https://www.alive.org.tw/api/public`
+- Public API base path: `https://www.alive.org.tw/api`, using feature-based paths instead of a fixed `/api/public/*` prefix.
 - Admin API base path: `https://www.alive.org.tw/api/admin`
 - Asset API base path: `https://www.alive.org.tw/api/assets`
 - Account API base path: `https://account.alive.org.tw`
@@ -157,7 +157,7 @@ This Phase 1 plan does not build the full church platform. It establishes gatewa
 - [ ] Add examples for weekly PDFs, news cover images, LINE group files, and desktop cloud-folder objects.
 - [ ] Review current TypeScript feature types and keep response shapes compatible with `NewsItem`, `WeeklyIssue`, `VideoItem`, `LocationItem`, and `HistoryTimelinePayload` where practical.
 
-## Task 3: Convert `hhc-web` To `www.alive.org.tw/api/public/*`
+## Task 3: Convert `hhc-web` To Feature-Based `www.alive.org.tw/api/*` Routes
 
 **Repo:** `C:\Users\IT\projects\hhc-web`
 
@@ -187,7 +187,7 @@ This Phase 1 plan does not build the full church platform. It establishes gatewa
 
 **Steps:**
 
-- [ ] Add an API client that defaults to same-origin `/api/public` in production.
+- [ ] Add an API client that defaults to same-origin `/api` in production.
 - [ ] Use `NEXT_PUBLIC_API_BASE_URL` only for local/test overrides; production should not require `api.alive.org.tw`.
 - [ ] Keep mock data as fallback only for local development when no API base URL is configured.
 - [ ] Update feature `api.ts` files to call the public API client while preserving current exported function names.
@@ -241,8 +241,7 @@ This Phase 1 plan does not build the full church platform. It establishes gatewa
 
 **Repos:**
 
-- `content-api`
-- `bulletin-api`
+- `cms-api`
 - `asset-api`
 - `hhc-web-api`
 - `notification-api`
@@ -272,10 +271,10 @@ This Phase 1 plan does not build the full church platform. It establishes gatewa
 - [ ] Create service repos or confirm existing repo names before implementation.
 - [ ] Scaffold Go services with config, logging, health checks, PostgreSQL connection, Redis connection where needed, and Dapr-compatible HTTP routes.
 - [ ] Add migrations for each owned schema.
-- [ ] Implement `asset-api` first because bulletin and content records depend on `asset_id`.
+- [ ] Implement `asset-api` first because CMS records depend on `asset_id`.
 - [ ] Implement asset namespaces for `cms.weekly.pdf`, `cms.news.cover`, `cms.page.image`, `line.group.file`, and `desktop.cloud-folder.object`.
 - [ ] Implement asset visibility and grant primitives for `public`, `authenticated`, `restricted`, and `private`.
-- [ ] Implement `content-api` and `bulletin-api` admin CRUD/publish flows.
+- [ ] Implement `cms-api` admin CRUD/publish flows, including modules for news, pages, videos, locations, legal pages, about/history, and weekly bulletins.
 - [ ] Implement publish/unpublish behavior that grants or revokes public asset access.
 - [ ] Implement `hhc-web-api` read projections and Redis cache invalidation.
 - [ ] Implement `notification-api` with template registry, send queue/outbox, provider adapter, retry state, and delivery audit.
@@ -291,7 +290,7 @@ This Phase 1 plan does not build the full church platform. It establishes gatewa
 - [ ] Add environment variables and secrets in Azure Container Apps for OIDC/JWKS, DB, Redis, Blob, notification provider, and service URLs.
 - [ ] Add staging/test domains using the existing `-test.alive.org.tw` convention.
 - [ ] Run gateway verification:
-  - `www.alive.org.tw/api/public/*` works without token.
+  - public website feature routes such as `www.alive.org.tw/api/home`, `www.alive.org.tw/api/news`, and `www.alive.org.tw/api/bulletins` work without token.
   - `www.alive.org.tw/api/admin/*` missing token returns `401`.
   - invalid token returns `401`.
   - valid token missing role returns `403`.
