@@ -2,188 +2,411 @@
 
 ## Goal
 
-Build the next HHC web platform around the currently visible `hhc-web` public site plus an admin CMS, using Azure-first microservices that stay reusable for future church systems.
+Build the next HHC web platform around the current public website and a CMS/admin console, using Azure-first Go microservices, PostgreSQL, Redis, and a gateway-first security model.
 
-The first release covers:
+The first release covers the features visible in `hhc-web` today:
 
-- Public site at `www.alive.org.tw`: multilingual home, news, weekly bulletins, videos, locations, about/history, legal pages, SEO, sitemap.
-- CMS at `admin.alive.org.tw`: content editing, draft/publish workflow, weekly bulletin upload, file metadata management.
-- Identity at `account.alive.org.tw`: existing `account-api` remains the single login and OIDC/OAuth2 authority.
-- Existing API gateway repo at `C:\Users\IT\projects\api-gateway`: extend it as the route security boundary for JWT validation, rate limiting, CORS, and identity header injection.
+- Public site: multilingual home, news, weekly bulletins, videos, locations, about/history, legal pages, SEO, and sitemap.
+- Admin console: content editing, draft/publish workflow, weekly bulletin upload, asset management, and operational CMS screens.
+- Identity: existing `account-api` remains the only login, OIDC/OAuth2, token issuing, and JWKS authority.
+- Gateway: existing `api-gateway` remains the first public gate for UI and API traffic.
 
-Not included in the first release: event registration, member records, pastoral care workflows, groups, donations, notification center, search engine, or LINE bot business workflows. LINE bot reuse is limited to future calls into shared file/content APIs.
+Not included in the first release: event registration, member records, pastoral care workflows, groups, donations, full notification center, search engine, or LINE bot business workflows. The backend is still designed so these can reuse the same identity, asset, notification, and content foundations later.
+
+## Non-Negotiable Domain Model
+
+There is no `api.alive.org.tw`.
+
+Public domains:
+
+- `www.alive.org.tw`: public website and every non-account API path.
+- `admin.alive.org.tw`: CMS/admin console UI only.
+- `account.alive.org.tw`: account UI plus account-owned APIs, OIDC endpoints, token endpoint, and JWKS.
+
+API paths:
+
+- `https://www.alive.org.tw/api/public/*`: public read APIs.
+- `https://www.alive.org.tw/api/admin/*`: protected CMS/admin APIs.
+- `https://www.alive.org.tw/api/assets/*`: asset upload, metadata, and download routes.
+- `https://www.alive.org.tw/api/line/webhook/*`: LINE webhook routes, unauthenticated by JWT but method-limited and signature-validated by the LINE service.
+- `https://account.alive.org.tw/*`: account login, OIDC, token, user profile, and JWKS APIs only.
+
+All public ingress goes through `api-gateway`. Backend services must not expose direct public ingress.
 
 ## Current State
 
-`hhc-web` is a Next.js 16 / React 19 / TypeScript public site. It currently uses feature-local `types.ts`, `api.ts`, and `mock-data.ts` files for weekly bulletins, news, videos, locations, and history. It is configured as `output: 'export'`, so it behaves as a static export today.
+`hhc-web` is a Next.js 16 / React 19 / TypeScript public site. Its feature data is currently typed and mocked inside `src/features/*`, with APIs such as `getNews`, `getLatestWeekly`, `getVideos`, `getLocations`, and `getHistoryTimeline`. It is currently configured with `output: 'export'`.
 
-`api-gateway` is an existing Nginx 1.30.3 Alpine reverse proxy deployed to Azure Container Apps. It routes through Dapr service invocation, currently exposes LINE bot and Bible API routes, strips client-supplied identity headers, has rate limits/CORS, and intentionally has no token validation yet.
+`api-gateway` is an existing Nginx 1.30.3 Alpine reverse proxy deployed to Azure Container Apps. It routes through Dapr service invocation, already knows `www.alive.org.tw`, `admin.alive.org.tw`, and `account.alive.org.tw`, strips client-supplied identity headers, has rate limits/CORS, and currently has no token validation.
 
-This design keeps those facts: the frontend contracts evolve from mock data to public API clients, and the existing gateway is extended instead of replacing it.
+The design extends the existing gateway rather than replacing it.
 
-## Architecture
+## System Shape
 
-Use a modular microservice architecture with a small number of Go services. Each service owns its domain schema in PostgreSQL and communicates through HTTP APIs behind the gateway. Services do not cross-query each other's database schemas.
+Use a modular microservice architecture with a small set of Go services:
+
+- `api-gateway`: first gate for public ingress, routing, rate limits, CORS, local JWT verification, and trusted identity header injection.
+- `account-api`: account domain only; OIDC/OAuth2 login, token issuance, user/account APIs, roles/claims source, and JWKS/public key publication.
+- `public-query-api`: read-optimized public API used by `www.alive.org.tw` pages.
+- `content-api`: CMS-owned content domain for news, pages, videos, locations, history, and legal pages.
+- `bulletin-api`: weekly bulletin issue/version domain.
+- `asset-api`: generic asset service for files, images, PDFs, thumbnails, private group files, and future app cloud-folder objects.
+- `notification-api`: internal notification command service; email is one delivery channel.
+- `audit-log`: append-only audit/event record capability, implemented either as a small service or shared module plus dedicated schema in Phase 1.
 
 Azure defaults:
 
-- Runtime: Azure Container Apps for Go services and existing Nginx gateway.
-- Data: Azure Database for PostgreSQL Flexible Server, with one schema per service.
-- Cache: Azure Cache for Redis for public projection cache, rate-limit support where needed, and short-lived file access tokens.
-- Files: Azure Blob Storage through a service-owned adapter, not direct Blob URLs embedded in app code.
-- Networking: Dapr service invocation remains the internal service call mechanism where it is already used by the gateway.
+- Runtime: Azure Container Apps for gateway and Go services.
+- Data: Azure Database for PostgreSQL Flexible Server.
+- Cache: Azure Cache for Redis.
+- Object storage: Azure Blob Storage.
+- Internal service call: Dapr service invocation where already used.
+- Async work: PostgreSQL outbox first; Azure Service Bus can be added when event volume or retry requirements justify it.
 
-Primary services:
+Each service owns its PostgreSQL schema. Services do not cross-query each other's schema. Shared data moves through APIs, domain events, or explicit projections.
 
-- `api-gateway`: public/admin API entry, route policy, JWT enforcement, CORS, rate limits, identity header injection.
-- `account-api`: existing OIDC/OAuth2 identity provider for login, token issuance, user/role claims, and JWKS/public key publication.
-- `public-query-api`: read-optimized public API used by `www`, aggregating only published content.
-- `content-api`: CMS-owned content for news, pages, videos, locations, history, and legal pages.
-- `bulletin-api`: weekly bulletin issue/version management.
-- `file-api`: generic Blob/file facade for weekly PDFs, CMS images, and future LINE bot file reuse.
+## Gateway-First Security
 
-## Domains And Authentication
+`api-gateway` is the first public gate. It handles all non-account API traffic under `www.alive.org.tw/api/*`.
 
-Domains:
+JWT verification must happen inside the gateway deployment. Do not call `account-api` for per-request token verification.
 
-- `www.alive.org.tw`: public website.
-- `admin.alive.org.tw`: CMS application.
-- `account.alive.org.tw`: identity/login application.
-- `api.alive.org.tw` or existing gateway host routing: API gateway entry for public and admin APIs.
-- Test domains use the existing `-test.alive.org.tw` convention from `api-gateway`.
+Recommended v1 implementation:
 
-Authentication:
+- Keep existing Nginx/Dapr gateway.
+- Add a local Go JWT verifier in the same gateway image.
+- Nginx calls the verifier only on `127.0.0.1:10001`.
+- The verifier fetches OIDC metadata/JWKS from `account.alive.org.tw`, caches keys, refreshes them in the background, and validates tokens locally.
 
-- `account-api` provides OIDC authorization code + PKCE.
-- `admin` logs users in through `account-api` and sends bearer access tokens to protected APIs.
-- The shared SSO cookie may use `Domain=.alive.org.tw; HttpOnly; Secure; SameSite=Lax` for account SSO continuity.
-- API auth must not rely on browser cookies as the primary credential. Protected API calls use `Authorization: Bearer <access_token>`.
-- `admin` keeps its own host-scoped session/CSRF protection for browser state.
+Gateway validation:
 
-## API Gateway JWT Boundary
+- Signature, issuer, audience, expiry, `nbf`, token type, `kid`.
+- Required role/scope per route.
+- Fail closed if no valid cached key can verify the token.
 
-Extend the existing `api-gateway` as the security enforcement point.
+Gateway route policy:
 
-Do not call `account-api` for per-request token verification. The gateway must verify JWTs itself from trusted signing keys.
+- `/api/public/*`: no JWT required, method/rate/CORS controlled.
+- `/api/admin/*`: bearer JWT required, CMS role/scope required.
+- `/api/assets/public/*`: no JWT for public published assets, cacheable.
+- `/api/assets/protected/*`: bearer JWT required.
+- `/api/assets/admin/*`: bearer JWT plus CMS asset role/scope.
+- `/api/line/webhook/*`: no JWT, POST only, rate-limited; LINE signature validated in `hhc-line-function-bot`.
 
-Recommended v1 implementation: keep the current Nginx/Dapr gateway as the edge proxy and add a local JWT verifier inside the `api-gateway` deployment. Nginx may use `auth_request` only against this localhost verifier, never against `account-api`. The local verifier loads issuer metadata and JWKS/public keys from `account-api`, caches keys locally, refreshes them in the background, and validates access tokens without a network call on each request.
+Header policy:
 
-If the Nginx runtime is later replaced, the replacement gateway must still provide native local JWT validation, route-level authorization policy, and Dapr-compatible upstream routing. The architectural requirement is local gateway verification, not a remote introspection dependency.
+- Strip all client-supplied `X-HHC-*`, `X-User-ID`, `X-Roles`, and `X-Permissions`.
+- Inject only gateway-produced trusted headers:
+  - `X-HHC-User-ID`
+  - `X-HHC-Roles`
+  - `X-HHC-Scopes`
+  - `X-HHC-Token-ID`
+  - `X-HHC-Request-ID`
 
-Gateway behavior:
+Backend services must treat missing trusted identity headers on protected routes as unauthorized, even if the route was supposed to be protected by gateway. This keeps defense-in-depth.
 
-- Public routes skip auth but keep CORS, rate limits, and method limits.
-- Protected routes require a bearer JWT and validate it inside the gateway deployment before proxying.
-- The verifier validates JWT signature, issuer, audience, expiry, `nbf`, token type, and required scopes/roles.
-- JWKS refresh is out-of-band and cached. If fresh keys cannot be fetched, the verifier may continue using cached unexpired keys; if no valid key is available for the token `kid`, it fails closed.
-- Gateway rejects failed verification with `401` or `403`.
-- Gateway strips incoming `X-User-ID`, `X-Roles`, `X-Permissions`, `X-HHC-User-ID`, `X-HHC-Roles`, `X-HHC-Scopes`, and related identity headers before auth.
-- After successful auth, gateway injects sanitized `X-HHC-User-ID`, `X-HHC-Roles`, `X-HHC-Scopes`, and `X-HHC-Token-ID` headers into upstream requests.
-- Backend services still validate required roles/scopes from trusted gateway headers as defense-in-depth and must reject protected operations when identity headers are missing.
+## Account Domain
 
-Required gateway route groups:
+`account-api` owns:
 
-- `/api/public/*`: public read APIs for `www`.
-- `/api/admin/*`: protected CMS APIs for `admin`.
-- `/api/files/*`: public download route for published files and protected upload/admin file routes.
-- Existing `/api/line/webhook/*` remains unauthenticated but method-limited to POST.
+- User login and session.
+- OIDC authorization code + PKCE.
+- Token issuing and refresh.
+- JWKS/public key publication.
+- User profile and role/claim source of truth.
+- Account-domain APIs under `account.alive.org.tw`.
 
-## CMS Content Model
+The shared SSO browser cookie can use `Domain=.alive.org.tw; HttpOnly; Secure; SameSite=Lax` for account continuity across subdomains. API authorization still uses bearer access tokens.
 
-All CMS-managed public content follows the same lifecycle:
+Admin console logs in through account OIDC and calls `https://www.alive.org.tw/api/admin/*` with bearer tokens.
 
-- `draft`: editable and visible only in admin preview.
-- `published`: visible to public APIs.
-- `unpublished`: hidden from public APIs while retained for history.
+## Asset Architecture
 
-Shared content fields:
+Use `asset-api`, not a narrow `file-api`.
 
-- Stable ID, slug, locale, title, summary/body, status, published timestamp, created/updated user, created/updated timestamps.
-- Public list ordering is explicit where needed and date-based where the current UI expects it.
-- Multilingual content stores one record per locale linked by a translation group ID.
+Reasoning:
 
-CMS modules:
+- Weekly PDFs, news images, page images, LINE group files, and desktop cloud-folder objects all share storage concerns: upload session, object key, MIME type, size, checksum, scan status, retention, visibility, download policy, and audit.
+- They do not share business meaning. A weekly PDF version, a news cover image, a LINE group attachment, and a desktop folder object are different domain relationships.
+- Therefore `asset-api` owns the binary asset and access primitives; consumer services own the semantic relationship.
 
-- News: title, summary, date, optional image file, optional external/internal link.
-- Pages: about vision sections, history timeline, legal pages.
-- Videos: title, YouTube URL, thumbnail URL or file, display order.
-- Locations: name, address, map URL, display order.
-- Weekly bulletins: issue date plus one file-backed version per locale.
+`asset-api` owns:
 
-## File API Design
+- Blob storage adapter.
+- Upload sessions.
+- Asset metadata.
+- Checksums and content type.
+- Size limits by namespace.
+- Public/private/restricted visibility.
+- Download URL or streaming decisions.
+- Virus scan and processing status.
+- Thumbnail/derivative references.
+- Retention and soft-delete primitives.
+- Generic access grants.
 
-`file-api` is the reusable Blob facade. Consumers never write Azure Blob paths directly.
+Consumer services own:
 
-Core fields:
+- Why the asset exists.
+- Which domain object uses it.
+- Whether the domain object is published.
+- Domain-specific validation such as "weekly bulletin PDF must be PDF" or "news cover image must be image".
+- Domain-specific UI labels and ordering.
 
-- `file_id`
-- `namespace` such as `weekly`, `cms-image`, `line-bot`
+Core asset fields:
+
+- `asset_id`
+- `namespace`: examples `cms.weekly.pdf`, `cms.news.cover`, `cms.page.image`, `line.group.file`, `desktop.cloud-folder.object`
+- `owner_service`: examples `bulletin-api`, `content-api`, `hhc-line-function-bot`, `desktop-sync-api`
 - `owner_type`
 - `owner_id`
+- `purpose`: examples `cover`, `attachment`, `pdf`, `thumbnail`, `folder-object`
 - `locale`
 - `mime_type`
 - `size_bytes`
-- `checksum`
+- `checksum_sha256`
+- `storage_container`
 - `storage_key`
-- `visibility` as `public`, `authenticated`, or `private`
+- `visibility`: `public`, `authenticated`, `restricted`, `private`
+- `scan_status`: `pending`, `clean`, `blocked`, `failed`
+- `processing_status`: `pending`, `ready`, `failed`
 - `created_by`
 - `created_at`
+- `deleted_at`
 
-Core operations:
+Access model:
 
-- Create upload session.
-- Complete upload and persist metadata.
-- Get file metadata.
-- Issue download URL or stream file through gateway.
-- Attach/detach file to a domain owner.
+- `public`: published website assets and bulletins; cacheable through gateway/CDN.
+- `authenticated`: any valid user can download, useful for future member-only files.
+- `restricted`: only listed subjects can access, such as a LINE group, admin role, app client, or specific user.
+- `private`: only owning service or creator can access unless explicitly granted.
 
-Weekly PDFs, CMS images, and future LINE bot files use the same file service. Domain services store `file_id`, not Blob URLs.
+The asset service should not query every consumer service on download. Instead, consumer services update asset visibility/grants when domain state changes. Example: when a news article is published, `content-api` grants public read for its cover image; when unpublished, it revokes public read.
+
+Examples:
+
+- Weekly bulletin: `bulletin-api` creates issue/version, asks `asset-api` for upload, requires PDF MIME type, stores `asset_id`, grants public read only when version is published.
+- News image: `content-api` owns the news article and cover-image relationship, stores `asset_id`, grants public read only when article is published.
+- LINE group file: `hhc-line-function-bot` stores group context and asks `asset-api` to create `line.group.file` assets with restricted access to that group or service account.
+- Desktop cloud folder: a future desktop sync service owns folder paths and versions; `asset-api` stores object bytes and restricted/private access grants.
+
+Asset workers:
+
+- Scan uploaded files.
+- Extract image dimensions and PDF page count.
+- Generate thumbnails.
+- Normalize image derivatives.
+- Mark blocked assets as unavailable before public download.
+
+## Content And CMS Architecture
+
+`content-api` owns CMS content that is not a weekly bulletin:
+
+- News.
+- Public pages.
+- About/vision/history.
+- Videos.
+- Locations.
+- Legal pages.
+- Site settings that belong to public content.
+
+All CMS content follows:
+
+- `draft`: editable and previewable in admin only.
+- `published`: visible through public APIs.
+- `unpublished`: hidden from public APIs but retained.
+
+Shared fields:
+
+- Stable ID.
+- Translation group ID.
+- Locale.
+- Slug.
+- Title.
+- Summary/body structured content.
+- Status.
+- Published timestamp.
+- Created/updated user.
+- Created/updated timestamp.
+
+`content-api` does not store file bytes. It stores asset references such as `cover_asset_id` or rich-content asset embeds.
+
+Admin preview should read draft content through protected admin APIs. Public pages only read published projections.
+
+## Bulletin Architecture
+
+`bulletin-api` is separate from generic content because weekly bulletins have a stable church workflow:
+
+- Issue date.
+- One or more language versions.
+- Each version points to one PDF asset.
+- Latest issue query.
+- History pagination by issue date.
+- Replacement history/audit.
+
+`bulletin-api` owns:
+
+- Issue records.
+- Locale version records.
+- Publish/unpublish state.
+- Ordering and latest selection.
+- Validation that bulletin assets are clean PDFs.
+
+`asset-api` owns only the PDF object, metadata, scan, visibility, and download policy.
+
+## Public Query API
+
+`public-query-api` is the public read model/BFF for the website. It prevents `www` from knowing the internal service split.
+
+It serves:
+
+- Home payload.
+- News lists.
+- Latest bulletin.
+- Bulletin archive pages.
+- Videos.
+- Locations.
+- About/history payload.
+- Legal page payload.
+- Sitemap data.
+
+It only returns published content and public asset references. It can cache Redis projections by locale and content type.
+
+When content or bulletin publish state changes, the owning service invalidates or refreshes the public projection.
+
+## Notification And Email
+
+Use `notification-api` as an internal capability service. It is not a public API.
+
+Reasoning:
+
+- Email will be needed by account verification, admin invites, CMS publish notices, future contact forms, event registration, reminders, and possibly LINE or desktop-app alerts.
+- Each domain should not directly integrate with SendGrid, Azure Communication Services, Gmail SMTP, or another provider.
+- Centralizing notification gives consistent templates, retry, audit, rate limiting, suppression, and provider swapping.
+
+`notification-api` owns:
+
+- Template catalog.
+- Email rendering.
+- Provider adapter.
+- Send queue.
+- Retry/backoff.
+- Delivery status.
+- Suppression/bounce handling.
+- Audit trail.
+
+Calling model:
+
+- Internal services call notification commands through internal service identity, not public users.
+- Account verification/reset flows can call restricted templates such as `account.verify-email`.
+- CMS can call templates such as `cms.publish-summary` or `admin.invite`.
+- Future event registration can call confirmation/reminder templates.
+
+Implementation:
+
+- Phase 1 can start with a PostgreSQL outbox table and a worker.
+- Add Azure Service Bus when message volume, delayed delivery, or retry isolation requires it.
+- Do not expose `notification-api` directly under public API routes except a highly restricted admin test/preview route if needed.
+
+## Audit And Events
+
+CMS and protected operations need auditability.
+
+Minimum audit events:
+
+- Login subject from token.
+- Content create/update/publish/unpublish.
+- Bulletin issue/version changes.
+- Asset upload, grant, revoke, delete.
+- Admin permission failures.
+- Notification send commands and delivery results.
+
+Phase 1 can implement audit as a dedicated `audit_events` schema/table written by each service through a shared library. If cross-service querying and retention policy become complex, promote it into an `audit-log` service.
+
+For async integration, prefer an outbox pattern:
+
+- Service writes domain data and event in the same PostgreSQL transaction.
+- Worker publishes or processes the event after commit.
+- Consumers update projections, grants, notifications, or cache invalidation.
 
 ## Frontend Applications
 
-`hhc-web` should evolve into a workspace with:
+Phase 1 keeps `hhc-web` in the current Next.js app while introducing API clients.
 
-- `apps/www`: public site, preserving current routes and visual behavior.
-- `apps/admin`: CMS interface.
-- `packages/api-client`: typed TypeScript clients for public and admin APIs.
-- `packages/i18n`: locale constants and helpers currently under `src/i18n`.
-- `packages/ui`: shared components only when reuse is real.
+Later workspace target:
 
-`www` keeps the current public contracts where practical: `NewsItem`, `WeeklyIssue`, `VideoItem`, `LocationItem`, and `HistoryTimelinePayload`. The implementation moves from mock data to `public-query-api`.
+- `apps/www`: public site.
+- `apps/admin`: CMS/admin console.
+- `packages/api-client`: typed public/admin API clients.
+- `packages/i18n`: locale constants and helpers.
+- `packages/ui`: shared UI only where real reuse exists.
 
-`admin` should be quiet and operational: list/detail/edit screens, draft/publish controls, file upload controls, preview links, and clear validation errors. It should not be a marketing-style site.
+The public site keeps current user-facing routes and component contracts where practical. Feature APIs move from mock data to `www.alive.org.tw/api/public/*`.
 
-## Caching And Publishing
+The admin console lives at `admin.alive.org.tw` and calls `www.alive.org.tw/api/admin/*` with bearer tokens.
 
-Publishing a CMS item updates PostgreSQL first, then invalidates Redis public projections. `public-query-api` rebuilds cache on next read or through an explicit publish event.
+## Caching
 
-Cache keys include locale and content type. Public content can use CDN caching with short TTLs, while admin APIs are never CDN-cacheable.
+Redis is used for:
 
-Weekly bulletin downloads should be stable by `file_id`. Replacing a weekly file creates a new file record and updates the bulletin version reference.
+- Public page/query projections.
+- Hot home/news/bulletin payloads by locale.
+- Short-lived upload/download tokens when needed.
+- Gateway or service-side rate-limit support where appropriate.
+- Background job coordination if a lightweight lock is needed.
 
-## Observability And Operations
+Cache keys must include environment, locale, content type, and version where needed.
 
-Each Go service exposes:
+Admin APIs are not CDN-cacheable. Public API responses may have short CDN TTLs when backed by publish invalidation.
 
-- `/healthz` for liveness.
-- `/readyz` for database/cache readiness.
-- Structured JSON logs with request ID, user ID where available, route, status, and latency.
-- OpenTelemetry-compatible traces where practical.
+## Data Ownership
 
-Gateway logs must include auth result, route group, request ID, status, upstream latency, and sanitized subject ID for protected routes.
+PostgreSQL schema ownership:
 
-CI/CD:
+- `content`: content records and draft/publish state.
+- `bulletin`: weekly issues and versions.
+- `asset`: asset metadata, bindings, grants, processing state.
+- `public_query`: optional materialized read projections.
+- `notification`: templates, send queue, delivery status.
+- `audit`: append-only audit events.
+- `account`: owned only by account-api.
 
-- Keep existing Azure DevOps style.
-- `api-gateway` pushes to `main` deploy by current pipeline, so gateway changes must be treated as production-impacting.
-- `hhc-web` frontend and Go services should have separate pipelines or path filters to avoid deploying unrelated apps.
+Services do not cross-query another service's schema. Read models are built by API composition or events.
+
+## Operational Boundaries
+
+Every service exposes:
+
+- `/healthz`
+- `/readyz`
+- Structured JSON logs.
+- Request ID propagation from gateway.
+- Metrics for latency, status, cache hit/miss, and dependency errors.
+
+Gateway logs include:
+
+- Host.
+- Route group.
+- Auth result.
+- User subject for protected requests.
+- Upstream service.
+- Status.
+- Latency.
+- Request ID.
+
+Deployment:
+
+- `api-gateway` main branch deployment is production-impacting.
+- Frontend, gateway, account, and backend services should have path-filtered pipelines.
+- No backend service should be reachable publicly except through gateway.
 
 ## Acceptance Criteria
 
-- All current visible `hhc-web` content can be served from public APIs instead of mock data.
-- CMS can create, edit, preview, publish, and unpublish news, pages, videos, locations, and weekly bulletins.
-- Weekly PDF upload stores files through `file-api` and public download works through stable file routes.
-- Admin APIs are inaccessible without a valid token and required role.
-- Gateway rejects invalid/expired tokens and strips spoofed identity headers.
-- Public pages still support the current three locales, SEO alternates, sitemap, and legal pages.
-- The design leaves a clear future path for LINE bot to reuse `file-api` and public/content APIs without adding bot workflows to this release.
+- There is no `api.alive.org.tw` in the architecture.
+- Non-account APIs are under `www.alive.org.tw/api/*`.
+- `admin.alive.org.tw` is UI console only and calls protected APIs under `www.alive.org.tw`.
+- `account.alive.org.tw` owns account APIs, OIDC, token, and JWKS.
+- Gateway verifies JWTs locally from cached JWKS and does not call account-api per request.
+- Asset service supports public, authenticated, restricted, and private assets.
+- Weekly PDFs, news images, LINE group files, and future desktop cloud-folder objects can all use the same `asset-api` without forcing their business logic into `asset-api`.
+- Email/notification is modeled as an internal service, not a public route.
+- Current visible website features can be served from public APIs and managed through CMS draft/publish flows.
