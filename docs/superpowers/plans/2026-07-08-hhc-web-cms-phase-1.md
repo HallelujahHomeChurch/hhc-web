@@ -244,7 +244,7 @@ This Phase 1 plan does not build the full church platform. It establishes gatewa
 - `content-api`
 - `bulletin-api`
 - `asset-api`
-- `public-query-api`
+- `hhc-web-api`
 - `notification-api`
 
 **Files per service repo:**
@@ -277,7 +277,7 @@ This Phase 1 plan does not build the full church platform. It establishes gatewa
 - [ ] Implement asset visibility and grant primitives for `public`, `authenticated`, `restricted`, and `private`.
 - [ ] Implement `content-api` and `bulletin-api` admin CRUD/publish flows.
 - [ ] Implement publish/unpublish behavior that grants or revokes public asset access.
-- [ ] Implement `public-query-api` read projections and Redis cache invalidation.
+- [ ] Implement `hhc-web-api` read projections and Redis cache invalidation.
 - [ ] Implement `notification-api` with template registry, send queue/outbox, provider adapter, retry state, and delivery audit.
 - [ ] Add service-level tests for missing identity headers, insufficient roles/scopes, publish transitions, locale behavior, asset ownership, asset visibility, and notification retry.
 

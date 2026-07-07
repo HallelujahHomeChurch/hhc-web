@@ -47,7 +47,7 @@ Use a modular microservice architecture with a small set of Go services:
 
 - `api-gateway`: first gate for public ingress, routing, rate limits, CORS, local JWT verification, and trusted identity header injection.
 - `account-api`: account domain only; OIDC/OAuth2 login, token issuance, user/account APIs, roles/claims source, and JWKS/public key publication.
-- `public-query-api`: read-optimized public API used by `www.alive.org.tw` pages.
+- `hhc-web-api`: main website backend/BFF used by `www.alive.org.tw` pages; it serves public read APIs and composes data from domain services.
 - `content-api`: CMS-owned content domain for news, pages, videos, locations, history, and legal pages.
 - `bulletin-api`: weekly bulletin issue/version domain.
 - `asset-api`: generic asset service for files, images, PDFs, thumbnails, private group files, and future app cloud-folder objects.
@@ -253,9 +253,11 @@ Admin preview should read draft content through protected admin APIs. Public pag
 
 `asset-api` owns only the PDF object, metadata, scan, visibility, and download policy.
 
-## Public Query API
+## HHC Web API
 
-`public-query-api` is the public read model/BFF for the website. It prevents `www` from knowing the internal service split.
+`hhc-web-api` is the main website backend. It is the public read model/BFF for `hhc-web` and prevents the website frontend from knowing the internal service split.
+
+It is not the source of truth for CMS content, bulletins, or assets. Those remain owned by `content-api`, `bulletin-api`, and `asset-api`.
 
 It serves:
 
@@ -365,7 +367,7 @@ PostgreSQL schema ownership:
 - `content`: content records and draft/publish state.
 - `bulletin`: weekly issues and versions.
 - `asset`: asset metadata, bindings, grants, processing state.
-- `public_query`: optional materialized read projections.
+- `hhc_web`: optional main-site read projections.
 - `notification`: templates, send queue, delivery status.
 - `audit`: append-only audit events.
 - `account`: owned only by account-api.
