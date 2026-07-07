@@ -1,5 +1,5 @@
 import type {Metadata} from 'next';
-import {inter, notoSansSC, notoSansTC} from './fonts';
+import {chenyuLuoyan, inter, notoSansSC, notoSansTC} from './fonts';
 import {defaultLocale} from '@/i18n/locales';
 import './globals.css';
 
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang={defaultLocale}>
-      <body className={`${inter.variable} ${notoSansTC.variable} ${notoSansSC.variable}`}>{children}</body>
+      <body className={`${inter.variable} ${notoSansTC.variable} ${notoSansSC.variable} ${chenyuLuoyan.variable}`}>{children}</body>
     </html>
   );
 }

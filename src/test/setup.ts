@@ -12,3 +12,7 @@ vi.mock('next/font/google', () => ({
   Noto_Sans_SC: () => mockFont,
   Noto_Sans_TC: () => mockFont
 }));
+
+vi.mock('next/font/local', () => ({
+  default: () => mockFont
+}));
