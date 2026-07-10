@@ -1,32 +1,55 @@
-# React + TypeScript + Vite
+# HHC Admin Console
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React/Vite admin console for `admin.alive.org.tw`.
 
-Currently, two official plugins are available:
+## Local Development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Mock mode is the fastest way to review the UI without starting backend services:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm run dev:mock
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Open:
+
+```text
+http://127.0.0.1:5175/
+```
+
+For real account-api integration, start account-api on `127.0.0.1:8080` and run:
+
+```bash
+npm run dev
+```
+
+The Vite dev server proxies `/api/account/*` to `http://127.0.0.1:8080`.
+
+## Runtime Configuration
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `VITE_ACCOUNT_API_BASE_URL` | `/api/account/v1` | API base for token exchange, refresh, `/me`, and admin APIs. |
+| `VITE_ACCOUNT_AUTHORIZE_BASE_URL` | production account host on `admin.alive.org.tw`, otherwise API base | OAuth authorize base. Production should point to `https://account.alive.org.tw/api/account/v1` so relative login redirects land on the account host. |
+| `VITE_ADMIN_CLIENT_ID` | `admin-web` | OAuth client id seeded by account-api. |
+| `VITE_ADMIN_REDIRECT_URI` | `${window.location.origin}/oauth/callback` | OAuth callback URI. |
+| `VITE_ADMIN_OAUTH_SCOPE` | `openid profile email` | Requested scopes. |
+| `VITE_ACCOUNT_API_MOCK` | `false` | Enables in-memory mock account/admin data. |
+
+## Verification
+
+```bash
+npm test -- --run
+npm run lint
+npm run build
+```
+
+## Scope
+
+The console includes:
+
+- OAuth Authorization Code + PKCE login flow.
+- Protected admin route guard.
+- User search/detail/role/direct-permission management.
+- Role and permission management.
+- OAuth client listing/creation/secret rotation.
+- CMS navigation placeholder for the upcoming `cms-api`.
