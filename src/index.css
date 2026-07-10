@@ -4,17 +4,19 @@
 :root {
   --color-cream: #fbf5eb;
   --color-paper: #fffdf9;
-  --color-ink: #342d2a;
-  --color-muted: #746c67;
-  --color-line: #eee3d7;
-  --color-panel: #f8f0e7;
+  --color-gold: #e4a43a;
   --color-primary: #cf685f;
   --color-primary-hover: #b64e45;
   --color-primary-soft: rgb(207 104 95 / 14%);
-  --color-teal: #2f7470;
+  --color-primary-soft-hover: rgb(207 104 95 / 22%);
+  --color-teal: #3a7e7a;
   --color-teal-soft: rgb(47 116 112 / 12%);
-  --color-gold: #d99b31;
-  --shadow-warm: 0 18px 44px rgb(76 50 28 / 11%);
+  --color-ink: #372d2b;
+  --color-muted: #746c67;
+  --color-line: #eee3d7;
+  --color-panel: #f8f0e7;
+  --color-panel-border: rgb(232 217 203 / 86%);
+  --shadow-warm: 0 20px 50px rgb(76 50 28 / 12%);
   color: var(--color-ink);
   background: var(--color-cream);
   font-family:
@@ -76,8 +78,12 @@ select:focus-visible {
 
 .button--secondary {
   border-color: transparent !important;
-  background: var(--color-teal-soft) !important;
-  color: var(--color-teal) !important;
+  background: var(--color-primary-soft) !important;
+  color: var(--color-primary) !important;
+}
+
+.button--secondary:hover {
+  background: var(--color-primary-soft-hover) !important;
 }
 
 .button--outline {
@@ -88,10 +94,9 @@ select:focus-visible {
 .admin-shell {
   display: grid;
   min-height: 100vh;
-  grid-template-columns: 252px minmax(0, 1fr);
+  grid-template-columns: 244px minmax(0, 1fr);
   background:
-    linear-gradient(90deg, rgb(255 253 249 / 90%) 0, rgb(255 253 249 / 50%) 252px, transparent 252px),
-    radial-gradient(circle at 12% 0%, rgb(217 155 49 / 13%), transparent 32rem),
+    radial-gradient(circle at top left, rgb(228 164 58 / 18%), transparent 34rem),
     linear-gradient(180deg, var(--color-cream), #fffaf4);
 }
 
@@ -101,21 +106,41 @@ select:focus-visible {
   display: grid;
   height: 100vh;
   grid-template-rows: auto 1fr auto;
-  gap: 24px;
-  border-right: 1px solid rgb(238 227 215 / 82%);
-  padding: 22px 16px;
+  gap: 28px;
+  border-right: 1px solid rgb(238 227 215 / 78%);
+  background: rgb(255 253 249 / 82%);
+  padding: 24px 16px;
   backdrop-filter: blur(16px);
 }
 
 .brand {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
   min-height: 48px;
-  padding: 0 10px;
+  padding: 0 12px;
   color: #403832;
-  font-size: 17px;
-  font-weight: 750;
+}
+
+.brand span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  line-height: 1;
+}
+
+.brand strong {
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.brand small {
+  color: var(--color-muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .brand img {
@@ -128,18 +153,18 @@ select:focus-visible {
   display: grid;
   align-content: start;
   gap: 6px;
+  color: var(--color-muted);
+  font-size: 14px;
 }
 
 .sidebar-nav a {
   display: flex;
   align-items: center;
-  gap: 9px;
-  min-height: 42px;
-  padding: 0 13px;
+  gap: 7px;
+  min-height: 44px;
+  padding: 0 14px;
   border-radius: 999px;
-  color: var(--color-muted);
-  font-size: 14px;
-  font-weight: 680;
+  font-weight: 650;
 }
 
 .sidebar-nav a:hover,
@@ -154,7 +179,7 @@ select:focus-visible {
   align-items: center;
   gap: 10px;
   border: 1px solid var(--color-line);
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--color-paper);
   padding: 10px;
   box-shadow: 0 10px 24px rgb(76 50 28 / 7%);
@@ -579,12 +604,13 @@ select:focus-visible {
   }
 
   .sidebar-nav {
-    display: flex;
-    overflow-x: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
   }
 
   .sidebar-nav a {
-    flex: 0 0 auto;
+    justify-content: center;
+    padding: 0 10px;
   }
 
   .sidebar-account {

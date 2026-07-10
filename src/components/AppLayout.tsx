@@ -28,7 +28,10 @@ export function AppLayout() {
       <aside className="sidebar">
         <a className="brand" href="/">
           <img src="/assets/brand/logo.png" alt="" />
-          <span>HHC Admin</span>
+          <span>
+            <strong>HHC Admin</strong>
+            <small>Hallelujah Home Church</small>
+          </span>
         </a>
 
         <nav className="sidebar-nav" aria-label="Admin">
