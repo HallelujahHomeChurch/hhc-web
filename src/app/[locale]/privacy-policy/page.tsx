@@ -2,8 +2,7 @@ import type {Metadata} from 'next';
 import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {LegalDocument} from '@/components/legal/LegalDocument';
-import {SiteFooter} from '@/components/layout/SiteFooter';
-import {SiteHeader} from '@/components/layout/SiteHeader';
+import {LegalPageShell} from '@/components/legal/LegalPageShell';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
@@ -51,12 +50,13 @@ export default async function PrivacyPolicyPage({params}: PrivacyPolicyPageProps
   const messages = getMessages(locale);
 
   return (
-    <>
-      <SiteHeader locale={locale} pathname={`/${locale}/privacy-policy`} />
-      <main>
-        <LegalDocument content={messages.privacyPolicy} />
-      </main>
-      <SiteFooter locale={locale} pathname={`/${locale}/privacy-policy`} />
-    </>
+    <LegalPageShell
+      languageLabel={messages.site.language}
+      locale={locale}
+      pathname={`/${locale}/privacy-policy`}
+      siteName={messages.site.name}
+    >
+      <LegalDocument content={messages.privacyPolicy} />
+    </LegalPageShell>
   );
 }

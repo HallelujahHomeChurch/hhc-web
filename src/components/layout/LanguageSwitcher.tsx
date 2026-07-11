@@ -8,9 +8,14 @@ type LanguageSwitcherProps = {
   locale: Locale;
   pathname: string;
   label: string;
+  variant?: 'default' | 'ghost';
 };
 
-export function LanguageSwitcher({label, locale, pathname}: LanguageSwitcherProps) {
+export function LanguageSwitcher({label, locale, pathname, variant = 'default'}: LanguageSwitcherProps) {
+  const triggerClassName = variant === 'ghost'
+    ? 'legal-language-trigger'
+    : 'inline-flex min-h-11 min-w-24 items-center justify-between gap-3 rounded-full border border-[#d7b9aa] bg-paper px-4 text-sm font-semibold text-[#7a423b] transition hover:border-primary focus-visible:border-primary focus-visible:bg-primary-soft focus-visible:outline-none data-[state=open]:border-primary data-[state=open]:bg-primary-soft';
+
   return (
     <div className="flex items-center">
       <Select.Root
@@ -24,7 +29,7 @@ export function LanguageSwitcher({label, locale, pathname}: LanguageSwitcherProp
       >
         <Select.Trigger
           aria-label={label}
-          className="inline-flex min-h-11 min-w-24 items-center justify-between gap-3 rounded-full border border-[#d7b9aa] bg-paper px-4 text-sm font-semibold text-[#7a423b] transition hover:border-primary focus-visible:border-primary focus-visible:bg-primary-soft focus-visible:outline-none data-[state=open]:border-primary data-[state=open]:bg-primary-soft"
+          className={triggerClassName}
         >
           <Select.Value />
           <Select.Icon className="text-xs text-muted" aria-hidden="true">
@@ -35,14 +40,14 @@ export function LanguageSwitcher({label, locale, pathname}: LanguageSwitcherProp
           <Select.Content
             position="popper"
             sideOffset={8}
-            className="z-50 overflow-hidden rounded-[24px] border border-panel-border bg-paper p-2 text-sm text-ink shadow-warm"
+            className="z-50 overflow-hidden rounded-[14px] border border-panel-border bg-paper p-1.5 text-sm text-ink shadow-warm"
           >
             <Select.Viewport>
               {locales.map((targetLocale) => (
                 <Select.Item
                   key={targetLocale}
                   value={targetLocale}
-                  className="relative flex min-h-10 cursor-pointer select-none items-center rounded-full px-4 pr-9 font-semibold outline-none data-highlighted:bg-primary-soft data-highlighted:text-primary data-[state=checked]:text-primary"
+                  className="relative flex min-h-9 cursor-pointer select-none items-center rounded-[10px] px-3 pr-9 font-semibold outline-none data-highlighted:bg-primary-soft data-highlighted:text-primary data-[state=checked]:text-primary"
                 >
                   <Select.ItemText>{localeLabels[targetLocale]}</Select.ItemText>
                   <Select.ItemIndicator className="absolute right-3 text-primary">✓</Select.ItemIndicator>

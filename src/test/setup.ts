@@ -16,3 +16,8 @@ vi.mock('next/font/google', () => ({
 vi.mock('next/font/local', () => ({
   default: () => mockFont
 }));
+
+HTMLElement.prototype.hasPointerCapture ??= () => false;
+HTMLElement.prototype.setPointerCapture ??= () => undefined;
+HTMLElement.prototype.releasePointerCapture ??= () => undefined;
+HTMLElement.prototype.scrollIntoView ??= () => undefined;

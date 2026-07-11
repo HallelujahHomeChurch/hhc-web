@@ -2,8 +2,7 @@ import type {Metadata} from 'next';
 import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {LegalDocument} from '@/components/legal/LegalDocument';
-import {SiteFooter} from '@/components/layout/SiteFooter';
-import {SiteHeader} from '@/components/layout/SiteHeader';
+import {LegalPageShell} from '@/components/legal/LegalPageShell';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
@@ -50,12 +49,13 @@ export default async function TermsOfUsePage({params}: TermsOfUsePageProps) {
   const messages = getMessages(locale);
 
   return (
-    <>
-      <SiteHeader locale={locale} pathname={`/${locale}/terms-of-use`} />
-      <main>
-        <LegalDocument content={messages.termsOfUse} />
-      </main>
-      <SiteFooter locale={locale} pathname={`/${locale}/terms-of-use`} />
-    </>
+    <LegalPageShell
+      languageLabel={messages.site.language}
+      locale={locale}
+      pathname={`/${locale}/terms-of-use`}
+      siteName={messages.site.name}
+    >
+      <LegalDocument content={messages.termsOfUse} />
+    </LegalPageShell>
   );
 }

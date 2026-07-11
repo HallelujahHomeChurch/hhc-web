@@ -12,6 +12,13 @@ export const metadata: Metadata = {
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang={defaultLocale}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(()=>{const m=document.cookie.match(/(?:^|;\\s*)hhc_theme=(light|dark)(?:;|$)/);const t=m?.[1]??(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=t;document.documentElement.classList.toggle('dark',t==='dark');document.documentElement.style.colorScheme=t})()`
+          }}
+        />
+      </head>
       <body className={`${inter.variable} ${notoSansTC.variable} ${notoSansSC.variable} ${chenyuLuoyan.variable}`}>{children}</body>
     </html>
   );

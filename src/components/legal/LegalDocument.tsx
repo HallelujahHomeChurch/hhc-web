@@ -16,7 +16,7 @@ type LegalDocumentProps = {
 
 export function LegalDocument({content}: LegalDocumentProps) {
   return (
-    <section className="bg-[linear-gradient(180deg,var(--color-cream),#fffaf4)] py-16">
+    <section className="legal-document">
       <article className="shell max-w-[880px]">
         <h1 className="text-[clamp(34px,5vw,56px)] font-medium leading-tight text-ink">{content.heroTitle}</h1>
         {content.heroSubtitle ? <p className="mt-4 text-xl leading-8 text-muted">{content.heroSubtitle}</p> : null}
