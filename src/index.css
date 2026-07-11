@@ -2,8 +2,10 @@
 @import "@heroui/styles";
 
 :root {
+  --color-canvas: #fbf5eb;
   --color-cream: #fbf5eb;
   --color-paper: #fffdf9;
+  --color-paper-raised: rgb(255 253 249 / 96%);
   --color-gold: #e4a43a;
   --color-primary: #cf685f;
   --color-primary-hover: #b64e45;
@@ -28,6 +30,26 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+[data-theme="dark"] {
+  --color-canvas: #1d1a19;
+  --color-cream: #1d1a19;
+  --color-paper: #282321;
+  --color-paper-raised: rgb(40 35 33 / 98%);
+  --color-gold: #e7aa49;
+  --color-primary: #df7a70;
+  --color-primary-hover: #f08c82;
+  --color-primary-soft: rgb(223 122 112 / 16%);
+  --color-primary-soft-hover: rgb(223 122 112 / 24%);
+  --color-teal: #65aaa4;
+  --color-teal-soft: rgb(101 170 164 / 14%);
+  --color-ink: #f3ece7;
+  --color-muted: #bcb1aa;
+  --color-line: #443b37;
+  --color-panel: #312a27;
+  --color-panel-border: rgb(79 67 61 / 88%);
+  --shadow-warm: 0 20px 50px rgb(0 0 0 / 24%);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -36,6 +58,8 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
 }
 
 a {
@@ -106,9 +130,7 @@ textarea:focus-visible {
   display: grid;
   min-height: 100vh;
   grid-template-columns: 244px minmax(0, 1fr);
-  background:
-    radial-gradient(circle at top left, rgb(228 164 58 / 18%), transparent 34rem),
-    linear-gradient(180deg, var(--color-cream), #fffaf4);
+  background: var(--color-canvas);
 }
 
 .sidebar {
@@ -116,12 +138,10 @@ textarea:focus-visible {
   top: 0;
   display: grid;
   height: 100vh;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto 1fr auto;
   gap: 28px;
-  border-right: 1px solid rgb(238 227 215 / 78%);
-  background: rgb(255 253 249 / 82%);
-  padding: 24px 16px;
-  backdrop-filter: blur(16px);
+  background: var(--color-canvas);
+  padding: 24px;
 }
 
 .brand {
@@ -129,34 +149,17 @@ textarea:focus-visible {
   align-items: center;
   gap: 10px;
   min-height: 48px;
-  padding: 0 12px;
-  color: #403832;
-}
-
-.brand span {
-  display: grid;
-  min-width: 0;
-  gap: 2px;
-  line-height: 1;
+  color: var(--color-ink);
 }
 
 .brand strong {
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 650;
 }
 
-.brand small {
-  color: var(--color-muted);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
 .brand img {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
 }
 
@@ -184,6 +187,18 @@ textarea:focus-visible {
   color: var(--color-primary);
 }
 
+.sidebar-legal-links {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.sidebar-legal-links a:hover {
+  color: var(--color-primary);
+}
+
 .admin-content {
   display: grid;
   min-width: 0;
@@ -198,34 +213,57 @@ textarea:focus-visible {
   min-height: 72px;
   align-items: center;
   justify-content: flex-end;
-  border-bottom: 1px solid rgb(238 227 215 / 54%);
-  background: rgb(251 245 235 / 78%);
+  background: var(--color-canvas);
   padding: 14px clamp(18px, 4vw, 44px);
-  backdrop-filter: blur(16px);
 }
 
 .account-menu-trigger {
   display: grid;
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   place-items: center;
-  border: 1px solid var(--color-line);
+  border: 0;
   border-radius: 50%;
-  background: var(--color-paper);
+  background: transparent;
   color: var(--color-primary);
   cursor: pointer;
-  box-shadow: 0 10px 22px rgb(76 50 28 / 8%);
+  padding: 0;
+  box-shadow: none;
 }
 
 .account-menu-trigger:hover,
 .account-menu-trigger[data-hovered] {
-  border-color: var(--color-primary);
-  background: var(--color-primary-soft);
+  background: transparent;
 }
 
-.account-menu-trigger:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 4px;
+.account-menu-trigger:hover .account-avatar,
+.account-menu-trigger[data-hovered] .account-avatar {
+  filter: brightness(0.94);
+}
+
+.account-menu-trigger:focus,
+.account-menu-trigger:focus-visible,
+.account-menu-trigger[data-focus-visible] {
+  outline: none;
+  box-shadow: none;
+}
+
+.account-menu-trigger:focus-visible .account-avatar,
+.account-menu-trigger[data-focus-visible] .account-avatar {
+  box-shadow: inset 0 0 0 2px var(--color-primary);
+}
+
+.account-avatar,
+.account-avatar .avatar__image,
+.account-avatar .avatar__fallback {
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+.account-avatar .avatar__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .account-menu-popover {
@@ -234,7 +272,7 @@ textarea:focus-visible {
   gap: 6px;
   border: 1px solid var(--color-panel-border);
   border-radius: 14px;
-  background: rgb(255 253 249 / 96%);
+  background: var(--color-paper-raised);
   box-shadow: var(--shadow-warm);
   padding: 8px;
 }
@@ -312,7 +350,7 @@ textarea:focus-visible {
   min-width: 180px;
   border: 1px solid var(--color-panel-border);
   border-radius: 14px;
-  background: rgb(255 253 249 / 96%);
+  background: var(--color-paper-raised);
   box-shadow: var(--shadow-warm);
   padding: 6px;
 }
@@ -392,7 +430,7 @@ textarea:focus-visible {
   width: min(100%, 520px);
   border: 1px solid var(--color-panel-border);
   border-radius: 18px;
-  background: rgb(255 253 249 / 98%);
+  background: var(--color-paper-raised);
   box-shadow: var(--shadow-warm);
   padding: 22px;
 }
@@ -438,7 +476,7 @@ textarea:focus-visible {
 .login-card {
   border: 1px solid var(--color-line) !important;
   border-radius: 8px !important;
-  background: rgb(255 253 249 / 86%) !important;
+  background: var(--color-paper-raised) !important;
   box-shadow: var(--shadow-warm) !important;
 }
 
@@ -465,7 +503,7 @@ textarea:focus-visible {
 .loading-panel {
   border: 1px solid var(--color-line);
   border-radius: 8px;
-  background: rgb(255 253 249 / 84%);
+  background: var(--color-paper-raised);
   padding: 24px;
   box-shadow: var(--shadow-warm);
 }
@@ -716,9 +754,7 @@ textarea:focus-visible {
   min-height: 100vh;
   place-items: center;
   padding: 24px;
-  background:
-    radial-gradient(circle at 50% 0%, rgb(207 104 95 / 13%), transparent 28rem),
-    linear-gradient(180deg, var(--color-cream), #fffaf4);
+  background: var(--color-canvas);
 }
 
 .login-panel {
@@ -772,8 +808,20 @@ textarea:focus-visible {
     position: relative;
     height: auto;
     grid-template-columns: 1fr;
-    border-right: 0;
-    border-bottom: 1px solid var(--color-line);
+    padding: 16px;
+  }
+
+  .brand strong {
+    font-size: 17px;
+  }
+
+  .brand img {
+    width: 36px;
+    height: 36px;
+  }
+
+  .sidebar-legal-links {
+    display: none;
   }
 
   .sidebar-nav {

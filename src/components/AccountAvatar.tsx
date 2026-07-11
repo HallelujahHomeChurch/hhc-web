@@ -13,7 +13,7 @@ export function AccountAvatar({
   size?: AvatarRootProps['size']
 }) {
   return (
-    <Avatar className={className} size={size} variant="soft">
+    <Avatar className={['account-avatar', className].filter(Boolean).join(' ')} size={size} variant="soft">
       {profile?.avatar_url ? <Avatar.Image src={profile.avatar_url} alt="" /> : null}
       <Avatar.Fallback>{accountInitials(profile)}</Avatar.Fallback>
     </Avatar>

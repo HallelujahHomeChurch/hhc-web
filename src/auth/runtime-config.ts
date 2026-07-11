@@ -5,6 +5,7 @@ export type RuntimeConfig = {
   redirectUri: string
   oauthScope: string
   mockApi: boolean
+  publicSiteUrl: string
 }
 
 type EnvLike = Record<string, string | boolean | undefined>
@@ -27,6 +28,7 @@ export function readRuntimeConfig(
     redirectUri: stringEnv(env.VITE_ADMIN_REDIRECT_URI, `${origin}/oauth/callback`),
     oauthScope: stringEnv(env.VITE_ADMIN_OAUTH_SCOPE, 'openid profile email'),
     mockApi: env.VITE_ACCOUNT_API_MOCK === 'true' || env.VITE_ACCOUNT_API_MOCK === true,
+    publicSiteUrl: stringEnv(env.VITE_PUBLIC_SITE_URL, 'https://www.alive.org.tw').replace(/\/$/, ''),
   }
 }
 

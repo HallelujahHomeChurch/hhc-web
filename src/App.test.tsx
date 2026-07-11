@@ -21,6 +21,24 @@ describe('App', () => {
     expect(screen.queryByText('Hi HHC Admin')).not.toBeInTheDocument()
   })
 
+  it('uses the shared locale for the brand and canonical legal links', async () => {
+    document.cookie = 'hhc_locale=zh-Hant; Path=/'
+    window.history.pushState({}, '', '/')
+    render(<App config={{ mockApi: true }} />)
+
+    expect(await screen.findByText('HHC 管理中心')).toBeInTheDocument()
+    expect(screen.queryByText('Hallelujah Home Church')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '隱私權' })).toHaveAttribute(
+      'href',
+      'https://www.alive.org.tw/zh-Hant/privacy-policy',
+    )
+    expect(screen.getByRole('link', { name: '條款' })).toHaveAttribute(
+      'href',
+      'https://www.alive.org.tw/zh-Hant/terms-of-use',
+    )
+    expect(document.querySelector('.account-menu-trigger .account-avatar')).toBeInTheDocument()
+  })
+
   it.each([
     ['/', 'Overview'],
     ['/users', 'Users'],

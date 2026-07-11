@@ -10,6 +10,7 @@ const config: RuntimeConfig = {
   redirectUri: 'https://admin.alive.org.tw/oauth/callback',
   oauthScope: 'openid profile email',
   mockApi: false,
+  publicSiteUrl: 'https://www.alive.org.tw',
 }
 
 describe('PKCE helpers', () => {

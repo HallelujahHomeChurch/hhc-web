@@ -11,6 +11,7 @@ import { LoginPage } from './pages/LoginPage'
 import { OAuthCallbackPage } from './pages/OAuthCallbackPage'
 import { OAuthClientsPage } from './pages/OAuthClientsPage'
 import { UsersPage } from './pages/UsersPage'
+import { LocaleProvider } from './preferences/locale-context'
 
 type AppProps = {
   config?: Partial<RuntimeConfig>
@@ -18,9 +19,10 @@ type AppProps = {
 
 function App({ config }: AppProps) {
   return (
-    <BrowserRouter>
-      <AuthProvider config={{ ...readRuntimeConfig(), ...config }}>
-        <Routes>
+    <LocaleProvider>
+      <BrowserRouter>
+        <AuthProvider config={{ ...readRuntimeConfig(), ...config }}>
+          <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
           <Route path="/forbidden" element={<ForbiddenPage />} />
@@ -34,9 +36,10 @@ function App({ config }: AppProps) {
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
+    </LocaleProvider>
   )
 }
 
