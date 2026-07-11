@@ -28,7 +28,7 @@ type AuthContextValue = {
   profile: Profile | null
   accessToken: string | null
   isBootstrapping: boolean
-  signIn: (returnTo?: string) => Promise<void>
+  signIn: (returnTo?: string) => Promise<string | null>
   completeOAuthCallback: (code: string, state: string) => Promise<string>
   logout: () => Promise<void>
   refreshProfile: () => Promise<Profile>
@@ -72,14 +72,15 @@ export function AuthProvider({
     async (returnTo = window.location.pathname) => {
       if (config.mockApi) {
         const token = await api.refreshAccessToken()
-        writeAccessToken(token)
-        await refreshProfile()
-        return
+    writeAccessToken(token)
+    await refreshProfile()
+    return returnTo
       }
 
       const transaction = await createOAuthTransaction(returnTo)
       saveOAuthTransaction(transaction)
-      window.location.assign(buildAuthorizeUrl(config, transaction).toString())
+    window.location.assign(buildAuthorizeUrl(config, transaction).toString())
+    return null
     },
     [api, config, refreshProfile, writeAccessToken],
   )

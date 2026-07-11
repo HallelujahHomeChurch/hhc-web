@@ -5,6 +5,14 @@ import { describe, expect, it } from 'vitest'
 import App from './App'
 
 describe('App', () => {
+  it('enters the protected console after mocked sign-in', async () => {
+    window.history.pushState({}, '', '/login')
+    render(<App config={{ mockApi: true }} />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Continue with HHC account' }))
+    expect(await screen.findByRole('heading', { name: 'Overview' })).toBeInTheDocument()
+  })
+
   it('renders the protected admin shell with a dismissible avatar menu', async () => {
     window.history.pushState({}, '', '/')
     render(<App config={{ mockApi: true }} />)

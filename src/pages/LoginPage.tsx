@@ -1,12 +1,18 @@
 import { Button, Card } from '@heroui/react'
 import { ShieldCheck } from 'lucide-react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../auth/auth-context'
 
 export function LoginPage() {
   const { signIn } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
+
+  async function continueToAccount() {
+    const destination = await signIn(location.state?.from?.pathname ?? '/')
+    if (destination) navigate(destination, { replace: true })
+  }
 
   return (
     <main className="login-screen">
@@ -31,7 +37,7 @@ export function LoginPage() {
             <Button
               className="login-action"
               variant="primary"
-              onPress={() => void signIn(location.state?.from?.pathname ?? '/')}
+        onPress={() => void continueToAccount()}
             >
               Continue with HHC account
             </Button>
