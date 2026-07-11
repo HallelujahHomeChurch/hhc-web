@@ -1,4 +1,4 @@
-import { Button, Card } from '@heroui/react'
+import { Button, Card, Form, Input, Label, Modal, TextField } from '@heroui/react'
 import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '../auth/auth-context'
@@ -11,6 +11,8 @@ export function AccessPage() {
   const [roleName, setRoleName] = useState('')
   const [permissionCode, setPermissionCode] = useState('')
   const [selectedRoleID, setSelectedRoleID] = useState('')
+  const [isRoleDialogOpen, setRoleDialogOpen] = useState(false)
+  const [isPermissionDialogOpen, setPermissionDialogOpen] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -29,6 +31,7 @@ export function AccessPage() {
     if (!roleName.trim()) return
     await api.createRole({ name: roleName.trim() })
     setRoleName('')
+    setRoleDialogOpen(false)
     setMessage('Role created.')
     await load()
   }
@@ -38,6 +41,7 @@ export function AccessPage() {
     if (!permissionCode.trim()) return
     await api.createPermission({ code: permissionCode.trim() })
     setPermissionCode('')
+    setPermissionDialogOpen(false)
     setMessage('Permission created.')
     await load()
   }
@@ -53,8 +57,13 @@ export function AccessPage() {
     <section className="page-stack">
       <header className="page-header">
         <div>
-          <p className="eyebrow">RBAC</p>
           <h1>Access</h1>
+        </div>
+        <div className="page-actions">
+          <Button variant="secondary" onPress={() => setPermissionDialogOpen(true)}>
+            Create permission
+          </Button>
+          <Button onPress={() => setRoleDialogOpen(true)}>Create role</Button>
         </div>
       </header>
 
@@ -64,13 +73,8 @@ export function AccessPage() {
         <Card className="table-card">
           <Card.Header>
             <Card.Title>Roles</Card.Title>
-            <Card.Description>Permission bundles assigned to users.</Card.Description>
           </Card.Header>
           <Card.Content>
-            <form className="inline-form" onSubmit={(event) => void createRole(event)}>
-              <input value={roleName} onChange={(event) => setRoleName(event.target.value)} placeholder="role name" />
-              <Button type="submit" variant="primary">Create</Button>
-            </form>
             <div className="list-stack">
               {roles.map((role) => (
                 <button
@@ -90,17 +94,8 @@ export function AccessPage() {
         <Card className="table-card">
           <Card.Header>
             <Card.Title>Permissions</Card.Title>
-            <Card.Description>Attach permissions to the selected role.</Card.Description>
           </Card.Header>
           <Card.Content>
-            <form className="inline-form" onSubmit={(event) => void createPermission(event)}>
-              <input
-                value={permissionCode}
-                onChange={(event) => setPermissionCode(event.target.value)}
-                placeholder="service:action"
-              />
-              <Button type="submit" variant="primary">Create</Button>
-            </form>
             <div className="chip-row">
               {permissions.map((permission) => (
                 <Button
@@ -116,6 +111,58 @@ export function AccessPage() {
           </Card.Content>
         </Card>
       </div>
+
+      <Modal isOpen={isRoleDialogOpen} onOpenChange={setRoleDialogOpen}>
+        <Modal.Backdrop className="modal-backdrop">
+          <Modal.Container className="modal-container" placement="center">
+            <Modal.Dialog className="modal-dialog">
+              <Modal.Header>
+                <Modal.Heading>Create role</Modal.Heading>
+              </Modal.Header>
+              <Form onSubmit={(event) => void createRole(event)}>
+                <Modal.Body className="modal-form-grid">
+                  <TextField isRequired value={roleName} onChange={setRoleName}>
+                    <Label>Role name</Label>
+                    <Input autoFocus />
+                  </TextField>
+                </Modal.Body>
+                <Modal.Footer className="modal-actions">
+                  <Button variant="ghost" onPress={() => setRoleDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit">Create</Button>
+                </Modal.Footer>
+              </Form>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
+
+      <Modal isOpen={isPermissionDialogOpen} onOpenChange={setPermissionDialogOpen}>
+        <Modal.Backdrop className="modal-backdrop">
+          <Modal.Container className="modal-container" placement="center">
+            <Modal.Dialog className="modal-dialog">
+              <Modal.Header>
+                <Modal.Heading>Create permission</Modal.Heading>
+              </Modal.Header>
+              <Form onSubmit={(event) => void createPermission(event)}>
+                <Modal.Body className="modal-form-grid">
+                  <TextField isRequired value={permissionCode} onChange={setPermissionCode}>
+                    <Label>Permission code</Label>
+                    <Input autoFocus />
+                  </TextField>
+                </Modal.Body>
+                <Modal.Footer className="modal-actions">
+                  <Button variant="ghost" onPress={() => setPermissionDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit">Create</Button>
+                </Modal.Footer>
+              </Form>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
     </section>
   )
 }

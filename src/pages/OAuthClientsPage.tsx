@@ -1,4 +1,4 @@
-import { Button, Card } from '@heroui/react'
+import { Button, Card, Form, Input, Label, Modal, TextField } from '@heroui/react'
 import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '../auth/auth-context'
@@ -9,6 +9,8 @@ export function OAuthClientsPage() {
   const [clients, setClients] = useState<OAuthClient[]>([])
   const [clientName, setClientName] = useState('')
   const [redirectUri, setRedirectUri] = useState('')
+  const [isCreateDialogOpen, setCreateDialogOpen] = useState(false)
+  const [rotateClient, setRotateClient] = useState<OAuthClient | null>(null)
   const [secret, setSecret] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -31,6 +33,7 @@ export function OAuthClientsPage() {
     })
     setClientName('')
     setRedirectUri('')
+    setCreateDialogOpen(false)
     await load()
   }
 
@@ -43,8 +46,10 @@ export function OAuthClientsPage() {
     <section className="page-stack">
       <header className="page-header">
         <div>
-          <p className="eyebrow">OAuth</p>
           <h1>OAuth clients</h1>
+        </div>
+        <div className="page-actions">
+          <Button onPress={() => setCreateDialogOpen(true)}>Create client</Button>
         </div>
       </header>
 
@@ -53,19 +58,8 @@ export function OAuthClientsPage() {
       <Card className="table-card">
         <Card.Header>
           <Card.Title>Registered clients</Card.Title>
-          <Card.Description>First-party web, desktop, and service clients.</Card.Description>
         </Card.Header>
         <Card.Content>
-          <form className="inline-form oauth-form" onSubmit={(event) => void createClient(event)}>
-            <input value={clientName} onChange={(event) => setClientName(event.target.value)} placeholder="Client name" />
-            <input
-              value={redirectUri}
-              onChange={(event) => setRedirectUri(event.target.value)}
-              placeholder="https://app.alive.org.tw/oauth/callback"
-            />
-            <Button type="submit" variant="primary">Create</Button>
-          </form>
-
           <table className="data-table">
             <thead>
               <tr>
@@ -85,7 +79,7 @@ export function OAuthClientsPage() {
                   <td>{client.client_type}</td>
                   <td>{client.redirect_uris.join(', ')}</td>
                   <td>
-                    <Button size="sm" variant="outline" onPress={() => void rotateSecret(client.client_id)}>
+                    <Button size="sm" variant="outline" onPress={() => setRotateClient(client)}>
                       Rotate
                     </Button>
                   </td>
@@ -95,6 +89,66 @@ export function OAuthClientsPage() {
           </table>
         </Card.Content>
       </Card>
+
+      <Modal isOpen={isCreateDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <Modal.Backdrop className="modal-backdrop">
+          <Modal.Container className="modal-container" placement="center">
+            <Modal.Dialog className="modal-dialog">
+              <Modal.Header>
+                <Modal.Heading>Create client</Modal.Heading>
+              </Modal.Header>
+              <Form onSubmit={(event) => void createClient(event)}>
+                <Modal.Body className="modal-form-grid">
+                  <TextField isRequired value={clientName} onChange={setClientName}>
+                    <Label>Client name</Label>
+                    <Input autoFocus />
+                  </TextField>
+                  <TextField isRequired value={redirectUri} onChange={setRedirectUri}>
+                    <Label>Redirect URI</Label>
+                    <Input placeholder="https://app.alive.org.tw/oauth/callback" />
+                  </TextField>
+                </Modal.Body>
+                <Modal.Footer className="modal-actions">
+                  <Button variant="ghost" onPress={() => setCreateDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit">Create</Button>
+                </Modal.Footer>
+              </Form>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
+
+      <Modal isOpen={Boolean(rotateClient)} onOpenChange={(open) => setRotateClient(open ? rotateClient : null)}>
+        <Modal.Backdrop className="modal-backdrop">
+          <Modal.Container className="modal-container" placement="center">
+            <Modal.Dialog className="modal-dialog">
+              <Modal.Header>
+                <Modal.Heading>Rotate client secret</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="modal-form-grid">
+                <p className="modal-copy">Rotate secret for {rotateClient?.client_name}. The new secret is shown once.</p>
+              </Modal.Body>
+              <Modal.Footer className="modal-actions">
+                <Button variant="ghost" onPress={() => setRotateClient(null)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="danger"
+                  onPress={async () => {
+                    if (!rotateClient) return
+                    await rotateSecret(rotateClient.client_id)
+                    setRotateClient(null)
+                  }}
+                >
+                  Rotate secret
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
     </section>
   )
 }

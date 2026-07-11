@@ -1,15 +1,10 @@
-import {
-  BadgeCheck,
-  BookOpen,
-  KeyRound,
-  LayoutDashboard,
-  LogOut,
-  ShieldCheck,
-  Users,
-} from 'lucide-react'
+import { Dropdown } from '@heroui/react'
+import { BookOpen, KeyRound, LayoutDashboard, LogOut, ShieldCheck, Users } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 
 import { useAuth } from '../auth/auth-context'
+import { AccountAvatar } from './AccountAvatar'
+import { displayAccountName } from '../lib/account-display'
 
 const navItems = [
   { to: '/', label: 'Overview', icon: LayoutDashboard },
@@ -21,7 +16,7 @@ const navItems = [
 
 export function AppLayout() {
   const { profile, logout } = useAuth()
-  const displayName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || profile?.email
+  const displayName = displayAccountName(profile, 'Admin')
 
   return (
     <div className="admin-shell">
@@ -45,22 +40,35 @@ export function AppLayout() {
             )
           })}
         </nav>
-
-        <div className="sidebar-account">
-          <BadgeCheck size={18} aria-hidden="true" />
-          <div>
-            <strong>{displayName}</strong>
-            <span>{profile?.email}</span>
-          </div>
-          <button type="button" aria-label="Sign out" onClick={() => void logout()}>
-            <LogOut size={17} aria-hidden="true" />
-          </button>
-        </div>
       </aside>
 
-      <main className="workspace">
-        <Outlet />
-      </main>
+      <div className="admin-content">
+        <header className="account-header">
+          <Dropdown>
+            <Dropdown.Trigger aria-label="Account menu" className="account-menu-trigger">
+              <AccountAvatar profile={profile} size="sm" />
+            </Dropdown.Trigger>
+            <Dropdown.Popover className="account-menu-popover" placement="bottom end">
+              <div className="account-menu-greeting">Hi {displayName}</div>
+              <Dropdown.Menu
+                aria-label="Account menu"
+                className="account-menu-list"
+                onAction={(key) => {
+                  if (key === 'sign-out') void logout()
+                }}
+              >
+                <Dropdown.Item id="sign-out" className="account-menu-item" textValue="Sign out">
+                  <LogOut size={16} aria-hidden="true" />
+                  Sign out
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown.Popover>
+          </Dropdown>
+        </header>
+        <main className="workspace">
+          <Outlet />
+        </main>
+      </div>
     </div>
   )
 }

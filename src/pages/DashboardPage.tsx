@@ -24,8 +24,7 @@ export function DashboardPage() {
     <section className="page-stack">
       <header className="page-header">
         <div>
-          <p className="eyebrow">Hallelujah Home Church</p>
-          <h1>Admin Console</h1>
+          <h1>Overview</h1>
         </div>
       </header>
 

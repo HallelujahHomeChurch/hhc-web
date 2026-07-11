@@ -5,8 +5,7 @@ export function CmsPage() {
     <section className="page-stack">
       <header className="page-header">
         <div>
-          <p className="eyebrow">CMS</p>
-          <h1>Content management</h1>
+          <h1>CMS</h1>
         </div>
       </header>
 

@@ -1,4 +1,4 @@
-import { Button, Card } from '@heroui/react'
+import { Button, Card, Dropdown, Modal } from '@heroui/react'
 import { Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -17,6 +17,7 @@ export function UsersPage() {
   const [roleFilter, setRoleFilter] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [message, setMessage] = useState<string | null>(null)
+  const [permissionToRemove, setPermissionToRemove] = useState<string | null>(null)
 
   const selectedUser = useMemo(
     () => users.find((user) => user.id === selectedUserID) ?? users[0] ?? null,
@@ -80,7 +81,6 @@ export function UsersPage() {
     <section className="page-stack">
       <header className="page-header">
         <div>
-          <p className="eyebrow">Account</p>
           <h1>Users</h1>
         </div>
       </header>
@@ -91,12 +91,27 @@ export function UsersPage() {
           <span className="sr-only">Search users</span>
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search email or name" />
         </label>
-        <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} aria-label="Filter by role">
-          <option value="">All roles</option>
-          {roles.map((role) => (
-            <option key={role.id} value={role.name}>{role.name}</option>
-          ))}
-        </select>
+        <Dropdown>
+          <Dropdown.Trigger aria-label="Filter by role" className="admin-select-trigger">
+            {roleFilter || 'All roles'}
+          </Dropdown.Trigger>
+          <Dropdown.Popover className="admin-select-popover">
+            <Dropdown.Menu
+              aria-label="Filter by role"
+              className="admin-select-menu"
+              onAction={(key) => setRoleFilter(key === 'all' ? '' : String(key))}
+            >
+              <Dropdown.Item id="all" className="admin-select-item" textValue="All roles">
+                All roles
+              </Dropdown.Item>
+              {roles.map((role) => (
+                <Dropdown.Item key={role.id} id={role.name} className="admin-select-item" textValue={role.name}>
+                  {role.name}
+                </Dropdown.Item>
+              ))}
+            </Dropdown.Menu>
+          </Dropdown.Popover>
+        </Dropdown>
       </div>
 
       {message ? <p className="notice">{message}</p> : null}
@@ -185,28 +200,36 @@ export function UsersPage() {
                     {detail.direct_permissions.map((permission) => (
                       <Button
                         key={permission}
+                        aria-label={`Remove permission ${permission}`}
                         size="sm"
                         variant="secondary"
-                        onPress={() => void removePermission(permission)}
+                        onPress={() => setPermissionToRemove(permission)}
                       >
                         {permission}
                       </Button>
                     ))}
                   </div>
-                  <select
-                    aria-label="Add direct permission"
-                    defaultValue=""
-                    onChange={(event) => {
-                      const value = event.target.value
-                      event.currentTarget.value = ''
-                      if (value) void addPermission(value)
-                    }}
-                  >
-                    <option value="">Add permission</option>
-                    {permissions.map((permission) => (
-                      <option key={permission.id} value={permission.code}>{permission.code}</option>
-                    ))}
-                  </select>
+                  <Dropdown>
+                    <Dropdown.Trigger className="admin-select-trigger">Add permission</Dropdown.Trigger>
+                    <Dropdown.Popover className="admin-select-popover">
+                      <Dropdown.Menu
+                        aria-label="Add direct permission"
+                        className="admin-select-menu"
+                        onAction={(key) => void addPermission(String(key))}
+                      >
+                        {permissions.map((permission) => (
+                          <Dropdown.Item
+                            key={permission.id}
+                            id={permission.code}
+                            className="admin-select-item"
+                            textValue={permission.code}
+                          >
+                            {permission.code}
+                          </Dropdown.Item>
+                        ))}
+                      </Dropdown.Menu>
+                    </Dropdown.Popover>
+                  </Dropdown>
                 </section>
               </div>
             ) : (
@@ -215,6 +238,36 @@ export function UsersPage() {
           </Card.Content>
         </Card>
       </div>
+
+      <Modal isOpen={Boolean(permissionToRemove)} onOpenChange={(open) => setPermissionToRemove(open ? permissionToRemove : null)}>
+        <Modal.Backdrop className="modal-backdrop">
+          <Modal.Container className="modal-container" placement="center">
+            <Modal.Dialog className="modal-dialog">
+              <Modal.Header>
+                <Modal.Heading>Remove direct permission</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="modal-form-grid">
+                <p className="modal-copy">Remove {permissionToRemove} from {detail?.email}.</p>
+              </Modal.Body>
+              <Modal.Footer className="modal-actions">
+                <Button variant="ghost" onPress={() => setPermissionToRemove(null)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="danger"
+                  onPress={async () => {
+                    if (!permissionToRemove) return
+                    await removePermission(permissionToRemove)
+                    setPermissionToRemove(null)
+                  }}
+                >
+                  Remove permission
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
     </section>
   )
 }
