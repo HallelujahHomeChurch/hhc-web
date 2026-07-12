@@ -203,6 +203,17 @@ Scanner.Scan(ctx, objectRef) -> clean | infected | failed
 
 Do not make scanner output the only source of truth. Store accepted scan result in PostgreSQL.
 
+### Azure v1 implementation
+
+Azure production uses Defender for Storage on-upload malware scanning rather than an application-hosted antivirus engine:
+
+1. Defender scans each uploaded Blob and writes Blob index tags.
+2. Defender publishes the result to a dedicated Event Grid custom topic.
+3. Event Grid uses its managed identity to deliver to a Service Bus queue.
+4. `asset-api` consumes with managed identity and persists each Event Grid `event_id` once.
+
+The storage account cap is 10 GB scanned per month. Exhausting the cap must never downgrade to `skipped`; assets remain `pending` and unavailable. Local development does not emulate Defender and uses service tests to apply scan transitions explicitly.
+
 ## Quarantine
 
 Infected files should not be downloaded.

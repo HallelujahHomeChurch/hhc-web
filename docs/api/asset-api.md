@@ -97,6 +97,13 @@ Public CMS assets must be `scan_status=clean` before public download. Public ima
 6. Worker scans/processes the asset.
 7. Consumer service can reference the asset only after status is compatible with its domain rule.
 
+### Implemented production profile
+
+- Browser uploads use a 10-minute, one-object Azure user-delegation SAS with create/write only. The upload target is a capability URL and must never be logged or persisted by consumer services.
+- The browser sends bytes directly to Blob, but all download URLs remain stable gateway URLs; Blob download URLs and credentials are never exposed.
+- Local development returns the same upload-target shape and writes through a signed `PUT /dev/uploads/{token}` endpoint into `.data/assets`.
+- Completion recomputes SHA-256 and detects MIME from bytes. Client size, checksum, filename, extension, and content type are not authoritative.
+
 Create upload session:
 
 ```text
@@ -227,3 +234,13 @@ Response:
 ## Audit
 
 `asset-api` emits audit events for upload session creation, upload completion, grant creation, grant revocation, delete, restore, hard delete, legal-hold transitions, infected scan result, scan failure, and download denial.
+
+## Defender For Storage
+
+Production enables Defender for Storage on-upload malware scanning with a 10 GB monthly cap. Scan results flow through an Event Grid custom topic into a Service Bus queue and are accepted idempotently by `event_id`.
+
+- `clean` is the only scan state that can become downloadable.
+- `pending`, `infected`, and `failed` are denied regardless of grants.
+- Blob index tags provide provider-side evidence, while PostgreSQL remains authoritative for application policy.
+- Reaching the monthly cap fails closed: new uploads remain unavailable until a clean scan result is recorded.
+- Defender does not automatically delete malicious blobs in v1; asset-api retains metadata and scan evidence for incident review.
