@@ -14,12 +14,22 @@ export function AccessPage() {
   const [isRoleDialogOpen, setRoleDialogOpen] = useState(false)
   const [isPermissionDialogOpen, setPermissionDialogOpen] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   const load = useCallback(async () => {
-    const [nextRoles, nextPermissions] = await Promise.all([api.listRoles(), api.listPermissions()])
-    setRoles(nextRoles)
-    setPermissions(nextPermissions)
-    setSelectedRoleID((current) => current || nextRoles[0]?.id || '')
+    setIsLoading(true)
+    setError(null)
+    try {
+      const [nextRoles, nextPermissions] = await Promise.all([api.listRoles(), api.listPermissions()])
+      setRoles(nextRoles)
+      setPermissions(nextPermissions)
+      setSelectedRoleID((current) => current || nextRoles[0]?.id || '')
+    } catch {
+      setError('Unable to load access data.')
+    } finally {
+      setIsLoading(false)
+    }
   }, [api])
 
   useEffect(() => {
@@ -29,28 +39,34 @@ export function AccessPage() {
   async function createRole(event: React.FormEvent) {
     event.preventDefault()
     if (!roleName.trim()) return
-    await api.createRole({ name: roleName.trim() })
-    setRoleName('')
-    setRoleDialogOpen(false)
-    setMessage('Role created.')
-    await load()
+    try {
+      await api.createRole({ name: roleName.trim() })
+      setRoleName('')
+      setRoleDialogOpen(false)
+      setMessage('Role created.')
+      await load()
+    } catch { setError('Unable to create role.') }
   }
 
   async function createPermission(event: React.FormEvent) {
     event.preventDefault()
     if (!permissionCode.trim()) return
-    await api.createPermission({ code: permissionCode.trim() })
-    setPermissionCode('')
-    setPermissionDialogOpen(false)
-    setMessage('Permission created.')
-    await load()
+    try {
+      await api.createPermission({ code: permissionCode.trim() })
+      setPermissionCode('')
+      setPermissionDialogOpen(false)
+      setMessage('Permission created.')
+      await load()
+    } catch { setError('Unable to create permission.') }
   }
 
   async function assignPermission(permissionID: string) {
     if (!selectedRoleID) return
-    await api.assignPermissionsToRole(selectedRoleID, [permissionID])
-    setMessage('Role permissions updated.')
-    await load()
+    try {
+      await api.assignPermissionsToRole(selectedRoleID, [permissionID])
+      setMessage('Role permissions updated.')
+      await load()
+    } catch { setError('Unable to update role permissions.') }
   }
 
   return (
@@ -68,11 +84,13 @@ export function AccessPage() {
       </header>
 
       {message ? <p className="notice">{message}</p> : null}
+      {error ? <div className="error-notice" role="alert"><span>{error}</span><Button size="sm" variant="outline" onPress={() => void load()}>Retry</Button></div> : null}
 
       <div className="access-grid">
         <Card className="table-card">
           <Card.Header>
             <Card.Title>Roles</Card.Title>
+            <Card.Description>{isLoading ? 'Loading roles' : `${roles.length} roles`}</Card.Description>
           </Card.Header>
           <Card.Content>
             <div className="list-stack">
@@ -94,6 +112,7 @@ export function AccessPage() {
         <Card className="table-card">
           <Card.Header>
             <Card.Title>Permissions</Card.Title>
+            <Card.Description>{isLoading ? 'Loading permissions' : `${permissions.length} permissions`}</Card.Description>
           </Card.Header>
           <Card.Content>
             <div className="chip-row">

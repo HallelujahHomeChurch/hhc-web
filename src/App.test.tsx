@@ -164,4 +164,26 @@ describe('App', () => {
     expect((await screen.findAllByText('page-2@example.com')).length).toBeGreaterThan(0)
     expect(listUsers).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2, perPage: 20 }))
   })
+
+  it('recovers when access data fails to load', async () => {
+    const listRoles = vi.spyOn(MockAdminApi.prototype, 'listRoles').mockRejectedValueOnce(new Error('unavailable'))
+    window.history.pushState({}, '', '/access')
+    render(<App config={{ mockApi: true }} />)
+
+    expect(await screen.findByText('Unable to load access data.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(listRoles).toHaveBeenCalledTimes(2)
+    expect(await screen.findByText('admin')).toBeInTheDocument()
+  })
+
+  it('recovers when OAuth clients fail to load', async () => {
+    const listClients = vi.spyOn(MockAdminApi.prototype, 'listOAuthClients').mockRejectedValueOnce(new Error('unavailable'))
+    window.history.pushState({}, '', '/oauth-clients')
+    render(<App config={{ mockApi: true }} />)
+
+    expect(await screen.findByText('Unable to load OAuth clients.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(listClients).toHaveBeenCalledTimes(2)
+    expect(await screen.findByText('Admin Console')).toBeInTheDocument()
+  })
 })

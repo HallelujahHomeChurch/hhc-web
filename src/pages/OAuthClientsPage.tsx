@@ -12,10 +12,20 @@ export function OAuthClientsPage() {
   const [isCreateDialogOpen, setCreateDialogOpen] = useState(false)
   const [rotateClient, setRotateClient] = useState<OAuthClient | null>(null)
   const [secret, setSecret] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   const load = useCallback(async () => {
-    const response = await api.listOAuthClients()
-    setClients(response.clients)
+    setIsLoading(true)
+    setError(null)
+    try {
+      const response = await api.listOAuthClients()
+      setClients(response.clients)
+    } catch {
+      setError('Unable to load OAuth clients.')
+    } finally {
+      setIsLoading(false)
+    }
   }, [api])
 
   useEffect(() => {
@@ -25,21 +35,23 @@ export function OAuthClientsPage() {
   async function createClient(event: React.FormEvent) {
     event.preventDefault()
     if (!clientName.trim() || !redirectUri.trim()) return
-    await api.createOAuthClient({
-      client_name: clientName.trim(),
-      client_type: 'public',
-      redirect_uris: [redirectUri.trim()],
-      allowed_scopes: ['openid', 'profile', 'email'],
-    })
-    setClientName('')
-    setRedirectUri('')
-    setCreateDialogOpen(false)
-    await load()
+    try {
+      await api.createOAuthClient({
+        client_name: clientName.trim(), client_type: 'public', redirect_uris: [redirectUri.trim()],
+        allowed_scopes: ['openid', 'profile', 'email'],
+      })
+      setClientName('')
+      setRedirectUri('')
+      setCreateDialogOpen(false)
+      await load()
+    } catch { setError('Unable to create OAuth client.') }
   }
 
   async function rotateSecret(clientID: string) {
-    const response = await api.rotateOAuthClientSecret(clientID)
-    setSecret(`${response.client_id}: ${response.client_secret}`)
+    try {
+      const response = await api.rotateOAuthClientSecret(clientID)
+      setSecret(`${response.client_id}: ${response.client_secret}`)
+    } catch { setError('Unable to rotate the client secret.') }
   }
 
   return (
@@ -54,10 +66,12 @@ export function OAuthClientsPage() {
       </header>
 
       {secret ? <p className="notice">New secret: {secret}</p> : null}
+      {error ? <div className="error-notice" role="alert"><span>{error}</span><Button size="sm" variant="outline" onPress={() => void load()}>Retry</Button></div> : null}
 
       <Card className="table-card">
         <Card.Header>
           <Card.Title>Registered clients</Card.Title>
+          <Card.Description>{isLoading ? 'Loading clients' : `${clients.length} clients`}</Card.Description>
         </Card.Header>
         <Card.Content>
           <table className="data-table">
