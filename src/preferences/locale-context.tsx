@@ -9,6 +9,9 @@ const messages = {
     privacy: '隱私權',
     terms: '條款',
     accountMenu: '帳號選單',
+    adminNavigation: '管理中心導覽',
+    openNavigation: '開啟導覽',
+    closeNavigation: '關閉導覽',
     signOut: '登出',
   },
   'zh-Hans': {
@@ -16,6 +19,9 @@ const messages = {
     privacy: '隐私权',
     terms: '条款',
     accountMenu: '帐号菜单',
+    adminNavigation: '管理中心导航',
+    openNavigation: '打开导航',
+    closeNavigation: '关闭导航',
     signOut: '退出登录',
   },
   en: {
@@ -23,6 +29,9 @@ const messages = {
     privacy: 'Privacy',
     terms: 'Terms',
     accountMenu: 'Account menu',
+    adminNavigation: 'Admin navigation',
+    openNavigation: 'Open navigation',
+    closeNavigation: 'Close navigation',
     signOut: 'Sign out',
   },
 } satisfies Record<Locale, Record<string, string>>

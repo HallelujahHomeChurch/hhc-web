@@ -29,12 +29,23 @@ describe('App', () => {
     expect(screen.queryByText('Hi HHC Admin')).not.toBeInTheDocument()
   })
 
+  it('opens and dismisses the mobile admin navigation drawer', async () => {
+    window.history.pushState({}, '', '/')
+    render(<App config={{ mockApi: true }} />)
+
+    await userEvent.click(await screen.findByRole('button', { name: /open navigation/i }))
+    expect(await screen.findByRole('dialog', { name: /admin navigation/i })).toBeInTheDocument()
+
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog', { name: /admin navigation/i })).not.toBeInTheDocument()
+  })
+
   it('uses the shared locale for the brand and canonical legal links', async () => {
     document.cookie = 'hhc_locale=zh-Hant; Path=/'
     window.history.pushState({}, '', '/')
     render(<App config={{ mockApi: true }} />)
 
-    expect(await screen.findByText('HHC 管理中心')).toBeInTheDocument()
+    expect((await screen.findAllByText('HHC 管理中心')).length).toBeGreaterThan(0)
     expect(screen.queryByText('Hallelujah Home Church')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: '隱私權' })).toHaveAttribute(
       'href',

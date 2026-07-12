@@ -18,6 +18,13 @@
   --color-line: #eee3d7;
   --color-panel: #f8f0e7;
   --color-panel-border: rgb(232 217 203 / 86%);
+  --color-on-primary: #ffffff;
+  --color-danger: #9d3328;
+  --color-danger-soft: rgb(157 51 40 / 12%);
+  --color-warning: #91610d;
+  --color-warning-soft: rgb(217 155 49 / 16%);
+  --color-neutral-soft: rgb(116 108 103 / 12%);
+  --color-scrim: rgb(29 26 25 / 52%);
   --shadow-warm: 0 20px 50px rgb(76 50 28 / 12%);
   color: var(--color-ink);
   background: var(--color-cream);
@@ -47,6 +54,13 @@
   --color-line: #443b37;
   --color-panel: #312a27;
   --color-panel-border: rgb(79 67 61 / 88%);
+  --color-on-primary: #1d1a19;
+  --color-danger: #ff9b8f;
+  --color-danger-soft: rgb(255 155 143 / 14%);
+  --color-warning: #efc46f;
+  --color-warning-soft: rgb(239 196 111 / 14%);
+  --color-neutral-soft: rgb(188 177 170 / 14%);
+  --color-scrim: rgb(0 0 0 / 68%);
   --shadow-warm: 0 20px 50px rgb(0 0 0 / 24%);
 }
 
@@ -104,7 +118,7 @@ textarea:focus-visible {
 .button--primary {
   border-color: var(--color-primary) !important;
   background: var(--color-primary) !important;
-  color: white !important;
+  color: var(--color-on-primary) !important;
 }
 
 .button--primary:hover {
@@ -215,6 +229,43 @@ textarea:focus-visible {
   justify-content: flex-end;
   background: var(--color-canvas);
   padding: 14px clamp(18px, 4vw, 44px);
+}
+
+.mobile-navigation-trigger,
+.mobile-shell-brand {
+  display: none;
+}
+
+.mobile-navigation-drawer {
+  width: min(84vw, 304px);
+  border-radius: 0 18px 18px 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+.mobile-navigation-heading {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.mobile-navigation-body {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  gap: 28px;
+  padding: 24px;
+}
+
+.mobile-navigation-links {
+  width: 100%;
+}
+
+.mobile-navigation-legal {
+  display: flex;
+  margin-top: auto;
 }
 
 .account-menu-trigger {
@@ -418,7 +469,7 @@ textarea:focus-visible {
 }
 
 .modal-backdrop {
-  background: rgb(55 45 43 / 30%);
+  background: var(--color-scrim);
   backdrop-filter: blur(8px);
 }
 
@@ -602,7 +653,7 @@ textarea:focus-visible {
 }
 
 .data-table tr {
-  border-bottom: 1px solid rgb(238 227 215 / 70%);
+  border-bottom: 1px solid var(--color-line);
 }
 
 .data-table tbody tr {
@@ -645,7 +696,7 @@ textarea:focus-visible {
   display: flex;
   justify-content: space-between;
   gap: 18px;
-  border-bottom: 1px solid rgb(238 227 215 / 70%);
+  border-bottom: 1px solid var(--color-line);
   padding-bottom: 8px;
 }
 
@@ -718,7 +769,7 @@ textarea:focus-visible {
 }
 
 .status-badge--neutral {
-  background: rgb(116 108 103 / 12%);
+  background: var(--color-neutral-soft);
   color: var(--color-muted);
 }
 
@@ -728,13 +779,13 @@ textarea:focus-visible {
 }
 
 .status-badge--warning {
-  background: rgb(217 155 49 / 16%);
-  color: #91610d;
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
 }
 
 .status-badge--danger {
-  background: rgb(157 51 40 / 12%);
-  color: #9d3328;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
 }
 
 .notice {
@@ -805,10 +856,7 @@ textarea:focus-visible {
   }
 
   .sidebar {
-    position: relative;
-    height: auto;
-    grid-template-columns: 1fr;
-    padding: 16px;
+    display: none;
   }
 
   .brand strong {
@@ -820,23 +868,50 @@ textarea:focus-visible {
     height: 36px;
   }
 
-  .sidebar-legal-links {
-    display: none;
-  }
-
-  .sidebar-nav {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
-  }
-
-  .sidebar-nav a {
-    justify-content: center;
-    padding: 0 10px;
-  }
-
   .account-header {
     min-height: 60px;
-    padding: 10px 14px;
+    justify-content: space-between;
+    padding: 10px 16px;
+  }
+
+  .mobile-navigation-trigger {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--color-ink);
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .mobile-navigation-trigger:hover {
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+  }
+
+  .mobile-shell-brand {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+    margin-right: auto;
+    margin-left: 8px;
+  }
+
+  .mobile-shell-brand img {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+  }
+
+  .mobile-shell-brand strong {
+    overflow: hidden;
+    font-size: 17px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .metric-grid,
