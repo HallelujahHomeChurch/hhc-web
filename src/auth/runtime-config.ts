@@ -26,7 +26,7 @@ export function readRuntimeConfig(
     accountAuthorizeBaseUrl,
     adminClientId: stringEnv(env.VITE_ADMIN_CLIENT_ID, 'admin-web'),
     redirectUri: stringEnv(env.VITE_ADMIN_REDIRECT_URI, `${origin}/oauth/callback`),
-    oauthScope: stringEnv(env.VITE_ADMIN_OAUTH_SCOPE, 'openid profile email'),
+    oauthScope: stringEnv(env.VITE_ADMIN_OAUTH_SCOPE, 'openid profile email cms:read cms:write cms:publish cms:admin assets:read assets:write assets:grant audit:read'),
     mockApi: env.VITE_ACCOUNT_API_MOCK === 'true' || env.VITE_ACCOUNT_API_MOCK === true,
     publicSiteUrl: stringEnv(env.VITE_PUBLIC_SITE_URL, 'https://www.alive.org.tw').replace(/\/$/, ''),
   }

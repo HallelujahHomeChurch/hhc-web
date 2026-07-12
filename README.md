@@ -32,7 +32,7 @@ The Vite dev server proxies `/api/account/*` to `http://127.0.0.1:8080`.
 | `VITE_ACCOUNT_AUTHORIZE_BASE_URL` | production account host on `admin.alive.org.tw`, otherwise API base | OAuth authorize base. Production should point to `https://account.alive.org.tw/api/account/v1` so relative login redirects land on the account host. |
 | `VITE_ADMIN_CLIENT_ID` | `admin-web` | OAuth client id seeded by account-api. |
 | `VITE_ADMIN_REDIRECT_URI` | `${window.location.origin}/oauth/callback` | OAuth callback URI. |
-| `VITE_ADMIN_OAUTH_SCOPE` | `openid profile email` | Requested scopes. |
+| `VITE_ADMIN_OAUTH_SCOPE` | CMS, asset, and audit scopes | Requested capabilities; account-api only issues scopes granted by the user's RBAC bundles. |
 | `VITE_ACCOUNT_API_MOCK` | `false` | Enables in-memory mock account/admin data. |
 
 ## Verification
