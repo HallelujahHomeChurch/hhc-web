@@ -103,8 +103,8 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
           {state === 'ready' && archive?.items.length ? archive.items.map((issue) => {
             const version = localizedVersion(issue, locale);
             return version ? (
-              <article key={issue.id} className="grid grid-cols-[110px_minmax(0,1fr)_auto] items-center gap-x-5 gap-y-4 rounded-[14px] border border-panel-border bg-panel px-5 py-4 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)] max-[860px]:grid-cols-1">
-                <time className="text-[21px] font-semibold text-primary">{issue.date}</time>
+              <article key={issue.id} className="grid grid-cols-[125px_minmax(0,1fr)_auto] items-center gap-x-5 gap-y-4 rounded-[14px] border border-panel-border bg-panel px-5 py-4 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)] max-[860px]:grid-cols-1">
+                <time className="whitespace-nowrap text-[21px] font-semibold text-primary">{issue.date}</time>
                 <div>
                   <h4 className="text-[21px] font-semibold text-ink">{version.title}</h4>
                   {version.subtitle ? <p className="mt-1 text-[15px] leading-relaxed text-ink">{version.subtitle}</p> : null}
