@@ -92,6 +92,7 @@ type RequestOptions = {
   auth?: boolean
   retry?: boolean
   form?: URLSearchParams
+  signal?: AbortSignal
 }
 
 export class ApiError extends Error {
@@ -171,6 +172,7 @@ export class AdminApi {
     provider?: string
     emailVerified?: boolean
     mfaEnabled?: boolean
+    signal?: AbortSignal
   } = {}) {
     const query = new URLSearchParams()
     if (params.page) query.set('page', String(params.page))
@@ -181,11 +183,11 @@ export class AdminApi {
     if (params.emailVerified !== undefined) query.set('email_verified', String(params.emailVerified))
     if (params.mfaEnabled !== undefined) query.set('mfa_enabled', String(params.mfaEnabled))
 
-    return this.request<AdminUserListResponse>(`/admin/users${query.size ? `?${query}` : ''}`)
+    return this.request<AdminUserListResponse>(`/admin/users${query.size ? `?${query}` : ''}`, { signal: params.signal })
   }
 
-  getUser(userID: string) {
-    return this.request<AdminUserDetail>(`/admin/users/${encodeURIComponent(userID)}`)
+  getUser(userID: string, signal?: AbortSignal) {
+    return this.request<AdminUserDetail>(`/admin/users/${encodeURIComponent(userID)}`, { signal })
   }
 
   assignRolesToUser(userID: string, roleIDs: string[]) {
@@ -288,6 +290,7 @@ export class AdminApi {
       headers,
       body,
       credentials: 'include',
+      signal: options.signal,
     })
 
     if (!response.ok) {

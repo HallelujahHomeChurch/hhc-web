@@ -1,8 +1,13 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import App from './App'
+import { MockAdminApi } from './lib/mock-api'
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 describe('App', () => {
   it('enters the protected console after mocked sign-in', async () => {
@@ -103,5 +108,60 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Rotate client secret' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: /^rotate secret$/i }))
     expect(await screen.findByText(/new secret:/i)).toBeInTheDocument()
+  })
+
+  it('shows a retry action when the user directory fails to load', async () => {
+    const listUsers = vi
+      .spyOn(MockAdminApi.prototype, 'listUsers')
+      .mockRejectedValueOnce(new Error('Directory unavailable'))
+      .mockResolvedValueOnce({ users: [], total: 0, page: 1, per_page: 20 })
+
+    window.history.pushState({}, '', '/users')
+    render(<App config={{ mockApi: true }} />)
+
+    expect(await screen.findByText('Unable to load users.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
+
+    expect(listUsers).toHaveBeenCalledTimes(2)
+    expect(await screen.findByText('No users match these filters.')).toBeInTheDocument()
+  })
+
+  it('paginates the user directory using the API total', async () => {
+    const listUsers = vi.spyOn(MockAdminApi.prototype, 'listUsers').mockImplementation(async ({ page = 1 } = {}) => ({
+      users: [{
+        id: `user-${page}`,
+        email: `page-${page}@example.com`,
+        is_email_verified: true,
+        has_password: true,
+        is_active: true,
+        mfa_enabled: false,
+        roles: ['user'],
+        linked_providers: [],
+      }],
+      total: 41,
+      page,
+      per_page: 20,
+    }))
+    vi.spyOn(MockAdminApi.prototype, 'getUser').mockImplementation(async (userID) => ({
+      id: userID,
+      email: `${userID.replace('user-', 'page-')}@example.com`,
+      is_email_verified: true,
+      has_password: true,
+      is_active: true,
+      mfa_enabled: false,
+      roles: ['user'],
+      linked_providers: [],
+      direct_permissions: [],
+      linked_identities: [],
+      mfa: { enabled: false, methods: [] },
+    }))
+
+    window.history.pushState({}, '', '/users')
+    render(<App config={{ mockApi: true }} />)
+
+    expect(await screen.findByText('page-1@example.com')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }))
+    expect((await screen.findAllByText('page-2@example.com')).length).toBeGreaterThan(0)
+    expect(listUsers).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2, perPage: 20 }))
   })
 })

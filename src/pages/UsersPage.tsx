@@ -1,10 +1,16 @@
-import { Button, Card, Dropdown, Modal } from '@heroui/react'
+import { Button, Card, Dropdown, Modal, Pagination } from '@heroui/react'
 import { Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { useAuth } from '../auth/auth-context'
 import { StatusBadge } from '../components/StatusBadge'
 import type { AdminUserDetail, AdminUserSummary, Permission, Role } from '../lib/api'
+
+const USERS_PER_PAGE = 20
+
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === 'AbortError'
+}
 
 export function UsersPage() {
   const { api } = useAuth()
@@ -16,6 +22,12 @@ export function UsersPage() {
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [detailError, setDetailError] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [retryKey, setRetryKey] = useState(0)
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [permissionToRemove, setPermissionToRemove] = useState<string | null>(null)
 
@@ -25,41 +37,83 @@ export function UsersPage() {
   )
 
   useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 300)
+    return () => window.clearTimeout(timer)
+  }, [search])
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearch, roleFilter])
+
+  useEffect(() => {
+    let active = true
     async function loadReferenceData() {
-      const [nextRoles, nextPermissions] = await Promise.all([api.listRoles(), api.listPermissions()])
-      setRoles(nextRoles)
-      setPermissions(nextPermissions)
+      try {
+        const [nextRoles, nextPermissions] = await Promise.all([api.listRoles(), api.listPermissions()])
+        if (!active) return
+        setRoles(nextRoles)
+        setPermissions(nextPermissions)
+      } catch {
+        if (active) setMessage('Unable to load access options.')
+      }
     }
     void loadReferenceData()
+    return () => { active = false }
   }, [api])
 
   useEffect(() => {
+    const controller = new AbortController()
     async function loadUsers() {
       setIsLoading(true)
-      const response = await api.listUsers({ search, role: roleFilter || undefined })
-      setUsers(response.users)
-      setSelectedUserID((current) => current ?? response.users[0]?.id ?? null)
-      setIsLoading(false)
+      setError(null)
+      try {
+        const response = await api.listUsers({
+          page,
+          perPage: USERS_PER_PAGE,
+          search: debouncedSearch,
+          role: roleFilter || undefined,
+          signal: controller.signal,
+        })
+        setUsers(response.users)
+        setTotal(response.total)
+        setSelectedUserID((current) => response.users.some((user) => user.id === current) ? current : response.users[0]?.id ?? null)
+      } catch (nextError) {
+        if (!isAbortError(nextError)) setError('Unable to load users.')
+      } finally {
+        if (!controller.signal.aborted) setIsLoading(false)
+      }
     }
     void loadUsers()
-  }, [api, roleFilter, search])
+    return () => controller.abort()
+  }, [api, debouncedSearch, page, retryKey, roleFilter])
 
   useEffect(() => {
+    const controller = new AbortController()
     async function loadDetail() {
       if (!selectedUser) {
         setDetail(null)
         return
       }
-      setDetail(await api.getUser(selectedUser.id))
+      setDetailError(null)
+      try {
+        setDetail(await api.getUser(selectedUser.id, controller.signal))
+      } catch (nextError) {
+        if (!isAbortError(nextError)) setDetailError('Unable to load user details.')
+      }
     }
     void loadDetail()
+    return () => controller.abort()
   }, [api, selectedUser])
+
+  async function refreshCurrentPage() {
+    setRetryKey((current) => current + 1)
+  }
 
   async function assignRole(roleID: string) {
     if (!detail) return
     await api.assignRolesToUser(detail.id, [roleID])
     setDetail(await api.getUser(detail.id))
-    setUsers((await api.listUsers({ search, role: roleFilter || undefined })).users)
+    await refreshCurrentPage()
     setMessage('User roles updated.')
   }
 
@@ -115,12 +169,18 @@ export function UsersPage() {
       </div>
 
       {message ? <p className="notice">{message}</p> : null}
+      {error ? (
+        <div className="error-notice" role="alert">
+          <span>{error}</span>
+          <Button size="sm" variant="outline" onPress={() => void refreshCurrentPage()}>Retry</Button>
+        </div>
+      ) : null}
 
       <div className="split-view">
         <Card className="table-card">
           <Card.Header>
             <Card.Title>Directory</Card.Title>
-            <Card.Description>{isLoading ? 'Loading users' : `${users.length} users`}</Card.Description>
+            <Card.Description>{isLoading ? 'Loading users' : `${total} users`}</Card.Description>
           </Card.Header>
           <Card.Content>
             <table className="data-table">
@@ -131,7 +191,10 @@ export function UsersPage() {
                   <th>MFA</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody aria-busy={isLoading}>
+                {!isLoading && !error && users.length === 0 ? (
+                  <tr><td colSpan={3} className="empty-table-cell">No users match these filters.</td></tr>
+                ) : null}
                 {users.map((user) => (
                   <tr
                     key={user.id}
@@ -152,6 +215,23 @@ export function UsersPage() {
                 ))}
               </tbody>
             </table>
+            {Math.ceil(total / USERS_PER_PAGE) > 1 ? (
+              <Pagination aria-label="User directory pages" className="directory-pagination">
+                <Pagination.Summary>Page {page} of {Math.ceil(total / USERS_PER_PAGE)}</Pagination.Summary>
+                <Pagination.Content>
+                  <Pagination.Item>
+                    <Pagination.Previous isDisabled={page === 1} onPress={() => setPage((current) => Math.max(1, current - 1))}>
+                      <Pagination.PreviousIcon /><span>Previous</span>
+                    </Pagination.Previous>
+                  </Pagination.Item>
+                  <Pagination.Item>
+                    <Pagination.Next isDisabled={page >= Math.ceil(total / USERS_PER_PAGE)} onPress={() => setPage((current) => current + 1)}>
+                      <span>Next</span><Pagination.NextIcon />
+                    </Pagination.Next>
+                  </Pagination.Item>
+                </Pagination.Content>
+              </Pagination>
+            ) : null}
           </Card.Content>
         </Card>
 
@@ -161,7 +241,7 @@ export function UsersPage() {
             <Card.Description>{detail?.email ?? 'Select a user'}</Card.Description>
           </Card.Header>
           <Card.Content>
-            {detail ? (
+            {detailError ? <p className="error-copy" role="alert">{detailError}</p> : detail ? (
               <div className="inspector-stack">
                 <dl className="detail-list">
                   <div>

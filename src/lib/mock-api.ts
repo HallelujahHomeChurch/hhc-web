@@ -142,7 +142,7 @@ export class MockAdminApi {
     return undefined
   }
 
-  async listUsers(params: { search?: string; role?: string } = {}): Promise<AdminUserListResponse> {
+  async listUsers(params: { page?: number; perPage?: number; search?: string; role?: string; signal?: AbortSignal } = {}): Promise<AdminUserListResponse> {
     let filtered = [...users]
     if (params.search) {
       const q = params.search.toLowerCase()
@@ -155,15 +155,18 @@ export class MockAdminApi {
       filtered = filtered.filter((user) => user.roles.includes(params.role ?? ''))
     }
 
+    const page = params.page ?? 1
+    const perPage = params.perPage ?? 20
+    const start = (page - 1) * perPage
     return {
-      users: filtered.map(summaryFromDetail),
+      users: filtered.slice(start, start + perPage).map(summaryFromDetail),
       total: filtered.length,
-      page: 1,
-      per_page: 20,
+      page,
+      per_page: perPage,
     }
   }
 
-  async getUser(userID: string) {
+  async getUser(userID: string, _signal?: AbortSignal) {
     const user = users.find((item) => item.id === userID)
     if (!user) throw new Error('User not found')
     return structuredClone(user)

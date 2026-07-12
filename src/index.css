@@ -799,6 +799,32 @@ textarea:focus-visible {
   font-weight: 650;
 }
 
+.error-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--danger-border);
+  border-radius: 8px;
+  color: var(--danger-text);
+  background: var(--danger-soft);
+}
+
+.error-copy {
+  color: var(--danger-text);
+}
+
+.empty-table-cell {
+  padding: 32px 16px !important;
+  text-align: center;
+  color: var(--muted);
+}
+
+.directory-pagination {
+  margin-top: 16px;
+}
+
 .login-screen,
 .center-screen {
   display: grid;
