@@ -11,7 +11,9 @@ import {
 } from 'react'
 
 import { AdminApi, type Profile } from '../lib/api'
+import { CmsApi } from '../lib/cms-api'
 import { MockAdminApi } from '../lib/mock-api'
+import { MockCmsApi } from '../lib/mock-cms-api'
 import {
   buildAuthorizeUrl,
   clearOAuthTransaction,
@@ -22,9 +24,11 @@ import {
 import { readRuntimeConfig, type RuntimeConfig } from './runtime-config'
 
 export type AdminApiClient = AdminApi | MockAdminApi
+export type CmsApiClient = CmsApi | MockCmsApi
 
 type AuthContextValue = {
   api: AdminApiClient
+	cmsApi: CmsApiClient
   profile: Profile | null
   accessToken: string | null
   isBootstrapping: boolean
@@ -61,6 +65,10 @@ export function AuthProvider({
       setAccessToken: writeAccessToken,
     })
   }, [config.accountApiBaseUrl, config.mockApi, writeAccessToken])
+	const cmsApi = useMemo<CmsApiClient>(() => {
+		if (config.mockApi) return new MockCmsApi()
+		return new CmsApi({ baseUrl: config.hhcWebApiBaseUrl, getAccessToken: () => tokenRef.current })
+	}, [config.hhcWebApiBaseUrl, config.mockApi])
 
   const refreshProfile = useCallback(async () => {
     const nextProfile = await api.me()
@@ -144,6 +152,7 @@ export function AuthProvider({
   const value = useMemo(
     () => ({
       api,
+			cmsApi,
       profile,
       accessToken,
       isBootstrapping,
@@ -152,7 +161,7 @@ export function AuthProvider({
       logout,
       refreshProfile,
     }),
-    [accessToken, api, completeOAuthCallback, isBootstrapping, logout, profile, refreshProfile, signIn],
+		[accessToken, api, cmsApi, completeOAuthCallback, isBootstrapping, logout, profile, refreshProfile, signIn],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -625,6 +625,127 @@ textarea:focus-visible {
   align-items: start;
 }
 
+.cms-split-view {
+  display: grid;
+  grid-template-columns: minmax(420px, 0.9fr) minmax(480px, 1.1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.cms-issue-list,
+.cms-inspector {
+  min-width: 0;
+}
+
+.cms-table-scroll {
+  overflow-x: auto;
+}
+
+.cms-issue-list .data-table th:first-child,
+.cms-issue-list .data-table td:first-child {
+	white-space: nowrap;
+}
+
+.cms-inspector {
+  position: sticky;
+  top: 88px;
+}
+
+.cms-inspector .card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cms-locale-list {
+  display: grid;
+}
+
+.cms-locale-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.cms-locale-row:last-child {
+  border-bottom: 0;
+}
+
+.cms-locale-copy,
+.cms-locale-copy > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.cms-locale-copy {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.cms-locale-copy span:last-child {
+  overflow: hidden;
+  max-width: 100%;
+  color: var(--color-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cms-locale-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.cms-empty-detail {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.cms-file-field {
+  display: grid;
+  gap: 8px;
+  color: var(--color-ink);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.cms-file-field input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.cms-file-picker {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  gap: 10px;
+  border: 1px dashed var(--color-line);
+  border-radius: 8px;
+  background: var(--color-paper);
+  color: var(--color-muted);
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.cms-file-field:focus-within .cms-file-picker,
+.cms-file-picker:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
 .access-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -942,8 +1063,28 @@ textarea:focus-visible {
 
   .metric-grid,
   .split-view,
+	.cms-split-view,
   .access-grid,
   .oauth-form {
     grid-template-columns: 1fr;
   }
+
+	.cms-inspector {
+		position: static;
+	}
+
+	.cms-locale-row {
+		grid-template-columns: 1fr;
+	}
+
+	.cms-locale-actions {
+		justify-content: flex-start;
+	}
+}
+
+@media (max-width: 560px) {
+	.cms-issue-list .data-table th:nth-child(2),
+	.cms-issue-list .data-table td:nth-child(2) {
+		display: none;
+	}
 }

@@ -1,6 +1,7 @@
 export type RuntimeConfig = {
   accountApiBaseUrl: string
   accountAuthorizeBaseUrl: string
+	hhcWebApiBaseUrl: string
   adminClientId: string
   redirectUri: string
   oauthScope: string
@@ -23,6 +24,7 @@ export function readRuntimeConfig(
 
   return {
     accountApiBaseUrl,
+		hhcWebApiBaseUrl: stringEnv(env.VITE_HHC_WEB_API_BASE_URL, '/api'),
     accountAuthorizeBaseUrl,
     adminClientId: stringEnv(env.VITE_ADMIN_CLIENT_ID, 'admin-web'),
     redirectUri: stringEnv(env.VITE_ADMIN_REDIRECT_URI, `${origin}/oauth/callback`),

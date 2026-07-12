@@ -10,6 +10,7 @@ describe('readRuntimeConfig', () => {
     )
 
     expect(config.accountApiBaseUrl).toBe('/api/account/v1')
+		expect(config.hhcWebApiBaseUrl).toBe('/api')
     expect(config.accountAuthorizeBaseUrl).toBe('https://account.alive.org.tw/api/account/v1')
     expect(config.redirectUri).toBe('https://admin.alive.org.tw/oauth/callback')
     expect(config.adminClientId).toBe('admin-web')
@@ -20,12 +21,14 @@ describe('readRuntimeConfig', () => {
       {
         VITE_ACCOUNT_API_MOCK: 'true',
         VITE_ACCOUNT_API_BASE_URL: 'http://localhost:8080/api/account/v1',
+			VITE_HHC_WEB_API_BASE_URL: 'http://127.0.0.1:8082/api',
       },
       new URL('http://localhost:5175/'),
     )
 
     expect(config.mockApi).toBe(true)
     expect(config.accountApiBaseUrl).toBe('http://localhost:8080/api/account/v1')
+		expect(config.hhcWebApiBaseUrl).toBe('http://127.0.0.1:8082/api')
     expect(config.redirectUri).toBe('http://localhost:5175/oauth/callback')
   })
 })

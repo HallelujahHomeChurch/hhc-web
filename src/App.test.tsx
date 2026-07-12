@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import App from './App'
 import { MockAdminApi } from './lib/mock-api'
+import { MockCmsApi } from './lib/mock-cms-api'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -186,4 +187,40 @@ describe('App', () => {
     expect(listClients).toHaveBeenCalledTimes(2)
     expect(await screen.findByText('Admin Console')).toBeInTheDocument()
   })
+
+	it('creates a weekly bulletin issue from the CMS workspace', async () => {
+		window.history.pushState({}, '', '/cms')
+		render(<App config={{ mockApi: true }} />)
+
+		expect(await screen.findByRole('heading', { name: 'CMS' })).toBeInTheDocument()
+		expect((await screen.findAllByText('2026-07-13')).length).toBeGreaterThan(0)
+		await userEvent.click(screen.getByRole('button', { name: 'Create issue' }))
+		await userEvent.type(await screen.findByLabelText('Issue date'), '2026-07-20')
+		await userEvent.click(screen.getByRole('button', { name: /^create$/i }))
+
+		expect((await screen.findAllByText('2026-07-20')).length).toBeGreaterThan(0)
+	})
+
+	it('uploads and publishes a localized weekly bulletin', async () => {
+		const createUpload = vi.spyOn(MockCmsApi.prototype, 'createBulletinUpload')
+		const completeUpload = vi.spyOn(MockCmsApi.prototype, 'completeBulletinUpload')
+		const publish = vi.spyOn(MockCmsApi.prototype, 'publishBulletin')
+		window.history.pushState({}, '', '/cms')
+		render(<App config={{ mockApi: true }} />)
+
+		await screen.findByRole('heading', { name: 'CMS' })
+		await userEvent.click(await screen.findByRole('button', { name: 'Upload PDF for English' }))
+		const file = new File(['%PDF-1.4\n%%EOF'], 'weekly-en.pdf', { type: 'application/pdf' })
+		await userEvent.upload(await screen.findByLabelText('PDF file'), file)
+		await userEvent.type(screen.getByLabelText('Title'), 'Weekly bulletin')
+		await userEvent.click(screen.getByRole('button', { name: 'Upload and attach' }))
+
+		expect(createUpload).toHaveBeenCalled()
+		expect(completeUpload).toHaveBeenCalled()
+		await userEvent.click(await screen.findByRole('button', { name: 'Publish English' }))
+		expect(await screen.findByRole('heading', { name: 'Publish English bulletin?' })).toBeInTheDocument()
+		await userEvent.click(screen.getByRole('button', { name: /^publish$/i }))
+		expect(publish).toHaveBeenCalled()
+		expect(await screen.findByText('Published.')).toBeInTheDocument()
+	})
 })

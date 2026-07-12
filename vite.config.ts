@@ -9,6 +9,14 @@ export default defineConfig({
   server: {
     proxy: {
       '/api/account': 'http://127.0.0.1:8080',
+			'/api/admin': {
+				target: 'http://127.0.0.1:8082',
+				headers: {
+					'X-HHC-User-ID': 'local-admin',
+					'X-HHC-Auth-Provider': 'account-api',
+					'X-HHC-Scopes': 'cms:read cms:write cms:publish assets:read assets:write assets:grant',
+				},
+			},
     },
   },
   test: {

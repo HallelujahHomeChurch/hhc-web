@@ -5,6 +5,7 @@ import type { RuntimeConfig } from './runtime-config'
 
 const config: RuntimeConfig = {
   accountApiBaseUrl: 'https://admin.alive.org.tw/api/account/v1',
+	hhcWebApiBaseUrl: 'https://www.alive.org.tw/api',
   accountAuthorizeBaseUrl: 'https://account.alive.org.tw/api/account/v1',
   adminClientId: 'admin-web',
   redirectUri: 'https://admin.alive.org.tw/oauth/callback',
