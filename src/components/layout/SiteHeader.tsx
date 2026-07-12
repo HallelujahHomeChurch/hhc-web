@@ -29,9 +29,9 @@ export function SiteHeader({locale, pathname}: SiteHeaderProps) {
             <Image src="/assets/brand/logo.png" alt="" width={40} height={40} className="h-full w-full object-contain" />
           </span>
           <span className="grid gap-0.5 leading-none">
-            <strong className="text-[19px] font-medium tracking-[0.02em] text-[#403832] max-[620px]:text-[17px]">{t('name')}</strong>
+            <strong className="text-[19px] font-medium tracking-[0.02em] text-[var(--hhc-brand-ui)] max-[620px]:text-[17px]">{t('name')}</strong>
             {locale !== 'en' ? (
-              <small className="text-[9px] font-extrabold uppercase tracking-[0.02em] text-[#6f6660] max-[620px]:text-[8px]">
+              <small className="text-[9px] font-extrabold uppercase tracking-[0.02em] text-[var(--hhc-brand-muted)] max-[620px]:text-[8px]">
                 {t('englishName')}
               </small>
             ) : null}
@@ -41,7 +41,7 @@ export function SiteHeader({locale, pathname}: SiteHeaderProps) {
           <button
             type="button"
             aria-label={isOpen ? t('nav.closeMenu') : t('nav.openMenu')}
-            className="ml-auto hidden size-11 items-center justify-center rounded-full border border-panel-border bg-panel text-ink shadow-[inset_0_1px_0_rgb(255_255_255_/_58%)] max-[620px]:inline-flex"
+            className="ml-auto hidden size-11 items-center justify-center rounded-full border border-panel-border bg-panel text-ink shadow-[inset_0_1px_0_var(--hhc-inset-highlight)] max-[620px]:inline-flex"
           >
             <span className="grid gap-1.5" aria-hidden="true">
               <span className="block h-0.5 w-5 rounded-full bg-current" />

@@ -51,7 +51,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
           </h2>
           <p className="mt-4 max-w-[620px] text-lg leading-[1.85] text-muted">{messages.archiveIntro}</p>
         </div>
-        <aside className="rounded-[14px] border border-panel-border bg-[linear-gradient(135deg,#fffdf9,#f8f0e7)] p-5 shadow-[inset_0_1px_0_rgb(255_255_255_/_64%)]" aria-labelledby="latest-weekly-title">
+        <aside className="rounded-[14px] border border-panel-border bg-[image:var(--hhc-panel-gradient)] p-5 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)]" aria-labelledby="latest-weekly-title">
           <span className="text-sm font-black uppercase tracking-[0.12em] text-teal">{messages.latestLabel}</span>
           <p className="mt-3 text-[21px] font-semibold text-primary">{latestVersion.date}</p>
           <h3 id="latest-weekly-title" className="mt-1 text-[21px] font-semibold text-ink">{latestVersion.title}</h3>
@@ -76,7 +76,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
             const localizedVersion = issue.versions.find((version) => version.locale === locale) ?? issue.versions[0];
 
             return (
-              <article key={issue.id} className="grid grid-cols-[110px_minmax(0,1fr)_auto] items-center gap-x-5 gap-y-4 rounded-[14px] border border-panel-border bg-panel px-5 py-4 shadow-[inset_0_1px_0_rgb(255_255_255_/_58%)] max-[860px]:grid-cols-1">
+              <article key={issue.id} className="grid grid-cols-[110px_minmax(0,1fr)_auto] items-center gap-x-5 gap-y-4 rounded-[14px] border border-panel-border bg-panel px-5 py-4 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)] max-[860px]:grid-cols-1">
                 <time className="text-[21px] font-semibold text-primary">{issue.date}</time>
                 <div>
                   <h4 className="text-[21px] font-semibold text-ink">{localizedVersion.title}</h4>

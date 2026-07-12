@@ -14,7 +14,7 @@ type LanguageSwitcherProps = {
 export function LanguageSwitcher({label, locale, pathname, variant = 'default'}: LanguageSwitcherProps) {
   const triggerClassName = variant === 'ghost'
     ? 'legal-language-trigger'
-    : 'inline-flex min-h-11 min-w-24 items-center justify-between gap-3 rounded-full border border-[#d7b9aa] bg-paper px-4 text-sm font-semibold text-[#7a423b] transition hover:border-primary focus-visible:border-primary focus-visible:bg-primary-soft focus-visible:outline-none data-[state=open]:border-primary data-[state=open]:bg-primary-soft';
+    : 'inline-flex min-h-11 min-w-24 items-center justify-between gap-3 rounded-full border border-[var(--hhc-control-border)] bg-paper px-4 text-sm font-semibold text-[var(--hhc-control)] transition hover:border-primary focus-visible:border-primary focus-visible:bg-primary-soft focus-visible:outline-none data-[state=open]:border-primary data-[state=open]:bg-primary-soft';
 
   return (
     <div className="flex items-center">

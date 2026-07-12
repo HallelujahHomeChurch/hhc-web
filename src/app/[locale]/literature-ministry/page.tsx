@@ -55,7 +55,7 @@ export default async function LiteratureMinistryPage({params}: LiteratureMinistr
       <SiteHeader locale={locale} pathname={`/${locale}/literature-ministry`} />
       <main>
         <AboutHero title={messages.literatureMinistry.heroTitle} subtitle={messages.literatureMinistry.heroSubtitle} />
-        <div className="bg-[linear-gradient(180deg,var(--color-cream),#fffaf4)] py-10 pb-14">
+        <div className="bg-[image:var(--hhc-page-gradient)] py-10 pb-14">
           <Suspense fallback={null}>
             <WeeklyArchive locale={locale} messages={messages.literatureMinistry} />
           </Suspense>

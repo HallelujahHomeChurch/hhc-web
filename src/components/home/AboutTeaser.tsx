@@ -20,10 +20,10 @@ export function AboutTeaser({locale, title, body, ctaLabel}: AboutTeaserProps) {
           sizes="(max-width: 900px) 100vw, 340px"
           className="object-cover object-[48%_42%]"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgb(207_104_95_/_18%),rgb(58_126_122_/_10%))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,var(--color-primary-soft),rgb(58_126_122_/_10%))]" />
       </div>
       <div className="px-10 py-8">
-        <h2 id="about-title" className="mb-3.5 text-[26px] font-semibold text-[#b64e45]">
+        <h2 id="about-title" className="mb-3.5 text-[26px] font-semibold text-primary-hover">
           {title}
         </h2>
         <p className="mb-5 leading-[1.9] text-ink">{body}</p>

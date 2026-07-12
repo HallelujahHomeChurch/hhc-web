@@ -57,7 +57,7 @@ export default async function AboutPage({params}: AboutPageProps) {
       <SiteHeader locale={locale} pathname={`/${locale}/about`} />
       <main>
           <AboutHero title={messages.about.heroTitle} subtitle={messages.about.heroSubtitle} />
-        <div className="bg-[linear-gradient(180deg,var(--color-cream),#fffaf4)] py-10 pb-14">
+        <div className="bg-[image:var(--hhc-page-gradient)] py-10 pb-14">
           <VisionContent content={messages.about.vision} />
           <HistoryTimeline content={messages.about.history} timeline={timeline} />
         </div>

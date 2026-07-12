@@ -18,7 +18,7 @@ export function SiteFooter({locale, pathname}: SiteFooterProps) {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-line bg-[#fbefd9]">
+    <footer className="border-t border-line bg-[var(--hhc-footer)]">
       <div className="shell grid gap-5 py-6">
         <div className="flex items-center justify-between gap-6 max-[620px]:flex-col max-[620px]:items-start">
           <Link href={`/${locale}`} className="inline-flex items-center gap-2.5">
@@ -26,8 +26,8 @@ export function SiteFooter({locale, pathname}: SiteFooterProps) {
               <Image src="/assets/brand/logo.png" alt="" width={36} height={36} className="h-full w-full object-contain" />
             </span>
             <span className="grid gap-0.5 leading-none">
-              <strong className="text-[17px] font-medium text-[#403832]">{t('name')}</strong>
-              {locale !== 'en' ? <small className="text-[8px] font-extrabold uppercase text-[#6f6660]">{t('englishName')}</small> : null}
+              <strong className="text-[17px] font-medium text-[var(--hhc-brand-ui)]">{t('name')}</strong>
+              {locale !== 'en' ? <small className="text-[8px] font-extrabold uppercase text-[var(--hhc-brand-muted)]">{t('englishName')}</small> : null}
             </span>
           </Link>
           <div className="flex items-center gap-4 max-[620px]:w-full max-[620px]:justify-between">

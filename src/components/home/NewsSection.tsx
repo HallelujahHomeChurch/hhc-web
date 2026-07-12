@@ -8,9 +8,9 @@ type NewsSectionProps = {
 
 export function NewsSection({title, moreLabel, items}: NewsSectionProps) {
   const placeholders = [
-    'linear-gradient(135deg,rgb(207_104_95_/_28%),rgb(248_240_231_/_88)),radial-gradient(circle_at_20%_25%,rgb(228_164_58_/_62%)_0_18%,transparent_19%)',
-    'linear-gradient(135deg,rgb(58_126_122_/_26%),rgb(248_240_231_/_90)),radial-gradient(circle_at_78%_28%,rgb(189_223_227_/_74%)_0_22%,transparent_23%)',
-    'linear-gradient(135deg,rgb(228_164_58_/_30%),rgb(248_240_231_/_88)),radial-gradient(circle_at_22%_76%,rgb(207_104_95_/_34%)_0_24%,transparent_25%)'
+    'linear-gradient(135deg,var(--color-primary-soft-hover),var(--hhc-news-panel)),radial-gradient(circle at 20% 25%,rgb(228 164 58 / 62%) 0 18%,transparent 19%)',
+    'linear-gradient(135deg,rgb(58 126 122 / 26%),var(--hhc-news-panel)),radial-gradient(circle at 78% 28%,rgb(189 223 227 / 54%) 0 22%,transparent 23%)',
+    'linear-gradient(135deg,rgb(228 164 58 / 30%),var(--hhc-news-panel)),radial-gradient(circle at 22% 76%,rgb(207 104 95 / 34%) 0 24%,transparent 25%)'
   ];
 
   return (

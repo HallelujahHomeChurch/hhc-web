@@ -15,7 +15,7 @@ export function LocationSection({title, mapLabel, items}: LocationSectionProps) 
       <div className="grid grid-cols-2 gap-5 max-[900px]:grid-cols-1">
         {items.map((item, index) => (
           <article key={item.id} className="grid grid-cols-[90px_1fr] items-center gap-5 rounded-2xl border border-line/80 bg-paper/90 p-5 shadow-warm max-[620px]:grid-cols-1">
-            <div className={`grid size-[74px] place-items-center rounded-full text-[42px] ${index === 0 ? 'bg-[#dfefea] text-teal' : 'bg-[#f5dddd] text-rose'}`} aria-hidden="true">
+            <div className={`grid size-[74px] place-items-center rounded-full text-[42px] ${index === 0 ? 'bg-[var(--hhc-badge-teal)] text-teal' : 'bg-[var(--hhc-badge-rose)] text-rose'}`} aria-hidden="true">
               ⌂
             </div>
             <div>

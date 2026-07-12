@@ -32,7 +32,7 @@ export function VisionContent({content}: VisionContentProps) {
         </div>
         <div className="grid grid-cols-2 items-start gap-6 max-[900px]:grid-cols-1">
           <p className="m-0 text-base leading-loose text-ink">{vision.body}</p>
-          <div className="overflow-hidden rounded-[14px] border border-panel-border bg-panel p-3 shadow-[inset_0_1px_0_rgb(255_255_255_/_58%)]">
+          <div className="overflow-hidden rounded-[14px] border border-panel-border bg-panel p-3 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)]">
             <Image
               src="/assets/about/vision-unity-prayer.png"
               alt={content.imageAlt}
@@ -63,8 +63,8 @@ export function VisionContent({content}: VisionContentProps) {
         </div>
         <div className="grid grid-cols-3 gap-4 max-[900px]:grid-cols-1">
           {actions.cards?.map((card) => (
-            <article key={card.title} className="rounded-[14px] border border-panel-border bg-panel p-5 shadow-[inset_0_1px_0_rgb(255_255_255_/_58%)]">
-              <strong className="mb-2.5 block text-lg font-semibold text-[#b64e45]">{card.title}</strong>
+            <article key={card.title} className="rounded-[14px] border border-panel-border bg-panel p-5 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)]">
+              <strong className="mb-2.5 block text-lg font-semibold text-primary-hover">{card.title}</strong>
               <p className="text-base leading-[1.8] text-muted">{card.body}</p>
             </article>
           ))}
@@ -81,13 +81,13 @@ export function VisionContent({content}: VisionContentProps) {
         <div className="grid grid-cols-2 items-start gap-6 max-[900px]:grid-cols-1">
           <ul className="m-0 grid list-none grid-cols-2 gap-4 p-0 max-[900px]:grid-cols-1">
             {convictions.cards?.map((card) => (
-              <li key={card.title} className="rounded-[14px] border border-panel-border bg-panel p-5 leading-[1.85] text-muted shadow-[inset_0_1px_0_rgb(255_255_255_/_58%)]">
-                <strong className="mb-2 block text-lg font-semibold text-[#b64e45]">{card.title}</strong>
+              <li key={card.title} className="rounded-[14px] border border-panel-border bg-panel p-5 leading-[1.85] text-muted shadow-[inset_0_1px_0_var(--hhc-inset-highlight)]">
+                <strong className="mb-2 block text-lg font-semibold text-primary-hover">{card.title}</strong>
                 {card.body}
               </li>
             ))}
           </ul>
-          <div className="grid grid-cols-2 gap-2.5 overflow-hidden rounded-[14px] border border-panel-border bg-panel p-3 shadow-[inset_0_1px_0_rgb(255_255_255_/_58%)]" aria-label={content.actionsImageAlt}>
+          <div className="grid grid-cols-2 gap-2.5 overflow-hidden rounded-[14px] border border-panel-border bg-panel p-3 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)]" aria-label={content.actionsImageAlt}>
             <Image src="/assets/about/vision-actions-space.png" alt="" width={720} height={405} className="col-span-2 aspect-video h-full w-full rounded-[10px] object-cover" />
             <Image src="/assets/about/vision-actions-worship.png" alt="" width={360} height={225} className="aspect-[16/10] h-full w-full rounded-[10px] object-cover" />
             <Image src="/assets/about/vision-actions-community.png" alt="" width={360} height={225} className="aspect-[16/10] h-full w-full rounded-[10px] object-cover" />

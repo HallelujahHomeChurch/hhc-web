@@ -22,6 +22,25 @@
   --font-sans: var(--font-noto-sans-tc), var(--font-noto-sans-sc), var(--font-inter), system-ui, sans-serif;
 }
 
+:root {
+  --hhc-brand-strong: #8f2e22;
+  --hhc-brand-copy: #6f352c;
+  --hhc-brand-ui: #403832;
+  --hhc-brand-muted: #6f6660;
+  --hhc-control: #7a423b;
+  --hhc-control-border: #d7b9aa;
+  --hhc-footer: #fbefd9;
+  --hhc-badge-rose: #f4d8d4;
+  --hhc-badge-teal: #dfefea;
+  --hhc-panel-gradient: linear-gradient(135deg, rgb(255 253 249 / 96%), rgb(248 240 231 / 82%));
+  --hhc-page-gradient: linear-gradient(180deg, var(--color-cream), #fffaf4);
+  --hhc-hero-overlay: linear-gradient(90deg, rgb(255 253 249 / 86%) 0 46%, rgb(255 253 249 / 44%) 68%, rgb(255 253 249 / 14%));
+  --hhc-inset-highlight: rgb(255 255 255 / 58%);
+  --hhc-timeline-ring: #fff6ee;
+  --hhc-news-panel: rgb(248 240 231 / 88%);
+  --hhc-artwork-blend: multiply;
+}
+
 [data-theme="dark"] {
   --color-cream: #1d1a19;
   --color-paper: #282321;
@@ -39,6 +58,22 @@
   --color-line: #443b37;
   --color-panel: #312a27;
   --color-panel-border: rgb(79 67 61 / 88%);
+  --hhc-brand-strong: #f08c82;
+  --hhc-brand-copy: #d9aaa3;
+  --hhc-brand-ui: #f3ece7;
+  --hhc-brand-muted: #bcb1aa;
+  --hhc-control: #e2b1aa;
+  --hhc-control-border: #73534d;
+  --hhc-footer: #241f1d;
+  --hhc-badge-rose: #4a302e;
+  --hhc-badge-teal: #263d3b;
+  --hhc-panel-gradient: linear-gradient(135deg, rgb(49 42 39 / 98%), rgb(40 35 33 / 92%));
+  --hhc-page-gradient: linear-gradient(180deg, var(--color-cream), #231f1d);
+  --hhc-hero-overlay: linear-gradient(90deg, rgb(29 26 25 / 84%) 0 46%, rgb(29 26 25 / 48%) 68%, rgb(29 26 25 / 16%));
+  --hhc-inset-highlight: rgb(255 255 255 / 8%);
+  --hhc-timeline-ring: #282321;
+  --hhc-news-panel: rgb(49 42 39 / 92%);
+  --hhc-artwork-blend: normal;
   --shadow-warm: 0 20px 50px rgb(0 0 0 / 24%);
 }
 
@@ -52,6 +87,14 @@
     background: var(--color-cream);
     color: var(--color-ink);
     font-family: var(--font-sans);
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  html[data-theme="dark"] {
+    color-scheme: dark;
   }
 
   [data-locale] {

@@ -8,9 +8,9 @@ type WeeklyCardProps = {
 
 export function WeeklyCard({weekly, ctaLabel}: WeeklyCardProps) {
   return (
-    <aside className="grid min-h-[350px] place-items-center rounded-[14px] border border-panel-border bg-panel px-6 py-8 text-center shadow-[inset_0_1px_0_rgb(255_255_255_/_58%)] max-[900px]:order-first" aria-labelledby="weekly-title">
+    <aside className="grid min-h-[350px] place-items-center rounded-[14px] border border-panel-border bg-panel px-6 py-8 text-center shadow-[inset_0_1px_0_var(--hhc-inset-highlight)] max-[900px]:order-first" aria-labelledby="weekly-title">
       <div>
-        <div className="mx-auto mb-6 grid size-28 place-items-center rounded-full bg-[#f4d8d4] text-5xl text-[#b64e45]" aria-hidden="true">
+        <div className="mx-auto mb-6 grid size-28 place-items-center rounded-full bg-[var(--hhc-badge-rose)] text-5xl text-primary-hover" aria-hidden="true">
           ▤
         </div>
         <p className="mb-1 text-[21px] font-semibold text-primary">{weekly.date}</p>
