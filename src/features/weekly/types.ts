@@ -4,7 +4,7 @@ export type WeeklyBulletin = {
   locale: Locale;
   date: string;
   title: string;
-  subtitle: string;
+  subtitle?: string;
   href: string;
 };
 

@@ -1,0 +1,77 @@
+import {locales, type Locale} from '@/i18n/locales';
+import type {WeeklyBulletin, WeeklyIssue, WeeklyIssuePage} from './types';
+
+type Fetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+type PublicBulletin = {
+  issueDate: string;
+  locale: Locale;
+  title: string;
+  downloadUrl: string;
+  publishedAt: string;
+  version: number;
+};
+type Envelope<T> = {
+  data: T;
+  meta: {page?: number; pageSize?: number; total?: number};
+  error: {code: string; message: string} | null;
+};
+type ClientOptions = {fetcher?: Fetcher; baseUrl?: string; signal?: AbortSignal};
+
+export class WeeklyApiError extends Error {
+  constructor(readonly code: string, message: string) {
+    super(message);
+    this.name = 'WeeklyApiError';
+  }
+}
+
+export async function fetchLatestWeekly(locale: Locale, options: ClientOptions = {}) {
+  const response = await request<PublicBulletin>(`/bulletins/latest?locale=${locale}`, options);
+  return toWeekly(response.data);
+}
+
+export async function fetchWeeklyArchive(
+  {page = 1, pageSize = 12}: {page?: number; pageSize?: number},
+  options: ClientOptions = {}
+): Promise<WeeklyIssuePage> {
+  const normalizedPage = Math.max(1, Math.floor(page));
+  const normalizedPageSize = Math.max(1, Math.floor(pageSize));
+  const query = `page=${normalizedPage}&pageSize=${normalizedPageSize}`;
+  const pages = await Promise.all(locales.map((locale) => request<PublicBulletin[]>(`/bulletins?locale=${locale}&${query}`, options)));
+  const byDate = new Map<string, WeeklyIssue>();
+
+  for (const pageResponse of pages) {
+    for (const value of pageResponse.data) {
+      const issue = byDate.get(value.issueDate) ?? {id: value.issueDate, date: value.issueDate, versions: []};
+      issue.versions.push(toWeekly(value));
+      byDate.set(value.issueDate, issue);
+    }
+  }
+  const order = new Map(locales.map((locale, index) => [locale, index]));
+  const items = Array.from(byDate.values())
+    .sort((left, right) => right.date.localeCompare(left.date))
+    .map((issue) => ({...issue, versions: issue.versions.sort((left, right) => (order.get(left.locale) ?? 0) - (order.get(right.locale) ?? 0))}));
+  const totalItems = Math.max(...pages.map((value) => value.meta.total ?? 0), items.length);
+
+  return {
+    items,
+    page: normalizedPage,
+    pageSize: normalizedPageSize,
+    totalItems,
+    totalPages: Math.max(1, Math.ceil(totalItems / normalizedPageSize))
+  };
+}
+
+function toWeekly(value: PublicBulletin): WeeklyBulletin {
+  return {locale: value.locale, date: value.issueDate, title: value.title, href: value.downloadUrl};
+}
+
+async function request<T>(path: string, options: ClientOptions) {
+  const fetcher = options.fetcher ?? globalThis.fetch.bind(globalThis);
+  const baseUrl = (options.baseUrl ?? process.env.NEXT_PUBLIC_HHC_WEB_API_BASE_URL ?? '/api').replace(/\/$/, '');
+  const response = await fetcher(`${baseUrl}${path}`, {headers: {Accept: 'application/json'}, signal: options.signal});
+  const envelope = await response.json() as Envelope<T>;
+  if (!response.ok || envelope.error) {
+    throw new WeeklyApiError(envelope.error?.code ?? 'request_failed', envelope.error?.message ?? response.statusText);
+  }
+  return envelope;
+}

@@ -1,0 +1,32 @@
+import {render, screen} from '@testing-library/react';
+import {afterEach, describe, expect, it, vi} from 'vitest';
+import {WeeklyArchive} from './WeeklyArchive';
+
+vi.mock('next/navigation', () => ({useSearchParams: () => new URLSearchParams()}));
+afterEach(() => vi.unstubAllGlobals());
+
+describe('WeeklyArchive', () => {
+  it('renders published locale downloads from the public API', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((input: string) => {
+      const locale = new URL(input, 'https://www.alive.org.tw').searchParams.get('locale');
+      return Promise.resolve(new Response(JSON.stringify({
+        data: [{issueDate: '2026-07-13', locale, title: `${locale} title`, downloadUrl: `/${locale}.pdf`, publishedAt: '2026-07-13T04:00:00Z', version: 3}],
+        meta: {page: 1, pageSize: 12, total: 1}, error: null
+      }), {status: 200}));
+    }));
+
+    render(<WeeklyArchive locale="en" messages={messages} />);
+
+    expect((await screen.findAllByText('en title')).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', {name: 'Traditional'})[0]).toHaveAttribute('href', '/zh-Hant.pdf');
+    expect(screen.getAllByRole('link', {name: 'Simplified'})[0]).toHaveAttribute('href', '/zh-Hans.pdf');
+    expect(screen.getAllByRole('link', {name: 'English'})[0]).toHaveAttribute('href', '/en.pdf');
+  });
+});
+
+const messages = {
+  eyebrow: 'Weekly Paper', archiveTitle: 'Downloads', archiveIntro: 'Available languages', latestLabel: 'Latest',
+  allIssuesTitle: 'History', paginationNote: 'Newest first', paginationLabel: 'Pages', previousPage: 'Previous',
+  nextPage: 'Next', pageLabel: 'Page', loading: 'Loading', loadError: 'Unavailable', retry: 'Retry', empty: 'No bulletins',
+  versionLabels: {'zh-Hant': 'Traditional', 'zh-Hans': 'Simplified', en: 'English'}
+};

@@ -13,7 +13,6 @@ import {SectionCard} from '@/components/ui/SectionCard';
 import {getLocations} from '@/features/locations/api';
 import {getNews} from '@/features/news/api';
 import {getVideos} from '@/features/videos/api';
-import {getLatestWeekly} from '@/features/weekly/api';
 import {getMessages} from '@/i18n/messages';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
@@ -62,7 +61,6 @@ export default async function HomePage({params}: HomePageProps) {
   setRequestLocale(locale);
   const messages = getMessages(locale);
   const news = getNews(locale);
-  const weekly = getLatestWeekly(locale);
   const videos = getVideos(locale);
   const locations = getLocations(locale);
 
@@ -74,7 +72,15 @@ export default async function HomePage({params}: HomePageProps) {
         <div className="relative z-[3] bg-[image:var(--hhc-page-gradient)] py-8 pb-11">
           <SectionCard className="shell grid grid-cols-[minmax(0,1.45fr)_minmax(300px,.9fr)] gap-8 p-7 max-[900px]:grid-cols-1 max-[620px]:p-5" ariaLabel="最新消息與週報">
             <NewsSection title={messages.home.newsTitle} moreLabel={`${messages.home.moreNews} →`} items={news} />
-            <WeeklyCard weekly={weekly} ctaLabel={`${messages.home.downloadWeekly} ↓`} />
+            <WeeklyCard
+              locale={locale}
+              ctaLabel={`${messages.home.downloadWeekly} ↓`}
+              messages={{
+                loading: messages.home.weeklyLoading,
+                error: messages.home.weeklyLoadError,
+                retry: messages.home.retry
+              }}
+            />
           </SectionCard>
           <VideoSection title={messages.home.videosTitle} subtitle={messages.home.videosSubtitle} ctaLabel={messages.home.watchMore} channelHref={siteConfig.music.youtube} items={videos} />
           <AboutTeaser locale={locale} title={messages.home.aboutTitle} body={messages.home.aboutBody} ctaLabel={`${messages.home.aboutCta} →`} />
