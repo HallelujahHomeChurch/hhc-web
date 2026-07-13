@@ -1,8 +1,20 @@
-allowBuilds:
-  '@parcel/watcher': set this to true or false
-  '@swc/core': set this to true or false
-  sharp: set this to true or false
-  unrs-resolver: set this to true or false
+packages:
+  - apps/*
+  - packages/*
+
+catalog:
+  react: 19.2.7
+  react-dom: 19.2.7
+  typescript: 6.0.2
+  vitest: 4.1.10
+  '@types/react': 19.2.17
+  '@types/react-dom': 19.2.3
+  '@testing-library/react': 16.3.2
+  '@testing-library/user-event': 14.6.1
+  '@testing-library/jest-dom': 6.9.1
+  jsdom: 29.1.1
+  tailwindcss: 4.3.2
+
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
