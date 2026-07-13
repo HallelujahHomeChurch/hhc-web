@@ -57,13 +57,17 @@ Account APIs live under:
 https://account.alive.org.tw
 ```
 
-Non-account public and admin APIs live under:
+First-party browser products live on separate hosts:
 
 ```text
+https://account.alive.org.tw
+https://admin.alive.org.tw
 https://www.alive.org.tw/api/*
 ```
 
-`admin.alive.org.tw` is the admin UI host only. It calls `www.alive.org.tw/api/admin/*` with an account-issued bearer access token.
+Each browser host owns its own host-only refresh cookie. Admin calls protected
+CMS APIs with an account-issued bearer access token; Web authentication only
+enhances the account control and never blocks public content.
 
 There is no `api.alive.org.tw`.
 
@@ -74,11 +78,12 @@ There is no `api.alive.org.tw`.
 ```text
 GET  /.well-known/openid-configuration
 GET  /.well-known/jwks.json
-GET  /oauth/authorize
-POST /oauth/token
-POST /oauth/revoke
-POST /oauth/logout
-GET  /api/account/me
+GET  /api/account/v1/oauth/authorize
+POST /api/account/v1/oauth/token
+POST /api/account/v1/refresh
+GET  /api/account/v1/me
+GET  /api/account/v1/session
+POST /api/account/v1/session/logout-all
 ```
 
 `/.well-known/openid-configuration` must include:
@@ -86,7 +91,6 @@ GET  /api/account/me
 - `issuer`
 - `authorization_endpoint`
 - `token_endpoint`
-- `revocation_endpoint`
 - `jwks_uri`
 - `response_types_supported`
 - `grant_types_supported`
@@ -103,8 +107,9 @@ Supported first-party client types:
 
 | Client | Example `client_id` | Flow | Notes |
 | --- | --- | --- | --- |
-| Account web UI | `account-web` | Account-domain session plus account APIs | Owns login/profile/security screens |
-| CMS admin UI | `hhc-admin` | Authorization Code with PKCE | Calls `www.alive.org.tw/api/admin/*` with bearer access token |
+| Account web UI | `account-console` | Account-domain session plus account APIs | Owns login/profile/security screens |
+| Public website | `www-web` | Authorization Code with PKCE | Passive `prompt=none` is optional and one-attempt |
+| CMS admin UI | `admin-web` | Authorization Code with PKCE | Calls protected CMS APIs with bearer access token |
 | Future desktop app | `hhc-desktop` | Authorization Code with PKCE for native apps | Uses a registered redirect URI and must not rely on browser-only cookies |
 
 Rules:
@@ -242,23 +247,41 @@ Revocation:
 
 ## Browser Token Handling
 
-Admin UI:
+Browser products:
 
 - Use Authorization Code with PKCE.
 - Keep access token in memory when possible.
 - Never store refresh token in `localStorage`.
-- Prefer host-only, `HttpOnly`, `Secure`, `SameSite=Lax` refresh cookie on `account.alive.org.tw` if browser refresh is needed.
-- Refresh endpoint must enforce CORS allowlist and CSRF/origin checks.
+- Use an independent host-only, `HttpOnly`, `Secure`, `SameSite=Lax` refresh
+  cookie on Account, Admin, and Web.
+- Browser OAuth clients use `browser_cookie`: token exchange sets the cookie
+  and omits `refresh_token` from JSON.
+- Native clients use `native_body`: token exchange returns the refresh token
+  and does not set a browser refresh cookie.
+- A host-only Account authorization-server session provides fast SSO without
+  sharing a refresh token across products.
+- `hhc_sso_hint` is a shared boolean optimization hint only. It contains no
+  identity and is never accepted as authentication.
+- Refresh, token exchange, session summary, and logout calls are same-origin
+  through each product's Gateway route.
 
-Acceptable CORS origins for account token refresh:
+Global sign-out from a product menu calls the CSRF-protected
+`POST /api/account/v1/session/logout-all`. It revokes every refresh family and
+Account SSO session for the current `(user, device)`, but does not revoke other
+browsers or devices. Frontend state is cleared only after durable revocation
+succeeds.
+
+Shared cross-subdomain cookies are limited to non-authentication state:
 
 ```text
-https://admin.alive.org.tw
+hhc_device
+hhc_sso_hint
+hhc_locale
+hhc_theme
 ```
 
-Same-origin account UI flows on `account.alive.org.tw` do not require CORS. Public website routes on `www.alive.org.tw` should not receive refresh cookies in v1.
-
-Do not allow wildcard CORS with credentials.
+Do not allow wildcard CORS with credentials. Do not use `Domain=.alive.org.tw`
+for refresh or authorization-server session cookies.
 
 `api-gateway` and backend services never receive refresh cookies as part of normal API authorization.
 

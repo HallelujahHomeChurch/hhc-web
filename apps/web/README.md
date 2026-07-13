@@ -7,12 +7,18 @@ Next.js public website for `www.alive.org.tw`. The app is part of the
 
 ```dotenv
 HHC_WEB_API_BASE_URL=http://127.0.0.1:8081/api
-NEXT_PUBLIC_ACCOUNT_URL=http://localhost:5173
+ACCOUNT_API_PROXY_TARGET=http://127.0.0.1:8080
+NEXT_PUBLIC_ACCOUNT_SITE_URL=http://account.hhc.test:5173
+NEXT_PUBLIC_ACCOUNT_AUTHORIZE_BASE_URL=http://account.hhc.test:5173/api/account/v1
 ```
 
 `HHC_WEB_API_BASE_URL` is server-only and should point to `hhc-web-api` in
 production. Public content failures render an explicit unavailable state; the
 app never substitutes test fixtures in production.
+
+`ACCOUNT_API_PROXY_TARGET` enables the same-origin Account proxy for local
+Next development only. Production leaves it unset because `api-gateway` owns
+those routes. See [browser-sso-local.md](../../docs/runbooks/browser-sso-local.md).
 
 ## Commands
 
