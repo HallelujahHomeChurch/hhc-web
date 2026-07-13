@@ -59,7 +59,7 @@ describe('App', () => {
 		await userEvent.click(screen.getByRole('menuitem', { name: /sign out/i }))
 
 		await vi.waitFor(() => expect(navigateExternal).toHaveBeenCalledWith(
-			'http://localhost:5173/login?status=signed-out',
+			'http://localhost:5173/login?signed_out=1',
 			true,
 		))
 	})

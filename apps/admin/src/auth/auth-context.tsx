@@ -134,7 +134,7 @@ export function AuthProvider({
       await api.logoutAll()
       writeAccessToken(null)
       setProfile(null)
-      navigateExternal(`${config.accountSiteUrl}/login?status=signed-out`, true)
+      navigateExternal(`${config.accountSiteUrl}/login?signed_out=1`, true)
     } catch {
       setLogoutError('Unable to sign out. Try again.')
     }
