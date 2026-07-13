@@ -16,3 +16,23 @@ describe('AdminApi request cancellation', () => {
     )
   })
 })
+
+describe('AdminApi session bootstrap', () => {
+  it('returns null only when the host has no usable refresh session', async () => {
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ csrf_token: 'csrf' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error_code: 'ACC_AUTH_REFRESH_TOKEN_REQUIRED' }), { status: 400 }))
+    const api = new AdminApi({ baseUrl: '/api/account/v1', fetcher })
+
+    await expect(api.refreshAccessToken()).resolves.toBeNull()
+  })
+
+  it('surfaces service failures instead of starting a new login', async () => {
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ csrf_token: 'csrf' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error_code: 'ACC_INTERNAL' }), { status: 500 }))
+    const api = new AdminApi({ baseUrl: '/api/account/v1', fetcher })
+
+    await expect(api.refreshAccessToken()).rejects.toMatchObject({ status: 500 })
+  })
+})

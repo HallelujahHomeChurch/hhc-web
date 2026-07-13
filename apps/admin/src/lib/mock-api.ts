@@ -142,6 +142,10 @@ export class MockAdminApi {
     return undefined
   }
 
+  async logoutAll() {
+    return undefined
+  }
+
   async listUsers(params: { page?: number; perPage?: number; search?: string; role?: string; signal?: AbortSignal } = {}): Promise<AdminUserListResponse> {
     let filtered = [...users]
     if (params.search) {

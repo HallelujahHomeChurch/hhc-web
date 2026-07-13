@@ -1,4 +1,4 @@
-import { AccountMenu, Button, Drawer } from '@hhc/ui'
+import { AccountMenu, Button, Drawer, Toast } from '@hhc/ui'
 import { BookOpen, History, KeyRound, LayoutDashboard, Menu, Newspaper, ShieldCheck, Users, Video } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 
@@ -23,7 +23,7 @@ const navGroups = [
 ]
 
 export function AppLayout() {
-  const { profile, logout } = useAuth()
+	const { profile, logout, logoutError } = useAuth()
   const { locale, messages } = useLocale()
   const displayName = displayAccountName(profile, 'Admin')
   const runtimeConfig = readRuntimeConfig()
@@ -99,6 +99,7 @@ export function AppLayout() {
               avatarUrl: profile?.avatar_url,
             }}
           />
+					{logoutError ? <div className="auth-error-toast"><Toast tone="danger">{logoutError}</Toast></div> : null}
         </header>
         <main className="workspace">
           <Outlet />

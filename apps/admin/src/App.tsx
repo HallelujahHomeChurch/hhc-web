@@ -18,13 +18,14 @@ const UsersPage = lazy(() => import('./pages/UsersPage').then((module) => ({ def
 
 type AppProps = {
   config?: Partial<RuntimeConfig>
+	navigateExternal?: (url: string, replace?: boolean) => void
 }
 
-function App({ config }: AppProps) {
+function App({ config, navigateExternal }: AppProps) {
   return (
     <LocaleProvider>
       <BrowserRouter>
-        <AuthProvider config={{ ...readRuntimeConfig(), ...config }}>
+        <AuthProvider config={{ ...readRuntimeConfig(), ...config }} navigateExternal={navigateExternal}>
           <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/oauth/callback" element={<OAuthCallbackPage />} />

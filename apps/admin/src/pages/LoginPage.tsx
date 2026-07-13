@@ -1,3 +1,4 @@
+import { safeReturnTo } from '@hhc/account-client'
 import { Button, Card } from '@hhc/ui'
 import { ShieldCheck } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -5,12 +6,14 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/auth-context'
 
 export function LoginPage() {
-  const { signIn } = useAuth()
+  const { signIn, authError } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
 
   async function continueToAccount() {
-    const destination = await signIn(location.state?.from?.pathname ?? '/')
+    const from = location.state?.from
+    const returnTo = from ? safeReturnTo(`${from.pathname}${from.search}${from.hash}`) : '/'
+    const destination = await signIn(returnTo)
     if (destination) navigate(destination, { replace: true })
   }
 
@@ -30,16 +33,16 @@ export function LoginPage() {
             <ShieldCheck size={28} aria-hidden="true" />
             <div>
               <Card.Title>Sign in required</Card.Title>
-              <Card.Description>Use your HHC account to manage users, access, and CMS operations.</Card.Description>
+              <Card.Description>{authError ?? 'Use your HHC account to manage users, access, and website content.'}</Card.Description>
             </div>
           </Card.Header>
           <Card.Content>
             <Button
               className="login-action"
               variant="primary"
-        onPress={() => void continueToAccount()}
+              onPress={() => void continueToAccount()}
             >
-              Continue with HHC account
+              {authError ? 'Try again' : 'Continue with HHC account'}
             </Button>
           </Card.Content>
         </Card>

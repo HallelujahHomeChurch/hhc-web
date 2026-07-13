@@ -1,3 +1,5 @@
+import { createAccountSessionClient } from '@hhc/account-client'
+
 export type Fetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
 
 export type Profile = {
@@ -150,9 +152,10 @@ export class AdminApi {
       const token = response.access_token ?? null
       this.setAccessToken?.(token)
       return token
-    } catch {
+    } catch (error) {
       this.setAccessToken?.(null)
-      return null
+      if (error instanceof ApiError && (error.status === 400 || error.status === 401)) return null
+      throw error
     }
   }
 
@@ -162,6 +165,13 @@ export class AdminApi {
 
   logout() {
     return this.request<void>('/logout', { method: 'POST', body: {} })
+  }
+
+  logoutAll() {
+    return createAccountSessionClient({
+      baseUrl: this.baseUrl,
+      fetcher: this.fetcher as typeof fetch,
+    }).logoutAll()
   }
 
   listUsers(params: {

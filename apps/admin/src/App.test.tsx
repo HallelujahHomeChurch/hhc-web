@@ -8,9 +8,70 @@ import { MockCmsApi } from './lib/mock-cms-api'
 
 afterEach(() => {
   vi.restoreAllMocks()
+	vi.unstubAllGlobals()
+	sessionStorage.clear()
 })
 
 describe('App', () => {
+	it('automatically starts Account authorization when the admin host has no session', async () => {
+		const fetcher = vi.fn()
+			.mockResolvedValueOnce(new Response(JSON.stringify({ csrf_token: 'csrf' }), { status: 200 }))
+			.mockResolvedValueOnce(new Response(JSON.stringify({ error_code: 'ACC_AUTH_REFRESH_TOKEN_REQUIRED' }), { status: 400 }))
+		vi.stubGlobal('fetch', fetcher)
+		const navigateExternal = vi.fn()
+		window.history.pushState({}, '', '/users?page=2#detail')
+
+		render(<App
+			config={{
+				accountAuthorizeBaseUrl: 'https://account.alive.org.tw/api/account/v1',
+				redirectUri: 'http://localhost:5175/oauth/callback',
+				mockApi: false,
+			}}
+			navigateExternal={navigateExternal}
+		/>)
+
+		await vi.waitFor(() => expect(navigateExternal).toHaveBeenCalledOnce())
+		const authorize = new URL(navigateExternal.mock.calls[0][0])
+		expect(authorize.origin).toBe('https://account.alive.org.tw')
+		expect(authorize.searchParams.get('client_id')).toBe('admin-web')
+		expect(screen.queryByText('Sign in required')).not.toBeInTheDocument()
+		expect(sessionStorage.getItem('hhc_admin_oauth_transaction')).toContain('/users?page=2#detail')
+	})
+
+	it('keeps the authenticated console visible when global sign-out fails', async () => {
+		vi.spyOn(MockAdminApi.prototype, 'logoutAll').mockRejectedValueOnce(new Error('unavailable'))
+		window.history.pushState({}, '', '/')
+		render(<App config={{ mockApi: true }} />)
+
+		await userEvent.click(await screen.findByRole('button', { name: /account menu/i }))
+		await userEvent.click(screen.getByRole('menuitem', { name: /sign out/i }))
+
+		expect(await screen.findByRole('alert')).toHaveTextContent('Unable to sign out. Try again.')
+		expect(screen.getByRole('heading', { name: 'Overview' })).toBeInTheDocument()
+	})
+
+	it('leaves the console only after global sign-out succeeds', async () => {
+		const navigateExternal = vi.fn()
+		window.history.pushState({}, '', '/')
+		render(<App config={{ mockApi: true }} navigateExternal={navigateExternal} />)
+
+		await userEvent.click(await screen.findByRole('button', { name: /account menu/i }))
+		await userEvent.click(screen.getByRole('menuitem', { name: /sign out/i }))
+
+		await vi.waitFor(() => expect(navigateExternal).toHaveBeenCalledWith(
+			'http://localhost:5173/login?status=signed-out',
+			true,
+		))
+	})
+
+	it('shows a recoverable OAuth callback error', async () => {
+		window.history.pushState({}, '', '/oauth/callback?error=access_denied&state=state-value')
+		render(<App config={{ mockApi: true }} />)
+
+		expect(await screen.findByRole('heading', { name: 'Cannot sign in' })).toBeInTheDocument()
+		expect(screen.getByText('Sign in was cancelled.')).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
+	})
   it('enters the protected console after mocked sign-in', async () => {
     window.history.pushState({}, '', '/login')
     render(<App config={{ mockApi: true }} />)

@@ -1,4 +1,5 @@
 /* oxlint-disable react/only-export-components */
+import { currentReturnTo } from '@hhc/account-client'
 import {
   createContext,
   useCallback,
@@ -20,6 +21,7 @@ import {
   createOAuthTransaction,
   readOAuthTransaction,
   saveOAuthTransaction,
+  validateOAuthState,
 } from './pkce'
 import { readRuntimeConfig, type RuntimeConfig } from './runtime-config'
 
@@ -28,10 +30,12 @@ export type CmsApiClient = CmsApi | MockCmsApi
 
 type AuthContextValue = {
   api: AdminApiClient
-	cmsApi: CmsApiClient
+  cmsApi: CmsApiClient
   profile: Profile | null
   accessToken: string | null
   isBootstrapping: boolean
+  authError: string | null
+  logoutError: string | null
   signIn: (returnTo?: string) => Promise<string | null>
   completeOAuthCallback: (code: string, state: string) => Promise<string>
   logout: () => Promise<void>
@@ -40,17 +44,26 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+function defaultNavigateExternal(url: string, replace = false) {
+  if (replace) window.location.replace(url)
+  else window.location.assign(url)
+}
+
 export function AuthProvider({
   children,
   config = readRuntimeConfig(),
+  navigateExternal = defaultNavigateExternal,
 }: {
   children: ReactNode
   config?: RuntimeConfig
+  navigateExternal?: (url: string, replace?: boolean) => void
 }) {
   const tokenRef = useRef<string | null>(null)
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [isBootstrapping, setIsBootstrapping] = useState(true)
+  const [authError, setAuthError] = useState<string | null>(null)
+  const [logoutError, setLogoutError] = useState<string | null>(null)
 
   const writeAccessToken = useCallback((token: string | null) => {
     tokenRef.current = token
@@ -65,10 +78,11 @@ export function AuthProvider({
       setAccessToken: writeAccessToken,
     })
   }, [config.accountApiBaseUrl, config.mockApi, writeAccessToken])
-	const cmsApi = useMemo<CmsApiClient>(() => {
-		if (config.mockApi) return new MockCmsApi()
-		return new CmsApi({ baseUrl: config.hhcWebApiBaseUrl, getAccessToken: () => tokenRef.current })
-	}, [config.hhcWebApiBaseUrl, config.mockApi])
+
+  const cmsApi = useMemo<CmsApiClient>(() => {
+    if (config.mockApi) return new MockCmsApi()
+    return new CmsApi({ baseUrl: config.hhcWebApiBaseUrl, getAccessToken: () => tokenRef.current })
+  }, [config.hhcWebApiBaseUrl, config.mockApi])
 
   const refreshProfile = useCallback(async () => {
     const nextProfile = await api.me()
@@ -76,55 +90,65 @@ export function AuthProvider({
     return nextProfile
   }, [api])
 
-  const signIn = useCallback(
-    async (returnTo = window.location.pathname) => {
-      if (config.mockApi) {
-        const token = await api.refreshAccessToken()
-    writeAccessToken(token)
-    await refreshProfile()
-    return returnTo
-      }
+  const beginAuthorization = useCallback(async (returnTo: string) => {
+    const transaction = await createOAuthTransaction(returnTo)
+    saveOAuthTransaction(transaction)
+    navigateExternal(buildAuthorizeUrl(config, transaction).toString())
+  }, [config, navigateExternal])
 
-      const transaction = await createOAuthTransaction(returnTo)
-      saveOAuthTransaction(transaction)
-    window.location.assign(buildAuthorizeUrl(config, transaction).toString())
-    return null
-    },
-    [api, config, refreshProfile, writeAccessToken],
-  )
-
-  const completeOAuthCallback = useCallback(
-    async (code: string, state: string) => {
-      const transaction = readOAuthTransaction()
-      if (!transaction || transaction.state !== state) {
-        throw new Error('OAuth state did not match this browser session.')
-      }
-
-      const response = await api.exchangeCode({
-        code,
-        codeVerifier: transaction.codeVerifier,
-        clientId: config.adminClientId,
-        redirectUri: config.redirectUri,
-      })
-
-      writeAccessToken(response.access_token ?? null)
-      clearOAuthTransaction()
+  const signIn = useCallback(async (returnTo = currentReturnTo(window.location)) => {
+    setAuthError(null)
+    if (config.mockApi) {
+      const token = await api.refreshAccessToken()
+      writeAccessToken(token)
       await refreshProfile()
-      return transaction.returnTo
-    },
-    [api, config.adminClientId, config.redirectUri, refreshProfile, writeAccessToken],
-  )
+      return returnTo
+    }
+
+    await beginAuthorization(returnTo)
+    return null
+  }, [api, beginAuthorization, config.mockApi, refreshProfile, writeAccessToken])
+
+  const completeOAuthCallback = useCallback(async (code: string, state: string) => {
+    const transaction = readOAuthTransaction()
+    if (!validateOAuthState(transaction, state)) {
+      throw new Error('OAuth state did not match this browser session.')
+    }
+
+    const response = await api.exchangeCode({
+      code,
+      codeVerifier: transaction.codeVerifier,
+      clientId: config.adminClientId,
+      redirectUri: config.redirectUri,
+    })
+
+    writeAccessToken(response.access_token ?? null)
+    clearOAuthTransaction()
+    await refreshProfile()
+    return transaction.returnTo
+  }, [api, config.adminClientId, config.redirectUri, refreshProfile, writeAccessToken])
 
   const logout = useCallback(async () => {
-    await api.logout()
-    writeAccessToken(null)
-    setProfile(null)
-  }, [api, writeAccessToken])
+    setLogoutError(null)
+    try {
+      await api.logoutAll()
+      writeAccessToken(null)
+      setProfile(null)
+      navigateExternal(`${config.accountSiteUrl}/login?status=signed-out`, true)
+    } catch {
+      setLogoutError('Unable to sign out. Try again.')
+    }
+  }, [api, config.accountSiteUrl, navigateExternal, writeAccessToken])
 
   useEffect(() => {
     let alive = true
 
     async function bootstrap() {
+      if (window.location.pathname === '/oauth/callback') {
+        setIsBootstrapping(false)
+        return
+      }
+
       const token = await api.refreshAccessToken()
       if (!alive) return
       if (token) {
@@ -133,36 +157,42 @@ export function AuthProvider({
           writeAccessToken(null)
           setProfile(null)
         })
+        if (alive) setIsBootstrapping(false)
+        return
       }
-      if (alive) setIsBootstrapping(false)
+      if (config.mockApi) {
+        if (alive) setIsBootstrapping(false)
+        return
+      }
+      await beginAuthorization(currentReturnTo(window.location))
     }
 
     bootstrap().catch(() => {
       if (!alive) return
       writeAccessToken(null)
       setProfile(null)
+      setAuthError('Unable to check your HHC account. Try again.')
       setIsBootstrapping(false)
     })
 
     return () => {
       alive = false
     }
-  }, [api, refreshProfile, writeAccessToken])
+  }, [api, beginAuthorization, config.mockApi, refreshProfile, writeAccessToken])
 
-  const value = useMemo(
-    () => ({
-      api,
-			cmsApi,
-      profile,
-      accessToken,
-      isBootstrapping,
-      signIn,
-      completeOAuthCallback,
-      logout,
-      refreshProfile,
-    }),
-		[accessToken, api, cmsApi, completeOAuthCallback, isBootstrapping, logout, profile, refreshProfile, signIn],
-  )
+  const value = useMemo(() => ({
+    api,
+    cmsApi,
+    profile,
+    accessToken,
+    isBootstrapping,
+    authError,
+    logoutError,
+    signIn,
+    completeOAuthCallback,
+    logout,
+    refreshProfile,
+  }), [accessToken, api, authError, cmsApi, completeOAuthCallback, isBootstrapping, logout, logoutError, profile, refreshProfile, signIn])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
