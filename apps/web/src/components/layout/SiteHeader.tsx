@@ -87,7 +87,8 @@ export function SiteHeader({locale, pathname, sessionClient}: SiteHeaderProps) {
               menu: t('account.menu'),
               manageAccount: t('account.manageAccount'),
               signIn: t('account.signIn'),
-              signOut: t('account.signOut')
+              signOut: t('account.signOut'),
+              signOutError: t('account.signOutError')
             }}
           />
         </div>

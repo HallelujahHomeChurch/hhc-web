@@ -13,7 +13,8 @@
       "menu": "帐号菜单",
       "manageAccount": "管理帐号",
       "signIn": "登录",
-      "signOut": "退出登录"
+      "signOut": "退出登录",
+      "signOutError": "无法退出登录，请重试。"
     },
     "language": "语言",
     "privacyPolicy": "隐私权",
