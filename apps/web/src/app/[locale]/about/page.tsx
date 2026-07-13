@@ -16,6 +16,8 @@ type AboutPageProps = {
   params: Promise<{locale: string}>;
 };
 
+export const dynamic = 'force-dynamic';
+
 async function getLocale(params: Promise<{locale: string}>): Promise<Locale> {
   const {locale} = await params;
   if (!isLocale(locale)) {
@@ -50,7 +52,7 @@ export default async function AboutPage({params}: AboutPageProps) {
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
-  const timeline = getHistoryTimeline(locale);
+  const timelineResult = await getHistoryTimeline(locale).then((value) => ({value, failed: false})).catch(() => ({value: {events: []}, failed: true}));
 
   return (
     <>
@@ -59,7 +61,7 @@ export default async function AboutPage({params}: AboutPageProps) {
           <AboutHero title={messages.about.heroTitle} subtitle={messages.about.heroSubtitle} />
         <div className="bg-[image:var(--hhc-page-gradient)] py-10 pb-14">
           <VisionContent content={messages.about.vision} />
-          <HistoryTimeline content={messages.about.history} timeline={timeline} />
+          <HistoryTimeline content={messages.about.history} timeline={timelineResult.value} errorMessage={timelineResult.failed ? messages.about.historyLoadError : undefined} />
         </div>
       </main>
       <SiteFooter locale={locale} pathname={`/${locale}/about`} />

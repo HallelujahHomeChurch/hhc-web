@@ -22,6 +22,8 @@ type HomePageProps = {
   params: Promise<{locale: string}>;
 };
 
+export const dynamic = 'force-dynamic';
+
 async function getLocale(params: Promise<{locale: string}>): Promise<Locale> {
   const {locale} = await params;
   if (!isLocale(locale)) {
@@ -60,8 +62,9 @@ export default async function HomePage({params}: HomePageProps) {
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
-  const news = getNews(locale);
-  const videos = getVideos(locale);
+  const [newsResult, videosResult] = await Promise.allSettled([getNews(locale), getVideos(locale)]);
+  const news = newsResult.status === 'fulfilled' ? newsResult.value : [];
+  const videos = videosResult.status === 'fulfilled' ? videosResult.value : [];
   const locations = getLocations(locale);
 
   return (
@@ -71,7 +74,7 @@ export default async function HomePage({params}: HomePageProps) {
         <HomeHero title={messages.home.heroTitle} subtitle={messages.home.heroSubtitle} />
         <div className="relative z-[3] bg-[image:var(--hhc-page-gradient)] py-8 pb-11">
           <SectionCard className="shell grid grid-cols-[minmax(0,1.45fr)_minmax(300px,.9fr)] gap-8 p-7 max-[900px]:grid-cols-1 max-[620px]:p-5" ariaLabel="最新消息與週報">
-            <NewsSection title={messages.home.newsTitle} moreLabel={`${messages.home.moreNews} →`} items={news} />
+            <NewsSection title={messages.home.newsTitle} moreLabel={`${messages.home.moreNews} →`} items={news} errorMessage={newsResult.status === 'rejected' ? messages.home.newsLoadError : undefined} />
             <WeeklyCard
               locale={locale}
               ctaLabel={`${messages.home.downloadWeekly} ↓`}
@@ -82,7 +85,7 @@ export default async function HomePage({params}: HomePageProps) {
               }}
             />
           </SectionCard>
-          <VideoSection title={messages.home.videosTitle} subtitle={messages.home.videosSubtitle} ctaLabel={messages.home.watchMore} channelHref={siteConfig.music.youtube} items={videos} />
+          <VideoSection title={messages.home.videosTitle} subtitle={messages.home.videosSubtitle} ctaLabel={messages.home.watchMore} channelHref={siteConfig.music.youtube} items={videos} errorMessage={videosResult.status === 'rejected' ? messages.home.videosLoadError : undefined} />
           <AboutTeaser locale={locale} title={messages.home.aboutTitle} body={messages.home.aboutBody} ctaLabel={`${messages.home.aboutCta} →`} />
           <LocationSection title={messages.home.locationsTitle} mapLabel={messages.home.mapLink} items={locations} />
         </div>

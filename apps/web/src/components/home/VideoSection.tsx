@@ -7,9 +7,10 @@ type VideoSectionProps = {
   ctaLabel: string;
   channelHref: string;
   items: VideoItem[];
+  errorMessage?: string;
 };
 
-export function VideoSection({title, subtitle, ctaLabel, channelHref, items}: VideoSectionProps) {
+export function VideoSection({title, subtitle, ctaLabel, channelHref, items, errorMessage}: VideoSectionProps) {
   return (
     <section className="shell mt-7 grid grid-cols-[230px_repeat(3,minmax(0,1fr))] gap-3.5 rounded-2xl border border-line/80 bg-paper/90 p-3.5 shadow-warm max-[900px]:grid-cols-1" aria-label={title}>
       <div className="px-1.5 py-3">
@@ -25,7 +26,7 @@ export function VideoSection({title, subtitle, ctaLabel, channelHref, items}: Vi
           Hallelujah Home Church
         </div>
       </div>
-      {items.map((item) => (
+      {errorMessage ? <p role="status" className="col-span-3 self-center rounded-lg border border-line bg-panel p-4 text-muted">{errorMessage}</p> : items.map((item) => (
         <a
           key={item.id}
           href={item.href}

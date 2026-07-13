@@ -9,9 +9,10 @@ type HistoryTimelineProps = {
     title: string;
   };
   timeline: HistoryTimelinePayload;
+  errorMessage?: string;
 };
 
-export function HistoryTimeline({content, timeline}: HistoryTimelineProps) {
+export function HistoryTimeline({content, timeline, errorMessage}: HistoryTimelineProps) {
   return (
     <article className="shell mt-7 overflow-hidden rounded-2xl border border-line/80 bg-paper/90 px-[38px] py-[34px] shadow-warm max-[620px]:px-5 max-[620px]:py-6">
       <div className="mb-[34px] grid grid-cols-[minmax(0,1.15fr)_minmax(280px,.85fr)] items-center gap-[30px] overflow-hidden rounded-[14px] border border-panel-border bg-panel p-[clamp(24px,4vw,44px)] shadow-[inset_0_1px_0_var(--hhc-inset-highlight)] max-[900px]:grid-cols-1">
@@ -40,7 +41,7 @@ export function HistoryTimeline({content, timeline}: HistoryTimelineProps) {
         <h2 id="history-main-title" className="mb-7 font-display text-[clamp(42px,6vw,76px)] font-normal leading-[1.08] tracking-[0.06em] text-[var(--hhc-brand-strong)]">
           {content.title}
         </h2>
-        <ol className="relative grid list-none grid-cols-2 gap-x-14 gap-y-5 p-0 before:absolute before:bottom-0 before:left-1/2 before:top-0 before:w-0.5 before:-translate-x-px before:bg-[linear-gradient(var(--color-rose),var(--color-teal))] before:opacity-55 max-[760px]:grid-cols-1 max-[760px]:gap-4 max-[760px]:pl-5 max-[760px]:before:left-[3px]">
+        {errorMessage ? <p role="status" className="rounded-lg border border-line bg-panel p-4 text-muted">{errorMessage}</p> : <ol className="relative grid list-none grid-cols-2 gap-x-14 gap-y-5 p-0 before:absolute before:bottom-0 before:left-1/2 before:top-0 before:w-0.5 before:-translate-x-px before:bg-[linear-gradient(var(--color-rose),var(--color-teal))] before:opacity-55 max-[760px]:grid-cols-1 max-[760px]:gap-4 max-[760px]:pl-5 max-[760px]:before:left-[3px]">
           {timeline.events.map((event, index) => (
             <li
               key={`${event.date}-${event.body}`}
@@ -56,7 +57,7 @@ export function HistoryTimeline({content, timeline}: HistoryTimelineProps) {
               <p className="m-0 text-base leading-[1.8] text-ink">{event.body}</p>
             </li>
           ))}
-        </ol>
+        </ol>}
       </section>
     </article>
   );

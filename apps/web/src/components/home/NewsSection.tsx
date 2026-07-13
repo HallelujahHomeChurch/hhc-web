@@ -4,9 +4,10 @@ type NewsSectionProps = {
   title: string;
   moreLabel: string;
   items: NewsItem[];
+  errorMessage?: string;
 };
 
-export function NewsSection({title, moreLabel, items}: NewsSectionProps) {
+export function NewsSection({title, moreLabel, items, errorMessage}: NewsSectionProps) {
   const placeholders = [
     'linear-gradient(135deg,var(--color-primary-soft-hover),var(--hhc-news-panel)),radial-gradient(circle at 20% 25%,rgb(228 164 58 / 62%) 0 18%,transparent 19%)',
     'linear-gradient(135deg,rgb(58 126 122 / 26%),var(--hhc-news-panel)),radial-gradient(circle at 78% 28%,rgb(189 223 227 / 54%) 0 22%,transparent 23%)',
@@ -21,7 +22,7 @@ export function NewsSection({title, moreLabel, items}: NewsSectionProps) {
           {moreLabel}
         </a>
       </div>
-      <ul className="m-0 grid list-none gap-5 p-0">
+      {errorMessage ? <p role="status" className="rounded-lg border border-line bg-panel p-4 text-sm text-muted">{errorMessage}</p> : <ul className="m-0 grid list-none gap-5 p-0">
         {items.map((item, index) => (
           <li key={item.id}>
             <a className="grid grid-cols-[210px_minmax(0,1fr)] items-center gap-5 max-[900px]:grid-cols-[160px_minmax(0,1fr)] max-[620px]:grid-cols-1" href={item.href}>
@@ -29,7 +30,7 @@ export function NewsSection({title, moreLabel, items}: NewsSectionProps) {
                 aria-label={item.imageAlt}
                 role="img"
                 className="h-24 w-[210px] rounded-[10px] bg-panel bg-cover bg-center ring-1 ring-panel-border max-[900px]:w-40 max-[620px]:h-40 max-[620px]:w-full"
-                style={{backgroundImage: placeholders[index % placeholders.length]}}
+                style={{backgroundImage: item.imageSrc ? `url("${item.imageSrc}")` : placeholders[index % placeholders.length]}}
               />
               <span>
                 <h3 className="mb-2 text-lg font-semibold leading-[1.45]">{item.title}</h3>
@@ -39,7 +40,7 @@ export function NewsSection({title, moreLabel, items}: NewsSectionProps) {
             </a>
           </li>
         ))}
-      </ul>
+      </ul>}
     </div>
   );
 }

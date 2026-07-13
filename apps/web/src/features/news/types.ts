@@ -4,5 +4,6 @@ export type NewsItem = {
   summary: string;
   date: string;
   imageAlt: string;
+  imageSrc?: string;
   href: string;
 };

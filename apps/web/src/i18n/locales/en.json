@@ -31,6 +31,7 @@
     "heroSubtitle": "Building families in love and growing in truth",
     "newsTitle": "Latest News",
     "moreNews": "View all",
+    "newsLoadError": "Latest news is temporarily unavailable",
     "weeklyTitle": "Weekly Paper",
     "downloadWeekly": "Download weekly paper",
     "weeklyLoading": "Loading weekly paper",
@@ -38,6 +39,7 @@
     "retry": "Retry",
     "videosTitle": "Kingdom Joy",
     "videosSubtitle": "Worship through music and let life be lit by love",
+    "videosLoadError": "Videos are temporarily unavailable",
     "watchMore": "Watch more videos",
     "aboutTitle": "About Us",
     "aboutBody": "Hallelujah Home Church values family, worship, and truth, building relationships of love, forming mature disciples, and sharing the gospel with more people.",
@@ -49,6 +51,7 @@
     "heroTitle": "About Us",
     "heroSubtitle": "Unity and mission",
     "historyIntro": "From the vision of family altars, the home church has walked step by step into mission, formation, and pastoral care. This timeline preserves key moments as a readable story of life passed on.",
+    "historyLoadError": "Church history is temporarily unavailable",
     "vision": {
       "intro": "The home church vision begins with life multiplying through relationships: one to three, three to twelve, twelve to seventy, and then to the harvest God prepares. Church is not first a building; it is a people who carry witness, formation, and blessing wherever they go.",
       "imageAlt": "Congregation in prayer",
