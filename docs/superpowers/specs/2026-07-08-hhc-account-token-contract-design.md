@@ -4,6 +4,8 @@
 
 This spec defines the contract between `account-api`, `api-gateway`, admin UI, and backend services for login, access JWTs, refresh tokens, JWKS, and trusted identity headers.
 
+`account-api` is the existing account authority. Implementation work should verify the current routes, claims, refresh behavior, and client registration model against this contract before adding account features. Do not rebuild account capability in `hhc-web` or `hhc-web-api`.
+
 Data minimization, token/secret handling, account metadata retention, and privacy rules are defined in `docs/superpowers/specs/2026-07-08-hhc-platform-data-classification-privacy-retention-design.md`.
 
 Admin invitation, role assignment, role downgrade, account suspend/disable/offboarding, and emergency access removal rules are defined in `docs/superpowers/specs/2026-07-08-hhc-account-admin-identity-rbac-lifecycle-design.md`.
@@ -17,6 +19,7 @@ It exists to keep the boundary clear:
 - `account-api` owns authentication, token issuance, refresh token rotation/revocation, user profile, roles/scopes, OIDC metadata, signing keys, and JWKS.
 - `api-gateway` owns per-request access JWT verification for non-account APIs.
 - Backend services trust only sanitized gateway headers for browser-origin API requests.
+- Future first-party clients, including a desktop application, should use the same account authority with their own registered OAuth client id and PKCE flow.
 
 `api-gateway` must not call `account-api` for per-request token verification.
 
@@ -94,6 +97,24 @@ GET  /api/account/me
 
 Admin UI should use Authorization Code with PKCE. Do not use implicit flow.
 
+## Client Types
+
+Supported first-party client types:
+
+| Client | Example `client_id` | Flow | Notes |
+| --- | --- | --- | --- |
+| Account web UI | `account-web` | Account-domain session plus account APIs | Owns login/profile/security screens |
+| CMS admin UI | `hhc-admin` | Authorization Code with PKCE | Calls `www.alive.org.tw/api/admin/*` with bearer access token |
+| Future desktop app | `hhc-desktop` | Authorization Code with PKCE for native apps | Uses a registered redirect URI and must not rely on browser-only cookies |
+
+Rules:
+
+- Each first-party app gets its own `client_id`.
+- Public clients such as browser SPAs and desktop apps must not require a client secret.
+- Refresh/session policy may differ by client, but refresh token rotation and revocation stay in `account-api`.
+- Access tokens for non-account APIs keep `aud=hhc-api`; client-specific behavior is represented by `client_id`, scopes, and account policy.
+- Do not hard-code token issuance, role mapping, CORS, redirect URI validation, or gateway policy only for `hhc-admin`.
+
 ## Access Token Claims
 
 Required access JWT claims:
@@ -137,14 +158,14 @@ Optional claims:
 
 Supported:
 
-- `RS256`, preferred for broad library support.
-- `ES256`, acceptable if both account and gateway libraries handle rotation reliably.
+- `EdDSA`, required for the current `account-api` Ed25519 access-token deployment.
+- `RS256` or `ES256`, optional later only if `account-api` publishes the algorithm and gateway allowlists it.
 
 Forbidden:
 
 - `none`
 - symmetric algorithms such as `HS256` for public gateway verification
-- any algorithm not explicitly configured in gateway
+- any algorithm not explicitly configured in gateway and published by `account-api`
 
 Every JWT header must include `kid`.
 

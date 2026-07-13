@@ -131,6 +131,10 @@
 - Public gateway must reject `/priv/*` and `/api/priv/*`.
 - Internal-only APIs use `/priv/*` behind Dapr service invocation, mTLS, and app-id allowlists.
 - `api-gateway` is the only external ingress for platform API traffic; backend API services use internal ingress and Dapr/app-id controls.
+- First implementation slice is the account system: `account.alive.org.tw` login/profile UI/API in the existing `account-api` repo, plus `api-gateway` host routing/JWKS/JWT boundary.
+- Treat `account-api` as the existing identity capability; verify current contracts before adding account code.
+- Account OIDC/token design must leave room for a future desktop application login client, not only `admin.alive.org.tw`.
+- `admin.alive.org.tw` must not implement its own login system; it consumes account-issued access tokens after the account system and gateway protected-route smoke tests pass.
 - Services own their PostgreSQL schemas and do not cross-query another service's schema.
 - Gateway routes and verifies but does not compose business data from multiple services.
 - Public content reads should hit one owning backend and its local PostgreSQL/Redis projection path, not runtime fan-out.
@@ -157,7 +161,7 @@
 - `docs/superpowers/plans/2026-07-08-hhc-web-platform-roadmap.md`
 
 **Deliverables:**
-- Service list is consistent: `api-gateway`, `account-api`, `hhc-web`, `hhc-web-api`, `asset-api`, `notification-api`, `audit-log`, and `hhc-line-function-bot`.
+- Service list is consistent: `api-gateway`, `account-fe`, `account-api`, `hhc-web`, `hhc-web-api`, `asset-api`, `notification-api`, `audit-log`, and `hhc-line-function-bot`.
 - `cms-api` is not required as a separate v1 service.
 - Weekly bulletin LINE bot integration is documented as a public `hhc-web-api` consumer.
 - API contract governance defines OpenAPI ownership, generated client boundaries, and compatibility gates.
@@ -208,17 +212,26 @@
 - Confirm publication workflow consistency prevents required-asset public projections from appearing before grants are active and cancels stale publish side effects.
 - Confirm architecture completion audit has no uncovered user requirement, unreferenced design artifact, or unresolved contradiction.
 
-### Phase 1: Gateway Security And Routing
+### Phase 1: Account System And Gateway Security
 
-**Component:** `api-gateway`
+**Components:** `account-fe`, `account-api`, `api-gateway`
+
+**Detailed Account FE/Gateway Plan:** See `docs/superpowers/plans/2026-07-09-hhc-account-fe-and-gateway-login.md` for the standalone `account-fe` project, account host routing, JWT verifier base-image decision, and admin login readiness gate.
 
 **Create or Modify:**
-- Local Go JWT verifier in the gateway image.
+- `account-fe` login/profile/security web surface for `account.alive.org.tw`.
+- Existing `account-api` login, profile, refresh/session, OAuth/OIDC metadata, JWKS, native-app PKCE, and role/scope issuance.
+- Contract verification against the current `account-api` implementation before adding new account behavior.
+- Local Go JWT verifier in the `api-gateway` deployment boundary, preferably as an ACA sidecar/container and acceptable as a same-image binary if multi-container is unavailable.
 - Nginx route policy for public, admin, asset, account, LINE webhook, and blocked internal routes.
 - JWKS cache configuration.
 - Trusted identity header injection.
 
 **Behavior:**
+- `account.alive.org.tw` serves `account-fe` UI plus account-api API/OIDC/JWKS paths through `api-gateway`.
+- Login/profile works against the existing `account-api` before admin work starts.
+- `account-api` issues access tokens and owns refresh/session/profile behavior.
+- Future desktop app login uses a separate registered account OAuth client and PKCE; do not hard-code the account contract only for `hhc-admin`.
 - Public feature APIs are readable without JWT.
 - Admin APIs require bearer access JWT with CMS roles/scopes.
 - Asset protected/admin routes require JWT.
@@ -227,6 +240,9 @@
 - Client-supplied `X-Internal-*` headers are stripped or rejected before any upstream call.
 
 **Tests:**
+- Account login succeeds through `account.alive.org.tw`.
+- Account profile loads after login.
+- Logout/session expiry removes admin access.
 - Public route success without JWT.
 - Missing token returns `401`.
 - Invalid token returns `401`.
@@ -653,16 +669,18 @@ These are post-v1 candidates, not required v1 deliverables.
 ## Build Order
 
 1. Align docs and roadmap.
-2. Implement gateway JWT verification and route policy.
-3. Lock account token/JWKS contract.
-4. Define public/admin/asset/internal API contracts, event JSON Schemas, and authorization policy metadata.
-5. Build `asset-api`.
-6. Build `hhc-web-api` CMS modules and public read APIs.
-7. Wire `hhc-web` public pages to APIs.
-8. Build weekly bulletin admin upload/publish flow.
-9. Add LINE bot weekly bulletin function.
-10. Add notification and audit integrations.
-11. Harden staging/prod observability and deployment pipelines.
+2. Complete the account system with the standalone `account-fe`, existing `account-api`, and `api-gateway`: `account.alive.org.tw` login/profile/security UI, session/refresh, OAuth/OIDC/JWKS, native-app PKCE support, and role/scope issuance.
+3. Implement `api-gateway` host routing, account route forwarding, protected-route JWT verification, JWKS cache, and trusted header injection.
+4. Lock the account token/JWKS/admin role contract with gateway smoke tests.
+5. Define public/admin/asset/internal API contracts, event JSON Schemas, and authorization policy metadata.
+6. Build the admin shell on `admin.alive.org.tw` as an account-system consumer; do not add a second login flow.
+7. Build `asset-api`.
+8. Build `hhc-web-api` CMS modules and public read APIs.
+9. Wire `hhc-web` public pages to APIs.
+10. Build weekly bulletin admin upload/publish flow.
+11. Add LINE bot weekly bulletin function.
+12. Add notification and audit integrations.
+13. Harden staging/prod observability and deployment pipelines.
 
 ## Acceptance Criteria
 

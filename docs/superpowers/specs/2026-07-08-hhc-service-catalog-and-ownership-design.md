@@ -43,7 +43,7 @@ This catalog does not replace the detailed specs. It is the index of ownership d
 V1 has a small service set with clear ownership:
 
 - `api-gateway` is the public ingress and first policy enforcement point.
-- `account-api` owns identity, token, refresh, JWKS, account admin lifecycle, and role bundle issuance.
+- `account-fe` owns the browser account console. `account-api` owns identity APIs, token, refresh, JWKS, account admin lifecycle, and role bundle issuance.
 - `hhc-web` owns the public website UI and admin console UI.
 - `hhc-web-api` owns the v1 website backend, CMS modules, public projections, and website product workflow.
 - `asset-api` owns reusable file/object mechanics.
@@ -60,6 +60,7 @@ The platform should not add a service unless the split reduces ownership ambigui
 | Component | V1 Status | Runtime | Public Surface | Private Surface | Source Of Truth | Reusable Capability | Criticality |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `api-gateway` | required | Nginx + Go verifier | all public non-account API routing under `www.alive.org.tw`; account host routing | none for business calls | route policy, verifier config | ingress, JWT validation, trusted headers, coarse limits | Tier 0 |
+| `account-fe` | required | Vite/React/TypeScript | `account.alive.org.tw` account login/profile/security UI | `account-api` through account host | no DB | account browser console | Tier 0 |
 | `account-api` | required | Go or existing account runtime | `account.alive.org.tw` account/OIDC/token/JWKS APIs | account-originated notification/audit commands | `account` schema | identity, refresh revocation, role/scope issuance, JWKS | Tier 0 |
 | `hhc-web` | required | Next.js/TypeScript | UI routes on `www.alive.org.tw` and `admin.alive.org.tw` | none | no DB | public website UI, admin console UI | Tier 1 |
 | `hhc-web-api` | required | Go | `www.alive.org.tw/api/*` website public/admin routes | service-owned workers and approved `/priv/*` only if added | `hhc_web` schema | website content backend, CMS, public projections | Tier 1 |
@@ -124,7 +125,7 @@ These can be revisited only through the extraction gates in this spec and the fu
 | `www.alive.org.tw` | `api-gateway` routes to `hhc-web` | public website UI | account-only identity UI as a separate product surface |
 | `www.alive.org.tw/api/*` | `api-gateway` routes to owning service | all non-account public APIs | generic query fan-out, `/priv/*`, Blob/SAS URLs |
 | `admin.alive.org.tw` | `api-gateway` routes to `hhc-web` | admin console UI only | backend APIs, internal routes |
-| `account.alive.org.tw` | `api-gateway` routes to `account-api` | account UI/API/OIDC/JWKS/token | CMS/admin content APIs |
+| `account.alive.org.tw` | `api-gateway` routes UI to `account-fe` and API/OIDC/JWKS/token paths to `account-api` | account UI/API/OIDC/JWKS/token | CMS/admin content APIs |
 | `/priv/*` | internal service invocation | service-to-service commands and queries | browser calls, public gateway routing |
 
 There is no `api.alive.org.tw`.
@@ -139,7 +140,7 @@ Allowed v1 calls:
 | `api-gateway` | `account-api` | cached JWKS pull | startup/refresh only; no per-request introspection |
 | `api-gateway` | backend services | route forwarding | one upstream per route; no business aggregation |
 | `hhc-web` | `hhc-web-api` | HTTPS through gateway | website public/admin data |
-| `hhc-web` | `account-api` | HTTPS through account host | login/account flows |
+| `hhc-web` / admin UI | `account-fe` + `account-api` | HTTPS through account host | OAuth login/account flows |
 | `hhc-web-api` | `asset-api` | `/priv/assets/*` command/query | upload sessions, grants, stable public URL lookup |
 | `hhc-web-api` | `notification-api` | `/priv/notifications/*` command | optional CMS/contact/publish notifications |
 | `hhc-web-api` | `audit-log` | outbox append and protected query | audit append and admin audit screen |

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the first shippable foundation for HHC Web + CMS: gateway-owned JWT validation, `www.alive.org.tw/api/*` API routing, reusable asset architecture, public API contracts, and CMS-ready frontend/backend boundaries.
+**Goal:** Build the first shippable foundation for HHC Web + CMS: `account.alive.org.tw` login/profile/security through standalone `account-fe` plus the existing account system, gateway-owned JWT validation, `www.alive.org.tw/api/*` API routing, reusable asset architecture, public API contracts, and CMS-ready frontend/backend boundaries.
 
 **Architecture:** `api-gateway` is the first public gate. There is no `api.alive.org.tw`; all non-account APIs live under `www.alive.org.tw/api/*`. `admin.alive.org.tw` is the CMS console UI, and `account.alive.org.tw` owns account/OIDC/token/JWKS APIs. Backend services are Go microservices with owned PostgreSQL schemas, Redis for cache/short-lived state, Azure Blob Storage through `asset-api`, and Dapr service invocation behind the gateway.
 
@@ -33,6 +33,8 @@
 **Account Admin Identity/RBAC Lifecycle:** Use `docs/superpowers/specs/2026-07-08-hhc-account-admin-identity-rbac-lifecycle-design.md` for admin invitations, account-domain user management APIs, role grant/revoke, suspend/disable/offboarding, account audit events, and the separation of `cms.admin` from `account.admin`.
 
 **Gateway Auth:** Use `docs/superpowers/specs/2026-07-08-hhc-api-gateway-authentication-design.md` for Nginx route policy, local JWT verification, JWKS cache/rotation, trusted headers, failure modes, and gateway test matrix.
+
+**Account FE And Gateway Login:** Use `docs/superpowers/plans/2026-07-09-hhc-account-fe-and-gateway-login.md` for the new `account-fe` project, account host routing, JWT verifier base-image decision, and admin login readiness gate.
 
 **Authorization Policy Governance:** Use `docs/superpowers/specs/2026-07-08-hhc-authorization-policy-and-permission-governance-design.md` for role/scope catalog, route/action metadata, resource-level authorization, field-level response policy, policy drift checks, and `authz_policy` release evidence.
 
@@ -100,6 +102,10 @@
 - `www.alive.org.tw` serves the public website and every non-account API path.
 - `admin.alive.org.tw` is CMS console UI only; it calls protected APIs under `www.alive.org.tw/api/admin/*`.
 - `account.alive.org.tw` owns account UI, account APIs, OIDC, token, and JWKS endpoints.
+- The first implementation slice is standalone `account-fe`, existing `account-api`, and `api-gateway` routing/JWT boundary.
+- Treat `account-api` as the existing capability source; verify current routes, claims, refresh/session behavior, and OAuth client support before adding account code.
+- `admin.alive.org.tw` must wait for account login/profile/session and gateway protected-route smoke tests; it must not add a separate login flow.
+- Account token/OIDC design must remain usable by a future desktop app with its own first-party OAuth client and PKCE flow.
 - Account user management, admin invitations, session revocation, role assignment, suspend, disable, and offboarding stay in `account-api`; `hhc-web-api` consumes trusted role/scope headers only.
 - Do not call `account-api` for per-request API token verification.
 - `api-gateway` verifies bearer JWTs locally from cached JWKS and injects sanitized `X-HHC-*` identity headers.
@@ -115,7 +121,40 @@
 
 ## Phase Boundary
 
-This Phase 1 plan does not build the full church platform. It establishes gateway security, API routing, reusable asset handling, CMS contracts, notification/email direction, frontend integration foundations, and the roadmap for LINE bot weekly bulletin download. Later phases can add activity registration, member/pastoral data, groups, donations, full notifications, search, and broader LINE bot workflows.
+This Phase 1 plan does not build the full church platform. It first completes the account system through `account.alive.org.tw`, the existing `account-api`, and `api-gateway`; then it establishes protected admin routing, reusable asset handling, CMS contracts, notification/email direction, frontend integration foundations, and the roadmap for LINE bot weekly bulletin download. Later phases can add activity registration, member/pastoral data, groups, donations, full notifications, search, and broader LINE bot workflows.
+
+## Task 0: Complete Account FE And Gateway Login Before Admin
+
+**Repos:**
+
+- `/Users/rayselfs/Projects/hhc/account/account-fe`
+- `/Users/rayselfs/Projects/hhc/account/account-api`
+- `/Users/rayselfs/Projects/hhc/account/api-gateway`
+
+**Interfaces:**
+
+- `account.alive.org.tw` serves the `account-fe` UI.
+- Account API calls use `https://account.alive.org.tw/api/account/v1/*`.
+- OIDC discovery and JWKS stay on `https://account.alive.org.tw`.
+- `account-fe` owns login/profile/security browser UI.
+- `account-api` owns account APIs: login, MFA/setup-required handling, profile, security, linked accounts, devices, user profile, sessions, refresh token rotation/revocation, roles/scopes, OAuth clients, native-app PKCE, and JWKS.
+- `account-api` should be checked first, not reimplemented, when a needed account feature appears missing.
+- `api-gateway` routes the account host and later validates access tokens for protected non-account APIs using account JWKS.
+
+**Steps:**
+
+- [ ] Confirm `account-api` currently provides the account routes needed for login, MFA/setup-required, profile, security, linked accounts, and devices.
+- [ ] Create the standalone `account-fe` project under `/Users/rayselfs/Projects/hhc/account/account-fe`.
+- [ ] Remove any accidental account console implementation from `account-api`.
+- [ ] Confirm first-admin login handles `mfa_type: "setup_required"` instead of treating it as a failed login.
+- [ ] Confirm `account-api` exposes OIDC metadata, token, refresh/revoke, profile, and JWKS endpoints for `account.alive.org.tw`.
+- [ ] Confirm the existing `account-api` route and claim names match the docs before changing code.
+- [ ] Confirm account OAuth client registration can support both `hhc-admin` and a future desktop app client with PKCE.
+- [ ] Configure `api-gateway` to route `account.alive.org.tw` account UI/API/OIDC/JWKS paths and reject unrelated API paths on that host.
+- [ ] Record and implement the gateway base decision: keep Nginx for account host routing first; add a local Go JWT verifier sidecar/process before protected admin APIs.
+- [ ] Verify login, profile load, refresh/session expiry, logout, and JWKS retrieval through the gateway.
+- [ ] Freeze token claims needed by admin: issuer, audience, subject/user id, `jti`, `sid`, roles, scopes, and token type.
+- [ ] Do not start `admin.alive.org.tw` implementation until this task passes.
 
 ## Task 1: Extend `api-gateway` With Local JWT Verification And Domain Routing
 
@@ -145,6 +184,7 @@ This Phase 1 plan does not build the full church platform. It establishes gatewa
 - Gateway accepts public traffic for `www.alive.org.tw`, `admin.alive.org.tw`, and `account.alive.org.tw`.
 - Non-account API routes are only under `www.alive.org.tw/api/*`.
 - Account/OIDC routes remain only under `account.alive.org.tw`.
+- Account login/profile must already work through gateway before admin routes are enabled.
 - Local verifier listens only on `127.0.0.1:10001`.
 - Nginx protected locations call `GET /verify` on the local verifier.
 - Verifier input comes from `Authorization: Bearer <jwt>` and route-policy headers set by Nginx:

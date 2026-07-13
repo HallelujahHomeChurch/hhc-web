@@ -35,6 +35,7 @@ Public/admin search UI boundaries, result safety, snippets, and post-v1 activati
 - Keep existing public routes stable.
 - V1 locales are `zh-Hant`, `zh-Hans`, and `en`.
 - Production must not use `api.alive.org.tw`.
+- Admin work starts only after `account-api` serves `account.alive.org.tw` login/profile/session and `api-gateway` protected-route JWT smoke tests pass.
 - Public feature functions should keep current exported names during migration where practical.
 - CMS/editor UI must not expose draft content through public routes.
 - Weekly download URLs must be gateway asset URLs.
@@ -44,6 +45,7 @@ Public/admin search UI boundaries, result safety, snippets, and post-v1 activati
 - V1 CMS uses explicit Save Draft, Preview, Publish, Unpublish, and Archive actions; approval workflow, scheduled publishing, collaborative editing, and autosave-as-source-of-truth are out of scope.
 - Admin mutations use `Idempotency-Key`; update/publish/unpublish/archive flows use version preconditions when versioned resources are implemented.
 - Revision restore and rollback controls are allowed in v1 because they protect recoverability; rollback publish still uses the normal publish safety checks.
+- `admin.alive.org.tw` must redirect to `account.alive.org.tw` for login and must not duplicate username/password, refresh-token, profile, or MFA flows.
 
 ---
 
@@ -179,6 +181,8 @@ Public/admin search UI boundaries, result safety, snippets, and post-v1 activati
 
 ## Phase 5: Admin Shell
 
+**Prerequisite:** `account-fe` serves the `account.alive.org.tw` account UI, `account-api` serves account API/OIDC/JWKS paths, and `api-gateway` account/JWKS routing is already deployed and smoke-tested.
+
 **Files:**
 
 - Create: `src/app/[locale]/admin/page.tsx`
@@ -204,6 +208,7 @@ Public/admin search UI boundaries, result safety, snippets, and post-v1 activati
   - Audit
   - Settings
 - Integrate OIDC token retrieval through an account-flow adapter that redirects to `account.alive.org.tw`, receives the access token, and exposes token/error state to admin API clients.
+- Reuse account-issued access tokens only; do not build a local admin login form or profile/session store.
 - Call `www.alive.org.tw/api/admin/*`.
 - Add Settings entry point for site navigation, footer links, social links, public contact display, and site SEO defaults.
 - Exclude runtime config, secrets, OIDC settings, service URLs, storage provider details, feature flags, and gateway route policy from the Settings UI.
@@ -211,6 +216,7 @@ Public/admin search UI boundaries, result safety, snippets, and post-v1 activati
 **Acceptance:**
 
 - Admin UI is host-aware for `admin.alive.org.tw`.
+- Login redirects to `account.alive.org.tw` and returns with account-issued access token state.
 - Missing token shows login/unauthorized state.
 - Insufficient role shows forbidden state.
 - Admin UI does not fetch draft content from public APIs.

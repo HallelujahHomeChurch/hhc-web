@@ -138,28 +138,42 @@
 
 - Docs-only rollback through Git revert if a decision changes.
 
-## Phase 1: Account And Gateway Foundation
+## Phase 1: Account System And Gateway Foundation
 
 **Deployables:**
 
-- `account-api` token/JWKS contract changes.
+- `account-fe` account UI plus `account-api` account API, token/JWKS, OAuth client, and native-app PKCE contract changes.
 - `api-gateway` local JWT verifier and route policy.
 
 **Preconditions:**
 
+- Existing `account-api` local/staging login and profile routes are healthy.
+- Current `account-api` routes, claims, refresh/session behavior, OIDC metadata, JWKS, and OAuth client registration have been checked against the docs.
+- `account.alive.org.tw` account UI routes are served by `account-fe`, while account API/OIDC/JWKS routes are served by `account-api` through the gateway account host.
 - JWKS endpoint is reachable from gateway.
+- Gateway verifier supports the signing algorithm currently used by `account-api`, including EdDSA/Ed25519 if that remains the active token algorithm.
 - Access token includes required claims.
 - OIDC metadata advertises issuer, token endpoint, revocation endpoint, and JWKS URI.
 - Account token contract is frozen for issuer, audience, token type, roles, scopes, `jti`, `sid`, and `client_id`.
 - Refresh token rotation/revocation is implemented or explicitly staged before admin production login.
 - Account admin invitation, role grant/revoke, suspend, disable, and session revocation behavior is implemented or explicitly staged before admin production login.
 - `cms.admin` and `account.admin` separation is represented in account roles/scopes and tests.
+- Future desktop app login is represented as a separate first-party OAuth client with PKCE, or explicitly deferred without narrowing the account contract to admin web only.
+- `account-fe` supports `/login?auth_request_id=...` so later `admin.alive.org.tw` and desktop PKCE flows can complete through the same account login surface.
+- Gateway JWT verifier decision is recorded: keep Nginx for routing-only account phase; add a local Go verifier through Nginx `auth_request` before protected admin APIs; do not depend on NGINX Plus, third-party JWT modules, or a custom Nginx module.
 - Staging gateway route config validates.
 - All upstream service app ids are configured but missing routes are not pointed to production until services exist.
 - Backend API services have internal ingress only; external traffic reaches APIs through `api-gateway`.
 
 **Verification:**
 
+- `account.alive.org.tw/login` renders the account login UI.
+- Valid account login reaches `account-api` through `api-gateway`.
+- First-admin login handles `mfa_type: "setup_required"`.
+- Authenticated profile page loads from `account-api`.
+- Logout/session expiry removes access token state.
+- `account.alive.org.tw` exposes OIDC discovery and JWKS but not CMS/admin APIs.
+- Account OAuth client tests cover `hhc-admin` and do not assume every first-party client is browser-only.
 - Valid access token reaches protected test route.
 - Expired token returns `401`.
 - Wrong audience returns `401`.
@@ -180,6 +194,7 @@
 - `cms.admin` without `account.admin` cannot manage account users.
 - `account.admin` without CMS publish scope cannot publish CMS content.
 - JWKS signing key rotation works without gateway restart.
+- `admin.alive.org.tw` work remains blocked until account login/profile/JWKS and protected-route JWT smoke tests pass.
 
 **Rollback:**
 
@@ -296,7 +311,8 @@
 **Preconditions:**
 
 - Public APIs stable in staging.
-- Admin OIDC login flow available.
+- Account login/profile/session, OIDC/JWKS, and gateway JWT verification are available.
+- Admin OIDC login flow redirects to `account.alive.org.tw`; no local admin login form exists.
 - `NEXT_PUBLIC_API_BASE_URL` is same-origin or staging override, never `api.alive.org.tw`.
 - `hhc-web` Next server deployment is available behind gateway.
 - Static export rollback path or previous ACA revision is available.
@@ -312,6 +328,7 @@
 - Public pages handle API `404` and `503` gracefully.
 - Sitemap and metadata use published public projections only.
 - Admin console loads from `admin.alive.org.tw`.
+- Missing admin token redirects to or links through `account.alive.org.tw`.
 - Admin API calls go to `www.alive.org.tw/api/admin/*`.
 - `admin.alive.org.tw/api/*` is rejected by gateway.
 - `www.alive.org.tw/api/*` routes to backend services, not Next.js handlers.

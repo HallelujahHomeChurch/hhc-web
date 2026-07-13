@@ -252,7 +252,7 @@ This protects service internals from provider contract churn and keeps service b
 | `api-gateway` | `account-api` JWKS | cached pull | startup/refresh only; no token introspection per request |
 | `api-gateway` | backend services | route only | no business data composition |
 | `hhc-web` | `hhc-web-api` public/admin APIs | HTTPS through gateway | no Next API routes for platform APIs |
-| `hhc-web` | `account-api` browser/OIDC routes | HTTPS through gateway/account host | account domain owns auth UI/API |
+| admin UI / browser | `account-fe` + `account-api` browser/OIDC routes | HTTPS through gateway/account host | account domain owns auth UI plus account API/OIDC |
 | `hhc-web-api` | `asset-api` | synchronous command and worker command | upload sessions, public URLs, grants |
 | `hhc-web-api` | `notification-api` | outbox worker command | optional contact/publish notifications |
 | `hhc-web-api` | `audit-log` | outbox append; protected query when needed | admin scope checked before query |

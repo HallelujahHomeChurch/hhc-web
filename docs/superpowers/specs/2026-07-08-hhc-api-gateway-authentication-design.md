@@ -24,6 +24,8 @@ The gateway must validate access JWTs locally and must not call `account-api` fo
 
 Use Nginx route policy plus a local Go JWT verifier.
 
+This is the v1 gateway auth direction. Do not use NGINX Plus `auth_jwt`, third-party Nginx JWT modules, or a custom Nginx C module for the first implementation.
+
 Recommended v1 shape:
 
 ```text
@@ -201,7 +203,9 @@ Access token required claims:
 
 Supported signing algorithms:
 
-- Prefer `RS256` or `ES256`.
+- The verifier must support the active `account-api` signing algorithm published by JWKS.
+- Current `account-api` uses `EdDSA`/Ed25519, so v1 verifier support for `EdDSA` is required unless `account-api` changes first.
+- `RS256` or `ES256` may be added later only if `account-api` publishes those algorithms and the gateway allowlist is updated.
 - Do not allow `none`.
 - Do not accept unexpected algorithms even if the key exists.
 

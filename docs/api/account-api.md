@@ -22,6 +22,8 @@ Account APIs do not live under `www.alive.org.tw/api/*`. Non-account APIs stay u
 
 ## Ownership
 
+`account-api` is expected to provide the required account capabilities already; implementation should confirm the current code and route behavior before adding or changing account features.
+
 `account-api` owns:
 
 - login
@@ -37,6 +39,7 @@ Account APIs do not live under `www.alive.org.tw/api/*`. Non-account APIs stay u
 - OIDC metadata
 - JWKS
 - account security audit events
+- first-party OAuth clients for admin UI and future desktop app login
 
 `api-gateway` validates access JWTs locally from JWKS. It must not call `account-api` for per-request token verification.
 
@@ -133,6 +136,8 @@ Requirements:
 ## Admin UI Flow
 
 Admin UI at `admin.alive.org.tw` should use Authorization Code with PKCE.
+
+Future desktop app login should also use account-owned OAuth/OIDC with its own first-party `client_id`, registered redirect URI, PKCE, and no client secret. Do not make account token issuance, role mapping, CORS, or redirect validation admin-web-only.
 
 Rules:
 

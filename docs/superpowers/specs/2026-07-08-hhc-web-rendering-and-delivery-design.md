@@ -113,7 +113,8 @@ api-gateway
   |     |-- everything else -> hhc-web Next.js server admin UI
   |
   |-- Host: account.alive.org.tw
-        |-- account/OIDC/token/JWKS routes -> account-api/account UI
+        |-- account UI routes -> account-fe
+        |-- account API/OIDC/token/JWKS routes -> account-api
 ```
 
 `api-gateway` remains the only external ingress for UI and API traffic.

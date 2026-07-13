@@ -43,7 +43,7 @@ The first release covers the features visible in `hhc-web` today:
 
 - Public site: multilingual home, news, weekly bulletins, videos, locations, about/history, legal pages, SEO, and sitemap.
 - Admin console: content editing, draft/publish workflow, weekly bulletin upload, asset management, and operational CMS screens.
-- Identity: existing `account-api` remains the only login, OIDC/OAuth2, token issuing, and JWKS authority.
+- Identity: existing `account-api` remains the only OIDC/OAuth2, token issuing, refresh/session, role/scope, and JWKS authority; standalone `account-fe` owns the browser login/profile/security UI.
 - Gateway: existing `api-gateway` remains the first public gate for UI and API traffic.
 
 Not included in the first release: event registration, member records, pastoral care workflows, groups, donations, full notification center, search engine, or LINE bot business workflows. The backend is still designed so these can reuse the same identity, asset, notification, and content foundations later. The finite v1 service catalog, explicit non-services, caller allowlists, and service admission gates are documented in `docs/superpowers/specs/2026-07-08-hhc-service-catalog-and-ownership-design.md`. Post-v1 split triggers and recommended service boundaries are documented in `docs/superpowers/specs/2026-07-08-hhc-web-future-domain-extension-strategy.md`.
@@ -56,7 +56,7 @@ Public domains:
 
 - `www.alive.org.tw`: public website and every non-account API path.
 - `admin.alive.org.tw`: CMS/admin console UI only.
-- `account.alive.org.tw`: account UI plus account-owned APIs, OIDC endpoints, token endpoint, and JWKS.
+- `account.alive.org.tw`: `account-fe` UI plus account-api-owned APIs, OIDC endpoints, token endpoint, and JWKS.
 
 API paths:
 
@@ -81,6 +81,7 @@ The design extends the existing gateway rather than replacing it.
 Use a modular microservice architecture with a small set of Go services:
 
 - `api-gateway`: first gate for public ingress, routing, rate limits, CORS, local JWT verification, and trusted identity header injection.
+- `account-fe`: account-domain browser login/profile/security console.
 - `account-api`: account domain only; OIDC/OAuth2 login, token issuance, user/account APIs, roles/claims source, and JWKS/public key publication.
 - `hhc-web-api`: main website backend and API facade for v1; it owns website content modules, admin writes, public read APIs, and projections.
 - `asset-api`: generic asset service for files, images, PDFs, thumbnails, private group files, and future app cloud-folder objects.
@@ -107,7 +108,7 @@ JWT verification must happen inside the gateway deployment. Do not call `account
 Recommended v1 implementation:
 
 - Keep existing Nginx/Dapr gateway.
-- Add a local Go JWT verifier in the same gateway image.
+- Add a local Go JWT verifier in the `api-gateway` deployment boundary, preferably as an ACA sidecar/container and acceptable as a same-image binary if multi-container is unavailable.
 - Nginx calls the verifier only on `127.0.0.1:10001`.
 - The verifier fetches OIDC metadata/JWKS from `account.alive.org.tw`, caches keys, refreshes them in the background, and validates tokens locally.
 
@@ -140,9 +141,11 @@ Backend services must treat missing trusted identity headers on protected routes
 
 ## Account Domain
 
+`account-fe` owns the browser login/profile/security console.
+
 `account-api` owns:
 
-- User login and session.
+- User login and session APIs.
 - OIDC authorization code + PKCE.
 - Token issuing and refresh.
 - JWKS/public key publication.
