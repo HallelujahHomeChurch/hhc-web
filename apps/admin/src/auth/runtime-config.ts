@@ -1,6 +1,7 @@
 export type RuntimeConfig = {
   accountApiBaseUrl: string
-  accountAuthorizeBaseUrl: string
+	accountAuthorizeBaseUrl: string
+	accountSiteUrl: string
 	hhcWebApiBaseUrl: string
   adminClientId: string
   redirectUri: string
@@ -26,12 +27,19 @@ export function readRuntimeConfig(
     accountApiBaseUrl,
 		hhcWebApiBaseUrl: stringEnv(env.VITE_HHC_WEB_API_BASE_URL, '/api'),
     accountAuthorizeBaseUrl,
+		accountSiteUrl: stringEnv(env.VITE_ACCOUNT_SITE_URL, defaultAccountSiteUrl(currentUrl)),
     adminClientId: stringEnv(env.VITE_ADMIN_CLIENT_ID, 'admin-web'),
     redirectUri: stringEnv(env.VITE_ADMIN_REDIRECT_URI, `${origin}/oauth/callback`),
     oauthScope: stringEnv(env.VITE_ADMIN_OAUTH_SCOPE, 'openid profile email cms:read cms:write cms:publish cms:admin assets:read assets:write assets:grant audit:read'),
     mockApi: env.VITE_ACCOUNT_API_MOCK === 'true' || env.VITE_ACCOUNT_API_MOCK === true,
     publicSiteUrl: stringEnv(env.VITE_PUBLIC_SITE_URL, 'https://www.alive.org.tw').replace(/\/$/, ''),
   }
+}
+
+function defaultAccountSiteUrl(currentUrl: URL) {
+  if (currentUrl.hostname === 'admin.alive.org.tw') return 'https://account.alive.org.tw'
+  if (currentUrl.hostname === 'admin-test.alive.org.tw') return 'https://account-test.alive.org.tw'
+  return 'http://localhost:5173'
 }
 
 function stringEnv(value: string | boolean | undefined, fallback: string) {

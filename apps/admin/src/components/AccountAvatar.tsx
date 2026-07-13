@@ -1,6 +1,6 @@
-import { Avatar, type AvatarRootProps } from '@heroui/react'
+import { Avatar, type AvatarProps } from '@hhc/ui'
 
-import { accountInitials } from '../lib/account-display'
+import { displayAccountName } from '../lib/account-display'
 import type { Profile } from '../lib/api'
 
 export function AccountAvatar({
@@ -10,12 +10,7 @@ export function AccountAvatar({
 }: {
   className?: string
   profile: Pick<Profile, 'avatar_url' | 'email' | 'first_name' | 'last_name'> | null | undefined
-  size?: AvatarRootProps['size']
+  size?: AvatarProps['size']
 }) {
-  return (
-    <Avatar className={['account-avatar', className].filter(Boolean).join(' ')} size={size} variant="soft">
-      {profile?.avatar_url ? <Avatar.Image src={profile.avatar_url} alt="" /> : null}
-      <Avatar.Fallback>{accountInitials(profile)}</Avatar.Fallback>
-    </Avatar>
-  )
+  return <Avatar className={['account-avatar', className].filter(Boolean).join(' ')} name={displayAccountName(profile)} src={profile?.avatar_url} size={size} />
 }

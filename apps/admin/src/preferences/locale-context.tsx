@@ -12,6 +12,7 @@ const messages = {
     adminNavigation: '管理中心導覽',
     openNavigation: '開啟導覽',
     closeNavigation: '關閉導覽',
+    manageAccount: '管理帳號',
     signOut: '登出',
   },
   'zh-Hans': {
@@ -22,6 +23,7 @@ const messages = {
     adminNavigation: '管理中心导航',
     openNavigation: '打开导航',
     closeNavigation: '关闭导航',
+    manageAccount: '管理帐号',
     signOut: '退出登录',
   },
   en: {
@@ -32,6 +34,7 @@ const messages = {
     adminNavigation: 'Admin navigation',
     openNavigation: 'Open navigation',
     closeNavigation: 'Close navigation',
+    manageAccount: 'Manage account',
     signOut: 'Sign out',
   },
 } satisfies Record<Locale, Record<string, string>>

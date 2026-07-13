@@ -30,6 +30,10 @@ describe('App', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /account menu/i }))
     expect(await screen.findByText('Hi HHC Admin')).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Manage account' })).toHaveAttribute(
+      'href',
+      'http://localhost:5173/profile',
+    )
 
     await userEvent.keyboard('{Escape}')
     expect(screen.queryByText('Hi HHC Admin')).not.toBeInTheDocument()
@@ -61,7 +65,7 @@ describe('App', () => {
       'href',
       'https://www.alive.org.tw/zh-Hant/terms-of-use',
     )
-    expect(document.querySelector('.account-menu-trigger .account-avatar')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '帳號選單' }).querySelector('.hhc-avatar')).toBeInTheDocument()
   })
 
   it.each([

@@ -7,6 +7,7 @@ const config: RuntimeConfig = {
   accountApiBaseUrl: 'https://admin.alive.org.tw/api/account/v1',
 	hhcWebApiBaseUrl: 'https://www.alive.org.tw/api',
   accountAuthorizeBaseUrl: 'https://account.alive.org.tw/api/account/v1',
+  accountSiteUrl: 'https://account.alive.org.tw',
   adminClientId: 'admin-web',
   redirectUri: 'https://admin.alive.org.tw/oauth/callback',
   oauthScope: 'openid profile email',
