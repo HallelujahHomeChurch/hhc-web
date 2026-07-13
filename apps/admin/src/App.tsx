@@ -1,18 +1,20 @@
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
+import { lazy, Suspense, type ReactNode } from 'react'
 
 import { AuthProvider, useAuth } from './auth/auth-context'
 import { readRuntimeConfig, type RuntimeConfig } from './auth/runtime-config'
 import { AppLayout } from './components/AppLayout'
-import { AccessPage } from './pages/AccessPage'
-import { CmsPage } from './pages/CmsPage'
-import { DashboardPage } from './pages/DashboardPage'
 import { ForbiddenPage } from './pages/ForbiddenPage'
 import { LoginPage } from './pages/LoginPage'
 import { OAuthCallbackPage } from './pages/OAuthCallbackPage'
-import { OAuthClientsPage } from './pages/OAuthClientsPage'
-import { UsersPage } from './pages/UsersPage'
-import { ContentModulePage } from './pages/content/ContentModulePage'
 import { LocaleProvider } from './preferences/locale-context'
+
+const AccessPage = lazy(() => import('./pages/AccessPage').then((module) => ({ default: module.AccessPage })))
+const CmsPage = lazy(() => import('./pages/CmsPage').then((module) => ({ default: module.CmsPage })))
+const ContentModulePage = lazy(() => import('./pages/content/ContentModulePage').then((module) => ({ default: module.ContentModulePage })))
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })))
+const OAuthClientsPage = lazy(() => import('./pages/OAuthClientsPage').then((module) => ({ default: module.OAuthClientsPage })))
+const UsersPage = lazy(() => import('./pages/UsersPage').then((module) => ({ default: module.UsersPage })))
 
 type AppProps = {
   config?: Partial<RuntimeConfig>
@@ -29,14 +31,14 @@ function App({ config }: AppProps) {
           <Route path="/forbidden" element={<ForbiddenPage />} />
           <Route element={<RequireAdmin />}>
             <Route element={<AppLayout />}>
-              <Route index element={<DashboardPage />} />
-              <Route path="/users" element={<UsersPage />} />
-              <Route path="/access" element={<AccessPage />} />
-              <Route path="/oauth-clients" element={<OAuthClientsPage />} />
-              <Route path="/content/bulletins" element={<CmsPage />} />
-              <Route path="/content/news" element={<ContentModulePage module="news" />} />
-              <Route path="/content/history" element={<ContentModulePage module="history" />} />
-              <Route path="/content/videos" element={<ContentModulePage module="videos" />} />
+              <Route index element={<Deferred><DashboardPage /></Deferred>} />
+              <Route path="/users" element={<Deferred><UsersPage /></Deferred>} />
+              <Route path="/access" element={<Deferred><AccessPage /></Deferred>} />
+              <Route path="/oauth-clients" element={<Deferred><OAuthClientsPage /></Deferred>} />
+              <Route path="/content/bulletins" element={<Deferred><CmsPage /></Deferred>} />
+              <Route path="/content/news" element={<Deferred><ContentModulePage module="news" /></Deferred>} />
+              <Route path="/content/history" element={<Deferred><ContentModulePage module="history" /></Deferred>} />
+              <Route path="/content/videos" element={<Deferred><ContentModulePage module="videos" /></Deferred>} />
               <Route path="/cms" element={<Navigate to="/content/bulletins" replace />} />
             </Route>
           </Route>
@@ -46,6 +48,10 @@ function App({ config }: AppProps) {
       </BrowserRouter>
     </LocaleProvider>
   )
+}
+
+function Deferred({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<p className="inline-status">Loading</p>}>{children}</Suspense>
 }
 
 function RequireAdmin() {

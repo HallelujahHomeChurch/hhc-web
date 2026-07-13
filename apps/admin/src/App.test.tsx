@@ -26,7 +26,8 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: /^overview$/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /users/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /roles & permissions/i })).toBeInTheDocument()
-    expect(screen.getByText('Website content')).toBeInTheDocument()
+    const navigation = screen.getByRole('navigation', { name: 'Admin' })
+    expect(Array.from(navigation.querySelectorAll('.sidebar-nav-group-label'), (element) => element.textContent)).toContain('Website content')
     expect(screen.queryByText('CMS')).not.toBeInTheDocument()
     expect(screen.queryByText('admin@alive.org.tw')).not.toBeInTheDocument()
 

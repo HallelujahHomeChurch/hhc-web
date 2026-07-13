@@ -1,4 +1,4 @@
-import { Button, Card, Dropdown, Modal } from '@heroui/react'
+import { Button, Card, Modal } from '@hhc/ui'
 import { Pagination as SharedPagination, Select as SharedSelect } from '@hhc/ui'
 import { Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -164,27 +164,12 @@ export function UsersPage() {
           <span className="sr-only">Search users</span>
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search email or name" />
         </label>
-        <Dropdown>
-          <Dropdown.Trigger aria-label="Filter by role" className="admin-select-trigger">
-            {roleFilter || 'All roles'}
-          </Dropdown.Trigger>
-          <Dropdown.Popover className="admin-select-popover">
-            <Dropdown.Menu
-              aria-label="Filter by role"
-              className="admin-select-menu"
-              onAction={(key) => updateSearchParams({ role: key === 'all' ? '' : String(key), page: 1 })}
-            >
-              <Dropdown.Item id="all" className="admin-select-item" textValue="All roles">
-                All roles
-              </Dropdown.Item>
-              {roles.map((role) => (
-                <Dropdown.Item key={role.id} id={role.name} className="admin-select-item" textValue={role.name}>
-                  {role.name}
-                </Dropdown.Item>
-              ))}
-            </Dropdown.Menu>
-          </Dropdown.Popover>
-        </Dropdown>
+        <SharedSelect
+          label="Filter by role"
+          items={[{id: 'all', label: 'All roles'}, ...roles.map((role) => ({id: role.name, label: role.name}))]}
+          selectedKey={roleFilter || 'all'}
+          onSelectionChange={(key) => updateSearchParams({role: key === 'all' ? '' : key, page: 1})}
+        />
         <SharedSelect
           label="Rows per page"
           items={PAGE_SIZES.map((size) => ({ id: String(size), label: String(size) }))}
@@ -301,27 +286,11 @@ export function UsersPage() {
                       </Button>
                     ))}
                   </div>
-                  <Dropdown>
-                    <Dropdown.Trigger className="admin-select-trigger">Add permission</Dropdown.Trigger>
-                    <Dropdown.Popover className="admin-select-popover">
-                      <Dropdown.Menu
-                        aria-label="Add direct permission"
-                        className="admin-select-menu"
-                        onAction={(key) => void addPermission(String(key))}
-                      >
-                        {permissions.map((permission) => (
-                          <Dropdown.Item
-                            key={permission.id}
-                            id={permission.code}
-                            className="admin-select-item"
-                            textValue={permission.code}
-                          >
-                            {permission.code}
-                          </Dropdown.Item>
-                        ))}
-                      </Dropdown.Menu>
-                    </Dropdown.Popover>
-                  </Dropdown>
+                  <SharedSelect
+                    label="Add permission"
+                    items={permissions.map((permission) => ({id: permission.code, label: permission.code}))}
+                    onSelectionChange={(key) => void addPermission(key)}
+                  />
                 </section>
               </div>
             ) : (

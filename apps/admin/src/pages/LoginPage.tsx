@@ -1,4 +1,4 @@
-import { Button, Card } from '@heroui/react'
+import { Button, Card } from '@hhc/ui'
 import { ShieldCheck } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 

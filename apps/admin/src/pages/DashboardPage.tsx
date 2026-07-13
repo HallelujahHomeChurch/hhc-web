@@ -1,14 +1,14 @@
-import { Card } from '@heroui/react'
-import { KeyRound, ShieldCheck, Users } from 'lucide-react'
+import { Card } from '@hhc/ui'
+import { FileText, KeyRound, ShieldCheck } from 'lucide-react'
 
 const cards = [
   {
-    label: 'Account operations',
-    value: 'Users and roles',
-    icon: Users,
+    label: 'Website content',
+    value: '4 modules',
+    icon: FileText,
   },
   {
-    label: 'Permission model',
+    label: 'Account access',
     value: 'RBAC backed',
     icon: ShieldCheck,
   },
@@ -42,14 +42,6 @@ export function DashboardPage() {
           )
         })}
       </div>
-
-      <section className="work-panel">
-        <h2>Ready for CMS rollout</h2>
-        <p>
-          Account login, admin RBAC surfaces, and OAuth client management are prepared as the control layer for
-          future CMS and service consoles.
-        </p>
-      </section>
     </section>
   )
 }

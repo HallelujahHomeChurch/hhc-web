@@ -2,8 +2,8 @@ import type {Metadata} from 'next';
 import {chenyuLuoyan, inter, notoSansSC, notoSansTC} from './fonts';
 import {defaultLocale} from '@/i18n/locales';
 import {getThemeBootstrapScript} from '@hhc/preferences';
-import '@hhc/ui/styles.css';
 import './globals.css';
+import '@hhc/ui/styles.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://example.com'),

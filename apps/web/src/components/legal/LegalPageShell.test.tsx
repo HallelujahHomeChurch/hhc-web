@@ -22,7 +22,7 @@ describe('LegalPageShell', () => {
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
     expect(screen.getByText('法律內容')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('combobox', {name: '語言'}));
+    await user.click(screen.getByRole('button', {name: /語言/}));
     expect(await screen.findByRole('option', {name: 'EN'})).toBeInTheDocument();
 
     await user.keyboard('{Escape}');
