@@ -25,6 +25,6 @@ describe('locales', () => {
   });
 
   it('builds a shareable locale cookie', () => {
-    expect(getLocaleCookie('en', '.example.com')).toContain('hhc_locale=en; Max-Age=31536000; Path=/; SameSite=Lax; Domain=.example.com');
+    expect(getLocaleCookie('en', '.alive.org.tw')).toContain('hhc_locale=en; Max-Age=31536000; Path=/; SameSite=Lax; Domain=.alive.org.tw');
   });
 });

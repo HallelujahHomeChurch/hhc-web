@@ -9,9 +9,15 @@
       "openMenu": "Open menu",
       "closeMenu": "Close menu"
     },
+    "account": {
+      "menu": "Account menu",
+      "manageAccount": "Manage account",
+      "signIn": "Sign in",
+      "signOut": "Sign out"
+    },
     "language": "Language",
-    "privacyPolicy": "Privacy Policy",
-    "termsOfUse": "Terms of Use",
+    "privacyPolicy": "Privacy",
+    "termsOfUse": "Terms",
     "legalNavigation": "Legal information",
     "copyrightHolder": "Hallelujah Community Care Association, R.O.C.",
     "allRightsReserved": "All rights reserved.",

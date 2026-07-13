@@ -9,9 +9,15 @@
       "openMenu": "開啟選單",
       "closeMenu": "關閉選單"
     },
+    "account": {
+      "menu": "帳號選單",
+      "manageAccount": "管理帳號",
+      "signIn": "登入",
+      "signOut": "登出"
+    },
     "language": "語言",
-    "privacyPolicy": "隱私權保護政策",
-    "termsOfUse": "使用條款",
+    "privacyPolicy": "隱私權",
+    "termsOfUse": "條款",
     "legalNavigation": "法律資訊",
     "copyrightHolder": "社團法人中華民國哈利路亞社區關懷協會",
     "allRightsReserved": "All rights reserved.",

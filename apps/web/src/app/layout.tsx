@@ -1,6 +1,8 @@
 import type {Metadata} from 'next';
 import {chenyuLuoyan, inter, notoSansSC, notoSansTC} from './fonts';
 import {defaultLocale} from '@/i18n/locales';
+import {getThemeBootstrapScript} from '@hhc/preferences';
+import '@hhc/ui/styles.css';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -15,7 +17,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(()=>{const m=document.cookie.match(/(?:^|;\\s*)hhc_theme=(light|dark)(?:;|$)/);const t=m?.[1]??(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=t;document.documentElement.classList.toggle('dark',t==='dark');document.documentElement.style.colorScheme=t})()`
+            __html: getThemeBootstrapScript()
           }}
         />
       </head>

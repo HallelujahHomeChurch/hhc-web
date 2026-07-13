@@ -9,9 +9,15 @@
       "openMenu": "开启菜单",
       "closeMenu": "关闭菜单"
     },
+    "account": {
+      "menu": "帐号菜单",
+      "manageAccount": "管理帐号",
+      "signIn": "登录",
+      "signOut": "退出登录"
+    },
     "language": "语言",
-    "privacyPolicy": "隐私权保护政策",
-    "termsOfUse": "使用条款",
+    "privacyPolicy": "隐私权",
+    "termsOfUse": "条款",
     "legalNavigation": "法律信息",
     "copyrightHolder": "社团法人中华民国哈利路亚社区关怀协会",
     "allRightsReserved": "All rights reserved.",

@@ -5,14 +5,17 @@ import Image from 'next/image';
 import {useState} from 'react';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import {useTranslations} from 'next-intl';
+import type {AccountSessionClient} from '@hhc/account-client';
 import type {Locale} from '@/i18n/locales';
+import {AccountControl} from './AccountControl';
 
 type SiteHeaderProps = {
   locale: Locale;
   pathname: string;
+  sessionClient?: AccountSessionClient;
 };
 
-export function SiteHeader({locale, pathname}: SiteHeaderProps) {
+export function SiteHeader({locale, pathname, sessionClient}: SiteHeaderProps) {
   const t = useTranslations('site');
   const [isOpen, setIsOpen] = useState(false);
   const navItems = [
@@ -70,6 +73,17 @@ export function SiteHeader({locale, pathname}: SiteHeaderProps) {
             ))}
           </nav>
         </Collapsible.Content>
+        <div className="ml-auto shrink-0">
+          <AccountControl
+            client={sessionClient}
+            labels={{
+              menu: t('account.menu'),
+              manageAccount: t('account.manageAccount'),
+              signIn: t('account.signIn'),
+              signOut: t('account.signOut')
+            }}
+          />
+        </div>
       </div>
       </header>
     </Collapsible.Root>
