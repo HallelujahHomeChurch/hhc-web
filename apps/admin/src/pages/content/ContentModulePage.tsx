@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { useAuth } from '../../auth/auth-context'
 import { StatusBadge } from '../../components/StatusBadge'
-import type { ContentItem, ContentModule, ContentRevision, ContentWriteInput } from '../../lib/cms-api'
+import type { AssetStatus, ContentItem, ContentModule, ContentRevision, ContentWriteInput } from '../../lib/cms-api'
 
 const locales = [
   { id: 'zh-Hant', label: '繁體中文' },
@@ -34,6 +34,8 @@ export function ContentModulePage({ module }: { module: ContentModule }) {
   const [total, setTotal] = useState(0)
   const [reloadKey, setReloadKey] = useState(0)
   const [revisions, setRevisions] = useState<ContentRevision[]>([])
+  const [coverStatus, setCoverStatus] = useState<AssetStatus | null>(null)
+  const [isUploadingCover, setUploadingCover] = useState(false)
   const requestSequence = useRef(0)
   const selected = useMemo(() => items.find((item) => item.id === selectedID) ?? null, [items, selectedID])
 
@@ -59,6 +61,23 @@ export function ContentModulePage({ module }: { module: ContentModule }) {
     if (!selected || isCreating) return
     setDraft(draftFromItem(module, selected))
   }, [isCreating, module, selected])
+
+  useEffect(() => {
+    if (module !== 'news' || !selected?.coverAssetId) { setCoverStatus(null); return }
+    const controller = new AbortController()
+    let timer: number | undefined
+    const poll = async () => {
+      try {
+        const status = await cmsApi.getNewsCoverStatus(selected.id, selected.coverAssetId!, controller.signal)
+        setCoverStatus(status)
+        if (!controller.signal.aborted && (status.scanStatus === 'pending' || status.processingStatus === 'pending')) {
+          timer = window.setTimeout(() => void poll(), 1500)
+        }
+      } catch { if (!controller.signal.aborted) setError('Unable to read cover image processing status.') }
+    }
+    void poll()
+    return () => { controller.abort(); if (timer) window.clearTimeout(timer) }
+  }, [cmsApi, module, selected?.coverAssetId, selected?.id])
 
   function beginCreate() {
     setCreating(true)
@@ -127,6 +146,20 @@ export function ContentModulePage({ module }: { module: ContentModule }) {
     }
   }
 
+  async function uploadCover(file: File) {
+    if (module !== 'news' || !selected) { setError('Save the news draft before uploading its cover image.'); return }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size < 1 || file.size > 10 << 20) { setError('Choose a JPEG, PNG, or WebP image no larger than 10 MiB.'); return }
+    setUploadingCover(true)
+    setError(null)
+    try {
+      const created = await cmsApi.createNewsCoverUpload(selected.id, { fileName: file.name, mimeType: file.type as 'image/jpeg' | 'image/png' | 'image/webp', sizeBytes: file.size }, crypto.randomUUID())
+      await cmsApi.uploadFile(created.uploadTarget, file)
+      const updated = await cmsApi.completeNewsCoverUpload(selected.id, created.asset.id, selected.version, { fileName: file.name, mimeType: file.type as 'image/jpeg' | 'image/png' | 'image/webp', sizeBytes: file.size, checksumSha256: await sha256(file) })
+      replaceItem(updated)
+      setMessage('Cover image uploaded. Security scanning and image processing are in progress.')
+    } catch { setError('Unable to upload the cover image.') } finally { setUploadingCover(false) }
+  }
+
   return (
     <section className="page-stack">
       <header className="page-header">
@@ -160,7 +193,7 @@ export function ContentModulePage({ module }: { module: ContentModule }) {
                 label="Content locale"
                 items={locales.map((locale) => ({ id: locale.id, label: locale.label, content: <TranslationFields key={locale.id} module={module} locale={locale.id} draft={draft} onChange={setDraft} /> }))}
               />
-              {module === 'news' ? <div className="content-cover-placeholder"><strong>Cover image</strong><span>{selected?.coverAssetId ? 'Image attached' : 'Upload will be available after the draft is saved.'}</span></div> : null}
+              {module === 'news' ? <label className="content-cover-placeholder"><strong>Cover image</strong><span>{coverStatus ? coverStatus.scanStatus !== 'clean' ? `Security scan: ${coverStatus.scanStatus}` : `Image processing: ${coverStatus.processingStatus}` : selected?.coverAssetId ? 'Checking image status' : selected ? 'JPEG, PNG, or WebP up to 10 MiB' : 'Save the draft before uploading'}</span><input aria-label="Cover image" type="file" accept="image/jpeg,image/png,image/webp" disabled={!selected || isUploadingCover} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadCover(file); event.target.value = '' }} /></label> : null}
               <div className="content-editor-actions">
                 {!isCreating && selected ? (
                   <Dialog trigger={<Button type="button" variant="ghost" onPress={() => void loadRevisions()}><RotateCcw size={16} />Revisions</Button>} title="Revision history">
@@ -224,3 +257,4 @@ function draftFromItem(module: ContentModule, item: ContentItem): Draft {
   }
 }
 function cleanInput(draft: Draft): ContentWriteInput { return { slug: draft.slug || undefined, displayDate: draft.displayDate || undefined, sortOrder: draft.sortOrder || undefined, youtubeVideoId: draft.youtubeVideoId || undefined, coverAssetId: draft.coverAssetId || undefined, featured: draft.featured, homeEligible: draft.homeEligible, translations: draft.translations.filter((value) => value.title.trim()).map((value) => ({ ...value, title: value.title.trim() })) } }
+async function sha256(file: File) { const digest = await crypto.subtle.digest('SHA-256', await new Response(file).arrayBuffer()); return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, '0')).join('') }

@@ -108,6 +108,9 @@ export class MockCmsApi {
   async unpublishContent(module: ContentModule, id: string, version: number) { return this.changeContentStatus(module, id, version, 'unpublished') }
   async listContentRevisions(module: ContentModule, id: string) { const item = findContent(module, id); return [{ version: item.version, snapshot: structuredClone(item), createdBy: item.updatedBy, createdAt: item.updatedAt }] }
   async restoreContentRevision(module: ContentModule, id: string, _revision: number, version: number) { return this.changeContentStatus(module, id, version, 'draft') }
+  async createNewsCoverUpload(id: string) { findContent('news', id); return { asset: { id: `cover-${id}` }, uploadTarget: { url: 'mock://upload', method: 'PUT', headers: {}, expiresAt: now } } }
+  async completeNewsCoverUpload(id: string, assetId: string, version: number) { const item = findContent('news', id); if (item.version !== version) throw new Error('precondition_failed'); item.coverAssetId = assetId; item.version++; item.status = 'draft'; return structuredClone(item) }
+  async getNewsCoverStatus(_id: string, assetId: string) { return { id: assetId, namespace: 'cms.news.cover', ownerService: 'hhc-web-api', ownerType: 'news', ownerId: _id, uploadStatus: 'completed' as const, scanStatus: 'clean' as const, processingStatus: 'ready' as const, visibility: 'public' } }
   private async changeContentStatus(module: ContentModule, id: string, version: number, status: ContentStatus) { const item = findContent(module, id); if (item.version !== version) throw new Error('precondition_failed'); item.status = status; item.version++; item.updatedAt = now; return structuredClone(item) }
 }
 

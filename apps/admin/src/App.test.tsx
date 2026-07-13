@@ -346,4 +346,18 @@ describe('App', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Unpublish' }))
     expect(unpublish).toHaveBeenCalled()
   })
+
+  it('uploads a news cover through the coordinated asset flow', async () => {
+    const createUpload = vi.spyOn(MockCmsApi.prototype, 'createNewsCoverUpload')
+    const completeUpload = vi.spyOn(MockCmsApi.prototype, 'completeNewsCoverUpload')
+    window.history.pushState({}, '', '/content/news')
+    render(<App config={{ mockApi: true }} />)
+
+    await screen.findByRole('heading', { level: 1, name: 'Latest news' })
+    await userEvent.upload(screen.getByLabelText('Cover image'), new File(['image'], 'cover.jpg', { type: 'image/jpeg' }))
+
+    expect(createUpload).toHaveBeenCalled()
+    expect(completeUpload).toHaveBeenCalled()
+    expect(await screen.findByText(/Security scanning and image processing are in progress/)).toBeInTheDocument()
+  })
 })

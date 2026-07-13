@@ -14,6 +14,9 @@ import {
   type HhcWebClient,
   type PageMeta,
   type UploadTarget,
+  type AssetStatus,
+  type CreateImageUploadInput,
+  type CompleteImageUploadInput,
 } from '@hhc/hhc-web-client'
 
 import type { Fetcher } from './api'
@@ -32,6 +35,9 @@ export type {
   CreatedBulletinUpload,
   PageMeta,
   UploadTarget,
+  AssetStatus,
+  CreateImageUploadInput,
+  CompleteImageUploadInput,
 }
 
 export class CmsApi {
@@ -91,4 +97,7 @@ export class CmsApi {
   unpublishContent(module: ContentModule, id: string, version: number) { return this.client.unpublishContent(module, id, version) }
   listContentRevisions(module: ContentModule, id: string) { return this.client.listContentRevisions(module, id) }
   restoreContentRevision(module: ContentModule, id: string, revision: number, version: number) { return this.client.restoreContentRevision(module, id, revision, version) }
+  createNewsCoverUpload(id: string, input: CreateImageUploadInput, key: string) { return this.client.createNewsCoverUpload(id, input, key) }
+  completeNewsCoverUpload(id: string, assetId: string, version: number, input: CompleteImageUploadInput) { return this.client.completeNewsCoverUpload(id, assetId, version, input) }
+  getNewsCoverStatus(id: string, assetId: string, signal?: AbortSignal) { return this.client.getNewsCoverStatus(id, assetId, signal) }
 }
