@@ -14,12 +14,9 @@ describe('CmsApi', () => {
     const result = await api.listBulletins({ page: 2, pageSize: 20, status: 'draft' })
 
     expect(result.meta.total).toBe(41)
-    expect(fetcher).toHaveBeenCalledWith(
-      'https://www.alive.org.tw/api/admin/bulletins?page=2&pageSize=20&status=draft',
-      expect.objectContaining({ headers: expect.any(Headers) }),
-    )
-    const headers = fetcher.mock.calls[0][1].headers as Headers
-    expect(headers.get('Authorization')).toBe('Bearer access-token')
+    const request = fetcher.mock.calls[0][0] as Request
+    expect(request.url).toBe('https://www.alive.org.tw/api/admin/bulletins?page=2&pageSize=20&status=draft')
+    expect(request.headers.get('Authorization')).toBe('Bearer access-token')
   })
 
   it('sends optimistic concurrency and idempotency headers', async () => {
@@ -34,9 +31,9 @@ describe('CmsApi', () => {
       locale: 'zh-Hant', title: '週報', fileName: 'weekly.pdf', mimeType: 'application/pdf', sizeBytes: 128, checksumSha256: 'a'.repeat(64),
     })
 
-    const headers = fetcher.mock.calls[0][1].headers as Headers
-    expect(headers.get('If-Match')).toBe('"1"')
-    expect(headers.get('Content-Type')).toBe('application/json')
+    const request = fetcher.mock.calls[0][0] as Request
+    expect(request.headers.get('If-Match')).toBe('"1"')
+    expect(request.headers.get('Content-Type')).toBe('application/json')
   })
 
   it('surfaces the API error code', async () => {

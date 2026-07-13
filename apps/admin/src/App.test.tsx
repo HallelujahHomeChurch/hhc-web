@@ -25,7 +25,9 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: /^overview$/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /users/i })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /access/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /roles & permissions/i })).toBeInTheDocument()
+    expect(screen.getByText('Website content')).toBeInTheDocument()
+    expect(screen.queryByText('CMS')).not.toBeInTheDocument()
     expect(screen.queryByText('admin@alive.org.tw')).not.toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: /account menu/i }))
@@ -71,9 +73,9 @@ describe('App', () => {
   it.each([
     ['/', 'Overview'],
     ['/users', 'Users'],
-    ['/access', 'Access'],
+    ['/access', 'Roles & permissions'],
     ['/oauth-clients', 'OAuth clients'],
-    ['/cms', 'CMS'],
+    ['/content/bulletins', 'Weekly bulletins'],
   ])('uses the nav label as the page h1 for %s', async (path, title) => {
     window.history.pushState({}, '', path)
     render(<App config={{ mockApi: true }} />)
@@ -85,7 +87,7 @@ describe('App', () => {
     window.history.pushState({}, '', '/access')
     render(<App config={{ mockApi: true }} />)
 
-    expect(await screen.findByRole('heading', { name: 'Access' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Roles & permissions' })).toBeInTheDocument()
     expect(screen.queryByLabelText('Role name')).not.toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: /create role/i }))
@@ -256,11 +258,11 @@ describe('App', () => {
     expect(await screen.findByText('Admin Console')).toBeInTheDocument()
   })
 
-	it('creates a weekly bulletin issue from the CMS workspace', async () => {
-		window.history.pushState({}, '', '/cms')
+	it('creates a weekly bulletin issue from the content workspace', async () => {
+		window.history.pushState({}, '', '/content/bulletins')
 		render(<App config={{ mockApi: true }} />)
 
-		expect(await screen.findByRole('heading', { name: 'CMS' })).toBeInTheDocument()
+		expect(await screen.findByRole('heading', { level: 1, name: 'Weekly bulletins' })).toBeInTheDocument()
 		expect((await screen.findAllByText('2026-07-13')).length).toBeGreaterThan(0)
 		await userEvent.click(screen.getByRole('button', { name: 'Create issue' }))
 		await userEvent.type(await screen.findByLabelText('Issue date'), '2026-07-20')
@@ -271,10 +273,10 @@ describe('App', () => {
 
 	it('restores bulletin filters and pagination from the URL', async () => {
 		const listBulletins = vi.spyOn(MockCmsApi.prototype, 'listBulletins')
-		window.history.pushState({}, '', '/cms?status=published&page=2&page_size=50')
+		window.history.pushState({}, '', '/content/bulletins?status=published&page=2&page_size=50')
 		render(<App config={{ mockApi: true }} />)
 
-		await screen.findByRole('heading', { name: 'CMS' })
+		await screen.findByRole('heading', { level: 1, name: 'Weekly bulletins' })
 		expect(listBulletins).toHaveBeenCalledWith(expect.objectContaining({
 			page: 2,
 			pageSize: 50,
@@ -283,7 +285,7 @@ describe('App', () => {
 	})
 
 	it('uses a button to select a weekly bulletin', async () => {
-		window.history.pushState({}, '', '/cms')
+		window.history.pushState({}, '', '/content/bulletins')
 		render(<App config={{ mockApi: true }} />)
 
 		expect(await screen.findByRole('button', { name: 'View bulletin 2026-07-13' })).toBeInTheDocument()
@@ -293,10 +295,10 @@ describe('App', () => {
 		const createUpload = vi.spyOn(MockCmsApi.prototype, 'createBulletinUpload')
 		const completeUpload = vi.spyOn(MockCmsApi.prototype, 'completeBulletinUpload')
 		const publish = vi.spyOn(MockCmsApi.prototype, 'publishBulletin')
-		window.history.pushState({}, '', '/cms')
+		window.history.pushState({}, '', '/content/bulletins')
 		render(<App config={{ mockApi: true }} />)
 
-		await screen.findByRole('heading', { name: 'CMS' })
+		await screen.findByRole('heading', { level: 1, name: 'Weekly bulletins' })
 		await userEvent.click(await screen.findByRole('button', { name: 'Upload PDF for English' }))
 		const file = new File(['%PDF-1.4\n%%EOF'], 'weekly-en.pdf', { type: 'application/pdf' })
 		await userEvent.upload(await screen.findByLabelText('PDF file'), file)

@@ -11,11 +11,13 @@ const now = new Date().toISOString()
 const bulletins: BulletinIssue[] = [
   {
     id: 'bulletin-2026-07-13', issueDate: '2026-07-13', status: 'draft', version: 2, createdAt: now, updatedAt: now,
-    versions: [{ id: 'version-1', issueId: 'bulletin-2026-07-13', locale: 'zh-Hant', title: '2026-07-13 週報', pdfAssetId: 'asset-1', pdfFileName: 'weekly-2026-07-13.pdf', status: 'draft', version: 1 }],
+    createdBy: 'admin-1', updatedBy: 'admin-1',
+    versions: [{ id: 'version-1', issueId: 'bulletin-2026-07-13', locale: 'zh-Hant', title: '2026-07-13 週報', pdfAssetId: 'asset-1', pdfFileName: 'weekly-2026-07-13.pdf', status: 'draft', version: 1, createdAt: now, updatedAt: now }],
   },
   {
     id: 'bulletin-2026-07-06', issueDate: '2026-07-06', status: 'published', version: 3, publishedAt: now, createdAt: now, updatedAt: now,
-    versions: [{ id: 'version-2', issueId: 'bulletin-2026-07-06', locale: 'zh-Hant', title: '2026-07-06 週報', pdfAssetId: 'asset-2', pdfFileName: 'weekly-2026-07-06.pdf', status: 'published', version: 2, publishedAt: now }],
+    createdBy: 'admin-1', updatedBy: 'admin-1',
+    versions: [{ id: 'version-2', issueId: 'bulletin-2026-07-06', locale: 'zh-Hant', title: '2026-07-06 週報', pdfAssetId: 'asset-2', pdfFileName: 'weekly-2026-07-06.pdf', status: 'published', version: 2, publishedAt: now, createdAt: now, updatedAt: now }],
   },
 ]
 
@@ -33,7 +35,7 @@ export class MockCmsApi {
   async createBulletin(issueDate: string) {
     const existing = bulletins.find((item) => item.issueDate === issueDate)
     if (existing) return structuredClone(existing)
-    const issue: BulletinIssue = { id: `bulletin-${issueDate}`, issueDate, status: 'draft', version: 1, createdAt: now, updatedAt: now, versions: [] }
+    const issue: BulletinIssue = { id: `bulletin-${issueDate}`, issueDate, status: 'draft', version: 1, createdBy: 'admin-1', updatedBy: 'admin-1', createdAt: now, updatedAt: now, versions: [] }
     bulletins.unshift(issue)
     return structuredClone(issue)
   }
@@ -46,7 +48,7 @@ export class MockCmsApi {
     const issue = findBulletin(id)
     if (issue.version !== version) throw new Error('version_conflict')
     const existing = issue.versions.find((item) => item.locale === input.locale)
-    const next = { id: existing?.id ?? `version-${assetId}`, issueId: id, locale: input.locale, title: input.title, pdfAssetId: assetId, pdfFileName: input.fileName, status: 'draft' as const, version: (existing?.version ?? 0) + 1 }
+    const next = { id: existing?.id ?? `version-${assetId}`, issueId: id, locale: input.locale, title: input.title, pdfAssetId: assetId, pdfFileName: input.fileName, status: 'draft' as const, version: (existing?.version ?? 0) + 1, createdAt: existing?.createdAt ?? now, updatedAt: now }
     issue.versions = [...issue.versions.filter((item) => item.locale !== input.locale), next]
     issue.status = 'draft'
     issue.version++

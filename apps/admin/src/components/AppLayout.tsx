@@ -7,12 +7,14 @@ import { readRuntimeConfig } from '../auth/runtime-config'
 import { displayAccountName } from '../lib/account-display'
 import { useLocale } from '../preferences/locale-context'
 
-const navItems = [
-  { to: '/', label: 'Overview', icon: LayoutDashboard },
-  { to: '/users', label: 'Users', icon: Users },
-  { to: '/access', label: 'Access', icon: ShieldCheck },
-  { to: '/oauth-clients', label: 'OAuth clients', icon: KeyRound },
-  { to: '/cms', label: 'CMS', icon: BookOpen },
+const navGroups = [
+  { label: 'Overview', items: [{ to: '/', label: 'Overview', icon: LayoutDashboard }] },
+  { label: 'Website content', items: [{ to: '/content/bulletins', label: 'Weekly bulletins', icon: BookOpen }] },
+  { label: 'Account & access', items: [
+    { to: '/users', label: 'Users', icon: Users },
+    { to: '/access', label: 'Roles & permissions', icon: ShieldCheck },
+    { to: '/oauth-clients', label: 'OAuth clients', icon: KeyRound },
+  ] },
 ]
 
 export function AppLayout() {
@@ -30,17 +32,7 @@ export function AppLayout() {
           <strong>{messages.brand}</strong>
         </a>
 
-        <nav className="sidebar-nav" aria-label="Admin">
-          {navItems.map((item) => {
-            const Icon = item.icon
-            return (
-              <NavLink key={item.to} to={item.to} end={item.to === '/'}>
-                <Icon size={18} aria-hidden="true" />
-                <span>{item.label}</span>
-              </NavLink>
-            )
-          })}
-        </nav>
+        <Navigation />
         <div className="sidebar-legal-links">
           <a href={`${publicSiteUrl}/${locale}/privacy-policy`} rel="noopener noreferrer" target="_blank">
             {messages.privacy}
@@ -70,17 +62,7 @@ export function AppLayout() {
                   <img src="/assets/brand/logo.png" alt="" />
                   <strong>{messages.brand}</strong>
                 </a>
-                <nav className="sidebar-nav mobile-navigation-links" aria-label={messages.adminNavigation}>
-                  {navItems.map((item) => {
-                    const Icon = item.icon
-                    return (
-                      <NavLink key={item.to} to={item.to} end={item.to === '/'} onClick={close}>
-                        <Icon size={18} aria-hidden="true" />
-                        <span>{item.label}</span>
-                      </NavLink>
-                    )
-                  })}
-                </nav>
+                <Navigation className="mobile-navigation-links" label={messages.adminNavigation} onNavigate={close} />
                 <div className="sidebar-legal-links mobile-navigation-legal">
                   <a href={`${publicSiteUrl}/${locale}/privacy-policy`} rel="noopener noreferrer" target="_blank">
                     {messages.privacy}
@@ -118,5 +100,28 @@ export function AppLayout() {
         </main>
       </div>
     </div>
+  )
+}
+
+function Navigation({ className = '', label = 'Admin', onNavigate }: { className?: string; label?: string; onNavigate?: () => void }) {
+  return (
+    <nav className={`sidebar-nav ${className}`.trim()} aria-label={label}>
+      {navGroups.map((group) => (
+        <section className="sidebar-nav-group" key={group.label}>
+          <span className="sidebar-nav-group-label">{group.label}</span>
+          <div>
+            {group.items.map((item) => {
+              const Icon = item.icon
+              return (
+                <NavLink key={item.to} to={item.to} end={item.to === '/'} onClick={onNavigate}>
+                  <Icon size={18} aria-hidden="true" />
+                  <span>{item.label}</span>
+                </NavLink>
+              )
+            })}
+          </div>
+        </section>
+      ))}
+    </nav>
   )
 }

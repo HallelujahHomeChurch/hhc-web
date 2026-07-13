@@ -73,7 +73,7 @@ export function AccessPage() {
     <section className="page-stack">
       <header className="page-header">
         <div>
-          <h1>Access</h1>
+          <h1>Roles &amp; permissions</h1>
         </div>
         <div className="page-actions">
           <Button variant="secondary" onPress={() => setPermissionDialogOpen(true)}>

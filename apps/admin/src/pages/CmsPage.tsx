@@ -181,7 +181,7 @@ export function CmsPage() {
   return (
     <section className="page-stack">
       <header className="page-header">
-        <h1>CMS</h1>
+        <h1>Weekly bulletins</h1>
         <div className="page-actions">
           <Button onPress={() => setCreateOpen(true)}><Plus size={17} />Create issue</Button>
         </div>

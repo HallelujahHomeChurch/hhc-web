@@ -32,7 +32,8 @@ function App({ config }: AppProps) {
               <Route path="/users" element={<UsersPage />} />
               <Route path="/access" element={<AccessPage />} />
               <Route path="/oauth-clients" element={<OAuthClientsPage />} />
-              <Route path="/cms" element={<CmsPage />} />
+              <Route path="/content/bulletins" element={<CmsPage />} />
+              <Route path="/cms" element={<Navigate to="/content/bulletins" replace />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
