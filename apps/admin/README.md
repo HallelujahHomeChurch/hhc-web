@@ -7,7 +7,7 @@ React/Vite admin console for `admin.alive.org.tw`.
 Mock mode is the fastest way to review the UI without starting backend services:
 
 ```bash
-npm run dev:mock
+pnpm --filter @hhc/admin dev:mock
 ```
 
 Open:
@@ -19,7 +19,7 @@ http://127.0.0.1:5175/
 For real account-api integration, start account-api on `127.0.0.1:8080` and run:
 
 ```bash
-npm run dev
+pnpm --filter @hhc/admin dev
 ```
 
 The Vite dev server proxies `/api/account/*` to `http://127.0.0.1:8080`.
@@ -38,9 +38,9 @@ The Vite dev server proxies `/api/account/*` to `http://127.0.0.1:8080`.
 ## Verification
 
 ```bash
-npm test -- --run
-npm run lint
-npm run build
+pnpm --filter @hhc/admin test -- --run
+pnpm --filter @hhc/admin lint
+pnpm --filter @hhc/admin build
 ```
 
 ## Scope
@@ -52,4 +52,9 @@ The console includes:
 - User search/detail/role/direct-permission management.
 - Role and permission management.
 - OAuth client listing/creation/secret rotation.
-- CMS navigation placeholder for the upcoming `cms-api`.
+- Website content workspaces for weekly bulletins, news, history, and videos.
+- Typed draft, publish, unpublish, revision restore, and scanned asset upload flows through `hhc-web-api`.
+
+`hhc-web-api` owns the website content lifecycle. `asset-api` owns bytes,
+ClamAV scanning, derivatives, grants, and stable downloads. The browser never
+operates Azure Blob credentials or asset grants directly.

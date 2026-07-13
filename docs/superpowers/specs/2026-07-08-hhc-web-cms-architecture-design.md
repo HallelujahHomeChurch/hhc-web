@@ -70,7 +70,7 @@ All public ingress goes through `api-gateway`. Backend services must not expose 
 
 ## Current State
 
-`hhc-web` is a Next.js 16 / React 19 / TypeScript public site. Its feature data is currently typed and mocked inside `src/features/*`, with APIs such as `getNews`, `getLatestWeekly`, `getVideos`, `getLocations`, and `getHistoryTimeline`. It is currently configured with `output: 'export'`. The production CMS-backed cutover should move it to a Next.js server behind `api-gateway` as defined in `docs/superpowers/specs/2026-07-08-hhc-web-rendering-and-delivery-design.md`.
+`hhc-frontend` is a pnpm monorepo containing an independently deployed Next.js public site, Vite account console, and Vite admin console. The public app uses `output: 'standalone'` and reads published `hhc-web-api` projections at runtime. Test fixtures are not production fallbacks.
 
 `api-gateway` is an existing Nginx 1.30.3 Alpine reverse proxy deployed to Azure Container Apps. It routes through Dapr service invocation, already knows `www.alive.org.tw`, `admin.alive.org.tw`, and `account.alive.org.tw`, strips client-supplied identity headers, has rate limits/CORS, and currently has no token validation.
 
@@ -81,7 +81,9 @@ The design extends the existing gateway rather than replacing it.
 Use a modular microservice architecture with a small set of Go services:
 
 - `api-gateway`: first gate for public ingress, routing, rate limits, CORS, local JWT verification, and trusted identity header injection.
-- `account-fe`: account-domain browser login/profile/security console.
+- `apps/account`: account-domain browser login/profile/security console, deployed as `account-fe`.
+- `apps/admin`: website content and platform administration console, deployed as `admin-fe`.
+- `apps/web`: public Next.js renderer, deployed as `hhc-web`.
 - `account-api`: account domain only; OIDC/OAuth2 login, token issuance, user/account APIs, roles/claims source, and JWKS/public key publication.
 - `hhc-web-api`: main website backend and API facade for v1; it owns website content modules, admin writes, public read APIs, and projections.
 - `asset-api`: generic asset service for files, images, PDFs, thumbnails, private group files, and future app cloud-folder objects.

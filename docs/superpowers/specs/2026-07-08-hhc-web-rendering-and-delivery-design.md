@@ -29,12 +29,12 @@ The key decision is when and how to move from the current static export build to
 Current `hhc-web` behavior:
 
 - Next.js 16, React 19, App Router, TypeScript.
-- `next.config.ts` uses `output: 'export'`.
+- `next.config.ts` uses `output: 'standalone'`.
 - `next.config.ts` sets `images.unoptimized = true`.
 - Locale routes are generated with `generateStaticParams`.
 - `[locale]` layout sets `dynamicParams = false`.
 - `sitemap.ts`, `robots.ts`, and `opengraph-image.tsx` are `force-static`.
-- Public page data comes from frontend i18n JSON and `src/features/*/mock-data.ts`.
+- Public news, history, and video data comes from published `hhc-web-api` projections.
 - There is no middleware today.
 - There are no Next.js API route handlers today.
 
@@ -42,9 +42,13 @@ This works for a static public site, but it will not be enough once published CM
 
 ## Decision
 
-Use one `hhc-web` Next.js server deployment for v1 public UI and admin UI.
+Use three independent frontend deployments from the `hhc-frontend` monorepo:
 
-Remove `output: 'export'` when runtime CMS/API-backed rendering becomes the production data path.
+- `hhc-web`: Next.js standalone public renderer.
+- `account-fe`: Vite account console.
+- `admin-fe`: Vite website content/admin console.
+
+Shared UI and clients live in workspace packages; deployment and rollback remain app-specific. This decision supersedes the earlier single Next server proposal.
 
 Keep all backend APIs outside the Next.js app. `hhc-web` must not become a BFF or API proxy. All non-account APIs stay under `www.alive.org.tw/api/*` and are served by `api-gateway` routing to backend services.
 
@@ -67,20 +71,9 @@ Cons:
 
 Use static export only while the site still depends on mock/static content.
 
-### Split Public And Admin Into Two Frontend Apps In V1
+### Serve Public And Admin From One Next.js Runtime
 
-Pros:
-
-- Strong isolation between public and admin UI.
-- Smaller deployable per surface.
-- Different release cadence possible.
-
-Cons:
-
-- Duplicates design system, i18n, API client, auth state handling, build config, and deployment pipeline too early.
-- Adds operational cost before there is a separate admin team or scale requirement.
-
-Do not split in v1. Split later if admin UI gets a separate team, release cadence, security boundary, or significantly different runtime needs.
+Rejected because Admin is an authenticated, high-density Vite application with a separate release and rollback boundary. The monorepo shares design, preferences, and typed clients without coupling its runtime to public rendering.
 
 ### Add Next.js API Routes As A BFF
 
@@ -110,7 +103,7 @@ api-gateway
   |
   |-- Host: admin.alive.org.tw
   |     |-- /api/*        -> reject or redirect; no backend APIs here
-  |     |-- everything else -> hhc-web Next.js server admin UI
+  |     |-- everything else -> admin-fe
   |
   |-- Host: account.alive.org.tw
         |-- account UI routes -> account-fe
@@ -342,48 +335,28 @@ NEXT_PUBLIC_ACCOUNT_BASE_URL=https://account.alive.org.tw
 Server-only variables:
 
 ```text
-HHC_WEB_SERVER_API_BASE_URL=https://www.alive.org.tw/api
-HHC_WEB_DATA_MODE=mock|api
-HHC_WEB_PUBLIC_REVALIDATE_SECONDS=300
-HHC_WEB_WEEKLY_REVALIDATE_SECONDS=60
+HHC_WEB_API_BASE_URL=https://www.alive.org.tw/api
 ```
 
 Production browser default:
 
 - use same-origin `/api` for public website reads from `www.alive.org.tw`
-- use absolute `https://www.alive.org.tw/api/admin` for admin UI on `admin.alive.org.tw`
+- use the generated `hhc-web-client` with bearer access tokens for Admin CMS calls
 
 Local development can use `NEXT_PUBLIC_API_BASE_URL` to point to a local or staging API.
 
 Do not configure production to use `api.alive.org.tw`.
 
-## Static Export Cutover
+## Standalone Runtime Cutover
 
-Keep `output: 'export'` only while all production-rendered content can be built from local files.
-
-Remove `output: 'export'` when any of these becomes production-critical:
-
-- public page content is fetched from `hhc-web-api` at request time
-- `generateMetadata` reads CMS public APIs
-- sitemap reads `GET /api/sitemap-data`
-- admin console is served by the same app
-- preview routes require runtime request handling
-- route-level rollback uses runtime data mode flags
-
-Cutover steps:
-
-1. Add API client and fixtures while keeping current static build.
-2. Add server runtime config and ACA deployment for `hhc-web`.
-3. Remove `output: 'export'` in a controlled branch.
-4. Keep static mock fallback through `HHC_WEB_DATA_MODE=mock`.
-5. Verify public routes in all locales on the Next server.
-6. Switch staging gateway host routes to the Next server.
-7. Switch production traffic after parity.
+The source has completed the standalone runtime cutover. CMS-backed routes render
+on request and public projection fetches revalidate every 60 seconds. Legal and
+other local-only routes remain pre-rendered. Production never substitutes test
+fixtures when `hhc-web-api` is unavailable.
 
 Rollback:
 
-- route gateway traffic back to previous static deployment or previous ACA revision
-- set `HHC_WEB_DATA_MODE=mock` if the server is healthy but API data is bad
+- route gateway traffic back to the previous ACA revision
 - keep CMS data and asset grants untouched unless content publish state caused the issue
 
 ## SEO And Metadata
@@ -519,7 +492,7 @@ Recommended runtime:
 - Node runtime image for Next server.
 - Internal ingress only.
 - Health route for process readiness.
-- Gateway routes public/admin UI hosts to the service.
+- Gateway routes the public host to this service; Admin and Account hosts route to their own frontend services.
 - No external direct frontend service URL in production.
 
 Required health checks:
@@ -587,15 +560,11 @@ Expected:
 - admin host API path is rejected
 - public API path routes to backend
 
-## Split Triggers
+## Frontend Boundaries
 
-Split admin into a separate frontend app only when at least one is true:
-
-- separate admin team or release cadence
-- separate security review/deployment approval path
-- admin bundle size materially affects public performance
-- admin requires a different framework/runtime
-- admin needs isolated downtime/rollback behavior
+Public, Account, and Admin are already separate deployment units. Keep visual
+tokens, interaction primitives, preferences, and generated API clients shared;
+keep routes, business workflows, runtime config, and release rollback app-owned.
 
 Add a dedicated frontend BFF only when at least one is true:
 
@@ -605,18 +574,16 @@ Add a dedicated frontend BFF only when at least one is true:
 
 The BFF must still follow `docs/superpowers/specs/2026-07-08-hhc-cross-service-dependency-query-and-read-model-governance-design.md`: it cannot become gateway-style business aggregation, cannot bypass domain authorization, and must prefer provider-owned APIs or explicit read models over public request fan-out.
 
-Until then, keep `hhc-web` as UI and `hhc-web-api` as domain backend.
+Keep `hhc-web` and `admin-fe` as UI clients and `hhc-web-api` as the website content domain backend.
 
 ## Rollout Checklist
 
-- [ ] Keep current static export until API-backed render path is tested.
-- [ ] Add public API fixtures and adapter tests.
-- [ ] Add server runtime config.
-- [ ] Add host-aware UI routing/middleware if needed.
-- [ ] Remove `output: 'export'` at API-backed production cutover.
+- [x] Add public API fixtures and adapter tests.
+- [x] Add server runtime config and standalone image.
+- [x] Remove `output: 'export'` from the production renderer.
 - [ ] Verify `www.alive.org.tw/api/*` still routes to backend services, not Next route handlers.
 - [ ] Verify `admin.alive.org.tw/api/*` is rejected.
 - [ ] Verify public pages render in `zh-Hant`, `zh-Hans`, and `en`.
 - [ ] Verify sitemap/SEO use published public data only.
 - [ ] Verify admin pages are noindex/no-store.
-- [ ] Keep rollback to previous frontend deployment or `HHC_WEB_DATA_MODE=mock`.
+- [x] Keep rollback to the previous frontend ACA revision.
