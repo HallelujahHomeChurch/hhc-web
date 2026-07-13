@@ -13,6 +13,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@hhc/account-client": "workspace:*",
     "@hhc/hhc-web-client": "workspace:*",
     "@hhc/preferences": "workspace:*",
     "@hhc/ui": "workspace:*",
