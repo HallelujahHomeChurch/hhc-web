@@ -170,6 +170,70 @@ describe('App', () => {
     expect(listUsers).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2, perPage: 20 }))
   })
 
+  it('restores user directory filters and pagination from the URL', async () => {
+    const listUsers = vi.spyOn(MockAdminApi.prototype, 'listUsers')
+
+    window.history.pushState({}, '', '/users?search=ada&role=admin&page=2&per_page=50')
+    render(<App config={{ mockApi: true }} />)
+
+    expect(await screen.findByDisplayValue('ada')).toBeInTheDocument()
+    expect(listUsers).toHaveBeenCalledWith(expect.objectContaining({
+      page: 2,
+      perPage: 50,
+      role: 'admin',
+      search: 'ada',
+    }))
+  })
+
+  it('stores user search state in the URL and exposes a keyboard-safe row action', async () => {
+    window.history.pushState({}, '', '/users')
+    render(<App config={{ mockApi: true }} />)
+
+    const search = await screen.findByPlaceholderText('Search email or name')
+    await userEvent.type(search, 'admin')
+
+    await vi.waitFor(() => expect(window.location.search).toContain('search=admin'))
+    expect(await screen.findByRole('button', { name: 'View admin@alive.org.tw' })).toBeInTheDocument()
+  })
+
+  it('does not let a stale user search replace the latest result', async () => {
+    let resolveInitial: ((value: Awaited<ReturnType<MockAdminApi['listUsers']>>) => void) | undefined
+    const initial = new Promise<Awaited<ReturnType<MockAdminApi['listUsers']>>>((resolve) => {
+      resolveInitial = resolve
+    })
+    vi.spyOn(MockAdminApi.prototype, 'listUsers')
+      .mockReturnValueOnce(initial)
+      .mockResolvedValue({
+        users: [{
+          id: 'latest-user', email: 'latest@example.com', is_email_verified: true, has_password: true,
+          is_active: true, mfa_enabled: false, roles: ['user'], linked_providers: [],
+        }],
+        total: 1,
+        page: 1,
+        per_page: 20,
+      })
+
+    window.history.pushState({}, '', '/users')
+    render(<App config={{ mockApi: true }} />)
+
+    await userEvent.type(await screen.findByPlaceholderText('Search email or name'), 'latest')
+    expect(await screen.findByText('latest@example.com')).toBeInTheDocument()
+
+    resolveInitial?.({
+      users: [{
+        id: 'stale-user', email: 'stale@example.com', is_email_verified: true, has_password: true,
+        is_active: true, mfa_enabled: false, roles: ['user'], linked_providers: [],
+      }],
+      total: 1,
+      page: 1,
+      per_page: 20,
+    })
+
+    await Promise.resolve()
+    expect(screen.queryByText('stale@example.com')).not.toBeInTheDocument()
+    expect(screen.getByText('latest@example.com')).toBeInTheDocument()
+  })
+
   it('recovers when access data fails to load', async () => {
     const listRoles = vi.spyOn(MockAdminApi.prototype, 'listRoles').mockRejectedValueOnce(new Error('unavailable'))
     window.history.pushState({}, '', '/access')
@@ -203,6 +267,26 @@ describe('App', () => {
 		await userEvent.click(screen.getByRole('button', { name: /^create$/i }))
 
 		expect((await screen.findAllByText('2026-07-20')).length).toBeGreaterThan(0)
+	})
+
+	it('restores bulletin filters and pagination from the URL', async () => {
+		const listBulletins = vi.spyOn(MockCmsApi.prototype, 'listBulletins')
+		window.history.pushState({}, '', '/cms?status=published&page=2&page_size=50')
+		render(<App config={{ mockApi: true }} />)
+
+		await screen.findByRole('heading', { name: 'CMS' })
+		expect(listBulletins).toHaveBeenCalledWith(expect.objectContaining({
+			page: 2,
+			pageSize: 50,
+			status: 'published',
+		}))
+	})
+
+	it('uses a button to select a weekly bulletin', async () => {
+		window.history.pushState({}, '', '/cms')
+		render(<App config={{ mockApi: true }} />)
+
+		expect(await screen.findByRole('button', { name: 'View bulletin 2026-07-13' })).toBeInTheDocument()
 	})
 
 	it('uploads and publishes a localized weekly bulletin', async () => {

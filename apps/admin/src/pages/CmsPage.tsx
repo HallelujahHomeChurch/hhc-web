@@ -1,12 +1,15 @@
-import { Button, Card, Form, Input, Label, Modal, Pagination, ProgressBar, TextField } from '@heroui/react'
+import { Button, Card, Form, Input, Label, Modal, ProgressBar, TextField } from '@heroui/react'
+import { Pagination as SharedPagination, Select as SharedSelect } from '@hhc/ui'
 import { FileText, Plus, Upload } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 import { useAuth } from '../auth/auth-context'
 import { StatusBadge } from '../components/StatusBadge'
 import type { BulletinIssue, BulletinLocale, BulletinStatus } from '../lib/cms-api'
 
-const PAGE_SIZE = 20
+const DEFAULT_PAGE_SIZE = 20
+const PAGE_SIZES = [20, 50, 100]
 const MAX_PDF_SIZE = 20 << 20
 const locales: Array<{ id: BulletinLocale; label: string }> = [
   { id: 'zh-Hant', label: 'Traditional Chinese' },
@@ -19,9 +22,14 @@ type PublicationDialog = { issue: BulletinIssue; locale: BulletinLocale; action:
 
 export function CmsPage() {
   const { cmsApi } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const page = positiveInteger(searchParams.get('page'), 1)
+  const requestedPageSize = positiveInteger(searchParams.get('page_size'), DEFAULT_PAGE_SIZE)
+  const pageSize = PAGE_SIZES.includes(requestedPageSize) ? requestedPageSize : DEFAULT_PAGE_SIZE
+  const requestedStatus = searchParams.get('status')
+  const status = isBulletinStatus(requestedStatus) ? requestedStatus : undefined
   const [issues, setIssues] = useState<BulletinIssue[]>([])
   const [selectedID, setSelectedID] = useState<string | null>(null)
-  const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -34,6 +42,7 @@ export function CmsPage() {
   const [uploadTitle, setUploadTitle] = useState('')
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [isSaving, setSaving] = useState(false)
+  const requestSequence = useRef(0)
 
   const selected = useMemo(
     () => issues.find((issue) => issue.id === selectedID) ?? issues[0] ?? null,
@@ -42,23 +51,33 @@ export function CmsPage() {
 
   useEffect(() => {
     const controller = new AbortController()
+    const sequence = ++requestSequence.current
     async function load() {
       setIsLoading(true)
       setError(null)
       try {
-        const response = await cmsApi.listBulletins({ page, pageSize: PAGE_SIZE, signal: controller.signal })
+        const response = await cmsApi.listBulletins({ page, pageSize, status, signal: controller.signal })
+        if (sequence !== requestSequence.current) return
         setIssues(response.data)
         setTotal(response.meta.total)
         setSelectedID((current) => response.data.some((issue) => issue.id === current) ? current : response.data[0]?.id ?? null)
       } catch (nextError) {
-        if (!isAbortError(nextError)) setError('Unable to load weekly bulletins.')
+        if (sequence === requestSequence.current && !isAbortError(nextError)) setError('Unable to load weekly bulletins.')
       } finally {
-        if (!controller.signal.aborted) setIsLoading(false)
+        if (sequence === requestSequence.current && !controller.signal.aborted) setIsLoading(false)
       }
     }
     void load()
     return () => controller.abort()
-  }, [cmsApi, page, reloadKey])
+  }, [cmsApi, page, pageSize, reloadKey, status])
+
+  function updateSearchParams(updates: { page?: number; pageSize?: number; status?: string }) {
+    const next = new URLSearchParams(searchParams)
+    if (updates.page !== undefined) setOptionalParam(next, 'page', updates.page === 1 ? '' : String(updates.page))
+    if (updates.pageSize !== undefined) setOptionalParam(next, 'page_size', updates.pageSize === DEFAULT_PAGE_SIZE ? '' : String(updates.pageSize))
+    if (updates.status !== undefined) setOptionalParam(next, 'status', updates.status)
+    setSearchParams(next, { replace: true })
+  }
 
   useEffect(() => {
     if (!selected || selected.status !== 'publishing') return
@@ -80,7 +99,7 @@ export function CmsPage() {
     setError(null)
     try {
       const created = await cmsApi.createBulletin(issueDate, uniqueKey())
-      setPage(1)
+      updateSearchParams({ page: 1 })
       setIssues((current) => [created, ...current.filter((issue) => issue.id !== created.id)])
       setSelectedID(created.id)
       setTotal((current) => current + (issues.some((issue) => issue.id === created.id) ? 0 : 1))
@@ -168,6 +187,27 @@ export function CmsPage() {
         </div>
       </header>
 
+      <div className="toolbar">
+        <SharedSelect
+          label="Status"
+          items={[
+            { id: 'all', label: 'All statuses' },
+            { id: 'draft', label: 'Draft' },
+            { id: 'publishing', label: 'Publishing' },
+            { id: 'published', label: 'Published' },
+            { id: 'unpublished', label: 'Unpublished' },
+          ]}
+          selectedKey={status ?? 'all'}
+          onSelectionChange={(key) => updateSearchParams({ status: key === 'all' ? '' : key, page: 1 })}
+        />
+        <SharedSelect
+          label="Rows per page"
+          items={PAGE_SIZES.map((size) => ({ id: String(size), label: String(size) }))}
+          selectedKey={String(pageSize)}
+          onSelectionChange={(key) => updateSearchParams({ pageSize: Number(key), page: 1 })}
+        />
+      </div>
+
       {message ? <p className="notice">{message}</p> : null}
       {error ? <div className="error-notice" role="alert"><span>{error}</span><Button size="sm" variant="outline" onPress={() => setReloadKey((key) => key + 1)}>Retry</Button></div> : null}
 
@@ -183,8 +223,8 @@ export function CmsPage() {
                 <thead><tr><th>Date</th><th>Languages</th><th>Status</th></tr></thead>
                 <tbody>
                   {issues.map((issue) => (
-                    <tr key={issue.id} className={selected?.id === issue.id ? 'is-selected' : ''} onClick={() => setSelectedID(issue.id)}>
-                      <td><strong>{issue.issueDate}</strong></td>
+                    <tr key={issue.id} className={selected?.id === issue.id ? 'is-selected' : ''}>
+                      <td><button className="table-row-action" type="button" onClick={() => setSelectedID(issue.id)} aria-label={`View bulletin ${issue.issueDate}`}><strong>{issue.issueDate}</strong></button></td>
                       <td>{issue.versions.length}/3</td>
                       <td><IssueStatus status={issue.status} /></td>
                     </tr>
@@ -193,15 +233,12 @@ export function CmsPage() {
                 </tbody>
               </table>
             </div>
-            {total > PAGE_SIZE ? (
-              <Pagination aria-label="Bulletin pages" className="directory-pagination">
-                <Pagination.Summary>Page {page} of {Math.ceil(total / PAGE_SIZE)}</Pagination.Summary>
-                <Pagination.Content>
-                  <Pagination.Item><Pagination.Previous isDisabled={page === 1} onPress={() => setPage((value) => Math.max(1, value - 1))}><Pagination.PreviousIcon /><span>Previous</span></Pagination.Previous></Pagination.Item>
-                  <Pagination.Item><Pagination.Next isDisabled={page >= Math.ceil(total / PAGE_SIZE)} onPress={() => setPage((value) => value + 1)}><span>Next</span><Pagination.NextIcon /></Pagination.Next></Pagination.Item>
-                </Pagination.Content>
-              </Pagination>
-            ) : null}
+            <SharedPagination
+              page={page}
+              totalPages={Math.ceil(total / pageSize)}
+              onPageChange={(nextPage) => updateSearchParams({ page: nextPage })}
+              labels={{ previous: 'Previous', next: 'Next' }}
+            />
           </Card.Content>
         </Card>
 
@@ -271,6 +308,20 @@ export function CmsPage() {
       </Modal>
     </section>
   )
+}
+
+function positiveInteger(value: string | null, fallback: number) {
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback
+}
+
+function isBulletinStatus(value: string | null): value is BulletinStatus {
+  return value === 'draft' || value === 'publishing' || value === 'published' || value === 'unpublished'
+}
+
+function setOptionalParam(params: URLSearchParams, key: string, value: string) {
+  if (value) params.set(key, value)
+  else params.delete(key)
 }
 
 function IssueStatus({ status }: { status: BulletinStatus | 'draft' | 'publishing' | 'published' | 'unpublished' }) {

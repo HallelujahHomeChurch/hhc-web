@@ -1,12 +1,15 @@
-import { Button, Card, Dropdown, Modal, Pagination } from '@heroui/react'
+import { Button, Card, Dropdown, Modal } from '@heroui/react'
+import { Pagination as SharedPagination, Select as SharedSelect } from '@hhc/ui'
 import { Search } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 import { useAuth } from '../auth/auth-context'
 import { StatusBadge } from '../components/StatusBadge'
 import type { AdminUserDetail, AdminUserSummary, Permission, Role } from '../lib/api'
 
-const USERS_PER_PAGE = 20
+const DEFAULT_USERS_PER_PAGE = 20
+const PAGE_SIZES = [20, 50, 100]
 
 function isAbortError(error: unknown) {
   return error instanceof DOMException && error.name === 'AbortError'
@@ -14,22 +17,35 @@ function isAbortError(error: unknown) {
 
 export function UsersPage() {
   const { api } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const querySearch = searchParams.get('search')?.trim() ?? ''
+  const roleFilter = searchParams.get('role')?.trim() ?? ''
+  const page = positiveInteger(searchParams.get('page'), 1)
+  const requestedPageSize = positiveInteger(searchParams.get('per_page'), DEFAULT_USERS_PER_PAGE)
+  const perPage = PAGE_SIZES.includes(requestedPageSize) ? requestedPageSize : DEFAULT_USERS_PER_PAGE
   const [users, setUsers] = useState<AdminUserSummary[]>([])
   const [roles, setRoles] = useState<Role[]>([])
   const [permissions, setPermissions] = useState<Permission[]>([])
   const [selectedUserID, setSelectedUserID] = useState<string | null>(null)
   const [detail, setDetail] = useState<AdminUserDetail | null>(null)
-  const [search, setSearch] = useState('')
-  const [roleFilter, setRoleFilter] = useState('')
+  const [search, setSearch] = useState(querySearch)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [detailError, setDetailError] = useState<string | null>(null)
-  const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [retryKey, setRetryKey] = useState(0)
-  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [permissionToRemove, setPermissionToRemove] = useState<string | null>(null)
+  const requestSequence = useRef(0)
+
+  const updateSearchParams = useCallback((updates: { search?: string; role?: string; page?: number; perPage?: number }) => {
+    const next = new URLSearchParams(searchParams)
+    if (updates.search !== undefined) setOptionalParam(next, 'search', updates.search)
+    if (updates.role !== undefined) setOptionalParam(next, 'role', updates.role)
+    if (updates.page !== undefined) setOptionalParam(next, 'page', updates.page === 1 ? '' : String(updates.page))
+    if (updates.perPage !== undefined) setOptionalParam(next, 'per_page', updates.perPage === DEFAULT_USERS_PER_PAGE ? '' : String(updates.perPage))
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
 
   const selectedUser = useMemo(
     () => users.find((user) => user.id === selectedUserID) ?? users[0] ?? null,
@@ -37,13 +53,14 @@ export function UsersPage() {
   )
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 300)
+    if (search.trim() === querySearch) return
+    const timer = window.setTimeout(() => updateSearchParams({ search: search.trim(), page: 1 }), 300)
     return () => window.clearTimeout(timer)
-  }, [search])
+  }, [querySearch, search, updateSearchParams])
 
   useEffect(() => {
-    setPage(1)
-  }, [debouncedSearch, roleFilter])
+    setSearch(querySearch)
+  }, [querySearch])
 
   useEffect(() => {
     let active = true
@@ -63,29 +80,31 @@ export function UsersPage() {
 
   useEffect(() => {
     const controller = new AbortController()
+    const sequence = ++requestSequence.current
     async function loadUsers() {
       setIsLoading(true)
       setError(null)
       try {
         const response = await api.listUsers({
           page,
-          perPage: USERS_PER_PAGE,
-          search: debouncedSearch,
+          perPage,
+          search: querySearch,
           role: roleFilter || undefined,
           signal: controller.signal,
         })
+        if (sequence !== requestSequence.current) return
         setUsers(response.users)
         setTotal(response.total)
         setSelectedUserID((current) => response.users.some((user) => user.id === current) ? current : response.users[0]?.id ?? null)
       } catch (nextError) {
-        if (!isAbortError(nextError)) setError('Unable to load users.')
+        if (sequence === requestSequence.current && !isAbortError(nextError)) setError('Unable to load users.')
       } finally {
-        if (!controller.signal.aborted) setIsLoading(false)
+        if (sequence === requestSequence.current && !controller.signal.aborted) setIsLoading(false)
       }
     }
     void loadUsers()
     return () => controller.abort()
-  }, [api, debouncedSearch, page, retryKey, roleFilter])
+  }, [api, page, perPage, querySearch, retryKey, roleFilter])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -153,7 +172,7 @@ export function UsersPage() {
             <Dropdown.Menu
               aria-label="Filter by role"
               className="admin-select-menu"
-              onAction={(key) => setRoleFilter(key === 'all' ? '' : String(key))}
+              onAction={(key) => updateSearchParams({ role: key === 'all' ? '' : String(key), page: 1 })}
             >
               <Dropdown.Item id="all" className="admin-select-item" textValue="All roles">
                 All roles
@@ -166,6 +185,12 @@ export function UsersPage() {
             </Dropdown.Menu>
           </Dropdown.Popover>
         </Dropdown>
+        <SharedSelect
+          label="Rows per page"
+          items={PAGE_SIZES.map((size) => ({ id: String(size), label: String(size) }))}
+          selectedKey={String(perPage)}
+          onSelectionChange={(key) => updateSearchParams({ perPage: Number(key), page: 1 })}
+        />
       </div>
 
       {message ? <p className="notice">{message}</p> : null}
@@ -196,14 +221,12 @@ export function UsersPage() {
                   <tr><td colSpan={3} className="empty-table-cell">No users match these filters.</td></tr>
                 ) : null}
                 {users.map((user) => (
-                  <tr
-                    key={user.id}
-                    className={user.id === selectedUser?.id ? 'is-selected' : undefined}
-                    onClick={() => setSelectedUserID(user.id)}
-                  >
+                  <tr key={user.id} className={user.id === selectedUser?.id ? 'is-selected' : undefined}>
                     <td>
-                      <strong>{user.email}</strong>
-                      <span>{[user.first_name, user.last_name].filter(Boolean).join(' ') || 'No name'}</span>
+                      <button className="table-row-action" type="button" onClick={() => setSelectedUserID(user.id)} aria-label={`View ${user.email}`}>
+                        <strong>{user.email}</strong>
+                        <span>{[user.first_name, user.last_name].filter(Boolean).join(' ') || 'No name'}</span>
+                      </button>
                     </td>
                     <td>{user.roles.join(', ') || 'none'}</td>
                     <td>
@@ -215,23 +238,12 @@ export function UsersPage() {
                 ))}
               </tbody>
             </table>
-            {Math.ceil(total / USERS_PER_PAGE) > 1 ? (
-              <Pagination aria-label="User directory pages" className="directory-pagination">
-                <Pagination.Summary>Page {page} of {Math.ceil(total / USERS_PER_PAGE)}</Pagination.Summary>
-                <Pagination.Content>
-                  <Pagination.Item>
-                    <Pagination.Previous isDisabled={page === 1} onPress={() => setPage((current) => Math.max(1, current - 1))}>
-                      <Pagination.PreviousIcon /><span>Previous</span>
-                    </Pagination.Previous>
-                  </Pagination.Item>
-                  <Pagination.Item>
-                    <Pagination.Next isDisabled={page >= Math.ceil(total / USERS_PER_PAGE)} onPress={() => setPage((current) => current + 1)}>
-                      <span>Next</span><Pagination.NextIcon />
-                    </Pagination.Next>
-                  </Pagination.Item>
-                </Pagination.Content>
-              </Pagination>
-            ) : null}
+            <SharedPagination
+              page={page}
+              totalPages={Math.ceil(total / perPage)}
+              onPageChange={(nextPage) => updateSearchParams({ page: nextPage })}
+              labels={{ previous: 'Previous', next: 'Next' }}
+            />
           </Card.Content>
         </Card>
 
@@ -350,4 +362,14 @@ export function UsersPage() {
       </Modal>
     </section>
   )
+}
+
+function positiveInteger(value: string | null, fallback: number) {
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback
+}
+
+function setOptionalParam(params: URLSearchParams, key: string, value: string) {
+  if (value) params.set(key, value)
+  else params.delete(key)
 }
