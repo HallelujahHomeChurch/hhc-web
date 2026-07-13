@@ -5,6 +5,11 @@ import {
   type BulletinLocale,
   type BulletinStatus,
   type CompleteBulletinUploadInput,
+  type ContentItem,
+  type ContentModule,
+  type ContentRevision,
+  type ContentStatus,
+  type ContentWriteInput,
   type CreatedBulletinUpload,
   type HhcWebClient,
   type PageMeta,
@@ -19,6 +24,11 @@ export type {
   BulletinLocale,
   BulletinStatus,
   CompleteBulletinUploadInput,
+  ContentItem,
+  ContentModule,
+  ContentRevision,
+  ContentStatus,
+  ContentWriteInput,
   CreatedBulletinUpload,
   PageMeta,
   UploadTarget,
@@ -70,4 +80,15 @@ export class CmsApi {
   uploadFile(target: UploadTarget, file: File, signal?: AbortSignal) {
     return this.client.uploadFile(target, file, signal)
   }
+
+  listContent(module: ContentModule, params: { page?: number; pageSize?: number; status?: ContentStatus; signal?: AbortSignal } = {}) {
+    return this.client.listContent(module, params)
+  }
+  getContent(module: ContentModule, id: string, signal?: AbortSignal) { return this.client.getContent(module, id, signal) }
+  createContent(module: ContentModule, input: ContentWriteInput, key: string) { return this.client.createContent(module, input, key) }
+  updateContent(module: ContentModule, id: string, version: number, input: ContentWriteInput) { return this.client.updateContent(module, id, version, input) }
+  publishContent(module: ContentModule, id: string, version: number) { return this.client.publishContent(module, id, version) }
+  unpublishContent(module: ContentModule, id: string, version: number) { return this.client.unpublishContent(module, id, version) }
+  listContentRevisions(module: ContentModule, id: string) { return this.client.listContentRevisions(module, id) }
+  restoreContentRevision(module: ContentModule, id: string, revision: number, version: number) { return this.client.restoreContentRevision(module, id, revision, version) }
 }

@@ -1,5 +1,5 @@
 import { AccountMenu, Button, Drawer } from '@hhc/ui'
-import { BookOpen, KeyRound, LayoutDashboard, Menu, ShieldCheck, Users } from 'lucide-react'
+import { BookOpen, History, KeyRound, LayoutDashboard, Menu, Newspaper, ShieldCheck, Users, Video } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 
 import { useAuth } from '../auth/auth-context'
@@ -9,7 +9,12 @@ import { useLocale } from '../preferences/locale-context'
 
 const navGroups = [
   { label: 'Overview', items: [{ to: '/', label: 'Overview', icon: LayoutDashboard }] },
-  { label: 'Website content', items: [{ to: '/content/bulletins', label: 'Weekly bulletins', icon: BookOpen }] },
+  { label: 'Website content', items: [
+    { to: '/content/news', label: 'Latest news', icon: Newspaper },
+    { to: '/content/bulletins', label: 'Weekly bulletins', icon: BookOpen },
+    { to: '/content/history', label: 'History', icon: History },
+    { to: '/content/videos', label: 'Kingdom Joy', icon: Video },
+  ] },
   { label: 'Account & access', items: [
     { to: '/users', label: 'Users', icon: Users },
     { to: '/access', label: 'Roles & permissions', icon: ShieldCheck },

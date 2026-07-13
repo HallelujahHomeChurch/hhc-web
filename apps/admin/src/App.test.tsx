@@ -76,6 +76,9 @@ describe('App', () => {
     ['/access', 'Roles & permissions'],
     ['/oauth-clients', 'OAuth clients'],
     ['/content/bulletins', 'Weekly bulletins'],
+    ['/content/news', 'Latest news'],
+    ['/content/history', 'History'],
+    ['/content/videos', 'Kingdom Joy'],
   ])('uses the nav label as the page h1 for %s', async (path, title) => {
     window.history.pushState({}, '', path)
     render(<App config={{ mockApi: true }} />)
@@ -313,4 +316,34 @@ describe('App', () => {
 		expect(publish).toHaveBeenCalled()
 		expect(await screen.findByText('Published.')).toBeInTheDocument()
 	})
+
+  it('creates a typed video draft from the editorial workspace', async () => {
+    const createContent = vi.spyOn(MockCmsApi.prototype, 'createContent')
+    window.history.pushState({}, '', '/content/videos')
+    render(<App config={{ mockApi: true }} />)
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Kingdom Joy' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Create' }))
+    await userEvent.type(screen.getByLabelText('YouTube video ID'), 'g2sP4m4T2Y0')
+    await userEvent.type(screen.getByLabelText('Title'), '驚天動地')
+    await userEvent.click(screen.getByRole('button', { name: 'Save draft' }))
+
+    expect(createContent).toHaveBeenCalledWith('videos', expect.objectContaining({
+      youtubeVideoId: 'g2sP4m4T2Y0',
+      translations: [expect.objectContaining({ locale: 'zh-Hant', title: '驚天動地' })],
+    }), expect.any(String))
+    expect(await screen.findByText('Draft saved.')).toBeInTheDocument()
+  })
+
+  it('requires confirmation before changing content publication', async () => {
+    const unpublish = vi.spyOn(MockCmsApi.prototype, 'unpublishContent')
+    window.history.pushState({}, '', '/content/history')
+    render(<App config={{ mockApi: true }} />)
+
+    await screen.findByRole('heading', { level: 1, name: 'History' })
+    await userEvent.click(await screen.findByRole('button', { name: 'Unpublish' }))
+    expect(await screen.findByRole('alertdialog', { name: 'Unpublish this content?' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Unpublish' }))
+    expect(unpublish).toHaveBeenCalled()
+  })
 })

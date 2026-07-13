@@ -11,6 +11,7 @@ import { LoginPage } from './pages/LoginPage'
 import { OAuthCallbackPage } from './pages/OAuthCallbackPage'
 import { OAuthClientsPage } from './pages/OAuthClientsPage'
 import { UsersPage } from './pages/UsersPage'
+import { ContentModulePage } from './pages/content/ContentModulePage'
 import { LocaleProvider } from './preferences/locale-context'
 
 type AppProps = {
@@ -33,6 +34,9 @@ function App({ config }: AppProps) {
               <Route path="/access" element={<AccessPage />} />
               <Route path="/oauth-clients" element={<OAuthClientsPage />} />
               <Route path="/content/bulletins" element={<CmsPage />} />
+              <Route path="/content/news" element={<ContentModulePage module="news" />} />
+              <Route path="/content/history" element={<ContentModulePage module="history" />} />
+              <Route path="/content/videos" element={<ContentModulePage module="videos" />} />
               <Route path="/cms" element={<Navigate to="/content/bulletins" replace />} />
             </Route>
           </Route>
