@@ -5,7 +5,7 @@ packages:
 catalog:
   react: 19.2.7
   react-dom: 19.2.7
-  typescript: 5.9.3
+  typescript: 6.0.3
   vitest: 4.1.10
   '@types/react': 19.2.17
   '@types/react-dom': 19.2.3
@@ -14,6 +14,10 @@ catalog:
   '@testing-library/jest-dom': 6.9.1
   jsdom: 29.1.1
   tailwindcss: 4.3.2
+
+catalogs:
+  codegen:
+    typescript: 5.9.3
 
 ignoredBuiltDependencies:
   - sharp
