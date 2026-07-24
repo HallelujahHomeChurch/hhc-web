@@ -51,7 +51,7 @@ Caddy obtains publicly trusted certificates with Let's Encrypt DNS-01 through Az
 
 Caddy uses a pinned custom image containing `github.com/caddy-dns/azure`. Its certificate and ACME-account storage are persistent named volumes.
 
-The Azure credential is a dedicated service principal. It receives `DNS Zone Contributor` only on a dedicated `acme-test.alive.org.tw` validation zone. The parent zone delegates the three `_acme-challenge` names by CNAME to that zone, and Caddy uses the DNS challenge override domain. This prevents the office host from changing normal `alive.org.tw` DNS records.
+The Azure credential is a dedicated service principal. It receives `DNS Zone Contributor` only on a dedicated `acme-test.alive.org.tw` validation zone. The parent zone delegates each `_acme-challenge` name by CNAME to a distinct target beneath that zone, and Caddy uses the matching DNS challenge override domain. This prevents certificate renewals from sharing a TXT record and prevents the office host from changing normal `alive.org.tw` DNS records.
 
 The first certificate request uses the Let's Encrypt staging endpoint. Production issuance is enabled only after the three hostnames and CNAME delegation validate.
 

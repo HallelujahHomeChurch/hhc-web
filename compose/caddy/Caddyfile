@@ -1,0 +1,64 @@
+{
+	email {$ACME_EMAIL}
+	acme_ca {$ACME_CA}
+}
+
+(office_tls_www) {
+	tls {
+		dns azure {
+			subscription_id {$AZURE_SUBSCRIPTION_ID}
+			resource_group_name {$AZURE_RESOURCE_GROUP_NAME}
+			tenant_id {$AZURE_TENANT_ID}
+			client_id {$AZURE_CLIENT_ID}
+			client_secret {$AZURE_CLIENT_SECRET}
+		}
+		dns_challenge_override_domain _acme-challenge.www-test.acme-test.alive.org.tw
+	}
+}
+
+(office_tls_account) {
+	tls {
+		dns azure {
+			subscription_id {$AZURE_SUBSCRIPTION_ID}
+			resource_group_name {$AZURE_RESOURCE_GROUP_NAME}
+			tenant_id {$AZURE_TENANT_ID}
+			client_id {$AZURE_CLIENT_ID}
+			client_secret {$AZURE_CLIENT_SECRET}
+		}
+		dns_challenge_override_domain _acme-challenge.account-test.acme-test.alive.org.tw
+	}
+}
+
+(office_tls_admin) {
+	tls {
+		dns azure {
+			subscription_id {$AZURE_SUBSCRIPTION_ID}
+			resource_group_name {$AZURE_RESOURCE_GROUP_NAME}
+			tenant_id {$AZURE_TENANT_ID}
+			client_id {$AZURE_CLIENT_ID}
+			client_secret {$AZURE_CLIENT_SECRET}
+		}
+		dns_challenge_override_domain _acme-challenge.admin-test.acme-test.alive.org.tw
+	}
+}
+
+www-test.alive.org.tw {
+	import office_tls_www
+	reverse_proxy api-gateway:10000 {
+		header_up X-Forwarded-Proto https
+	}
+}
+
+account-test.alive.org.tw {
+	import office_tls_account
+	reverse_proxy api-gateway:10000 {
+		header_up X-Forwarded-Proto https
+	}
+}
+
+admin-test.alive.org.tw {
+	import office_tls_admin
+	reverse_proxy api-gateway:10000 {
+		header_up X-Forwarded-Proto https
+	}
+}
