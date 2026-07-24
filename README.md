@@ -38,3 +38,8 @@ Build one deployable independently with `pnpm --filter @hhc/web build`,
 `azure-pipelines.yml` verifies the full workspace, then builds and deploys
 three independent images to `hhc-web`, `account-fe`, and `admin-fe`. Docker
 build context is always the monorepo root.
+# HHC Frontend
+
+## Office Integration Compose
+
+The HTTPS-only Windows Docker Desktop integration stack is documented in [the office Compose runbook](docs/runbooks/office-compose.md). It builds the sibling HHC services without source mounts and publishes only Caddy on TCP 443.
