@@ -25,5 +25,7 @@ status=$(curl --silent --output /dev/null --write-out '%{http_code}' https://www
 [ "$status" = 404 ] || { printf '%s\n' "Public host exposed /priv/ with status $status" >&2; exit 1; }
 status=$(curl --silent --output /dev/null --write-out '%{http_code}' https://admin-test.alive.org.tw/api/)
 [ "$status" = 404 ] || { printf '%s\n' "Admin host exposed /api/ with status $status" >&2; exit 1; }
+status=$(curl --silent --output /dev/null --write-out '%{http_code}' https://www-test.alive.org.tw/api/assets/admin/test)
+[ "$status" = 404 ] || { printf '%s\n' "Public host exposed asset admin routes with status $status" >&2; exit 1; }
 
 printf '%s\n' "Office HTTPS smoke test passed."

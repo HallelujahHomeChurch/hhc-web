@@ -4,6 +4,11 @@
 
 `asset-api` owns asset metadata, Blob object references, upload sessions, scan/quarantine state, derivative generation, public/private access grants, and public download URL mediation. Consumers such as weekly bulletins, news images, LINE group files, and future desktop cloud-folder features use `asset-api` instead of direct Blob access.
 
+In the office Compose stack, signed local upload targets use
+`https://www-test.alive.org.tw/api/assets/uploads`; container-only hostnames are
+never returned to browsers. `account-api` and `hhc-web-api` call private asset
+routes directly with the development caller-header fallback enabled.
+
 ## Owner And Escalation
 
 - Primary owner: asset/storage domain engineering

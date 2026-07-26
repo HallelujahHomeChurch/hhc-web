@@ -33,7 +33,7 @@
 **Interfaces:**
 - `compose/.env.compose.local` supplies all secrets and is ignored.
 - `postgres` creates `account_db`, `hhc_web`, and `asset` databases with their isolated roles.
-- Named volumes are `office-postgres`, `office-redis`, `office-assets`, `office-avatars`, `office-caddy-data`, and `office-caddy-config`.
+- Named volumes are `office-postgres`, `office-redis`, `office-assets`, `office-caddy-data`, and `office-caddy-config`.
 
 - [ ] **Step 1: Verify the project has no Compose file**
 

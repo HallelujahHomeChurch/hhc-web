@@ -14,6 +14,12 @@ docker compose --env-file "$env_file" config --quiet
 docker compose --env-file "$env_file" up --build -d postgres redis notification-api account-migrate account-api asset-api hhc-web-api api-gateway web account admin
 docker compose --env-file "$env_file" exec -T api-gateway nginx -t
 
+resolved_upload_base=$(docker compose --env-file "$env_file" config | awk '/ASSET_LOCAL_UPLOAD_BASE_URL:/ { print $2; exit }')
+[ "$resolved_upload_base" = "https://www-test.alive.org.tw/api/assets/uploads" ] || {
+  printf '%s\n' "Asset signed upload URL is not browser reachable: $resolved_upload_base" >&2
+  exit 1
+}
+
 assert_host() {
   host=$1
   expected=$2
