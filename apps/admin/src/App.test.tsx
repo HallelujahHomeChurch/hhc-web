@@ -379,6 +379,20 @@ describe('App', () => {
 		expect(await screen.findByText('Publication started.')).toBeInTheDocument()
 	})
 
+	it('retries a failed bulletin unpublish instead of offering publish', async () => {
+		const unpublish = vi.spyOn(MockCmsApi.prototype, 'unpublishBulletin')
+		window.history.pushState({}, '', '/content/bulletins')
+		render(<App config={{ mockApi: true }} />)
+
+		await userEvent.click(await screen.findByRole('button', { name: 'View bulletin 2026-06-29' }))
+		await userEvent.click(await screen.findByRole('button', { name: 'Retry unpublish English' }))
+		expect(await screen.findByRole('heading', { name: 'Unpublish English bulletin?' })).toBeInTheDocument()
+		await userEvent.click(screen.getByRole('button', { name: 'Unpublish' }))
+
+		expect(unpublish).toHaveBeenCalled()
+		expect(await screen.findByText('Unpublishing started.')).toBeInTheDocument()
+	})
+
   it('creates a typed video draft from the editorial workspace', async () => {
     const createContent = vi.spyOn(MockCmsApi.prototype, 'createContent')
     window.history.pushState({}, '', '/content/videos')

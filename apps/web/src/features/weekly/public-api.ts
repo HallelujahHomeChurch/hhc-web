@@ -10,6 +10,10 @@ type PublicBulletin = {
   publishedAt: string;
   version: number;
 };
+type PublicIssue = {
+  issueDate: string;
+  versions: PublicBulletin[];
+};
 type Envelope<T> = {
   data: T;
   meta: {page?: number; pageSize?: number; total?: number};
@@ -36,21 +40,16 @@ export async function fetchWeeklyArchive(
   const normalizedPage = Math.max(1, Math.floor(page));
   const normalizedPageSize = Math.max(1, Math.floor(pageSize));
   const query = `page=${normalizedPage}&pageSize=${normalizedPageSize}`;
-  const pages = await Promise.all(locales.map((locale) => request<PublicBulletin[]>(`/bulletins?locale=${locale}&${query}`, options)));
-  const byDate = new Map<string, WeeklyIssue>();
-
-  for (const pageResponse of pages) {
-    for (const value of pageResponse.data) {
-      const issue = byDate.get(value.issueDate) ?? {id: value.issueDate, date: value.issueDate, versions: []};
-      issue.versions.push(toWeekly(value));
-      byDate.set(value.issueDate, issue);
-    }
-  }
+  const response = await request<PublicIssue[]>(`/bulletins?${query}`, options);
   const order = new Map(locales.map((locale, index) => [locale, index]));
-  const items = Array.from(byDate.values())
-    .sort((left, right) => right.date.localeCompare(left.date))
-    .map((issue) => ({...issue, versions: issue.versions.sort((left, right) => (order.get(left.locale) ?? 0) - (order.get(right.locale) ?? 0))}));
-  const totalItems = Math.max(...pages.map((value) => value.meta.total ?? 0), items.length);
+  const items: WeeklyIssue[] = response.data.map((issue) => ({
+    id: issue.issueDate,
+    date: issue.issueDate,
+    versions: issue.versions
+      .map(toWeekly)
+      .sort((left, right) => (order.get(left.locale) ?? 0) - (order.get(right.locale) ?? 0))
+  }));
+  const totalItems = response.meta.total ?? items.length;
 
   return {
     items,

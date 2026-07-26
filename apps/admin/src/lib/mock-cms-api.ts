@@ -23,6 +23,11 @@ const bulletins: BulletinIssue[] = [
     createdBy: 'admin-1', updatedBy: 'admin-1',
     versions: [{ id: 'version-2', issueId: 'bulletin-2026-07-06', locale: 'zh-Hant', title: '2026-07-06 週報', pdfAssetId: 'asset-2', pdfFileName: 'weekly-2026-07-06.pdf', status: 'published', version: 2, publishedAt: now, createdAt: now, updatedAt: now }],
   },
+  {
+    id: 'bulletin-2026-06-29', issueDate: '2026-06-29', status: 'unpublish_failed', version: 4, createdAt: now, updatedAt: now,
+    createdBy: 'admin-1', updatedBy: 'admin-1',
+    versions: [{ id: 'version-3', issueId: 'bulletin-2026-06-29', locale: 'en', title: '2026-06-29 Weekly', pdfAssetId: 'asset-3', pdfFileName: 'weekly-2026-06-29.pdf', status: 'unpublish_failed', workflowStatus: 'failed', workflowError: 'Asset grant could not be revoked.', version: 3, createdAt: now, updatedAt: now }],
+  },
 ]
 
 const contentItems: ContentItem[] = [

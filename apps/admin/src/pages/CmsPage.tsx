@@ -263,8 +263,8 @@ export function CmsPage() {
                       </div>
                       <div className="cms-locale-actions">
                         <Button size="sm" variant="outline" isDisabled={isPublicationPending(selected.status)} aria-label={`Upload PDF for ${locale.label}`} onPress={() => openUpload(selected, locale.id)}><Upload size={15} />{version ? 'Replace' : 'Upload'}</Button>
-                        {version?.status === 'published' ? (
-                          <Button size="sm" variant="danger" aria-label={`Unpublish ${locale.label}`} onPress={() => setPublicationDialog({ issue: selected, locale: locale.id, action: 'unpublish' })}>Unpublish</Button>
+                        {version?.status === 'published' || version?.status === 'unpublish_failed' ? (
+                          <Button size="sm" variant="danger" aria-label={`${version.status === 'unpublish_failed' ? 'Retry unpublish' : 'Unpublish'} ${locale.label}`} onPress={() => setPublicationDialog({ issue: selected, locale: locale.id, action: 'unpublish' })}>{version.status === 'unpublish_failed' ? 'Retry unpublish' : 'Unpublish'}</Button>
                         ) : version ? (
                           <Button size="sm" aria-label={`Publish ${locale.label}`} isDisabled={isPublicationPending(selected.status)} onPress={() => setPublicationDialog({ issue: selected, locale: locale.id, action: 'publish' })}>Publish</Button>
                         ) : null}

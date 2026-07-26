@@ -8,9 +8,12 @@ afterEach(() => vi.unstubAllGlobals());
 describe('WeeklyArchive', () => {
   it('renders published locale downloads from the public API', async () => {
     vi.stubGlobal('fetch', vi.fn().mockImplementation((input: string) => {
-      const locale = new URL(input, 'https://www.alive.org.tw').searchParams.get('locale');
+      const url = new URL(input, 'https://www.alive.org.tw');
+      const versions = ['zh-Hant', 'zh-Hans', 'en'].map((locale) => ({
+        issueDate: '2026-07-13', locale, title: `${locale} title`, downloadUrl: `/${locale}.pdf`, publishedAt: '2026-07-13T04:00:00Z', version: 3
+      }));
       return Promise.resolve(new Response(JSON.stringify({
-        data: [{issueDate: '2026-07-13', locale, title: `${locale} title`, downloadUrl: `/${locale}.pdf`, publishedAt: '2026-07-13T04:00:00Z', version: 3}],
+        data: url.pathname.endsWith('/latest') ? versions[2] : [{issueDate: '2026-07-13', versions}],
         meta: {page: 1, pageSize: 12, total: 1}, error: null
       }), {status: 200}));
     }));
