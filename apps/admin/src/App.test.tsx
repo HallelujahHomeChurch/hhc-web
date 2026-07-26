@@ -376,7 +376,7 @@ describe('App', () => {
 		expect(await screen.findByRole('heading', { name: 'Publish English bulletin?' })).toBeInTheDocument()
 		await userEvent.click(screen.getByRole('button', { name: /^publish$/i }))
 		expect(publish).toHaveBeenCalled()
-		expect(await screen.findByText('Published.')).toBeInTheDocument()
+		expect(await screen.findByText('Publication started.')).toBeInTheDocument()
 	})
 
   it('creates a typed video draft from the editorial workspace', async () => {

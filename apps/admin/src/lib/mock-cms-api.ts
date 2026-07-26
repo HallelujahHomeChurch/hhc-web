@@ -70,20 +70,20 @@ export class MockCmsApi {
     const localized = issue.versions.find((item) => item.locale === locale)
     if (!localized) throw new Error('not_publishable')
     issue.version++
-    issue.status = 'published'
-    issue.publishedAt = now
-    localized.status = 'published'
-    localized.publishedAt = now
-    return { id: `workflow-${id}-${locale}`, status: 'completed' }
+    issue.status = 'publishing'
+    localized.status = 'publishing'
+    localized.workflowStatus = 'waiting_asset_scan'
+    return { id: `workflow-${id}-${locale}`, status: 'waiting_asset_scan' }
   }
   async unpublishBulletin(id: string, version: number, locale: BulletinLocale) {
     const issue = findBulletin(id)
     if (issue.version !== version) throw new Error('version_conflict')
     const localized = issue.versions.find((item) => item.locale === locale)
     if (!localized) throw new Error('not_publishable')
-    localized.status = 'unpublished'
+    localized.status = 'unpublishing'
+    localized.workflowStatus = 'revoke_pending'
     issue.version++
-    issue.status = issue.versions.some((item) => item.status === 'published') ? 'published' : 'unpublished'
+    issue.status = 'unpublishing'
     return structuredClone(issue)
   }
   async listContent(module: ContentModule, params: { page?: number; pageSize?: number; status?: ContentStatus } = {}) {

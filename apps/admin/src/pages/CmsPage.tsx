@@ -80,7 +80,7 @@ export function CmsPage() {
   }
 
   useEffect(() => {
-    if (!selected || selected.status !== 'publishing') return
+    if (!selected || !isPublicationPending(selected.status)) return
     const timer = window.setInterval(() => {
       void cmsApi.getBulletin(selected.id).then(replaceIssue).catch(() => undefined)
     }, 2000)
@@ -170,7 +170,7 @@ export function CmsPage() {
       }
       replaceIssue(await cmsApi.getBulletin(issue.id))
       setPublicationDialog(null)
-      setMessage(action === 'publish' ? 'Published.' : 'Unpublished.')
+      setMessage(action === 'publish' ? 'Publication started.' : 'Unpublishing started.')
     } catch {
       setError(`Unable to ${action} the bulletin.`)
     } finally {
@@ -195,6 +195,8 @@ export function CmsPage() {
             { id: 'draft', label: 'Draft' },
             { id: 'publishing', label: 'Publishing' },
             { id: 'published', label: 'Published' },
+            { id: 'unpublishing', label: 'Unpublishing' },
+            { id: 'unpublish_failed', label: 'Unpublish failed' },
             { id: 'unpublished', label: 'Unpublished' },
           ]}
           selectedKey={status ?? 'all'}
@@ -257,13 +259,14 @@ export function CmsPage() {
                       <div className="cms-locale-copy">
                         <div><strong>{locale.label}</strong>{version ? <IssueStatus status={version.status} /> : <StatusBadge>Not uploaded</StatusBadge>}</div>
                         <span>{version?.pdfFileName ?? 'No PDF attached'}</span>
+                        {version?.workflowStatus === 'failed' ? <span className="form-error">{version.workflowError || 'Publication failed. Try again.'}</span> : null}
                       </div>
                       <div className="cms-locale-actions">
-                        <Button size="sm" variant="outline" aria-label={`Upload PDF for ${locale.label}`} onPress={() => openUpload(selected, locale.id)}><Upload size={15} />{version ? 'Replace' : 'Upload'}</Button>
+                        <Button size="sm" variant="outline" isDisabled={isPublicationPending(selected.status)} aria-label={`Upload PDF for ${locale.label}`} onPress={() => openUpload(selected, locale.id)}><Upload size={15} />{version ? 'Replace' : 'Upload'}</Button>
                         {version?.status === 'published' ? (
                           <Button size="sm" variant="danger" aria-label={`Unpublish ${locale.label}`} onPress={() => setPublicationDialog({ issue: selected, locale: locale.id, action: 'unpublish' })}>Unpublish</Button>
                         ) : version ? (
-                          <Button size="sm" aria-label={`Publish ${locale.label}`} isDisabled={selected.status === 'publishing'} onPress={() => setPublicationDialog({ issue: selected, locale: locale.id, action: 'publish' })}>Publish</Button>
+                          <Button size="sm" aria-label={`Publish ${locale.label}`} isDisabled={isPublicationPending(selected.status)} onPress={() => setPublicationDialog({ issue: selected, locale: locale.id, action: 'publish' })}>Publish</Button>
                         ) : null}
                       </div>
                     </section>
@@ -316,7 +319,7 @@ function positiveInteger(value: string | null, fallback: number) {
 }
 
 function isBulletinStatus(value: string | null): value is BulletinStatus {
-  return value === 'draft' || value === 'publishing' || value === 'published' || value === 'unpublished'
+  return value === 'draft' || value === 'publishing' || value === 'published' || value === 'unpublishing' || value === 'unpublish_failed' || value === 'unpublished'
 }
 
 function setOptionalParam(params: URLSearchParams, key: string, value: string) {
@@ -324,10 +327,11 @@ function setOptionalParam(params: URLSearchParams, key: string, value: string) {
   else params.delete(key)
 }
 
-function IssueStatus({ status }: { status: BulletinStatus | 'draft' | 'publishing' | 'published' | 'unpublished' }) {
-  const tone = status === 'published' ? 'success' : status === 'publishing' ? 'warning' : status === 'unpublished' ? 'danger' : 'neutral'
-  return <StatusBadge tone={tone}>{status[0].toUpperCase() + status.slice(1)}</StatusBadge>
+function IssueStatus({ status }: { status: BulletinStatus }) {
+  const tone = status === 'published' ? 'success' : isPublicationPending(status) ? 'warning' : status === 'unpublished' || status === 'unpublish_failed' ? 'danger' : 'neutral'
+  return <StatusBadge tone={tone}>{status.replaceAll('_', ' ').replace(/^./, (value) => value.toUpperCase())}</StatusBadge>
 }
+function isPublicationPending(status: BulletinStatus) { return status === 'publishing' || status === 'unpublishing' }
 function localeLabel(locale: BulletinLocale) { return locales.find((item) => item.id === locale)?.label ?? locale }
 function uniqueKey() { return globalThis.crypto.randomUUID() }
 function isAbortError(error: unknown) { return error instanceof DOMException && error.name === 'AbortError' }
