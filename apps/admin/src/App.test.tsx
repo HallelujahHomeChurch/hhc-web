@@ -263,6 +263,16 @@ describe('App', () => {
     expect(await screen.findByRole('button', { name: 'View admin@alive.org.tw' })).toBeInTheDocument()
   })
 
+  it('shows linked LINE state without a manual LINE control', async () => {
+    window.history.pushState({}, '', '/users')
+    render(<App config={{ mockApi: true }} />)
+
+    expect(await screen.findByRole('heading', { name: 'Linked accounts' })).toBeInTheDocument()
+    expect(screen.getByText('LINE')).toBeInTheDocument()
+    expect(screen.queryByLabelText(/LINE user ID/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /LINE role/i })).not.toBeInTheDocument()
+  })
+
   it('does not let a stale user search replace the latest result', async () => {
     let resolveInitial: ((value: Awaited<ReturnType<MockAdminApi['listUsers']>>) => void) | undefined
     const initial = new Promise<Awaited<ReturnType<MockAdminApi['listUsers']>>>((resolve) => {

@@ -55,6 +55,7 @@ const users: AdminUserDetail[] = [
     linked_providers: ['google', 'microsoft'],
     linked_identities: [
       { provider: 'google', created_at: now },
+      { provider: 'line', created_at: now },
       { provider: 'microsoft', created_at: now },
     ],
     mfa: { enabled: true, methods: [{ type: 'totp', created_at: now }] },

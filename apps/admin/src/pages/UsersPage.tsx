@@ -15,6 +15,13 @@ function isAbortError(error: unknown) {
   return error instanceof DOMException && error.name === 'AbortError'
 }
 
+function providerLabel(provider: string) {
+  if (provider.toLowerCase() === 'line') return 'LINE'
+  if (provider.toLowerCase() === 'microsoft') return 'Microsoft'
+  if (provider.toLowerCase() === 'google') return 'Google'
+  return provider
+}
+
 export function UsersPage() {
   const { api } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -254,6 +261,21 @@ export function UsersPage() {
                     <dd>{detail.mfa.enabled ? detail.mfa.methods.map((method) => method.type).join(', ') : 'Off'}</dd>
                   </div>
                 </dl>
+
+                <section>
+                  <h3>Linked accounts</h3>
+                  {detail.linked_identities.length ? (
+                    <div className="chip-row">
+                      {detail.linked_identities.map((identity) => (
+                        <StatusBadge key={identity.provider}>
+                          {providerLabel(identity.provider)}
+                        </StatusBadge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="muted-copy">No linked accounts.</p>
+                  )}
+                </section>
 
                 <section>
                   <h3>Roles</h3>
