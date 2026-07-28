@@ -50,24 +50,19 @@ Before applying the constraints, deployment validation must detect duplicates
 and stop with a report containing database IDs only. It must not choose a
 winner automatically.
 
-## Permissions
+## Phase-One Administrator Authority
 
-Seed these Account permissions:
+Do not create LINE-specific roles or permissions until the Bot operations have
+been inventoried and grouped into stable authorization boundaries.
 
-- `line-bot:operate`: run normal Bot administrator actions.
-- `line-bot:configure`: run elevated provider and system configuration actions.
+In phase one, the existing Account `admin` role is the sole source of human Bot
+administrator authority. Existing Bot actions classified as either
+`auth: admin` or `auth: superadmin` both require an active linked Account user
+with the `admin` role.
 
-Seed `line-bot.operator` with `line-bot:operate`. Do not create another global
-superadministrator role. The existing Account `admin` role has `*` and therefore
-passes both permission checks.
-
-Existing Bot action policy maps:
-
-- `auth: admin` to `line-bot:operate`.
-- `auth: superadmin` to `line-bot:configure`.
-
-Admin Console remains the only management surface for assigning these Account
-roles and permissions.
+Admin Console remains the only management surface for assigning the Account
+`admin` role. Existing Bot user/group principals, function grants, and
+role-capability bindings remain unchanged.
 
 ## LINE Binding Flow
 
@@ -142,8 +137,7 @@ Content-Type: application/json
 X-Internal-Caller-App-Id: hhc-line-function-bot
 
 {
-  "line_user_id": "U0123...",
-  "permission": "line-bot:operate"
+  "line_user_id": "U0123..."
 }
 ```
 
@@ -158,8 +152,8 @@ Response for a linked and allowed user:
 ```
 
 Unlinked users receive `200` with `bound: false, allowed: false`; inactive,
-unlinked, or unauthorized users never receive permission details. Invalid
-callers receive `403`.
+unlinked, or non-admin users never receive role details. Invalid callers
+receive `403`.
 
 The Bot records the HHC user ID as the administrator audit actor when available,
 and may retain the LINE source ID only in its existing privacy-safe correlation
@@ -179,7 +173,7 @@ mechanism.
 ## Bot Changes
 
 - Add a small Account authorization client with two operations: create binding
-  intent and authorize permission.
+  intent and authorize administrator access.
 - Replace all duplicated `isAdminUser` checks with one injected authorizer.
 - Remove `/admin-add` and `/admin-remove` from parsing, help, tests, and docs.
 - Remove bootstrap-superadmin checks from action policy.
@@ -194,27 +188,37 @@ mechanism.
 
 - Show linked providers in the selected user inspector, including LINE.
 - Keep role and direct-permission assignment in the existing Users inspector.
-- Label `line-bot.operator` as a scoped Bot role; global `admin` remains the
-  highest Account role.
 - Do not add a separate LINE admin page or a manual LINE-ID field.
+
+## Seed Administrator Handoff And MFA
+
+- Remove the hardcoded seed-admin MFA setup login branch and the
+  `setup_required` authentication state.
+- Remove the unauthenticated setup-token MFA endpoints used only by that branch.
+- Keep normal authenticated MFA setup, verification, recovery, and removal.
+- The seed administrator may initialize without MFA, promote the first permanent
+  administrator, and then be disabled.
+- A permanent administrator must enable MFA before receiving the Account
+  `admin` role and cannot disable MFA while retaining that role.
+- Disabling or demoting an administrator must preserve at least one active
+  Account administrator.
 
 ## Production Migration
 
-1. Deploy Account API identity constraints, binding endpoints, permissions, and
-   authorization endpoint.
+1. Deploy Account API identity constraints, binding endpoints, administrator
+   authorization endpoint, and seed-admin handoff guards.
 2. Deploy Account Console binding page and Admin Console linked-provider state.
-3. Have every existing Bot administrator bind their LINE identity.
-4. Assign the current bootstrap administrator the Account `admin` role. Assign
-   other Bot administrators `line-bot.operator` or explicit permissions.
-5. Verify private authorization for every current administrator.
+3. Have the existing Bot administrator bind their LINE identity.
+4. Enable MFA and assign that linked Account user the `admin` role.
+5. Verify private authorization, then disable the seed administrator.
 6. Deploy the Bot version that removes local administrator authority.
 7. Remove `LINE_HELPER_ADMIN_USER_ID` from ACA and Key Vault after the new Bot
    revision is ready.
 8. Delete legacy Bot admin-principal rows only after comparing them with the
    accepted migration list. Preserve audit events.
 
-The Bot deployment must not proceed if no bound Account user passes
-`line-bot:configure`.
+The Bot deployment must not proceed if no active, MFA-enabled, LINE-linked
+Account user has the `admin` role.
 
 ## Error And UX States
 
@@ -225,8 +229,8 @@ The Bot deployment must not proceed if no bound Account user passes
   account.
 - Account authorization unavailable: deny only the administrator operation and
   ask the user to retry later.
-- Permission denied: state that the account lacks permission and direct the user
-  to an HHC administrator.
+- Access denied: state that the account is not an administrator and direct the
+  user to an HHC administrator.
 
 ## Tests
 
@@ -237,8 +241,9 @@ The Bot deployment must not proceed if no bound Account user passes
 - Confirmation requires authenticated active user and CSRF.
 - Both identity conflict directions return `409`.
 - Internal caller allowlist rejects unknown callers.
-- Authorization handles unbound, inactive, allowed, denied, wildcard, and
-  direct-permission users.
+- Authorization handles unbound, inactive, admin, and non-admin users.
+- Admin promotion requires MFA and last-active-admin guards prevent lockout.
+- Seed administrator can be disabled after a permanent administrator exists.
 
 ### account/admin frontend
 
@@ -249,7 +254,7 @@ The Bot deployment must not proceed if no bound Account user passes
 
 ### hhc-line-function-bot
 
-- Admin and elevated actions request the correct Account permission.
+- Admin and elevated actions require Account administrator authorization.
 - Unbound direct users receive a binding link.
 - Denied and unavailable authorization fail closed without affecting public
   commands.
@@ -260,14 +265,16 @@ The Bot deployment must not proceed if no bound Account user passes
 
 - The LINE webhook user ID and LINE Login subject match under the configured
   Provider.
-- Bind one test account, assign and revoke `line-bot.operator`, and observe
-  immediate Bot authorization changes.
+- Bind one test account, assign and revoke `admin`, and observe immediate Bot
+  authorization changes.
 - Global Account logout does not remove the persistent LINE identity binding.
 - Account deactivation and LINE unlink immediately deny Bot administration.
 
 ## Non-Goals
 
 - Moving LINE group registration or function grants into Account API.
+- Defining LINE operation-level roles or permissions before the action inventory
+  is stable.
 - Giving Admin Console access to LINE Official Account Manager roles.
 - Issuing delegated user JWTs to the Bot.
 - Caching Account authorization decisions in the Bot.
