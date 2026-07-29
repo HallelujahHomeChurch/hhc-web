@@ -6,7 +6,9 @@ Run the current HHC web platform as a shared, production-like integration enviro
 
 ## Scope
 
-The Compose project lives in `hhc-web` because it is the frontend monorepo and platform documentation home. It builds sibling repositories with explicit relative build contexts.
+The Compose project lives in `hhc-web` as the office integration and platform
+documentation home. It builds the sibling `account-fe` and `admin-fe`
+repositories with explicit relative build contexts.
 
 Default services:
 

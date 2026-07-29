@@ -1,5 +1,5 @@
 {
-  "name": "hhc-frontend",
+  "name": "@hallelujahhomechurch/hhc-web",
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@10.12.1",
@@ -7,11 +7,39 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev:web": "pnpm --filter @hhc/web dev",
-    "dev:account": "pnpm --filter @hhc/account dev",
-    "dev:admin": "pnpm --filter @hhc/admin dev",
-    "build": "pnpm -r --if-present build",
-    "lint": "pnpm -r --if-present lint",
-    "test": "pnpm -r --if-present test:run"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "dependencies": {
+    "@hallelujahhomechurch/account-client": "0.1.1",
+    "@hallelujahhomechurch/hhc-web-client": "0.1.1",
+    "@hallelujahhomechurch/preferences": "0.1.1",
+    "@hallelujahhomechurch/ui": "0.1.1",
+    "next": "16.2.9",
+    "next-intl": "^4.13.0",
+    "lucide-react": "^1.24.0",
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
+    "@testing-library/user-event": "14.6.1",
+    "@types/node": "24.13.2",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.9",
+    "jsdom": "29.1.1",
+    "msw": "^2.14.6",
+    "tailwindcss": "4.3.2",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
   }
 }

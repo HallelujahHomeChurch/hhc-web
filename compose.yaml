@@ -170,21 +170,30 @@ services:
   web:
     build:
       context: .
-      dockerfile: apps/web/Dockerfile
+      dockerfile: Dockerfile
+      secrets:
+        - source: frontend_npmrc
+          target: npmrc
     restart: unless-stopped
     expose: ["10000"]
 
   account:
     build:
-      context: .
-      dockerfile: apps/account/Dockerfile
+      context: ../account-fe
+      dockerfile: Dockerfile
+      secrets:
+        - source: frontend_npmrc
+          target: npmrc
     restart: unless-stopped
     expose: ["10000"]
 
   admin:
     build:
-      context: .
-      dockerfile: apps/admin/Dockerfile
+      context: ../admin-fe
+      dockerfile: Dockerfile
+      secrets:
+        - source: frontend_npmrc
+          target: npmrc
     restart: unless-stopped
     expose: ["10000"]
 
@@ -216,3 +225,7 @@ volumes:
   office-assets:
   office-caddy-data:
   office-caddy-config:
+
+secrets:
+  frontend_npmrc:
+    file: ${FRONTEND_NPMRC_FILE:?set FRONTEND_NPMRC_FILE}

@@ -1,45 +1,39 @@
-# HHC Frontend
+# HHC Public Web
 
-HHC frontend monorepo for the public website, account console, and admin console.
+Next.js public website for `www.alive.org.tw`.
 
-## Applications
+## Local development
 
-- `apps/web`: `www.alive.org.tw`
-- `apps/account`: `account.alive.org.tw`
-- `apps/admin`: `admin.alive.org.tw`
-
-The apps share React Aria primitives, semantic theme tokens, preferences, and
-typed API clients. They do not share business pages or deployment units.
-
-## Packages
-
-- `packages/ui`: unstyled React Aria interaction primitives and HHC tokens.
-- `packages/preferences`: shared locale/theme cookie contracts and bootstrap.
-- `packages/account-client`: public session summary and logout client.
-- `packages/hhc-web-client`: generated `hhc-web-api` DTOs and client.
-
-## Commands
-
-```bash
-pnpm install
-pnpm dev:web
-pnpm dev:account
-pnpm dev:admin
-pnpm test
-pnpm lint
-pnpm build
+```sh
+NODE_AUTH_TOKEN="$(gh auth token)" corepack pnpm install
+corepack pnpm dev
 ```
 
-Build one deployable independently with `pnpm --filter @hhc/web build`,
-`pnpm --filter @hhc/account build`, or `pnpm --filter @hhc/admin build`.
+Environment:
 
-## Deployment
+```dotenv
+HHC_WEB_API_BASE_URL=http://127.0.0.1:8081/api
+ACCOUNT_API_PROXY_TARGET=http://127.0.0.1:8080
+NEXT_PUBLIC_ACCOUNT_SITE_URL=http://account.hhc.test:5173
+NEXT_PUBLIC_ACCOUNT_AUTHORIZE_BASE_URL=http://account.hhc.test:5173/api/account/v1
+```
 
-`azure-pipelines.yml` verifies the full workspace, then builds and deploys
-three independent images to `hhc-web`, `account-fe`, and `admin-fe`. Docker
-build context is always the monorepo root.
-# HHC Frontend
+`HHC_WEB_API_BASE_URL` is server-only. `ACCOUNT_API_PROXY_TARGET` is only for
+local same-origin Account API proxying; production routing belongs to
+`api-gateway`.
 
-## Office Integration Compose
+## Verification
 
-The HTTPS-only Windows Docker Desktop integration stack is documented in [the office Compose runbook](docs/runbooks/office-compose.md). It builds the sibling HHC services without source mounts and publishes only Caddy on TCP 443.
+```sh
+corepack pnpm test:run
+corepack pnpm lint
+corepack pnpm build
+docker build --secret id=npmrc,src="$HOME/.npmrc" -t hhc-web:local .
+```
+
+The runtime serves `GET /health` on port `10000`.
+
+## Office integration
+
+The HTTPS-only Windows Docker Desktop stack is documented in
+[the office Compose runbook](docs/runbooks/office-compose.md).

@@ -2,7 +2,10 @@
 
 ## Service Purpose
 
-`hhc-web` serves the public church website at `www.alive.org.tw`. It is a Next.js standalone runtime and does not own business data or backend API behavior. `admin-fe` and `account-fe` are separate deployables from the same frontend monorepo.
+`hhc-web` serves the public church website at `www.alive.org.tw`. It is a
+Next.js standalone runtime and does not own business data or backend API
+behavior. `admin-fe` and `account-fe` are separate repositories and
+deployables; all three consume versioned packages from `frontend-platform`.
 
 ## Owner And Escalation
 

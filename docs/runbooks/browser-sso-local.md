@@ -56,33 +56,36 @@ grep '^ADMIN_INIT_PASSWORD=' .env
 
 ## Frontends
 
-Run each command from `/Users/rayselfs/Projects/hhc/hhc-web` in a separate
-terminal.
+Run each frontend from its repository in a separate terminal after installing
+dependencies with a GitHub token that has `read:packages`.
 
 Account:
 
 ```bash
+cd /Users/rayselfs/Projects/hhc/account-fe
 __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=account.hhc.test \
-  pnpm --filter @hhc/account dev -- --host 0.0.0.0 --port 5173
+  corepack pnpm dev -- --host 0.0.0.0 --port 5173
 ```
 
 Admin:
 
 ```bash
+cd /Users/rayselfs/Projects/hhc/admin-fe
 __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=admin.hhc.test \
 VITE_ACCOUNT_AUTHORIZE_BASE_URL=http://account.hhc.test:5173/api/account/v1 \
 VITE_ACCOUNT_SITE_URL=http://account.hhc.test:5173 \
 VITE_ADMIN_REDIRECT_URI=http://admin.hhc.test:5175/oauth/callback \
-  pnpm --filter @hhc/admin dev -- --host 0.0.0.0 --port 5175
+  corepack pnpm dev -- --host 0.0.0.0 --port 5175
 ```
 
 Public Web:
 
 ```bash
+cd /Users/rayselfs/Projects/hhc/hhc-web
 ACCOUNT_API_PROXY_TARGET=http://127.0.0.1:8080 \
 NEXT_PUBLIC_ACCOUNT_SITE_URL=http://account.hhc.test:5173 \
 NEXT_PUBLIC_ACCOUNT_AUTHORIZE_BASE_URL=http://account.hhc.test:5173/api/account/v1 \
-  pnpm --filter @hhc/web dev -- --hostname 0.0.0.0 --port 3000
+  corepack pnpm dev -- --hostname 0.0.0.0 --port 3000
 ```
 
 Open these browser URLs, not `localhost`:
