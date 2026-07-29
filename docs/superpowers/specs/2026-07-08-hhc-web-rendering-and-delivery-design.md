@@ -42,7 +42,7 @@ This works for a static public site, but it will not be enough once published CM
 
 ## Decision
 
-Use three independent frontend deployments from the `hhc-frontend` monorepo:
+Use three independent frontend repositories and deployments:
 
 - `hhc-web`: Next.js standalone public renderer.
 - `account-fe`: Vite account console.
@@ -73,7 +73,10 @@ Use static export only while the site still depends on mock/static content.
 
 ### Serve Public And Admin From One Next.js Runtime
 
-Rejected because Admin is an authenticated, high-density Vite application with a separate release and rollback boundary. The monorepo shares design, preferences, and typed clients without coupling its runtime to public rendering.
+Rejected because Admin is an authenticated, high-density Vite application
+with a separate release and rollback boundary. `frontend-platform` shares
+versioned design, preferences, and typed clients without coupling application
+source trees or runtimes.
 
 ### Add Next.js API Routes As A BFF
 

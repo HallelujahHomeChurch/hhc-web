@@ -8,6 +8,10 @@
 
 **Tech Stack:** Next.js, TypeScript, Go, PostgreSQL, Redis, Azure Container Apps, Azure Blob Storage, Dapr service invocation, Azure DevOps.
 
+**Frontend repositories:** `hhc-web`, `account-fe`, and `admin-fe` are
+independently versioned and deployed. Shared compiled packages live in
+`frontend-platform` and are consumed from GitHub Packages at exact versions.
+
 **Detailed Architecture:** See `docs/superpowers/specs/2026-07-08-hhc-web-platform-detailed-architecture.md` for route policy, database schemas, JWT contract, event names, cache keys, asset grants, notification/audit contracts, and LINE bot weekly bulletin flow.
 
 **Service Catalog/Ownership:** See `docs/superpowers/specs/2026-07-08-hhc-service-catalog-and-ownership-design.md` for the finite v1 deployable set, reusable capability boundaries, allowed caller matrix, non-service decisions, and service admission/extraction gates.
@@ -514,7 +518,7 @@
 
 ### Phase 7: Public Website And Admin UI
 
-**Component:** `hhc-web`
+**Components:** `hhc-web`, `admin-fe`
 
 **Modify:**
 - Replace mock-only feature data with typed API client calls.
@@ -522,9 +526,9 @@
 - Keep same-origin `/api/*` as production default.
 - Use `NEXT_PUBLIC_API_BASE_URL` only for local/staging override.
 - Remove `output: 'export'` when CMS/API-backed runtime rendering becomes the production data path.
-- Serve public and admin UI from one `hhc-web` Next server in v1, with host-aware routing behind `api-gateway`.
+- Serve public UI from `hhc-web` and the CMS/admin UI from `admin-fe`, with host-aware routing behind `api-gateway`.
 - Do not add Next.js API route handlers for platform APIs.
-- Add admin console screens under the existing app first; split into `apps/admin` only after auth and CMS flows are stable.
+- Keep CMS/admin editors in `admin-fe`; both frontends consume typed `hhc-web-api` contracts from `frontend-platform`.
 
 **Public Pages:**
 - Home.

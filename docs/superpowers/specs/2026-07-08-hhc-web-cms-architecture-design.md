@@ -70,7 +70,12 @@ All public ingress goes through `api-gateway`. Backend services must not expose 
 
 ## Current State
 
-`hhc-frontend` is a pnpm monorepo containing an independently deployed Next.js public site, Vite account console, and Vite admin console. The public app uses `output: 'standalone'` and reads published `hhc-web-api` projections at runtime. Test fixtures are not production fallbacks.
+`hhc-web`, `account-fe`, and `admin-fe` are independent repositories and
+deployments. Shared UI, preferences, account session helpers, and generated
+CMS clients live in `frontend-platform` and are consumed as exact-version
+compiled packages. The public app uses `output: 'standalone'` and reads
+published `hhc-web-api` projections at runtime. Test fixtures are not
+production fallbacks.
 
 `api-gateway` is an existing Nginx 1.30.3 Alpine reverse proxy deployed to Azure Container Apps. It routes through Dapr service invocation, already knows `www.alive.org.tw`, `admin.alive.org.tw`, and `account.alive.org.tw`, strips client-supplied identity headers, has rate limits/CORS, and currently has no token validation.
 
@@ -81,9 +86,10 @@ The design extends the existing gateway rather than replacing it.
 Use a modular microservice architecture with a small set of Go services:
 
 - `api-gateway`: first gate for public ingress, routing, rate limits, CORS, local JWT verification, and trusted identity header injection.
-- `apps/account`: account-domain browser login/profile/security console, deployed as `account-fe`.
-- `apps/admin`: website content and platform administration console, deployed as `admin-fe`.
-- `apps/web`: public Next.js renderer, deployed as `hhc-web`.
+- `account-fe`: account-domain browser login/profile/security console.
+- `admin-fe`: website content and platform administration console.
+- `hhc-web`: public Next.js renderer.
+- `frontend-platform`: versioned shared packages with no application runtime.
 - `account-api`: account domain only; OIDC/OAuth2 login, token issuance, user/account APIs, roles/claims source, and JWKS/public key publication.
 - `hhc-web-api`: main website backend and API facade for v1; it owns website content modules, admin writes, public read APIs, and projections.
 - `asset-api`: generic asset service for files, images, PDFs, thumbnails, private group files, and future app cloud-folder objects.
@@ -391,10 +397,10 @@ Phase 1 keeps `hhc-web` in the current Next.js app while introducing API clients
 Later workspace target:
 
 - `apps/www`: public site.
-- `apps/admin`: CMS/admin console.
+- `admin-fe`: CMS/admin console.
 - `packages/api-client`: typed public/admin API clients.
 - `packages/i18n`: locale constants and helpers.
-- `packages/ui`: shared UI only where real reuse exists.
+- `frontend-platform/packages/ui`: shared UI only where real reuse exists.
 
 The public site keeps current user-facing routes and component contracts where practical. Feature APIs move from mock data to feature-based routes under `www.alive.org.tw/api/*`.
 

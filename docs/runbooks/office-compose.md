@@ -9,6 +9,14 @@ This is a shared test environment for Windows Docker Desktop, not production. St
 - Windows Firewall permits inbound TCP 443 only on the Private profile.
 - A dedicated `acme-test.alive.org.tw` Azure DNS zone exists. Create these CNAMEs: `_acme-challenge.www-test.alive.org.tw` to `_acme-challenge.www-test.acme-test.alive.org.tw`, `_acme-challenge.account-test.alive.org.tw` to `_acme-challenge.account-test.acme-test.alive.org.tw`, and `_acme-challenge.admin-test.alive.org.tw` to `_acme-challenge.admin-test.acme-test.alive.org.tw`. The Azure service principal has `DNS Zone Contributor` only on this validation zone.
 - The office Docker network can reach the private ClamAV endpoint on `172.16.65.5:3310`.
+- `hhc-web`, `account-fe`, and `admin-fe` are sibling directories.
+- A dedicated npmrc outside the repositories contains a GitHub token with
+  `read:packages`:
+
+  ```text
+  @hallelujahhomechurch:registry=https://npm.pkg.github.com
+  //npm.pkg.github.com/:_authToken=github_pat_REDACTED
+  ```
 
 ## First Start
 
@@ -18,7 +26,9 @@ From the repository root:
 ./scripts/office-compose-init.sh
 ```
 
-Fill `compose/.env.compose.local` with the Azure DNS service-principal fields and `ACME_EMAIL`. Keep `ACME_CA` on Let's Encrypt staging for the first successful issuance.
+Fill `compose/.env.compose.local` with the Azure DNS service-principal fields,
+`ACME_EMAIL`, and the absolute Windows `FRONTEND_NPMRC_FILE` path. Keep
+`ACME_CA` on Let's Encrypt staging for the first successful issuance.
 
 ```sh
 docker compose --env-file compose/.env.compose.local up --build -d
