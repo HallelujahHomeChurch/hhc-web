@@ -74,6 +74,7 @@ services:
       REDIS_PORT: "6379"
       JWT_ISSUER: https://account-test.alive.org.tw
       FRONTEND_URL: https://account-test.alive.org.tw
+      CORS_ALLOWED_ORIGINS: https://account-test.alive.org.tw,https://admin-test.alive.org.tw,https://www-test.alive.org.tw
       SHARED_COOKIE_DOMAIN: .alive.org.tw
       ASSET_API_URL: http://asset-api:8080
       ASSET_PUBLIC_BASE_URL: https://www-test.alive.org.tw/api/assets
@@ -81,6 +82,8 @@ services:
       NOTIFICATION_API_URL: http://notification-api:8081
       NOTIFICATION_INTERNAL_TOKEN: ${NOTIFICATION_INTERNAL_TOKEN}
       ADMIN_INIT_PASSWORD: ${ADMIN_INIT_PASSWORD}
+      ADMIN_INIT_ENABLED: ${ADMIN_INIT_ENABLED:-true}
+      REGISTRATION_ENABLED: "false"
       REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
@@ -179,7 +182,7 @@ services:
 
   account:
     build:
-      context: ../account-fe
+      context: ../account/account-fe
       dockerfile: Dockerfile
       secrets:
         - source: frontend_npmrc
@@ -189,7 +192,7 @@ services:
 
   admin:
     build:
-      context: ../admin-fe
+      context: ../account/admin-fe
       dockerfile: Dockerfile
       secrets:
         - source: frontend_npmrc
