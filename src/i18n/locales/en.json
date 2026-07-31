@@ -273,6 +273,10 @@
       }
     ]
   },
+  "maintenance": {
+    "title": "Website update in progress",
+    "description": "We are preparing the website and will be back soon."
+  },
   "root": {
     "title": "Choose language",
     "description": "Choose the language version you want to browse."

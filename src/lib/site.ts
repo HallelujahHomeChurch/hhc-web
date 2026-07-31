@@ -1,6 +1,6 @@
 export const siteConfig = {
   name: '哈利路亞家教會',
-  url: 'https://example.com',
+  url: 'https://www.alive.org.tw',
   defaultOgImage: '/opengraph-image',
   social: {
     youtube: 'https://youtube.com/@hhc33?si=SR2rSIVOTFX2dCmw',

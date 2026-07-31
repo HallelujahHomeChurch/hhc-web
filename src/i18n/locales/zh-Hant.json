@@ -248,6 +248,10 @@
       }
     ]
   },
+  "maintenance": {
+    "title": "網站更新中",
+    "description": "我們正在整理網站內容，很快就會再次與你見面。"
+  },
   "root": {
     "title": "選擇語言",
     "description": "請選擇要瀏覽的語言版本。"
