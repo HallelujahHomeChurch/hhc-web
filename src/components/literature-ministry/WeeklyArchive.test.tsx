@@ -25,6 +25,25 @@ describe('WeeklyArchive', () => {
     expect(screen.getAllByRole('link', {name: 'Simplified'})[0]).toHaveAttribute('href', '/zh-Hans.pdf');
     expect(screen.getAllByRole('link', {name: 'English'})[0]).toHaveAttribute('href', '/en.pdf');
   });
+
+  it('does not render a download for an unavailable locale version', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      data: [{
+        issueDate: '2026-07-13',
+        versions: [{
+          issueDate: '2026-07-13', locale: 'zh-Hant', title: 'Traditional title',
+          downloadUrl: '/zh-Hant.pdf', publishedAt: '2026-07-13T04:00:00Z', version: 3
+        }]
+      }],
+      meta: {page: 1, pageSize: 12, total: 1}, error: null
+    }), {status: 200})));
+
+    render(<WeeklyArchive locale="en" messages={messages} />);
+
+    expect((await screen.findAllByRole('link', {name: 'Traditional'})).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('link', {name: 'Simplified'})).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', {name: 'English'})).not.toBeInTheDocument();
+  });
 });
 
 const messages = {
