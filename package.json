@@ -18,7 +18,7 @@
     "@hallelujahhomechurch/account-client": "0.1.1",
     "@hallelujahhomechurch/hhc-web-client": "0.1.1",
     "@hallelujahhomechurch/preferences": "0.1.1",
-    "@hallelujahhomechurch/ui": "0.1.1",
+    "@hallelujahhomechurch/ui": "0.2.2",
     "next": "16.2.9",
     "next-intl": "^4.13.0",
     "lucide-react": "^1.24.0",
