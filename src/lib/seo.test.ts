@@ -9,9 +9,9 @@ describe('seo utilities', () => {
 
   it('builds alternates for every locale', () => {
     expect(getAlternates('/about')).toEqual({
-      'zh-Hant': 'https://example.com/zh-Hant/about',
-      'zh-Hans': 'https://example.com/zh-Hans/about',
-      en: 'https://example.com/en/about'
+      'zh-Hant': 'https://www.alive.org.tw/zh-Hant/about',
+      'zh-Hans': 'https://www.alive.org.tw/zh-Hans/about',
+      en: 'https://www.alive.org.tw/en/about'
     });
   });
 

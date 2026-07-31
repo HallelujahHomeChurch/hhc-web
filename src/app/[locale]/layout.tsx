@@ -29,7 +29,7 @@ export default async function LocaleLayout({children, params}: LocaleLayoutProps
 
   return (
     <NextIntlClientProvider locale={rawLocale} messages={await getMessages(rawLocale)}>
-      <div data-locale={rawLocale}>{children}</div>
+      <div data-locale={rawLocale} lang={rawLocale}>{children}</div>
     </NextIntlClientProvider>
   );
 }

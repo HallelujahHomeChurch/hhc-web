@@ -1,0 +1,182 @@
+name: Production Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type deploy-hhc-web-production
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: hhc-web-production
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+          package-manager-cache: false
+      - run: corepack enable
+      - run: corepack pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: |
+          corepack pnpm test:run
+          corepack pnpm lint
+          corepack pnpm build
+          ./scripts/test-release-policy.sh
+      - name: Build image
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          printf '@hallelujahhomechurch:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=%s\n' "$GITHUB_TOKEN" > "$RUNNER_TEMP/npmrc"
+          docker build --secret id=npmrc,src="$RUNNER_TEMP/npmrc" .
+
+  deploy:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    env:
+      ACR_NAME: alive
+      ACR_LOGIN_SERVER: alive.azurecr.io
+      IMAGE_REPOSITORY: alive/hhc-web
+      RESOURCE_GROUP: alive
+      APP_NAME: hhc-web
+      API_GATEWAY_APP_NAME: api-gateway
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      RELEASE_CONFIRMATION: ${{ inputs.confirmation }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Validate release configuration
+        run: |
+          [[ "$GITHUB_REF" == "refs/heads/main" ]]
+          [[ "$RELEASE_CONFIRMATION" == "deploy-hhc-web-production" ]]
+          for name in AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID; do
+            test -n "${!name:-}" || { echo "Missing repository variable: ${name}" >&2; exit 1; }
+          done
+      - name: Set image tag
+        run: echo "IMAGE_TAG=main-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+      - name: Sign in to Azure with OIDC
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - run: az extension add --name containerapp --upgrade --yes
+      - name: Capture current state
+        run: |
+          resolve_image_ref() {
+            local image="$1"
+            if [[ "$image" == *@sha256:* ]]; then printf '%s\n' "$image"; return; fi
+            local image_spec="${image#${ACR_LOGIN_SERVER}/}"
+            local repository="${image_spec%:*}"
+            local digest
+            digest="$(az acr repository show --name "$ACR_NAME" --image "$image_spec" \
+              --query digest -o tsv --only-show-errors)"
+            [[ "$digest" == sha256:* ]]
+            printf '%s/%s@%s\n' "$ACR_LOGIN_SERVER" "$repository" "$digest"
+          }
+
+          if az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" --only-show-errors --output none 2>/dev/null; then
+            revision="$(az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
+              --query properties.latestReadyRevisionName -o tsv --only-show-errors)"
+            image="$(az containerapp revision show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
+              --revision "$revision" --query properties.template.containers[0].image -o tsv --only-show-errors)"
+            {
+              echo "HAS_PREVIOUS=true"
+              echo "PROVISION_PERMISSIONS=false"
+              echo "PREVIOUS_READY_REVISION=$revision"
+              echo "PREVIOUS_IMAGE_REF=$(resolve_image_ref "$image")"
+            } >> "$GITHUB_ENV"
+          else
+            {
+              echo "HAS_PREVIOUS=false"
+              echo "PROVISION_PERMISSIONS=true"
+            } >> "$GITHUB_ENV"
+          fi
+      - name: Build and push image
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          az acr login --name "$ACR_NAME"
+          printf '@hallelujahhomechurch:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=%s\n' "$GITHUB_TOKEN" > "$RUNNER_TEMP/npmrc"
+          image_ref="${ACR_LOGIN_SERVER}/${IMAGE_REPOSITORY}:${IMAGE_TAG}"
+          docker build --secret id=npmrc,src="$RUNNER_TEMP/npmrc" -t "$image_ref" .
+          docker push "$image_ref"
+      - name: Resolve immutable image
+        run: |
+          digest="$(az acr repository show --name "$ACR_NAME" \
+            --image "${IMAGE_REPOSITORY}:${IMAGE_TAG}" --query digest -o tsv --only-show-errors)"
+          [[ "$digest" == sha256:* ]]
+          echo "IMAGE_REF=${ACR_LOGIN_SERVER}/${IMAGE_REPOSITORY}@${digest}" >> "$GITHUB_ENV"
+      - name: Preview infrastructure change
+        run: |
+          az deployment group what-if \
+            --resource-group "$RESOURCE_GROUP" \
+            --template-file infra/main.bicep \
+            --parameters image="$IMAGE_REF" provisionPermissions="$PROVISION_PERMISSIONS" \
+            --validation-level Provider \
+            --result-format ResourceIdOnly \
+            --only-show-errors
+      - name: Deploy
+        id: deploy_runtime
+        run: |
+          az deployment group create \
+            --name "hhc-web-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --resource-group "$RESOURCE_GROUP" \
+            --template-file infra/main.bicep \
+            --parameters image="$IMAGE_REF" provisionPermissions="$PROVISION_PERMISSIONS" \
+            --only-show-errors --output none
+      - name: Wait for revision
+        run: |
+          for attempt in {1..60}; do
+            latest="$(az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
+              --query properties.latestRevisionName -o tsv --only-show-errors)"
+            ready="$(az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
+              --query properties.latestReadyRevisionName -o tsv --only-show-errors)"
+            if [[ -n "$latest" && "$latest" == "$ready" ]]; then
+              image="$(az containerapp revision show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
+                --revision "$ready" --query properties.template.containers[0].image -o tsv --only-show-errors)"
+              [[ "$image" == "$IMAGE_REF" ]] && exit 0
+            fi
+            sleep 10
+          done
+          echo "HHC web did not become ready" >&2
+          exit 1
+      - name: Verify through gateway Dapr
+        run: |
+          for path in health zh-Hant/maintenance; do
+            output="$(timeout 60s script -q -e -c \
+              "az containerapp exec -g \"$RESOURCE_GROUP\" -n \"$API_GATEWAY_APP_NAME\" --command \"/usr/bin/wget -S -O - http://127.0.0.1:3500/v1.0/invoke/hhc-web/method/${path}\"" \
+              /dev/null 2>&1)"
+            output="${output//$'\r'/}"
+            printf '%s\n' "$output"
+            grep -Eq 'HTTP/1\.[01][[:space:]]+200' <<< "$output"
+          done
+      - name: Roll back failed update
+        if: ${{ failure() && steps.deploy_runtime.outcome != 'skipped' && env.HAS_PREVIOUS == 'true' }}
+        run: |
+          az containerapp revision copy \
+            -g "$RESOURCE_GROUP" \
+            -n "$APP_NAME" \
+            --from-revision "$PREVIOUS_READY_REVISION" \
+            --image "$PREVIOUS_IMAGE_REF" \
+            --revision-suffix "rollback-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --only-show-errors --output none
