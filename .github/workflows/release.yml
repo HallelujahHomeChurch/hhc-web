@@ -82,6 +82,18 @@ jobs:
       - run: az extension add --name containerapp --upgrade --yes
       - name: Capture current state
         run: |
+          resolve_image_ref() {
+            local image="$1"
+            if [[ "$image" == *@sha256:* ]]; then printf '%s\n' "$image"; return; fi
+            local image_spec="${image#${ACR_LOGIN_SERVER}/}"
+            local repository="${image_spec%:*}"
+            local digest
+            digest="$(az acr repository show --name "$ACR_NAME" --image "$image_spec" \
+              --query digest -o tsv --only-show-errors)"
+            [[ "$digest" == sha256:* ]]
+            printf '%s/%s@%s\n' "$ACR_LOGIN_SERVER" "$repository" "$digest"
+          }
+
           if az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" --only-show-errors --output none 2>/dev/null; then
             revision="$(az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
               --query properties.latestReadyRevisionName -o tsv --only-show-errors)"
@@ -91,7 +103,7 @@ jobs:
               echo "HAS_PREVIOUS=true"
               echo "PROVISION_PERMISSIONS=false"
               echo "PREVIOUS_READY_REVISION=$revision"
-              echo "PREVIOUS_IMAGE=$image"
+              echo "PREVIOUS_IMAGE_REF=$(resolve_image_ref "$image")"
             } >> "$GITHUB_ENV"
           else
             {
@@ -165,6 +177,6 @@ jobs:
             -g "$RESOURCE_GROUP" \
             -n "$APP_NAME" \
             --from-revision "$PREVIOUS_READY_REVISION" \
-            --image "$PREVIOUS_IMAGE" \
+            --image "$PREVIOUS_IMAGE_REF" \
             --revision-suffix "rollback-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
             --only-show-errors --output none

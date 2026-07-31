@@ -15,6 +15,8 @@ grep -q 'az deployment group what-if' "$workflow"
 grep -q 'for path in health zh-Hant/maintenance' "$workflow"
 grep -q 'v1.0/invoke/hhc-web/method/${path}' "$workflow"
 grep -q 'PREVIOUS_READY_REVISION' "$workflow"
+grep -q 'PREVIOUS_IMAGE_REF=' "$workflow"
+grep -q -- '--image "$PREVIOUS_IMAGE_REF"' "$workflow"
 
 grep -q "name: 'hhc-web'" "$infra"
 grep -q "appId: 'hhc-web'" "$infra"
