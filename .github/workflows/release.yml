@@ -62,6 +62,7 @@ jobs:
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       RELEASE_CONFIRMATION: ${{ inputs.confirmation }}
+      PROVISION_PERMISSIONS: "false"
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Validate release configuration
@@ -80,6 +81,14 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       - run: az extension add --name containerapp --upgrade --yes
+      - name: Verify runtime prerequisites
+        run: |
+          principal="$(az identity show -g "$RESOURCE_GROUP" -n hhc-web-identity \
+            --query principalId -o tsv --only-show-errors)"
+          registry="$(az acr show -g "$RESOURCE_GROUP" -n "$ACR_NAME" \
+            --query id -o tsv --only-show-errors)"
+          [[ "$(az role assignment list --scope "$registry" --assignee-object-id "$principal" \
+            --query "[?roleDefinitionName=='AcrPull'] | length(@)" -o tsv --only-show-errors)" == "1" ]]
       - name: Capture current state
         run: |
           resolve_image_ref() {
@@ -101,15 +110,11 @@ jobs:
               --revision "$revision" --query properties.template.containers[0].image -o tsv --only-show-errors)"
             {
               echo "HAS_PREVIOUS=true"
-              echo "PROVISION_PERMISSIONS=false"
               echo "PREVIOUS_READY_REVISION=$revision"
               echo "PREVIOUS_IMAGE_REF=$(resolve_image_ref "$image")"
             } >> "$GITHUB_ENV"
           else
-            {
-              echo "HAS_PREVIOUS=false"
-              echo "PROVISION_PERMISSIONS=true"
-            } >> "$GITHUB_ENV"
+            echo "HAS_PREVIOUS=false" >> "$GITHUB_ENV"
           fi
       - name: Build and push image
         env:
