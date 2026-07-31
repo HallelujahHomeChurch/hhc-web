@@ -7,10 +7,12 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('WeeklyCard', () => {
   it('renders the latest published bulletin', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(apiResponse({
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(apiResponse([{
+      issueDate: '2026-07-13', versions: [{
       issueDate: '2026-07-13', locale: 'en', title: 'Weekly bulletin',
       downloadUrl: '/api/assets/public/asset-1', publishedAt: '2026-07-13T04:00:00Z', version: 3
-    })));
+      }]
+    }])));
 
     render(<WeeklyCard locale="en" ctaLabel="Download" messages={{loading: 'Loading', error: 'Unavailable', retry: 'Retry'}} />);
 
@@ -21,10 +23,12 @@ describe('WeeklyCard', () => {
   it('allows retry after a load failure', async () => {
     const fetcher = vi.fn()
       .mockResolvedValueOnce(apiResponse(null, {code: 'unavailable', message: 'Unavailable'}, 503))
-      .mockResolvedValueOnce(apiResponse({
+      .mockResolvedValueOnce(apiResponse([{
+        issueDate: '2026-07-13', versions: [{
         issueDate: '2026-07-13', locale: 'en', title: 'Weekly bulletin',
         downloadUrl: '/weekly.pdf', publishedAt: '2026-07-13T04:00:00Z', version: 3
-      }));
+        }]
+      }]));
     vi.stubGlobal('fetch', fetcher);
     render(<WeeklyCard locale="en" ctaLabel="Download" messages={{loading: 'Loading', error: 'Unavailable', retry: 'Retry'}} />);
 

@@ -29,8 +29,13 @@ export class WeeklyApiError extends Error {
 }
 
 export async function fetchLatestWeekly(locale: Locale, options: ClientOptions = {}) {
-  const response = await request<PublicBulletin>(`/bulletins/latest?locale=${locale}`, options);
-  return toWeekly(response.data);
+  const latest = (await fetchWeeklyArchive({page: 1, pageSize: 1}, options)).items[0];
+  const weekly = latest?.versions.find((version) => version.locale === locale)
+    ?? latest?.versions.find((version) => version.locale === 'zh-Hant');
+  if (!weekly) {
+    throw new WeeklyApiError('not_found', 'The latest bulletin is unavailable for this locale.');
+  }
+  return weekly;
 }
 
 export async function fetchWeeklyArchive(
