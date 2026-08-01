@@ -26,6 +26,16 @@
 - Protected route smoke: valid token succeeds, missing token fails, invalid signature fails
 - Private route smoke: external `/priv/*` returns blocked response
 
+## Browser Auth Method Policy
+
+- OAuth token exchange, refresh, and logout routes accept `POST` only.
+- Session summary, `/me`, and CSRF-token routes accept `GET` only.
+- `www.alive.org.tw` exposes only session summary, CSRF, OAuth token exchange,
+  and current-device global logout; general Account management stays on the
+  Account host.
+- Run `scripts/test-auth-method-matrix.sh` in the `api-gateway` repo before
+  building the image, then run `nginx -t` against that exact image.
+
 ## Dashboards And Logs
 
 - request rate, 4xx, 5xx, p95 latency by host and route class
