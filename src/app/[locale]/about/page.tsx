@@ -58,7 +58,7 @@ export default async function AboutPage({params}: AboutPageProps) {
     <>
       <SiteHeader locale={locale} pathname={`/${locale}/about`} />
       <main>
-          <AboutHero title={messages.about.heroTitle} subtitle={messages.about.heroSubtitle} />
+          <AboutHero locale={locale} title={messages.about.heroTitle} subtitle={messages.about.heroSubtitle} />
         <div className="bg-[image:var(--hhc-page-gradient)] py-10 pb-14">
           <VisionContent content={messages.about.vision} />
           <HistoryTimeline content={messages.about.history} timeline={timelineResult.value} errorMessage={timelineResult.failed ? messages.about.historyLoadError : undefined} />
