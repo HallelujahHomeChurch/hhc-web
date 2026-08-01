@@ -13,9 +13,10 @@ const items = [{
 
 describe('NewsSection', () => {
   it('renders news item links', () => {
-    const {container} = render(<NewsSection items={items} moreLabel="查看更多" title="最新消息" />);
+    const {container} = render(<NewsSection items={items} moreHref="/zh-Hant/news" moreLabel="查看更多" title="最新消息" />);
 
     expect(screen.getByRole('heading', {name: '最新消息'})).toBeInTheDocument();
+    expect(screen.getByRole('link', {name: '查看更多'})).toHaveAttribute('href', '/zh-Hant/news');
     expect(screen.getAllByRole('link').length).toBeGreaterThan(1);
     expect(screen.getByText('十年養成計畫｜滿心怡姊妹分享會')).toBeInTheDocument();
     expect(container.innerHTML).not.toContain('/assets/');

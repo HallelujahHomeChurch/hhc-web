@@ -107,6 +107,7 @@
 
   [data-locale="zh-Hans"] {
     --font-sans: var(--font-noto-sans-sc), var(--font-noto-sans-tc), var(--font-inter), system-ui, sans-serif;
+    --font-display: var(--font-ma-shan-zheng), "Kaiti SC", "STKaiti", "KaiTi", var(--font-sans);
   }
 
   [data-locale="en"] {
@@ -286,6 +287,74 @@
   .site-mobile-navigation a:hover,
   .site-mobile-navigation a[aria-current="page"] {
     background: var(--color-primary-soft);
+    color: var(--color-primary);
+  }
+
+  body .hhc-modal--drawer-right {
+    width: min(300px, 88vw);
+  }
+
+  .site-mobile-drawer-content {
+    display: flex;
+    min-height: calc(100dvh - 85px);
+    flex-direction: column;
+  }
+
+  .site-mobile-account {
+    display: grid;
+    gap: 6px;
+    margin-top: auto;
+    padding-top: 20px;
+    border-top: 1px solid var(--color-line);
+  }
+
+  .site-mobile-account-user {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px 14px;
+  }
+
+  .site-mobile-account-user > span {
+    display: grid;
+    min-width: 0;
+  }
+
+  .site-mobile-account-user strong,
+  .site-mobile-account-user small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .site-mobile-account-user small {
+    color: var(--color-muted);
+  }
+
+  .site-mobile-account-action {
+    display: flex;
+    width: 100%;
+    min-height: 44px;
+    align-items: center;
+    gap: 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    padding-inline: 12px;
+    color: var(--color-ink);
+    font: inherit;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .site-mobile-account-action:hover {
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+  }
+
+  .site-mobile-account-action--danger {
     color: var(--color-primary);
   }
 

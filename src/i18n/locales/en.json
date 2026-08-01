@@ -5,7 +5,9 @@
     "nav": {
       "home": "Home",
       "about": "About",
+      "news": "Latest News",
       "literatureMinistry": "Literature Ministry",
+      "menu": "Menu",
       "openMenu": "Open menu",
       "closeMenu": "Close menu"
     },
@@ -41,12 +43,20 @@
     "videosTitle": "Kingdom Joy",
     "videosSubtitle": "Worship through music and let life be lit by love",
     "videosLoadError": "Videos are temporarily unavailable",
-    "watchMore": "Watch more videos",
+    "watchMore": "Watch more",
     "aboutTitle": "About Us",
     "aboutBody": "Hallelujah Home Church values family, worship, and truth, building relationships of love, forming mature disciples, and sharing the gospel with more people.",
     "aboutCta": "Meet us",
     "locationsTitle": "Locations",
     "mapLink": "View map"
+  },
+  "news": {
+    "title": "Latest News",
+    "description": "Read the latest news and event updates from Hallelujah Home Church.",
+    "empty": "There is no news yet.",
+    "loadError": "Latest news is temporarily unavailable.",
+    "back": "Back to latest news",
+    "publishedAt": "Published"
   },
   "about": {
     "heroTitle": "About Us",

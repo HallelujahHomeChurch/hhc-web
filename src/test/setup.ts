@@ -9,6 +9,7 @@ const mockFont = {
 
 vi.mock('next/font/google', () => ({
   Inter: () => mockFont,
+  Ma_Shan_Zheng: () => mockFont,
   Noto_Sans_SC: () => mockFont,
   Noto_Sans_TC: () => mockFont
 }));

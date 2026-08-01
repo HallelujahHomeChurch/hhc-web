@@ -7,3 +7,7 @@ export type NewsItem = {
   imageSrc?: string;
   href: string;
 };
+
+export type NewsDetail = NewsItem & {
+  body: string;
+};

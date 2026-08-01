@@ -1,4 +1,4 @@
-import {Inter, Noto_Sans_SC, Noto_Sans_TC} from 'next/font/google';
+import {Inter, Ma_Shan_Zheng, Noto_Sans_SC, Noto_Sans_TC} from 'next/font/google';
 import localFont from 'next/font/local';
 
 export const inter = Inter({
@@ -23,6 +23,13 @@ export const notoSansSC = Noto_Sans_SC({
   subsets: ['latin'],
   variable: '--font-noto-sans-sc',
   weight: ['400', '500', '600', '700', '800', '900']
+});
+
+export const maShanZheng = Ma_Shan_Zheng({
+  display: 'block',
+  preload: false,
+  variable: '--font-ma-shan-zheng',
+  weight: '400'
 });
 
 export const chenyuLuoyan = localFont({

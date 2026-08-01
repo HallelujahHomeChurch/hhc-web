@@ -6,7 +6,7 @@ import {Button, Drawer} from '@hallelujahhomechurch/ui';
 import {useTranslations} from 'next-intl';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
 import type {Locale} from '@/i18n/locales';
-import {AccountControl} from './AccountControl';
+import {AccountControlProvider, AccountControlView} from './AccountControl';
 
 type SiteHeaderProps = {
   locale: Locale;
@@ -18,10 +18,20 @@ export function SiteHeader({locale, pathname, sessionClient}: SiteHeaderProps) {
   const t = useTranslations('site');
   const navItems = [
     {href: `/${locale}/about`, label: t('nav.about')},
+    {href: `/${locale}/news`, label: t('nav.news')},
     {href: `/${locale}/literature-ministry`, label: t('nav.literatureMinistry')}
   ];
+  const accountLabels = {
+    menu: t('account.menu'),
+    manageAccount: t('account.manageAccount'),
+    signIn: t('account.signIn'),
+    signOut: t('account.signOut'),
+    signOutError: t('account.signOutError')
+  };
+  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   return (
+    <AccountControlProvider client={sessionClient} labels={accountLabels}>
       <header className="sticky top-0 z-10 border-b border-line/70 bg-paper/90 backdrop-blur-xl">
       <div className="relative flex min-h-[76px] w-full items-center gap-6 px-6 max-[620px]:min-h-[68px] max-[620px]:px-4">
         <Link href={`/${locale}`} className="inline-flex min-h-11 min-w-max items-center gap-2.5" aria-label={t('nav.home')}>
@@ -46,8 +56,8 @@ export function SiteHeader({locale, pathname, sessionClient}: SiteHeaderProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                aria-current={pathname === item.href ? 'page' : undefined}
-                data-active={pathname === item.href ? 'true' : undefined}
+                aria-current={isActive(item.href) ? 'page' : undefined}
+                data-active={isActive(item.href) ? 'true' : undefined}
                 className="relative inline-flex items-center px-4 font-semibold tracking-[0.02em] after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:origin-left after:scale-x-0 after:bg-primary hover:text-primary hover:after:scale-x-100 data-[active=true]:text-primary data-[active=true]:after:scale-x-100 max-[620px]:min-h-11 max-[620px]:rounded-full max-[620px]:bg-panel max-[620px]:after:hidden"
               >
                 {item.label}
@@ -58,7 +68,7 @@ export function SiteHeader({locale, pathname, sessionClient}: SiteHeaderProps) {
           <Drawer
             closeLabel={t('nav.closeMenu')}
             placement="right"
-            title={t('nav.openMenu')}
+            title={t('nav.menu')}
             trigger={
               <Button type="button" variant="ghost" aria-label={t('nav.openMenu')} className="site-mobile-menu-trigger">
                 <span className="grid gap-1.5" aria-hidden="true">
@@ -70,29 +80,24 @@ export function SiteHeader({locale, pathname, sessionClient}: SiteHeaderProps) {
             }
           >
             {(close) => (
-              <nav className="site-mobile-navigation" aria-label="主要導覽">
-                {navItems.map((item) => (
-                  <Link key={item.href} href={item.href} aria-current={pathname === item.href ? 'page' : undefined} onClick={close}>
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
+              <div className="site-mobile-drawer-content">
+                <nav className="site-mobile-navigation" aria-label={t('nav.menu')}>
+                  {navItems.map((item) => (
+                    <Link key={item.href} href={item.href} aria-current={isActive(item.href) ? 'page' : undefined} onClick={close}>
+                      {item.label}
+                    </Link>
+                  ))}
+                </nav>
+                <AccountControlView variant="inline" onNavigate={close} />
+              </div>
             )}
           </Drawer>
         </div>
-        <div className="ml-auto shrink-0 max-[620px]:ml-0">
-          <AccountControl
-            client={sessionClient}
-            labels={{
-              menu: t('account.menu'),
-              manageAccount: t('account.manageAccount'),
-              signIn: t('account.signIn'),
-              signOut: t('account.signOut'),
-              signOutError: t('account.signOutError')
-            }}
-          />
+        <div className="ml-auto shrink-0 max-[620px]:hidden">
+          <AccountControlView />
         </div>
       </div>
       </header>
+    </AccountControlProvider>
   );
 }
