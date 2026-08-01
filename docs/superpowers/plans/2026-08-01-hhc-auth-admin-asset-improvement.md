@@ -445,14 +445,16 @@ Reference: Azure Container Apps event jobs support queue-driven executions with 
 
 Reference: Microsoft explicitly lists Container Apps Jobs as unsupported by managed Dapr sidecars: [Dapr limitations in Azure Container Apps](https://learn.microsoft.com/en-us/azure/container-apps/dapr-overview#limitations).
 
-- [ ] Extend Asset's `line.group.file` policy to the Office, PowerPoint, and text formats that LINE already accepts, with per-type limits and content detection.
-- [ ] Add a production-only Entra workload-auth branch to Asset private-route middleware while preserving Dapr caller authentication and keeping the development caller header disabled in production.
-- [ ] Add a narrow Asset client to LINE and preserve existing requester/group authorization before creating an upload.
-- [ ] Persist `assetId` in LINE work state and make restart/retry idempotent.
-- [ ] Wait through the Asset status contract with a workflow deadline; `pending` does not consume a publication failure attempt.
+- [x] Extend Asset's `line.group.file` policy to the Office, PowerPoint, and text formats that LINE already accepts, with per-type limits and content detection.
+- [x] Add a production-only Entra workload-auth branch to Asset private-route middleware while preserving Dapr caller authentication and keeping the development caller header disabled in production.
+- [x] Add a narrow Asset client to LINE and preserve existing requester/group authorization before creating an upload.
+- [x] Persist `assetId` in LINE work state and make restart/retry idempotent.
+- [x] Wait through the Asset status contract with a workflow deadline; `pending` does not consume a publication failure attempt.
 - [ ] Deploy and verify the Asset path before removing LINE's scanner, signature job, Azure Files mount, storage keys, queue connection string, and scan image.
-- [ ] Keep rollback to the previous valid signature snapshot.
+- [x] Keep rollback to the previous valid signature snapshot.
 - [ ] Add a smoke test that succeeds with the office computer off and no Tailscale route.
+
+Implementation evidence: Asset `3cc65a0`; LINE `205049c`. Production cutover and rollback cleanup remain deferred until live proof.
 
 **Commits:**
 

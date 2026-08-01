@@ -50,6 +50,11 @@ routes directly with the development caller-header fallback enabled.
   Azure Files storage key is shared with LINE.
 - Deploy first with `activate_queue_scanning=false`; after clean/EICAR fixtures
   pass, rerun with the flag true. Only then remove office/Tailscale/NSG access.
+- LINE attachment Jobs call private Asset ingress with a dedicated managed
+  identity and the `Asset.Invoke` app role. LINE owns download and publication;
+  Asset remains the sole owner of quarantine, signatures, scan state, grants,
+  and clean download. Keep the old LINE scanner as rollback-only until the
+  private workload path passes production smoke without the office route.
 
 ## Health And Ready Checks
 
