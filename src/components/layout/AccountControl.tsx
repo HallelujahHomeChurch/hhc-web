@@ -1,6 +1,6 @@
 'use client';
 
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {UserRound} from 'lucide-react';
 import {
   buildAuthorizeUrl,
@@ -12,7 +12,7 @@ import {
   type AccountSessionClient,
   type OAuthClientConfig
 } from '@hallelujahhomechurch/account-client';
-import {AccountMenu, Toast} from '@hallelujahhomechurch/ui';
+import {AccountMenu, Avatar, Toast} from '@hallelujahhomechurch/ui';
 
 export const webOAuthTransactionKey = 'hhc_web_oauth_transaction';
 export const webPassiveSsoAttemptKey = 'hhc_web_passive_sso_attempted';
@@ -40,13 +40,32 @@ interface AccountControlProps {
   oauth?: OAuthClientConfig;
 }
 
-export function AccountControl({
+type AccountControlContextValue = {
+  accountSiteUrl: string;
+  auth: AccountControlState;
+  beginAuthorization: () => void;
+  labels: AccountControlLabels;
+  signOut: () => Promise<boolean>;
+};
+
+const AccountControlContext = createContext<AccountControlContextValue | null>(null);
+
+export function AccountControl(props: AccountControlProps) {
+  return (
+    <AccountControlProvider {...props}>
+      <AccountControlView />
+    </AccountControlProvider>
+  );
+}
+
+export function AccountControlProvider({
   accountSiteUrl = accountSiteUrlForBrowser(),
+  children,
   client,
   labels,
   navigateExternal = defaultNavigateExternal,
   oauth
-}: AccountControlProps) {
+}: AccountControlProps & {children: ReactNode}) {
   const sessionClient = useMemo(() => client ?? createAccountSessionClient(), [client]);
   const oauthConfig = useMemo(() => oauth ?? webOAuthConfigForBrowser(), [oauth]);
   const [auth, setAuth] = useState<AccountControlState>({status: 'loading'});
@@ -127,14 +146,52 @@ export function AccountControl({
     };
   }, [refreshSession]);
 
+  const signOut = useCallback(async () => {
+    setLogoutError('');
+    try {
+      await sessionClient.logoutAll();
+      setAuth({status: 'anonymous'});
+      notifyAccountStateChange('sign-out');
+      return true;
+    } catch {
+      const result = await refreshSession();
+      if (result.status === 'anonymous') {
+        notifyAccountStateChange('sign-out');
+        return true;
+      }
+      setLogoutError(labels.signOutError);
+      return false;
+    }
+  }, [labels.signOutError, refreshSession, sessionClient]);
+
+  return (
+    <AccountControlContext.Provider value={{accountSiteUrl, auth, beginAuthorization, labels, signOut}}>
+      {children}
+      {logoutError ? (
+        <div className="fixed right-6 top-20 z-50 max-w-[min(360px,calc(100vw-32px))]">
+          <Toast tone="danger">{logoutError}</Toast>
+        </div>
+      ) : null}
+    </AccountControlContext.Provider>
+  );
+}
+
+export function AccountControlView({variant = 'menu', onNavigate}: {variant?: 'menu' | 'inline'; onNavigate?: () => void}) {
+  const context = useContext(AccountControlContext);
+  if (!context) throw new Error('AccountControlView must be used inside AccountControlProvider.');
+
+  const {accountSiteUrl, auth, beginAuthorization, labels, signOut} = context;
+
   if (auth.status === 'loading' || auth.status === 'unavailable') {
-    return <span className="inline-block size-10 shrink-0" aria-hidden="true" />;
+    return variant === 'menu' ? <span className="inline-block size-10 shrink-0" aria-hidden="true" /> : null;
   }
 
   if (auth.status === 'anonymous') {
     return (
       <a
-        className="grid size-10 shrink-0 place-items-center rounded-full text-ink hover:bg-primary-soft hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        className={variant === 'menu'
+          ? 'grid size-10 shrink-0 place-items-center rounded-full text-ink hover:bg-primary-soft hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
+          : 'site-mobile-account-action'}
         href={`${accountSiteUrl}/login`}
         aria-label={labels.signIn}
         onClick={(event) => {
@@ -143,6 +200,7 @@ export function AccountControl({
         }}
       >
         <UserRound size={21} aria-hidden="true" />
+        {variant === 'inline' ? <span>{labels.signIn}</span> : null}
       </a>
     );
   }
@@ -150,44 +208,46 @@ export function AccountControl({
   const user = auth.user;
   const displayName = user.display_name || user.email.split('@')[0] || user.email;
 
-  return (
-    <>
-      <AccountMenu
-        labels={{
-          menu: labels.menu,
-          greeting: `Hi ${displayName}`,
-          manageAccount: labels.manageAccount,
-          signOut: labels.signOut
-        }}
-        manageAccountHref={`${accountSiteUrl}/profile`}
-        onSignOut={() => {
-          setLogoutError('');
-          void sessionClient.logoutAll()
-            .then(() => {
-              setAuth({status: 'anonymous'});
-              notifyAccountStateChange('sign-out');
-            })
-            .catch(async () => {
-              const result = await refreshSession();
-              if (result.status === 'anonymous') {
-                notifyAccountStateChange('sign-out');
-                return;
-              }
-              setLogoutError(labels.signOutError);
-            });
-        }}
-        user={{
-          name: displayName,
-          email: user.email,
-          avatarUrl: user.avatar_url
-        }}
-      />
-      {logoutError ? (
-        <div className="fixed right-6 top-20 z-50 max-w-[min(360px,calc(100vw-32px))]">
-          <Toast tone="danger">{logoutError}</Toast>
+  if (variant === 'inline') {
+    return (
+      <section className="site-mobile-account" aria-label={labels.menu}>
+        <div className="site-mobile-account-user">
+          <Avatar name={displayName} src={user.avatar_url} />
+          <span>
+            <strong>{displayName}</strong>
+            <small>{user.email}</small>
+          </span>
         </div>
-      ) : null}
-    </>
+        <a className="site-mobile-account-action" href={`${accountSiteUrl}/profile`} onClick={onNavigate}>
+          {labels.manageAccount}
+        </a>
+        <button
+          className="site-mobile-account-action site-mobile-account-action--danger"
+          type="button"
+          onClick={() => void signOut().then((didSignOut) => { if (didSignOut) onNavigate?.(); })}
+        >
+          {labels.signOut}
+        </button>
+      </section>
+    );
+  }
+
+  return (
+    <AccountMenu
+      labels={{
+        menu: labels.menu,
+        greeting: `Hi ${displayName}`,
+        manageAccount: labels.manageAccount,
+        signOut: labels.signOut
+      }}
+      manageAccountHref={`${accountSiteUrl}/profile`}
+      onSignOut={() => void signOut()}
+      user={{
+        name: displayName,
+        email: user.email,
+        avatarUrl: user.avatar_url
+      }}
+    />
   );
 }
 

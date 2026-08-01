@@ -1,13 +1,15 @@
 import type {NewsItem} from '@/features/news/types';
+import Link from 'next/link';
 
 type NewsSectionProps = {
   title: string;
-  moreLabel: string;
+  moreHref?: string;
+  moreLabel?: string;
   items: NewsItem[];
   errorMessage?: string;
 };
 
-export function NewsSection({title, moreLabel, items, errorMessage}: NewsSectionProps) {
+export function NewsSection({title, moreHref, moreLabel, items, errorMessage}: NewsSectionProps) {
   const placeholders = [
     'linear-gradient(135deg,var(--color-primary-soft-hover),var(--hhc-news-panel)),radial-gradient(circle at 20% 25%,rgb(228 164 58 / 62%) 0 18%,transparent 19%)',
     'linear-gradient(135deg,rgb(58 126 122 / 26%),var(--hhc-news-panel)),radial-gradient(circle at 78% 28%,rgb(189 223 227 / 54%) 0 22%,transparent 23%)',
@@ -18,14 +20,16 @@ export function NewsSection({title, moreLabel, items, errorMessage}: NewsSection
     <div className="min-w-0">
       <div className="mb-5 flex items-center justify-between gap-5">
         <h2 className="m-0 text-2xl font-semibold tracking-[0.03em] text-ink">{title}</h2>
-        <a className="inline-flex min-h-11 items-center text-sm font-extrabold text-rose" href="#">
-          {moreLabel}
-        </a>
+        {moreHref && moreLabel ? (
+          <Link className="inline-flex min-h-11 items-center text-sm font-extrabold text-rose" href={moreHref}>
+            {moreLabel}
+          </Link>
+        ) : null}
       </div>
       {errorMessage ? <p role="status" className="rounded-lg border border-line bg-panel p-4 text-sm text-muted">{errorMessage}</p> : <ul className="m-0 grid list-none gap-5 p-0">
         {items.map((item, index) => (
           <li key={item.id}>
-            <a className="grid grid-cols-[210px_minmax(0,1fr)] items-center gap-5 max-[900px]:grid-cols-[160px_minmax(0,1fr)] max-[620px]:grid-cols-1" href={item.href}>
+            <Link className="grid grid-cols-[210px_minmax(0,1fr)] items-center gap-5 max-[900px]:grid-cols-[160px_minmax(0,1fr)] max-[620px]:grid-cols-1" href={item.href}>
               <span
                 aria-label={item.imageAlt}
                 role="img"
@@ -37,7 +41,7 @@ export function NewsSection({title, moreLabel, items, errorMessage}: NewsSection
                 <p className="mb-3 text-sm leading-relaxed text-muted">{item.summary}</p>
                 <span className="text-[13px] font-bold text-muted">● {item.date}</span>
               </span>
-            </a>
+            </Link>
           </li>
         ))}
       </ul>}

@@ -1,5 +1,6 @@
 import type {VideoItem} from '@/features/videos/types';
 import {Button} from '@/components/ui/Button';
+import {Play} from 'lucide-react';
 
 type VideoSectionProps = {
   title: string;
@@ -17,13 +18,12 @@ export function VideoSection({title, subtitle, ctaLabel, channelHref, items, err
         <h2 className="mb-3 text-[25px] font-semibold text-teal">{title}</h2>
         <p className="mb-5 leading-[1.7] text-ink">{subtitle}</p>
         <div className="mb-4">
-          <Button href={channelHref} target="_blank">{ctaLabel}</Button>
-        </div>
-        <div className="flex items-center gap-2 text-[13px] font-extrabold leading-snug text-muted">
-          <span className="grid h-5 w-7 place-items-center rounded-md bg-[#e62117] text-xs text-white" aria-hidden="true">▶</span>
-          YouTube
-          <br />
-          Hallelujah Home Church
+          <Button className="gap-2" href={channelHref} target="_blank">
+            <span className="grid h-5 w-7 place-items-center rounded-md bg-[#e62117] text-white" aria-hidden="true">
+              <Play size={12} fill="currentColor" />
+            </span>
+            {ctaLabel}
+          </Button>
         </div>
       </div>
       {errorMessage ? <p role="status" className="col-span-3 self-center rounded-lg border border-line bg-panel p-4 text-muted">{errorMessage}</p> : items.map((item) => (

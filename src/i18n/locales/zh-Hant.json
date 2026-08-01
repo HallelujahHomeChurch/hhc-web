@@ -5,7 +5,9 @@
     "nav": {
       "home": "首頁",
       "about": "關於我們",
+      "news": "最新消息",
       "literatureMinistry": "文字事工",
+      "menu": "選單",
       "openMenu": "開啟選單",
       "closeMenu": "關閉選單"
     },
@@ -41,12 +43,20 @@
     "videosTitle": "神國大樂",
     "videosSubtitle": "用音樂敬拜神，讓生命被愛點亮",
     "videosLoadError": "影片暫時無法載入",
-    "watchMore": "觀看更多影片",
+    "watchMore": "觀看更多",
     "aboutTitle": "關於我們",
     "aboutBody": "哈利路亞家教會是一個重視家庭、敬拜與真理的教會，致力於建立愛的關係、培育成熟的門徒，並將福音帶給更多人。",
     "aboutCta": "認識我們",
     "locationsTitle": "服務據點",
     "mapLink": "查看地圖"
+  },
+  "news": {
+    "title": "最新消息",
+    "description": "查看哈利路亞家教會最新消息與活動資訊。",
+    "empty": "目前尚無最新消息。",
+    "loadError": "最新消息暫時無法載入。",
+    "back": "返回最新消息",
+    "publishedAt": "發布日期"
   },
   "about": {
     "heroTitle": "關於我們",

@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import type {HhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
-import {getNews} from './api';
+import {getNews, getNewsBySlug} from './api';
 
 describe('getNews', () => {
   it('maps published news projections without using fixtures', async () => {
@@ -14,5 +14,14 @@ describe('getNews', () => {
       href: expect.any(String)
     });
     expect(item.imageSrc).toBe('/api/assets/public/cover/large');
+  });
+
+  it('maps a news detail without treating its body as markup', async () => {
+    const client = {getNewsBySlug: async () => ({id: 'news-1', title: '消息', body: '<script>alert(1)</script>', href: '/zh-Hant/news/news-1'})} as unknown as HhcWebClient;
+
+    await expect(getNewsBySlug('zh-Hant', 'news-1', client)).resolves.toMatchObject({
+      title: '消息',
+      body: '<script>alert(1)</script>'
+    });
   });
 });
