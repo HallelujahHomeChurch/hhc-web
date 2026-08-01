@@ -39,6 +39,17 @@ routes directly with the development caller-header fallback enabled.
   scanner remains active. Enable dispatch only after the queue-triggered ACA
   Job exists; disable the embedded scanner only after clean, infected, retry,
   and poison acceptance checks pass.
+- `asset-scan` is an event-triggered ACA Job. Its managed identity has Queue
+  Processor, poison Queue Contributor, Blob Reader, Key Vault secret, and ACR
+  pull access only. The scan image includes ClamAV but no HTTP runtime.
+- PostgreSQL records a durable poison event before the worker forwards its
+  idempotent poison envelope. A Job crash therefore cannot lose failed work.
+- `asset-clamav-signature-refresh` writes immutable generations to the private
+  `asset-signatures` Blob container and atomically switches `current.json`.
+  Scan and refresh Jobs use separate reader/writer managed identities; no
+  Azure Files storage key is shared with LINE.
+- Deploy first with `activate_queue_scanning=false`; after clean/EICAR fixtures
+  pass, rerun with the flag true. Only then remove office/Tailscale/NSG access.
 
 ## Health And Ready Checks
 
