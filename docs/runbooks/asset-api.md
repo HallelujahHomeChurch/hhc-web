@@ -20,15 +20,30 @@ routes directly with the development caller-header fallback enabled.
 
 - PostgreSQL asset schema
 - Blob Storage
-- Scanner provider or internal scanning worker
+- Azure Storage Queue scan dispatch and the embedded scanner during cutover
 - Derivative generation worker for images
 - `audit-log` for protected grant changes
 - Consumer services that own asset references
 
+## Scan Dispatch
+
+- Upload completion and one `asset.scan.requested.v1` outbox row commit in the
+  same PostgreSQL transaction.
+- The Asset runtime sends pending outbox rows to the `asset-scan` Azure Storage
+  Queue with managed identity. Messages contain only version, event ID, asset
+  ID, and immutable Blob ETag.
+- Delivery is at-least-once. A send accepted by Azure can be repeated when the
+  process exits before recording `delivered_at`; scan workers must deduplicate
+  by event ID.
+- During queue rollout `ASSET_SCAN_DISPATCH_ENABLED=false` and the embedded
+  scanner remains active. Enable dispatch only after the queue-triggered ACA
+  Job exists; disable the embedded scanner only after clean, infected, retry,
+  and poison acceptance checks pass.
+
 ## Health And Ready Checks
 
-- `GET /healthz`: process health
-- `GET /readyz`: PostgreSQL reachable, Blob reachable, scanner configuration valid
+- `GET /health`: process health
+- `GET /ready`: PostgreSQL reachable and runtime dependencies initialized
 - Upload session smoke in staging
 - Public download smoke through asset route, not raw Blob
 - Worker backlog checks for scan and derivative queues
@@ -38,6 +53,7 @@ routes directly with the development caller-header fallback enabled.
 - upload session count and failures
 - Blob operation latency and failures
 - scan backlog age and result counts
+- scan outbox oldest pending age, send attempts, and last error
 - derivative backlog age and failures
 - public URL grant validation failures
 - download route p95 latency and 5xx
