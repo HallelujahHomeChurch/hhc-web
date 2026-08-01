@@ -227,7 +227,7 @@ Response:
 ```json
 {
   "assetId": "asset_123",
-  "downloadUrl": "https://www.alive.org.tw/api/assets/public/asset_123"
+  "downloadUrl": "https://www.alive.org.tw/assets/asset_123"
 }
 ```
 

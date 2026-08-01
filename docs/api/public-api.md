@@ -176,7 +176,7 @@ Response:
     "locale": "zh-Hant",
     "title": "2026-07-12 週報",
     "assetId": "asset_123",
-    "downloadUrl": "https://www.alive.org.tw/api/assets/public/asset_123",
+    "downloadUrl": "https://www.alive.org.tw/assets/asset_123",
     "mimeType": "application/pdf",
     "sizeBytes": 1234567,
     "publishedAt": "2026-07-12T00:00:00Z"
