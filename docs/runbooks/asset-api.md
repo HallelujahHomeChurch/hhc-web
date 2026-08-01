@@ -20,15 +20,46 @@ routes directly with the development caller-header fallback enabled.
 
 - PostgreSQL asset schema
 - Blob Storage
-- Scanner provider or internal scanning worker
+- Azure Storage Queue scan dispatch and the embedded scanner during cutover
 - Derivative generation worker for images
 - `audit-log` for protected grant changes
 - Consumer services that own asset references
 
+## Scan Dispatch
+
+- Upload completion and one `asset.scan.requested.v1` outbox row commit in the
+  same PostgreSQL transaction.
+- The Asset runtime sends pending outbox rows to the `asset-scan` Azure Storage
+  Queue with managed identity. Messages contain only version, event ID, asset
+  ID, and immutable Blob ETag.
+- Delivery is at-least-once. A send accepted by Azure can be repeated when the
+  process exits before recording `delivered_at`; scan workers must deduplicate
+  by event ID.
+- During queue rollout `ASSET_SCAN_DISPATCH_ENABLED=false` and the embedded
+  scanner remains active. Enable dispatch only after the queue-triggered ACA
+  Job exists; disable the embedded scanner only after clean, infected, retry,
+  and poison acceptance checks pass.
+- `asset-scan` is an event-triggered ACA Job. Its managed identity has Queue
+  Processor, poison Queue Contributor, Blob Reader, Key Vault secret, and ACR
+  pull access only. The scan image includes ClamAV but no HTTP runtime.
+- PostgreSQL records a durable poison event before the worker forwards its
+  idempotent poison envelope. A Job crash therefore cannot lose failed work.
+- `asset-clamav-signature-refresh` writes immutable generations to the private
+  `asset-signatures` Blob container and atomically switches `current.json`.
+  Scan and refresh Jobs use separate reader/writer managed identities; no
+  Azure Files storage key is shared with LINE.
+- Deploy first with `activate_queue_scanning=false`; after clean/EICAR fixtures
+  pass, rerun with the flag true. Only then remove office/Tailscale/NSG access.
+- LINE attachment Jobs call private Asset ingress with a dedicated managed
+  identity and the `Asset.Invoke` app role. LINE owns download and publication;
+  Asset remains the sole owner of quarantine, signatures, scan state, grants,
+  and clean download. Keep the old LINE scanner as rollback-only until the
+  private workload path passes production smoke without the office route.
+
 ## Health And Ready Checks
 
-- `GET /healthz`: process health
-- `GET /readyz`: PostgreSQL reachable, Blob reachable, scanner configuration valid
+- `GET /health`: process health
+- `GET /ready`: PostgreSQL reachable and runtime dependencies initialized
 - Upload session smoke in staging
 - Public download smoke through asset route, not raw Blob
 - Worker backlog checks for scan and derivative queues
@@ -38,6 +69,7 @@ routes directly with the development caller-header fallback enabled.
 - upload session count and failures
 - Blob operation latency and failures
 - scan backlog age and result counts
+- scan outbox oldest pending age, send attempts, and last error
 - derivative backlog age and failures
 - public URL grant validation failures
 - download route p95 latency and 5xx

@@ -1,8 +1,8 @@
-import {render, screen, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
-import {AccountControl} from './AccountControl';
+import {AccountControl, accountStateEventName} from './AccountControl';
 
 const labels = {
   menu: 'Account menu',
@@ -69,6 +69,24 @@ describe('AccountControl', () => {
     expect(navigateExternal).not.toHaveBeenCalled();
   });
 
+  it('does not present an unavailable session endpoint as signed out', async () => {
+    const client = anonymousClient();
+    vi.mocked(client.getSession).mockRejectedValue(new Error('unavailable'));
+
+    render(
+      <AccountControl
+        accountSiteUrl="https://account.alive.org.tw"
+        client={client}
+        labels={labels}
+        navigateExternal={vi.fn()}
+        oauth={oauth}
+      />
+    );
+
+    await waitFor(() => expect(client.getSession).toHaveBeenCalledOnce());
+    expect(screen.queryByRole('link', {name: 'Sign in'})).not.toBeInTheDocument();
+  });
+
   it('starts interactive OAuth from sign in and preserves the current URL', async () => {
     const user = userEvent.setup();
     const navigateExternal = vi.fn();
@@ -91,6 +109,26 @@ describe('AccountControl', () => {
     expect(sessionStorage.getItem('hhc_web_oauth_transaction')).toContain(
       '/en/about?source=header#account'
     );
+  });
+
+  it('starts interactive OAuth only once when sign in is clicked repeatedly', async () => {
+    const user = userEvent.setup();
+    const navigateExternal = vi.fn();
+
+    render(
+      <AccountControl
+        accountSiteUrl="https://account.alive.org.tw"
+        client={anonymousClient()}
+        labels={labels}
+        navigateExternal={navigateExternal}
+        oauth={oauth}
+      />
+    );
+
+    const signIn = await screen.findByRole('link', {name: 'Sign in'});
+    await Promise.all([user.click(signIn), user.click(signIn)]);
+
+    await waitFor(() => expect(navigateExternal).toHaveBeenCalledOnce());
   });
 
   it('attempts prompt=none once when the SSO hint exists', async () => {
@@ -175,6 +213,53 @@ describe('AccountControl', () => {
     await user.click(screen.getByRole('menuitem', {name: 'Sign out'}));
 
     expect(logoutAll).toHaveBeenCalledOnce();
+    await waitFor(() => expect(screen.getByRole('link', {name: 'Sign in'})).toBeInTheDocument());
+  });
+
+  it('revalidates the public header when the page regains focus', async () => {
+    const client = authenticatedClient();
+    vi.mocked(client.getSession)
+      .mockResolvedValueOnce({
+        authenticated: true,
+        user: {id: 'u1', email: 'ada@example.com', display_name: 'Ada', avatar_url: null}
+      })
+      .mockResolvedValueOnce({authenticated: false});
+
+    render(
+      <AccountControl
+        accountSiteUrl="https://account.alive.org.tw"
+        client={client}
+        labels={labels}
+      />
+    );
+
+    expect(await screen.findByRole('button', {name: 'Account menu'})).toBeInTheDocument();
+    fireEvent.focus(window);
+
+    await waitFor(() => expect(screen.getByRole('link', {name: 'Sign in'})).toBeInTheDocument());
+    expect(client.getSession).toHaveBeenCalledTimes(2);
+  });
+
+  it('revalidates when another same-origin account control reports sign out', async () => {
+    const client = authenticatedClient();
+    vi.mocked(client.getSession)
+      .mockResolvedValueOnce({
+        authenticated: true,
+        user: {id: 'u1', email: 'ada@example.com', display_name: 'Ada', avatar_url: null}
+      })
+      .mockResolvedValueOnce({authenticated: false});
+
+    render(
+      <AccountControl
+        accountSiteUrl="https://account.alive.org.tw"
+        client={client}
+        labels={labels}
+      />
+    );
+
+    expect(await screen.findByRole('button', {name: 'Account menu'})).toBeInTheDocument();
+    window.dispatchEvent(new CustomEvent(accountStateEventName, {detail: {type: 'sign-out'}}));
+
     await waitFor(() => expect(screen.getByRole('link', {name: 'Sign in'})).toBeInTheDocument());
   });
 });

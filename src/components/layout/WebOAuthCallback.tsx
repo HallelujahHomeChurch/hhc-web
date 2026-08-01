@@ -1,42 +1,66 @@
 'use client';
 
 import {
+  buildAuthorizeUrl,
+  claimOAuthRecovery,
   clearOAuthTransaction,
   readOAuthTransaction,
-  validateOAuthState
+  validateOAuthState,
+  type OAuthClientConfig
 } from '@hallelujahhomechurch/account-client';
-import {useEffect, useState} from 'react';
-import {webOAuthTransactionKey} from './AccountControl';
+import {Button} from '@hallelujahhomechurch/ui';
+import {useEffect, useRef, useState} from 'react';
+import {webOAuthConfigForBrowser, webOAuthTransactionKey} from './AccountControl';
+
+type CallbackLabels = {
+  completing: string;
+  error: string;
+  retry: string;
+};
 
 type WebOAuthCallbackProps = {
   currentUrl?: URL;
   fetcher?: typeof fetch;
+  labels?: CallbackLabels;
   navigate?: (url: string) => void;
+  oauth?: OAuthClientConfig;
   storage?: Storage;
 };
 
 export function WebOAuthCallback({
   currentUrl,
   fetcher = fetch,
+  labels: labelsProp,
   navigate = defaultNavigate,
+  oauth,
   storage
 }: WebOAuthCallbackProps) {
-  const [error, setError] = useState('');
+  const [error, setError] = useState<{message: string; retryable: boolean} | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const completion = useRef<{attempt: number; promise: Promise<void>} | null>(null);
 
   useEffect(() => {
     let active = true;
-    const reportError = () => queueMicrotask(() => {
-      if (active) setError('Unable to complete sign in.');
-    });
     const url = currentUrl ?? new URL(window.location.href);
     const transactionStorage = storage ?? sessionStorage;
     const transaction = readOAuthTransaction({
       storage: transactionStorage,
       storageKey: webOAuthTransactionKey
     });
+    const labels = labelsProp ?? callbackLabels(transaction?.returnTo);
+    const reportError = (retryable = false) => queueMicrotask(() => {
+      if (active) setError({message: labels.error, retryable});
+    });
     const state = url.searchParams.get('state') ?? '';
 
     if (!validateOAuthState(transaction, state)) {
+      if (transaction && claimOAuthRecovery({
+        storage: transactionStorage,
+        storageKey: webOAuthTransactionKey
+      })) {
+        navigate(buildAuthorizeUrl(oauth ?? webOAuthConfigForBrowser(), transaction).toString());
+        return () => { active = false; };
+      }
       reportError();
       return () => { active = false; };
     }
@@ -55,39 +79,107 @@ export function WebOAuthCallback({
       return () => { active = false; };
     }
 
-    const body = new URLSearchParams({
+    if (!completion.current || completion.current.attempt !== attempt) {
+      completion.current = {
+        attempt,
+        promise: completeSignIn({attempt, code, fetcher, transaction, url})
+      };
+    }
+    completion.current.promise
+      .then(() => {
+        clearOAuthTransaction({storage: transactionStorage, storageKey: webOAuthTransactionKey});
+        if (active) navigate(transaction.returnTo);
+      })
+      .catch(() => reportError(true));
+
+    return () => { active = false; };
+  }, [attempt, currentUrl, fetcher, labelsProp, navigate, oauth, storage]);
+
+  const labelStorage = storage ?? (typeof window === 'undefined' ? null : sessionStorage);
+  const labels = labelsProp ?? callbackLabels(labelStorage
+    ? readOAuthTransaction({storage: labelStorage, storageKey: webOAuthTransactionKey})?.returnTo
+    : undefined);
+
+  return (
+    <main className="grid min-h-screen place-items-center bg-paper px-6 text-ink">
+      {error ? (
+        <div className="grid justify-items-center gap-4 text-center">
+          <p role="alert">{error.message}</p>
+          {error.retryable ? (
+            <Button variant="outline" onPress={() => {
+              setError(null);
+              setAttempt((value) => value + 1);
+            }}>
+              {labels.retry}
+            </Button>
+          ) : null}
+        </div>
+      ) : <p>{labels.completing}</p>}
+    </main>
+  );
+}
+
+async function completeSignIn({
+  attempt,
+  code,
+  fetcher,
+  transaction,
+  url
+}: {
+  attempt: number;
+  code: string;
+  fetcher: typeof fetch;
+  transaction: NonNullable<ReturnType<typeof readOAuthTransaction>>;
+  url: URL;
+}) {
+  if (attempt > 0) {
+    const session = await fetcher('/api/account/v1/session', {
+      method: 'GET',
+      credentials: 'include',
+      headers: {accept: 'application/json'},
+      cache: 'no-store'
+    });
+    if (session.ok) {
+      try {
+        const body: unknown = await session.json();
+        if (isAuthenticatedSession(body)) return;
+      } catch {
+        // Retry the original exchange when session recovery returned an invalid body.
+      }
+    }
+  }
+
+  const response = await fetcher('/api/account/v1/oauth/token', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      accept: 'application/json',
+      'content-type': 'application/x-www-form-urlencoded'
+    },
+    body: new URLSearchParams({
       grant_type: 'authorization_code',
       code,
       redirect_uri: `${url.origin}/oauth/callback`,
       client_id: 'www-web',
       code_verifier: transaction.codeVerifier
-    });
+    })
+  });
+  if (!response.ok) throw new Error('Token exchange failed');
+}
 
-    fetcher('/api/account/v1/oauth/token', {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        accept: 'application/json',
-        'content-type': 'application/x-www-form-urlencoded'
-      },
-      body
-    }).then((response) => {
-      if (!response.ok) throw new Error('Token exchange failed');
-      clearOAuthTransaction({storage: transactionStorage, storageKey: webOAuthTransactionKey});
-      if (active) navigate(transaction.returnTo);
-    }).catch(() => {
-      clearOAuthTransaction({storage: transactionStorage, storageKey: webOAuthTransactionKey});
-      if (active) navigate(transaction.returnTo);
-    });
+function isAuthenticatedSession(value: unknown): value is {authenticated: true} {
+  return typeof value === 'object' && value !== null
+    && 'authenticated' in value && value.authenticated === true;
+}
 
-    return () => { active = false; };
-  }, [currentUrl, fetcher, navigate, storage]);
-
-  return (
-    <main className="grid min-h-screen place-items-center bg-paper px-6 text-ink">
-      {error ? <p role="alert">{error}</p> : <p>Completing sign in...</p>}
-    </main>
-  );
+function callbackLabels(returnTo = '/') : CallbackLabels {
+  if (returnTo.startsWith('/zh-Hant/')) {
+    return {completing: '正在完成登入…', error: '無法完成登入。', retry: '再試一次'};
+  }
+  if (returnTo.startsWith('/zh-Hans/')) {
+    return {completing: '正在完成登录…', error: '无法完成登录。', retry: '重试'};
+  }
+  return {completing: 'Completing sign in…', error: 'Unable to complete sign in.', retry: 'Try again'};
 }
 
 function defaultNavigate(url: string) {
