@@ -12,7 +12,7 @@ import {
   type AccountSessionClient,
   type OAuthClientConfig
 } from '@hallelujahhomechurch/account-client';
-import {AccountMenu, Avatar, Toast} from '@hallelujahhomechurch/ui';
+import {AccountMenu, Toast} from '@hallelujahhomechurch/ui';
 
 export const webOAuthTransactionKey = 'hhc_web_oauth_transaction';
 export const webPassiveSsoAttemptKey = 'hhc_web_passive_sso_attempted';
@@ -176,22 +176,20 @@ export function AccountControlProvider({
   );
 }
 
-export function AccountControlView({variant = 'menu', onNavigate}: {variant?: 'menu' | 'inline'; onNavigate?: () => void}) {
+export function AccountControlView() {
   const context = useContext(AccountControlContext);
   if (!context) throw new Error('AccountControlView must be used inside AccountControlProvider.');
 
   const {accountSiteUrl, auth, beginAuthorization, labels, signOut} = context;
 
   if (auth.status === 'loading' || auth.status === 'unavailable') {
-    return variant === 'menu' ? <span className="inline-block size-10 shrink-0" aria-hidden="true" /> : null;
+    return <span className="inline-block size-10 shrink-0" aria-hidden="true" />;
   }
 
   if (auth.status === 'anonymous') {
     return (
       <a
-        className={variant === 'menu'
-          ? 'grid size-10 shrink-0 place-items-center rounded-full text-ink hover:bg-primary-soft hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
-          : 'site-mobile-account-action'}
+        className="grid size-10 shrink-0 place-items-center rounded-full text-ink hover:bg-primary-soft hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         href={`${accountSiteUrl}/login`}
         aria-label={labels.signIn}
         onClick={(event) => {
@@ -200,37 +198,12 @@ export function AccountControlView({variant = 'menu', onNavigate}: {variant?: 'm
         }}
       >
         <UserRound size={21} aria-hidden="true" />
-        {variant === 'inline' ? <span>{labels.signIn}</span> : null}
       </a>
     );
   }
 
   const user = auth.user;
   const displayName = user.display_name || user.email.split('@')[0] || user.email;
-
-  if (variant === 'inline') {
-    return (
-      <section className="site-mobile-account" aria-label={labels.menu}>
-        <div className="site-mobile-account-user">
-          <Avatar name={displayName} src={user.avatar_url} />
-          <span>
-            <strong>{displayName}</strong>
-            <small>{user.email}</small>
-          </span>
-        </div>
-        <a className="site-mobile-account-action" href={`${accountSiteUrl}/profile`} onClick={onNavigate}>
-          {labels.manageAccount}
-        </a>
-        <button
-          className="site-mobile-account-action site-mobile-account-action--danger"
-          type="button"
-          onClick={() => void signOut().then((didSignOut) => { if (didSignOut) onNavigate?.(); })}
-        >
-          {labels.signOut}
-        </button>
-      </section>
-    );
-  }
 
   return (
     <AccountMenu
