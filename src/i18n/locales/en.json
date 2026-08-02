@@ -22,6 +22,7 @@
     "privacyPolicy": "Privacy",
     "termsOfUse": "Terms",
     "legalNavigation": "Legal information",
+    "pagination": {"navigation": "Content pagination", "previous": "Previous page", "next": "Next page"},
     "copyrightHolder": "Hallelujah Community Care Association, R.O.C.",
     "allRightsReserved": "All rights reserved.",
     "social": {
@@ -52,7 +53,7 @@
   },
   "news": {
     "title": "Latest News",
-    "heroSubtitle": "Church updates, upcoming events, and important announcements",
+    "heroSubtitle": "Church updates, event information, and important announcements.",
     "allNews": "All news",
     "description": "Read the latest news and event updates from Hallelujah Home Church.",
     "empty": "There is no news yet.",
@@ -147,7 +148,7 @@
     "heroSubtitle": "Weekly papers, messages, and written records for formation",
     "eyebrow": "Weekly Paper",
     "archiveTitle": "Weekly paper downloads",
-    "archiveIntro": "Weekly papers are available in Traditional Chinese, Simplified Chinese, and English for reading and sharing.",
+    "archiveIntro": "Weekly papers are available in Traditional Chinese, Simplified Chinese, and English for family members to read and share.",
     "latestLabel": "Latest weekly paper",
     "allIssuesTitle": "History",
     "paginationNote": "Sorted newest first",

@@ -8,11 +8,11 @@ const mapLinks = {
 
 export const locationsByLocale: LocalizedRecord<LocationItem[]> = {
   'zh-Hant': [
-    {id: 'taipei', name: '台北哈利路亞家教會', address: '106臺北市大安區民權里仁愛路三段29號B1', mapHref: mapLinks.taipei},
+    {id: 'taipei', name: '台北哈利路亞家教會', address: '106臺北市大安區民輝里仁愛路三段29號B1', mapHref: mapLinks.taipei},
     {id: 'zhongli', name: '中壢哈利路亞家教會', address: '320桃園市中壢區正義里福州路25號2樓', mapHref: mapLinks.zhongli}
   ],
   'zh-Hans': [
-    {id: 'taipei', name: '台北哈利路亚家教会', address: '106台北市大安区民权里仁爱路三段29号B1', mapHref: mapLinks.taipei},
+    {id: 'taipei', name: '台北哈利路亚家教会', address: '106台北市大安区民辉里仁爱路三段29号B1', mapHref: mapLinks.taipei},
     {id: 'zhongli', name: '中坜哈利路亚家教会', address: '320桃园市中坜区正义里福州路25号2楼', mapHref: mapLinks.zhongli}
   ],
   en: [

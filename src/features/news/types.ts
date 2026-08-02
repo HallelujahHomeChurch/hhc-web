@@ -11,3 +11,8 @@ export type NewsItem = {
 export type NewsDetail = NewsItem & {
   body: string;
 };
+
+export type NewsPage = {
+  items: NewsItem[];
+  meta: {page: number; pageSize: number; total: number};
+};

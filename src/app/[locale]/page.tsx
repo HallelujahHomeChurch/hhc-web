@@ -11,7 +11,7 @@ import {SiteFooter} from '@/components/layout/SiteFooter';
 import {SiteHeader} from '@/components/layout/SiteHeader';
 import {SectionCard} from '@/components/ui/SectionCard';
 import {getLocations} from '@/features/locations/api';
-import {getNews} from '@/features/news/api';
+import {getHomeNews} from '@/features/news/api';
 import {getVideos} from '@/features/videos/api';
 import {getMessages} from '@/i18n/messages';
 import {isLocale, type Locale} from '@/i18n/locales';
@@ -54,6 +54,11 @@ export async function generateMetadata({params}: HomePageProps): Promise<Metadat
       locale: getOpenGraphLocale(locale),
       url: `${siteConfig.url}${getLocalizedPath(locale, '/')}`,
       siteName: siteConfig.name
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${messages.site.name} | ${messages.home.heroTitle}`,
+      description: messages.home.heroSubtitle
     }
   };
 }
@@ -62,7 +67,7 @@ export default async function HomePage({params}: HomePageProps) {
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
-  const [newsResult, videosResult] = await Promise.allSettled([getNews(locale), getVideos(locale)]);
+  const [newsResult, videosResult] = await Promise.allSettled([getHomeNews(locale), getVideos(locale)]);
   const news = newsResult.status === 'fulfilled' ? newsResult.value : [];
   const videos = videosResult.status === 'fulfilled' ? videosResult.value : [];
   const locations = getLocations(locale);

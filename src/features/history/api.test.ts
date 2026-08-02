@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import type {HhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
-import {getHistoryTimeline} from './api';
+import {getHistoryTimeline, getHistoryTimelinePage} from './api';
 
 describe('getHistoryTimeline', () => {
   it('maps published history projections', async () => {
@@ -34,5 +34,17 @@ describe('getHistoryTimeline', () => {
     await expect(getHistoryTimeline('zh-Hant', client)).resolves.toEqual({events: [
       {date: '2005年9月18日', body: 'Legacy'},
     ]});
+  });
+
+  it('keeps public pagination metadata', async () => {
+    const client = {listPublicContentPage: async () => ({
+      data: [{id: 'event-1', eventDate: '1984', body: 'Year'}],
+      meta: {page: 2, pageSize: 12, total: 20}
+    })} as unknown as HhcWebClient;
+
+    await expect(getHistoryTimelinePage('en', 2, 12, client)).resolves.toEqual({
+      events: [{date: '1984', body: 'Year'}],
+      meta: {page: 2, pageSize: 12, total: 20}
+    });
   });
 });

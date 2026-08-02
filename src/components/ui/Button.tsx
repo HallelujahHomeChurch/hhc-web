@@ -11,7 +11,7 @@ type ButtonProps = {
 };
 
 const variants: Record<NonNullable<ButtonProps['variant']>, string> = {
-  primary: 'border-primary bg-primary text-primary-foreground hover:bg-primary-hover',
+  primary: 'border-primary-solid bg-primary-solid text-primary-foreground hover:bg-primary-solid-hover',
   primarySoft: 'border-transparent bg-primary-soft text-primary hover:bg-primary-soft-hover',
   outline: 'border-[var(--hhc-control-border)] bg-paper text-[var(--hhc-control)] hover:border-primary hover:bg-primary hover:text-primary-foreground',
   ghost: 'border-transparent bg-transparent text-muted hover:bg-primary-soft hover:text-primary'
