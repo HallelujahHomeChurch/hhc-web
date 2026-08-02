@@ -25,4 +25,14 @@ describe('getHistoryTimeline', () => {
       {date: 'March 1984', body: 'Month'},
     ]});
   });
+
+  it('falls back to the legacy date label while imported data is backfilled', async () => {
+    const client = {listPublicContent: async () => [
+      {id: 'legacy', eventDate: undefined, dateLabel: '2005年9月18日', body: 'Legacy'},
+    ]} as unknown as HhcWebClient;
+
+    await expect(getHistoryTimeline('zh-Hant', client)).resolves.toEqual({events: [
+      {date: '2005年9月18日', body: 'Legacy'},
+    ]});
+  });
 });
