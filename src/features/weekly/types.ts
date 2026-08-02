@@ -2,6 +2,7 @@ import type {Locale} from '@/i18n/locales';
 
 export type WeeklyBulletin = {
   locale: Locale;
+  issueNumber?: number;
   date: string;
   title: string;
   subtitle?: string;
@@ -10,6 +11,7 @@ export type WeeklyBulletin = {
 
 export type WeeklyIssue = {
   id: string;
+  issueNumber?: number;
   date: string;
   versions: WeeklyBulletin[];
 };
