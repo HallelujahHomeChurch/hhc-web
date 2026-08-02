@@ -18,6 +18,7 @@ describe('WeeklyCard', () => {
 
     expect(await screen.findByText('Weekly bulletin')).toBeInTheDocument();
     expect(screen.getByRole('link', {name: 'Download'})).toHaveAttribute('href', '/api/assets/public/asset-1');
+    expect(screen.getByRole('heading', {name: 'Weekly bulletin'})).toHaveClass('text-[18px]');
   });
 
   it('allows retry after a load failure', async () => {

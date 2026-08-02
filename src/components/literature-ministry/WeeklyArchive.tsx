@@ -79,17 +79,17 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
           {state === 'ready' && latestIssue && latestVersion ? (
             <>
               <p className="mt-3 text-[21px] font-semibold text-primary">{latestVersion.date}</p>
-              <h3 id="latest-weekly-title" className="mt-1 text-[21px] font-semibold text-ink">{latestVersion.title}</h3>
+              <h3 id="latest-weekly-title" className="mt-1 text-[18px] font-semibold text-ink">{latestVersion.title}</h3>
               {latestVersion.subtitle ? <p className="mt-1 text-[15px] leading-relaxed text-ink">{latestVersion.subtitle}</p> : null}
               <VersionLinks issue={latestIssue} messages={messages} className="mt-5" />
             </>
           ) : state === 'error' ? (
             <div className="mt-4 grid justify-items-start gap-4">
-              <h3 id="latest-weekly-title" className="text-[21px] font-semibold text-ink">{messages.loadError}</h3>
+              <h3 id="latest-weekly-title" className="text-[18px] font-semibold text-ink">{messages.loadError}</h3>
               <button className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--hhc-control-border)] bg-paper px-5 font-semibold text-[var(--hhc-control)] transition hover:border-primary hover:bg-primary hover:text-primary-foreground" type="button" onClick={() => setRetryKey((value) => value + 1)}>{messages.retry}</button>
             </div>
           ) : (
-            <h3 id="latest-weekly-title" className="mt-4 text-[21px] font-semibold text-muted" aria-live="polite">{messages.loading}</h3>
+            <h3 id="latest-weekly-title" className="mt-4 text-[18px] font-semibold text-muted" aria-live="polite">{messages.loading}</h3>
           )}
         </aside>
       </div>
@@ -106,7 +106,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
               <article key={issue.id} className="grid grid-cols-[125px_minmax(0,1fr)_auto] items-center gap-x-5 gap-y-4 rounded-[14px] border border-panel-border bg-panel px-5 py-4 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)] max-[860px]:grid-cols-1">
                 <time className="whitespace-nowrap text-[21px] font-semibold text-primary">{issue.date}</time>
                 <div>
-                  <h4 className="text-[21px] font-semibold text-ink">{version.title}</h4>
+                  <h4 className="text-[18px] font-semibold text-ink">{version.title}</h4>
                   {version.subtitle ? <p className="mt-1 text-[15px] leading-relaxed text-ink">{version.subtitle}</p> : null}
                 </div>
                 <VersionLinks issue={issue} messages={messages} />

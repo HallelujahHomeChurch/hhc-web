@@ -41,6 +41,7 @@ describe('WeeklyArchive', () => {
     render(<WeeklyArchive locale="en" messages={messages} />);
 
     expect((await screen.findAllByRole('link', {name: 'Traditional'})).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('heading', {name: 'Traditional title'})[0]).toHaveClass('text-[18px]');
     expect(screen.queryByRole('link', {name: 'Simplified'})).not.toBeInTheDocument();
     expect(screen.queryByRole('link', {name: 'English'})).not.toBeInTheDocument();
   });

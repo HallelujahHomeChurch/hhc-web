@@ -43,14 +43,14 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
         <div>
           <BulletinMark />
           <p className="mb-1 text-[21px] font-semibold text-primary">{weekly.date}</p>
-          <h3 id="weekly-title" className="mb-1 text-[21px] font-semibold text-ink">{weekly.title}</h3>
+          <h3 id="weekly-title" className="mb-1 text-[18px] font-semibold text-ink">{weekly.title}</h3>
           {weekly.subtitle ? <p className="mb-6 text-[15px] text-ink">{weekly.subtitle}</p> : <div className="mb-5" />}
           <Button href={weekly.href}>{ctaLabel}</Button>
         </div>
       ) : state === 'error' ? (
         <div>
           <BulletinMark />
-          <h3 id="weekly-title" className="mb-5 text-[21px] font-semibold text-ink">{messages.error}</h3>
+          <h3 id="weekly-title" className="mb-5 text-[18px] font-semibold text-ink">{messages.error}</h3>
           <button className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--hhc-control-border)] bg-paper px-5 font-semibold text-[var(--hhc-control)] transition hover:border-primary hover:bg-primary hover:text-primary-foreground" type="button" onClick={() => setRetryKey((value) => value + 1)}>
             {messages.retry}
           </button>
@@ -58,7 +58,7 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
       ) : (
         <div aria-live="polite">
           <BulletinMark />
-          <h3 id="weekly-title" className="text-[21px] font-semibold text-muted">{messages.loading}</h3>
+          <h3 id="weekly-title" className="text-[18px] font-semibold text-muted">{messages.loading}</h3>
         </div>
       )}
     </aside>
