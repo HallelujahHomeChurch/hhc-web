@@ -5,7 +5,7 @@ import type {HistoryTimelinePayload} from './types';
 
 export async function getHistoryTimeline(locale: Locale, client: HhcWebClient = publicContentClient()): Promise<HistoryTimelinePayload> {
   const values = await client.listPublicContent('history', locale);
-  return {events: values.map((value) => ({date: formatHistoryDate(value.eventDate ?? '', locale), body: value.body ?? ''}))};
+  return {events: values.map((value) => ({date: formatHistoryDate(value.eventDate ?? '', locale) || value.dateLabel || '', body: value.body ?? ''}))};
 }
 
 function formatHistoryDate(value: string, locale: Locale): string {
