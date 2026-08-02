@@ -4,7 +4,7 @@ import {getHistoryTimeline, getHistoryTimelinePage} from './api';
 
 describe('getHistoryTimeline', () => {
   it('maps published history projections', async () => {
-    const client = {listPublicContent: async () => [{id: 'event-1', title: '教會沿革', eventDate: '1984-03-01', dateLabel: 'legacy label', body: '領受建造家庭祭壇的異象。'}]} as unknown as HhcWebClient;
+    const client = clientWith([{id: 'event-1', title: '教會沿革', eventDate: '1984-03-01', dateLabel: 'legacy label', body: '領受建造家庭祭壇的異象。'}]);
     const payload = await getHistoryTimeline('zh-Hant', client);
 
     expect(payload.events).toHaveLength(1);
@@ -15,10 +15,10 @@ describe('getHistoryTimeline', () => {
   });
 
   it('formats partial canonical dates for the active locale', async () => {
-    const client = {listPublicContent: async () => [
+    const client = clientWith([
       {id: 'year', eventDate: '1984', body: 'Year'},
       {id: 'month', eventDate: '1984-03', body: 'Month'},
-    ]} as unknown as HhcWebClient;
+    ]);
 
     await expect(getHistoryTimeline('en', client)).resolves.toEqual({events: [
       {date: '1984', body: 'Year'},
@@ -27,9 +27,9 @@ describe('getHistoryTimeline', () => {
   });
 
   it('falls back to the legacy date label while imported data is backfilled', async () => {
-    const client = {listPublicContent: async () => [
+    const client = clientWith([
       {id: 'legacy', eventDate: undefined, dateLabel: '2005年9月18日', body: 'Legacy'},
-    ]} as unknown as HhcWebClient;
+    ]);
 
     await expect(getHistoryTimeline('zh-Hant', client)).resolves.toEqual({events: [
       {date: '2005年9月18日', body: 'Legacy'},
@@ -47,4 +47,23 @@ describe('getHistoryTimeline', () => {
       meta: {page: 2, pageSize: 12, total: 20}
     });
   });
+
+  it('collects every published history page for the public timeline', async () => {
+    const listPublicContentPage = async (_module: string, _locale: string, input: {page: number; pageSize: number}) => ({
+      data: input.page === 1
+        ? [{id: 'event-1', eventDate: '1984', body: 'First'}]
+        : [{id: 'event-2', eventDate: '1985', body: 'Second'}],
+      meta: {page: input.page, pageSize: 1, total: 2}
+    });
+    const client = {listPublicContentPage} as unknown as HhcWebClient;
+
+    await expect(getHistoryTimeline('en', client)).resolves.toEqual({events: [
+      {date: '1984', body: 'First'},
+      {date: '1985', body: 'Second'},
+    ]});
+  });
 });
+
+function clientWith(values: Array<Record<string, unknown>>) {
+  return {listPublicContentPage: async () => ({data: values, meta: {page: 1, pageSize: 100, total: values.length}})} as unknown as HhcWebClient;
+}

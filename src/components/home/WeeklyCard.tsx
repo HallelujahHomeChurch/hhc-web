@@ -1,7 +1,7 @@
 'use client';
 
 import {useEffect, useState} from 'react';
-import {Button} from '@/components/ui/Button';
+import {DownloadButton} from '@/components/ui/DownloadButton';
 import {fetchLatestWeekly} from '@/features/weekly/public-api';
 import type {WeeklyBulletin} from '@/features/weekly/types';
 import type {Locale} from '@/i18n/locales';
@@ -9,7 +9,7 @@ import type {Locale} from '@/i18n/locales';
 type WeeklyCardProps = {
   locale: Locale;
   ctaLabel: string;
-  messages: {loading: string; error: string; retry: string};
+  messages: {loading: string; downloading: string; error: string; retry: string};
 };
 
 export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
@@ -45,7 +45,7 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
           <p className="mb-1 text-[21px] font-semibold text-primary">{weekly.date}</p>
           <h3 id="weekly-title" className="mb-1 text-[18px] font-semibold text-ink">{weekly.title}</h3>
           {weekly.subtitle ? <p className="mb-6 text-[15px] text-ink">{weekly.subtitle}</p> : <div className="mb-5" />}
-          <Button href={weekly.href}>{ctaLabel}</Button>
+          <DownloadButton href={weekly.href} label={ctaLabel} pendingLabel={messages.downloading} />
         </div>
       ) : state === 'error' ? (
         <div>

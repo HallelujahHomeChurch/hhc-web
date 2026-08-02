@@ -19,6 +19,8 @@ describe('NewsSection', () => {
     expect(screen.getByRole('link', {name: '查看更多'})).toHaveAttribute('href', '/zh-Hant/news');
     expect(screen.getAllByRole('link').length).toBeGreaterThan(1);
     expect(screen.getByText('十年養成計畫｜滿心怡姊妹分享會')).toBeInTheDocument();
+    expect(screen.getByText('2026 / 07 / 13')).toBeInTheDocument();
+    expect(screen.queryByText('活動摘要')).not.toBeInTheDocument();
     expect(container.innerHTML).not.toContain('/assets/');
   });
 });

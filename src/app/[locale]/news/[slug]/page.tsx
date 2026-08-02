@@ -75,13 +75,12 @@ export default async function NewsDetailPage({params}: NewsDetailPageProps) {
             <div
               role="img"
               aria-label={news.imageAlt}
-              className="mb-7 aspect-[16/9] rounded-xl bg-panel bg-cover bg-center ring-1 ring-panel-border"
+              className="mb-7 aspect-[16/9] rounded-xl bg-panel bg-contain bg-center bg-no-repeat ring-1 ring-panel-border"
               style={{backgroundImage: `url("${news.imageSrc}")`}}
             />
           ) : null}
           <header className="mb-8 border-b border-line pb-7">
             <h1 className="text-[clamp(30px,5vw,48px)] font-semibold leading-tight text-ink">{news.title}</h1>
-            {news.summary ? <p className="mt-4 text-lg leading-relaxed text-muted">{news.summary}</p> : null}
             {news.date ? <p className="mt-4 text-sm font-semibold text-muted">{messages.news.publishedAt} · {news.date}</p> : null}
           </header>
           {news.body ? <div className="whitespace-pre-line text-[17px] leading-[1.9] text-ink">{news.body}</div> : null}

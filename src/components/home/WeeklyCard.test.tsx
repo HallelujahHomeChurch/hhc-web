@@ -14,10 +14,11 @@ describe('WeeklyCard', () => {
       }]
     }])));
 
-    render(<WeeklyCard locale="en" ctaLabel="Download" messages={{loading: 'Loading', error: 'Unavailable', retry: 'Retry'}} />);
+    render(<WeeklyCard locale="en" ctaLabel="Download" messages={{loading: 'Loading', downloading: 'Preparing download', error: 'Unavailable', retry: 'Retry'}} />);
 
     expect(await screen.findByText('Weekly bulletin')).toBeInTheDocument();
     expect(screen.getByRole('link', {name: 'Download'})).toHaveAttribute('href', '/api/assets/public/asset-1');
+    expect(screen.getByRole('link', {name: 'Download'})).toHaveAttribute('download', '');
     expect(screen.getByRole('heading', {name: 'Weekly bulletin'})).toHaveClass('text-[18px]');
   });
 
@@ -31,7 +32,7 @@ describe('WeeklyCard', () => {
         }]
       }]));
     vi.stubGlobal('fetch', fetcher);
-    render(<WeeklyCard locale="en" ctaLabel="Download" messages={{loading: 'Loading', error: 'Unavailable', retry: 'Retry'}} />);
+    render(<WeeklyCard locale="en" ctaLabel="Download" messages={{loading: 'Loading', downloading: 'Preparing download', error: 'Unavailable', retry: 'Retry'}} />);
 
     expect(await screen.findByText('Unavailable')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', {name: 'Retry'}));

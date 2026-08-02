@@ -3,6 +3,7 @@
 import {useEffect, useState} from 'react';
 import {useSearchParams} from 'next/navigation';
 import {Button} from '@/components/ui/Button';
+import {DownloadButton} from '@/components/ui/DownloadButton';
 import {fetchWeeklyArchive} from '@/features/weekly/public-api';
 import type {WeeklyIssue, WeeklyIssuePage} from '@/features/weekly/types';
 import type {Locale} from '@/i18n/locales';
@@ -19,6 +20,7 @@ type WeeklyArchiveMessages = {
   nextPage: string;
   pageLabel: string;
   loading: string;
+  downloading: string;
   loadError: string;
   retry: string;
   empty: string;
@@ -135,7 +137,7 @@ function localizedVersion(issue: WeeklyIssue | undefined, locale: Locale) {
 function VersionLinks({issue, messages, className = ''}: {issue: WeeklyIssue; messages: WeeklyArchiveMessages; className?: string}) {
   return (
     <div className={`flex flex-wrap justify-end gap-2.5 max-[860px]:justify-start ${className}`}>
-      {issue.versions.map((version) => <Button key={version.locale} href={version.href} variant="outline">{messages.versionLabels[version.locale]}</Button>)}
+      {issue.versions.map((version) => <DownloadButton key={version.locale} href={version.href} label={messages.versionLabels[version.locale]} pendingLabel={messages.downloading} variant="outline" />)}
     </div>
   );
 }
