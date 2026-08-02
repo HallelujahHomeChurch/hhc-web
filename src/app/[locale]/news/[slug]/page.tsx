@@ -8,7 +8,7 @@ import {SiteHeader} from '@/components/layout/SiteHeader';
 import {getNewsBySlug} from '@/features/news/api';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
-import {getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
+import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
 import {siteConfig} from '@/lib/site';
 
 type NewsDetailPageProps = {params: Promise<{locale: string; slug: string}>};
@@ -38,7 +38,7 @@ export async function generateMetadata({params}: NewsDetailPageProps): Promise<M
   return {
     title: `${news.title} | ${messages.site.name}`,
     description: news.summary || messages.news.description,
-    alternates: {canonical: getLocalizedPath(locale, path)},
+    alternates: {canonical: getLocalizedPath(locale, path), languages: getAlternates(path)},
     openGraph: {
       title: news.title,
       description: news.summary || messages.news.description,
@@ -46,6 +46,12 @@ export async function generateMetadata({params}: NewsDetailPageProps): Promise<M
       locale: getOpenGraphLocale(locale),
       url: `${siteConfig.url}${getLocalizedPath(locale, path)}`,
       siteName: siteConfig.name
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: news.title,
+      description: news.summary || messages.news.description,
+      images: news.imageSrc ? [news.imageSrc] : undefined
     }
   };
 }

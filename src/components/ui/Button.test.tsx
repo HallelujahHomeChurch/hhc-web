@@ -8,7 +8,7 @@ describe('Button', () => {
 
     const link = screen.getByRole('link', {name: '認識我們'});
 
-    expect(link.className).toContain('bg-primary');
+    expect(link.className).toContain('bg-primary-solid');
     expect(link.className).toContain('text-primary-foreground');
     expect(link.className).toContain('font-semibold');
     expect(link.className).not.toContain('font-extrabold');

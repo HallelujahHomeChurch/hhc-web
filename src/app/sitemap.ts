@@ -1,20 +1,36 @@
 import type {MetadataRoute} from 'next';
+import type {NewsItem} from '@/features/news/types';
+import {getNewsPage} from '@/features/news/api';
 import {locales} from '@/i18n/locales';
 import {getAlternates, getLocalizedPath} from '@/lib/seo';
 import {siteConfig} from '@/lib/site';
 
 const paths = ['/', '/about', '/news', '/literature-ministry', '/privacy-policy', '/terms-of-use'] as const;
 
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  return paths.flatMap((path) =>
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const staticEntries = paths.flatMap((path) =>
     locales.map((locale) => ({
       url: `${siteConfig.url}${getLocalizedPath(locale, path)}`,
-      lastModified: new Date('2026-06-26'),
       alternates: {
         languages: getAlternates(path)
       }
     }))
   );
+  // ponytail: index the first 100 published items; paginate when the site exceeds that ceiling.
+  const news = await getNewsPage('zh-Hant', 1, 100).then((result) => result.items).catch(() => []);
+  return [...staticEntries, ...buildNewsSitemap(news)];
+}
+
+export function buildNewsSitemap(news: NewsItem[]): MetadataRoute.Sitemap {
+  return news.flatMap((item) => {
+    const slug = item.href.split('/').filter(Boolean).at(-1);
+    if (!slug) return [];
+    const path = `/news/${slug}`;
+    return locales.map((locale) => ({
+      url: `${siteConfig.url}${getLocalizedPath(locale, path)}`,
+      alternates: {languages: getAlternates(path)}
+    }));
+  });
 }
