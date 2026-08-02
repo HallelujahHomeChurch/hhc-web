@@ -39,7 +39,14 @@ export async function generateMetadata({params}: PrivacyPolicyPageProps): Promis
       description,
       locale: getOpenGraphLocale(locale),
       url: `${siteConfig.url}${getLocalizedPath(locale, '/privacy-policy')}`,
-      siteName: siteConfig.name
+      siteName: siteConfig.name,
+      images: [siteConfig.defaultOgImage]
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${messages.privacyPolicy.heroTitle} | ${messages.site.name}`,
+      description,
+      images: [siteConfig.defaultOgImage]
     }
   };
 }

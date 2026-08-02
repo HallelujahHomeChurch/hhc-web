@@ -38,7 +38,14 @@ export async function generateMetadata({params}: TermsOfUsePageProps): Promise<M
       description,
       locale: getOpenGraphLocale(locale),
       url: `${siteConfig.url}${getLocalizedPath(locale, '/terms-of-use')}`,
-      siteName: siteConfig.name
+      siteName: siteConfig.name,
+      images: [siteConfig.defaultOgImage]
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${messages.termsOfUse.heroTitle} | ${messages.site.name}`,
+      description,
+      images: [siteConfig.defaultOgImage]
     }
   };
 }

@@ -42,7 +42,7 @@ export async function generateMetadata({params}: NewsDetailPageProps): Promise<M
     openGraph: {
       title: news.title,
       description: news.summary || messages.news.description,
-      images: news.imageSrc ? [{url: news.imageSrc, alt: news.imageAlt}] : undefined,
+      images: [{url: news.imageSrc || siteConfig.defaultOgImage, alt: news.imageAlt || messages.site.name}],
       locale: getOpenGraphLocale(locale),
       url: `${siteConfig.url}${getLocalizedPath(locale, path)}`,
       siteName: siteConfig.name
@@ -51,7 +51,7 @@ export async function generateMetadata({params}: NewsDetailPageProps): Promise<M
       card: 'summary_large_image',
       title: news.title,
       description: news.summary || messages.news.description,
-      images: news.imageSrc ? [news.imageSrc] : undefined
+      images: [news.imageSrc || siteConfig.defaultOgImage]
     }
   };
 }

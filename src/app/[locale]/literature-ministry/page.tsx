@@ -40,7 +40,14 @@ export async function generateMetadata({params}: LiteratureMinistryPageProps): P
       description: messages.literatureMinistry.heroSubtitle,
       locale: getOpenGraphLocale(locale),
       url: `${siteConfig.url}${getLocalizedPath(locale, '/literature-ministry')}`,
-      siteName: siteConfig.name
+      siteName: siteConfig.name,
+      images: [siteConfig.defaultOgImage]
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${messages.literatureMinistry.heroTitle} | ${messages.site.name}`,
+      description: messages.literatureMinistry.heroSubtitle,
+      images: [siteConfig.defaultOgImage]
     }
   };
 }

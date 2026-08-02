@@ -53,12 +53,14 @@ export async function generateMetadata({params}: HomePageProps): Promise<Metadat
       description: messages.home.heroSubtitle,
       locale: getOpenGraphLocale(locale),
       url: `${siteConfig.url}${getLocalizedPath(locale, '/')}`,
-      siteName: siteConfig.name
+      siteName: siteConfig.name,
+      images: [siteConfig.defaultOgImage]
     },
     twitter: {
       card: 'summary_large_image',
       title: `${messages.site.name} | ${messages.home.heroTitle}`,
-      description: messages.home.heroSubtitle
+      description: messages.home.heroSubtitle,
+      images: [siteConfig.defaultOgImage]
     }
   };
 }

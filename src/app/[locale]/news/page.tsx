@@ -36,12 +36,14 @@ export async function generateMetadata({params, searchParams}: NewsPageProps): P
       description: messages.news.description,
       locale: getOpenGraphLocale(locale),
       url: `${siteConfig.url}${getLocalizedPath(locale, path)}`,
-      siteName: siteConfig.name
+      siteName: siteConfig.name,
+      images: [siteConfig.defaultOgImage]
     },
     twitter: {
       card: 'summary_large_image',
       title: `${messages.news.title} | ${messages.site.name}`,
-      description: messages.news.description
+      description: messages.news.description,
+      images: [siteConfig.defaultOgImage]
     }
   };
 }

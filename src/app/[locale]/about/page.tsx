@@ -47,12 +47,14 @@ export async function generateMetadata({params, searchParams}: AboutPageProps): 
       description: messages.about.heroSubtitle,
       locale: getOpenGraphLocale(locale),
       url: `${siteConfig.url}${getLocalizedPath(locale, path)}`,
-      siteName: siteConfig.name
+      siteName: siteConfig.name,
+      images: [siteConfig.defaultOgImage]
     },
     twitter: {
       card: 'summary_large_image',
       title: `${messages.about.heroTitle} | ${messages.site.name}`,
-      description: messages.about.heroSubtitle
+      description: messages.about.heroSubtitle,
+      images: [siteConfig.defaultOgImage]
     }
   };
 }
