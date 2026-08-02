@@ -5,6 +5,9 @@ workflow=.github/workflows/release.yml
 infra=infra/main.bicep
 
 grep -q 'workflow_dispatch:' "$workflow"
+grep -q '^  push:' "$workflow"
+grep -q 'branches: \[main\]' "$workflow"
+grep -Fq "github.event_name == 'push' && 'deploy-hhc-web-production' || inputs.confirmation" "$workflow"
 grep -q 'deploy-hhc-web-production' "$workflow"
 grep -q 'environment: production' "$workflow"
 grep -q 'id-token: write' "$workflow"
