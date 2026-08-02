@@ -3,14 +3,18 @@ import type {WeeklyBulletin, WeeklyIssue, WeeklyIssuePage} from './types';
 
 type Fetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 type PublicBulletin = {
+  issueNumber?: number;
   issueDate: string;
   locale: Locale;
   title: string;
+  subtitle?: string;
   downloadUrl: string;
+  downloadFileName?: string;
   publishedAt: string;
   version: number;
 };
 type PublicIssue = {
+  issueNumber?: number;
   issueDate: string;
   versions: PublicBulletin[];
 };
@@ -49,6 +53,7 @@ export async function fetchWeeklyArchive(
   const order = new Map(locales.map((locale, index) => [locale, index]));
   const items: WeeklyIssue[] = response.data.map((issue) => ({
     id: issue.issueDate,
+    issueNumber: issue.issueNumber,
     date: issue.issueDate,
     versions: issue.versions
       .map(toWeekly)
@@ -66,7 +71,10 @@ export async function fetchWeeklyArchive(
 }
 
 function toWeekly(value: PublicBulletin): WeeklyBulletin {
-  return {locale: value.locale, date: value.issueDate, title: value.title, href: value.downloadUrl};
+  const href = value.downloadFileName && !value.downloadUrl.includes('filename=')
+    ? `${value.downloadUrl}${value.downloadUrl.includes('?') ? '&' : '?'}filename=${encodeURIComponent(value.downloadFileName)}`
+    : value.downloadUrl;
+  return {locale: value.locale, issueNumber: value.issueNumber, date: value.issueDate, title: value.title, subtitle: value.subtitle ?? '', href};
 }
 
 async function request<T>(path: string, options: ClientOptions) {

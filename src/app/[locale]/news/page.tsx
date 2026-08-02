@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {NewsSection} from '@/components/home/NewsSection';
+import {AboutHero} from '@/components/about/AboutHero';
 import {SiteFooter} from '@/components/layout/SiteFooter';
 import {SiteHeader} from '@/components/layout/SiteHeader';
 import {getNews} from '@/features/news/api';
@@ -47,10 +48,11 @@ export default async function NewsPage({params}: NewsPageProps) {
   return (
     <>
       <SiteHeader locale={locale} pathname={pathname} />
-      <main className="min-h-[calc(100vh-76px)] bg-[image:var(--hhc-page-gradient)] py-10 max-[620px]:py-6">
-        <section className="shell" aria-label={messages.news.title}>
+      <main className="min-h-[calc(100vh-76px)] bg-[image:var(--hhc-page-gradient)]">
+        <AboutHero locale={locale} title={messages.news.title} subtitle={messages.news.heroSubtitle} />
+        <section className="shell py-10 max-[620px]:py-6" aria-label={messages.news.allNews}>
           <NewsSection
-            title={messages.news.title}
+            title={messages.news.allNews}
             items={result.items}
             errorMessage={result.failed ? messages.news.loadError : result.items.length === 0 ? messages.news.empty : undefined}
           />

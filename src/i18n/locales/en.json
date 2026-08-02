@@ -52,6 +52,8 @@
   },
   "news": {
     "title": "Latest News",
+    "heroSubtitle": "Church updates, upcoming events, and important announcements",
+    "allNews": "All news",
     "description": "Read the latest news and event updates from Hallelujah Home Church.",
     "empty": "There is no news yet.",
     "loadError": "Latest news is temporarily unavailable.",

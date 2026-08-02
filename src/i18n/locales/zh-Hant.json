@@ -52,6 +52,8 @@
   },
   "news": {
     "title": "最新消息",
+    "heroSubtitle": "掌握教會近況、活動資訊與重要公告",
+    "allNews": "所有消息",
     "description": "查看哈利路亞家教會最新消息與活動資訊。",
     "empty": "目前尚無最新消息。",
     "loadError": "最新消息暫時無法載入。",
