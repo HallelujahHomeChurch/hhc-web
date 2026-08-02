@@ -4,7 +4,13 @@ import type {Locale} from '@/i18n/locales';
 import type {HistoryTimelinePage, HistoryTimelinePayload} from './types';
 
 export async function getHistoryTimeline(locale: Locale, client: HhcWebClient = publicContentClient()): Promise<HistoryTimelinePayload> {
-  const values = await client.listPublicContent('history', locale);
+  const values = [] as Awaited<ReturnType<HhcWebClient['listPublicContent']>>;
+  const pageSize = 100;
+  for (let page = 1; ; page += 1) {
+    const result = await client.listPublicContentPage('history', locale, {page, pageSize});
+    values.push(...result.data);
+    if (values.length >= result.meta.total || result.data.length === 0) break;
+  }
   return {events: mapHistory(values, locale)};
 }
 

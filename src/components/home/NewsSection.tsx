@@ -1,4 +1,5 @@
 import type {NewsItem} from '@/features/news/types';
+import {Newspaper} from 'lucide-react';
 import Link from 'next/link';
 
 type NewsSectionProps = {
@@ -10,12 +11,6 @@ type NewsSectionProps = {
 };
 
 export function NewsSection({title, moreHref, moreLabel, items, errorMessage}: NewsSectionProps) {
-  const placeholders = [
-    'linear-gradient(135deg,var(--color-primary-soft-hover),var(--hhc-news-panel)),radial-gradient(circle at 20% 25%,rgb(228 164 58 / 62%) 0 18%,transparent 19%)',
-    'linear-gradient(135deg,rgb(58 126 122 / 26%),var(--hhc-news-panel)),radial-gradient(circle at 78% 28%,rgb(189 223 227 / 54%) 0 22%,transparent 23%)',
-    'linear-gradient(135deg,rgb(228 164 58 / 30%),var(--hhc-news-panel)),radial-gradient(circle at 22% 76%,rgb(207 104 95 / 34%) 0 24%,transparent 25%)'
-  ];
-
   return (
     <div className="min-w-0">
       <div className="mb-5 flex items-center justify-between gap-5">
@@ -27,19 +22,20 @@ export function NewsSection({title, moreHref, moreLabel, items, errorMessage}: N
         ) : null}
       </div>
       {errorMessage ? <p role="status" className="rounded-lg border border-line bg-panel p-4 text-sm text-muted">{errorMessage}</p> : <ul className="m-0 grid list-none gap-5 p-0">
-        {items.map((item, index) => (
+        {items.map((item) => (
           <li key={item.id}>
-            <Link className="grid grid-cols-[210px_minmax(0,1fr)] items-center gap-5 max-[900px]:grid-cols-[160px_minmax(0,1fr)] max-[620px]:grid-cols-1" href={item.href}>
+            <Link className="group grid grid-cols-[210px_minmax(0,1fr)] items-center gap-5 max-[900px]:grid-cols-[160px_minmax(0,1fr)] max-[620px]:grid-cols-1" href={item.href}>
               <span
-                aria-label={item.imageAlt}
-                role="img"
-                className="h-24 w-[210px] rounded-[10px] bg-panel bg-cover bg-center ring-1 ring-panel-border max-[900px]:w-40 max-[620px]:h-40 max-[620px]:w-full"
-                style={{backgroundImage: item.imageSrc ? `url("${item.imageSrc}")` : placeholders[index % placeholders.length]}}
-              />
+                aria-label={item.imageSrc ? item.imageAlt : undefined}
+                role={item.imageSrc ? 'img' : undefined}
+                className="grid aspect-video w-[210px] place-items-center overflow-hidden rounded-[10px] bg-[var(--hhc-news-panel)] bg-cover bg-center text-primary ring-1 ring-panel-border transition group-hover:ring-primary max-[900px]:w-40 max-[620px]:w-full"
+                style={item.imageSrc ? {backgroundImage: `url("${item.imageSrc}")`} : undefined}
+              >
+                {item.imageSrc ? null : <Newspaper size={34} strokeWidth={1.5} aria-hidden="true" />}
+              </span>
               <span>
                 <h3 className="mb-2 text-lg font-semibold leading-[1.45]">{item.title}</h3>
-                <p className="mb-3 text-sm leading-relaxed text-muted">{item.summary}</p>
-                <span className="text-[13px] font-bold text-muted">● {item.date}</span>
+                <time className="text-[13px] font-bold text-muted">{item.date}</time>
               </span>
             </Link>
           </li>

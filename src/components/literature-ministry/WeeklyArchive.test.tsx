@@ -22,6 +22,7 @@ describe('WeeklyArchive', () => {
 
     expect((await screen.findAllByText('en title')).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('link', {name: 'Traditional'})[0]).toHaveAttribute('href', '/zh-Hant.pdf');
+    expect(screen.getAllByRole('link', {name: 'Traditional'})[0]).toHaveAttribute('download', '');
     expect(screen.getAllByRole('link', {name: 'Simplified'})[0]).toHaveAttribute('href', '/zh-Hans.pdf');
     expect(screen.getAllByRole('link', {name: 'English'})[0]).toHaveAttribute('href', '/en.pdf');
   });
@@ -51,5 +52,6 @@ const messages = {
   eyebrow: 'Weekly Paper', archiveTitle: 'Downloads', archiveIntro: 'Available languages', latestLabel: 'Latest',
   allIssuesTitle: 'History', paginationNote: 'Newest first', paginationLabel: 'Pages', previousPage: 'Previous',
   nextPage: 'Next', pageLabel: 'Page', loading: 'Loading', loadError: 'Unavailable', retry: 'Retry', empty: 'No bulletins',
+  downloading: 'Preparing download',
   versionLabels: {'zh-Hant': 'Traditional', 'zh-Hans': 'Simplified', en: 'English'}
 };

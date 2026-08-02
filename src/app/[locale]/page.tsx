@@ -87,6 +87,7 @@ export default async function HomePage({params}: HomePageProps) {
               ctaLabel={`${messages.home.downloadWeekly} ↓`}
               messages={{
                 loading: messages.home.weeklyLoading,
+                downloading: messages.home.weeklyDownloading,
                 error: messages.home.weeklyLoadError,
                 retry: messages.home.retry
               }}
