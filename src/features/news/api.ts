@@ -25,7 +25,7 @@ function mapNewsItem(value: Awaited<ReturnType<HhcWebClient['listPublicContent']
     summary: value.summary ?? '',
     date: value.displayDate?.replaceAll('-', ' / ') ?? '',
     imageAlt: value.imageAlt ?? value.title,
-    imageSrc: value.imageUrl,
+    imageSrc: value.homeImageUrl ?? value.imageUrl,
     href: value.href ?? '#'
   };
 }
