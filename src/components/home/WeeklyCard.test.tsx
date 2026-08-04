@@ -8,8 +8,8 @@ afterEach(() => vi.unstubAllGlobals());
 describe('WeeklyCard', () => {
   it('renders the latest published bulletin', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(apiResponse([{
-      issueDate: '2026-07-13', versions: [{
-      issueDate: '2026-07-13', locale: 'en', title: 'Weekly bulletin',
+      issueNumber: 1732, issueDate: '2026-07-13', versions: [{
+      issueNumber: 1732, issueDate: '2026-07-13', locale: 'en', title: 'Weekly bulletin',
       downloadUrl: '/api/assets/public/asset-1', publishedAt: '2026-07-13T04:00:00Z', version: 3
       }]
     }])));
@@ -17,6 +17,8 @@ describe('WeeklyCard', () => {
     render(<WeeklyCard locale="en" ctaLabel="Download" messages={{loading: 'Loading', downloading: 'Preparing download', error: 'Unavailable', retry: 'Retry'}} />);
 
     expect(await screen.findByText('Weekly bulletin')).toBeInTheDocument();
+    expect(screen.getByText('Issue 1732')).toBeInTheDocument();
+    expect(screen.queryByText('2026-07-13')).not.toBeInTheDocument();
     expect(screen.getByRole('link', {name: 'Download'})).toHaveAttribute('href', '/api/assets/public/asset-1');
     expect(screen.getByRole('link', {name: 'Download'})).toHaveAttribute('download', '');
     expect(screen.getByRole('heading', {name: 'Weekly bulletin'})).toHaveClass('text-[18px]');

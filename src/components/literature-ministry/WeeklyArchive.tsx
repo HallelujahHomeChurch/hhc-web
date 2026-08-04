@@ -5,6 +5,7 @@ import {useSearchParams} from 'next/navigation';
 import {Button} from '@/components/ui/Button';
 import {DownloadButton} from '@/components/ui/DownloadButton';
 import {fetchWeeklyArchive} from '@/features/weekly/public-api';
+import {formatIssueNumber} from '@/features/weekly/format';
 import type {WeeklyIssue, WeeklyIssuePage} from '@/features/weekly/types';
 import type {Locale} from '@/i18n/locales';
 
@@ -67,6 +68,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
 
   const latestIssue = archive?.items[0];
   const latestVersion = localizedVersion(latestIssue, locale);
+  const latestIssueLabel = formatIssueNumber(locale, latestIssue?.issueNumber);
 
   return (
     <section className="shell grid gap-7" aria-labelledby="weekly-archive-title">
@@ -80,7 +82,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
           <span className="text-sm font-black uppercase tracking-[0.12em] text-teal">{messages.latestLabel}</span>
           {state === 'ready' && latestIssue && latestVersion ? (
             <>
-              <p className="mt-3 text-[21px] font-semibold text-primary">{latestVersion.date}</p>
+              {latestIssueLabel ? <p className="mt-3 text-[21px] font-semibold text-primary">{latestIssueLabel}</p> : null}
               <h3 id="latest-weekly-title" className="mt-1 text-[18px] font-semibold text-ink">{latestVersion.title}</h3>
               {latestVersion.subtitle ? <p className="mt-1 text-[15px] leading-relaxed text-ink">{latestVersion.subtitle}</p> : null}
               <VersionLinks issue={latestIssue} messages={messages} className="mt-5" />
@@ -104,9 +106,10 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
         <div className="grid min-h-24 gap-3">
           {state === 'ready' && archive?.items.length ? archive.items.map((issue) => {
             const version = localizedVersion(issue, locale);
+            const issueLabel = formatIssueNumber(locale, issue.issueNumber);
             return version ? (
               <article key={issue.id} className="grid grid-cols-[125px_minmax(0,1fr)_auto] items-center gap-x-5 gap-y-4 rounded-[14px] border border-panel-border bg-panel px-5 py-4 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)] max-[860px]:grid-cols-1">
-                <time className="whitespace-nowrap text-[21px] font-semibold text-primary">{issue.date}</time>
+                {issueLabel ? <p className="whitespace-nowrap text-[21px] font-semibold text-primary">{issueLabel}</p> : null}
                 <div>
                   <h4 className="text-[18px] font-semibold text-ink">{version.title}</h4>
                   {version.subtitle ? <p className="mt-1 text-[15px] leading-relaxed text-ink">{version.subtitle}</p> : null}

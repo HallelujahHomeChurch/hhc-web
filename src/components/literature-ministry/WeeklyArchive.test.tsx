@@ -10,10 +10,10 @@ describe('WeeklyArchive', () => {
     vi.stubGlobal('fetch', vi.fn().mockImplementation((input: string) => {
       const url = new URL(input, 'https://www.alive.org.tw');
       const versions = ['zh-Hant', 'zh-Hans', 'en'].map((locale) => ({
-        issueDate: '2026-07-13', locale, title: `${locale} title`, downloadUrl: `/${locale}.pdf`, publishedAt: '2026-07-13T04:00:00Z', version: 3
+        issueNumber: 1732, issueDate: '2026-07-13', locale, title: `${locale} title`, downloadUrl: `/${locale}.pdf`, publishedAt: '2026-07-13T04:00:00Z', version: 3
       }));
       return Promise.resolve(new Response(JSON.stringify({
-        data: url.pathname.endsWith('/latest') ? versions[2] : [{issueDate: '2026-07-13', versions}],
+        data: url.pathname.endsWith('/latest') ? versions[2] : [{issueNumber: 1732, issueDate: '2026-07-13', versions}],
         meta: {page: 1, pageSize: 12, total: 1}, error: null
       }), {status: 200}));
     }));
@@ -21,6 +21,8 @@ describe('WeeklyArchive', () => {
     render(<WeeklyArchive locale="en" messages={messages} />);
 
     expect((await screen.findAllByText('en title')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Issue 1732').length).toBeGreaterThan(0);
+    expect(screen.queryByText('2026-07-13')).not.toBeInTheDocument();
     expect(screen.getAllByRole('link', {name: 'Traditional'})[0]).toHaveAttribute('href', '/zh-Hant.pdf');
     expect(screen.getAllByRole('link', {name: 'Traditional'})[0]).toHaveAttribute('download', '');
     expect(screen.getAllByRole('link', {name: 'Simplified'})[0]).toHaveAttribute('href', '/zh-Hans.pdf');

@@ -3,6 +3,7 @@
 import {useEffect, useState} from 'react';
 import {DownloadButton} from '@/components/ui/DownloadButton';
 import {fetchLatestWeekly} from '@/features/weekly/public-api';
+import {formatIssueNumber} from '@/features/weekly/format';
 import type {WeeklyBulletin} from '@/features/weekly/types';
 import type {Locale} from '@/i18n/locales';
 
@@ -22,6 +23,7 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
   } | null>(null);
   const state = result?.key === requestKey ? result.state : 'loading';
   const weekly = result?.key === requestKey ? result.weekly : null;
+  const issueLabel = formatIssueNumber(locale, weekly?.issueNumber);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -42,7 +44,7 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
       {state === 'ready' && weekly ? (
         <div>
           <BulletinMark />
-          <p className="mb-1 text-[21px] font-semibold text-primary">{weekly.date}</p>
+          {issueLabel ? <p className="mb-1 text-[21px] font-semibold text-primary">{issueLabel}</p> : null}
           <h3 id="weekly-title" className="mb-1 text-[18px] font-semibold text-ink">{weekly.title}</h3>
           {weekly.subtitle ? <p className="mb-6 text-[15px] text-ink">{weekly.subtitle}</p> : <div className="mb-5" />}
           <DownloadButton href={weekly.href} label={ctaLabel} pendingLabel={messages.downloading} />
