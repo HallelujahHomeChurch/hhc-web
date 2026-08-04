@@ -62,6 +62,17 @@
     "back": "返回最新消息",
     "publishedAt": "发布日期"
   },
+  "accountApp": {
+    "title": "HHC Account",
+    "subtitle": "哈利路亚家教会帐户服务",
+    "description": "使用同一个帐户登录哈利路亚家教会的网站与服务，并在帐户中心管理个人资料、登录方式与安全性。",
+    "featuresTitle": "服务用途",
+    "accountFeature": "HHC Account 用于识别您的身份，让您安全地访问需要登录的教会服务。",
+    "googleFeature": "使用 Google 登录时，我们只获取基本个人资料、电子邮件地址与头像，用于建立或连接您的 HHC Account；不会读取 Gmail、Google Drive 或其他 Google 内容。",
+    "signIn": "前往登录",
+    "privacy": "隐私权",
+    "terms": "条款"
+  },
   "about": {
     "heroTitle": "关于我们",
     "heroSubtitle": "合一与宣教",

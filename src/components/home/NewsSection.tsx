@@ -21,20 +21,20 @@ export function NewsSection({title, moreHref, moreLabel, items, errorMessage}: N
           </Link>
         ) : null}
       </div>
-      {errorMessage ? <p role="status" className="rounded-lg border border-line bg-panel p-4 text-sm text-muted">{errorMessage}</p> : <ul className="m-0 grid list-none gap-5 p-0">
-        {items.map((item) => (
+      {errorMessage ? <p role="status" className="rounded-lg border border-line bg-panel p-4 text-sm text-muted">{errorMessage}</p> : <ul className="m-0 grid list-none gap-3 p-0">
+        {items.slice(0, 3).map((item) => (
           <li key={item.id}>
-            <Link className="group grid grid-cols-[210px_minmax(0,1fr)] items-center gap-5 max-[900px]:grid-cols-[160px_minmax(0,1fr)] max-[620px]:grid-cols-1" href={item.href}>
+            <Link className="group grid min-h-[82px] grid-cols-[132px_minmax(0,1fr)] items-center gap-4 max-[620px]:grid-cols-[112px_minmax(0,1fr)]" href={item.href}>
               <span
                 aria-label={item.imageSrc ? item.imageAlt : undefined}
                 role={item.imageSrc ? 'img' : undefined}
-                className="grid aspect-video w-[210px] place-items-center overflow-hidden rounded-[10px] bg-[var(--hhc-news-panel)] bg-cover bg-center text-primary ring-1 ring-panel-border transition group-hover:ring-primary max-[900px]:w-40 max-[620px]:w-full"
+                className="grid aspect-video w-[132px] place-items-center overflow-hidden rounded-[10px] bg-[var(--hhc-news-panel)] bg-cover bg-center text-primary ring-1 ring-panel-border transition group-hover:ring-primary max-[620px]:w-28"
                 style={item.imageSrc ? {backgroundImage: `url("${item.imageSrc}")`} : undefined}
               >
                 {item.imageSrc ? null : <Newspaper size={34} strokeWidth={1.5} aria-hidden="true" />}
               </span>
               <span>
-                <h3 className="mb-2 text-lg font-semibold leading-[1.45]">{item.title}</h3>
+                <h3 className="mb-1 line-clamp-2 text-base font-semibold leading-[1.45]">{item.title}</h3>
                 <time className="text-[13px] font-bold text-muted">{item.date}</time>
               </span>
             </Link>

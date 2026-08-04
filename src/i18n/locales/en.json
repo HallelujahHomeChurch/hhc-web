@@ -62,6 +62,17 @@
     "back": "Back to latest news",
     "publishedAt": "Published"
   },
+  "accountApp": {
+    "title": "HHC Account",
+    "subtitle": "The Hallelujah Home Church account service",
+    "description": "Use one account to sign in to Hallelujah Home Church websites and services, then manage your profile, sign-in methods, and security in the account center.",
+    "featuresTitle": "What the service does",
+    "accountFeature": "HHC Account identifies you so you can securely access church services that require sign-in.",
+    "googleFeature": "When you sign in with Google, we only receive your basic profile, email address, and profile image to create or link your HHC Account. We do not access Gmail, Google Drive, or other Google content.",
+    "signIn": "Continue to sign in",
+    "privacy": "Privacy",
+    "terms": "Terms"
+  },
   "about": {
     "heroTitle": "About Us",
     "heroSubtitle": "Unity and mission",
