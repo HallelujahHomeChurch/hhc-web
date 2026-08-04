@@ -62,6 +62,23 @@
     "back": "返回最新消息",
     "publishedAt": "發布日期"
   },
+  "accountHelp": {
+    "eyebrow": "帳戶服務",
+    "title": "HHC 帳戶",
+    "intro": "使用同一個帳戶登入哈利路亞家教會網站與相關線上服務，並管理您的個人資料、登入方式與帳戶安全。",
+    "purposeTitle": "服務用途",
+    "purposeBody": "HHC 帳戶用於辨識您的身分，讓您安全存取需要登入的教會服務。建立帳戶後，您可以管理個人資料、已連結的登入方式、裝置與安全設定。",
+    "googleTitle": "使用 Google 登入",
+    "googleBody": "當您選擇 Google 登入時，我們僅取得您的 Google 帳戶識別碼、已驗證的電子郵件地址、姓名與頭像，用於建立、辨識或連結 HHC 帳戶。我們不會讀取 Gmail、Google Drive 或其他 Google 內容。",
+    "otherProvidersTitle": "其他登入方式",
+    "otherProvidersBody": "HHC 帳戶也可能提供 Microsoft 或 LINE 登入。若登入服務未提供可供信賴的電子郵件地址，我們會要求您另外完成 HHC 電子郵件驗證。",
+    "privacyTitle": "資料與隱私",
+    "privacyBody": "我們只在提供帳戶、驗證身分、維護安全及防止濫用所需的範圍內處理資料，不會出售您的個人資料。完整內容請參閱隱私權保護政策與使用條款。",
+    "signIn": "前往登入",
+    "privacy": "隱私權保護政策",
+    "terms": "使用條款",
+    "support": "需要協助？請聯絡 support@alive.org.tw"
+  },
   "about": {
     "heroTitle": "關於我們",
     "heroSubtitle": "合一與宣教",

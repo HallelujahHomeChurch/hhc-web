@@ -8,6 +8,18 @@ describe('legal content', () => {
     ['zh-Hant', zhHant],
     ['zh-Hans', zhHans],
     ['en', en]
+  ])('publishes an account help page for OAuth review in %s', (_locale, messages) => {
+    const accountHelp = JSON.stringify(messages.accountHelp);
+
+    expect(accountHelp).toContain('Google');
+    expect(accountHelp).toContain('support@alive.org.tw');
+    expect(accountHelp).toMatch(/privacy-policy|隱私權|隐私权|Privacy/);
+  });
+
+  it.each([
+    ['zh-Hant', zhHant],
+    ['zh-Hans', zhHans],
+    ['en', en]
   ])('discloses account protections in %s', (_locale, messages) => {
     const privacy = JSON.stringify(messages.privacyPolicy);
     const terms = JSON.stringify(messages.termsOfUse);

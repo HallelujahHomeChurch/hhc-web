@@ -62,6 +62,23 @@
     "back": "Back to latest news",
     "publishedAt": "Published"
   },
+  "accountHelp": {
+    "eyebrow": "Account service",
+    "title": "HHC Account",
+    "intro": "Use one account to sign in to Hallelujah Home Church websites and related online services, and manage your profile, sign-in methods, and account security.",
+    "purposeTitle": "What the service does",
+    "purposeBody": "HHC Account identifies you so you can securely access church services that require sign-in. After creating an account, you can manage your profile, linked sign-in methods, devices, and security settings.",
+    "googleTitle": "Sign in with Google",
+    "googleBody": "When you choose Google sign-in, we only receive your Google account identifier, verified email address, name, and profile image to create, identify, or link your HHC Account. We do not access Gmail, Google Drive, or other Google content.",
+    "otherProvidersTitle": "Other sign-in methods",
+    "otherProvidersBody": "HHC Account may also offer Microsoft or LINE sign-in. If a sign-in provider does not supply an email address we can rely on, we require separate HHC email verification.",
+    "privacyTitle": "Data and privacy",
+    "privacyBody": "We process information only as needed to provide accounts, verify identity, maintain security, and prevent abuse. We do not sell your personal information. See our Privacy Policy and Terms of Use for complete details.",
+    "signIn": "Continue to sign in",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Use",
+    "support": "Need help? Contact support@alive.org.tw"
+  },
   "about": {
     "heroTitle": "About Us",
     "heroSubtitle": "Unity and mission",
