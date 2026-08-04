@@ -62,17 +62,6 @@
     "back": "Back to latest news",
     "publishedAt": "Published"
   },
-  "accountApp": {
-    "title": "HHC Account",
-    "subtitle": "The Hallelujah Home Church account service",
-    "description": "Use one account to sign in to Hallelujah Home Church websites and services, then manage your profile, sign-in methods, and security in the account center.",
-    "featuresTitle": "What the service does",
-    "accountFeature": "HHC Account identifies you so you can securely access church services that require sign-in.",
-    "googleFeature": "When you sign in with Google, we only receive your basic profile, email address, and profile image to create or link your HHC Account. We do not access Gmail, Google Drive, or other Google content.",
-    "signIn": "Continue to sign in",
-    "privacy": "Privacy",
-    "terms": "Terms"
-  },
   "about": {
     "heroTitle": "About Us",
     "heroSubtitle": "Unity and mission",
@@ -183,67 +172,75 @@
     "heroTitle": "Privacy Policy",
     "heroSubtitle": "",
     "updatedAtLabel": "Last updated",
-    "updatedAt": "June 29, 2026",
-    "intro": "Welcome to the Hallelujah Home Church website (this website). To help you use the services and information on this website with confidence, this Privacy Policy explains how this website protects your rights and handles personal information. Please read the following terms carefully.",
+    "updatedAt": "August 4, 2026",
+    "intro": "This policy explains how the Hallelujah Home Church website and HHC Account services collect, use, retain, and protect personal information. Please read it before using the website or creating an account.",
     "sections": [
       {
         "title": "Scope and data controller",
         "body": [
-          "This policy applies to the public pages and online services provided by this website. This website is provided and maintained by Hallelujah Community Care Association, R.O.C.",
+          "This policy applies to the public website, HHC Account, and related online services provided through alive.org.tw and its subdomains. They are provided and maintained by Hallelujah Community Care Association, R.O.C. (the Association).",
           "If this website links to third-party websites, video platforms, social platforms, or map services, those services are governed by their own privacy policies."
         ]
       },
       {
-        "title": "Information we may collect",
+        "title": "Information we collect",
         "body": [
           "When you contact us through a form, email, or event registration, we may collect your name, contact details, registration details, message content, and other information needed to respond to your request.",
+          "When you create or use an HHC Account, we process your email address, name, profile image, email-verification status, password hash, and security data such as multi-factor authentication secrets and backup codes. We do not store your plaintext password.",
+          "To maintain sign-in and account security, we process device identifiers, browser and operating-system details, IP addresses, sign-in and activity times, sessions, and security-event records.",
           "When you browse this website, servers or third-party services may generate necessary technical data, such as IP address, browser information, device type, access time, browsing and click records, and error logs."
+        ]
+      },
+      {
+        "title": "Third-party sign-in",
+        "body": [
+          "When you sign in with Google, we receive your Google account identifier, verified email address, name, and profile image to create, identify, or link your HHC Account. We do not access Gmail, Google Drive, or other Google content.",
+          "When you sign in with Microsoft, we receive your Microsoft account identifier, name, and any email address Microsoft provides. When you sign in with LINE, we receive your LINE account identifier, display name, and profile image, and we do not request your email address from LINE.",
+          "If a provider does not supply an email address we can rely on, we require separate HHC email verification. We retain third-party sign-in identifiers until you unlink the provider or delete your account. Each provider handles its own data under its own policy."
         ]
       },
       {
         "title": "How we use information",
         "body": [
-          "We use information only as needed for church administration, event communication, pastoral care, responding to inquiries, website operations, security, and service improvement.",
+          "We use information only as needed to provide account and church services, verify identity and email addresses, communicate about events, respond to inquiries, operate and secure the website, prevent fraud and abuse, and improve services.",
           "Browsing and click records are mainly used for internal analysis of traffic, content quality, and service experience, not to identify specific individuals for advertising tracking.",
-          "We do not sell your personal information or provide it to unrelated third parties for marketing unless required by law, needed to protect rights, or authorized by your consent."
+          "We do not sell personal information or provide third-party sign-in data to unrelated parties for advertising, data-broker, or marketing purposes. We do not use it outside the stated purposes unless required by law, needed to protect rights, or authorized by your consent."
         ]
       },
       {
-        "title": "Retention period, region, recipients, and methods",
+        "title": "Retention",
         "body": [
-          "We use information during the period needed for the collection purpose, legal requirements, or church administrative record retention.",
-          "The region of use is limited to where this website, church administration, and service providers operate. Recipients may include the association, entrusted service providers, and authorities legally entitled to request information.",
-          "Methods of use may include electronic processing, manual contact, event administration, website operations, security management, statistical analysis, and other necessary methods permitted by law."
+          "We generally retain account information until the account is deleted or the service relationship ends. Records needed for legal obligations, security investigations, dispute handling, or audits may be retained for the necessary period.",
+          "Registration accounts that do not complete email verification are deleted 7 days after creation. Device activity records are deleted 180 days after their last activity. Other information is deleted or de-identified when its purpose ends, its retention period expires, or deletion is legally required."
         ]
       },
       {
-        "title": "Vendors and third-party services",
+        "title": "Processing locations, recipients, and vendors",
         "body": [
-          "To provide hosting, forms, email, video, maps, or security maintenance, we may engage service providers to process information within the necessary scope.",
-          "We require service providers to keep information confidential, use appropriate security measures, and process information only for the entrusted purpose. We may provide necessary information when required by law, judicial or competent authorities, rights protection, or harm prevention."
+          "Information may be processed where the Association and its cloud hosting, storage, email, security, and third-party sign-in providers operate, which may involve cross-border processing.",
+          "Recipients are limited to authorized Association personnel, contracted service providers, your selected sign-in provider, and authorities legally entitled to request information. Vendors may process information only for the contracted purpose and must use appropriate confidentiality and security measures."
         ]
       },
       {
-        "title": "Cookies",
+        "title": "Cookies and local storage",
         "body": [
-          "This website may use necessary cookies to remember your language preference, such as hhc_locale. These cookies provide website functions you request and are not used for advertising tracking.",
-          "You can refuse or delete cookies through your browser settings, but some language preferences or website functions may not be saved correctly.",
-          "If we later add analytics, advertising, or other non-essential tracking tools, we will update this policy and provide any required choice or consent mechanism under applicable law."
+          "We use necessary cookies or local storage to maintain sign-in and security state, recognize devices, prevent cross-site request forgery, and remember language and appearance preferences. We do not use this information for advertising tracking.",
+          "You can delete cookies or local data through your browser. Doing so may sign you out, create a new device record, or prevent preferences from being saved. If we later add non-essential analytics or advertising tracking, we will update this policy and provide any choice or consent required by applicable law."
         ]
       },
       {
-        "title": "Retention and protection",
+        "title": "Security and incident notice",
         "body": [
-          "We retain information only for as long as needed to fulfill the collection purpose, meet legal obligations, or maintain church administrative records.",
-          "We use reasonable technical and organizational measures to protect information. No internet transmission is completely secure, so please avoid submitting unnecessary sensitive information through public forms."
+          "We use reasonable technical and organizational measures, including access controls, transport protection, and hashing or encryption appropriate to the data, to reduce unauthorized access, alteration, loss, or disclosure. No online service can guarantee absolute security.",
+          "If a personal-data incident requires notice under applicable law, we will notify affected people and take necessary response measures. Please do not submit unnecessary sensitive information through public forms."
         ]
       },
       {
         "title": "Your rights and contact",
         "body": [
-          "You may request access, copies, correction, supplementation, deletion, or the suspension of collection, processing, or use of your personal information as allowed by applicable law.",
-          "If you do not provide necessary information, we may be unable to respond to inquiries, complete event registration, provide related services, or save your language preference.",
-          "If you have questions about this policy or how your personal information is handled, please contact us through the church contact information provided on this website."
+          "You may request access, copies, supplementation, correction, deletion, or suspension of collection, processing, or use as permitted by applicable law. You may also request to unlink a third-party sign-in or delete your HHC Account.",
+          "If you do not provide necessary information, we may be unable to create an account, verify your identity, respond to inquiries, complete event registration, or provide related services.",
+          "To exercise these rights, request account deletion, or ask about this policy or our data handling, email support@alive.org.tw. We may take reasonable steps to verify your identity before processing a request."
         ]
       }
     ]
@@ -252,9 +249,16 @@
     "heroTitle": "Terms of Use",
     "heroSubtitle": "",
     "updatedAtLabel": "Last updated",
-    "updatedAt": "June 29, 2026",
-    "intro": "By using this website, you agree to these terms. This website mainly provides church information, service content, weekly paper downloads, and related resources.",
+    "updatedAt": "August 4, 2026",
+    "intro": "By using the Hallelujah Home Church website, HHC Account, or related online services, you agree to these terms.",
     "sections": [
+      {
+        "title": "HHC Account",
+        "body": [
+          "You must provide accurate information and protect your email, password, multi-factor authentication, and devices. Do not share your account, impersonate another person, or permit unauthorized use. If you notice unusual activity, change your sign-in method and contact support@alive.org.tw promptly.",
+          "Third-party sign-in is only a method for creating, identifying, or linking an HHC Account. Unlinking a provider or deleting your HHC Account does not delete your Google, Microsoft, or LINE account. Users below the legal age in their location must use account services with consent from a legal guardian."
+        ]
+      },
       {
         "title": "Website content",
         "body": [
@@ -270,31 +274,33 @@
         ]
       },
       {
-        "title": "Use restrictions",
+        "title": "Use restrictions and account action",
         "body": [
           "You may not use this website in a way that interferes with its operation, attempts unauthorized access, distributes malicious code, impersonates others, or violates applicable law.",
-          "If you submit messages, registration details, or other content, you are responsible for making sure it is accurate, lawful, and does not infringe the rights of others."
+          "If you submit messages, registration details, or other content, you are responsible for making sure it is accurate, lawful, and does not infringe the rights of others.",
+          "If conduct is unlawful, violates these terms, harms users or system security, or involves fraud or abuse, the Association may reasonably restrict or disable accounts, revoke sessions, or remove related content. Where legally permitted and consistent with a security investigation, we will provide appropriate notice or a way to raise concerns."
         ]
       },
       {
         "title": "Third-party services and links",
         "body": [
-          "This website may link to YouTube, Facebook, maps, or other third-party services. Those services are governed by their own terms and policies, and this website does not control their content or data handling.",
-          "Before using third-party services, you should review their terms, privacy policies, and security settings."
+          "This website may use or link to Google, Microsoft, LINE, YouTube, Facebook, maps, or other third-party services. Their own terms and policies govern them, and the Association does not control their content, data handling, or availability.",
+          "A third-party outage, restriction, or policy change may affect sign-in or website functions. We will make reasonable efforts to provide an alternative where practical, but we do not guarantee continued availability of a third-party service."
         ]
       },
       {
         "title": "Disclaimer",
         "body": [
           "The content on this website is not legal, medical, financial, or other professional advice. If you need professional help, please seek advice from a qualified professional.",
-          "We will make reasonable efforts to handle service interruptions or delays caused by network issues, maintenance, third-party service failures, or force majeure, but we do not guarantee uninterrupted website availability."
+          "We will make reasonable efforts to handle service interruptions or delays caused by network issues, maintenance, third-party service failures, or force majeure, but we do not guarantee uninterrupted website availability. Nothing in these terms excludes or limits liability that cannot legally be excluded or limited."
         ]
       },
       {
-        "title": "Changes to these terms",
+        "title": "Changes, governing law, and contact",
         "body": [
           "We may update these terms based on website services, legal requirements, or church ministry needs. Updated terms will be posted on this page and take effect when posted.",
-          "If you continue using this website after the terms are updated, you are deemed to agree to the updated terms."
+          "If you continue using this website after the terms are updated, you are deemed to agree to the updated terms. We will provide additional notice of material changes where reasonably practicable.",
+          "These terms are governed by the laws of the Republic of China (Taiwan), and jurisdiction is determined under applicable law. Questions may be sent to support@alive.org.tw."
         ]
       }
     ]
