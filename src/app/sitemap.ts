@@ -5,7 +5,7 @@ import {locales} from '@/i18n/locales';
 import {getAlternates, getLocalizedPath} from '@/lib/seo';
 import {siteConfig} from '@/lib/site';
 
-const paths = ['/', '/about', '/news', '/literature-ministry', '/privacy-policy', '/terms-of-use'] as const;
+const paths = ['/', '/about', '/help/account', '/news', '/literature-ministry', '/privacy-policy', '/terms-of-use'] as const;
 
 export const dynamic = 'force-dynamic';
 
