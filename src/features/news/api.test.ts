@@ -17,11 +17,12 @@ describe('getNews', () => {
   });
 
   it('maps a news detail without treating its body as markup', async () => {
-    const client = {getNewsBySlug: async () => ({id: 'news-1', title: '消息', body: '<script>alert(1)</script>', href: '/zh-Hant/news/news-1'})} as unknown as HhcWebClient;
+    const client = {getNewsBySlug: async () => ({id: 'news-1', title: '消息', body: '<script>alert(1)</script>', detailLayout: 'left', href: '/zh-Hant/news/news-1'})} as unknown as HhcWebClient;
 
     await expect(getNewsBySlug('zh-Hant', 'news-1', client)).resolves.toMatchObject({
       title: '消息',
-      body: '<script>alert(1)</script>'
+      body: '<script>alert(1)</script>',
+      layout: 'left'
     });
   });
 
