@@ -10,6 +10,7 @@ export type NewsItem = {
 
 export type NewsDetail = NewsItem & {
   body: string;
+  layout: 'top' | 'left' | 'right';
 };
 
 export type NewsPage = {

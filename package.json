@@ -15,10 +15,10 @@
     "test:run": "vitest run"
   },
   "dependencies": {
-    "@hallelujahhomechurch/account-client": "0.4.8",
-    "@hallelujahhomechurch/hhc-web-client": "0.4.8",
-    "@hallelujahhomechurch/preferences": "0.4.8",
-    "@hallelujahhomechurch/ui": "0.4.8",
+    "@hallelujahhomechurch/account-client": "0.4.9",
+    "@hallelujahhomechurch/hhc-web-client": "0.4.9",
+    "@hallelujahhomechurch/preferences": "0.4.9",
+    "@hallelujahhomechurch/ui": "0.4.9",
     "lucide-react": "^1.24.0",
     "next": "16.2.9",
     "next-intl": "^4.13.0",

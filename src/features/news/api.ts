@@ -40,6 +40,7 @@ export async function getNewsBySlug(locale: Locale, slug: string, client: HhcWeb
     date: value.displayDate?.replaceAll('-', ' / ') ?? '',
     imageAlt: value.imageAlt ?? value.title,
     imageSrc: value.imageUrl,
+    layout: value.detailLayout ?? 'top',
     href: value.href ?? `/${locale}/news/${slug}`
   };
 }
