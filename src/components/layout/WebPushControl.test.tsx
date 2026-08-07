@@ -71,10 +71,43 @@ describe('WebPushControl', () => {
       userVisibleOnly: true,
       applicationServerKey: new Uint8Array([1, 2, 3])
     });
-    expect(fetch).toHaveBeenLastCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       '/api/engagement/v1/push/subscriptions',
       expect.objectContaining({method: 'POST'})
     );
     expect(screen.getByRole('button', {name: labels.disable})).toBeInTheDocument();
+  });
+
+  it('binds an existing subscription to the authenticated account without exposing a user id', async () => {
+    getSubscription.mockResolvedValue({unsubscribe: vi.fn()});
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith('/push/config')) {
+        return new Response(JSON.stringify({data: {vapidPublicKey: 'AQID'}}), {status: 200});
+      }
+      if (url.endsWith('/session')) {
+        return new Response(JSON.stringify({authenticated: true, user: {id: 'private-user-id'}}), {status: 200});
+      }
+      if (url.endsWith('/csrf-token')) {
+        return new Response(JSON.stringify({csrf_token: 'csrf-value'}), {status: 200});
+      }
+      if (url.endsWith('/push-subscriptions/bind') && init?.method === 'POST') {
+        return new Response(null, {status: 204});
+      }
+      return new Response(null, {status: 404});
+    }));
+
+    render(<WebPushControl locale="en" labels={labels} />);
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith(
+      '/api/account/v1/push-subscriptions/bind',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({'x-csrf-token': 'csrf-value'}),
+        body: expect.stringContaining('installationId')
+      })
+    ));
+    const bindCall = vi.mocked(fetch).mock.calls.find(([url]) => String(url).endsWith('/push-subscriptions/bind'));
+    expect(bindCall?.[1]?.body).not.toContain('private-user-id');
   });
 });

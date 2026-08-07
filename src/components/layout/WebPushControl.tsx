@@ -34,6 +34,35 @@ function installationId() {
   return value;
 }
 
+async function bindInstallationToAccount() {
+  try {
+    const session = await fetch('/api/account/v1/session', {
+      credentials: 'include',
+      headers: {Accept: 'application/json'},
+      cache: 'no-store'
+    });
+    if (!session.ok || !(await session.json() as {authenticated?: boolean}).authenticated) return;
+
+    const csrf = await fetch('/api/account/v1/csrf-token', {
+      credentials: 'include',
+      headers: {Accept: 'application/json'},
+      cache: 'no-store'
+    });
+    if (!csrf.ok) return;
+    const {csrf_token: csrfToken} = await csrf.json() as {csrf_token?: string};
+    if (!csrfToken) return;
+
+    await fetch('/api/account/v1/push-subscriptions/bind', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {'Content-Type': 'application/json', 'x-csrf-token': csrfToken},
+      body: JSON.stringify({installationId: installationId()})
+    });
+  } catch {
+    // General broadcast subscriptions remain valid when account association is unavailable.
+  }
+}
+
 export function WebPushControl({labels, locale}: WebPushControlProps) {
   const [state, setState] = useState<State>('checking');
   const registration = useRef<ServiceWorkerRegistration | null>(null);
@@ -57,6 +86,7 @@ export function WebPushControl({labels, locale}: WebPushControlProps) {
         registration.current = serviceWorker;
         vapidPublicKey.current = payload.data.vapidPublicKey;
         const subscription = await serviceWorker.pushManager.getSubscription();
+        if (subscription) void bindInstallationToAccount();
         if (active) setState(subscription ? 'on' : Notification.permission === 'denied' ? 'denied' : 'off');
       } catch {
         if (active) setState('error');
@@ -110,6 +140,7 @@ export function WebPushControl({labels, locale}: WebPushControlProps) {
         await subscription.unsubscribe();
         throw new Error('subscription registration failed');
       }
+      void bindInstallationToAccount();
       setState('on');
     } catch {
       setState('error');
