@@ -38,4 +38,16 @@ describe('legal content', () => {
     expect(JSON.stringify(en.privacyPolicy)).toContain('7 days');
     expect(JSON.stringify(en.privacyPolicy)).toContain('180 days');
   });
+
+  it.each([
+    ['zh-Hant', zhHant],
+    ['zh-Hans', zhHans],
+    ['en', en]
+  ])('discloses optional newsletter and browser notification consent in %s', (_locale, messages) => {
+    const privacy = JSON.stringify(messages.privacyPolicy).toLowerCase();
+
+    expect(privacy).toMatch(/電子報|电子报|newsletter/);
+    expect(privacy).toMatch(/瀏覽器通知|浏览器通知|browser notification/);
+    expect(privacy).toMatch(/取消訂閱|取消订阅|unsubscribe/);
+  });
 });

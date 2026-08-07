@@ -7,6 +7,7 @@ import type {Locale} from '@/i18n/locales';
 import {Button} from '@/components/ui/Button';
 import {siteConfig} from '@/lib/site';
 import {LanguageSwitcher} from './LanguageSwitcher';
+import {WebPushControl} from './WebPushControl';
 
 type SiteFooterProps = {
   locale: Locale;
@@ -32,6 +33,16 @@ export function SiteFooter({locale, pathname}: SiteFooterProps) {
           </Link>
           <div className="flex items-center gap-4 max-[620px]:w-full max-[620px]:justify-between">
             <LanguageSwitcher locale={locale} pathname={pathname} label={t('language')} />
+            <WebPushControl
+              locale={locale}
+              labels={{
+                enable: t('notifications.enable'),
+                disable: t('notifications.disable'),
+                pending: t('notifications.pending'),
+                denied: t('notifications.denied'),
+                error: t('notifications.error')
+              }}
+            />
             <div className="flex gap-2.5" aria-label="社群">
               <Button href={siteConfig.social.youtube} ariaLabel={t('social.youtube')} size="icon" target="_blank" variant="primarySoft">
                 <svg viewBox="0 0 24 24" className="size-5 text-primary" aria-hidden="true">
