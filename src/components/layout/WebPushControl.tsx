@@ -56,7 +56,7 @@ async function bindInstallationToAccount() {
       method: 'POST',
       credentials: 'include',
       headers: {'Content-Type': 'application/json', 'x-csrf-token': csrfToken},
-      body: JSON.stringify({installationId: installationId()})
+      body: JSON.stringify({installation_id: installationId()})
     });
   } catch {
     // General broadcast subscriptions remain valid when account association is unavailable.

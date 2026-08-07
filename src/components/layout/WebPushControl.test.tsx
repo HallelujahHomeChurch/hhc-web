@@ -104,7 +104,7 @@ describe('WebPushControl', () => {
       expect.objectContaining({
         method: 'POST',
         headers: expect.objectContaining({'x-csrf-token': 'csrf-value'}),
-        body: expect.stringContaining('installationId')
+        body: expect.stringContaining('installation_id')
       })
     ));
     const bindCall = vi.mocked(fetch).mock.calls.find(([url]) => String(url).endsWith('/push-subscriptions/bind'));
