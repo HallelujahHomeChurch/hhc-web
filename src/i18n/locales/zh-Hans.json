@@ -301,6 +301,17 @@
     "title": "网站更新中",
     "description": "我们正在整理网站内容，很快就会再次与你见面。"
   },
+  "newsletterUnsubscribe": {
+    "title": "取消电子报订阅",
+    "description": "取消后，您将不再收到哈利路亚家教会电子报。帐户服务与必要的安全通知不受影响。",
+    "confirm": "取消订阅",
+    "pending": "处理中",
+    "successTitle": "已取消订阅",
+    "successBody": "您将不再收到电子报。之后可在 HHC 帐户的通知偏好中重新订阅。",
+    "invalid": "此取消订阅链接无效或已过期。",
+    "error": "目前无法取消订阅，请稍后再试。",
+    "home": "返回首页"
+  },
   "root": {
     "title": "选择语言",
     "description": "请选择要浏览的语言版本。"

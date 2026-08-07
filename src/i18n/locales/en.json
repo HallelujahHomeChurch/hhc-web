@@ -326,6 +326,17 @@
     "title": "Website update in progress",
     "description": "We are preparing the website and will be back soon."
   },
+  "newsletterUnsubscribe": {
+    "title": "Unsubscribe from newsletters",
+    "description": "You will stop receiving Hallelujah Home Church newsletters. Account and essential security messages are not affected.",
+    "confirm": "Unsubscribe",
+    "pending": "Unsubscribing",
+    "successTitle": "You are unsubscribed",
+    "successBody": "You will no longer receive newsletters. You can subscribe again from notification preferences in your HHC Account.",
+    "invalid": "This unsubscribe link is invalid or has expired.",
+    "error": "We could not unsubscribe you right now. Please try again later.",
+    "home": "Back to home"
+  },
   "root": {
     "title": "Choose language",
     "description": "Choose the language version you want to browse."
