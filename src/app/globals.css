@@ -216,6 +216,88 @@
     line-height: 1.75;
   }
 
+  .newsletter-unsubscribe {
+    display: flex;
+    width: min(100% - 48px, 620px);
+    min-height: calc(100vh - 184px);
+    align-items: flex-start;
+    justify-content: center;
+    flex-direction: column;
+    margin-inline: auto;
+    padding-block: 64px;
+  }
+
+  .newsletter-unsubscribe h1 {
+    margin: 0;
+    font-size: clamp(32px, 5vw, 46px);
+    line-height: 1.2;
+  }
+
+  .newsletter-unsubscribe p {
+    margin: 18px 0 0;
+    color: var(--color-muted);
+    font-size: 17px;
+    line-height: 1.75;
+  }
+
+  .newsletter-unsubscribe__mark {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    margin-bottom: 22px;
+    border-radius: 50%;
+    background: var(--hhc-badge-teal);
+    color: var(--color-teal);
+    font-size: 24px;
+    font-weight: 800;
+  }
+
+  .newsletter-unsubscribe__primary,
+  .newsletter-unsubscribe__secondary {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 28px;
+    border-radius: 999px;
+    padding-inline: 20px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .newsletter-unsubscribe__primary {
+    border: 1px solid var(--color-primary-solid);
+    background: var(--color-primary-solid);
+    color: var(--color-primary-foreground);
+  }
+
+  .newsletter-unsubscribe__primary:hover:not(:disabled) {
+    background: var(--color-primary-solid-hover);
+  }
+
+  .newsletter-unsubscribe__primary:disabled {
+    cursor: wait;
+    opacity: .65;
+  }
+
+  .newsletter-unsubscribe__secondary {
+    border: 1px solid var(--hhc-control-border);
+    color: var(--hhc-control);
+  }
+
+  .newsletter-unsubscribe__secondary:hover {
+    border-color: var(--color-primary);
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+  }
+
+  .newsletter-unsubscribe .newsletter-unsubscribe__error {
+    color: var(--color-primary);
+    font-weight: 650;
+  }
+
   .legal-language-trigger {
     display: inline-flex;
     min-width: 72px;
