@@ -47,7 +47,7 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
           {issueLabel ? <p className="mb-1 text-[21px] font-semibold text-primary">{issueLabel}</p> : null}
           <h3 id="weekly-title" className="mb-1 text-[18px] font-semibold text-ink">{weekly.title}</h3>
           {weekly.subtitle ? <p className="mb-6 text-[15px] text-ink">{weekly.subtitle}</p> : <div className="mb-5" />}
-          <DownloadButton href={weekly.href} label={ctaLabel} pendingLabel={messages.downloading} />
+          <DownloadButton href={weekly.href} label={ctaLabel} />
         </div>
       ) : state === 'error' ? (
         <div>

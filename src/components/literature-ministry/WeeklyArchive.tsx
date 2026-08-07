@@ -139,8 +139,8 @@ function localizedVersion(issue: WeeklyIssue | undefined, locale: Locale) {
 
 function VersionLinks({issue, messages, className = ''}: {issue: WeeklyIssue; messages: WeeklyArchiveMessages; className?: string}) {
   return (
-    <div className={`flex flex-wrap justify-end gap-2.5 max-[860px]:justify-start ${className}`}>
-      {issue.versions.map((version) => <DownloadButton key={version.locale} href={version.href} label={messages.versionLabels[version.locale]} pendingLabel={messages.downloading} variant="outline" />)}
+    <div className={`flex justify-end gap-2.5 max-[860px]:grid max-[860px]:grid-flow-col max-[860px]:auto-cols-fr ${className}`}>
+      {issue.versions.map((version) => <DownloadButton key={version.locale} href={version.href} label={messages.versionLabels[version.locale]} variant="outline" />)}
     </div>
   );
 }
