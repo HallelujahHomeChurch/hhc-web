@@ -170,12 +170,22 @@ jobs:
       - name: Verify through gateway Dapr
         run: |
           for path in health zh-Hant/maintenance; do
-            output="$(timeout 60s script -q -e -c \
-              "az containerapp exec -g \"$RESOURCE_GROUP\" -n \"$API_GATEWAY_APP_NAME\" --command \"/usr/bin/wget -S -O - http://127.0.0.1:3500/v1.0/invoke/hhc-web/method/${path}\"" \
-              /dev/null 2>&1)"
-            output="${output//$'\r'/}"
-            printf '%s\n' "$output"
-            grep -Eq 'HTTP/1\.[01][[:space:]]+200' <<< "$output"
+            ready=false
+            for attempt in {1..12}; do
+              output="$(timeout 60s script -q -e -c \
+                "az containerapp exec -g \"$RESOURCE_GROUP\" -n \"$API_GATEWAY_APP_NAME\" --command \"/usr/bin/wget -S -O - http://127.0.0.1:3500/v1.0/invoke/hhc-web/method/${path}\"" \
+                /dev/null 2>&1)" || true
+              output="${output//$'\r'/}"
+              if grep -Eq 'HTTP/1\.[01][[:space:]]+200' <<< "$output"; then
+                ready=true
+                break
+              fi
+              sleep 5
+            done
+            if [[ "$ready" != true ]]; then
+              printf '%s\n' "$output"
+              exit 1
+            fi
           done
       - name: Roll back failed update
         if: ${{ failure() && steps.deploy_runtime.outcome != 'skipped' && env.HAS_PREVIOUS == 'true' }}
