@@ -27,6 +27,7 @@ describe('WeeklyArchive', () => {
     expect(screen.getAllByRole('link', {name: 'Traditional'})[0]).toHaveAttribute('download', '');
     expect(screen.getAllByRole('link', {name: 'Simplified'})[0]).toHaveAttribute('href', '/zh-Hans.pdf');
     expect(screen.getAllByRole('link', {name: 'English'})[0]).toHaveAttribute('href', '/en.pdf');
+    expect(screen.getAllByRole('link', {name: 'Traditional'})[0].parentElement).toHaveClass('max-[860px]:grid-flow-col');
   });
 
   it('does not render a download for an unavailable locale version', async () => {
