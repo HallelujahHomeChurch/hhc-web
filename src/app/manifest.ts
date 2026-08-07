@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: 'HHC',
     description: '哈利路亞家教會官網',
     id: '/',
-    start_url: '/zh-Hant',
+    start_url: '/',
     scope: '/',
     display: 'standalone',
     background_color: '#fbf5eb',

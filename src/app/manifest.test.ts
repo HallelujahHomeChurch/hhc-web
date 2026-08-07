@@ -6,7 +6,7 @@ describe('web app manifest', () => {
     expect(manifest()).toMatchObject({
       name: '哈利路亞家教會',
       id: '/',
-      start_url: '/zh-Hant',
+      start_url: '/',
       display: 'standalone'
     });
     expect(manifest().icons).toEqual(expect.arrayContaining([
