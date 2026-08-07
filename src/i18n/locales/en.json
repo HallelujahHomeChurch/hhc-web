@@ -25,6 +25,13 @@
     "pagination": {"navigation": "Content pagination", "previous": "Previous page", "next": "Next page"},
     "copyrightHolder": "Hallelujah Community Care Association, R.O.C.",
     "allRightsReserved": "All rights reserved.",
+    "notifications": {
+      "enable": "Enable notifications",
+      "disable": "Disable notifications",
+      "pending": "Updating notifications",
+      "denied": "Notifications are blocked in your browser",
+      "error": "Unable to update notifications. Try again."
+    },
     "social": {
       "youtube": "YouTube",
       "facebook": "Facebook"
@@ -189,7 +196,7 @@
     "heroTitle": "Privacy Policy",
     "heroSubtitle": "",
     "updatedAtLabel": "Last updated",
-    "updatedAt": "August 4, 2026",
+    "updatedAt": "August 8, 2026",
     "intro": "This policy explains how the Hallelujah Home Church website and HHC Account services collect, use, retain, and protect personal information. Please read it before using the website or creating an account.",
     "sections": [
       {
@@ -205,7 +212,8 @@
           "When you contact us through a form, email, or event registration, we may collect your name, contact details, registration details, message content, and other information needed to respond to your request.",
           "When you create or use an HHC Account, we process your email address, name, profile image, email-verification status, password hash, and security data such as multi-factor authentication secrets and backup codes. We do not store your plaintext password.",
           "To maintain sign-in and account security, we process device identifiers, browser and operating-system details, IP addresses, sign-in and activity times, sessions, and security-event records.",
-          "When you browse this website, servers or third-party services may generate necessary technical data, such as IP address, browser information, device type, access time, browsing and click records, and error logs."
+          "When you browse this website, servers or third-party services may generate necessary technical data, such as IP address, browser information, device type, access time, browsing and click records, and error logs.",
+          "When you choose to receive newsletters or browser notifications, we process your language, consent and subscription status, together with the email address or encrypted browser push subscription needed to provide that service."
         ]
       },
       {
@@ -221,7 +229,8 @@
         "body": [
           "We use information only as needed to provide account and church services, verify identity and email addresses, communicate about events, respond to inquiries, operate and secure the website, prevent fraud and abuse, and improve services.",
           "Browsing and click records are mainly used for internal analysis of traffic, content quality, and service experience, not to identify specific individuals for advertising tracking.",
-          "We do not sell personal information or provide third-party sign-in data to unrelated parties for advertising, data-broker, or marketing purposes. We do not use it outside the stated purposes unless required by law, needed to protect rights, or authorized by your consent."
+          "We do not sell personal information or provide third-party sign-in data to unrelated parties for advertising, data-broker, or marketing purposes. We do not use it outside the stated purposes unless required by law, needed to protect rights, or authorized by your consent.",
+          "Newsletters and non-essential browser notifications are sent only after you opt in. You can unsubscribe at any time through an email unsubscribe link, HHC Account notification preferences, or the website notification control. Account verification and security messages are not affected by newsletter opt-out."
         ]
       },
       {
