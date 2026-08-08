@@ -30,7 +30,13 @@
       "disable": "关闭通知",
       "pending": "正在更新通知",
       "denied": "浏览器已阻止通知",
-      "error": "无法更新通知，请重试"
+      "error": "无法更新通知，请重试",
+      "promptTitle": "接收教会通知",
+      "promptBody": "在此设备接收重要公告与最新消息。",
+      "promptAction": "开启通知",
+      "promptLater": "稍后",
+      "promptDismiss": "关闭通知提示",
+      "installPrompt": "将网站添加到主屏幕后，即可在 iPhone 上接收通知。"
     },
     "social": {
       "youtube": "YouTube",

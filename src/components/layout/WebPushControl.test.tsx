@@ -1,4 +1,4 @@
-import {render, screen, waitFor} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {WebPushControl} from './WebPushControl';
@@ -8,7 +8,12 @@ const labels = {
   disable: 'Disable notifications',
   pending: 'Updating notifications',
   denied: 'Notifications are blocked in your browser',
-  error: 'Unable to update notifications. Try again.'
+  error: 'Unable to update notifications. Try again.',
+  promptTitle: 'Stay informed',
+  promptBody: 'Receive important church updates on this device.',
+  promptAction: 'Enable notifications',
+  promptLater: 'Later',
+  installPrompt: 'Add this website to your Home Screen to enable notifications.'
 };
 
 describe('WebPushControl', () => {
@@ -19,9 +24,9 @@ describe('WebPushControl', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    requestPermission.mockResolvedValue('granted');
-    getSubscription.mockResolvedValue(null);
-    subscribe.mockResolvedValue({
+    requestPermission.mockReset().mockResolvedValue('granted');
+    getSubscription.mockReset().mockResolvedValue(null);
+    subscribe.mockReset().mockResolvedValue({
       toJSON: () => ({
         endpoint: 'https://push.example.test/subscription',
         expirationTime: null,
@@ -52,6 +57,7 @@ describe('WebPushControl', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
@@ -109,5 +115,34 @@ describe('WebPushControl', () => {
     ));
     const bindCall = vi.mocked(fetch).mock.calls.find(([url]) => String(url).endsWith('/push-subscriptions/bind'));
     expect(bindCall?.[1]?.body).not.toContain('private-user-id');
+  });
+
+  it('treats denied browser permission as blocked even when a stale subscription exists', async () => {
+    getSubscription.mockResolvedValue({unsubscribe: vi.fn()});
+    Object.defineProperty(globalThis, 'Notification', {
+      configurable: true,
+      value: {permission: 'denied', requestPermission}
+    });
+
+    render(<WebPushControl locale="en" labels={labels} />);
+
+    expect(await screen.findByRole('button', {name: labels.denied})).toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: labels.disable})).not.toBeInTheDocument();
+  });
+
+  it('shows a first-party prompt only on a later homepage visit', async () => {
+    vi.useFakeTimers();
+    localStorage.setItem('hhc_push_prompt_visits', '1');
+
+    render(<WebPushControl locale="en" labels={labels} autoPrompt />);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(screen.getByRole('button', {name: labels.enable})).toBeInTheDocument();
+    await act(async () => vi.advanceTimersByTimeAsync(8000));
+
+    expect(screen.getByRole('dialog', {name: labels.promptTitle})).toBeInTheDocument();
+    expect(requestPermission).not.toHaveBeenCalled();
   });
 });

@@ -30,7 +30,13 @@
       "disable": "關閉通知",
       "pending": "正在更新通知",
       "denied": "瀏覽器已封鎖通知",
-      "error": "無法更新通知，請再試一次"
+      "error": "無法更新通知，請再試一次",
+      "promptTitle": "接收教會通知",
+      "promptBody": "在這部裝置接收重要公告與最新消息。",
+      "promptAction": "開啟通知",
+      "promptLater": "稍後",
+      "promptDismiss": "關閉通知提示",
+      "installPrompt": "將網站加入主畫面後，即可在 iPhone 上接收通知。"
     },
     "social": {
       "youtube": "YouTube",
