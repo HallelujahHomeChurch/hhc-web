@@ -31,26 +31,28 @@ export function SiteFooter({locale, pathname}: SiteFooterProps) {
               {locale !== 'en' ? <small className="text-[8px] font-extrabold uppercase text-[var(--hhc-brand-muted)]">{t('englishName')}</small> : null}
             </span>
           </Link>
-          <div className="flex items-center gap-3 max-[620px]:w-full max-[620px]:justify-start">
-            <LanguageSwitcher locale={locale} pathname={pathname} label={t('language')} />
-            <WebPushControl
-              locale={locale}
-              autoPrompt={pathname === `/${locale}`}
-              labels={{
-                enable: t('notifications.enable'),
-                disable: t('notifications.disable'),
-                pending: t('notifications.pending'),
-                denied: t('notifications.denied'),
-                error: t('notifications.error'),
-                promptTitle: t('notifications.promptTitle'),
-                promptBody: t('notifications.promptBody'),
-                promptAction: t('notifications.promptAction'),
-                promptLater: t('notifications.promptLater'),
-                promptDismiss: t('notifications.promptDismiss'),
-                installPrompt: t('notifications.installPrompt')
-              }}
-            />
-            <div className="contents" aria-label="社群">
+          <div className="footer-control-row flex items-center gap-6 max-[620px]:w-full max-[620px]:justify-between">
+            <div className="footer-preference-controls flex items-center gap-3">
+              <LanguageSwitcher locale={locale} pathname={pathname} label={t('language')} />
+              <WebPushControl
+                locale={locale}
+                autoPrompt={pathname === `/${locale}`}
+                labels={{
+                  enable: t('notifications.enable'),
+                  disable: t('notifications.disable'),
+                  pending: t('notifications.pending'),
+                  denied: t('notifications.denied'),
+                  error: t('notifications.error'),
+                  promptTitle: t('notifications.promptTitle'),
+                  promptBody: t('notifications.promptBody'),
+                  promptAction: t('notifications.promptAction'),
+                  promptLater: t('notifications.promptLater'),
+                  promptDismiss: t('notifications.promptDismiss'),
+                  installPrompt: t('notifications.installPrompt')
+                }}
+              />
+            </div>
+            <div className="footer-social-controls flex items-center gap-3" aria-label="社群">
               <Button href={siteConfig.social.youtube} ariaLabel={t('social.youtube')} size="icon" target="_blank" variant="primarySoft">
                 <svg viewBox="0 0 24 24" className="size-5 text-primary" aria-hidden="true">
                   <rect x="3" y="6.5" width="18" height="11" rx="3" fill="none" stroke="currentColor" strokeWidth="2" />

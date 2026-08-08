@@ -85,7 +85,15 @@ describe('WebPushControl', () => {
   });
 
   it('binds an existing subscription to the authenticated account without exposing a user id', async () => {
-    getSubscription.mockResolvedValue({unsubscribe: vi.fn()});
+    const existingSubscription = {
+      unsubscribe: vi.fn(),
+      toJSON: () => ({
+        endpoint: 'https://push.example.test/existing',
+        expirationTime: null,
+        keys: {p256dh: 'existing-p256dh', auth: 'existing-auth'}
+      })
+    };
+    getSubscription.mockResolvedValue(existingSubscription);
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.endsWith('/push/config')) {
@@ -100,10 +108,25 @@ describe('WebPushControl', () => {
       if (url.endsWith('/push-subscriptions/bind') && init?.method === 'POST') {
         return new Response(null, {status: 204});
       }
+      if (url.endsWith('/push/subscriptions') && init?.method === 'POST') {
+        return new Response(JSON.stringify({data: {status: 'active'}}), {status: 200});
+      }
       return new Response(null, {status: 404});
     }));
 
     render(<WebPushControl locale="en" labels={labels} />);
+
+    await waitFor(() => expect(vi.mocked(fetch).mock.calls.some(([url, init]) =>
+      String(url).endsWith('/push/subscriptions') && init?.method === 'POST'
+    )).toBe(true));
+    const refreshCall = vi.mocked(fetch).mock.calls.find(([url, init]) =>
+      String(url).endsWith('/push/subscriptions') && init?.method === 'POST'
+    );
+    expect(JSON.parse(String(refreshCall?.[1]?.body))).toEqual({
+      installationId: expect.any(String),
+      locale: 'en',
+      subscription: existingSubscription.toJSON()
+    });
 
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(
       '/api/account/v1/push-subscriptions/bind',
@@ -115,10 +138,14 @@ describe('WebPushControl', () => {
     ));
     const bindCall = vi.mocked(fetch).mock.calls.find(([url]) => String(url).endsWith('/push-subscriptions/bind'));
     expect(bindCall?.[1]?.body).not.toContain('private-user-id');
+    expect(subscribe).not.toHaveBeenCalled();
   });
 
   it('treats denied browser permission as blocked even when a stale subscription exists', async () => {
-    getSubscription.mockResolvedValue({unsubscribe: vi.fn()});
+    getSubscription.mockResolvedValue({
+      unsubscribe: vi.fn(),
+      toJSON: () => ({endpoint: 'https://push.example.test/stale', keys: {p256dh: 'stale', auth: 'stale'}})
+    });
     Object.defineProperty(globalThis, 'Notification', {
       configurable: true,
       value: {permission: 'denied', requestPermission}
