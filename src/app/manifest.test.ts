@@ -1,4 +1,6 @@
 import {describe, expect, it} from 'vitest';
+import {existsSync} from 'node:fs';
+import {join} from 'node:path';
 import manifest from './manifest';
 
 describe('web app manifest', () => {
@@ -10,8 +12,9 @@ describe('web app manifest', () => {
       display: 'standalone'
     });
     expect(manifest().icons).toEqual(expect.arrayContaining([
-      expect.objectContaining({src: '/assets/brand/icon-192.png', sizes: '192x192'}),
-      expect.objectContaining({src: '/assets/brand/logo.png', sizes: '512x512'})
+      expect.objectContaining({src: '/assets/brand/app-icon-192.png', sizes: '192x192', purpose: 'any'}),
+      expect.objectContaining({src: '/assets/brand/app-icon-512.png', sizes: '512x512', purpose: 'any'})
     ]));
+    expect(existsSync(join(process.cwd(), 'src/app/apple-icon.png'))).toBe(true);
   });
 });
