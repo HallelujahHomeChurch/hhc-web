@@ -7,6 +7,13 @@ function notificationPath(value) {
   }
 }
 
+function notificationClickBehavior(payload) {
+  if (payload?.clickBehavior === 'dismiss') return 'dismiss';
+  if (payload?.clickBehavior === 'url') return 'url';
+  if (payload?.clickBehavior === 'home') return 'home';
+  return payload?.actionUrl ? 'url' : 'home';
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(self.skipWaiting());
 });
@@ -23,16 +30,22 @@ self.addEventListener('push', (event) => {
     payload = {};
   }
 
+  const clickBehavior = notificationClickBehavior(payload);
   event.waitUntil(self.registration.showNotification(payload.title || '哈利路亞家教會', {
     body: payload.body || '',
     icon: '/assets/brand/logo.png',
-    data: {url: notificationPath(payload.actionUrl)}
+    data: {
+      clickBehavior,
+      url: clickBehavior === 'url' ? notificationPath(payload.actionUrl) : '/'
+    }
   }));
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const path = notificationPath(event.notification.data?.url);
+  const clickBehavior = event.notification.data?.clickBehavior;
+  if (clickBehavior === 'dismiss') return;
+  const path = clickBehavior === 'home' ? '/' : notificationPath(event.notification.data?.url);
   event.waitUntil(self.clients.matchAll({type: 'window', includeUncontrolled: true}).then((windows) => {
     const existing = windows.find((client) => new URL(client.url).origin === self.location.origin);
     if (existing) return existing.navigate(path).then(() => existing.focus());
