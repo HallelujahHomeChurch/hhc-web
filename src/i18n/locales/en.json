@@ -30,7 +30,13 @@
       "disable": "Disable notifications",
       "pending": "Updating notifications",
       "denied": "Notifications are blocked in your browser",
-      "error": "Unable to update notifications. Try again."
+      "error": "Unable to update notifications. Try again.",
+      "promptTitle": "Stay informed",
+      "promptBody": "Receive important church announcements and updates on this device.",
+      "promptAction": "Enable notifications",
+      "promptLater": "Later",
+      "promptDismiss": "Dismiss notification prompt",
+      "installPrompt": "Add this website to your Home Screen to receive notifications on iPhone."
     },
     "social": {
       "youtube": "YouTube",
