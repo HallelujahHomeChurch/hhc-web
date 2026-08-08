@@ -77,6 +77,19 @@ async function bindInstallationToAccount() {
   }
 }
 
+async function registerSubscription(subscription: PushSubscription, locale: Locale) {
+  try {
+    const response = await fetch('/api/engagement/v1/push/subscriptions', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({installationId: installationId(), locale, subscription: subscription.toJSON()})
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 function isStandaloneWebApp() {
   return (typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches) ||
     (navigator as Navigator & {standalone?: boolean}).standalone === true;
@@ -114,8 +127,11 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
         vapidPublicKey.current = payload.data.vapidPublicKey;
         const subscription = await serviceWorker.pushManager.getSubscription();
         if (subscription) {
-          void bindInstallationToAccount().then((bound) => {
-            if (active) setBindingPending(!bound);
+          void Promise.all([
+            registerSubscription(subscription, locale),
+            bindInstallationToAccount()
+          ]).then(([registered, bound]) => {
+            if (active) setBindingPending(!registered || !bound);
           });
         }
         if (active) setState(Notification.permission === 'denied' ? 'denied' : subscription ? 'on' : 'off');
@@ -127,7 +143,7 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
     return () => {
       active = false;
     };
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     if (!autoPrompt || state !== 'off' || Notification.permission !== 'default') return;
@@ -142,10 +158,20 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
   useEffect(() => {
     if (!bindingPending || state !== 'on') return;
     const timer = window.setTimeout(() => {
-      void bindInstallationToAccount().then((bound) => setBindingPending(!bound));
+      void registration.current?.pushManager.getSubscription().then(async (subscription) => {
+        if (!subscription) {
+          setBindingPending(false);
+          return;
+        }
+        const [registered, bound] = await Promise.all([
+          registerSubscription(subscription, locale),
+          bindInstallationToAccount()
+        ]);
+        setBindingPending(!registered || !bound);
+      });
     }, 30000);
     return () => window.clearTimeout(timer);
-  }, [bindingPending, state]);
+  }, [bindingPending, locale, state]);
 
   if (state === 'unsupported') return null;
 
@@ -185,12 +211,7 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
         userVisibleOnly: true,
         applicationServerKey: applicationServerKey(vapidPublicKey.current)
       });
-      const response = await fetch('/api/engagement/v1/push/subscriptions', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({installationId: installationId(), locale, subscription: subscription.toJSON()})
-      });
-      if (!response.ok) {
+      if (!await registerSubscription(subscription, locale)) {
         await subscription.unsubscribe();
         throw new Error('subscription registration failed');
       }
