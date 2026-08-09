@@ -29,7 +29,7 @@ describe('getContentSecurityPolicy', () => {
     expect(directive(policy, 'worker-src')).toBe("worker-src 'self' blob:");
     expect(directive(policy, 'style-src-elem')).toBe("style-src-elem 'self' 'unsafe-inline'");
     expect(directive(policy, 'style-src-attr')).toBe("style-src-attr 'unsafe-inline'");
-    expect(policy).toContain('upgrade-insecure-requests');
+    expect(policy).not.toContain('upgrade-insecure-requests');
     expect(policy).toContain('report-uri /csp-report');
   });
 

@@ -91,7 +91,9 @@ Report-Only policy, a bounded and sanitized report endpoint, and gateway rate
 limiting. It intentionally does not add a root-layout nonce because Next would
 then dynamically render every document and undo public caching. Enforcement
 remains a separate promotion after production reports identify the remaining
-inline dependencies.
+inline dependencies. Enforcement-only directives such as
+`upgrade-insecure-requests` are also deferred because browsers ignore them in
+Report-Only mode and log a console error.
 
 ## Residual risk
 

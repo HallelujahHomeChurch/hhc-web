@@ -20,7 +20,6 @@ export function getContentSecurityPolicy({development}: ContentSecurityPolicyOpt
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
-    ...(development ? [] : ['upgrade-insecure-requests']),
     'report-uri /csp-report'
   ].join('; ');
 }
