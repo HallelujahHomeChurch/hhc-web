@@ -13,7 +13,7 @@ import {siteConfig} from '@/lib/site';
 
 type NewsDetailPageProps = {params: Promise<{locale: string; slug: string}>};
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 async function resolveParams(params: NewsDetailPageProps['params']): Promise<{locale: Locale; slug: string}> {
   const {locale, slug} = await params;

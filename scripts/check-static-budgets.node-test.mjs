@@ -7,18 +7,22 @@ import test from 'node:test';
 
 const checker = path.resolve('scripts/check-static-budgets.mjs');
 
-async function fixture({fontBytes = 200_000, fontName = 'ChenYuluoyan-HHC-Banners.woff2', heroBytes = 140_000} = {}) {
+async function fixture({bodyFontPreload = false, cssBytes = 0, fontBytes = 200_000, fontName = 'ChenYuluoyan-HHC-Banners.woff2', heroBytes = 140_000} = {}) {
   const root = await mkdtemp(path.join(tmpdir(), 'hhc-static-budget-'));
   const fontDir = path.join(root, 'src/assets/fonts/chenyuluoyan');
   const bannerDir = path.join(root, 'public/assets/banners');
   await mkdir(fontDir, {recursive: true});
   await mkdir(bannerDir, {recursive: true});
   await mkdir(path.join(root, 'src/app'), {recursive: true});
+  if (cssBytes > 0) {
+    await mkdir(path.join(root, '.next/static/chunks'), {recursive: true});
+    await writeFile(path.join(root, '.next/static/chunks/app.css'), Buffer.alloc(cssBytes));
+  }
   await writeFile(path.join(fontDir, fontName), Buffer.alloc(fontBytes));
   await writeFile(path.join(bannerDir, 'hero.jpg'), Buffer.alloc(heroBytes));
   await writeFile(
     path.join(root, 'src/app/fonts.ts'),
-    `localFont({src: '../assets/fonts/chenyuluoyan/${fontName}'})\n`
+    `Inter({preload: ${bodyFontPreload}})\nlocalFont({src: '../assets/fonts/chenyuluoyan/${fontName}'})\n`
   );
   return root;
 }
@@ -68,4 +72,24 @@ test('rejects a hero source over 200 KiB', async (t) => {
 
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /hero source exceeds 200 KiB/i);
+});
+
+test('rejects eager body-font preloads that affect every locale', async (t) => {
+  const root = await fixture({bodyFontPreload: true});
+  t.after(() => rm(root, {recursive: true, force: true}));
+
+  const result = run(root);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /body font preload is forbidden/i);
+});
+
+test('rejects generated CSS over 400 KiB after a production build', async (t) => {
+  const root = await fixture({cssBytes: 400 * 1024 + 1});
+  t.after(() => rm(root, {recursive: true, force: true}));
+
+  const result = run(root);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /generated css exceeds 400 KiB/i);
 });

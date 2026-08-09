@@ -35,8 +35,8 @@ jobs:
       - run: |
           corepack pnpm test:run
           corepack pnpm lint
-          corepack pnpm perf:static
           corepack pnpm build
+          corepack pnpm perf:static
           ./scripts/test-release-policy.sh
       - name: Build image
         env:

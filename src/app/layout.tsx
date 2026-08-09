@@ -30,11 +30,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang={defaultLocale} suppressHydrationWarning>
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: getThemeBootstrapScript()
-          }}
-        />
+        <script dangerouslySetInnerHTML={{__html: getThemeBootstrapScript()}} />
       </head>
       <body className={`${inter.variable} ${notoSansTC.variable} ${notoSansSC.variable} ${chenyuLuoyanBanner.variable} ${maShanZheng.variable}`}>{children}</body>
     </html>

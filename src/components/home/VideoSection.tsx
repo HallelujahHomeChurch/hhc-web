@@ -1,6 +1,7 @@
 import type {VideoItem} from '@/features/videos/types';
 import {Button} from '@/components/ui/Button';
 import {Play} from 'lucide-react';
+import Image from 'next/image';
 
 type VideoSectionProps = {
   title: string;
@@ -32,14 +33,17 @@ export function VideoSection({title, subtitle, ctaLabel, channelHref, items, err
           href={item.href}
           target="_blank"
           rel="noreferrer"
-          aria-label={item.imageAlt}
-          className="relative min-h-[220px] overflow-hidden rounded-xl bg-panel bg-cover bg-center shadow-[0_14px_34px_rgb(76_50_28_/_9%)] transition hover:translate-y-[-2px] max-[900px]:aspect-video max-[900px]:min-h-0"
-          style={{
-            backgroundImage: `linear-gradient(180deg, rgb(55 45 43 / 0%) 45%, rgb(55 45 43 / 76%) 100%), url("${item.imageSrc}")`,
-            backgroundPosition: 'center, center',
-            backgroundSize: '100% 100%, auto 118%'
-          }}
+          className="relative min-h-[220px] overflow-hidden rounded-xl bg-panel shadow-[0_14px_34px_rgb(76_50_28_/_9%)] transition hover:translate-y-[-2px] max-[900px]:aspect-video max-[900px]:min-h-0"
         >
+          <Image
+            src={item.imageSrc}
+            alt={item.imageAlt}
+            fill
+            sizes="(max-width: 900px) 100vw, 25vw"
+            quality={70}
+            className="object-cover scale-[1.18]"
+          />
+          <span className="absolute inset-0 bg-[linear-gradient(180deg,rgb(55_45_43_/_0%)_45%,rgb(55_45_43_/_76%)_100%)]" aria-hidden="true" />
           <span className="absolute inset-x-3 bottom-3 rounded-lg px-2.5 py-2 font-semibold text-white">{item.title}</span>
         </a>
       ))}

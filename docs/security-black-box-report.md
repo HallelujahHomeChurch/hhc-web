@@ -86,10 +86,12 @@ A guessed global CSP was not deployed. The production source inventory is:
 - inline style attributes used for CMS background images.
 
 A strict policy therefore requires a nonce-capable Next request path and
-removal of inline style attributes. Adding `unsafe-inline` merely to silence a
-scanner would not provide the intended protection and could change caching or
-hydration behavior. CSP remains a separate, tested hardening task with those
-prerequisites.
+removal of inline style attributes. A follow-up now adds a cache-compatible
+Report-Only policy, a bounded and sanitized report endpoint, and gateway rate
+limiting. It intentionally does not add a root-layout nonce because Next would
+then dynamically render every document and undo public caching. Enforcement
+remains a separate promotion after production reports identify the remaining
+inline dependencies.
 
 ## Residual risk
 

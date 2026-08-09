@@ -14,8 +14,6 @@ import {siteConfig} from '@/lib/site';
 
 type NewsPageProps = {params: Promise<{locale: string}>; searchParams: Promise<{page?: string}>};
 
-export const dynamic = 'force-dynamic';
-
 async function resolveLocale(params: NewsPageProps['params']): Promise<Locale> {
   const {locale} = await params;
   if (!isLocale(locale)) notFound();
