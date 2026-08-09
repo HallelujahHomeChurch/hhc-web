@@ -168,9 +168,9 @@
     "retry": "重试",
     "empty": "目前尚未发布周报。",
     "versionLabels": {
-      "zh-Hant": "繁体版",
-      "zh-Hans": "简体版",
-      "en": "英文版"
+      "zh-Hant": "繁体",
+      "zh-Hans": "简体",
+      "en": "英文"
     }
   },
   "privacyPolicy": {
