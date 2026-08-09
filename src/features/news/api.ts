@@ -13,12 +13,7 @@ export async function getNewsPage(locale: Locale, page: number, pageSize: number
   return {items: result.data.map(mapNewsItem), meta: result.meta};
 }
 
-export async function getHomeNews(locale: Locale, client: HhcWebClient = publicContentClient()): Promise<NewsItem[]> {
-  const home = await client.getHome(locale);
-  return home.news.map(mapNewsItem);
-}
-
-function mapNewsItem(value: Awaited<ReturnType<HhcWebClient['listPublicContent']>>[number]): NewsItem {
+export function mapNewsItem(value: Awaited<ReturnType<HhcWebClient['listPublicContent']>>[number]): NewsItem {
   return {
     id: value.id,
     title: value.title,

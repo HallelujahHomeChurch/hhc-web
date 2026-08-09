@@ -23,6 +23,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: corepack pnpm test:run
       - run: corepack pnpm lint
+      - run: corepack pnpm perf:static
       - run: corepack pnpm build
       - run: ./scripts/test-release-policy.sh
       - name: Build image

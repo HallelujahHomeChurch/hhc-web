@@ -9,17 +9,17 @@ importers:
   .:
     dependencies:
       '@hallelujahhomechurch/account-client':
-        specifier: 0.4.9
-        version: 0.4.9
+        specifier: 0.6.2
+        version: 0.6.2
       '@hallelujahhomechurch/hhc-web-client':
-        specifier: 0.4.9
-        version: 0.4.9
+        specifier: 0.6.2
+        version: 0.6.2
       '@hallelujahhomechurch/preferences':
-        specifier: 0.4.9
-        version: 0.4.9
+        specifier: 0.6.2
+        version: 0.6.2
       '@hallelujahhomechurch/ui':
-        specifier: 0.4.9
-        version: 0.4.9(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: 0.6.2
+        version: 0.6.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       lucide-react:
         specifier: ^1.24.0
         version: 1.27.0(react@19.2.7)
@@ -297,17 +297,17 @@ packages:
   '@formatjs/intl-localematcher@0.8.13':
     resolution: {integrity: sha512-kHEAFOkeJSPNi7c5PaKaRjxcBrJwzzt81ifUu+8uve1EDW/VJl83KsxmqgqNZLzcFEhSliZGvx3+pk/RH0IOmg==}
 
-  '@hallelujahhomechurch/account-client@0.4.9':
-    resolution: {integrity: sha512-BRSridXDqP6qGz2OHg+ofSYFiQXFJ8RhUCqh+0KyqOmu54JuO7iGowhG/GAkWR86W8KouHWtj1F1OFsOvfS1Eg==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/account-client/0.4.9/b94b2700b13a0ab86b721328a2767fc99302b35a}
+  '@hallelujahhomechurch/account-client@0.6.2':
+    resolution: {integrity: sha512-Cji3w2xegPURKXIF4MZT0ms6OK4OXY9PdtF1OZgzrKhBTyk/igiF0XUK820fvM1AATLfymNutFV48koXXhppGQ==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/account-client/0.6.2/17e6367d2f7d5fee90b3bb51b82cd5924b27dd15}
 
-  '@hallelujahhomechurch/hhc-web-client@0.4.9':
-    resolution: {integrity: sha512-x1lqyHMaB3QqD+ArUTzlgRE5/b4MXl4YowjHUxx0lX6RTfOCmxzT+yHz2egHYjjoe5MLiymJ7/fXp2SgRcdlaw==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/hhc-web-client/0.4.9/e57e980ec36d02838f59040b470885e87771b1c4}
+  '@hallelujahhomechurch/hhc-web-client@0.6.2':
+    resolution: {integrity: sha512-274nSK07dTMHsQwerRt+rrTdigXqUBT1/fqvu1ouI4jpO8nxbYZe90TLUzM0q7aObVBWn4QLQfYsX6F+4UBQQQ==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/hhc-web-client/0.6.2/e49f4b611da78b0a10936d7dae0afad0e2f95d6e}
 
-  '@hallelujahhomechurch/preferences@0.4.9':
-    resolution: {integrity: sha512-0laRhe/N/LGJZZIYwm4sqLjI2xnKZDwkZKuEHkPV6Z1kiP0Tc1KpIqB9ncjaHocVGWGwlZe/qG4HqT8UV1pqyg==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/preferences/0.4.9/2638fa56f7e969640e284294f186e8d433419dcd}
+  '@hallelujahhomechurch/preferences@0.6.2':
+    resolution: {integrity: sha512-HqJGaqA0/2k+RYINalcmGgKGzhnrkiL07rrwMOnSouiP3hxizQdTrPU8t8Ha2sv1IQ9PdI0bVAlm9084SSej2w==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/preferences/0.6.2/f368832e1018789bc4188cbee38786051ae8940e}
 
-  '@hallelujahhomechurch/ui@0.4.9':
-    resolution: {integrity: sha512-8ZqmGySlsL5oypwzP9NXP98bteaGJklO2CW8d47Hzd7rD/RsxNuwENaop0vAlGrjBXq3Hrn8Ze1kB6Ahc7dE8A==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/ui/0.4.9/5236143f11a6de4cf8ebbb0882aa377f81e15e32}
+  '@hallelujahhomechurch/ui@0.6.2':
+    resolution: {integrity: sha512-VMU6LrrmGHI1/3Fkgw+lBJApoR5xkjtChEOC5R39BSge8/Otr/8gEYiuMRbQsIK2kZHHrqA1bjXRs5te2uFdng==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/ui/0.6.2/8b9a1e89ce9c30089186f349868fa5e8a1a887b4}
     peerDependencies:
       react: ^19.0.0
       react-dom: ^19.0.0
@@ -3329,15 +3329,15 @@ snapshots:
     dependencies:
       '@formatjs/fast-memoize': 3.1.7
 
-  '@hallelujahhomechurch/account-client@0.4.9': {}
+  '@hallelujahhomechurch/account-client@0.6.2': {}
 
-  '@hallelujahhomechurch/hhc-web-client@0.4.9':
+  '@hallelujahhomechurch/hhc-web-client@0.6.2':
     dependencies:
       openapi-fetch: 0.15.2
 
-  '@hallelujahhomechurch/preferences@0.4.9': {}
+  '@hallelujahhomechurch/preferences@0.6.2': {}
 
-  '@hallelujahhomechurch/ui@0.4.9(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@hallelujahhomechurch/ui@0.6.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@internationalized/date': 3.12.3
       input-otp: 1.4.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)

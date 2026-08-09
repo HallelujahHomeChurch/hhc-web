@@ -2,7 +2,9 @@
 
 import {useEffect, useId, useRef, useState} from 'react';
 import {Bell, BellOff, LoaderCircle, X} from 'lucide-react';
+import {IconButton} from '@hallelujahhomechurch/ui';
 import type {Locale} from '@/i18n/locales';
+import {isIOSDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 
 const installationKey = 'hhc_push_installation_id';
 const promptVisitKey = 'hhc_push_prompt_visits';
@@ -88,16 +90,6 @@ async function registerSubscription(subscription: PushSubscription, locale: Loca
   } catch {
     return false;
   }
-}
-
-function isStandaloneWebApp() {
-  return (typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches) ||
-    (navigator as Navigator & {standalone?: boolean}).standalone === true;
-}
-
-function isIOSDevice() {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 }
 
 export function WebPushControl({labels, locale, autoPrompt = false}: WebPushControlProps) {
@@ -235,17 +227,16 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
 
   return (
     <>
-      <button
+      <IconButton
         type="button"
         aria-label={label}
-        title={label}
         data-account-binding={bindingPending ? 'retrying' : undefined}
-        disabled={pending}
-        onClick={updateSubscription}
-        className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-transparent bg-primary-soft p-0 text-primary transition hover:bg-primary-soft-hover disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {pending ? <LoaderCircle className="size-5 animate-spin" aria-hidden="true" /> : state === 'on' ? <BellOff className="size-5" aria-hidden="true" /> : <Bell className="size-5" aria-hidden="true" />}
-      </button>
+        isDisabled={pending}
+        onPress={() => void updateSubscription()}
+        variant="soft"
+        size="lg"
+        icon={pending ? <LoaderCircle className="size-5 animate-spin" aria-hidden="true" /> : state === 'on' ? <BellOff className="size-5" aria-hidden="true" /> : <Bell className="size-5" aria-hidden="true" />}
+      />
       {showPrompt ? (
         <section
           role="dialog"

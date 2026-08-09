@@ -32,10 +32,10 @@ export const maShanZheng = Ma_Shan_Zheng({
   weight: '400'
 });
 
-export const chenyuLuoyan = localFont({
+export const chenyuLuoyanBanner = localFont({
   display: 'block',
   preload: true,
-  src: '../assets/fonts/chenyuluoyan/ChenYuluoyan-2.0-Thin.woff2',
+  src: '../assets/fonts/chenyuluoyan/ChenYuluoyan-HHC-Banners.woff2',
   variable: '--font-chenyuluoyan',
   weight: '100 900'
 });

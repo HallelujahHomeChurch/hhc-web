@@ -5,10 +5,7 @@ import {accountProxyRewrites} from './src/lib/account-proxy';
 const nextConfig: NextConfig = {
   output: 'standalone',
   allowedDevOrigins: ['www.hhc.test'],
-  rewrites: async () => accountProxyRewrites(process.env.ACCOUNT_API_PROXY_TARGET),
-  images: {
-    unoptimized: true
-  }
+  rewrites: async () => accountProxyRewrites(process.env.ACCOUNT_API_PROXY_TARGET)
 };
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
