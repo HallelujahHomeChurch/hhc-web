@@ -15,7 +15,8 @@ export function generateStaticParams() {
 export const dynamicParams = false;
 
 async function getMessages(locale: Locale) {
-  return (await import(`../../i18n/locales/${locale}.json`)).default;
+  const messages = (await import(`../../i18n/locales/${locale}.json`)).default;
+  return {site: messages.site};
 }
 
 export default async function LocaleLayout({children, params}: LocaleLayoutProps) {

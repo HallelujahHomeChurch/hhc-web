@@ -15,13 +15,14 @@ import {getLocations} from '@/features/locations/api';
 import {getMessages} from '@/i18n/messages';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
+import {getHomePageTitle} from '@/lib/home-metadata';
 import {siteConfig} from '@/lib/site';
 
 type HomePageProps = {
   params: Promise<{locale: string}>;
 };
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 async function getLocale(params: Promise<{locale: string}>): Promise<Locale> {
   const {locale} = await params;
@@ -29,10 +30,6 @@ async function getLocale(params: Promise<{locale: string}>): Promise<Locale> {
     notFound();
   }
   return locale;
-}
-
-export function getHomePageTitle(locale: Locale) {
-  return getMessages(locale).site.name;
 }
 
 export async function generateMetadata({params}: HomePageProps): Promise<Metadata> {

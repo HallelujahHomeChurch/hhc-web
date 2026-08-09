@@ -8,6 +8,7 @@ const items = Array.from({length: 4}, (_, index) => ({
   summary: '活動摘要',
   date: '2026 / 07 / 13',
   imageAlt: '活動封面',
+  imageSrc: index === 0 ? 'https://www.alive.org.tw/assets/public/news-cover' : undefined,
   href: `/zh-Hant/news/news-${index + 1}`
 }));
 
@@ -22,6 +23,8 @@ describe('NewsSection', () => {
     expect(screen.getAllByText('2026 / 07 / 13')).toHaveLength(3);
     expect(screen.queryByText('消息 4')).not.toBeInTheDocument();
     expect(screen.queryByText('活動摘要')).not.toBeInTheDocument();
-    expect(container.innerHTML).not.toContain('/assets/');
+    const image = screen.getByRole('img', {name: '活動封面'});
+    expect(image).toHaveAttribute('sizes', '(max-width: 620px) 112px, 132px');
+    expect(container.innerHTML).not.toContain('background-image');
   });
 });

@@ -1,5 +1,6 @@
 import type {NewsItem} from '@/features/news/types';
 import {Newspaper} from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 type NewsSectionProps = {
@@ -25,13 +26,17 @@ export function NewsSection({title, moreHref, moreLabel, items, errorMessage}: N
         {items.slice(0, 3).map((item) => (
           <li key={item.id}>
             <Link className="group grid min-h-[82px] grid-cols-[132px_minmax(0,1fr)] items-center gap-4 max-[620px]:grid-cols-[112px_minmax(0,1fr)]" href={item.href}>
-              <span
-                aria-label={item.imageSrc ? item.imageAlt : undefined}
-                role={item.imageSrc ? 'img' : undefined}
-                className="grid aspect-video w-[132px] place-items-center overflow-hidden rounded-[10px] bg-[var(--hhc-news-panel)] bg-cover bg-center text-primary ring-1 ring-panel-border transition group-hover:ring-primary max-[620px]:w-28"
-                style={item.imageSrc ? {backgroundImage: `url("${item.imageSrc}")`} : undefined}
-              >
-                {item.imageSrc ? null : <Newspaper size={34} strokeWidth={1.5} aria-hidden="true" />}
+              <span className="relative grid aspect-video w-[132px] place-items-center overflow-hidden rounded-[10px] bg-[var(--hhc-news-panel)] text-primary ring-1 ring-panel-border transition group-hover:ring-primary max-[620px]:w-28">
+                {item.imageSrc ? (
+                  <Image
+                    src={item.imageSrc}
+                    alt={item.imageAlt}
+                    fill
+                    sizes="(max-width: 620px) 112px, 132px"
+                    quality={70}
+                    className="object-cover"
+                  />
+                ) : <Newspaper size={34} strokeWidth={1.5} aria-hidden="true" />}
               </span>
               <span>
                 <h3 className="mb-1 line-clamp-2 text-base font-semibold leading-[1.45]">{item.title}</h3>

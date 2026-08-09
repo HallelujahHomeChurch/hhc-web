@@ -53,3 +53,14 @@ median post-change request and the pre-change reference.
 - A later performance task should serve smaller list-card image derivatives and
   review locale font preloads. Those changes are not hidden inside this release
   because they change the asset and typography contracts.
+
+## 2026-08-10 follow-up (local verification)
+
+- Home and About now use 60-second ISR instead of forced dynamic rendering.
+- The bare-domain locale redirect runs on the server, without a client loading screen.
+- Home news and video thumbnails use responsive Next image output at quality 70.
+- Body fonts no longer preload and use variable weights with `font-display: swap`.
+- Generated production CSS is 348,950 bytes and is guarded by a 400 KiB build budget.
+- The localized homepage response is 43,138 bytes locally and returns `s-maxage=60`.
+
+Production Lighthouse numbers remain unchanged in this document until the PR is deployed and the same three-run method can be repeated.
