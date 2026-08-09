@@ -24,6 +24,7 @@ describe('WebPushControl', () => {
 
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     requestPermission.mockReset().mockResolvedValue('granted');
     getSubscription.mockReset().mockResolvedValue(null);
     subscribe.mockReset().mockResolvedValue({
@@ -139,6 +140,42 @@ describe('WebPushControl', () => {
     const bindCall = vi.mocked(fetch).mock.calls.find(([url]) => String(url).endsWith('/push-subscriptions/bind'));
     expect(bindCall?.[1]?.body).not.toContain('private-user-id');
     expect(subscribe).not.toHaveBeenCalled();
+  });
+
+  it('does not repeat successful subscription writes when remounted', async () => {
+    const existingSubscription = {
+      unsubscribe: vi.fn(),
+      toJSON: () => ({
+        endpoint: 'https://push.example.test/existing',
+        expirationTime: null,
+        keys: {p256dh: 'existing-p256dh', auth: 'existing-auth'}
+      })
+    };
+    getSubscription.mockResolvedValue(existingSubscription);
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith('/push/config')) return new Response(JSON.stringify({data: {vapidPublicKey: 'AQID'}}), {status: 200});
+      if (url.endsWith('/session')) return new Response(JSON.stringify({authenticated: true, user: {id: 'user-id'}}), {status: 200});
+      if (url.endsWith('/csrf-token')) return new Response(JSON.stringify({csrf_token: 'csrf-value'}), {status: 200});
+      if (url.endsWith('/push-subscriptions/bind') && init?.method === 'POST') return new Response(null, {status: 204});
+      if (url.endsWith('/push/subscriptions') && init?.method === 'POST') return new Response(JSON.stringify({data: {status: 'active'}}), {status: 201});
+      return new Response(null, {status: 404});
+    }));
+
+    const first = render(<WebPushControl locale="en" labels={labels} />);
+    await waitFor(() => expect(vi.mocked(fetch).mock.calls.filter(([url]) =>
+      String(url).endsWith('/push-subscriptions/bind')
+    )).toHaveLength(1));
+    first.unmount();
+    render(<WebPushControl locale="en" labels={labels} />);
+
+    await waitFor(() => expect(screen.getByRole('button', {name: labels.disable})).toBeInTheDocument());
+    expect(vi.mocked(fetch).mock.calls.filter(([url, init]) =>
+      String(url).endsWith('/push/subscriptions') && init?.method === 'POST'
+    )).toHaveLength(1);
+    expect(vi.mocked(fetch).mock.calls.filter(([url]) =>
+      String(url).endsWith('/push-subscriptions/bind')
+    )).toHaveLength(1);
   });
 
   it('treats denied browser permission as blocked even when a stale subscription exists', async () => {

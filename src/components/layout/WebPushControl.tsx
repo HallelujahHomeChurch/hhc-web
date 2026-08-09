@@ -9,6 +9,8 @@ import {isIOSDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 const installationKey = 'hhc_push_installation_id';
 const promptVisitKey = 'hhc_push_prompt_visits';
 const promptSnoozeKey = 'hhc_push_prompt_snooze_until';
+const registrationSyncKey = 'hhc_push_registration_sync';
+const accountBindingSyncKey = 'hhc_push_account_binding_sync';
 const promptDelay = 8000;
 const laterCooldown = 14 * 24 * 60 * 60 * 1000;
 const dismissCooldown = 30 * 24 * 60 * 60 * 1000;
@@ -48,6 +50,27 @@ function installationId() {
   return value;
 }
 
+const pendingSyncs = new Map<string, Promise<boolean>>();
+
+function syncOnce(key: string, value: string, operation: () => Promise<boolean>) {
+  if (sessionStorage.getItem(key) === value) return Promise.resolve(true);
+  const requestKey = `${key}:${value}`;
+  const existing = pendingSyncs.get(requestKey);
+  if (existing) return existing;
+
+  const pending = operation().then((success) => {
+    if (success) sessionStorage.setItem(key, value);
+    return success;
+  }).finally(() => pendingSyncs.delete(requestKey));
+  pendingSyncs.set(requestKey, pending);
+  return pending;
+}
+
+function clearPushSyncState() {
+  sessionStorage.removeItem(registrationSyncKey);
+  sessionStorage.removeItem(accountBindingSyncKey);
+}
+
 async function bindInstallationToAccount() {
   try {
     const session = await fetch('/api/account/v1/session', {
@@ -56,24 +79,32 @@ async function bindInstallationToAccount() {
       cache: 'no-store'
     });
     if (!session.ok) return false;
-    if (!(await session.json() as {authenticated?: boolean}).authenticated) return true;
+    const payload = await session.json() as {authenticated?: boolean; user?: {id?: string}};
+    if (!payload.authenticated) {
+      sessionStorage.removeItem(accountBindingSyncKey);
+      return true;
+    }
+    if (!payload.user?.id) return false;
 
-    const csrf = await fetch('/api/account/v1/csrf-token', {
-      credentials: 'include',
-      headers: {Accept: 'application/json'},
-      cache: 'no-store'
-    });
-    if (!csrf.ok) return false;
-    const {csrf_token: csrfToken} = await csrf.json() as {csrf_token?: string};
-    if (!csrfToken) return false;
+    const installation = installationId();
+    return syncOnce(accountBindingSyncKey, `${installation}:${payload.user.id}`, async () => {
+      const csrf = await fetch('/api/account/v1/csrf-token', {
+        credentials: 'include',
+        headers: {Accept: 'application/json'},
+        cache: 'no-store'
+      });
+      if (!csrf.ok) return false;
+      const {csrf_token: csrfToken} = await csrf.json() as {csrf_token?: string};
+      if (!csrfToken) return false;
 
-    const response = await fetch('/api/account/v1/push-subscriptions/bind', {
-      method: 'POST',
-      credentials: 'include',
-      headers: {'Content-Type': 'application/json', 'x-csrf-token': csrfToken},
-      body: JSON.stringify({installation_id: installationId()})
+      const response = await fetch('/api/account/v1/push-subscriptions/bind', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {'Content-Type': 'application/json', 'x-csrf-token': csrfToken},
+        body: JSON.stringify({installation_id: installation})
+      });
+      return response.ok;
     });
-    return response.ok;
   } catch {
     return false;
   }
@@ -81,12 +112,15 @@ async function bindInstallationToAccount() {
 
 async function registerSubscription(subscription: PushSubscription, locale: Locale) {
   try {
-    const response = await fetch('/api/engagement/v1/push/subscriptions', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({installationId: installationId(), locale, subscription: subscription.toJSON()})
+    const installation = installationId();
+    return syncOnce(registrationSyncKey, `${installation}:${locale}`, async () => {
+      const response = await fetch('/api/engagement/v1/push/subscriptions', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({installationId: installation, locale, subscription: subscription.toJSON()})
+      });
+      return response.ok;
     });
-    return response.ok;
   } catch {
     return false;
   }
@@ -125,7 +159,7 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
           ]).then(([registered, bound]) => {
             if (active) setBindingPending(!registered || !bound);
           });
-        }
+        } else clearPushSyncState();
         if (active) setState(Notification.permission === 'denied' ? 'denied' : subscription ? 'on' : 'off');
       } catch {
         if (active) setState('error');
@@ -188,6 +222,7 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
           body: JSON.stringify({installationId: installationId()})
         });
         if (!response.ok || !(await current.unsubscribe())) throw new Error('unsubscribe failed');
+        clearPushSyncState();
         setState('off');
         setShowPrompt(false);
         return;
