@@ -32,7 +32,7 @@ describe('SiteFooter', () => {
     expect(screen.getByRole('link', {name: 'YouTube'})).toHaveAttribute('href', siteConfig.social.youtube);
     expect(screen.getByRole('link', {name: 'Facebook'})).toHaveAttribute('href', siteConfig.social.facebook);
     const notification = await screen.findByRole('button', {name: '開啟通知'});
-    expect(notification).toHaveClass('size-11', 'p-0', 'rounded-full');
+    expect(notification).toHaveClass('hhc-icon-button', 'hhc-button--soft', 'hhc-button--lg');
     expect(notification).not.toHaveTextContent('開啟通知');
     const preferences = container.querySelector('.footer-preference-controls');
     const social = container.querySelector('.footer-social-controls');
