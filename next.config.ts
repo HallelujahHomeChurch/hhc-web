@@ -4,6 +4,7 @@ import {accountProxyRewrites} from './src/lib/account-proxy';
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  poweredByHeader: false,
   allowedDevOrigins: ['www.hhc.test'],
   rewrites: async () => accountProxyRewrites(process.env.ACCOUNT_API_PROXY_TARGET)
 };
