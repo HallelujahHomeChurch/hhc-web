@@ -11,8 +11,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "perf:static": "node scripts/check-static-budgets.mjs",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "node --test scripts/check-static-budgets.node-test.mjs && vitest run"
   },
   "dependencies": {
     "@hallelujahhomechurch/account-client": "0.4.9",

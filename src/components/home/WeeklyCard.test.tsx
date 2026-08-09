@@ -41,6 +41,20 @@ describe('WeeklyCard', () => {
     expect(await screen.findByText('Weekly bulletin')).toBeInTheDocument();
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
+
+  it('aborts the active request when the card unmounts', () => {
+    const fetcher = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => new Promise<Response>(() => {
+      expect(init?.signal).toBeInstanceOf(AbortSignal);
+    }));
+    vi.stubGlobal('fetch', fetcher);
+
+    const {unmount} = render(<WeeklyCard locale="en" ctaLabel="Download" messages={{loading: 'Loading', downloading: 'Preparing download', error: 'Unavailable', retry: 'Retry'}} />);
+    const signal = fetcher.mock.calls[0]?.[1]?.signal;
+
+    unmount();
+
+    expect(signal?.aborted).toBe(true);
+  });
 });
 
 function apiResponse(data: unknown, error: unknown = null, status = 200) {

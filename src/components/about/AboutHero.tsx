@@ -1,4 +1,5 @@
-import {chenyuLuoyan, maShanZheng} from '@/app/fonts';
+import Image from 'next/image';
+import {chenyuLuoyanBanner, maShanZheng} from '@/app/fonts';
 import type {Locale} from '@/i18n/locales';
 
 type AboutHeroProps = {
@@ -8,19 +9,23 @@ type AboutHeroProps = {
 };
 
 export function AboutHero({locale, title, subtitle}: AboutHeroProps) {
-  const displayFont = locale === 'zh-Hans' ? maShanZheng.className : chenyuLuoyan.className;
+  const displayFont = locale === 'zh-Hans' ? maShanZheng.className : chenyuLuoyanBanner.className;
 
   return (
     <section
       className="relative min-h-[clamp(430px,56vw,610px)] overflow-hidden bg-paper"
       aria-labelledby="page-title"
-      style={{
-        backgroundImage:
-          'var(--hhc-hero-overlay), url("/assets/banners/hero.jpg")',
-        backgroundPosition: 'center',
-        backgroundSize: 'cover'
-      }}
     >
+      <Image
+        src="/assets/banners/hero.jpg"
+        alt=""
+        fill
+        preload
+        fetchPriority="high"
+        sizes="100vw"
+        className="object-cover object-center"
+      />
+      <div className="absolute inset-0 z-[1]" aria-hidden="true" style={{backgroundImage: 'var(--hhc-hero-overlay)'}} />
       <div className="shell relative z-[2] flex min-h-[clamp(430px,56vw,610px)] items-center py-[70px] pb-[88px] max-[620px]:py-12 max-[620px]:pb-16">
         <div className="max-w-[590px] pt-8 max-[620px]:pt-0">
           <h1 id="page-title" className={`${displayFont} whitespace-nowrap text-[clamp(54px,8vw,96px)] font-normal leading-[1.08] tracking-[0.08em] text-[var(--hhc-brand-strong)] max-[620px]:text-[clamp(34px,12vw,54px)] max-[620px]:tracking-[0.03em]`}>

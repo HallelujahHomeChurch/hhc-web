@@ -10,9 +10,8 @@ import {WeeklyCard} from '@/components/home/WeeklyCard';
 import {SiteFooter} from '@/components/layout/SiteFooter';
 import {SiteHeader} from '@/components/layout/SiteHeader';
 import {SectionCard} from '@/components/ui/SectionCard';
+import {getHomeContent} from '@/features/home/api';
 import {getLocations} from '@/features/locations/api';
-import {getHomeNews} from '@/features/news/api';
-import {getVideos} from '@/features/videos/api';
 import {getMessages} from '@/i18n/messages';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
@@ -69,9 +68,9 @@ export default async function HomePage({params}: HomePageProps) {
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
-  const [newsResult, videosResult] = await Promise.allSettled([getHomeNews(locale), getVideos(locale)]);
-  const news = newsResult.status === 'fulfilled' ? newsResult.value : [];
-  const videos = videosResult.status === 'fulfilled' ? videosResult.value : [];
+  const [homeResult] = await Promise.allSettled([getHomeContent(locale)]);
+  const news = homeResult.status === 'fulfilled' ? homeResult.value.news : [];
+  const videos = homeResult.status === 'fulfilled' ? homeResult.value.videos : [];
   const locations = getLocations(locale);
 
   return (
@@ -81,7 +80,7 @@ export default async function HomePage({params}: HomePageProps) {
         <HomeHero locale={locale} title={messages.home.heroTitle} subtitle={messages.home.heroSubtitle} />
         <div className="relative z-[3] bg-[image:var(--hhc-page-gradient)] py-8 pb-11">
           <SectionCard className="shell grid grid-cols-[minmax(0,1.45fr)_minmax(300px,.9fr)] gap-8 p-7 max-[900px]:grid-cols-1 max-[620px]:p-5" ariaLabel="最新消息與週報">
-            <NewsSection title={messages.home.newsTitle} moreHref={`/${locale}/news`} moreLabel={`${messages.home.moreNews} →`} items={news} errorMessage={newsResult.status === 'rejected' ? messages.home.newsLoadError : undefined} />
+            <NewsSection title={messages.home.newsTitle} moreHref={`/${locale}/news`} moreLabel={`${messages.home.moreNews} →`} items={news} errorMessage={homeResult.status === 'rejected' ? messages.home.newsLoadError : undefined} />
             <WeeklyCard
               locale={locale}
               ctaLabel={`${messages.home.downloadWeekly} ↓`}
@@ -93,7 +92,7 @@ export default async function HomePage({params}: HomePageProps) {
               }}
             />
           </SectionCard>
-          <VideoSection title={messages.home.videosTitle} subtitle={messages.home.videosSubtitle} ctaLabel={messages.home.watchMore} channelHref={siteConfig.music.youtube} items={videos} errorMessage={videosResult.status === 'rejected' ? messages.home.videosLoadError : undefined} />
+          <VideoSection title={messages.home.videosTitle} subtitle={messages.home.videosSubtitle} ctaLabel={messages.home.watchMore} channelHref={siteConfig.music.youtube} items={videos} errorMessage={homeResult.status === 'rejected' ? messages.home.videosLoadError : undefined} />
           <AboutTeaser locale={locale} title={messages.home.aboutTitle} body={messages.home.aboutBody} ctaLabel={`${messages.home.aboutCta} →`} />
           <LocationSection title={messages.home.locationsTitle} mapLabel={messages.home.mapLink} items={locations} />
         </div>

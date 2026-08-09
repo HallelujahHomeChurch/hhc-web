@@ -1,12 +1,13 @@
 'use client';
 
-import {useEffect, useState} from 'react';
+import {useEffect, useState, useSyncExternalStore} from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {BookOpenText, Newspaper, UsersRound} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
 import type {Locale} from '@/i18n/locales';
+import {isIPhoneDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 import {AccountControlProvider, AccountControlView} from './AccountControl';
 
 type SiteHeaderProps = {
@@ -14,6 +15,10 @@ type SiteHeaderProps = {
   pathname: string;
   sessionClient?: AccountSessionClient;
 };
+
+const subscribeToStandaloneMode = () => () => undefined;
+const getIPhoneStandaloneSnapshot = () => isIPhoneDevice() && isStandaloneWebApp();
+const getServerStandaloneSnapshot = () => false;
 
 export function SiteHeader({locale, pathname, sessionClient}: SiteHeaderProps) {
   const t = useTranslations('site');
@@ -31,6 +36,11 @@ export function SiteHeader({locale, pathname, sessionClient}: SiteHeaderProps) {
   };
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   const [mobileChrome, setMobileChrome] = useState({pathname, visible: true});
+  const iphoneStandalone = useSyncExternalStore(
+    subscribeToStandaloneMode,
+    getIPhoneStandaloneSnapshot,
+    getServerStandaloneSnapshot
+  );
   const mobileChromeVisible = mobileChrome.pathname === pathname ? mobileChrome.visible : true;
 
   useEffect(() => {
@@ -106,7 +116,7 @@ export function SiteHeader({locale, pathname, sessionClient}: SiteHeaderProps) {
         </div>
       </div>
       </header>
-      <nav className="site-mobile-tab-bar" aria-label={t('nav.menu')} data-mobile-hidden={!mobileChromeVisible}>
+      <nav className="site-mobile-tab-bar" aria-label={t('nav.menu')} data-mobile-hidden={!mobileChromeVisible} data-iphone-standalone={iphoneStandalone || undefined}>
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);

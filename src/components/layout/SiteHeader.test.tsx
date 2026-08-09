@@ -1,6 +1,6 @@
-import {act, fireEvent, render, screen, within} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import {NextIntlClientProvider} from 'next-intl';
-import {describe, expect, it, vi} from 'vitest';
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
 import en from '@/i18n/locales/en.json';
 import zhHant from '@/i18n/locales/zh-Hant.json';
@@ -10,6 +10,11 @@ const anonymousSessionClient: AccountSessionClient = {
   getSession: async () => ({authenticated: false}),
   logout: async () => undefined
 };
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 describe('SiteHeader', () => {
   it('renders brand, navigation, and account entry point', async () => {
@@ -55,6 +60,21 @@ describe('SiteHeader', () => {
     expect(screen.queryByRole('button', {name: '開啟選單'})).not.toBeInTheDocument();
     expect(await screen.findByRole('link', {name: '登入'})).toBeInTheDocument();
     expect(getSession).toHaveBeenCalledOnce();
+  });
+
+  it('marks the mobile navigation only for an installed iPhone PWA', async () => {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)');
+    vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
+      matches: query === '(display-mode: standalone)'
+    }) as MediaQueryList));
+
+    render(
+      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <SiteHeader locale="zh-Hant" pathname="/zh-Hant/about" sessionClient={anonymousSessionClient} />
+      </NextIntlClientProvider>
+    );
+
+    await waitFor(() => expect(screen.getByRole('navigation', {name: '選單'})).toHaveAttribute('data-iphone-standalone', 'true'));
   });
 
   it('hides mobile chrome when scrolling down and restores it when scrolling up', () => {

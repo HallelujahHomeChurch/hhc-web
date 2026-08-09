@@ -4,7 +4,7 @@ import {AboutHero} from './about/AboutHero';
 import {HomeHero} from './home/HomeHero';
 
 vi.mock('@/app/fonts', () => ({
-  chenyuLuoyan: {className: 'font-chenyuluoyan'},
+  chenyuLuoyanBanner: {className: 'font-chenyuluoyan-banner'},
   maShanZheng: {className: 'font-ma-shan-zheng'}
 }));
 
@@ -15,8 +15,8 @@ describe.each([
   it.each(['zh-Hant', 'en'] as const)('uses ChenYuluoyan for %s', (locale) => {
     render(<Hero locale={locale} title="Title" subtitle="Subtitle" />);
 
-    expect(screen.getByRole('heading', {name: 'Title'})).toHaveClass('font-chenyuluoyan');
-    expect(screen.getByText('Subtitle')).toHaveClass('font-chenyuluoyan');
+    expect(screen.getByRole('heading', {name: 'Title'})).toHaveClass('font-chenyuluoyan-banner');
+    expect(screen.getByText('Subtitle')).toHaveClass('font-chenyuluoyan-banner');
   });
 
   it('uses Ma Shan Zheng for zh-Hans', () => {

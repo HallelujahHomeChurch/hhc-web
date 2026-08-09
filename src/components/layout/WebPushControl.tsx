@@ -3,6 +3,7 @@
 import {useEffect, useId, useRef, useState} from 'react';
 import {Bell, BellOff, LoaderCircle, X} from 'lucide-react';
 import type {Locale} from '@/i18n/locales';
+import {isIOSDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 
 const installationKey = 'hhc_push_installation_id';
 const promptVisitKey = 'hhc_push_prompt_visits';
@@ -88,16 +89,6 @@ async function registerSubscription(subscription: PushSubscription, locale: Loca
   } catch {
     return false;
   }
-}
-
-function isStandaloneWebApp() {
-  return (typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches) ||
-    (navigator as Navigator & {standalone?: boolean}).standalone === true;
-}
-
-function isIOSDevice() {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 }
 
 export function WebPushControl({labels, locale, autoPrompt = false}: WebPushControlProps) {
