@@ -17,7 +17,7 @@ describe('WeeklyCard', () => {
     render(<WeeklyCard locale="en" ctaLabel="Download" messages={{loading: 'Loading', downloading: 'Preparing download', error: 'Unavailable', retry: 'Retry'}} />);
 
     expect(await screen.findByText('Weekly bulletin')).toBeInTheDocument();
-    expect(screen.getByText('Issue 1732')).toBeInTheDocument();
+    expect(screen.getByText('Issue 1732')).toHaveClass('text-[var(--hhc-brand-strong)]');
     expect(screen.queryByText('2026-07-13')).not.toBeInTheDocument();
     expect(screen.getByRole('link', {name: 'Download'})).toHaveAttribute('href', '/api/assets/public/asset-1');
     expect(screen.getByRole('link', {name: 'Download'})).toHaveAttribute('download', '');

@@ -21,7 +21,7 @@ describe('WeeklyArchive', () => {
     render(<WeeklyArchive locale="en" messages={messages} />);
 
     expect((await screen.findAllByText('en title')).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Issue 1732').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Issue 1732')[0]).toHaveClass('text-[var(--hhc-brand-strong)]');
     expect(screen.queryByText('2026-07-13')).not.toBeInTheDocument();
     expect(screen.getAllByRole('link', {name: '繁中'})[0]).toHaveAttribute('href', '/zh-Hant.pdf');
     expect(screen.getAllByRole('link', {name: '繁中'})[0]).toHaveAttribute('download', '');

@@ -81,7 +81,7 @@ export function SiteHeader({locale, pathname, sessionClient}: SiteHeaderProps) {
     <AccountControlProvider client={sessionClient} labels={accountLabels}>
       <header className="site-header sticky top-0 z-10 border-b border-line/70 bg-paper/90 backdrop-blur-xl" data-mobile-hidden={!mobileChromeVisible}>
       <div className="relative flex min-h-[76px] w-full items-center gap-6 px-6 max-[767px]:min-h-[68px] max-[767px]:px-4">
-        <Link href={`/${locale}`} className="inline-flex min-h-11 min-w-max items-center gap-2.5" aria-label={t('nav.home')}>
+        <Link href={`/${locale}`} className="inline-flex min-h-11 min-w-max items-center gap-2.5">
           <span className="grid size-10 shrink-0 place-items-center max-[767px]:size-9" aria-hidden="true">
             <Image src="/assets/brand/logo.png" alt="" width={40} height={40} className="h-full w-full object-contain" />
           </span>
