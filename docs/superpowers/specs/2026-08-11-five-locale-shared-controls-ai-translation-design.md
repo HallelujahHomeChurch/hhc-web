@@ -20,6 +20,8 @@ The same work will refine the shared avatar menu and selector primitives using t
 
 CMS editors will also be able to generate missing language drafts from a saved Traditional Chinese source through an LLM API. Generated text is a reviewable preview only: it never overwrites existing translations, saves automatically, or publishes automatically.
 
+Japanese and Korean banners retain the site's handwritten brand character through locale-specific display fonts. Generated CMS translations target natural, contemporary local expression rather than literal Traditional Chinese sentence structure.
+
 ## Goals
 
 1. Keep the Admin console interface limited to `zh-Hant`, `zh-Hans`, and `en`.
@@ -31,6 +33,8 @@ CMS editors will also be able to generate missing language drafts from a saved T
 7. Remove the hero image preload warning without regressing above-the-fold image priority.
 8. Avoid adding a global text-only loading page.
 9. Publish Isaiah 49:1–3 and 49:5–6 with reviewed source text, locale-specific fallback, and publisher-compliant attribution.
+10. Preserve the handwritten banner identity in Japanese and Korean without mixed fallback glyphs or large runtime font payloads.
+11. Make generated Japanese and Korean CMS drafts natural and approachable while preserving meaning, terminology, and editorial control.
 
 ## Non-Goals
 
@@ -43,6 +47,8 @@ CMS editors will also be able to generate missing language drafts from a saved T
 - Automatically saving or publishing generated text.
 - Replacing the current authentication, publication, revision, asset, or notification service boundaries.
 - Introducing a global `loading.tsx` or client-side locale redirect page.
+- Loading Japanese or Korean banner fonts from a third-party origin at runtime.
+- Applying a casual conversational register to legal copy, account security messages, or scripture.
 
 ## Current-State Findings
 
@@ -84,6 +90,10 @@ The warning is nevertheless tied to the explicit preload lifecycle. Client navig
 ### There is no global loading page
 
 `hhc-web` has no `loading.tsx`. The bare root performs a server-side locale redirect. Existing user-visible loading copy is scoped to the weekly-paper card/archive and the OAuth callback. The repository does not contain a full-page element that renders the exact standalone text `Loading` during ordinary page navigation.
+
+### Japanese and Korean banner fonts are not defined
+
+`HomeHero` and `AboutHero` currently choose `Ma Shan Zheng` only for `zh-Hans` and send every other locale to the banner-only `ChenYuluoyan` subset. That subset contains fixed Traditional Chinese and English hero copy, not complete Japanese or Korean glyph coverage. Adding `ja` and `ko` without an explicit mapping would therefore create browser-dependent fallback glyphs and visibly mixed typography.
 
 ## Locale Model
 
@@ -156,6 +166,37 @@ Admin detection uses the same Chinese rules, recognizes English, and falls back 
 - Campaign delivery resolves the recipient’s exact locale first and English second. It must not default a Japanese or Korean recipient to Traditional Chinese.
 - Account security templates provide exact Japanese and Korean versions. English fallback remains a defensive path for malformed or future locale values, not normal `ja`/`ko` behavior.
 
+## Locale Typography and Banner Fonts
+
+Banner typography uses an exhaustive locale-to-font mapping rather than a Chinese/non-Chinese conditional:
+
+| Locale | Banner source font | Behavior |
+| --- | --- | --- |
+| `zh-Hant` | Existing `ChenYuluoyan` banner subset | Unchanged. |
+| `zh-Hans` | Existing `Ma Shan Zheng` banner subset | Unchanged. |
+| `en` | Existing `ChenYuluoyan` banner subset | Unchanged. |
+| `ja` | `Klee One` Regular | Warm, restrained pen-written character that remains mature at hero scale. |
+| `ko` | `Nanum Pen Script` Regular | Natural handwritten Hangul with the closest visual warmth to the current HHC banner identity. |
+
+The Japanese and Korean source fonts and their license notices are committed with the existing font assets. The existing deterministic subset process produces one local WOFF2 file per locale from the fixed source-controlled hero titles and subtitles. Production does not request Google Fonts or another font CDN.
+
+Subsetting is treated as a modified font build. The Korean artifact must remove the OFL Reserved Font Names—including `Nanum`, `NanumPen`, and `Naver NanumPen`—from its primary user-visible metadata and use an HHC-specific family name while retaining the original copyright and OFL notice. The build fails if a reserved primary name remains. The product design still identifies Nanum Pen Script as the source font.
+
+Each imported banner subset:
+
+- stays below the existing 250 KiB per-font static budget;
+- uses `display: swap` and `preload: false`;
+- loads only when its locale-specific class is rendered;
+- contains every glyph used by that locale's fixed banner copy, including punctuation and Latin characters;
+- falls back to the locale's system sans stack only if the font file itself fails, not because the subset omitted an approved banner glyph.
+
+Japanese and Korean retain the same hero image, color, alignment, and no-wrap headline direction. Font size and tracking are tuned per locale rather than inheriting Chinese spacing, and the approved fixed copy must not overflow at the supported 320px mobile viewport. Dynamic CMS text never uses a banner-only subset.
+
+Font sources and licenses:
+
+- [Klee One source and OFL license](https://github.com/google/fonts/tree/main/ofl/kleeone)
+- [Nanum Pen Script source and OFL license](https://github.com/google/fonts/tree/main/ofl/nanumpenscript)
+
 ## Scripture Editions and Rights
 
 The About history section displays Isaiah 49:1–3 and 49:5–6. These passages are source-controlled product content, not CMS translation output.
@@ -222,6 +263,7 @@ Rights sources:
 - Add forward-only PostgreSQL migrations that replace three-value locale checks with five-value checks.
 - Continue publishing exact per-locale public projections and preserve the existing requested-locale-to-`zh-Hant` public read fallback.
 - Add CMS translation-preview endpoints and the server-side LLM adapter.
+- Keep a versioned shared translation prompt with explicit Japanese and Korean voice rules.
 - Use existing `cms:write` authorization for translation previews; this is an editing operation and does not grant publish rights.
 - Write translation-generation audit events without storing draft content in logs.
 
@@ -241,6 +283,7 @@ Rights sources:
 - Preserve server-side root locale redirect behavior.
 - Consume the redesigned shared menu and selector.
 - Replace hero `preload` with eager, high-priority image loading.
+- Add a local licensed `Klee One` subset and a renamed, Nanum Pen Script-derived subset through the existing subset and static-budget workflow.
 - Add the reviewed Japanese Isaiah text, Terms copyright section, and page-local About notices; render the English NIV block for Korean until the Korean publication gate passes.
 - Do not add a global loading page.
 
@@ -446,10 +489,26 @@ The provider request must:
 
 - treat source content as untrusted text, not instructions;
 - request a typed JSON result;
+- translate meaning into natural, contemporary language used by local readers instead of preserving Traditional Chinese word order;
 - preserve paragraph breaks, URLs, names, scripture references, and HHC terminology;
+- preserve facts, theological meaning, and the author's intent without adding claims or promotional language;
 - forbid commentary, explanations, Markdown fences, or fields outside the schema;
 - use a versioned prompt stored with the backend code;
 - run under an overall timeout shorter than the gateway upstream timeout.
+
+### Translation voice and register
+
+“Natural” means warm, clear, and locally idiomatic, not slang-heavy or loose with meaning. The prompt selects register by target locale and field type:
+
+- Japanese body copy defaults to natural modern `です・ます` prose. Titles and short labels use concise forms when that reads more naturally. Avoid Chinese sentence order, excessive nominalization, unnecessary honorifics, and word-for-word translation.
+- Korean approachable public copy defaults to consistent `해요체`. Formal notices or historical/factual passages may use `합니다체` when the content type calls for it, but one field never mixes sentence-ending styles. Avoid translated-Chinese syntax and unnecessarily bureaucratic vocabulary.
+- Titles remain concise; summaries read as natural introductions; image alternative text stays neutral and descriptive rather than promotional.
+- Established Japanese and Korean Christian terminology is used consistently. Names, organizations, dates, URLs, and scripture references remain source-faithful.
+- The model does not add emoji, slang, commentary, new facts, calls to action, or theological interpretation absent from the source.
+
+Static product copy, legal documents, account security templates, and scripture remain human-authored or human-reviewed source files outside this CMS translation prompt. Product and security copy still follows natural locale-appropriate wording with the precision required by the message; legal copy keeps its appropriate formal register.
+
+Before a prompt version is enabled in production, a fluent reviewer evaluates at least one representative record from each supported CMS module in both Japanese and Korean. Each sample must pass meaning preservation, naturalness, register consistency, and terminology review. Exact-output snapshot tests are not used for subjective prose; contract tests cover the structured fields and safety rules, while the Admin preview remains the final editorial gate.
 
 ### Validation and overwrite protection
 
@@ -558,7 +617,7 @@ Every repository uses its own branch, PR, CI, merge, release, and live smoke tes
    - keep console UI at three locales;
    - expose five content locales and translation-preview workflow.
 4. **`hhc-web`**
-   - add Japanese/Korean routes, copy, metadata, legal pages, selector, existing CMS fallback integration, scripture presentation, and hero loading fix.
+   - add Japanese/Korean routes, copy, metadata, legal pages, selector, local handwritten banner subsets, existing CMS fallback integration, scripture presentation, and hero loading fix.
 5. **`account-fe`**
    - add Japanese/Korean UI and consume shared controls/locales.
 6. **Content enablement**
@@ -594,6 +653,14 @@ Backend changes must be compatible with the existing three-locale frontends befo
 - The About notice remains a single muted footer paragraph with no card, heading, icon, panel, or unrelated-page placement on desktop and mobile.
 - Korean written permission is required before switching from NIV fallback to `개역개정`, not before launching the Korean route.
 
+### Locale typography
+
+- Japanese banners use the local `Klee One` subset; Korean banners use a local Nanum Pen Script-derived subset with an HHC-specific primary family name.
+- Approved Japanese and Korean hero strings render without missing or mixed fallback glyphs.
+- No production request is made to Google Fonts or another font CDN.
+- Each banner subset remains below 250 KiB, is not globally preloaded, and passes desktop and 320px no-overflow checks.
+- Dynamic CMS content remains on the locale system sans stack.
+
 ### Account and messaging
 
 - Registration, OAuth onboarding, email verification, password reset, and OAuth link confirmation preserve `ja` and `ko`.
@@ -612,6 +679,9 @@ Backend changes must be compatible with the existing three-locale frontends befo
 - Save Draft is still required; Publish remains separate.
 - Logs and error reporting contain no source or generated content.
 - Audit records contain metadata but no translated text.
+- Japanese previews use natural contemporary Japanese and consistent field-appropriate register rather than literal Chinese syntax.
+- Korean previews use natural contemporary Korean with consistent `해요체` or context-required `합니다체`, never a mixture within one field.
+- Representative Japanese and Korean samples pass fluent human review for meaning, naturalness, register, and terminology before the prompt version is released.
 
 ### Shared controls
 
@@ -645,7 +715,8 @@ Backend changes must be compatible with the existing three-locale frontends befo
 | CMS fallback creates accidental mixed-language fields or false completion | Keep the existing whole-projection `zh-Hant` fallback, preserve the resolved locale in rendered `lang`, and calculate Admin completion from exact locales only. |
 | Scripture is mistranslated or published without rights | Use fixed reviewed editions, exclude scripture from LLM input, require two-person text comparison, apply the Korean NIV fallback, and gate each edition switch on attribution/permission evidence. |
 | Bible copyright wording overwhelms the About design | Keep the short source beside the quote, put complete edition details in Terms, and limit required page-local wording to one muted SiteFooter paragraph for the edition rendered. |
-| LLM output changes meaning, names, or scripture references | Preserve a strict prompt, validate structure, label output as generated, and require human review/save/publish. |
+| Japanese/Korean banner glyphs fall back, violate a reserved name, or add excessive font cost | Use explicit local subsets, rename the Nanum-derived artifact, verify complete fixed-copy coverage, preserve the 250 KiB per-font budget, and disable global preload. |
+| LLM output is literal, stiff, or changes meaning | Use locale- and field-specific register rules, validate structure, run fluent-speaker sample review, label output as generated, and require human review/save/publish. |
 | Draft content leaks through provider/logs | Server-only credentials, approved provider retention, no content logging, bounded audit metadata. |
 | Translation requests become costly or slow | Explicit user action, missing-only targets, size/rate limits, max concurrency two, per-target timeouts and metrics. |
 | Schema rollback rejects persisted new locales | Keep migrations forward-compatible and do not remove locale values on rollback. |
@@ -662,6 +733,8 @@ Backend changes must be compatible with the existing three-locale frontends befo
 - LLM output: preview only, human-reviewed, never auto-saved or auto-published.
 - Security emails: reviewed Japanese/Korean templates, no runtime LLM.
 - Public CMS fallback: preserve the existing requested-locale-to-`zh-Hant` whole-projection fallback; Admin completeness remains exact locale.
+- Banner typography: local `Klee One` subset for Japanese and a renamed Nanum Pen Script-derived subset for Korean; no runtime font CDN.
+- CMS translation voice: natural contemporary local expression with field-appropriate register, source-faithful meaning, and fluent human review before prompt release.
 - Scripture: Japanese `聖書 新共同訳`; Korean scripture-only fallback to English NIV until approved `성경전서 개역개정판` text is available; never LLM-translated.
 - Bible copyright presentation: short source beside the About quotation, one required muted page-local footer paragraph, and complete edition details in Terms.
 - Hero image: eager and high priority, no explicit preload.
