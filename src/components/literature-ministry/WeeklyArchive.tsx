@@ -25,7 +25,12 @@ type WeeklyArchiveMessages = {
   loadError: string;
   retry: string;
   empty: string;
-  versionLabels: Record<Locale, string>;
+};
+
+const versionLabels: Record<Locale, string> = {
+  'zh-Hant': '繁中',
+  'zh-Hans': '简中',
+  en: 'English'
 };
 
 type WeeklyArchiveProps = {locale: Locale; messages: WeeklyArchiveMessages};
@@ -85,7 +90,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
               {latestIssueLabel ? <p className="mt-3 text-[21px] font-semibold text-primary">{latestIssueLabel}</p> : null}
               <h3 id="latest-weekly-title" className="mt-1 text-[18px] font-semibold text-ink">{latestVersion.title}</h3>
               {latestVersion.subtitle ? <p className="mt-1 text-[15px] leading-relaxed text-ink">{latestVersion.subtitle}</p> : null}
-              <VersionLinks issue={latestIssue} messages={messages} className="mt-5" />
+              <VersionLinks issue={latestIssue} className="mt-5" />
             </>
           ) : state === 'error' ? (
             <div className="mt-4 grid justify-items-start gap-4">
@@ -114,7 +119,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
                   <h4 className="text-[18px] font-semibold text-ink">{version.title}</h4>
                   {version.subtitle ? <p className="mt-1 text-[15px] leading-relaxed text-ink">{version.subtitle}</p> : null}
                 </div>
-                <VersionLinks issue={issue} messages={messages} />
+                <VersionLinks issue={issue} />
               </article>
             ) : null;
           }) : state === 'ready' ? <p className="text-muted">{messages.empty}</p> : null}
@@ -137,10 +142,10 @@ function localizedVersion(issue: WeeklyIssue | undefined, locale: Locale) {
   return issue?.versions.find((version) => version.locale === locale) ?? issue?.versions[0];
 }
 
-function VersionLinks({issue, messages, className = ''}: {issue: WeeklyIssue; messages: WeeklyArchiveMessages; className?: string}) {
+function VersionLinks({issue, className = ''}: {issue: WeeklyIssue; className?: string}) {
   return (
     <div className={`flex justify-end gap-2.5 max-[860px]:grid max-[860px]:grid-flow-col max-[860px]:auto-cols-fr ${className}`}>
-      {issue.versions.map((version) => <DownloadButton key={version.locale} href={version.href} label={messages.versionLabels[version.locale]} variant="outline" />)}
+      {issue.versions.map((version) => <DownloadButton key={version.locale} href={version.href} label={versionLabels[version.locale]} variant="outline" />)}
     </div>
   );
 }

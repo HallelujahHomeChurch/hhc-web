@@ -67,7 +67,7 @@
   },
   "news": {
     "title": "最新消息",
-    "heroSubtitle": "教会近况、活动资讯与重要公告。",
+    "heroSubtitle": "教会近况、活动资讯与重要公告",
     "allNews": "所有消息",
     "description": "查看哈利路亚家教会最新消息与活动资讯。",
     "empty": "目前尚无最新消息。",
@@ -166,12 +166,7 @@
     "downloading": "准备下载…",
     "loadError": "周报暂时无法加载",
     "retry": "重试",
-    "empty": "目前尚未发布周报。",
-    "versionLabels": {
-      "zh-Hant": "繁体",
-      "zh-Hans": "简体",
-      "en": "英文"
-    }
+    "empty": "目前尚未发布周报。"
   },
   "privacyPolicy": {
     "heroTitle": "隐私权保护政策",

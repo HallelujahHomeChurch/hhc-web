@@ -1,6 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import zhHans from './locales/zh-Hans.json';
 import zhHant from './locales/zh-Hant.json';
+import en from './locales/en.json';
 import {defaultLocale, detectLocale, getLocaleCookie, getStoredLocale, localeLabels, locales} from './locales';
 
 describe('locales', () => {
@@ -30,16 +31,15 @@ describe('locales', () => {
     expect(getLocaleCookie('en', '.alive.org.tw')).toContain('hhc_locale=en; Max-Age=31536000; Path=/; SameSite=Lax; Domain=.alive.org.tw');
   });
 
-  it('uses concise weekly download labels in Chinese locales', () => {
-    expect(zhHant.literatureMinistry.versionLabels).toEqual({
-      'zh-Hant': '繁體',
-      'zh-Hans': '簡體',
-      en: '英文'
-    });
-    expect(zhHans.literatureMinistry.versionLabels).toEqual({
-      'zh-Hant': '繁体',
-      'zh-Hans': '简体',
-      en: '英文'
-    });
+  it('keeps weekly file-language labels out of translated messages', () => {
+    expect(zhHant.literatureMinistry).not.toHaveProperty('versionLabels');
+    expect(zhHans.literatureMinistry).not.toHaveProperty('versionLabels');
+    expect(en.literatureMinistry).not.toHaveProperty('versionLabels');
+  });
+
+  it('keeps latest-news banner subtitles free of redundant punctuation', () => {
+    expect(zhHant.news.heroSubtitle).toBe('教會近況、活動資訊與重要公告');
+    expect(zhHans.news.heroSubtitle).toBe('教会近况、活动资讯与重要公告');
+    expect(en.news.heroSubtitle).toBe('Church updates, event information, and important announcements');
   });
 });

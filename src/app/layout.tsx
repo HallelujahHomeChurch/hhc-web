@@ -1,5 +1,5 @@
 import type {Metadata} from 'next';
-import {chenyuLuoyanBanner, inter, maShanZheng, notoSansSC, notoSansTC} from './fonts';
+import {chenyuLuoyanBanner, inter, maShanZheng} from './fonts';
 import {defaultLocale} from '@/i18n/locales';
 import {getThemeBootstrapScript} from '@hallelujahhomechurch/preferences';
 import {siteConfig} from '@/lib/site';
@@ -32,7 +32,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
       <head>
         <script dangerouslySetInnerHTML={{__html: getThemeBootstrapScript()}} />
       </head>
-      <body className={`${inter.variable} ${notoSansTC.variable} ${notoSansSC.variable} ${chenyuLuoyanBanner.variable} ${maShanZheng.variable}`}>{children}</body>
+      <body className={`${inter.variable} ${chenyuLuoyanBanner.variable} ${maShanZheng.variable}`}>{children}</body>
     </html>
   );
 }
