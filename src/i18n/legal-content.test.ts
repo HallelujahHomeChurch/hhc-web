@@ -50,4 +50,16 @@ describe('legal content', () => {
     expect(privacy).toMatch(/瀏覽器通知|浏览器通知|browser notification/);
     expect(privacy).toMatch(/取消訂閱|取消订阅|unsubscribe/);
   });
+
+  it.each([
+    ['zh-Hant', zhHant],
+    ['zh-Hans', zhHans],
+    ['en', en]
+  ])('discloses privacy-safe frontend error monitoring in %s', (_locale, messages) => {
+    const privacy = JSON.stringify(messages.privacyPolicy);
+
+    expect(privacy).toContain('Sentry');
+    expect(privacy).toMatch(/Cookie|cookie/);
+    expect(privacy).toMatch(/授權|授权|authorization/);
+  });
 });
