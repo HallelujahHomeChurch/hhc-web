@@ -197,7 +197,7 @@
     "heroTitle": "Privacy Policy",
     "heroSubtitle": "",
     "updatedAtLabel": "Last updated",
-    "updatedAt": "August 8, 2026",
+    "updatedAt": "August 10, 2026",
     "intro": "This policy explains how the Hallelujah Home Church website and HHC Account services collect, use, retain, and protect personal information. Please read it before using the website or creating an account.",
     "sections": [
       {
@@ -214,6 +214,7 @@
           "When you create or use an HHC Account, we process your email address, name, profile image, email-verification status, password hash, and security data such as multi-factor authentication secrets and backup codes. We do not store your plaintext password.",
           "To maintain sign-in and account security, we process device identifiers, browser and operating-system details, IP addresses, sign-in and activity times, sessions, and security-event records.",
           "When you browse this website, servers or third-party services may generate necessary technical data, such as IP address, browser information, device type, access time, browsing and click records, and error logs.",
+          "We use Sentry to detect frontend errors and performance problems. We send only de-identified error, browser, device, page-path, release, and trace data, and do not intentionally send cookies, authorization headers, form contents, or complete URL query parameters.",
           "When you choose to receive newsletters or browser notifications, we process your language, consent and subscription status, together with the email address or encrypted browser push subscription needed to provide that service."
         ]
       },
