@@ -32,6 +32,7 @@
 - Do not log cookies, tokens, passwords, email addresses, request bodies, signed URLs, or full query strings.
 - Treat stdout JSON in Log Analytics as the only application-log pipeline, Azure native metrics as the platform-metric source, OpenTelemetry/Application Insights as the backend-trace pipeline, Sentry as the browser-error/Web-Vitals view, and owning databases as the audit source.
 - Do not export application logs through OpenTelemetry or install a second Application Insights SDK beside the OpenTelemetry SDK.
+- Use one correlation contract: a shared 32-hex trace ID across sampled Sentry browser spans and Azure backend traces, a gateway-issued request ID for every HTTP request, and stable domain IDs for queued or long-running workflows.
 - Keep CSP in Report-Only until organic reports are clean for 48-72 hours and the unrelated Next `NoFallbackError` bursts are understood.
 - Preserve React Aria keyboard navigation, outside click, Escape, focus restore, and visible keyboard focus.
 - Preserve queue and ClamAV scanning; do not bypass scanning or replace bounded polling with WebSocket infrastructure.
@@ -115,7 +116,7 @@
 - [ ] Enable Sentry server-side default data scrubbing, IP-address scrubbing, and explicit sensitive-field rules as a second layer.
 - [ ] Disable Session Replay for Account and Admin; leave it disabled on public web until a separate privacy review approves masked replay.
 - [ ] Keep Sentry server performance tracing disabled; start browser performance tracing at 10% while retaining error events.
-- [ ] Do not propagate Sentry tracing headers to HHC APIs. Capture the response `X-HHC-Request-ID` as a sanitized Sentry breadcrumb/tag for cross-system lookup.
+- [ ] Propagate `sentry-trace` only to approved HHC API routes. Capture the response `X-HHC-Request-ID` as a sanitized Sentry breadcrumb/tag so unsampled and partial traces remain diagnosable.
 - [ ] Add only the exact regional ingest origin from each project DSN to CSP `connect-src`; do not use a wildcard Sentry origin.
 - [ ] Keep CSP reports in Log Analytics rather than duplicating them into Sentry; accept a bounded Reporting API batch, emit one sanitized JSON record per violation, and retain no query values.
 - [ ] Publish the updated privacy-policy disclosure before enabling production DSNs.
@@ -129,7 +130,9 @@
 
 - [ ] Standardize JSON logs with `service`, `environment`, `release`, `request_id`, `trace_id`, route template, method, status, duration, and stable error code.
 - [ ] Generate a new bounded `X-HHC-Request-ID` at every public gateway entry, pass it to every upstream, include it in access logs, return it to callers, and expose it through CORS where required.
-- [ ] Ignore external `X-HHC-Request-ID`, `traceparent`, `tracestate`, `sentry-trace`, and `baggage` headers at the public boundary; validate or create W3C trace context at the first backend service and propagate it only across trusted service-to-service calls.
+- [ ] Ignore external `X-HHC-Request-ID`, `traceparent`, and `tracestate` at the public boundary. On approved frontend API routes only, strictly validate the untrusted `sentry-trace` header, convert its trace ID, parent span ID, and sampled flag into W3C `traceparent`, then remove Sentry-specific tracing headers before proxying upstream.
+- [ ] If `sentry-trace` is absent or invalid, let the first instrumented backend service create a new W3C trace. Never use trace context for authentication, authorization, rate limiting, or other security decisions.
+- [ ] Preserve the W3C trace ID across trusted service-to-service HTTP and messaging calls; attach stable `asset_id`, `bulletin_id`, `notification_id`, or equivalent domain IDs where asynchronous work may outlive or split a trace.
 - [ ] Add regression tests for newline injection, oversized correlation values, and malformed trace headers.
 - [ ] Remove duplicate forwarded-IP fields and raw User-Agent values from routine access logs; keep normalized browser/OS or full network context only for explicitly documented security events.
 - [ ] Do not emit raw user/device identifiers in operational logs; use a stable non-reversible correlation value only where diagnosis requires it.
@@ -148,7 +151,7 @@
 - [ ] Instrument the remaining high-value flows only after the staging flow is verified: account to Redis/PostgreSQL, CMS to asset, and engagement to notification.
 - [ ] Capture HTTP and supported PostgreSQL, Redis, Blob, and messaging dependency spans without query text or payload data.
 - [ ] Use a parent-based trace-ID-ratio sampler at the first instrumented backend service; downstream services honor the parent sampled flag.
-- [ ] Use 100% tracing only during a time-bounded staging verification, then start production at 5-10% through environment configuration and review ingestion after seven days.
+- [ ] Use 100% tracing only during a time-bounded staging verification. Start Sentry browser tracing and backend root sampling at the same 10% production rate, preserve incoming sampled flags, and review ingestion after seven days.
 - [ ] Add one Azure Workbook for traffic, 5xx ratio, p95 latency, restart count, replica count, queue age, scan latency, and notification delivery.
 - [ ] Inventory existing alerts first, including owner, action group, evaluation frequency, runbook, and estimated monthly cost; reuse `RecommendedAlertRules-AG-1` and remove or avoid duplicates.
 - [ ] Initially alert only on public unavailability, sustained 5xx, unusable JWKS, and scan backlog; dashboard CPU/memory/restart/latency signals until measured thresholds justify paging.
@@ -175,7 +178,8 @@
 ### Task 10: Verification, Runbooks, And Delivery
 
 - [ ] Verify Sentry source-map resolution with a controlled, non-sensitive frontend exception in staging.
-- [ ] Follow one request from a Sentry event breadcrumb to the gateway request ID and then to the backend trace ID.
+- [ ] Verify a sampled browser request has the same 32-hex trace ID in Sentry and Application Insights, with the gateway request ID available in both systems.
+- [ ] Verify an unsampled request remains traceable through `X-HHC-Request-ID`, and one queued workflow remains traceable through its stable domain ID.
 - [ ] Verify one login, one bulletin replacement/scan, and one notification flow end to end.
 - [ ] Confirm logs and traces contain no raw credentials, user content, email, signed URLs, or query values.
 - [ ] Confirm CSP reports remain queryable after the logging changes.
@@ -203,5 +207,5 @@
 - Replacing an existing bulletin version has visible bounded progress and completes without an indefinite pending state.
 - Public LCP improvement is measured from three comparable production runs.
 - Frontend exceptions resolve to the deployed commit and source line without exposing PII.
-- Logs, metrics, and traces cover the three production observability pillars; Sentry events and backend traces are correlated through the gateway-issued request ID.
+- Logs, metrics, and traces cover the three production observability pillars; sampled Sentry browser spans and Azure backend traces share a trace ID, while request and domain IDs provide fallback correlation.
 - Operational telemetry remains inside the documented initial cost range or has an explained, approved variance.
