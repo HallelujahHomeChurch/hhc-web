@@ -30,12 +30,14 @@ CMS editors will also be able to generate missing language drafts from a saved T
 6. Make the shared avatar menu and selector visually consistent, accessible, compact, and reusable by all three frontends.
 7. Remove the hero image preload warning without regressing above-the-fold image priority.
 8. Avoid adding a global text-only loading page.
+9. Publish Isaiah 49:1–3 and 49:5–6 from reviewed, locally familiar Bible editions with correct attribution and permission.
 
 ## Non-Goals
 
 - Translating weekly-paper PDF contents. Editors continue to upload one PDF per content locale.
 - Generating account security emails with an LLM at send time.
 - Automatically translating static product copy, privacy policies, or terms at runtime. Those translations remain reviewed source files.
+- Translating or paraphrasing canonical scripture with an LLM.
 - Automatically translating campaign/newsletter copy in the first CMS translation release. Campaign schemas and editors become five-locale capable, but LLM assistance starts with website CMS text and bulletin metadata.
 - Creating a translation microservice.
 - Automatically saving or publishing generated text.
@@ -104,6 +106,24 @@ These names express ownership at call sites. No consumer should import an unqual
 
 Generated API clients may retain a domain-specific name such as `BulletinLocale` or `ContentLocale`, but its enum must contain the five canonical content values.
 
+### Locale metadata registry
+
+`frontend-platform` owns the frontend locale metadata used by selectors, CMS tabs, and locale-aware route generation:
+
+```ts
+type LocaleMetadata = {
+  code: ProductLocale
+  shortLabel: string
+  nativeLabel: string
+}
+```
+
+Consumer pages must derive locale options from the approved metadata and locale sets instead of maintaining page-local arrays. Admin filters that metadata through `adminUiLocales` for console chrome and uses the generated API `ContentLocale` for CMS content.
+
+Generated API clients remain authoritative for backend content-locale enums. Backend services retain explicit allowlists and database constraints because locale validation is a trust-boundary concern, not frontend presentation metadata.
+
+A contract test verifies that the frontend content registry and generated API `ContentLocale` contain the same values wherever they must match. Adding a future locale still requires reviewed product copy, legal/security templates, content, and backend migrations; the registry prevents repetitive UI wiring and accidental omissions, not those deliberate release gates.
+
 ### Detection behavior
 
 Product detection evaluates browser languages in order:
@@ -131,6 +151,43 @@ Admin detection uses the same Chinese rules, recognizes English, and falls back 
 - Japanese and Korean public routes are enabled only after essential static copy and initial CMS translations are ready.
 - Campaign delivery resolves the recipient’s exact locale first and English second. It must not default a Japanese or Korean recipient to Traditional Chinese.
 - Account security templates provide exact Japanese and Korean versions. English fallback remains a defensive path for malformed or future locale values, not normal `ja`/`ko` behavior.
+
+## Scripture Editions and Rights
+
+The About history section displays Isaiah 49:1–3 and 49:5–6. These passages are source-controlled product content, not CMS translation output.
+
+### Selected editions
+
+| Locale | Edition | Decision basis |
+| --- | --- | --- |
+| `en` | New International Version, 2011 text (`NIV®`) | Preserve the edition already identified in the current site, with the publisher-required full attribution. |
+| `ja` | 日本聖書協会『聖書 新共同訳』 | The Japan Bible Society still identifies it as the most-read Bible in Japan. The newer 2018 `聖書協会共同訳` aims to become the next standard but is not the documented current majority edition. |
+| `ko` | 대한성서공회 『성경전서 개역개정판』 (1998) | The Korean Bible Society identifies it as the Korean church's worship Bible. The 2024 `새한글성경` is positioned for the next generation, not as the current worship default. |
+
+The Japanese evangelical alternative `聖書 新改訳2017` is intentionally not the default because this decision optimizes for the widest current national familiarity. It can replace `新共同訳` only through an explicit pastoral/content decision and a fresh rights review.
+
+Sources:
+
+- [Japan Bible Society: 新共同訳 is the most-read Bible in Japan](https://www.bible.or.jp/online.html)
+- [Japan Bible Society: 2018 聖書協会共同訳 aims to be the next standard](https://www.bible.or.jp/online/jbsiv.html)
+- [Korean Bible Society: 개역개정판 is the Korean church worship Bible](https://bible.bskorea.or.kr/about_us)
+
+### Text integrity and publication gate
+
+- A human editor copies Isaiah 49:1–3 and 49:5–6 verbatim from an authorized source and performs a second-person comparison before merge.
+- Scripture text, edition labels, and copyright notices are excluded from LLM translation requests and cannot be regenerated through CMS translation assistance.
+- The page preserves the publisher's wording and required attribution; line wrapping may change responsively, but words, punctuation, and verse scope may not be paraphrased or silently truncated.
+- Japanese publication must identify `日本聖書協会『聖書 新共同訳』`, stay within the Japan Bible Society quotation limit, and report the production URL to its copyright contact before release.
+- Korean publication is blocked until the Korean Bible Society grants written permission; its official guidance requires permission even for non-commercial partial quotation. Record the approval reference and required attribution in the release evidence.
+- English publication must add Biblica's full NIV copyright and trademark notice on the page. The short `NIV` suffix alone is not sufficient for a public web page.
+- If any permission is unavailable, the affected locale route does not publish substitute machine-translated scripture. It remains gated until an approved edition and exact text are available.
+
+Rights sources:
+
+- [Japan Bible Society scripture copyright policy](https://www.bible.or.jp/read/bible_copyright.html)
+- [Korean Bible Society copyright notice](https://bible.bskorea.or.kr/copyright_notice)
+- [Korean Bible Society permission FAQ](https://www.bskorea.or.kr/bbs/board.php?bo_table=copyright_faq&device=mobile&wr_id=8)
+- [Biblica NIV permissions](https://www.biblica.com/permissions/)
 
 ## Repository Responsibilities
 
@@ -167,6 +224,7 @@ Admin detection uses the same Chinese rules, recognizes English, and falls back 
 - Preserve server-side root locale redirect behavior.
 - Consume the redesigned shared menu and selector.
 - Replace hero `preload` with eager, high-priority image loading.
+- Add the approved Japanese and Korean Isaiah text and edition attribution only after the scripture publication gate passes.
 - Do not add a global loading page.
 
 ### `account-fe`
@@ -488,6 +546,7 @@ Every repository uses its own branch, PR, CI, merge, release, and live smoke tes
    - add Japanese/Korean UI and consume shared controls/locales.
 6. **Content enablement**
    - seed/review essential Japanese and Korean CMS content;
+   - obtain and record scripture quotation approval, add exact reviewed Isaiah text, and verify all edition notices;
    - enable public discovery/alternate URLs only when the essential locale experience is complete.
 
 Backend changes must be compatible with the existing three-locale frontends before consumer releases. Frontends must not send `ja` or `ko` until the relevant backend deployment and database migration are live.
@@ -509,6 +568,9 @@ Backend changes must be compatible with the existing three-locale frontends befo
 - Five-locale content can be created, revised, published, queried, unpublished, restored, and deleted.
 - Japanese and Korean bulletin PDFs can be uploaded, scanned, granted, published, downloaded, revoked, and replaced.
 - A locale with no published translation does not silently display a different language.
+- Japanese Isaiah uses `聖書 新共同訳`; Korean Isaiah uses `성경전서 개역개정판`.
+- Isaiah 49:1–3 and 49:5–6 match the authorized source character-for-character and are never LLM-generated.
+- Japanese URL reporting, Korean written permission, and NIV attribution are present in release evidence before the affected routes go live.
 
 ### Account and messaging
 
@@ -559,6 +621,7 @@ Backend changes must be compatible with the existing three-locale frontends befo
 | A shared locale tuple leaks Japanese/Korean into Admin UI | Use explicit locale types and separate Admin cookie/detection. |
 | Frontend ships before backend accepts new locale | Release backend compatibility first and smoke contracts before consumer rollout. |
 | Japanese/Korean pages mix languages | Use exact content projections and enable routes after initial content is ready. |
+| Scripture is mistranslated or published without rights | Use fixed reviewed editions, exclude scripture from LLM input, require two-person text comparison, and block release on attribution/permission evidence. |
 | LLM output changes meaning, names, or scripture references | Preserve a strict prompt, validate structure, label output as generated, and require human review/save/publish. |
 | Draft content leaks through provider/logs | Server-only credentials, approved provider retention, no content logging, bounded audit metadata. |
 | Translation requests become costly or slow | Explicit user action, missing-only targets, size/rate limits, max concurrency two, per-target timeouts and metrics. |
@@ -575,5 +638,6 @@ Backend changes must be compatible with the existing three-locale frontends befo
 - LLM integration owner: `hhc-web-api`.
 - LLM output: preview only, human-reviewed, never auto-saved or auto-published.
 - Security emails: reviewed Japanese/Korean templates, no runtime LLM.
+- Scripture: Japanese `聖書 新共同訳`, Korean `성경전서 개역개정판`; exact human-reviewed text with rights evidence, never LLM-translated.
 - Hero image: eager and high priority, no explicit preload.
 - Global loading page: not added.
