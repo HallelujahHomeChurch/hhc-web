@@ -25,6 +25,7 @@ describe('SiteHeader', () => {
     );
 
     expect(screen.getByText('哈利路亞家教會')).toBeInTheDocument();
+    const brandLink = screen.getByRole('link', {name: /哈利路亞家教會/});
     const desktopNavigation = screen.getByRole('navigation', {name: '主要導覽'});
     const aboutLink = within(desktopNavigation).getByRole('link', {name: '關於我們'});
     const newsLinks = screen.getAllByRole('link', {name: '最新消息'});
@@ -36,6 +37,7 @@ describe('SiteHeader', () => {
     expect(aboutLink).toHaveAttribute('aria-current', 'page');
     expect(aboutLink).toHaveAttribute('data-active', 'true');
     expect(await screen.findByRole('link', {name: '登入'})).toBeInTheDocument();
+    expect(brandLink).not.toHaveAttribute('aria-label');
     expect(aboutLink.className).toContain('font-semibold');
     expect(aboutLink.className).not.toContain('font-extrabold');
     expect(aboutLink.className).toContain('hover:text-primary');

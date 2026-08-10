@@ -22,4 +22,10 @@ describe('RootLayout', () => {
     expect(styles).toContain('"PingFang SC"');
     expect(styles).not.toContain('--font-noto-sans');
   });
+
+  it('does not preload locale-specific banner fonts globally', () => {
+    const fonts = readFileSync('src/app/fonts.ts', 'utf8');
+
+    expect(fonts.match(/preload: false/g)).toHaveLength(3);
+  });
 });

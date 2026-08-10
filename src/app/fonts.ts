@@ -11,7 +11,7 @@ export const inter = Inter({
 
 export const maShanZheng = localFont({
   display: 'swap',
-  preload: true,
+  preload: false,
   src: '../assets/fonts/ma-shan-zheng/MaShanZheng-HHC-Banners.woff2',
   variable: '--font-ma-shan-zheng',
   weight: '400'
@@ -19,7 +19,7 @@ export const maShanZheng = localFont({
 
 export const chenyuLuoyanBanner = localFont({
   display: 'swap',
-  preload: true,
+  preload: false,
   src: '../assets/fonts/chenyuluoyan/ChenYuluoyan-HHC-Banners.woff2',
   variable: '--font-chenyuluoyan',
   weight: '100 900'
