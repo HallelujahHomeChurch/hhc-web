@@ -49,8 +49,10 @@
 - [ ] Use primary-soft hover for normal actions and danger-soft hover for sign out; add a separator before sign out.
 - [ ] Replace external menu-item focus outlines with an accessible inset focus treatment.
 - [ ] Add light/dark, pointer, keyboard, Escape, outside-click, and focus-restore component tests.
+- [ ] Extend the existing CMS client request methods with an optional `AbortSignal` for create-session and complete/attach calls so Task 5 does not require a second shared-package release.
+- [ ] Merge through CI, publish one new immutable package version, and verify the package registry before updating consumers. Pin the exact version and frozen lockfile in `hhc-web`, `account-fe`, and `admin-fe`; rollback by restoring the previous pinned version.
 
-**Acceptance:** Footer notification, YouTube, and Facebook controls are equal 44x44 circles; account-menu rows have identical geometry and sign out differs only by semantic color and separator.
+**Acceptance:** Footer notification, YouTube, and Facebook controls are equal 44x44 circles; account-menu rows have identical geometry and sign out differs only by semantic color and separator. All three consumers install the same published package version with frozen lockfiles.
 
 ### Task 2: Account Copy, Title, And Menu Integration
 
@@ -69,7 +71,8 @@
 - [ ] Remove the redundant locale-specific `versionLabels` messages and test all three site locales.
 - [ ] Remove the final punctuation from all three latest-news banner subtitles.
 - [ ] Replace Noto Sans TC/SC body webfonts with the system CJK sans stack.
-- [ ] Generate a local Simplified Chinese display-font WOFF2 subset containing only fixed banner glyphs; keep the existing Traditional display subset.
+- [ ] Obtain the official Simplified Chinese display-font source and license, commit the required license notice, then generate a deterministic local WOFF2 subset containing only fixed banner glyphs; keep the existing Traditional display subset.
+- [ ] Do not block removal of the Noto body webfonts if the Simplified display-font source or license is not ready; retain the current fallback for that one display string.
 - [ ] Keep Inter for Latin content and avoid subsetting dynamic CMS body content.
 - [ ] Re-run three mobile Lighthouse samples and record the median in `docs/performance-baseline.md`.
 
@@ -92,22 +95,23 @@
 
 ### Task 5: Bulletin Replacement Progress And Scan Latency
 
-**Repositories:** `admin-fe`, `asset-api`, `hhc-web-api`
+**Repositories:** `frontend-platform`, `admin-fe`, `asset-api`, `hhc-web-api`
 
 - [ ] Display explicit upload stages: preparing file, uploading, attaching, and waiting for security scan.
 - [ ] Add an AbortController timeout of two minutes to the signed Blob upload and 15 seconds to completion/attachment requests.
 - [ ] Preserve the selected file and localized metadata after a retryable failure.
 - [ ] Close the upload dialog after attachment succeeds; show scan status in the locale row with `通常約 1 分鐘` guidance.
 - [ ] Keep bounded status polling and expose retry only for failed or timed-out states.
-- [ ] Add a correlation ID across create-session, Blob upload, complete, attach, and scan logs without logging the signed URL or private filename.
+- [ ] Use the existing `asset_id` across create-session, Blob upload, complete, attach, and scan logs without logging the signed URL or private filename; do not add another database correlation field.
 - [ ] Reduce the asset scan job queue polling interval from 30 seconds to 10 seconds and compare queue pickup latency before and after deployment.
-- [ ] Add a regression test that replaces the same locale twice, including retirement of an already-published version.
+- [ ] Keep existing backend replacement/grant-retirement coverage. Add the missing Admin flow regression for replacing the same locale twice, Blob timeout, completion retry, dialog closure, pending/clean scan states, and retaining the selected file/title after a retryable failure.
 
 ### Task 6: Frontend Sentry Error Monitoring
 
 **Repositories:** `hhc-web`, `account-fe`, `admin-fe`
 
 - [ ] Create separate Sentry projects for public web, account, and admin under the HHC organization.
+- [ ] Add CSP Report-Only baselines to Account and Admin before enabling their Sentry DSNs; record current first-party violations and add only each project's exact regional ingest origin.
 - [ ] Capture runtime exceptions, React/Next errors, failed-request breadcrumbs, release, environment, and Git commit SHA.
 - [ ] Use `SENTRY_RELEASE=${GITHUB_SHA}` and upload source maps from the same production build that creates the deployed image; inject the organization token as a BuildKit secret, then remove source maps from the runtime image.
 - [ ] Use an organization token restricted to `org:ci`; add `org:read` only if the selected CLI operation proves it is required.
@@ -144,8 +148,11 @@
 
 **Runtime:** Azure Container Apps and Azure Monitor
 
+**Infrastructure owner:** `api-gateway/infra/observability.bicep` with a separate manually triggered workflow. Individual service releases must not mutate the shared ACA environment.
+
+- [ ] Capture the current ACA environment configuration and run Bicep what-if before every environment-level change; document the command or deployment that restores the previous configuration.
 - [ ] Create one workspace-based Application Insights resource linked to `alive-env-logs`.
-- [ ] Instrument one bounded staging flow first with the Go OpenTelemetry SDK, HTTP instrumentation, and OTLP gRPC exporter; set `service.name`, `service.version`, and `deployment.environment.name`.
+- [ ] Instrument one bounded `hhc-web-api` to `asset-api` staging flow first with the Go OpenTelemetry SDK, HTTP instrumentation, and OTLP gRPC exporter; set `service.name`, `service.version`, and `deployment.environment.name`.
 - [ ] Enable only the ACA managed OpenTelemetry trace destination to Application Insights. Keep logs in stdout/Log Analytics and metrics in Azure native metrics.
 - [ ] Verify telemetry export is fail-open and that an unavailable collector never fails or delays a business request.
 - [ ] Instrument the remaining high-value flows only after the staging flow is verified: account to Redis/PostgreSQL, CMS to asset, and engagement to notification.
@@ -158,6 +165,7 @@
 - [ ] Every alert must have an owner, minimum-volume/no-data behavior, runbook, and controlled trigger verification. Keep one-minute log-query alerts only for page-worthy failures.
 - [ ] Treat Log Analytics as the incident source of truth and traces as diagnostic assistance; add a low-frequency synthetic trace check because the managed agent is a single-replica, best-effort pipeline.
 - [ ] Add an ingestion-volume budget alert before the shared 5 GB monthly allowance can be unexpectedly exceeded.
+- [ ] Configure an Application Insights daily cap as a final cost guardrail, with an alert before the cap is reached rather than treating the cap as normal flow control.
 
 ### Task 9: Retention And Cost Guardrails
 
@@ -177,35 +185,44 @@
 
 ### Task 10: Verification, Runbooks, And Delivery
 
+- [ ] Before each repository task, fetch `origin/main` and create a new focused `codex/*` branch from that exact commit; do not reuse unrelated local feature branches.
 - [ ] Verify Sentry source-map resolution with a controlled, non-sensitive frontend exception in staging.
 - [ ] Verify a sampled browser request has the same 32-hex trace ID in Sentry and Application Insights, with the gateway request ID available in both systems.
 - [ ] Verify an unsampled request remains traceable through `X-HHC-Request-ID`, and one queued workflow remains traceable through its stable domain ID.
 - [ ] Verify one login, one bulletin replacement/scan, and one notification flow end to end.
+- [ ] Verify one bulletin replacement can be followed through Admin, CMS, Asset, and scan logs using the existing `asset_id`; do not add a database correlation column.
+- [ ] Disable the OpenTelemetry destination during a controlled staging request and verify the API remains healthy and latency does not materially regress.
 - [ ] Confirm logs and traces contain no raw credentials, user content, email, signed URLs, or query values.
 - [ ] Confirm CSP reports remain queryable after the logging changes.
 - [ ] Update service runbooks with dashboard, KQL, alert, rollback, and cost links.
+- [ ] Record Bicep what-if output and a tested disable/rollback procedure for every ACA environment-level observability change.
 - [ ] Run repository-specific tests, lint, and builds before each PR.
 - [ ] Merge each repository through required CI using squash merge and verify the production revision and route after deployment.
 
 ## Delivery Order
 
-1. `frontend-platform`: shared icon and account-menu behavior.
-2. `account-fe`: copy, title, and menu integration.
-3. `hhc-web`: weekly labels, news copy, and font/LCP work.
-4. `admin-fe`: account/access IA, title, and bulletin progress.
-5. `hhc-web-api` and `asset-api`: upload correlation, replacement regression, and scan polling interval.
-6. Gateway and Go services: PII-safe structured logging, trusted request IDs, and backend trace context.
-7. Azure infrastructure: Application Insights and a bounded staging OpenTelemetry trace flow.
-8. `hhc-web`, `account-fe`, and `admin-fe`: Sentry/CSP integration after correlation and privacy controls exist.
-9. Azure infrastructure: workbook, deduplicated alerts, and budget controls.
-10. Production verification and runbook evidence.
+1. Synchronize every repository from `origin/main`; create isolated task branches.
+2. `frontend-platform`: shared icon/account-menu behavior and CMS-client timeout contract; publish one verified package version.
+3. `account-fe`, `hhc-web`, and `admin-fe`: pin the same shared version and update their lockfiles.
+4. `account-fe`: copy, title, and menu integration.
+5. `hhc-web`: weekly labels, news copy, and font/LCP work.
+6. `admin-fe`: account/access IA, title, and bulletin progress.
+7. `hhc-web-api` and `asset-api`: upload correlation, Admin-focused replacement regression, and scan polling interval.
+8. Gateway and Go services: PII-safe structured logging, trusted request IDs, and backend trace context.
+9. `api-gateway` infrastructure workflow: Application Insights and a bounded staging OpenTelemetry trace flow.
+10. `hhc-web`, `account-fe`, and `admin-fe`: CSP/Sentry integration after correlation and privacy controls exist.
+11. Azure infrastructure: workbook, deduplicated alerts, and budget controls.
+12. Production verification and runbook evidence.
 
 ## Completion Criteria
 
 - Shared controls are visually and behaviorally consistent in light/dark and desktop/mobile layouts.
+- One published `frontend-platform` version is pinned by all three frontend consumers and installs with frozen lockfiles.
 - Admin account and access workflows no longer depend on generic detail links or chip walls.
 - Replacing an existing bulletin version has visible bounded progress and completes without an indefinite pending state.
 - Public LCP improvement is measured from three comparable production runs.
 - Frontend exceptions resolve to the deployed commit and source line without exposing PII.
+- Account and Admin CSP Report-Only policies allow expected traffic without permitting wildcard Sentry origins.
 - Logs, metrics, and traces cover the three production observability pillars; sampled Sentry browser spans and Azure backend traces share a trace ID, while request and domain IDs provide fallback correlation.
+- OpenTelemetry exporter failure is fail-open, and every shared Azure environment change has a reviewed what-if and explicit rollback.
 - Operational telemetry remains inside the documented initial cost range or has an explained, approved variance.
