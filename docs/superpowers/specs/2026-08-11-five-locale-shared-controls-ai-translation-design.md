@@ -14,11 +14,11 @@
 
 HHC will support Traditional Chinese, Simplified Chinese, English, Japanese, and Korean across the public website, account experience, CMS content, subscriptions, campaigns, and user-facing notifications. The Admin console interface itself remains Traditional Chinese, Simplified Chinese, and English because its operators do not need Japanese or Korean console copy.
 
-The current single locale tuple cannot represent those different responsibilities. The implementation must split Admin interface locales from product and content locales before adding Japanese and Korean.
+The current single locale tuple cannot represent those different responsibilities. The implementation must split Admin interface locales from product and content locales before adding Japanese and Korean. The Admin header keeps a three-language selector backed by a host-only preference, so isolating Admin from the product cookie does not remove the operator's ability to choose a console language.
 
 The same work will refine the shared avatar menu and selector primitives using the approved **Compact Utility** direction, remove the redundant hero image preload that produces browser warnings, and preserve the current server-rendered navigation without adding a global loading page.
 
-CMS editors will also be able to generate missing language drafts from a saved Traditional Chinese source through an LLM API. Generated text is a reviewable preview only: it never overwrites existing translations, saves automatically, or publishes automatically.
+CMS editors will also be able to generate missing language drafts from a saved Traditional Chinese source through Azure OpenAI. Generated text is a reviewable preview only: it never overwrites existing translations, saves automatically, or publishes automatically.
 
 Japanese and Korean banners retain the site's handwritten brand character through locale-specific display fonts. Generated CMS translations target natural, contemporary local expression rather than literal Traditional Chinese sentence structure.
 
@@ -152,6 +152,8 @@ Admin detection uses the same Chinese rules, recognizes English, and falls back 
 - `hhc_locale` stores `ProductLocale`, remains scoped to `.alive.org.tw`, and keeps `hhc-web` and `account-fe` aligned.
 - `hhc_admin_locale` stores `AdminUiLocale` and is host-only on `admin.alive.org.tw`.
 - Admin ignores `hhc_locale` when choosing its interface language.
+- The Admin header exposes the Compact Utility selector for the three Admin interface locales and writes `hhc_admin_locale` when the operator changes language.
+- When `hhc_admin_locale` is absent, Admin performs Admin-specific browser detection. It does not copy `hhc_locale`; this avoids coupling the new host-only preference to an older cross-subdomain value.
 - Existing three-locale `hhc_locale` values remain valid; no cookie migration is required.
 - An invalid stored value is ignored and detection runs normally.
 
@@ -159,7 +161,9 @@ Admin detection uses the same Chinese rules, recognizes English, and falls back 
 
 - Public CMS list and detail queries retain the existing per-resource fallback: prefer the requested locale, then use the published `zh-Hant` projection when that translation is missing.
 - Fallback selects one complete published translation. It never mixes fields from the requested locale and Traditional Chinese.
-- The public payload's resolved locale remains authoritative for rendered `lang` metadata. A `ja` or `ko` route displaying fallback CMS content marks that content as `zh-Hant`.
+- Every public content item exposes `resolvedLocale` and `availableLocales`. `resolvedLocale` is the locale of the selected complete projection; `availableLocales` contains only exact published translations.
+- The public payload's `resolvedLocale` is authoritative for per-item or per-block `lang` metadata and locale-aware content formatting. A `ja` or `ko` route displaying fallback CMS content marks that content as `zh-Hant` and formats its content-owned date labels using `zh-Hant`.
+- Public list/detail navigation stays in the requested route locale, so a fallback card on `/ja` links to `/ja/news/{slug}`. If an exact Japanese translation is absent, the detail page canonical points to the exact published `zh-Hant` URL and hreflang advertises only locales in `availableLocales`. Once an exact Japanese translation is published, canonical and hreflang update to include it.
 - Admin completion and publish state remain exact-locale checks. A visible `zh-Hant` public fallback does not count as a Japanese or Korean translation in Admin.
 - No new CMS fallback API or client-side fallback layer is part of this work; the implementation preserves and tests the current repository behavior.
 - Japanese and Korean public routes are enabled only after essential static UI, account, notification, and legal copy is ready. CMS entries may use the existing `zh-Hant` fallback until reviewed translations are published.
@@ -188,6 +192,7 @@ Each imported banner subset:
 - uses `display: swap` and `preload: false`;
 - loads only when its locale-specific class is rendered;
 - contains every glyph used by that locale's fixed banner copy, including punctuation and Latin characters;
+- retains the source copyright and OFL metadata in both derived font files, while the Korean derivative removes every reserved primary family name;
 - falls back to the locale's system sans stack only if the font file itself fails, not because the subset omitted an approved banner glyph.
 
 Japanese and Korean retain the same hero image, color, alignment, and no-wrap headline direction. Font size and tracking are tuned per locale rather than inheriting Chinese spacing, and the approved fixed copy must not overflow at the supported 320px mobile viewport. Dynamic CMS text never uses a banner-only subset.
@@ -226,11 +231,15 @@ Sources:
 - Korean `개역개정` publication is blocked until the Korean Bible Society grants written permission; its official guidance requires permission even for non-commercial partial quotation. Record the approval reference and required attribution in the release evidence.
 - Until that Korean gate passes, only the scripture block falls back to the existing English NIV text. The block uses `lang="en"`, keeps the English NIV citation, and does not affect the locale of the surrounding Korean page.
 - Every About page that actually renders NIV text—including the Korean fallback—must show Biblica's full NIV copyright and trademark notice on that page. The short `NIV` suffix alone is insufficient.
+- English NIV display and the Korean NIV fallback require a recorded written permission or license from Biblica that covers this website. Because the website includes an AI-assisted CMS feature, HHC must disclose that architecture and receive written confirmation of the permitted separation: scripture is source-controlled and is never sent to Azure OpenAI.
+- Existing Traditional and Simplified Chinese scripture text remains unchanged, but its exact edition, source, and current permission/attribution evidence must be inventoried before the five-locale public release. Any rights correction is a separate reviewed content change and must not silently rewrite the passage during this rollout.
 - No unavailable edition is replaced with machine-translated scripture. `zh-Hant`, `zh-Hans`, and `en` scripture behavior remains unchanged; `ja` adds the reviewed `新共同訳` text; only `ko` uses the defined NIV fallback.
 
 ### About-page presentation and legal placement
 
 The scripture source stays visually attached to the quotation as a short edition citation. Full Bible edition and copyright details live in a dedicated, anchor-linked section of the localized Terms of Use page, including the NIV notice, the Japanese source notice, and the future Korean notice after permission is granted.
+
+That Terms section uses the stable `id="bible-quotations"` anchor in every locale. A route test verifies that the About footer link resolves to the section rather than merely loading the Terms page.
 
 Publisher-required page-local wording is rendered only on the About page and only for the edition actually shown:
 
@@ -262,15 +271,19 @@ Rights sources:
 - Expand content, bulletin, public projection, OpenAPI, and service validation to five content locales.
 - Add forward-only PostgreSQL migrations that replace three-value locale checks with five-value checks.
 - Continue publishing exact per-locale public projections and preserve the existing requested-locale-to-`zh-Hant` public read fallback.
+- Expose `resolvedLocale` and `availableLocales` on public content and normalize navigation links to the requested route locale.
+- Generate five-locale bulletin notification translations with exact-locale copy and English fallback instead of a three-locale `zh-Hant` fallback map.
 - Add CMS translation-preview endpoints and the server-side LLM adapter.
 - Keep a versioned shared translation prompt with explicit Japanese and Korean voice rules.
 - Use existing `cms:write` authorization for translation previews; this is an editing operation and does not grant publish rights.
 - Write translation-generation audit events without storing draft content in logs.
+- Make content writes locale-set safe before accepting Japanese or Korean rows: a write that omits an existing locale is rejected unless that locale is explicitly named for deletion. This prevents cached or rolled-back three-locale Admin clients from erasing newer translations.
 
 ### `admin-fe`
 
 - Use `AdminUiLocale` for the console provider and console messages.
 - Use API-generated `ContentLocale` for content, bulletin, campaign, and schedule editors.
+- Add the three-language Admin header selector and persist it through `hhc_admin_locale`.
 - Show five content tabs and five-language completion counts.
 - Add the approved “generate all missing translations” action to supported CMS editors.
 - Preserve unsaved-change protection after generated values enter the local draft.
@@ -280,6 +293,7 @@ Rights sources:
 
 - Add `ja` and `ko` message files, route params, metadata, alternate URLs, legal pages, locale labels, and locale detection.
 - Request Japanese and Korean public content through the existing server fallback and render each returned item's resolved locale correctly.
+- Build public CMS navigation from the requested route locale while deriving canonical/hreflang from `resolvedLocale` and `availableLocales`.
 - Preserve server-side root locale redirect behavior.
 - Consume the redesigned shared menu and selector.
 - Replace hero `preload` with eager, high-priority image loading.
@@ -317,6 +331,7 @@ Rights sources:
   - newsletter wrapper and unsubscribe copy;
   - Web Push wrapper copy where the template owns visible text.
 - Keep security email templates source-controlled and human-reviewed.
+- Add new immutable template versions for Japanese and Korean support; queued messages pinned to older versions continue rendering from those historical versions.
 - Never call an LLM during notification delivery.
 - Retain English fallback only for unknown locale values.
 
@@ -353,6 +368,8 @@ Avatar trigger:
 
 The menu remains accessible through React Aria semantics, supports Escape and outside-click dismissal, restores focus to its trigger, and respects reduced motion.
 
+Truncated display name and email remain available to assistive technology through an accessible identity label. The control remains usable at 200% zoom and in forced-colors mode.
+
 ### Select
 
 The component retains two responsibility-specific variants:
@@ -383,11 +400,13 @@ Popover/listbox:
 
 Consumer CSS may set placement or width, but must not restyle interaction states independently. Footer locale behavior belongs in the shared primitive.
 
+Visible compact labels do not replace accessible full locale names. The trigger exposes the selected locale name, options expose `aria-selected`, and pointer-restored focus never suppresses keyboard `focus-visible` behavior.
+
 ## CMS Translation Assistance
 
 ### Product behavior
 
-The approved interaction is **Generate all missing translations**.
+The approved interaction is **Generate all missing translations**. A locale is “missing” only when the saved resource has no translation row for that locale. A partially populated locale is treated as existing and is skipped by the batch action; it can be regenerated only through the explicit per-language replacement preview.
 
 1. The editor completes and saves the Traditional Chinese version.
 2. Admin shows which of `zh-Hans`, `en`, `ja`, and `ko` are empty.
@@ -405,12 +424,14 @@ Existing target text is never overwritten by the batch action. Re-generating a p
 
 Initial LLM assistance covers:
 
-- News: title, summary when present, body, and image alternative text.
-- History: event/title, body, and date label when present.
-- Video: title and summary when present.
+- News: title, body, and image alternative text.
+- History: the event text currently persisted as title/body.
+- Video: title.
 - Bulletin metadata: title and subtitle.
 
 Slugs, IDs, display dates, event dates, YouTube IDs, asset IDs, layouts, flags, and uploaded files are not translated.
+
+The first release intentionally excludes hidden or non-editable summary/date-label fields. Translation support expands only after Admin exposes a reviewable field and the same value survives its save normalization.
 
 Weekly-paper PDF contents remain manual. The Japanese and Korean bulletin tabs can upload and publish their own PDFs after metadata is generated or entered.
 
@@ -481,9 +502,19 @@ The batch action always sends `replaceExisting: false`. The per-language re-gene
 
 ### Translation service boundary
 
-`hhc-web-api` owns a small internal translator contract that accepts typed source fields and one target locale. Provider-specific request/response code stays behind that contract.
+`hhc-web-api` owns the translation boundary and calls Azure OpenAI directly through the Responses API. The implementation uses the Go standard `net/http` client and a focused Azure OpenAI client; it does not add a generic multi-provider framework or OpenAI SDK.
 
-Deployment configuration names the provider endpoint, model, timeout, and source-character limit. Credentials come from the existing secret-management path and never appear in browser configuration, logs, audit payloads, or repository files.
+Deployment configuration provides:
+
+- `CMS_TRANSLATION_ENABLED`, default `false`;
+- `AZURE_OPENAI_ENDPOINT`, the approved Azure OpenAI resource origin;
+- `AZURE_OPENAI_DEPLOYMENT`, the exact deployed multilingual model name;
+- `AZURE_OPENAI_API_KEY`, mounted from the existing Key Vault secret path;
+- a 20,000-character aggregate source limit;
+- a 40-second Azure OpenAI client timeout;
+- a 45-second translation handler deadline.
+
+The Azure request is `POST {AZURE_OPENAI_ENDPOINT}/openai/v1/responses`, sends the configured deployment in `model`, sets `store: false` and `background: false`, enables no tools, and requests a strict JSON Schema through the Responses API text format. The production deployment must support multilingual Structured Outputs. Credentials never appear in browser configuration, logs, audit payloads, or repository files.
 
 The provider request must:
 
@@ -494,7 +525,22 @@ The provider request must:
 - preserve facts, theological meaning, and the author's intent without adding claims or promotional language;
 - forbid commentary, explanations, Markdown fences, or fields outside the schema;
 - use a versioned prompt stored with the backend code;
-- run under an overall timeout shorter than the gateway upstream timeout.
+- run under the timeout hierarchy defined below.
+
+### Translation timeout hierarchy
+
+The existing server-wide `ReadTimeout` and `WriteTimeout` remain 30 seconds for ordinary endpoints. They are not increased globally merely to match the gateway.
+
+The translation handlers extend only their current response write deadline with `http.NewResponseController(w).SetWriteDeadline(...)` before provider work begins:
+
+| Boundary | Deadline | Purpose |
+| --- | ---: | --- |
+| Azure OpenAI HTTP client | 40 seconds | Stop provider work first. |
+| Translation handler context | 45 seconds | Validate/map failure and prepare an HHC response. |
+| Translation route write deadline | 50 seconds | Allow the handler to write the typed `504 translation_timeout`. |
+| API gateway upstream read timeout | 60 seconds | Final edge ceiling; unchanged. |
+
+Setting all layers to 60 seconds is intentionally rejected because simultaneous expiry turns an application timeout into an opaque gateway error. A route-specific extension preserves the tighter 30-second budget for every other API and leaves ten seconds between the service response ceiling and the gateway ceiling.
 
 ### Translation voice and register
 
@@ -535,18 +581,18 @@ Public renderers currently display CMS body text as escaped React text. Generate
 ### Security, privacy, cost, and audit
 
 - Only authenticated `cms:write` actors may request translations.
-- Rate limits apply per actor and deployment.
+- A PostgreSQL fixed-window limiter permits 10 requests per actor per minute and 60 requests per deployment per minute. Counter increments are atomic across replicas, and stale windows are deleted opportunistically. No Redis dependency is added.
 - The API rejects empty and oversized source text before provider use.
 - Provider calls use bounded timeouts and no automatic unbounded retry.
-- Draft content may be unpublished and potentially sensitive; production provider selection must meet HHC data-processing and retention requirements.
-- Application logs and Sentry events must not contain source or generated content.
+- Draft content may be unpublished and potentially sensitive. The Azure subscription, region, model deployment, data-processing terms, abuse-monitoring behavior, and retention configuration must be reviewed and recorded before `CMS_TRANSLATION_ENABLED=true` in production.
+- Application logs and OpenTelemetry spans/metrics must not contain source or generated content.
 - `cms_audit_event` records action, actor, resource, source version, source locale, target locale, provider/model identifier, prompt version, character count, duration, and outcome.
 - Model output is advisory. Admin copy identifies it as AI-generated until the editor saves the draft.
 - Runtime metrics record request count, latency, timeout, validation failure, provider failure, and generated character count by target locale, without content.
 
 ### Why translation stays synchronous
 
-Each target locale is an independent preview request and the gateway already allows a 60-second upstream read. A bounded synchronous call gives the editor an immediate result without adding job tables, polling, cleanup, or worker ownership.
+Each target locale is an independent preview request and the translation endpoint has the bounded route-specific deadline above. A synchronous call gives the editor an immediate result without adding job tables, polling, cleanup, or worker ownership.
 
 A durable asynchronous translation job is justified only if measured production requests regularly exceed the timeout, editors need to leave and resume batches, or bulk backfill becomes a supported product workflow.
 
@@ -573,7 +619,8 @@ Verification must confirm:
 - the rendered image remains eager and high priority;
 - the correct responsive candidate loads;
 - home, about, and literature routes render without the unused-preload warning;
-- mobile and desktop LCP do not regress beyond the agreed performance budget.
+- Lighthouse mobile runs use the same production URL, cold cache, 4× CPU slowdown, and simulated slow 4G profile before and after the change;
+- median LCP across three runs stays at or below 2.5 seconds and does not regress by more than 200 ms; CLS stays at or below 0.1.
 
 If measured LCP regresses materially, investigate image sizing and server response timing before restoring an explicit preload.
 
@@ -592,6 +639,8 @@ Migrations are forward-only and backward compatible with existing three-locale d
 
 `hhc-web-api` migrations expand locale checks for content translations, bulletin versions, public projections, and any related revision/projection records that constrain locale values.
 
+Before those values are used, the content write contract adds `deleteLocales: ContentLocale[]` and compares the submitted locale set with persisted translations. Omitting an existing locale without naming it in `deleteLocales` returns `409 locale_set_mismatch`; the repository never reaches its delete-and-reinsert transaction. The upgraded Admin submits every existing translation it loaded and uses `deleteLocales` only after a dedicated confirmation. Cached or rolled-back three-locale Admin clients therefore fail closed instead of deleting Japanese or Korean rows.
+
 `engagement-api` migrations expand locale checks for newsletter subscriptions, Web Push subscriptions, campaign deliveries, and other persisted recipient-locale fields.
 
 No existing row value changes. New enum values are accepted only after the owning service code can validate and serve them.
@@ -602,25 +651,35 @@ Rollback does not remove Japanese or Korean values from database checks once dat
 
 Every repository uses its own branch, PR, CI, merge, release, and live smoke test.
 
-1. **`frontend-platform`**
+1. **Contract safety in `hhc-web-api`**
+   - locale-set-safe content writes;
+   - `resolvedLocale` and `availableLocales` on public projections;
+   - backward-compatibility tests before five-locale rows exist.
+2. **Shared frontend foundation in `frontend-platform`**
    - locale model and Compact Utility controls;
    - package tests and packed-consumer checks;
-   - publish the new package version.
-2. **Backend compatibility**
-   - `hhc-web-api`: five-locale contracts/migrations and translation preview;
-   - `engagement-api`: five-locale subscriptions/campaigns/deliveries;
-   - `notification-api`: reviewed Japanese/Korean templates;
+   - publish the first package version for locale/preferences/UI changes.
+3. **Backend five-locale compatibility**
+   - `hhc-web-api`: five-locale validation, contracts, migrations, bulletin notification copy, and rollback floor;
+   - `engagement-api`: five-locale subscriptions/campaigns/deliveries and exact-to-English fallback;
+   - `notification-api`: new immutable Japanese/Korean template versions;
    - `account-api`: accept and propagate Japanese/Korean locale;
-   - verify `api-gateway` routing/timeouts without changing it unless evidence requires a patch.
-3. **`admin-fe`**
-   - update shared packages and generated client;
-   - keep console UI at three locales;
-   - expose five content locales and translation-preview workflow.
-4. **`hhc-web`**
-   - add Japanese/Korean routes, copy, metadata, legal pages, selector, local handwritten banner subsets, existing CMS fallback integration, scripture presentation, and hero loading fix.
-5. **`account-fe`**
-   - add Japanese/Korean UI and consume shared controls/locales.
-6. **Content enablement**
+   - verify `api-gateway` routing and the existing 60-second upstream timeout without changing it.
+4. **Generated client publication in `frontend-platform`**
+   - sync the deployed `hhc-web-api` OpenAPI contract;
+   - regenerate the five-locale client;
+   - run packed-consumer checks and publish the second package version.
+5. **Azure OpenAI translation vertical slice**
+   - provision the approved Azure OpenAI resource/deployment and Key Vault secret through reviewed infrastructure delivery;
+   - release the disabled backend endpoint, limiter, audit, metrics, and route-specific timeout;
+   - update `admin-fe`, add the Admin-only locale selector and translation preview UX, then enable translation after production smoke and fluent sample review.
+6. **`account-fe`**
+   - add Japanese/Korean UI and consume shared controls/locales;
+   - release and smoke registration, OAuth onboarding, profile, recovery, and notification locale propagation before public website discovery.
+7. **`hhc-web`**
+   - add Japanese/Korean routes, copy, metadata, legal pages, selector, local handwritten banner subsets, resolved-locale CMS rendering, scripture presentation, and hero loading fix;
+   - publish routes, sitemap, canonical, and alternate links only after the account and messaging dependencies are live.
+8. **Content enablement**
    - seed and review Japanese and Korean CMS translations while preserving the published `zh-Hant` fallback for missing entries;
    - add the exact reviewed Japanese Isaiah text and required notices;
    - launch the Korean scripture block with the English NIV fallback, then replace it with exact reviewed `개역개정` text and notice only after written approval;
@@ -729,7 +788,8 @@ Backend changes must be compatible with the existing three-locale frontends befo
 - Website, account, CMS content, subscriptions, campaigns, and notifications: five locales.
 - Avatar menu and selector visual direction: Compact Utility.
 - CMS translation interaction: generate all missing translations from a saved Traditional Chinese source.
-- LLM integration owner: `hhc-web-api`.
+- LLM integration owner: `hhc-web-api`; provider: Azure OpenAI Responses API.
+- Translation timeout: 40-second provider, 45-second handler, 50-second route write deadline, 60-second gateway; ordinary `hhc-web-api` endpoints remain at the existing 30-second server timeout.
 - LLM output: preview only, human-reviewed, never auto-saved or auto-published.
 - Security emails: reviewed Japanese/Korean templates, no runtime LLM.
 - Public CMS fallback: preserve the existing requested-locale-to-`zh-Hant` whole-projection fallback; Admin completeness remains exact locale.
