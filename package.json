@@ -20,6 +20,7 @@
     "@hallelujahhomechurch/hhc-web-client": "0.6.3",
     "@hallelujahhomechurch/preferences": "0.6.3",
     "@hallelujahhomechurch/ui": "0.6.3",
+    "@sentry/react": "10.69.0",
     "lucide-react": "^1.24.0",
     "next": "16.2.9",
     "next-intl": "^4.13.0",
@@ -27,6 +28,7 @@
     "react-dom": "19.2.7"
   },
   "devDependencies": {
+    "@sentry/cli": "3.6.2",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "6.9.1",
