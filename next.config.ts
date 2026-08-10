@@ -3,10 +3,17 @@ import type {NextConfig} from 'next';
 import {accountProxyRewrites} from './src/lib/account-proxy';
 import {getContentSecurityPolicy} from './src/lib/csp';
 
-const reportOnlyCsp = getContentSecurityPolicy({development: process.env.NODE_ENV !== 'production'});
+const reportOnlyCsp = getContentSecurityPolicy({
+  development: process.env.NODE_ENV !== 'production',
+  sentryDsn: process.env.NEXT_PUBLIC_SENTRY_DSN
+});
+const uploadSourceMaps = Boolean(
+  process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT
+);
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  productionBrowserSourceMaps: uploadSourceMaps,
   poweredByHeader: false,
   allowedDevOrigins: ['www.hhc.test'],
   images: {

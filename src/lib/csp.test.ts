@@ -39,4 +39,15 @@ describe('getContentSecurityPolicy', () => {
     );
     expect(getContentSecurityPolicy({development: true})).not.toContain('upgrade-insecure-requests');
   });
+
+  it('adds only the exact Sentry ingest origin', () => {
+    const policy = getContentSecurityPolicy({
+      development: false,
+      sentryDsn: 'https://public-key@o123.ingest.us.sentry.io/456'
+    });
+
+    expect(directive(policy, 'connect-src')).toBe("connect-src 'self' https://o123.ingest.us.sentry.io");
+    expect(policy).not.toContain('public-key');
+    expect(policy).not.toContain('/456');
+  });
 });

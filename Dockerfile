@@ -10,7 +10,25 @@ COPY package.json pnpm-lock.yaml ./
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc pnpm install --frozen-lockfile
 
 COPY . .
-RUN pnpm build
+ARG NEXT_PUBLIC_SENTRY_DSN=
+ARG NEXT_PUBLIC_SENTRY_ENVIRONMENT=production
+ARG NEXT_PUBLIC_SENTRY_RELEASE=
+ARG SENTRY_ORG=
+ARG SENTRY_PROJECT=
+ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
+ENV NEXT_PUBLIC_SENTRY_ENVIRONMENT=$NEXT_PUBLIC_SENTRY_ENVIRONMENT
+ENV NEXT_PUBLIC_SENTRY_RELEASE=$NEXT_PUBLIC_SENTRY_RELEASE
+ENV SENTRY_ORG=$SENTRY_ORG
+ENV SENTRY_PROJECT=$SENTRY_PROJECT
+RUN --mount=type=secret,id=sentry_auth_token,required=false \
+  export SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token 2>/dev/null || true)"; \
+  pnpm build; \
+  if [ -n "$SENTRY_AUTH_TOKEN" ] && [ -n "$SENTRY_ORG" ] && [ -n "$SENTRY_PROJECT" ]; then \
+    pnpm exec sentry-cli sourcemaps inject .next/static; \
+    pnpm exec sentry-cli sourcemaps upload --org "$SENTRY_ORG" --project "$SENTRY_PROJECT" \
+      --release "$NEXT_PUBLIC_SENTRY_RELEASE" .next/static; \
+    find .next -type f -name '*.map' -delete; \
+  fi
 
 FROM node:22-alpine AS runtime
 
