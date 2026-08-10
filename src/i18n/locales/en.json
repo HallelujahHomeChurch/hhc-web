@@ -67,7 +67,7 @@
   },
   "news": {
     "title": "Latest News",
-    "heroSubtitle": "Church updates, event information, and important announcements.",
+    "heroSubtitle": "Church updates, event information, and important announcements",
     "allNews": "All news",
     "description": "Read the latest news and event updates from Hallelujah Home Church.",
     "empty": "There is no news yet.",
@@ -191,12 +191,7 @@
     "downloading": "Preparing download…",
     "loadError": "Weekly papers are temporarily unavailable",
     "retry": "Retry",
-    "empty": "No weekly papers have been published yet.",
-    "versionLabels": {
-      "zh-Hant": "Traditional",
-      "zh-Hans": "Simplified",
-      "en": "English"
-    }
+    "empty": "No weekly papers have been published yet."
   },
   "privacyPolicy": {
     "heroTitle": "Privacy Policy",
