@@ -14,6 +14,7 @@ grep -q 'id-token: write' "$workflow"
 grep -q 'packages: read' "$workflow"
 grep -q 'IMAGE_TAG=main-${GITHUB_SHA::7}' "$workflow"
 grep -q 'docker build --secret id=npmrc' "$workflow"
+grep -q '^  set -eu;' Dockerfile
 grep -q 'az deployment group what-if' "$workflow"
 grep -q 'for path in health zh-Hant/maintenance' "$workflow"
 grep -q 'for attempt in {1..12}' "$workflow"
