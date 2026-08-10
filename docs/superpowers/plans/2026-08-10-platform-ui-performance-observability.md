@@ -30,6 +30,8 @@
 - Do not duplicate all ACA logs into Sentry.
 - Do not enable Session Replay on Account or Admin.
 - Do not log cookies, tokens, passwords, email addresses, request bodies, signed URLs, or full query strings.
+- Treat stdout JSON in Log Analytics as the only application-log pipeline, Azure native metrics as the platform-metric source, OpenTelemetry/Application Insights as the backend-trace pipeline, Sentry as the browser-error/Web-Vitals view, and owning databases as the audit source.
+- Do not export application logs through OpenTelemetry or install a second Application Insights SDK beside the OpenTelemetry SDK.
 - Keep CSP in Report-Only until organic reports are clean for 48-72 hours and the unrelated Next `NoFallbackError` bursts are understood.
 - Preserve React Aria keyboard navigation, outside click, Escape, focus restore, and visible keyboard focus.
 - Preserve queue and ClamAV scanning; do not bypass scanning or replace bounded polling with WebSocket infrastructure.
@@ -106,12 +108,18 @@
 
 - [ ] Create separate Sentry projects for public web, account, and admin under the HHC organization.
 - [ ] Capture runtime exceptions, React/Next errors, failed-request breadcrumbs, release, environment, and Git commit SHA.
-- [ ] Upload source maps from CI and do not publish source maps as public build artifacts.
-- [ ] Set `sendDefaultPii: false` and scrub cookies, authorization headers, email, tokens, signed URLs, request/response bodies, and query values.
+- [ ] Use `SENTRY_RELEASE=${GITHUB_SHA}` and upload source maps from the same production build that creates the deployed image; inject the organization token as a BuildKit secret, then remove source maps from the runtime image.
+- [ ] Use an organization token restricted to `org:ci`; add `org:read` only if the selected CLI operation proves it is required.
+- [ ] Set `sendDefaultPii: false`, `includeLocalVariables: false` for the Next server, and implement shared `beforeSend`, `beforeSendTransaction`, and `beforeBreadcrumb` sanitizers.
+- [ ] Remove URL query/hash values, cookies, authorization headers, user/email fields, form data, request/response bodies, OAuth codes, verification/reset tokens, and Blob SAS values before events leave the app.
+- [ ] Enable Sentry server-side default data scrubbing, IP-address scrubbing, and explicit sensitive-field rules as a second layer.
 - [ ] Disable Session Replay for Account and Admin; leave it disabled on public web until a separate privacy review approves masked replay.
-- [ ] Start production performance tracing at 10% while retaining error events.
-- [ ] Restrict trace propagation to HHC same-origin API routes and approved HHC subdomains.
-- [ ] Update the privacy policy disclosure before production telemetry begins.
+- [ ] Keep Sentry server performance tracing disabled; start browser performance tracing at 10% while retaining error events.
+- [ ] Do not propagate Sentry tracing headers to HHC APIs. Capture the response `X-HHC-Request-ID` as a sanitized Sentry breadcrumb/tag for cross-system lookup.
+- [ ] Add only the exact regional ingest origin from each project DSN to CSP `connect-src`; do not use a wildcard Sentry origin.
+- [ ] Keep CSP reports in Log Analytics rather than duplicating them into Sentry; accept a bounded Reporting API batch, emit one sanitized JSON record per violation, and retain no query values.
+- [ ] Publish the updated privacy-policy disclosure before enabling production DSNs.
+- [ ] Verify scrubbers with controlled OAuth code, verification token, reset token, email, query/hash, and SAS URL values and assert that no original value reaches Sentry.
 
 **Boundary:** Sentry is the frontend application-error view. It does not replace Log Analytics, ACA metrics, audit records, or backend operational logs.
 
@@ -120,8 +128,11 @@
 **Repositories:** `api-gateway`, all production Go services
 
 - [ ] Standardize JSON logs with `service`, `environment`, `release`, `request_id`, `trace_id`, route template, method, status, duration, and stable error code.
-- [ ] Generate or forward `X-HHC-Request-ID` at the gateway and return it to callers.
-- [ ] Forward W3C `traceparent` and `tracestate` without treating them as authentication inputs.
+- [ ] Generate a new bounded `X-HHC-Request-ID` at every public gateway entry, pass it to every upstream, include it in access logs, return it to callers, and expose it through CORS where required.
+- [ ] Ignore external `X-HHC-Request-ID`, `traceparent`, `tracestate`, `sentry-trace`, and `baggage` headers at the public boundary; validate or create W3C trace context at the first backend service and propagate it only across trusted service-to-service calls.
+- [ ] Add regression tests for newline injection, oversized correlation values, and malformed trace headers.
+- [ ] Remove duplicate forwarded-IP fields and raw User-Agent values from routine access logs; keep normalized browser/OS or full network context only for explicitly documented security events.
+- [ ] Do not emit raw user/device identifiers in operational logs; use a stable non-reversible correlation value only where diagnosis requires it.
 - [ ] Exclude successful health-probe and static-asset requests from high-volume gateway access logs; retain failures and security events.
 - [ ] Add saved KQL queries for request ID, trace ID, release, CSP violations, asset ID, bulletin issue ID, notification message ID, 5xx ratio, and slow requests.
 - [ ] Keep security/admin audit records in their owning database with the documented retention policy rather than relying on expiring application logs.
@@ -131,19 +142,24 @@
 **Runtime:** Azure Container Apps and Azure Monitor
 
 - [ ] Create one workspace-based Application Insights resource linked to `alive-env-logs`.
-- [ ] Enable the ACA managed OpenTelemetry agent and export backend application traces to Application Insights.
-- [ ] Instrument the first high-value flows: account to Redis/PostgreSQL, CMS to asset, and engagement to notification.
+- [ ] Instrument one bounded staging flow first with the Go OpenTelemetry SDK, HTTP instrumentation, and OTLP gRPC exporter; set `service.name`, `service.version`, and `deployment.environment.name`.
+- [ ] Enable only the ACA managed OpenTelemetry trace destination to Application Insights. Keep logs in stdout/Log Analytics and metrics in Azure native metrics.
+- [ ] Verify telemetry export is fail-open and that an unavailable collector never fails or delays a business request.
+- [ ] Instrument the remaining high-value flows only after the staging flow is verified: account to Redis/PostgreSQL, CMS to asset, and engagement to notification.
 - [ ] Capture HTTP and supported PostgreSQL, Redis, Blob, and messaging dependency spans without query text or payload data.
-- [ ] Use 100% tracing during bounded staging verification, then start production sampling conservatively and adjust from measured ingestion.
+- [ ] Use a parent-based trace-ID-ratio sampler at the first instrumented backend service; downstream services honor the parent sampled flag.
+- [ ] Use 100% tracing only during a time-bounded staging verification, then start production at 5-10% through environment configuration and review ingestion after seven days.
 - [ ] Add one Azure Workbook for traffic, 5xx ratio, p95 latency, restart count, replica count, queue age, scan latency, and notification delivery.
-- [ ] Add multi-resource metric alerts for unavailable replicas, restart spikes, CPU/memory saturation, and sustained latency.
-- [ ] Keep one-minute log-query alerts only for page-worthy failures; move lower-risk rules to five-minute evaluation.
+- [ ] Inventory existing alerts first, including owner, action group, evaluation frequency, runbook, and estimated monthly cost; reuse `RecommendedAlertRules-AG-1` and remove or avoid duplicates.
+- [ ] Initially alert only on public unavailability, sustained 5xx, unusable JWKS, and scan backlog; dashboard CPU/memory/restart/latency signals until measured thresholds justify paging.
+- [ ] Every alert must have an owner, minimum-volume/no-data behavior, runbook, and controlled trigger verification. Keep one-minute log-query alerts only for page-worthy failures.
+- [ ] Treat Log Analytics as the incident source of truth and traces as diagnostic assistance; add a low-frequency synthetic trace check because the managed agent is a single-replica, best-effort pipeline.
 - [ ] Add an ingestion-volume budget alert before the shared 5 GB monthly allowance can be unexpectedly exceeded.
 
 ### Task 9: Retention And Cost Guardrails
 
 - [ ] Keep ACA console/system logs at 30 days of interactive retention.
-- [ ] Set 90 days of total retention for ACA console/system tables, using long-term retention after the interactive window.
+- [ ] Do not enable ACA long-term retention initially; review individual tables after seven and 30 days and extend only a table with a documented incident or compliance need.
 - [ ] Keep Application Insights tables within their included 90-day retention unless incident evidence justifies more.
 - [ ] Review Azure Cost Management after seven and 30 days, grouped by Log Analytics ingestion, retention, metric alerts, and scheduled-query alerts.
 - [ ] Record a baseline cost projection in the operations runbook.
@@ -153,14 +169,13 @@
 - Sentry Developer: USD 0 while one-user and event/span quotas are sufficient.
 - Current ACA log ingestion: likely USD 0 while the shared Azure Monitor 5 GB monthly allowance remains available.
 - One to two additional GB of sampled traces: expected to remain inside that allowance.
-- Ninety-day archive for the current ACA log volume: approximately USD 0.20-0.30 per month at steady state.
 - Metrics and scheduled-query alerts: approximately USD 10-20 per month, depending primarily on evaluation frequency.
-- If total monthly ingestion reaches 10 GB, approximately 5 GB becomes billable; at the observed East Asia retail rate near USD 4.03/GB, ingestion would be about USD 20 before alerts.
+- Actual billable ingestion depends on the subscription's active allowance and pricing meter; replace estimates with Cost Management data after seven and 30 days.
 
 ### Task 10: Verification, Runbooks, And Delivery
 
 - [ ] Verify Sentry source-map resolution with a controlled, non-sensitive frontend exception in staging.
-- [ ] Follow one request from frontend event to gateway request ID and backend trace ID.
+- [ ] Follow one request from a Sentry event breadcrumb to the gateway request ID and then to the backend trace ID.
 - [ ] Verify one login, one bulletin replacement/scan, and one notification flow end to end.
 - [ ] Confirm logs and traces contain no raw credentials, user content, email, signed URLs, or query values.
 - [ ] Confirm CSP reports remain queryable after the logging changes.
@@ -172,12 +187,14 @@
 
 1. `frontend-platform`: shared icon and account-menu behavior.
 2. `account-fe`: copy, title, and menu integration.
-3. `hhc-web`: weekly labels, news copy, font/LCP work, and Sentry frontend integration.
-4. `admin-fe`: account/access IA, title, bulletin progress, and Sentry frontend integration.
+3. `hhc-web`: weekly labels, news copy, and font/LCP work.
+4. `admin-fe`: account/access IA, title, and bulletin progress.
 5. `hhc-web-api` and `asset-api`: upload correlation, replacement regression, and scan polling interval.
-6. Gateway and Go services: structured logging and correlation headers.
-7. Azure infrastructure: Application Insights, managed OTel, workbook, alerts, retention, and budget controls.
-8. Production verification and runbook evidence.
+6. Gateway and Go services: PII-safe structured logging, trusted request IDs, and backend trace context.
+7. Azure infrastructure: Application Insights and a bounded staging OpenTelemetry trace flow.
+8. `hhc-web`, `account-fe`, and `admin-fe`: Sentry/CSP integration after correlation and privacy controls exist.
+9. Azure infrastructure: workbook, deduplicated alerts, and budget controls.
+10. Production verification and runbook evidence.
 
 ## Completion Criteria
 
@@ -186,5 +203,5 @@
 - Replacing an existing bulletin version has visible bounded progress and completes without an indefinite pending state.
 - Public LCP improvement is measured from three comparable production runs.
 - Frontend exceptions resolve to the deployed commit and source line without exposing PII.
-- Logs, metrics, and traces cover the three production observability pillars and share request/trace correlation.
+- Logs, metrics, and traces cover the three production observability pillars; Sentry events and backend traces are correlated through the gateway-issued request ID.
 - Operational telemetry remains inside the documented initial cost range or has an explained, approved variance.
