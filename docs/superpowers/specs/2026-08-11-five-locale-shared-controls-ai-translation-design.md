@@ -30,7 +30,7 @@ CMS editors will also be able to generate missing language drafts from a saved T
 6. Make the shared avatar menu and selector visually consistent, accessible, compact, and reusable by all three frontends.
 7. Remove the hero image preload warning without regressing above-the-fold image priority.
 8. Avoid adding a global text-only loading page.
-9. Publish Isaiah 49:1–3 and 49:5–6 from reviewed, locally familiar Bible editions with correct attribution and permission.
+9. Publish Isaiah 49:1–3 and 49:5–6 with reviewed source text, locale-specific fallback, and publisher-compliant attribution.
 
 ## Non-Goals
 
@@ -147,8 +147,12 @@ Admin detection uses the same Chinese rules, recognizes English, and falls back 
 
 ### Content availability and fallback
 
-- Public CMS queries use exact locale projections. A missing Japanese translation is not silently replaced with Chinese or English inside a Japanese page.
-- Japanese and Korean public routes are enabled only after essential static copy and initial CMS translations are ready.
+- Public CMS list and detail queries retain the existing per-resource fallback: prefer the requested locale, then use the published `zh-Hant` projection when that translation is missing.
+- Fallback selects one complete published translation. It never mixes fields from the requested locale and Traditional Chinese.
+- The public payload's resolved locale remains authoritative for rendered `lang` metadata. A `ja` or `ko` route displaying fallback CMS content marks that content as `zh-Hant`.
+- Admin completion and publish state remain exact-locale checks. A visible `zh-Hant` public fallback does not count as a Japanese or Korean translation in Admin.
+- No new CMS fallback API or client-side fallback layer is part of this work; the implementation preserves and tests the current repository behavior.
+- Japanese and Korean public routes are enabled only after essential static UI, account, notification, and legal copy is ready. CMS entries may use the existing `zh-Hant` fallback until reviewed translations are published.
 - Campaign delivery resolves the recipient’s exact locale first and English second. It must not default a Japanese or Korean recipient to Traditional Chinese.
 - Account security templates provide exact Japanese and Korean versions. English fallback remains a defensive path for malformed or future locale values, not normal `ja`/`ko` behavior.
 
@@ -162,7 +166,7 @@ The About history section displays Isaiah 49:1–3 and 49:5–6. These passages 
 | --- | --- | --- |
 | `en` | New International Version, 2011 text (`NIV®`) | Preserve the edition already identified in the current site, with the publisher-required full attribution. |
 | `ja` | 日本聖書協会『聖書 新共同訳』 | The Japan Bible Society still identifies it as the most-read Bible in Japan. The newer 2018 `聖書協会共同訳` aims to become the next standard but is not the documented current majority edition. |
-| `ko` | 대한성서공회 『성경전서 개역개정판』 (1998) | The Korean Bible Society identifies it as the Korean church's worship Bible. The 2024 `새한글성경` is positioned for the next generation, not as the current worship default. |
+| `ko` target | 대한성서공회 『성경전서 개역개정판』 (1998) | The Korean Bible Society identifies it as the Korean church's worship Bible. Until written permission and reviewed text are available, the Korean About page renders the existing English NIV passage instead. |
 
 The Japanese evangelical alternative `聖書 新改訳2017` is intentionally not the default because this decision optimizes for the widest current national familiarity. It can replace `新共同訳` only through an explicit pastoral/content decision and a fresh rights review.
 
@@ -178,9 +182,22 @@ Sources:
 - Scripture text, edition labels, and copyright notices are excluded from LLM translation requests and cannot be regenerated through CMS translation assistance.
 - The page preserves the publisher's wording and required attribution; line wrapping may change responsively, but words, punctuation, and verse scope may not be paraphrased or silently truncated.
 - Japanese publication must identify `日本聖書協会『聖書 新共同訳』`, stay within the Japan Bible Society quotation limit, and report the production URL to its copyright contact before release.
-- Korean publication is blocked until the Korean Bible Society grants written permission; its official guidance requires permission even for non-commercial partial quotation. Record the approval reference and required attribution in the release evidence.
-- English publication must add Biblica's full NIV copyright and trademark notice on the page. The short `NIV` suffix alone is not sufficient for a public web page.
-- If any permission is unavailable, the affected locale route does not publish substitute machine-translated scripture. It remains gated until an approved edition and exact text are available.
+- Korean `개역개정` publication is blocked until the Korean Bible Society grants written permission; its official guidance requires permission even for non-commercial partial quotation. Record the approval reference and required attribution in the release evidence.
+- Until that Korean gate passes, only the scripture block falls back to the existing English NIV text. The block uses `lang="en"`, keeps the English NIV citation, and does not affect the locale of the surrounding Korean page.
+- Every About page that actually renders NIV text—including the Korean fallback—must show Biblica's full NIV copyright and trademark notice on that page. The short `NIV` suffix alone is insufficient.
+- No unavailable edition is replaced with machine-translated scripture. `zh-Hant`, `zh-Hans`, and `en` scripture behavior remains unchanged; `ja` adds the reviewed `新共同訳` text; only `ko` uses the defined NIV fallback.
+
+### About-page presentation and legal placement
+
+The scripture source stays visually attached to the quotation as a short edition citation. Full Bible edition and copyright details live in a dedicated, anchor-linked section of the localized Terms of Use page, including the NIV notice, the Japanese source notice, and the future Korean notice after permission is granted.
+
+Publisher-required page-local wording is rendered only on the About page and only for the edition actually shown:
+
+- `en` and the `ko` fallback show the full NIV notice;
+- `ja` shows the required Japan Bible Society source/copyright wording;
+- switching `ko` to `개역개정` later replaces both the passage and the page-local notice in the same reviewed change.
+
+To preserve the About page's current visual hierarchy, this page-local notice is one subdued legal paragraph below the existing SiteFooter copyright/legal row, with a link to the Terms section. It uses the footer's small muted typography and content width, wraps naturally on mobile, and adds no card, heading, icon, background panel, or extra divider. It is not added to unrelated pages.
 
 Rights sources:
 
@@ -203,7 +220,7 @@ Rights sources:
 
 - Expand content, bulletin, public projection, OpenAPI, and service validation to five content locales.
 - Add forward-only PostgreSQL migrations that replace three-value locale checks with five-value checks.
-- Continue publishing exact per-locale public projections.
+- Continue publishing exact per-locale public projections and preserve the existing requested-locale-to-`zh-Hant` public read fallback.
 - Add CMS translation-preview endpoints and the server-side LLM adapter.
 - Use existing `cms:write` authorization for translation previews; this is an editing operation and does not grant publish rights.
 - Write translation-generation audit events without storing draft content in logs.
@@ -220,11 +237,11 @@ Rights sources:
 ### `hhc-web`
 
 - Add `ja` and `ko` message files, route params, metadata, alternate URLs, legal pages, locale labels, and locale detection.
-- Fetch exact Japanese and Korean public projections.
+- Request Japanese and Korean public content through the existing server fallback and render each returned item's resolved locale correctly.
 - Preserve server-side root locale redirect behavior.
 - Consume the redesigned shared menu and selector.
 - Replace hero `preload` with eager, high-priority image loading.
-- Add the approved Japanese and Korean Isaiah text and edition attribution only after the scripture publication gate passes.
+- Add the reviewed Japanese Isaiah text, Terms copyright section, and page-local About notices; render the English NIV block for Korean until the Korean publication gate passes.
 - Do not add a global loading page.
 
 ### `account-fe`
@@ -541,12 +558,13 @@ Every repository uses its own branch, PR, CI, merge, release, and live smoke tes
    - keep console UI at three locales;
    - expose five content locales and translation-preview workflow.
 4. **`hhc-web`**
-   - add Japanese/Korean routes, copy, metadata, legal pages, selector, exact CMS queries, and hero loading fix.
+   - add Japanese/Korean routes, copy, metadata, legal pages, selector, existing CMS fallback integration, scripture presentation, and hero loading fix.
 5. **`account-fe`**
    - add Japanese/Korean UI and consume shared controls/locales.
 6. **Content enablement**
-   - seed/review essential Japanese and Korean CMS content;
-   - obtain and record scripture quotation approval, add exact reviewed Isaiah text, and verify all edition notices;
+   - seed and review Japanese and Korean CMS translations while preserving the published `zh-Hant` fallback for missing entries;
+   - add the exact reviewed Japanese Isaiah text and required notices;
+   - launch the Korean scripture block with the English NIV fallback, then replace it with exact reviewed `개역개정` text and notice only after written approval;
    - enable public discovery/alternate URLs only when the essential locale experience is complete.
 
 Backend changes must be compatible with the existing three-locale frontends before consumer releases. Frontends must not send `ja` or `ko` until the relevant backend deployment and database migration are live.
@@ -567,10 +585,14 @@ Backend changes must be compatible with the existing three-locale frontends befo
 - Content, bulletin, campaign, and schedule editors expose five language tabs.
 - Five-locale content can be created, revised, published, queried, unpublished, restored, and deleted.
 - Japanese and Korean bulletin PDFs can be uploaded, scanned, granted, published, downloaded, revoked, and replaced.
-- A locale with no published translation does not silently display a different language.
-- Japanese Isaiah uses `聖書 新共同訳`; Korean Isaiah uses `성경전서 개역개정판`.
+- A missing public CMS translation resolves to the complete published `zh-Hant` projection; exact locale wins when both exist, and no response mixes fields across locales.
+- Fallback CMS content exposes and renders `lang="zh-Hant"`, while Admin still reports the requested locale as incomplete.
+- Japanese Isaiah uses `聖書 新共同訳`; Korean Isaiah uses the English NIV passage with `lang="en"` until approved `성경전서 개역개정판` text replaces it.
 - Isaiah 49:1–3 and 49:5–6 match the authorized source character-for-character and are never LLM-generated.
-- Japanese URL reporting, Korean written permission, and NIV attribution are present in release evidence before the affected routes go live.
+- Japanese URL reporting and its required source notice are present before the Japanese route goes live.
+- The English and Korean-fallback About pages show the required NIV page-local notice; full edition details are available from the linked Terms section.
+- The About notice remains a single muted footer paragraph with no card, heading, icon, panel, or unrelated-page placement on desktop and mobile.
+- Korean written permission is required before switching from NIV fallback to `개역개정`, not before launching the Korean route.
 
 ### Account and messaging
 
@@ -620,8 +642,9 @@ Backend changes must be compatible with the existing three-locale frontends befo
 | --- | --- |
 | A shared locale tuple leaks Japanese/Korean into Admin UI | Use explicit locale types and separate Admin cookie/detection. |
 | Frontend ships before backend accepts new locale | Release backend compatibility first and smoke contracts before consumer rollout. |
-| Japanese/Korean pages mix languages | Use exact content projections and enable routes after initial content is ready. |
-| Scripture is mistranslated or published without rights | Use fixed reviewed editions, exclude scripture from LLM input, require two-person text comparison, and block release on attribution/permission evidence. |
+| CMS fallback creates accidental mixed-language fields or false completion | Keep the existing whole-projection `zh-Hant` fallback, preserve the resolved locale in rendered `lang`, and calculate Admin completion from exact locales only. |
+| Scripture is mistranslated or published without rights | Use fixed reviewed editions, exclude scripture from LLM input, require two-person text comparison, apply the Korean NIV fallback, and gate each edition switch on attribution/permission evidence. |
+| Bible copyright wording overwhelms the About design | Keep the short source beside the quote, put complete edition details in Terms, and limit required page-local wording to one muted SiteFooter paragraph for the edition rendered. |
 | LLM output changes meaning, names, or scripture references | Preserve a strict prompt, validate structure, label output as generated, and require human review/save/publish. |
 | Draft content leaks through provider/logs | Server-only credentials, approved provider retention, no content logging, bounded audit metadata. |
 | Translation requests become costly or slow | Explicit user action, missing-only targets, size/rate limits, max concurrency two, per-target timeouts and metrics. |
@@ -638,6 +661,8 @@ Backend changes must be compatible with the existing three-locale frontends befo
 - LLM integration owner: `hhc-web-api`.
 - LLM output: preview only, human-reviewed, never auto-saved or auto-published.
 - Security emails: reviewed Japanese/Korean templates, no runtime LLM.
-- Scripture: Japanese `聖書 新共同訳`, Korean `성경전서 개역개정판`; exact human-reviewed text with rights evidence, never LLM-translated.
+- Public CMS fallback: preserve the existing requested-locale-to-`zh-Hant` whole-projection fallback; Admin completeness remains exact locale.
+- Scripture: Japanese `聖書 新共同訳`; Korean scripture-only fallback to English NIV until approved `성경전서 개역개정판` text is available; never LLM-translated.
+- Bible copyright presentation: short source beside the About quotation, one required muted page-local footer paragraph, and complete edition details in Terms.
 - Hero image: eager and high priority, no explicit preload.
 - Global loading page: not added.
