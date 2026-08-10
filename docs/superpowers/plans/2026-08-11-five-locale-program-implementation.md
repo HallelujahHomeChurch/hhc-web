@@ -18,6 +18,7 @@
 - Azure OpenAI timeout hierarchy is 40-second provider, 45-second handler, 50-second route write deadline, and 60-second gateway; ordinary API endpoints remain at 30 seconds.
 - No new microservice, Redis dependency, translation job system, font CDN, or global `loading.tsx`.
 - Every production change is delivered by PR, green CI, merge to `main`, release workflow, and live smoke.
+- Azure resource/deployment/secret provisioning and publisher permissions remain external launch gates. Merge and release disabled-by-default compatibility code independently; never claim full locale launch or enable gated content without recorded evidence.
 
 ---
 

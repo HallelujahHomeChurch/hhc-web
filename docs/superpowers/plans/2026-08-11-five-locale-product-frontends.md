@@ -29,6 +29,7 @@
 - Modify: `src/i18n/locale-context.tsx`
 - Modify: `src/i18n/locale-context.test.tsx`
 - Modify: `src/i18n/messages.ts`
+- Modify: `src/components/LanguageSelector.tsx`
 - Modify: `src/components/LanguageSelector.test.tsx`
 - Modify: `src/pages/LoginPage.test.tsx`
 - Modify: `src/pages/RegisterPage.test.tsx`
@@ -145,6 +146,12 @@ git commit -m "feat: add Japanese and Korean website routes"
 - Modify: `src/features/videos/api.test.ts`
 - Modify: `src/features/home/api.ts`
 - Modify: `src/features/home/api.test.ts`
+- Modify: `src/components/about/HistoryTimeline.tsx`
+- Modify: `src/components/about/HistoryTimeline.test.tsx`
+- Modify: `src/components/home/NewsSection.tsx`
+- Modify: `src/components/home/NewsSection.test.tsx`
+- Modify: `src/components/home/VideoSection.tsx`
+- Modify: `src/components/home/VideoSection.test.tsx`
 - Modify: `src/app/[locale]/news/[slug]/page.tsx`
 - Modify: `src/app/[locale]/news/page.tsx`
 - Modify: `src/app/sitemap.ts`
@@ -156,7 +163,7 @@ git commit -m "feat: add Japanese and Korean website routes"
 
 - [ ] **Step 1: Add failing mapper/render tests**
 
-For a Japanese request resolved to `zh-Hant`, assert Traditional Chinese date formatting, card/detail `lang="zh-Hant"`, link remains `/ja/news/...`, canonical is `/zh-Hant/news/...`, and hreflang/sitemap omit Japanese until exact publication. Assert exact Japanese wins and restores Japanese canonical/hreflang.
+For a Japanese request resolved to `zh-Hant`, assert Traditional Chinese date formatting, HistoryTimeline event, home NewsSection card, VideoSection card, and news detail each set `lang="zh-Hant"`; links remain under `/ja`, canonical is `/zh-Hant/news/...`, and hreflang/sitemap omit Japanese until exact publication. Assert surrounding page chrome remains Japanese. Assert exact Japanese wins and restores Japanese canonical/hreflang.
 
 - [ ] **Step 2: Run focused tests and confirm failure**
 
@@ -182,10 +189,15 @@ git commit -m "fix: preserve CMS fallback language semantics"
 **Repository:** `hhc-web`
 
 **Files:**
+- Modify: `src/components/layout/LanguageSwitcher.tsx`
+- Modify: `src/components/layout/AccountControl.tsx`
 - Modify: `src/components/layout/AccountControl.test.tsx`
+- Modify: `src/components/layout/SiteHeader.tsx`
 - Modify: `src/components/layout/SiteHeader.test.tsx`
+- Modify: `src/components/layout/SiteFooter.tsx`
 - Modify: `src/components/layout/SiteFooter.test.tsx`
-- Modify: affected layout component CSS
+- Modify: `src/components/legal/LegalPageShell.tsx`
+- Modify: `src/app/globals.css`
 
 **Interfaces:**
 - Consumes: released shared `AccountMenu` and `Select variant="utility"`.
@@ -197,7 +209,7 @@ Assert five locale options, accessible full locale names, selected state, keyboa
 
 - [ ] **Step 2: Remove consumer-specific interaction CSS and use shared variants**
 
-Keep only placement/width rules in `hhc-web`; shared package owns hover, open, focus, selected, danger, disabled, forced-colors, and reduced-motion states.
+Update `LanguageSwitcher`, `AccountControl`, `SiteHeader`, `SiteFooter`, and `LegalPageShell` to use the released utility variant. In `src/app/globals.css`, retain only header/footer/legal placement, responsive width, alignment, and spacing rules; delete consumer overrides for hover, open, focus, selected, danger, disabled, forced-colors, and reduced-motion states because the shared package owns them.
 
 - [ ] **Step 3: Run tests and commit**
 
@@ -257,6 +269,7 @@ git commit -m "fix: avoid redundant hero image preload"
 - Create: `src/assets/fonts/klee-one/KleeOne-HHC-Banners.woff2`
 - Create: `src/assets/fonts/klee-one/OFL.txt`
 - Create: `src/assets/fonts/hhc-pen-hangul/HHC-Pen-Hangul-Banners.woff2`
+- Create: `src/assets/fonts/hhc-pen-hangul/NanumPenScript-Regular.ttf`
 - Create: `src/assets/fonts/hhc-pen-hangul/OFL.txt`
 - Create: `src/assets/fonts/hhc-pen-hangul/SOURCE.md`
 

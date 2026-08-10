@@ -28,6 +28,7 @@
 - Modify: `internal/content/service_test.go`
 - Modify: `internal/postgres/content_repository.go`
 - Modify: `internal/postgres/content_repository_test.go`
+- Modify: `internal/postgres/repository_integration_test.go`
 - Modify: `internal/httpapi/content_handlers.go`
 - Modify: `internal/httpapi/content_handlers_test.go`
 - Modify: `openapi.yaml`
@@ -47,6 +48,11 @@ func TestUpdateContentRejectsOmittedPersistedLocale(t *testing.T) {
 func TestUpdateContentAllowsExplicitLocaleDeletion(t *testing.T) {
     // Input names ja in DeleteLocales and keeps zh-Hant.
     // Expect the repository to receive only zh-Hant.
+}
+
+func TestRestoreRevisionPreservesLocalesMissingFromSnapshot(t *testing.T) {
+    // Current item contains zh-Hant and ja; historical snapshot contains only zh-Hant.
+    // Restore zh-Hant fields and preserve the current ja translation.
 }
 ```
 
@@ -68,7 +74,7 @@ type WriteInput struct {
 var ErrLocaleSetMismatch = errors.New("locale set mismatch")
 ```
 
-In `Service.UpdateContent`, load the current item, validate `DeleteLocales`, reject overlap between submitted and deleted locales, and reject every persisted locale absent from both sets before calling the repository.
+In `Service.UpdateContent`, load the current item, validate `DeleteLocales`, reject overlap between submitted and deleted locales, and reject every persisted locale absent from both sets before calling the repository. Apply the same preservation rule to revision restore: merge current translations whose locales are absent from the historical snapshot before the repository delete/reinsert transaction. Revision restore never implies deletion; locale removal remains a separate confirmed write carrying `deleteLocales`.
 
 - [ ] **Step 4: Map the typed error and document the API**
 

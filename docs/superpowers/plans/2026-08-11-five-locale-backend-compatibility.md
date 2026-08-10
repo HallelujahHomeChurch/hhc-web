@@ -21,22 +21,24 @@
 ### Task 1: Expand `hhc-web-api` content, bulletin, projection, and notification locales
 
 **Files:**
-- Modify: `hhc-web-api/internal/content/service.go`
-- Modify: `hhc-web-api/internal/content/service_test.go`
-- Modify: `hhc-web-api/internal/httpapi/handler.go`
-- Modify: `hhc-web-api/internal/postgres/repository.go`
-- Modify: `hhc-web-api/internal/postgres/repository_integration_test.go`
-- Create: `hhc-web-api/internal/migrations/sql/022_five_content_locales.sql`
-- Modify: `hhc-web-api/internal/migrations/migrations.go`
-- Modify: `hhc-web-api/internal/migrations/migrations_test.go`
-- Modify: `hhc-web-api/openapi.yaml`
+- Modify: `internal/content/service.go`
+- Modify: `internal/content/service_test.go`
+- Modify: `internal/bulletins/service.go`
+- Modify: `internal/bulletins/service_test.go`
+- Modify: `internal/httpapi/handler.go`
+- Modify: `internal/postgres/repository.go`
+- Modify: `internal/postgres/repository_integration_test.go`
+- Create: `internal/migrations/sql/022_five_content_locales.sql`
+- Modify: `internal/migrations/migrations.go`
+- Modify: `internal/migrations/migrations_test.go`
+- Modify: `openapi.yaml`
 
 **Interfaces:**
 - Produces: `Locale` enum `zh-Hant | zh-Hans | en | ja | ko` and five-locale bulletin notification translations.
 
 - [ ] **Step 1: Add failing locale and migration tests**
 
-Test `ja`/`ko` content create/update/publish/public projection and bulletin version lifecycle. Assert the new migration replaces every three-value locale check without rewriting rows.
+Test `ja`/`ko` content create/update/publish/public projection and bulletin create/update-version/publish/unpublish/public-read lifecycle through `internal/bulletins.Service`. Assert the new migration replaces every three-value locale check without rewriting rows.
 
 - [ ] **Step 2: Run focused tests and confirm failure**
 

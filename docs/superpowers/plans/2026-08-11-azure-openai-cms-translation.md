@@ -110,7 +110,7 @@ type Generator interface {
 
 - [ ] **Step 1: Add failing `httptest.Server` contract tests**
 
-Assert request path `/openai/v1/responses`, `api-key` header, configured deployment in `model`, `store:false`, `background:false`, no tools, strict JSON Schema field allowlist, source content only in an untrusted-data message, and successful parsing from `output_text`. Cover malformed JSON, unknown fields, Azure non-2xx, content filter failure, and 40-second context cancellation using a short injected test timeout.
+Assert request path `/openai/v1/responses`, `api-key` header, configured deployment in `model`, `store:false`, `background:false`, no tools, strict JSON Schema field allowlist, source content only in an untrusted-data message, and successful parsing from `output[].content[]` where `type == "output_text"`. Accept top-level `output_text` only as a compatibility fallback. Require `status == "completed"`, `error == nil`, and no refusal, incomplete response, or content-filter failure. Cover malformed JSON, unknown fields, Azure non-2xx, and 40-second context cancellation using a short injected test timeout.
 
 - [ ] **Step 2: Run tests and confirm failure**
 
@@ -188,7 +188,9 @@ git commit -m "feat: limit and audit CMS translations"
 - Create: `internal/httpapi/translation_handlers.go`
 - Create: `internal/httpapi/translation_handlers_test.go`
 - Modify: `internal/httpapi/handler.go`
+- Modify: `internal/httpapi/handler_test.go`
 - Modify: `cmd/server/main.go`
+- Modify: `cmd/server/telemetry_test.go`
 - Modify: `openapi.yaml`
 
 **Interfaces:**
@@ -196,6 +198,19 @@ git commit -m "feat: limit and audit CMS translations"
   - `POST /api/admin/content/{module}/{contentId}/translation-previews/{targetLocale}`
   - `POST /api/admin/bulletins/{issueId}/translation-previews/{targetLocale}`
   - errors `invalid_translation_request`, `translation_exists`, `version_mismatch`, `translation_rate_limited`, `translation_provider_error`, `translation_timeout`.
+- Consumes saved resources through:
+
+```go
+type ContentSource interface {
+    GetContent(context.Context, content.Module, string) (content.Item, error)
+}
+
+type BulletinSource interface {
+    GetIssue(context.Context, string) (bulletins.Issue, error)
+}
+```
+
+`cmd/server/main.go` injects the existing `content.Service` and `bulletins.Service`; the translation package never reads PostgreSQL directly.
 
 - [ ] **Step 1: Add failing service tests**
 
@@ -203,7 +218,7 @@ Cover saved source lookup, `If-Match`, exact missing-row semantics, explicit rep
 
 - [ ] **Step 2: Add failing handler/deadline tests**
 
-Assert `cms:write`, strict body decoding, `If-Match`, typed status mapping, disabled feature response, and that only these handlers call `http.NewResponseController(w).SetWriteDeadline(now+50s)`. Use injected clock/durations so tests do not sleep.
+Assert `cms:write`, strict body decoding, `If-Match`, typed status mapping, disabled feature response, and that only these handlers call `http.NewResponseController(w).SetWriteDeadline(now+50s)`. Add `Unwrap() http.ResponseWriter` to the access-log `statusWriter`; never ignore a `SetWriteDeadline` error. In `internal/httpapi`, test `statusWriter.Unwrap()` and handler behavior with an instrumented deadline setter. In `cmd/server/telemetry_test.go` (`package main`), exercise the complete `newHTTPTraceHandler(handler.Routes())` chain with injected clock/durations so tests do not sleep; prove translation gets 50 seconds while an ordinary route keeps the server-wide 30-second deadline.
 
 - [ ] **Step 3: Run focused tests and confirm failure**
 
