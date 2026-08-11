@@ -16,6 +16,17 @@ const labels = {
   installPrompt: 'Add this website to your Home Screen to enable notifications.'
 };
 
+function pushSubscription(endpoint = 'https://push.example.test/existing', auth = 'existing-auth') {
+  return {
+    unsubscribe: vi.fn().mockResolvedValue(true),
+    toJSON: () => ({
+      endpoint,
+      expirationTime: null,
+      keys: {p256dh: 'existing-p256dh', auth}
+    })
+  };
+}
+
 describe('WebPushControl', () => {
   const requestPermission = vi.fn();
   const subscribe = vi.fn();
@@ -143,14 +154,7 @@ describe('WebPushControl', () => {
   });
 
   it('does not repeat successful subscription writes when remounted', async () => {
-    const existingSubscription = {
-      unsubscribe: vi.fn(),
-      toJSON: () => ({
-        endpoint: 'https://push.example.test/existing',
-        expirationTime: null,
-        keys: {p256dh: 'existing-p256dh', auth: 'existing-auth'}
-      })
-    };
+    const existingSubscription = pushSubscription();
     getSubscription.mockResolvedValue(existingSubscription);
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -176,6 +180,110 @@ describe('WebPushControl', () => {
     expect(vi.mocked(fetch).mock.calls.filter(([url]) =>
       String(url).endsWith('/push-subscriptions/bind')
     )).toHaveLength(1);
+  });
+
+  it('keeps an in-flight subscription write single across remounts', async () => {
+    getSubscription.mockResolvedValue(pushSubscription());
+    let finishRegistration!: (response: Response) => void;
+    const registrationResponse = new Promise<Response>((resolve) => { finishRegistration = resolve; });
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith('/push/config')) return new Response(JSON.stringify({data: {vapidPublicKey: 'AQID'}}), {status: 200});
+      if (url.endsWith('/push/subscriptions') && init?.method === 'POST') return registrationResponse;
+      return new Response(null, {status: 404});
+    }));
+
+    const first = render(<WebPushControl locale="en" labels={labels} />);
+    await waitFor(() => expect(vi.mocked(fetch).mock.calls.filter(([url, init]) =>
+      String(url).endsWith('/push/subscriptions') && init?.method === 'POST'
+    )).toHaveLength(1));
+    first.unmount();
+    render(<WebPushControl locale="en" labels={labels} />);
+
+    expect(vi.mocked(fetch).mock.calls.filter(([url, init]) =>
+      String(url).endsWith('/push/subscriptions') && init?.method === 'POST'
+    )).toHaveLength(1);
+    finishRegistration(new Response(null, {status: 201}));
+    expect(await screen.findByRole('button', {name: labels.disable})).toBeInTheDocument();
+  });
+
+  it('persists only a digest so a reload-like remount does not rewrite the same subscription', async () => {
+    getSubscription.mockResolvedValue(pushSubscription());
+    const first = render(<WebPushControl locale="en" labels={labels} />);
+    await waitFor(() => expect(vi.mocked(fetch).mock.calls.filter(([url, init]) =>
+      String(url).endsWith('/push/subscriptions') && init?.method === 'POST'
+    )).toHaveLength(1));
+
+    first.unmount();
+    sessionStorage.clear();
+    render(<WebPushControl locale="en" labels={labels} />);
+    await waitFor(() => expect(screen.getByRole('button', {name: labels.disable})).toBeInTheDocument());
+
+    expect(vi.mocked(fetch).mock.calls.filter(([url, init]) =>
+      String(url).endsWith('/push/subscriptions') && init?.method === 'POST'
+    )).toHaveLength(1);
+    const stored = localStorage.getItem('hhc_push_registration_state') ?? '';
+    expect(stored).toMatch(/^[0-9a-f]{64}:\d+$/);
+    expect(stored).not.toContain('push.example.test');
+    expect(stored).not.toContain('existing-p256dh');
+    expect(stored).not.toContain('existing-auth');
+  });
+
+  it('writes once for a real locale change', async () => {
+    getSubscription.mockResolvedValue(pushSubscription());
+    const first = render(<WebPushControl locale="en" labels={labels} />);
+    await waitFor(() => expect(vi.mocked(fetch).mock.calls.filter(([url, init]) =>
+      String(url).endsWith('/push/subscriptions') && init?.method === 'POST'
+    )).toHaveLength(1));
+    first.unmount();
+    render(<WebPushControl locale="ja" labels={labels} />);
+
+    await waitFor(() => expect(vi.mocked(fetch).mock.calls.filter(([url, init]) =>
+      String(url).endsWith('/push/subscriptions') && init?.method === 'POST'
+    )).toHaveLength(2));
+  });
+
+  it('writes once when the browser rotates the subscription', async () => {
+    getSubscription.mockResolvedValue(pushSubscription());
+    const first = render(<WebPushControl locale="en" labels={labels} />);
+    await waitFor(() => expect(vi.mocked(fetch).mock.calls.filter(([url, init]) =>
+      String(url).endsWith('/push/subscriptions') && init?.method === 'POST'
+    )).toHaveLength(1));
+    first.unmount();
+    getSubscription.mockResolvedValue(pushSubscription('https://push.example.test/rotated', 'rotated-auth'));
+    render(<WebPushControl locale="en" labels={labels} />);
+
+    await waitFor(() => expect(vi.mocked(fetch).mock.calls.filter(([url, init]) =>
+      String(url).endsWith('/push/subscriptions') && init?.method === 'POST'
+    )).toHaveLength(2));
+  });
+
+  it('honors Retry-After and suppresses navigation retries after a 429', async () => {
+    getSubscription.mockResolvedValue(pushSubscription());
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith('/push/config')) return new Response(JSON.stringify({data: {vapidPublicKey: 'AQID'}}), {status: 200});
+      if (url.endsWith('/push/subscriptions') && init?.method === 'POST') {
+        return new Response(null, {status: 429, headers: {'Retry-After': '120'}});
+      }
+      return new Response(null, {status: 404});
+    }));
+
+    const first = render(<WebPushControl locale="en" labels={labels} />);
+    await waitFor(() => expect(vi.mocked(fetch).mock.calls.filter(([url, init]) =>
+      String(url).endsWith('/push/subscriptions') && init?.method === 'POST'
+    )).toHaveLength(1));
+    first.unmount();
+    sessionStorage.clear();
+    render(<WebPushControl locale="en" labels={labels} />);
+    await waitFor(() => expect(screen.getByRole('button', {name: labels.disable})).toBeInTheDocument());
+
+    expect(vi.mocked(fetch).mock.calls.filter(([url, init]) =>
+      String(url).endsWith('/push/subscriptions') && init?.method === 'POST'
+    )).toHaveLength(1);
+    const cooldown = localStorage.getItem('hhc_push_registration_cooldown') ?? '';
+    expect(cooldown).toMatch(/^[0-9a-f]{64}:\d+$/);
+    expect(Number(cooldown.split(':')[1])).toBeGreaterThanOrEqual(Date.now() + 120_000 - 1000);
   });
 
   it('treats denied browser permission as blocked even when a stale subscription exists', async () => {
