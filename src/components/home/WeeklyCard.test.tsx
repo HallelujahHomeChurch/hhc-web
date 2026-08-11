@@ -7,6 +7,14 @@ import {WeeklyCard} from './WeeklyCard';
 afterEach(() => vi.unstubAllGlobals());
 
 describe('WeeklyCard', () => {
+  const issueLabels = {
+    'zh-Hant': '第 1732 期',
+    'zh-Hans': '第 1732 期',
+    en: 'Issue 1732',
+    ja: '第1732号',
+    ko: '제1732호'
+  } as const;
+
   it.each(productLocales)('renders the same three edition downloads on the %s product route', async (locale) => {
     const fetcher = vi.fn().mockResolvedValue(apiResponse([latestIssue()]));
     vi.stubGlobal('fetch', fetcher);
@@ -17,7 +25,7 @@ describe('WeeklyCard', () => {
     expect(screen.getByRole('link', {name: 'Download weekly: 简中'})).toHaveAttribute('href', '/zh-Hans.pdf');
     expect(screen.getByRole('link', {name: 'Download weekly: English'})).toHaveAttribute('href', '/en.pdf');
     expect(screen.getAllByRole('link')).toHaveLength(3);
-    expect(screen.getByText(locale === 'en' ? 'Issue 1732' : '第 1732 期')).toHaveClass('text-[var(--hhc-brand-strong)]');
+    expect(screen.getByText(issueLabels[locale])).toHaveClass('text-[var(--hhc-brand-strong)]');
     expect(screen.queryByText('2026-07-13')).not.toBeInTheDocument();
     expect(screen.queryByText(/title$/)).not.toBeInTheDocument();
     expect(fetcher).toHaveBeenCalledWith('/api/bulletins?page=1&pageSize=1', expect.any(Object));

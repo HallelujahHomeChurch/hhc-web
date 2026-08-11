@@ -97,7 +97,7 @@ export function SiteHeader({locale, pathname, sessionClient}: SiteHeaderProps) {
         <nav
           id="site-navigation"
           className="absolute left-1/2 top-0 flex h-full -translate-x-1/2 items-stretch max-[767px]:hidden"
-          aria-label="主要導覽"
+          aria-label={t('nav.primary')}
         >
             {navItems.map((item) => (
               <Link

@@ -3,6 +3,8 @@ import {NextIntlClientProvider} from 'next-intl';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
 import en from '@/i18n/locales/en.json';
+import ja from '@/i18n/locales/ja.json';
+import ko from '@/i18n/locales/ko.json';
 import zhHant from '@/i18n/locales/zh-Hant.json';
 import {SiteHeader} from './SiteHeader';
 
@@ -138,5 +140,19 @@ describe('SiteHeader', () => {
     );
 
     expect(screen.getAllByText('Hallelujah Home Church')).toHaveLength(1);
+  });
+
+  it.each([
+    ['ja', ja, 'メインナビゲーション'],
+    ['ko', ko, '주요 메뉴']
+  ] as const)('localizes the primary navigation name for %s', async (locale, messages, navigationName) => {
+    render(
+      <NextIntlClientProvider locale={locale} messages={messages}>
+        <SiteHeader locale={locale} pathname={`/${locale}`} sessionClient={anonymousSessionClient} />
+      </NextIntlClientProvider>
+    );
+
+    expect(screen.getByRole('navigation', {name: navigationName})).toBeInTheDocument();
+    expect(await screen.findByRole('link', {name: messages.site.account.signIn})).toBeInTheDocument();
   });
 });

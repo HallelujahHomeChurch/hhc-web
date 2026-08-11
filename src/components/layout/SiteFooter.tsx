@@ -52,7 +52,7 @@ export function SiteFooter({locale, pathname}: SiteFooterProps) {
                 }}
               />
             </div>
-            <div className="footer-social-controls flex items-center gap-3" aria-label="社群">
+            <div className="footer-social-controls flex items-center gap-3" role="group" aria-label={t('social.navigation')}>
               <Button href={siteConfig.social.youtube} ariaLabel={t('social.youtube')} size="icon" target="_blank" variant="primarySoft">
                 <svg viewBox="0 0 24 24" className="size-5 text-primary" aria-hidden="true">
                   <rect x="3" y="6.5" width="18" height="11" rx="3" fill="none" stroke="currentColor" strokeWidth="2" />

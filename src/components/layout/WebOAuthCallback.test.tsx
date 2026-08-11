@@ -103,6 +103,26 @@ describe('WebOAuthCallback', () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['/ja', 'ログインを完了できませんでした。'],
+    ['/ko/about?source=header#account', '로그인을 완료할 수 없습니다.']
+  ])('localizes callback errors for %s', async (returnTo, expected) => {
+    sessionStorage.setItem('hhc_web_oauth_transaction', JSON.stringify({...transaction, returnTo}));
+    sessionStorage.setItem('hhc_web_oauth_transaction:recovery', '1');
+
+    render(
+      <WebOAuthCallback
+        currentUrl={new URL('https://www.alive.org.tw/oauth/callback?code=code-123&state=wrong')}
+        fetcher={vi.fn()}
+        navigate={vi.fn()}
+        storage={sessionStorage}
+      />
+    );
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(expected);
+    expect(screen.getByRole('main')).toHaveAttribute('lang', returnTo.slice(1, 3));
+  });
+
   it('keeps a failed token exchange recoverable and retries it', async () => {
     const user = userEvent.setup();
     const fetcher = vi.fn()

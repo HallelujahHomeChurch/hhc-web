@@ -4,6 +4,7 @@
     "englishName": "Hallelujah Home Church",
     "nav": {
       "home": "ホーム",
+      "primary": "メインナビゲーション",
       "about": "私たちについて",
       "news": "お知らせ",
       "literatureMinistry": "文書ミニストリー",
@@ -39,6 +40,7 @@
       "installPrompt": "iPhoneで通知を受け取るには、このウェブサイトをホーム画面に追加してください。"
     },
     "social": {
+      "navigation": "ソーシャルメディア",
       "youtube": "YouTube",
       "facebook": "Facebook"
     }

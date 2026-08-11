@@ -7,6 +7,14 @@ vi.mock('next/navigation', () => ({useSearchParams: () => new URLSearchParams()}
 afterEach(() => vi.unstubAllGlobals());
 
 describe('WeeklyArchive', () => {
+  const issueLabels = {
+    'zh-Hant': '第 1732 期',
+    'zh-Hans': '第 1732 期',
+    en: 'Issue 1732',
+    ja: '第1732号',
+    ko: '제1732호'
+  } as const;
+
   it.each(productLocales)('renders the same three edition downloads on the %s product route', async (locale) => {
     vi.stubGlobal('fetch', vi.fn().mockImplementation((input: string) => {
       const url = new URL(input, 'https://www.alive.org.tw');
@@ -22,7 +30,7 @@ describe('WeeklyArchive', () => {
     render(<WeeklyArchive locale={locale} messages={messages} />);
 
     expect((await screen.findAllByRole('link', {name: '繁中'})).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(locale === 'en' ? 'Issue 1732' : '第 1732 期')[0]).toHaveClass('text-[var(--hhc-brand-strong)]');
+    expect(screen.getAllByText(issueLabels[locale])[0]).toHaveClass('text-[var(--hhc-brand-strong)]');
     expect(screen.queryByText('2026-07-13')).not.toBeInTheDocument();
     expect(screen.getAllByRole('link', {name: '繁中'})[0]).toHaveAttribute('href', '/zh-Hant.pdf');
     expect(screen.getAllByRole('link', {name: '繁中'})[0]).toHaveAttribute('download', '');

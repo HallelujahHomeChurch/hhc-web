@@ -4,6 +4,7 @@
     "englishName": "Hallelujah Home Church",
     "nav": {
       "home": "首页",
+      "primary": "主要导航",
       "about": "关于我们",
       "news": "最新消息",
       "literatureMinistry": "文字事工",
@@ -39,6 +40,7 @@
       "installPrompt": "将网站添加到主屏幕后，即可在 iPhone 上接收通知。"
     },
     "social": {
+      "navigation": "社交媒体",
       "youtube": "YouTube",
       "facebook": "Facebook"
     }

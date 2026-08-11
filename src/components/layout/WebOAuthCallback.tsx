@@ -10,6 +10,7 @@ import {
 } from '@hallelujahhomechurch/account-client';
 import {Button} from '@hallelujahhomechurch/ui';
 import {useEffect, useRef, useState} from 'react';
+import {isLocale, type Locale} from '@/i18n/locales';
 import {webOAuthConfigForBrowser, webOAuthTransactionKey} from './AccountControl';
 
 type CallbackLabels = {
@@ -96,12 +97,13 @@ export function WebOAuthCallback({
   }, [attempt, currentUrl, fetcher, labelsProp, navigate, oauth, storage]);
 
   const labelStorage = storage ?? (typeof window === 'undefined' ? null : sessionStorage);
-  const labels = labelsProp ?? callbackLabels(labelStorage
+  const returnTo = labelStorage
     ? readOAuthTransaction({storage: labelStorage, storageKey: webOAuthTransactionKey})?.returnTo
-    : undefined);
+    : undefined;
+  const labels = labelsProp ?? callbackLabels(returnTo);
 
   return (
-    <main className="grid min-h-screen place-items-center bg-paper px-6 text-ink">
+    <main lang={callbackLocale(returnTo)} className="grid min-h-screen place-items-center bg-paper px-6 text-ink">
       {error ? (
         <div className="grid justify-items-center gap-4 text-center">
           <p role="alert">{error.message}</p>
@@ -173,13 +175,18 @@ function isAuthenticatedSession(value: unknown): value is {authenticated: true} 
 }
 
 function callbackLabels(returnTo = '/') : CallbackLabels {
-  if (returnTo.startsWith('/zh-Hant/')) {
-    return {completing: '正在完成登入…', error: '無法完成登入。', retry: '再試一次'};
+  switch (callbackLocale(returnTo)) {
+    case 'zh-Hant': return {completing: '正在完成登入…', error: '無法完成登入。', retry: '再試一次'};
+    case 'zh-Hans': return {completing: '正在完成登录…', error: '无法完成登录。', retry: '重试'};
+    case 'ja': return {completing: 'ログインを完了しています…', error: 'ログインを完了できませんでした。', retry: 'もう一度試す'};
+    case 'ko': return {completing: '로그인을 완료하는 중입니다…', error: '로그인을 완료할 수 없습니다.', retry: '다시 시도'};
+    default: return {completing: 'Completing sign in…', error: 'Unable to complete sign in.', retry: 'Try again'};
   }
-  if (returnTo.startsWith('/zh-Hans/')) {
-    return {completing: '正在完成登录…', error: '无法完成登录。', retry: '重试'};
-  }
-  return {completing: 'Completing sign in…', error: 'Unable to complete sign in.', retry: 'Try again'};
+}
+
+function callbackLocale(returnTo = '/'): Locale {
+  const candidate = returnTo.match(/^\/([^/?#]+)(?:[/?#]|$)/)?.[1];
+  return candidate && isLocale(candidate) ? candidate : 'en';
 }
 
 function defaultNavigate(url: string) {

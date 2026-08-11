@@ -4,6 +4,7 @@
     "englishName": "Hallelujah Home Church",
     "nav": {
       "home": "홈",
+      "primary": "주요 메뉴",
       "about": "교회 소개",
       "news": "새소식",
       "literatureMinistry": "문서 사역",
@@ -39,6 +40,7 @@
       "installPrompt": "iPhone에서 알림을 받으려면 이 웹사이트를 홈 화면에 추가해 주세요."
     },
     "social": {
+      "navigation": "소셜 미디어",
       "youtube": "YouTube",
       "facebook": "Facebook"
     }

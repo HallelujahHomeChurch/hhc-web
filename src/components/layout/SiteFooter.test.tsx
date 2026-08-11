@@ -1,6 +1,8 @@
 import {render, screen} from '@testing-library/react';
 import {NextIntlClientProvider} from 'next-intl';
 import {afterEach, describe, expect, it, vi} from 'vitest';
+import ja from '@/i18n/locales/ja.json';
+import ko from '@/i18n/locales/ko.json';
 import zhHant from '@/i18n/locales/zh-Hant.json';
 import {siteConfig} from '@/lib/site';
 import {SiteFooter} from './SiteFooter';
@@ -51,5 +53,18 @@ describe('SiteFooter', () => {
     expect(screen.getByText(/社團法人中華民國哈利路亞社區關懷協會/)).toBeInTheDocument();
     expect(screen.getByRole('link', {name: '隱私權'})).toHaveAttribute('href', '/zh-Hant/privacy-policy');
     expect(screen.getByRole('link', {name: '條款'})).toHaveAttribute('href', '/zh-Hant/terms-of-use');
+  });
+
+  it.each([
+    ['ja', ja, 'ソーシャルメディア'],
+    ['ko', ko, '소셜 미디어']
+  ] as const)('localizes the social group name for %s', (locale, messages, groupName) => {
+    render(
+      <NextIntlClientProvider locale={locale} messages={messages}>
+        <SiteFooter locale={locale} pathname={`/${locale}/about`} />
+      </NextIntlClientProvider>
+    );
+
+    expect(screen.getByRole('group', {name: groupName})).toBeInTheDocument();
   });
 });

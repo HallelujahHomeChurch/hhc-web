@@ -4,6 +4,7 @@
     "englishName": "Hallelujah Home Church",
     "nav": {
       "home": "Home",
+      "primary": "Primary navigation",
       "about": "About",
       "news": "Latest News",
       "literatureMinistry": "Literature Ministry",
@@ -39,6 +40,7 @@
       "installPrompt": "Add this website to your Home Screen to receive notifications on iPhone."
     },
     "social": {
+      "navigation": "Social media",
       "youtube": "YouTube",
       "facebook": "Facebook"
     }
