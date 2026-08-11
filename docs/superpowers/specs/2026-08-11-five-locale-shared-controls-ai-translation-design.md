@@ -568,7 +568,7 @@ Setting all layers to 60 seconds is intentionally rejected because simultaneous 
 
 Static product copy, legal documents, account security templates, and scripture remain human-authored or human-reviewed source files outside this CMS translation prompt. Product and security copy still follows natural locale-appropriate wording with the precision required by the message; legal copy keeps its appropriate formal register.
 
-Before a prompt version is enabled in production, a fluent reviewer evaluates at least one representative record from each supported CMS module in both Japanese and Korean. Each sample must pass meaning preservation, naturalness, register consistency, and terminology review. Exact-output snapshot tests are not used for subjective prose; contract tests cover the structured fields and safety rules, while the Admin preview remains the final editorial gate.
+Before a prompt version is enabled in production, a fluent reviewer evaluates at least one Japanese and one Korean record from each supported generic CMS module (news, history, and video), plus one Simplified Chinese and one English bulletin-metadata preview. Each sample must pass meaning preservation, naturalness, register consistency, and terminology review. Exact-output snapshot tests are not used for subjective prose; contract tests cover the structured fields and safety rules, while the Admin preview remains the final editorial gate.
 
 ### Validation and overwrite protection
 
@@ -754,7 +754,7 @@ Backend changes must be compatible with the existing three-locale frontends befo
 - Audit records contain metadata but no translated text.
 - Japanese previews use natural contemporary Japanese and consistent field-appropriate register rather than literal Chinese syntax.
 - Korean previews use natural contemporary Korean with consistent `해요체` or context-required `합니다체`, never a mixture within one field.
-- Representative Japanese and Korean samples pass fluent human review for meaning, naturalness, register, and terminology before the prompt version is released.
+- Representative Japanese and Korean generic CMS samples, plus Simplified Chinese and English bulletin-metadata samples, pass fluent human review for meaning, naturalness, register, and terminology before the prompt version is released.
 
 ### Shared controls
 
