@@ -6,6 +6,11 @@ const mapLinks = {
   zhongli: 'https://maps.app.goo.gl/A1SDTSZC2XLHqkST7'
 } as const;
 
+const englishAddresses = {
+  taipei: "B1, No. 29, Sec. 3, Ren'ai Rd., Da'an Dist., Taipei City 106675, Taiwan (R.O.C.).",
+  zhongli: '2 F., No. 25, Fuzhou Rd., Zhongli Dist., Taoyuan City 320048, Taiwan (R.O.C.).'
+} as const;
+
 export const locationsByLocale: LocalizedRecord<LocationItem[]> = {
   'zh-Hant': [
     {id: 'taipei', name: '台北哈利路亞家教會', address: '106臺北市大安區民輝里仁愛路三段29號B1', mapHref: mapLinks.taipei},
@@ -16,7 +21,15 @@ export const locationsByLocale: LocalizedRecord<LocationItem[]> = {
     {id: 'zhongli', name: '中坜哈利路亚家教会', address: '320桃园市中坜区正义里福州路25号2楼', mapHref: mapLinks.zhongli}
   ],
   en: [
-    {id: 'taipei', name: 'Taipei Hallelujah Home Church', address: 'B1, No. 29, Sec. 3, Renai Rd., Da-an District, Taipei', mapHref: mapLinks.taipei},
-    {id: 'zhongli', name: 'Zhongli Hallelujah Home Church', address: '2F, No. 25, Fuzhou Rd., Zhongli District, Taoyuan', mapHref: mapLinks.zhongli}
+    {id: 'taipei', name: 'Taipei Hallelujah Home Church', address: englishAddresses.taipei, mapHref: mapLinks.taipei},
+    {id: 'zhongli', name: 'Zhongli Hallelujah Home Church', address: englishAddresses.zhongli, mapHref: mapLinks.zhongli}
+  ],
+  ja: [
+    {id: 'taipei', name: '台北ハレルヤ・ホームチャーチ', address: englishAddresses.taipei, mapHref: mapLinks.taipei},
+    {id: 'zhongli', name: '中壢ハレルヤ・ホームチャーチ', address: englishAddresses.zhongli, mapHref: mapLinks.zhongli}
+  ],
+  ko: [
+    {id: 'taipei', name: '타이베이 할렐루야 가정교회', address: englishAddresses.taipei, mapHref: mapLinks.taipei},
+    {id: 'zhongli', name: '중리 할렐루야 가정교회', address: englishAddresses.zhongli, mapHref: mapLinks.zhongli}
   ]
 };
