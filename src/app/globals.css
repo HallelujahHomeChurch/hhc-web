@@ -123,8 +123,7 @@
     text-decoration: none;
   }
 
-  a:focus-visible,
-  button:focus-visible {
+  a:focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 4px;
   }
@@ -296,46 +295,6 @@
   .newsletter-unsubscribe .newsletter-unsubscribe__error {
     color: var(--color-primary);
     font-weight: 650;
-  }
-
-  .legal-language-trigger {
-    display: inline-flex;
-    min-width: 72px;
-    min-height: 34px;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    border: 1px solid transparent;
-    border-radius: 14px;
-    background: transparent;
-    color: var(--color-muted);
-    padding-inline: 10px;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-  }
-
-  .legal-language-trigger:hover,
-  .legal-language-trigger[data-hovered],
-  .legal-language-trigger[data-pressed] {
-    border-color: var(--color-primary);
-    background: var(--color-primary-soft);
-    color: var(--color-primary);
-  }
-
-  .legal-language-trigger:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 3px;
-  }
-
-  .site-language-trigger {
-    min-width: 96px;
-    border-color: var(--hhc-control-border);
-    border-radius: 999px;
-    background: var(--color-paper);
-    color: var(--hhc-control);
-    font-size: 14px;
-    font-weight: 600;
   }
 
   .site-header,

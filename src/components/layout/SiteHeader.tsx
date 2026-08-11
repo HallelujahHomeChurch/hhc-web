@@ -81,12 +81,12 @@ export function SiteHeader({locale, pathname, sessionClient}: SiteHeaderProps) {
     <AccountControlProvider client={sessionClient} labels={accountLabels}>
       <header className="site-header sticky top-0 z-10 border-b border-line/70 bg-paper/90 backdrop-blur-xl" data-mobile-hidden={!mobileChromeVisible}>
       <div className="relative flex min-h-[76px] w-full items-center gap-6 px-6 max-[767px]:min-h-[68px] max-[767px]:px-4">
-        <Link href={`/${locale}`} className="inline-flex min-h-11 min-w-max items-center gap-2.5">
+        <Link href={`/${locale}`} className="inline-flex min-h-11 min-w-max items-center gap-2.5 max-[767px]:min-w-0 max-[767px]:flex-1">
           <span className="grid size-10 shrink-0 place-items-center max-[767px]:size-9" aria-hidden="true">
             <Image src="/assets/brand/logo.png" alt="" width={40} height={40} className="h-full w-full object-contain" />
           </span>
-          <span className="grid gap-0.5 leading-none">
-            <strong className="text-[19px] font-medium tracking-[0.02em] text-[var(--hhc-brand-ui)] max-[767px]:text-[17px]">{t('name')}</strong>
+          <span className="grid min-w-0 gap-0.5 leading-none">
+            <strong className="truncate text-[19px] font-medium tracking-[0.02em] text-[var(--hhc-brand-ui)] max-[767px]:text-[17px]">{t('name')}</strong>
             {locale !== 'en' ? (
               <small className="text-[9px] font-extrabold uppercase tracking-[0.02em] text-[var(--hhc-brand-muted)] max-[767px]:text-[8px]">
                 {t('englishName')}

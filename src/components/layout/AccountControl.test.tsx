@@ -207,11 +207,15 @@ describe('AccountControl', () => {
     await user.click(await screen.findByRole('button', {name: 'Account menu'}));
     expect(screen.getByText('Ada')).toBeInTheDocument();
     expect(screen.getByText('ada@example.com')).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', {name: 'Manage account'})).toHaveAttribute(
+    const manageAccount = screen.getByRole('menuitem', {name: 'Manage account'});
+    const signOut = screen.getByRole('menuitem', {name: 'Sign out'});
+    expect(manageAccount).toHaveClass('hhc-menu__item', 'hhc-menu__item--default');
+    expect(signOut).toHaveClass('hhc-menu__item', 'hhc-menu__item--danger');
+    expect(manageAccount).toHaveAttribute(
       'href',
       'https://account.alive.org.tw/profile'
     );
-    await user.click(screen.getByRole('menuitem', {name: 'Sign out'}));
+    await user.click(signOut);
 
     expect(logoutAll).toHaveBeenCalledOnce();
     await waitFor(() => expect(screen.getByRole('link', {name: 'Sign in'})).toBeInTheDocument());

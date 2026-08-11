@@ -36,7 +36,10 @@ describe('SiteHeader', () => {
     expect(literatureMinistryLink).toHaveAttribute('href', '/zh-Hant/literature-ministry');
     expect(aboutLink).toHaveAttribute('aria-current', 'page');
     expect(aboutLink).toHaveAttribute('data-active', 'true');
-    expect(await screen.findByRole('link', {name: '登入'})).toBeInTheDocument();
+    const accountEntry = await screen.findByRole('link', {name: '登入'});
+    expect(accountEntry).toBeInTheDocument();
+    expect(accountEntry.parentElement).toHaveClass('ml-auto', 'shrink-0');
+    expect(screen.getByRole('banner').firstElementChild).toHaveClass('max-[767px]:px-4');
     expect(brandLink).not.toHaveAttribute('aria-label');
     expect(aboutLink.className).toContain('font-semibold');
     expect(aboutLink.className).not.toContain('font-extrabold');
@@ -62,6 +65,19 @@ describe('SiteHeader', () => {
     expect(screen.queryByRole('button', {name: '開啟選單'})).not.toBeInTheDocument();
     expect(await screen.findByRole('link', {name: '登入'})).toBeInTheDocument();
     expect(getSession).toHaveBeenCalledOnce();
+  });
+
+  it('lets long localized branding shrink before the fixed account slot at mobile zoom widths', async () => {
+    render(
+      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <SiteHeader locale="zh-Hant" pathname="/zh-Hant" sessionClient={anonymousSessionClient} />
+      </NextIntlClientProvider>
+    );
+
+    const brandLink = screen.getByRole('link', {name: /哈利路亞家教會/});
+    expect(brandLink).toHaveClass('max-[767px]:min-w-0', 'max-[767px]:flex-1');
+    expect(screen.getByText('哈利路亞家教會')).toHaveClass('truncate');
+    expect((await screen.findByRole('link', {name: '登入'})).parentElement).toHaveClass('shrink-0');
   });
 
   it('marks the mobile navigation only for an installed iPhone PWA', async () => {

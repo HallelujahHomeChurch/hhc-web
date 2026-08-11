@@ -27,7 +27,11 @@ describe('SiteFooter', () => {
 
     expect(screen.getByText('哈利路亞家教會')).toBeInTheDocument();
     expect(screen.queryByRole('link', {name: '關於我們'})).not.toBeInTheDocument();
-    expect(screen.getByRole('button', {name: /語言/})).toHaveTextContent('繁中');
+    const languageTrigger = screen.getByRole('button', {name: /語言/});
+    expect(languageTrigger).toHaveTextContent('繁中');
+    expect(languageTrigger).toHaveClass('hhc-select__trigger--utility');
+    expect(languageTrigger).not.toHaveClass('site-language-trigger', 'legal-language-trigger');
+    expect(languageTrigger).toHaveAccessibleName(/繁體中文/);
     expect(container.querySelector('select')).toHaveAttribute('tabindex', '-1');
     expect(screen.getByRole('link', {name: 'YouTube'})).toHaveAttribute('href', siteConfig.social.youtube);
     expect(screen.getByRole('link', {name: 'Facebook'})).toHaveAttribute('href', siteConfig.social.facebook);
@@ -43,6 +47,7 @@ describe('SiteFooter', () => {
     expect(social).toContainElement(screen.getByRole('link', {name: 'Facebook'}));
     expect(social).toHaveClass('gap-3');
     expect(controls).toHaveClass('max-[620px]:justify-between');
+    expect(controls?.parentElement).toHaveClass('max-[620px]:flex-col', 'max-[620px]:items-start');
     expect(screen.getByText(/社團法人中華民國哈利路亞社區關懷協會/)).toBeInTheDocument();
     expect(screen.getByRole('link', {name: '隱私權'})).toHaveAttribute('href', '/zh-Hant/privacy-policy');
     expect(screen.getByRole('link', {name: '條款'})).toHaveAttribute('href', '/zh-Hant/terms-of-use');
