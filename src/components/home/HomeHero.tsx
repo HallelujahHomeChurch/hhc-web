@@ -16,15 +16,17 @@ export function HomeHero({locale, title, subtitle}: HomeHeroProps) {
       className="relative min-h-[clamp(430px,56vw,610px)] overflow-hidden bg-paper"
       aria-labelledby="hero-title"
     >
-      <Image
-        src="/assets/banners/hero.jpg"
-        alt=""
-        fill
-        preload
-        fetchPriority="high"
-        sizes="100vw"
-        className="object-cover object-center"
-      />
+      <picture>
+        <Image
+          src="/assets/banners/hero.jpg"
+          alt=""
+          fill
+          loading="eager"
+          fetchPriority="high"
+          sizes="100vw"
+          className="object-cover object-center"
+        />
+      </picture>
       <div className="absolute inset-0 z-[1]" aria-hidden="true" style={{backgroundImage: 'var(--hhc-hero-overlay)'}} />
       <div className="shell relative z-2 flex min-h-[clamp(430px,56vw,610px)] items-center py-[70px] pb-[88px] max-[620px]:py-12 max-[620px]:pb-16">
         <div className="min-w-0 max-w-[590px] pt-8 max-[620px]:pt-0">
