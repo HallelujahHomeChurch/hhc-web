@@ -20,9 +20,14 @@ if (localFontSources.length === 0) {
 const failures = [];
 const eagerBodyFonts = [...fontConfig.matchAll(/(?:Inter|Noto_Sans_(?:SC|TC))\(\{([\s\S]*?)\}\)/g)]
   .filter((match) => /preload\s*:\s*true/.test(match[1]));
+const eagerDisplayFonts = [...fontConfig.matchAll(/localFont\(\{([\s\S]*?)\}\)/g)]
+  .filter((match) => /preload\s*:\s*true/.test(match[1]));
 
 if (eagerBodyFonts.length > 0) {
   failures.push('Body font preload is forbidden; let each locale load only the font it uses');
+}
+if (eagerDisplayFonts.length > 0) {
+  failures.push('Display font preload is forbidden; let each locale load only the font it uses');
 }
 
 for (const source of localFontSources) {

@@ -16,7 +16,7 @@ describe('RootLayout', () => {
     expect(layout.props.children[0].props.children.props.dangerouslySetInnerHTML.__html).toContain('hhc_theme');
   });
 
-  it('uses system CJK body fonts and a local simplified banner subset', () => {
+  it('uses system CJK body fonts and local locale-specific banner subsets', () => {
     const fonts = readFileSync('src/app/fonts.ts', 'utf8');
     const styles = readFileSync('src/app/globals.css', 'utf8');
 
@@ -24,6 +24,9 @@ describe('RootLayout', () => {
     expect(fonts).not.toContain('Noto_Sans_SC');
     expect(fonts).not.toContain("Ma_Shan_Zheng");
     expect(fonts).toContain('MaShanZheng-HHC-Banners.woff2');
+    expect(fonts).toContain('KleeOne-HHC-Banners.woff2');
+    expect(fonts).toContain('HHC-Pen-Hangul-Banners.woff2');
+    expect(fonts.match(/fallback: \['system-ui', 'sans-serif'\]/g)).toHaveLength(2);
     expect(styles).toContain('"PingFang TC"');
     expect(styles).toContain('"PingFang SC"');
     expect(styles).not.toContain('--font-noto-sans');
@@ -32,6 +35,6 @@ describe('RootLayout', () => {
   it('does not preload locale-specific banner fonts globally', () => {
     const fonts = readFileSync('src/app/fonts.ts', 'utf8');
 
-    expect(fonts.match(/preload: false/g)).toHaveLength(3);
+    expect(fonts.match(/preload: false/g)).toHaveLength(5);
   });
 });
