@@ -5,7 +5,7 @@ import {useSearchParams} from 'next/navigation';
 import {Button} from '@/components/ui/Button';
 import {DownloadButton} from '@/components/ui/DownloadButton';
 import {fetchWeeklyArchive} from '@/features/weekly/public-api';
-import {formatIssueNumber} from '@/features/weekly/format';
+import {formatIssueNumber, resolveWeeklyCopy} from '@/features/weekly/format';
 import {weeklyEditionLabels, type WeeklyIssue, type WeeklyIssuePage} from '@/features/weekly/types';
 import type {Locale} from '@/i18n/locales';
 
@@ -67,6 +67,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
 
   const latestIssue = archive?.items[0];
   const latestIssueLabel = formatIssueNumber(locale, latestIssue?.issueNumber);
+  const latestCopy = latestIssue ? resolveWeeklyCopy(latestIssue, locale) : null;
 
   return (
     <section className="shell grid gap-7" aria-labelledby="weekly-archive-title">
@@ -81,6 +82,8 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
           {state === 'ready' && latestIssue?.versions.length ? (
             <>
               {latestIssueLabel ? <p className="mt-3 text-[21px] font-semibold text-[var(--hhc-brand-strong)]">{latestIssueLabel}</p> : null}
+              {latestCopy ? <h3 lang={latestCopy.locale} className="mt-2 text-lg font-semibold leading-snug text-ink">{latestCopy.title}</h3> : null}
+              {latestCopy?.subtitle ? <p lang={latestCopy.locale} className="mt-1 text-sm leading-relaxed text-muted">{latestCopy.subtitle}</p> : null}
               <VersionLinks issue={latestIssue} className="mt-5" />
             </>
           ) : state === 'error' ? (
@@ -102,9 +105,14 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
         <div className="grid min-h-24 gap-3">
           {state === 'ready' && archive?.items.length ? archive.items.map((issue) => {
             const issueLabel = formatIssueNumber(locale, issue.issueNumber);
+            const copy = resolveWeeklyCopy(issue, locale);
             return issue.versions.length ? (
-              <article key={issue.id} className="grid grid-cols-[125px_minmax(0,1fr)] items-center gap-x-5 gap-y-4 rounded-[14px] border border-panel-border bg-panel px-5 py-4 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)] max-[860px]:grid-cols-1">
+              <article key={issue.id} className="grid grid-cols-[125px_minmax(0,1fr)_auto] items-center gap-x-5 gap-y-4 rounded-[14px] border border-panel-border bg-panel px-5 py-4 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)] max-[860px]:grid-cols-1">
                 {issueLabel ? <p className="whitespace-nowrap text-[21px] font-semibold text-[var(--hhc-brand-strong)]">{issueLabel}</p> : null}
+                <div className="min-w-0">
+                  {copy ? <h4 lang={copy.locale} className="text-lg font-semibold leading-snug text-ink">{copy.title}</h4> : null}
+                  {copy?.subtitle ? <p lang={copy.locale} className="mt-1 text-sm leading-relaxed text-muted">{copy.subtitle}</p> : null}
+                </div>
                 <VersionLinks issue={issue} />
               </article>
             ) : null;

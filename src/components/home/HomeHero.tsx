@@ -11,15 +11,15 @@ type HomeHeroProps = {
 export function HomeHero({locale, title, subtitle}: HomeHeroProps) {
   const displayFont = bannerFontByLocale[locale].className;
   const titleTypography = locale === 'ja'
-    ? 'text-[clamp(42px,5vw,68px)] tracking-[0.03em] max-[620px]:text-[clamp(32px,10vw,44px)] max-[620px]:tracking-[0.01em]'
+    ? 'text-[clamp(44px,5.8vw,76px)] tracking-[0.03em] max-[620px]:text-[clamp(34px,10vw,46px)] max-[620px]:tracking-[0.01em]'
     : locale === 'ko'
-      ? 'text-[clamp(44px,5.5vw,72px)] tracking-[0.01em] max-[620px]:text-[clamp(32px,10vw,44px)] max-[620px]:tracking-[0]'
-      : 'text-[clamp(54px,8vw,96px)] tracking-[0.08em] max-[620px]:text-[clamp(34px,12vw,54px)] max-[620px]:tracking-[0.03em]';
+      ? 'text-[clamp(46px,6vw,80px)] tracking-[0.01em] max-[620px]:text-[clamp(34px,10vw,46px)] max-[620px]:tracking-[0]'
+      : 'text-[clamp(58px,8.5vw,104px)] tracking-[0.08em] max-[620px]:text-[clamp(36px,12vw,56px)] max-[620px]:tracking-[0.03em]';
   const subtitleTypography = locale === 'ja'
-    ? 'text-[clamp(20px,2.2vw,28px)] tracking-[0.03em]'
+    ? 'text-[clamp(24px,3.5vw,36px)] tracking-[0.03em] max-[620px]:text-[clamp(21px,7vw,29px)]'
     : locale === 'ko'
-      ? 'text-[clamp(20px,2.2vw,28px)] tracking-[0.01em]'
-      : 'text-[clamp(22px,2.5vw,32px)] tracking-[0.06em]';
+      ? 'text-[clamp(24px,3.5vw,36px)] tracking-[0.01em] max-[620px]:text-[clamp(21px,7vw,29px)]'
+      : 'text-[clamp(26px,3.5vw,40px)] tracking-[0.06em] max-[620px]:text-[clamp(22px,7vw,30px)]';
 
   return (
     <section
@@ -39,7 +39,7 @@ export function HomeHero({locale, title, subtitle}: HomeHeroProps) {
       </picture>
       <div className="absolute inset-0 z-[1]" aria-hidden="true" style={{backgroundImage: 'var(--hhc-hero-overlay)'}} />
       <div className="shell relative z-2 flex min-h-[clamp(430px,56vw,610px)] items-center py-[70px] pb-[88px] max-[620px]:py-12 max-[620px]:pb-16">
-        <div className="min-w-0 max-w-[590px] pt-8 max-[620px]:pt-0">
+        <div className="min-w-0 max-w-[680px] pt-8 max-[620px]:pt-0">
           <h1 id="hero-title" className={`${displayFont} ${titleTypography} whitespace-nowrap font-normal leading-[1.08] text-[var(--hhc-brand-strong)] max-[620px]:whitespace-normal`}>
             {title}
           </h1>

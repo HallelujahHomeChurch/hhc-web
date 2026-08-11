@@ -2,6 +2,7 @@ import {NextIntlClientProvider} from 'next-intl';
 import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {isLocale, productLocales, type Locale} from '@/i18n/locales';
+import {TranslationNotice} from '@/components/layout/TranslationNotice';
 
 type LocaleLayoutProps = {
   children: React.ReactNode;
@@ -28,9 +29,13 @@ export default async function LocaleLayout({children, params}: LocaleLayoutProps
 
   setRequestLocale(rawLocale);
 
+  const messages = await getMessages(rawLocale);
   return (
-    <NextIntlClientProvider locale={rawLocale} messages={await getMessages(rawLocale)}>
-      <div data-locale={rawLocale} lang={rawLocale}>{children}</div>
+    <NextIntlClientProvider locale={rawLocale} messages={messages}>
+      <div data-locale={rawLocale} lang={rawLocale}>
+        <TranslationNotice locale={rawLocale} message={messages.site.translationNotice} dismissLabel={messages.site.translationNoticeDismiss} regionLabel={messages.site.translationNoticeRegion} />
+        {children}
+      </div>
     </NextIntlClientProvider>
   );
 }

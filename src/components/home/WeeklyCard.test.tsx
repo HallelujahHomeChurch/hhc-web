@@ -26,8 +26,10 @@ describe('WeeklyCard', () => {
     expect(screen.getByRole('link', {name: 'Download weekly: English'})).toHaveAttribute('href', '/en.pdf');
     expect(screen.getAllByRole('link')).toHaveLength(3);
     expect(screen.getByText(issueLabels[locale])).toHaveClass('text-[var(--hhc-brand-strong)]');
+    const copyLocale = locale === 'zh-Hans' || locale === 'en' ? locale : 'zh-Hant';
+    expect(screen.getByRole('heading', {name: `${copyLocale} title`})).toHaveAttribute('lang', copyLocale);
+    expect(screen.getByText(`${copyLocale} subtitle`)).toHaveAttribute('lang', copyLocale);
     expect(screen.queryByText('2026-07-13')).not.toBeInTheDocument();
-    expect(screen.queryByText(/title$/)).not.toBeInTheDocument();
     expect(fetcher).toHaveBeenCalledWith('/api/bulletins?page=1&pageSize=1', expect.any(Object));
     expect(String(fetcher.mock.calls[0]?.[0])).not.toContain('locale=');
   });

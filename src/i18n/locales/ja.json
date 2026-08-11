@@ -20,6 +20,9 @@
       "signOutError": "ログアウトできませんでした。もう一度お試しください。"
     },
     "language": "言語",
+    "translationNotice": "このウェブサイトの一部のコンテンツには、機械翻訳またはAI翻訳が使用されている場合があります。",
+    "translationNoticeDismiss": "翻訳に関するお知らせを閉じる",
+    "translationNoticeRegion": "翻訳に関するお知らせ",
     "privacyPolicy": "プライバシー",
     "termsOfUse": "利用規約",
     "legalNavigation": "法的情報",

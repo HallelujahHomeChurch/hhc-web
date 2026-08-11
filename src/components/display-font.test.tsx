@@ -33,13 +33,20 @@ describe.each([
   });
 
   it.each([
-    ['ja', 'text-[clamp(42px,5vw,68px)]', 'tracking-[0.03em]', 'max-[620px]:text-[clamp(32px,10vw,44px)]'],
-    ['ko', 'text-[clamp(44px,5.5vw,72px)]', 'tracking-[0.01em]', 'max-[620px]:text-[clamp(32px,10vw,44px)]']
-  ] as const)('uses locale-tuned banner sizing for %s', (locale, desktopSize, tracking, mobileSize) => {
+    ['ja', 'text-[clamp(44px,5.8vw,76px)]', 'tracking-[0.03em]', 'max-[620px]:text-[clamp(34px,10vw,46px)]', 'text-[clamp(24px,3.5vw,36px)]', 'max-[620px]:text-[clamp(21px,7vw,29px)]'],
+    ['ko', 'text-[clamp(46px,6vw,80px)]', 'tracking-[0.01em]', 'max-[620px]:text-[clamp(34px,10vw,46px)]', 'text-[clamp(24px,3.5vw,36px)]', 'max-[620px]:text-[clamp(21px,7vw,29px)]']
+  ] as const)('uses locale-tuned banner sizing for %s', (locale, desktopSize, tracking, mobileSize, subtitleSize, subtitleMobileSize) => {
     render(<Hero locale={locale} title="Title" subtitle="Subtitle" />);
 
     expect(screen.getByRole('heading', {name: 'Title'})).toHaveClass(desktopSize, tracking, mobileSize);
-    expect(screen.getByText('Subtitle')).toHaveClass('text-[clamp(20px,2.2vw,28px)]', tracking);
+    expect(screen.getByText('Subtitle')).toHaveClass(subtitleSize, subtitleMobileSize, tracking);
+  });
+
+  it('uses the larger Traditional Chinese and English banner scale', () => {
+    render(<Hero locale="en" title="Title" subtitle="Subtitle" />);
+
+    expect(screen.getByRole('heading', {name: 'Title'})).toHaveClass('text-[clamp(58px,8.5vw,104px)]');
+    expect(screen.getByText('Subtitle')).toHaveClass('text-[clamp(26px,3.5vw,40px)]', 'max-[620px]:text-[clamp(22px,7vw,30px)]');
   });
 });
 

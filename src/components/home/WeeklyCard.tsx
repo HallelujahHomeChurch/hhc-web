@@ -3,7 +3,7 @@
 import {useEffect, useState} from 'react';
 import {DownloadButton} from '@/components/ui/DownloadButton';
 import {fetchLatestWeekly} from '@/features/weekly/public-api';
-import {formatIssueNumber} from '@/features/weekly/format';
+import {formatIssueNumber, resolveWeeklyCopy} from '@/features/weekly/format';
 import {weeklyEditionLabels, type WeeklyIssue} from '@/features/weekly/types';
 import type {Locale} from '@/i18n/locales';
 
@@ -24,6 +24,7 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
   const state = result?.key === requestKey ? result.state : 'loading';
   const weekly = result?.key === requestKey ? result.weekly : null;
   const issueLabel = formatIssueNumber(locale, weekly?.issueNumber);
+  const copy = weekly ? resolveWeeklyCopy(weekly, locale) : null;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -44,8 +45,9 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
       {state === 'ready' && weekly ? (
         <div>
           <BulletinMark />
-          <h3 id="weekly-title" className="sr-only">{ctaLabel}</h3>
           {issueLabel ? <p className="mb-1 text-[21px] font-semibold text-[var(--hhc-brand-strong)]">{issueLabel}</p> : null}
+          {copy ? <h3 id="weekly-title" lang={copy.locale} className="text-xl font-semibold leading-snug text-ink">{copy.title}</h3> : <h3 id="weekly-title" className="sr-only">{ctaLabel}</h3>}
+          {copy?.subtitle ? <p lang={copy.locale} className="mt-1 text-sm leading-relaxed text-muted">{copy.subtitle}</p> : null}
           <div className="mt-5 grid grid-cols-3 gap-2.5">
             {weekly.versions.map((version) => (
               <DownloadButton

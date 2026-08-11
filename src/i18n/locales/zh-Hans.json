@@ -20,6 +20,9 @@
       "signOutError": "无法退出登录，请重试。"
     },
     "language": "语言",
+    "translationNotice": "本网站的部分内容可能是机器或 AI 翻译。",
+    "translationNoticeDismiss": "关闭翻译提示",
+    "translationNoticeRegion": "翻译提示",
     "privacyPolicy": "隐私权",
     "termsOfUse": "条款",
     "legalNavigation": "法律信息",

@@ -37,7 +37,8 @@ describe('WeeklyArchive', () => {
     expect(screen.getAllByRole('link', {name: '简中'})[0]).toHaveAttribute('href', '/zh-Hans.pdf');
     expect(screen.getAllByRole('link', {name: 'English'})[0]).toHaveAttribute('href', '/en.pdf');
     expect(screen.getAllByRole('link', {name: '繁中'})[0].parentElement).toHaveClass('max-[860px]:grid-flow-col');
-    expect(screen.queryByText(/title$/)).not.toBeInTheDocument();
+    const copyLocale = locale === 'zh-Hans' || locale === 'en' ? locale : 'zh-Hant';
+    expect(screen.getAllByRole('heading', {name: `${copyLocale} title`}).length).toBeGreaterThan(0);
   });
 
   it('does not render a download for an unavailable locale version', async () => {
@@ -55,7 +56,7 @@ describe('WeeklyArchive', () => {
     render(<WeeklyArchive locale="en" messages={messages} />);
 
     expect((await screen.findAllByRole('link', {name: '繁中'})).length).toBeGreaterThan(0);
-    expect(screen.queryByText('Traditional title')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('heading', {name: 'Traditional title'}).length).toBeGreaterThan(0);
     expect(screen.queryByRole('link', {name: '简中'})).not.toBeInTheDocument();
     expect(screen.queryByRole('link', {name: 'English'})).not.toBeInTheDocument();
   });
@@ -80,7 +81,7 @@ describe('WeeklyArchive', () => {
     expect(screen.getAllByRole('link', {name: 'English'}).length).toBeGreaterThan(0);
     expect(screen.queryByRole('link', {name: '日本語'})).not.toBeInTheDocument();
     expect(screen.queryByRole('link', {name: '한국어'})).not.toBeInTheDocument();
-    expect(screen.queryByText(/title$/)).not.toBeInTheDocument();
+    expect(screen.getAllByRole('heading', {name: 'zh-Hant title'}).length).toBeGreaterThan(0);
   });
 });
 

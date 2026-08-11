@@ -20,6 +20,9 @@
       "signOutError": "Unable to sign out. Try again."
     },
     "language": "Language",
+    "translationNotice": "Some content on this website may be machine- or AI-translated.",
+    "translationNoticeDismiss": "Dismiss translation notice",
+    "translationNoticeRegion": "Translation notice",
     "privacyPolicy": "Privacy",
     "termsOfUse": "Terms",
     "legalNavigation": "Legal information",
