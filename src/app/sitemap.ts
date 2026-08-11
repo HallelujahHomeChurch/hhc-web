@@ -1,7 +1,7 @@
 import type {MetadataRoute} from 'next';
 import type {NewsItem} from '@/features/news/types';
 import {getNewsPage} from '@/features/news/api';
-import {locales} from '@/i18n/locales';
+import {productLocales} from '@/i18n/locales';
 import {getAlternates, getLocalizedPath} from '@/lib/seo';
 import {siteConfig} from '@/lib/site';
 
@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticEntries = paths.flatMap((path) =>
-    locales.map((locale) => ({
+    productLocales.map((locale) => ({
       url: `${siteConfig.url}${getLocalizedPath(locale, path)}`,
       alternates: {
         languages: getAlternates(path)
@@ -28,9 +28,9 @@ export function buildNewsSitemap(news: NewsItem[]): MetadataRoute.Sitemap {
     const slug = item.href.split('/').filter(Boolean).at(-1);
     if (!slug) return [];
     const path = `/news/${slug}`;
-    return locales.map((locale) => ({
+    return item.availableLocales.map((locale) => ({
       url: `${siteConfig.url}${getLocalizedPath(locale, path)}`,
-      alternates: {languages: getAlternates(path)}
+      alternates: {languages: getAlternates(path, item.availableLocales)}
     }));
   });
 }

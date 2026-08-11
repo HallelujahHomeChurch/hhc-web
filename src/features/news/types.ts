@@ -1,4 +1,6 @@
-export type NewsItem = {
+import type {ContentLocaleMetadata} from '@/features/content/locale';
+
+export type NewsItem = ContentLocaleMetadata & {
   id: string;
   title: string;
   summary: string;

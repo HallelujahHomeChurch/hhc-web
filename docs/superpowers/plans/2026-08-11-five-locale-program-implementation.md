@@ -12,6 +12,7 @@
 
 - Admin console chrome supports only `zh-Hant`, `zh-Hans`, and `en`.
 - Website, account, CMS content, subscriptions, campaigns, and notifications support `zh-Hant`, `zh-Hans`, `en`, `ja`, and `ko`.
+- **2026-08-11 domain correction:** weekly-paper `BulletinEdition` is independently and exactly `zh-Hant | zh-Hans | en`; Japanese/Korean routes and messages show the three edition links, and no Japanese/Korean PDF exists. Generic CMS translation targets remain `zh-Hans`/`en`/`ja`/`ko`; bulletin metadata preview targets only `zh-Hans`/`en`. Migration 022 is immutable, and legacy bulletin rows require inventory before any separate data remediation.
 - Public CMS fallback remains one complete published `zh-Hant` projection; it never mixes fields.
 - Generated text is preview-only and never auto-saved or auto-published.
 - Scripture, legal copy, static product copy, and security email templates are never translated at runtime.
@@ -27,7 +28,7 @@
 | Wave | Plan | Repositories | Exit gate |
 | ---: | --- | --- | --- |
 | 1 | [Locale Contract Safety and Shared Foundation](./2026-08-11-locale-contract-safety-and-shared-foundation.md) | `hhc-web-api`, `frontend-platform` | Old three-locale Admin cannot delete newer locales; shared packages are published. |
-| 2 | [Five-Locale Backend Compatibility](./2026-08-11-five-locale-backend-compatibility.md) | `hhc-web-api`, `engagement-api`, `notification-api`, `account-api`, `frontend-platform` | All server contracts accept five locales; generated clients are published. |
+| 2 | [Five-Locale Backend Compatibility](./2026-08-11-five-locale-backend-compatibility.md) | `hhc-web-api`, `engagement-api`, `notification-api`, `account-api`, `frontend-platform` | Locale contracts accept five values while weekly-paper contracts enforce three editions; generated clients are published. |
 | 3 | [Azure OpenAI CMS Translation](./2026-08-11-azure-openai-cms-translation.md) | `hhc-web-api`, `admin-fe` | Disabled-by-default translation slice passes production smoke and fluent review before enablement. |
 | 4 | [Five-Locale Product Frontends](./2026-08-11-five-locale-product-frontends.md) | `account-fe`, `hhc-web` | Account releases first; website routes, controls, fonts, hero fix, fallback semantics, and legal UI pass. |
 | 5 | [Content Rights and Launch Enablement](./2026-08-11-content-rights-and-launch-enablement.md) | operational evidence plus `hhc-web` content PRs | Rights evidence, reviewed copy, content, discovery, and cross-service production smoke are complete. |
@@ -103,7 +104,7 @@ Expected: static locale routes, sitemap, canonical/hreflang, reviewed content, p
 
 - [ ] **Step 1: Run the production user journeys**
 
-Verify `ja` and `ko` for: public root detection, login, first-time OAuth registration, email verification, password reset, profile locale update, CMS exact/fallback content, bulletin download, newsletter subscription, Web Push subscription, campaign delivery, Admin translation preview, and About scripture/legal links.
+Verify `ja` and `ko` for: public root detection, login, first-time OAuth registration, email verification, password reset, profile locale update, CMS exact/fallback content, all three weekly-paper edition links/downloads, newsletter subscription, Web Push subscription, campaign delivery, generic CMS translation preview, and About scripture/legal links. Confirm no `ja`/`ko` bulletin edition is offered.
 
 - [ ] **Step 2: Verify failure paths**
 

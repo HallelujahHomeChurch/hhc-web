@@ -1,11 +1,11 @@
-import {locales, type Locale} from '@/i18n/locales';
-import type {WeeklyBulletin, WeeklyIssue, WeeklyIssuePage} from './types';
+import {bulletinEditions, isBulletinEdition, type BulletinEdition} from '@hallelujahhomechurch/preferences';
+import {type WeeklyBulletin, type WeeklyIssue, type WeeklyIssuePage} from './types';
 
 type Fetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 type PublicBulletin = {
   issueNumber?: number;
   issueDate: string;
-  locale: Locale;
+  locale: string;
   title: string;
   subtitle?: string;
   downloadUrl: string;
@@ -32,14 +32,12 @@ export class WeeklyApiError extends Error {
   }
 }
 
-export async function fetchLatestWeekly(locale: Locale, options: ClientOptions = {}) {
+export async function fetchLatestWeekly(options: ClientOptions = {}) {
   const latest = (await fetchWeeklyArchive({page: 1, pageSize: 1}, options)).items[0];
-  const weekly = latest?.versions.find((version) => version.locale === locale)
-    ?? latest?.versions.find((version) => version.locale === 'zh-Hant');
-  if (!weekly) {
-    throw new WeeklyApiError('not_found', 'The latest bulletin is unavailable for this locale.');
+  if (!latest?.versions.length) {
+    throw new WeeklyApiError('not_found', 'The latest bulletin is unavailable.');
   }
-  return weekly;
+  return latest;
 }
 
 export async function fetchWeeklyArchive(
@@ -50,12 +48,13 @@ export async function fetchWeeklyArchive(
   const normalizedPageSize = Math.max(1, Math.floor(pageSize));
   const query = `page=${normalizedPage}&pageSize=${normalizedPageSize}`;
   const response = await request<PublicIssue[]>(`/bulletins?${query}`, options);
-  const order = new Map(locales.map((locale, index) => [locale, index]));
+  const order = new Map(bulletinEditions.map((locale, index) => [locale, index]));
   const items: WeeklyIssue[] = response.data.map((issue) => ({
     id: issue.issueDate,
     issueNumber: issue.issueNumber,
     date: issue.issueDate,
     versions: issue.versions
+      .filter((version): version is PublicBulletin & {locale: BulletinEdition} => isBulletinEdition(version.locale))
       .map(toWeekly)
       .sort((left, right) => (order.get(left.locale) ?? 0) - (order.get(right.locale) ?? 0))
   }));
@@ -70,7 +69,7 @@ export async function fetchWeeklyArchive(
   };
 }
 
-function toWeekly(value: PublicBulletin): WeeklyBulletin {
+function toWeekly(value: PublicBulletin & {locale: BulletinEdition}): WeeklyBulletin {
   const href = value.downloadFileName && !value.downloadUrl.includes('filename=')
     ? `${value.downloadUrl}${value.downloadUrl.includes('?') ? '&' : '?'}filename=${encodeURIComponent(value.downloadFileName)}`
     : value.downloadUrl;

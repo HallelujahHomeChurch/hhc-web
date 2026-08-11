@@ -1,4 +1,6 @@
-export type HistoryEvent = {
+import type {ContentLocaleMetadata} from '@/features/content/locale';
+
+export type HistoryEvent = ContentLocaleMetadata & {
   date: string;
   body: string;
   continued?: boolean;

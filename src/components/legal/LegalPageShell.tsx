@@ -23,7 +23,7 @@ export function LegalPageShell({children, languageLabel, locale, pathname, siteN
       </header>
       <main className="legal-page-main">{children}</main>
       <footer className="legal-page-footer">
-        <LanguageSwitcher label={languageLabel} locale={locale} pathname={pathname} variant="ghost" />
+        <LanguageSwitcher label={languageLabel} locale={locale} pathname={pathname} />
       </footer>
     </div>
   );

@@ -7,7 +7,7 @@ import test from 'node:test';
 
 const checker = path.resolve('scripts/check-static-budgets.mjs');
 
-async function fixture({bodyFontPreload = false, cssBytes = 0, fontBytes = 200_000, fontName = 'ChenYuluoyan-HHC-Banners.woff2', heroBytes = 140_000} = {}) {
+async function fixture({bodyFontPreload = false, cssBytes = 0, displayFontPreload = false, fontBytes = 200_000, fontName = 'ChenYuluoyan-HHC-Banners.woff2', heroBytes = 140_000} = {}) {
   const root = await mkdtemp(path.join(tmpdir(), 'hhc-static-budget-'));
   const fontDir = path.join(root, 'src/assets/fonts/chenyuluoyan');
   const bannerDir = path.join(root, 'public/assets/banners');
@@ -22,7 +22,7 @@ async function fixture({bodyFontPreload = false, cssBytes = 0, fontBytes = 200_0
   await writeFile(path.join(bannerDir, 'hero.jpg'), Buffer.alloc(heroBytes));
   await writeFile(
     path.join(root, 'src/app/fonts.ts'),
-    `Inter({preload: ${bodyFontPreload}})\nlocalFont({src: '../assets/fonts/chenyuluoyan/${fontName}'})\n`
+    `Inter({preload: ${bodyFontPreload}})\nlocalFont({preload: ${displayFontPreload}, src: '../assets/fonts/chenyuluoyan/${fontName}'})\n`
   );
   return root;
 }
@@ -82,6 +82,16 @@ test('rejects eager body-font preloads that affect every locale', async (t) => {
 
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /body font preload is forbidden/i);
+});
+
+test('rejects globally preloaded local display fonts', async (t) => {
+  const root = await fixture({displayFontPreload: true});
+  t.after(() => rm(root, {recursive: true, force: true}));
+
+  const result = run(root);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /display font preload is forbidden/i);
 });
 
 test('rejects generated CSS over 400 KiB after a production build', async (t) => {

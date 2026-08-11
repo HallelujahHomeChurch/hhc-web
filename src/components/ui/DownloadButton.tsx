@@ -5,6 +5,7 @@ import {useState} from 'react';
 type DownloadButtonProps = {
   href: string;
   label: string;
+  ariaLabel?: string;
   className?: string;
   variant?: 'primary' | 'outline';
 };
@@ -14,13 +15,14 @@ const variants = {
   outline: 'border-[var(--hhc-control-border)] bg-paper text-[var(--hhc-control)] hover:border-primary hover:bg-primary hover:text-primary-foreground'
 };
 
-export function DownloadButton({href, label, className = '', variant = 'primary'}: DownloadButtonProps) {
+export function DownloadButton({href, label, ariaLabel, className = '', variant = 'primary'}: DownloadButtonProps) {
   const [preparing, setPreparing] = useState(false);
 
   return (
     <a
       href={href}
       download
+      aria-label={ariaLabel}
       aria-busy={preparing}
       aria-disabled={preparing}
       className={`relative inline-flex min-h-11 items-center justify-center rounded-full border px-5 font-semibold transition ${variants[variant]} ${className}`}

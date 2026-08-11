@@ -1,7 +1,7 @@
 import type {Metadata} from 'next';
 import {chenyuLuoyanBanner, inter, maShanZheng} from './fonts';
-import {defaultLocale} from '@/i18n/locales';
 import {getThemeBootstrapScript} from '@hallelujahhomechurch/preferences';
+import {LocaleDocument} from '@/components/layout/LocaleDocument';
 import {siteConfig} from '@/lib/site';
 import './globals.css';
 import '@hallelujahhomechurch/ui/styles.css';
@@ -28,11 +28,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
-    <html lang={defaultLocale} suppressHydrationWarning>
+    <LocaleDocument suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{__html: getThemeBootstrapScript()}} />
       </head>
       <body className={`${inter.variable} ${chenyuLuoyanBanner.variable} ${maShanZheng.variable}`}>{children}</body>
-    </html>
+    </LocaleDocument>
   );
 }

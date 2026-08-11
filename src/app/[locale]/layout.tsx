@@ -1,7 +1,7 @@
 import {NextIntlClientProvider} from 'next-intl';
 import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
-import {isLocale, locales, type Locale} from '@/i18n/locales';
+import {isLocale, productLocales, type Locale} from '@/i18n/locales';
 
 type LocaleLayoutProps = {
   children: React.ReactNode;
@@ -9,7 +9,7 @@ type LocaleLayoutProps = {
 };
 
 export function generateStaticParams() {
-  return locales.map((locale) => ({locale}));
+  return productLocales.map((locale) => ({locale}));
 }
 
 export const dynamicParams = false;

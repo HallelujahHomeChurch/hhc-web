@@ -11,13 +11,13 @@ type Props = {
 
 export function NewsDetailArticle({news, backHref, backLabel, publishedAtLabel}: Props) {
   const sideLayout = news.imageSrc && news.layout !== 'top';
-  const media = news.imageSrc ? <img src={news.imageSrc} alt={news.imageAlt} className="mx-auto block h-auto max-h-[72vh] max-w-full rounded-xl bg-panel object-contain ring-1 ring-panel-border" /> : null;
+  const media = news.imageSrc ? <img src={news.imageSrc} alt={news.imageAlt} lang={news.resolvedLocale} className="mx-auto block h-auto max-h-[72vh] max-w-full rounded-xl bg-panel object-contain ring-1 ring-panel-border" /> : null;
   const copy = <div data-news-copy className={sideLayout ? 'min-w-0' : ''}>
     <header className="mb-8 border-b border-line pb-7">
-      <h1 className="text-[clamp(30px,5vw,48px)] font-semibold leading-tight text-ink">{news.title}</h1>
-      {news.date ? <p className="mt-4 text-sm font-semibold text-muted">{publishedAtLabel} · {news.date}</p> : null}
+      <h1 lang={news.resolvedLocale} className="text-[clamp(30px,5vw,48px)] font-semibold leading-tight text-ink">{news.title}</h1>
+      {news.date ? <p className="mt-4 text-sm font-semibold text-muted"><span>{publishedAtLabel}</span> · <time lang={news.resolvedLocale}>{news.date}</time></p> : null}
     </header>
-    {news.body ? <div className="whitespace-pre-line text-[17px] leading-[1.9] text-ink">{news.body}</div> : null}
+    {news.body ? <div lang={news.resolvedLocale} className="whitespace-pre-line text-[17px] leading-[1.9] text-ink">{news.body}</div> : null}
   </div>;
 
   return <article className="shell max-w-[1120px]" data-layout={news.layout}>

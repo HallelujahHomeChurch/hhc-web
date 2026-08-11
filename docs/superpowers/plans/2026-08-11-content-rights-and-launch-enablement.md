@@ -16,6 +16,7 @@
 - Traditional/Simplified Chinese scripture text is unchanged; only edition/source/permission evidence is inventoried.
 - Scripture is never machine-translated or sent to Azure OpenAI.
 - Every generated CMS item is reviewed by a fluent target-language reviewer before publication.
+- **2026-08-11 domain correction:** product/content/message locales have five values, but weekly-paper `BulletinEdition` remains exactly `zh-Hant | zh-Hans | en`. Japanese/Korean routes expose those same three edition links; no Japanese/Korean PDF lifecycle exists.
 
 ---
 
@@ -174,7 +175,7 @@ Fluent reviewer edits Japanese/Korean before Save Draft. Verify no source fact, 
 
 - [ ] **Step 3: Publish through existing permissions**
 
-Use normal Save Draft, revision, publish confirmation, asset scan/grant, and bulletin PDF workflow. LLM preview success is not publish approval.
+Use normal Save Draft, revision, and publish confirmation for five-locale generic CMS content. The separate weekly-paper workflow keeps exactly three edition PDFs and its existing asset scan/grant boundary. LLM preview success is not publish approval.
 
 - [ ] **Step 4: Verify exact and fallback records**
 
@@ -201,7 +202,7 @@ Static pages advertise five locales. Dynamic content advertises only exact `avai
 
 - [ ] **Step 3: Run cross-service production journeys**
 
-Run the exact acceptance list from the coordinating program plan for `ja` and `ko`, including third-party first-login registration, security email rendering, newsletter/Web Push, campaign exact-to-English fallback, CMS preview failure paths, bulletin PDF, About notices, and font/network checks.
+Run the exact acceptance list from the coordinating program plan for `ja` and `ko`, including third-party first-login registration, security email rendering, newsletter/Web Push, campaign exact-to-English fallback, generic CMS preview failure paths, the same three weekly-paper edition links/downloads, About notices, and font/network checks. Confirm no `ja`/`ko` PDF edition appears.
 
 - [ ] **Step 4: Record rollout and rollback floors**
 

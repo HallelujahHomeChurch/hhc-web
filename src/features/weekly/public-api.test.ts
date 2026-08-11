@@ -2,45 +2,23 @@ import {describe, expect, it, vi} from 'vitest';
 import {fetchLatestWeekly, fetchWeeklyArchive} from './public-api';
 
 describe('weekly public api', () => {
-  it('selects the requested locale from the latest issue', async () => {
+  it('returns the latest issue with all valid editions and no product-locale argument', async () => {
     const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      data: [{issueDate: '2026-07-13', versions: [
-        {
-          issueDate: '2026-07-13', locale: 'zh-Hant', title: '2026-07-13 週報',
-          downloadUrl: '/api/assets/public/asset-1', publishedAt: '2026-07-13T04:00:00Z', version: 3
-        },
-        {
-          issueDate: '2026-07-13', locale: 'en', title: 'Weekly bulletin',
-          downloadUrl: '/api/assets/public/asset-2', publishedAt: '2026-07-13T04:00:00Z', version: 3
-        }
-      ]}],
+      data: [{issueNumber: 1732, issueDate: '2026-07-13', versions: ['ko', 'en', 'ja', 'zh-Hans', 'zh-Hant'].map((locale) => ({
+        issueDate: '2026-07-13', locale, title: `${locale} title`,
+        downloadUrl: `/api/assets/public/${locale}`, publishedAt: '2026-07-13T04:00:00Z', version: 3
+      }))}],
       meta: {page: 1, pageSize: 1, total: 1}, error: null
     }), {status: 200}));
+    vi.stubGlobal('fetch', fetcher);
 
-    await expect(fetchLatestWeekly('en', {fetcher, baseUrl: '/api'})).resolves.toMatchObject({
-      locale: 'en',
-      date: '2026-07-13',
-      title: 'Weekly bulletin',
-      href: '/api/assets/public/asset-2'
-    });
-    expect(fetcher).toHaveBeenCalledWith('/api/bulletins?page=1&pageSize=1', expect.any(Object));
-  });
-
-  it('falls back to Traditional Chinese when the requested latest version is unavailable', async () => {
-    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      data: [{
-        issueDate: '2026-07-13',
-        versions: [{
-          issueDate: '2026-07-13', locale: 'zh-Hant', title: '2026-07-13 週報',
-          downloadUrl: '/api/assets/public/asset-1', publishedAt: '2026-07-13T04:00:00Z', version: 3
-        }]
-      }],
-      meta: {page: 1, pageSize: 1, total: 1}, error: null
-    }), {status: 200}));
-
-    await expect(fetchLatestWeekly('en', {fetcher, baseUrl: '/api'})).resolves.toMatchObject({
-      locale: 'zh-Hant',
-      title: '2026-07-13 週報'
+    await expect(fetchLatestWeekly()).resolves.toMatchObject({
+      issueNumber: 1732,
+      versions: [
+        {locale: 'zh-Hant', href: '/api/assets/public/zh-Hant'},
+        {locale: 'zh-Hans', href: '/api/assets/public/zh-Hans'},
+        {locale: 'en', href: '/api/assets/public/en'}
+      ]
     });
     expect(fetcher).toHaveBeenCalledWith('/api/bulletins?page=1&pageSize=1', expect.any(Object));
     expect(fetcher).toHaveBeenCalledTimes(1);
@@ -66,5 +44,22 @@ describe('weekly public api', () => {
     expect(archive.totalPages).toBe(2);
     expect(fetcher).toHaveBeenCalledWith('/api/bulletins?page=1&pageSize=12', expect.any(Object));
     expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps bulletin editions limited to Traditional Chinese, Simplified Chinese, and English', async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      data: [{
+        issueDate: '2026-07-13',
+        versions: ['ko', 'en', 'ja', 'zh-Hans', 'zh-Hant'].map((locale) => ({
+          issueDate: '2026-07-13', locale, title: `${locale} title`,
+          downloadUrl: `/assets/${locale}.pdf`, publishedAt: '2026-07-13T04:00:00Z', version: 3
+        }))
+      }],
+      meta: {page: 1, pageSize: 12, total: 1}, error: null
+    }), {status: 200}));
+
+    const archive = await fetchWeeklyArchive({}, {fetcher, baseUrl: '/api'});
+
+    expect(archive.items[0].versions.map((version) => version.locale)).toEqual(['zh-Hant', 'zh-Hans', 'en']);
   });
 });

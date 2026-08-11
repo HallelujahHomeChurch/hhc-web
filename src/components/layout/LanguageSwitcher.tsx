@@ -1,29 +1,24 @@
 'use client';
 
 import {Select} from '@hallelujahhomechurch/ui';
-import {getLocaleCookie, localeLabels, locales, type Locale} from '@/i18n/locales';
+import {getLocaleCookie, localeMetadata, type Locale} from '@/i18n/locales';
 import {replaceLocale} from '@/i18n/navigation';
 
 type LanguageSwitcherProps = {
   locale: Locale;
   pathname: string;
   label: string;
-  variant?: 'default' | 'ghost';
 };
 
-export function LanguageSwitcher({label, locale, pathname, variant = 'default'}: LanguageSwitcherProps) {
-  const triggerClassName = variant === 'ghost'
-    ? 'legal-language-trigger'
-    : 'site-language-trigger';
-
+export function LanguageSwitcher({label, locale, pathname}: LanguageSwitcherProps) {
   return (
     <div className="flex items-center">
       <Select
         hideLabel
         label={label}
-        items={locales.map((targetLocale) => ({id: targetLocale, label: localeLabels[targetLocale]}))}
+        items={localeMetadata.map(({code, nativeLabel, shortLabel}) => ({id: code, label: shortLabel, ariaLabel: nativeLabel}))}
         selectedKey={locale}
-        triggerClassName={triggerClassName}
+        variant="utility"
         onSelectionChange={(targetLocale) => {
           const nextLocale = targetLocale as Locale;
 

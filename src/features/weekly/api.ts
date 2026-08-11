@@ -1,13 +1,12 @@
-import type {Locale} from '@/i18n/locales';
-import {weeklyByLocale, weeklyIssues} from './mock-data';
+import {weeklyIssues} from './mock-data';
 import type {WeeklyIssuePageParams} from './types';
 
-export function getLatestWeekly(locale: Locale) {
-  return weeklyByLocale[locale];
+export function getLatestWeekly() {
+  return weeklyIssues[0];
 }
 
-export function getWeekly(locale: Locale) {
-  return getLatestWeekly(locale);
+export function getWeekly() {
+  return getLatestWeekly();
 }
 
 export function getWeeklyIssues() {

@@ -1,27 +1,36 @@
 import {
-  detectLocale,
-  getLocaleCookie as getSharedLocaleCookie,
-  getStoredLocale,
-  isLocale,
+  detectProductLocale,
+  getProductLocaleCookie,
+  getStoredProductLocale,
+  isProductLocale,
   localeCookieName,
-  locales,
-  type Locale
+  localeMetadata,
+  productLocales,
+  type ProductLocale
 } from '@hallelujahhomechurch/preferences';
 
-export {detectLocale, getStoredLocale, isLocale, localeCookieName, locales, type Locale};
-
-export type LocalizedRecord<T> = Record<Locale, T>;
-
-export const defaultLocale: Locale = 'zh-Hant';
-
-export const localeLabels: Record<Locale, string> = {
-  'zh-Hant': '繁中',
-  'zh-Hans': '简中',
-  en: 'EN'
+export {
+  detectProductLocale as detectLocale,
+  getStoredProductLocale as getStoredLocale,
+  isProductLocale as isLocale,
+  localeCookieName,
+  localeMetadata,
+  productLocales,
+  productLocales as locales,
+  type ProductLocale,
+  type ProductLocale as Locale
 };
 
-export function getLocaleCookie(locale: Locale, domain = process.env.NEXT_PUBLIC_LOCALE_COOKIE_DOMAIN) {
-  return getSharedLocaleCookie(locale, {
+export type LocalizedRecord<T> = Partial<Record<ProductLocale, T>>;
+
+export const defaultLocale: ProductLocale = 'zh-Hant';
+
+export const localeLabels = Object.fromEntries(
+  localeMetadata.map(({code, shortLabel}) => [code, shortLabel])
+) as Record<ProductLocale, string>;
+
+export function getLocaleCookie(locale: ProductLocale, domain = process.env.NEXT_PUBLIC_LOCALE_COOKIE_DOMAIN) {
+  return getProductLocaleCookie(locale, {
     hostname: domain ?? (typeof location === 'undefined' ? undefined : location.hostname),
     protocol: typeof location === 'undefined' ? undefined : location.protocol
   });

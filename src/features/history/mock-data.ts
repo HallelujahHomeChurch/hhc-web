@@ -1,9 +1,14 @@
-import type {LocalizedRecord} from '@/i18n/locales';
-import type {HistoryTimelinePayload} from './types';
+import type {ContentLocaleMetadata} from '@/features/content/locale';
+import type {Locale, LocalizedRecord} from '@/i18n/locales';
+import type {HistoryEvent, HistoryTimelinePayload} from './types';
+
+function historyEvents(locale: Locale, events: Array<Omit<HistoryEvent, keyof ContentLocaleMetadata>>): HistoryEvent[] {
+  return events.map((event) => ({...event, requestedLocale: locale, resolvedLocale: locale, availableLocales: [locale]}));
+}
 
 export const historyByLocale: LocalizedRecord<HistoryTimelinePayload> = {
   'zh-Hant': {
-    events: [
+    events: historyEvents('zh-Hant', [
       {date: '1984年', body: '曾英欽醫師夫婦在韓國百年宣教特會，從神領受建造家庭祭壇的異象。'},
       {date: '1989年5月6日', body: '曾英欽醫師夫婦被按立為台灣第一個帶職事奉的牧師。'},
       {date: '1990年9月2日', body: '哈利路亞家教會獻堂。'},
@@ -30,10 +35,10 @@ export const historyByLocale: LocalizedRecord<HistoryTimelinePayload> = {
       {date: '2014年3月1日', body: '家教會廿年中國宣教特會。'},
       {date: '2014年3月1日', body: '按立國峰夫婦、中平夫婦、黃弘夫婦為牧師。'},
       {date: '同日', body: '按立丁章豪為傳道人，差派趙彥樺為宣教士前往緬甸。', continued: true}
-    ]
+    ])
   },
   'zh-Hans': {
-    events: [
+    events: historyEvents('zh-Hans', [
       {date: '1984年', body: '曾英钦医师夫妇在韩国百年宣教特会，从神领受建造家庭祭坛的异象。'},
       {date: '1989年5月6日', body: '曾英钦医师夫妇被按立为台湾第一个带职事奉的牧师。'},
       {date: '1990年9月2日', body: '哈利路亚家教会献堂。'},
@@ -60,10 +65,10 @@ export const historyByLocale: LocalizedRecord<HistoryTimelinePayload> = {
       {date: '2014年3月1日', body: '家教会廿年中国宣教特会。'},
       {date: '2014年3月1日', body: '按立国峰夫妇、中平夫妇、黄弘夫妇为牧师。'},
       {date: '同日', body: '按立丁章豪为传道人，差派赵彦桦为宣教士前往缅甸。', continued: true}
-    ]
+    ])
   },
   en: {
-    events: [
+    events: historyEvents('en', [
       {date: '1984', body: 'Dr. Tseng and his wife received the vision to build family altars at a centennial mission gathering in Korea.'},
       {date: 'May 6, 1989', body: 'Dr. Tseng and his wife were ordained as Taiwan’s first bivocational pastors.'},
       {date: 'September 2, 1990', body: 'Hallelujah Home Church was dedicated.'},
@@ -90,6 +95,6 @@ export const historyByLocale: LocalizedRecord<HistoryTimelinePayload> = {
       {date: 'March 1, 2014', body: 'The church held its twentieth anniversary China mission conference.'},
       {date: 'March 1, 2014', body: 'Kuo-feng, Chung-ping, and Huang Hung and their wives were ordained as pastors.'},
       {date: 'Same day', body: 'Ting Chang-hao was ordained as a minister, and Chao Yen-hua was sent as a missionary to Myanmar.', continued: true}
-    ]
+    ])
   }
 };

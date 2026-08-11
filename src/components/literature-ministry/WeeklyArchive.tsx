@@ -6,7 +6,7 @@ import {Button} from '@/components/ui/Button';
 import {DownloadButton} from '@/components/ui/DownloadButton';
 import {fetchWeeklyArchive} from '@/features/weekly/public-api';
 import {formatIssueNumber} from '@/features/weekly/format';
-import type {WeeklyIssue, WeeklyIssuePage} from '@/features/weekly/types';
+import {weeklyEditionLabels, type WeeklyIssue, type WeeklyIssuePage} from '@/features/weekly/types';
 import type {Locale} from '@/i18n/locales';
 
 type WeeklyArchiveMessages = {
@@ -25,12 +25,6 @@ type WeeklyArchiveMessages = {
   loadError: string;
   retry: string;
   empty: string;
-};
-
-const versionLabels: Record<Locale, string> = {
-  'zh-Hant': '繁中',
-  'zh-Hans': '简中',
-  en: 'English'
 };
 
 type WeeklyArchiveProps = {locale: Locale; messages: WeeklyArchiveMessages};
@@ -72,7 +66,6 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
   }, [page, requestKey]);
 
   const latestIssue = archive?.items[0];
-  const latestVersion = localizedVersion(latestIssue, locale);
   const latestIssueLabel = formatIssueNumber(locale, latestIssue?.issueNumber);
 
   return (
@@ -84,21 +77,19 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
           <p className="mt-4 max-w-[620px] text-lg leading-[1.85] text-muted">{messages.archiveIntro}</p>
         </div>
         <aside className="min-h-[220px] rounded-[14px] border border-panel-border bg-[image:var(--hhc-panel-gradient)] p-5 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)]" aria-labelledby="latest-weekly-title">
-          <span className="text-sm font-black uppercase tracking-[0.12em] text-teal">{messages.latestLabel}</span>
-          {state === 'ready' && latestIssue && latestVersion ? (
+          <span id="latest-weekly-title" className="text-sm font-black uppercase tracking-[0.12em] text-teal">{messages.latestLabel}</span>
+          {state === 'ready' && latestIssue?.versions.length ? (
             <>
               {latestIssueLabel ? <p className="mt-3 text-[21px] font-semibold text-[var(--hhc-brand-strong)]">{latestIssueLabel}</p> : null}
-              <h3 id="latest-weekly-title" className="mt-1 text-[18px] font-semibold text-ink">{latestVersion.title}</h3>
-              {latestVersion.subtitle ? <p className="mt-1 text-[15px] leading-relaxed text-ink">{latestVersion.subtitle}</p> : null}
               <VersionLinks issue={latestIssue} className="mt-5" />
             </>
           ) : state === 'error' ? (
             <div className="mt-4 grid justify-items-start gap-4">
-              <h3 id="latest-weekly-title" className="text-[18px] font-semibold text-ink">{messages.loadError}</h3>
+              <h3 className="text-[18px] font-semibold text-ink">{messages.loadError}</h3>
               <button className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--hhc-control-border)] bg-paper px-5 font-semibold text-[var(--hhc-control)] transition hover:border-primary hover:bg-primary hover:text-primary-foreground" type="button" onClick={() => setRetryKey((value) => value + 1)}>{messages.retry}</button>
             </div>
           ) : (
-            <h3 id="latest-weekly-title" className="mt-4 text-[18px] font-semibold text-muted" aria-live="polite">{messages.loading}</h3>
+            <h3 className="mt-4 text-[18px] font-semibold text-muted" aria-live="polite">{messages.loading}</h3>
           )}
         </aside>
       </div>
@@ -110,15 +101,10 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
         </div>
         <div className="grid min-h-24 gap-3">
           {state === 'ready' && archive?.items.length ? archive.items.map((issue) => {
-            const version = localizedVersion(issue, locale);
             const issueLabel = formatIssueNumber(locale, issue.issueNumber);
-            return version ? (
-              <article key={issue.id} className="grid grid-cols-[125px_minmax(0,1fr)_auto] items-center gap-x-5 gap-y-4 rounded-[14px] border border-panel-border bg-panel px-5 py-4 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)] max-[860px]:grid-cols-1">
+            return issue.versions.length ? (
+              <article key={issue.id} className="grid grid-cols-[125px_minmax(0,1fr)] items-center gap-x-5 gap-y-4 rounded-[14px] border border-panel-border bg-panel px-5 py-4 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)] max-[860px]:grid-cols-1">
                 {issueLabel ? <p className="whitespace-nowrap text-[21px] font-semibold text-[var(--hhc-brand-strong)]">{issueLabel}</p> : null}
-                <div>
-                  <h4 className="text-[18px] font-semibold text-ink">{version.title}</h4>
-                  {version.subtitle ? <p className="mt-1 text-[15px] leading-relaxed text-ink">{version.subtitle}</p> : null}
-                </div>
                 <VersionLinks issue={issue} />
               </article>
             ) : null;
@@ -138,14 +124,10 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
   );
 }
 
-function localizedVersion(issue: WeeklyIssue | undefined, locale: Locale) {
-  return issue?.versions.find((version) => version.locale === locale) ?? issue?.versions[0];
-}
-
 function VersionLinks({issue, className = ''}: {issue: WeeklyIssue; className?: string}) {
   return (
     <div className={`flex justify-end gap-2.5 max-[860px]:grid max-[860px]:grid-flow-col max-[860px]:auto-cols-fr ${className}`}>
-      {issue.versions.map((version) => <DownloadButton key={version.locale} href={version.href} label={versionLabels[version.locale]} variant="outline" />)}
+      {issue.versions.map((version) => <DownloadButton key={version.locale} href={version.href} label={weeklyEditionLabels[version.locale]} variant="outline" />)}
     </div>
   );
 }

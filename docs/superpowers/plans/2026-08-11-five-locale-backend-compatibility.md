@@ -10,6 +10,7 @@
 
 ## Global Constraints
 
+- **2026-08-11 domain correction:** `ProductLocale`, `ContentLocale`, and `MessageLocale` have five values; `AdminUiLocale` has three; `BulletinEdition` is independently and exactly `zh-Hant | zh-Hans | en`. Japanese/Korean routes and messages may use English message fallback but never create Japanese/Korean weekly-paper PDFs. Any `ja`/`ko` bulletin lifecycle step below is superseded. Migration 022 remains byte-for-byte immutable; inventory legacy bulletin rows before any separate remediation and do not delete, relabel, or rewrite them in this plan.
 - Backend releases remain compatible with existing three-locale consumers.
 - Do not remove `ja`/`ko` constraints during rollback after new rows exist.
 - Notification and engagement logs contain no addresses, endpoints, tokens, or provider payloads.
@@ -18,7 +19,7 @@
 
 ---
 
-### Task 1: Expand `hhc-web-api` content, bulletin, projection, and notification locales
+### Task 1: Expand `hhc-web-api` content and message locales while preserving three bulletin editions
 
 **Files:**
 - Modify: `internal/content/service.go`
@@ -28,35 +29,35 @@
 - Modify: `internal/httpapi/handler.go`
 - Modify: `internal/postgres/repository.go`
 - Modify: `internal/postgres/repository_integration_test.go`
-- Create: `internal/migrations/sql/022_five_content_locales.sql`
+- Preserve unchanged: `internal/migrations/sql/022_five_content_locales.sql`
 - Modify: `internal/migrations/migrations.go`
 - Modify: `internal/migrations/migrations_test.go`
 - Modify: `openapi.yaml`
 
 **Interfaces:**
-- Produces: `Locale` enum `zh-Hant | zh-Hans | en | ja | ko` and five-locale bulletin notification translations.
+- Produces: five-value `ContentLocale`/`MessageLocale`, three-value `BulletinEdition`, and five-locale bulletin notification messages built from three-edition issues.
 
 - [ ] **Step 1: Add failing locale and migration tests**
 
-Test `ja`/`ko` content create/update/publish/public projection and bulletin create/update-version/publish/unpublish/public-read lifecycle through `internal/bulletins.Service`. Assert the new migration replaces every three-value locale check without rewriting rows.
+Test `ja`/`ko` generic content create/update/publish/public projection. **Superseded:** do not add a `ja`/`ko` bulletin create/update/publish/public-read lifecycle; instead assert every bulletin trust boundary rejects those edition values before side effects while cleanup can revoke legacy public grants. Assert migration 022 is unchanged and inventory legacy bulletin rows before remediation.
 
 - [ ] **Step 2: Run focused tests and confirm failure**
 
 Run: `go test ./internal/content ./internal/httpapi ./internal/migrations ./internal/postgres`
 
-Expected: FAIL because allowlists and constraints reject `ja`/`ko`.
+Expected: FAIL because generic content allowlists reject `ja`/`ko` or bulletin boundaries accept values outside the three editions.
 
-- [ ] **Step 3: Expand validation and write the forward migration**
+- [ ] **Step 3: Enforce the split validation without editing migration 022**
 
-Use explicit `switch locale { case "zh-Hant", "zh-Hans", "en", "ja", "ko": }`. Drop/recreate only named locale check constraints in migration 022; do not modify historical migration files.
+Use the explicit five-value allowlist for generic content/message locales and the explicit three-value allowlist for `BulletinEdition`. Do not edit historical migration 022 or mutate legacy bulletin data in this task.
 
 - [ ] **Step 4: Generate five-locale bulletin notification copy**
 
-Update `buildBulletinNotification` to emit exact reviewed subject/body for every published locale and use English as the fallback body when a locale version is absent. Keep action URLs locale-specific.
+Update `buildBulletinNotification` to emit five recipient/message-locale copies from only the three valid editions. Japanese/Korean bodies may use the English edition metadata fallback; keep action URLs message-locale-specific and expose only the three edition links.
 
 - [ ] **Step 5: Expand OpenAPI structural limits**
 
-Update every `Locale` enum and any `maxItems`/`maxProperties` value that encodes three locales.
+Split OpenAPI `ContentLocale`/message-locale enums from three-value `BulletinEdition`; update structural limits only for the domain they encode.
 
 - [ ] **Step 6: Run full verification and commit**
 
@@ -67,7 +68,7 @@ git add internal openapi.yaml
 git commit -m "feat: support five website content locales"
 ```
 
-Merge, release, smoke `ja`/`ko` draft/public/bulletin contracts, and record the first compatible deployed revision.
+Merge, release, smoke `ja`/`ko` generic content and five-locale notification contracts plus rejection of `ja`/`ko` bulletin editions, and record the first compatible deployed revision.
 
 ### Task 2: Expand engagement locale persistence and delivery fallback
 
@@ -208,7 +209,7 @@ Merge, release, and smoke against already-released notification and engagement r
 
 **Interfaces:**
 - Consumes: deployed `hhc-web-api/openapi.yaml` from Tasks 1–2 of the contract plans.
-- Produces: generated `ContentLocale`, `resolvedLocale`, `availableLocales`, `deleteLocales`, and typed error contract for frontend consumers.
+- Produces: generated five-value `ContentLocale`, three-value `BulletinEdition`, `resolvedLocale`, `availableLocales`, `deleteLocales`, and typed error contract for frontend consumers.
 
 - [ ] **Step 1: Sync the exact deployed OpenAPI file**
 
@@ -221,14 +222,14 @@ Run: `pnpm --filter @hallelujahhomechurch/hhc-web-client generate`
 Then verify:
 
 ```bash
-rg -n "resolvedLocale|availableLocales|deleteLocales|'ja'|'ko'" packages/hhc-web-client/src/generated.ts
+rg -n "ContentLocale|BulletinEdition|resolvedLocale|availableLocales|deleteLocales|'ja'|'ko'" packages/hhc-web-client/src/generated.ts
 ```
 
-Expected: all five contract elements are present.
+Expected: both domain enums and all four content contract elements are present.
 
 - [ ] **Step 3: Add a contract test for the five canonical locale values**
 
-Assert generated `ContentLocale` matches the shared `contentLocales` registry exactly.
+Assert generated `ContentLocale` matches shared `contentLocales` and generated `BulletinEdition` matches shared `bulletinEditions`; runtime and compile-time checks reject `ja`/`ko` as editions.
 
 - [ ] **Step 4: Run package and packed-consumer checks**
 

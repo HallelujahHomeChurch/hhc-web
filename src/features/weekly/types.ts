@@ -1,7 +1,13 @@
-import type {Locale} from '@/i18n/locales';
+import type {BulletinEdition} from '@hallelujahhomechurch/preferences';
+
+export const weeklyEditionLabels: Record<BulletinEdition, string> = {
+  'zh-Hant': '繁中',
+  'zh-Hans': '简中',
+  en: 'English'
+};
 
 export type WeeklyBulletin = {
-  locale: Locale;
+  locale: BulletinEdition;
   issueNumber?: number;
   date: string;
   title: string;
@@ -17,7 +23,6 @@ export type WeeklyIssue = {
 };
 
 export type WeeklyIssuePageParams = {
-  locale: Locale;
   page?: number;
   pageSize?: number;
 };
