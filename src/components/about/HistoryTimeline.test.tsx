@@ -47,7 +47,7 @@ describe('HistoryTimeline', () => {
     expect(screen.getAllByRole('blockquote')).toSatisfy((quotes: HTMLElement[]) => quotes.every((quote) => quote.lang === 'en'));
   });
 
-  it('keeps Japanese chrome while marking scripture and fallback history independently', () => {
+  it('renders the official Japanese scripture while marking fallback history independently', () => {
     const messages = getMessages('ja');
     const fallbackTimeline: HistoryTimelinePayload = {events: [{
       date: '1984年3月1日',
@@ -57,9 +57,13 @@ describe('HistoryTimeline', () => {
       availableLocales: ['zh-Hant', 'en']
     }]};
 
-    render(<HistoryTimeline content={messages.about.history} timeline={fallbackTimeline} scriptureLanguage="en" />);
+    render(<HistoryTimeline content={messages.about.history} timeline={fallbackTimeline} scriptureLanguage="ja" />);
 
-    expect(screen.getAllByRole('blockquote')).toSatisfy((quotes: HTMLElement[]) => quotes.every((quote) => quote.lang === 'en'));
+    expect(screen.getByText('島々よ、わたしに聞け／遠い国々よ、耳を傾けよ。主は母の胎にあるわたしを呼び／母の腹にあるわたしの名を呼ばれた。')).toBeInTheDocument();
+    expect(screen.getByText('わたしはあなたを国々の光とし／わたしの救いを地の果てまで、もたらす者とする。')).toBeInTheDocument();
+    expect(screen.getByText('イザヤ書 49章1–3節（聖書 新共同訳）')).toBeInTheDocument();
+    expect(screen.getByText('イザヤ書 49章5–6節（聖書 新共同訳）')).toBeInTheDocument();
+    expect(screen.getAllByRole('blockquote')).toSatisfy((quotes: HTMLElement[]) => quotes.every((quote) => quote.lang === 'ja'));
     expect(screen.getByRole('heading', {name: '教会の歩み'})).not.toHaveAttribute('lang', 'zh-Hant');
     expect(screen.getByText('領受建造家庭祭壇的異象。').closest('li')).toHaveAttribute('lang', 'zh-Hant');
     expect(screen.getByText('1984年3月1日')).toHaveAttribute('lang', 'zh-Hant');

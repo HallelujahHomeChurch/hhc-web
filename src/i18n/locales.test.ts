@@ -95,4 +95,15 @@ describe('locales', () => {
   it('uses natural Japanese copy for the About call to action', () => {
     expect(ja.home.aboutCta).toBe('教会について知る');
   });
+
+  it('records Japanese and NIV scripture rights in the existing legal section', () => {
+    const intellectualProperty = ja.termsOfUse.sections.find((section) => section.title === '知的財産権');
+
+    expect(intellectualProperty?.body).toContain('日本語の聖書本文は『聖書 新共同訳』から引用しています。©1987, 1988 共同訳聖書実行委員会、日本聖書協会。英語の聖書本文はHoly Bible, New International Version® (NIV®)から引用しています。Copyright © 1973, 1978, 1984, 2011 by Biblica, Inc. All rights reserved worldwide.');
+  });
+
+  it('keeps the Japanese scripture text byte-for-byte across presentation line breaks', () => {
+    expect(ja.about.history.scripture[0].lines.join('')).toBe('島々よ、わたしに聞け／遠い国々よ、耳を傾けよ。主は母の胎にあるわたしを呼び／母の腹にあるわたしの名を呼ばれた。わたしの口を鋭い剣として御手の陰に置き／わたしを尖らせた矢として矢筒の中に隠してわたしに言われた／あなたはわたしの僕、イスラエル／あなたによってわたしの輝きは現れる、と。');
+    expect(ja.about.history.scripture[1].lines.join('')).toBe('主の御目にわたしは重んじられている。わたしの神こそ、わたしの力。今や、主は言われる。ヤコブを御もとに立ち帰らせ／イスラエルを集めるために／母の胎にあったわたしを／御自分の僕として形づくられた主はこう言われる。わたしはあなたを僕として／ヤコブの諸部族を立ち上がらせ／イスラエルの残りの者を連れ帰らせる。だがそれにもまして／わたしはあなたを国々の光とし／わたしの救いを地の果てまで、もたらす者とする。');
+  });
 });
