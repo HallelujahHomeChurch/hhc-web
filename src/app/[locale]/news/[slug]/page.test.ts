@@ -37,4 +37,34 @@ describe('news detail metadata', () => {
       url: 'https://www.alive.org.tw/zh-Hant/news/announcement'
     });
   });
+
+  it('uses exact Japanese canonical and hreflang as soon as that projection exists', async () => {
+    getNewsBySlug.mockResolvedValue({
+      id: 'news-1',
+      title: 'お知らせ',
+      summary: '概要',
+      body: '本文',
+      date: '2026年8月11日',
+      imageAlt: 'カバー',
+      href: '/ja/news/announcement',
+      layout: 'top',
+      requestedLocale: 'ja',
+      resolvedLocale: 'ja',
+      availableLocales: ['zh-Hant', 'ja']
+    });
+
+    const metadata = await generateMetadata({params: Promise.resolve({locale: 'ja', slug: 'announcement'})});
+
+    expect(metadata.alternates).toEqual({
+      canonical: '/ja/news/announcement',
+      languages: {
+        'zh-Hant': 'https://www.alive.org.tw/zh-Hant/news/announcement',
+        ja: 'https://www.alive.org.tw/ja/news/announcement'
+      }
+    });
+    expect(metadata.openGraph).toMatchObject({
+      locale: 'ja_JP',
+      url: 'https://www.alive.org.tw/ja/news/announcement'
+    });
+  });
 });

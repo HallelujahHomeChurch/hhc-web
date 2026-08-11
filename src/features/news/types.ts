@@ -1,10 +1,8 @@
-import type {Locale} from '@/i18n/locales';
+import type {ContentLocaleMetadata} from '@/features/content/locale';
 
-export type NewsItem = {
+export type NewsItem = ContentLocaleMetadata & {
   id: string;
   title: string;
-  resolvedLocale: Locale;
-  availableLocales: Locale[];
   summary: string;
   date: string;
   imageAlt: string;

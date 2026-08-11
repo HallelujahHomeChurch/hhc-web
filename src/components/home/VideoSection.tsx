@@ -30,6 +30,7 @@ export function VideoSection({title, subtitle, ctaLabel, channelHref, items, err
       {errorMessage ? <p role="status" className="col-span-3 self-center rounded-lg border border-line bg-panel p-4 text-muted">{errorMessage}</p> : items.map((item) => (
         <a
           key={item.id}
+          lang={item.resolvedLocale}
           href={item.href}
           target="_blank"
           rel="noreferrer"

@@ -13,6 +13,9 @@ describe('VideoSection', () => {
         items={[{
           id: 'video-1',
           title: '敬拜影片',
+          requestedLocale: 'ko',
+          resolvedLocale: 'zh-Hant',
+          availableLocales: ['zh-Hant'],
           imageSrc: 'https://i.ytimg.com/vi/K3ckFWeSQ-k/hqdefault.jpg',
           imageAlt: '敬拜影片縮圖',
           href: 'https://www.youtube.com/watch?v=K3ckFWeSQ-k'
@@ -28,5 +31,7 @@ describe('VideoSection', () => {
       '(max-width: 900px) 100vw, 25vw'
     );
     expect(container.innerHTML).not.toContain('background-image');
+    expect(screen.getByText('敬拜影片').closest('a')).toHaveAttribute('lang', 'zh-Hant');
+    expect(screen.getByRole('heading', {name: '神國大樂'})).not.toHaveAttribute('lang', 'zh-Hant');
   });
 });

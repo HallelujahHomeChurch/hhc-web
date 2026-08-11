@@ -9,6 +9,9 @@ const items = Array.from({length: 4}, (_, index) => ({
   date: '2026 / 07 / 13',
   imageAlt: '活動封面',
   imageSrc: index === 0 ? 'https://www.alive.org.tw/assets/public/news-cover' : undefined,
+  requestedLocale: 'zh-Hant' as const,
+  resolvedLocale: 'zh-Hant' as const,
+  availableLocales: ['zh-Hant' as const],
   href: `/zh-Hant/news/news-${index + 1}`
 }));
 
@@ -26,5 +29,14 @@ describe('NewsSection', () => {
     const image = screen.getByRole('img', {name: '活動封面'});
     expect(image).toHaveAttribute('sizes', '(max-width: 620px) 112px, 132px');
     expect(container.innerHTML).not.toContain('background-image');
+  });
+
+  it('keeps Japanese chrome and href while marking fallback card content as Traditional Chinese', () => {
+    render(<NewsSection items={[{...items[0], requestedLocale: 'ja', href: '/ja/news/news-1'}]} moreHref="/ja/news" moreLabel="もっと見る" title="最新のお知らせ" />);
+
+    expect(screen.getByRole('heading', {name: '最新のお知らせ'})).not.toHaveAttribute('lang', 'zh-Hant');
+    expect(screen.getByRole('link', {name: /十年養成計畫/})).toHaveAttribute('href', '/ja/news/news-1');
+    expect(screen.getByText('十年養成計畫｜滿心怡姊妹分享會').closest('li')).toHaveAttribute('lang', 'zh-Hant');
+    expect(screen.getByText('2026 / 07 / 13')).toHaveAttribute('lang', 'zh-Hant');
   });
 });

@@ -5,6 +5,7 @@ export const newsByLocale: LocalizedRecord<NewsItem[]> = {
   'zh-Hant': [
     {
       id: 'formation-sharing',
+      requestedLocale: 'zh-Hant',
       title: '十年養成計畫｜滿心怡姊妹分享會',
       resolvedLocale: 'zh-Hant',
       availableLocales: ['zh-Hant', 'zh-Hans', 'en'],
@@ -15,6 +16,7 @@ export const newsByLocale: LocalizedRecord<NewsItem[]> = {
     },
     {
       id: 'rainbow-testimony',
+      requestedLocale: 'zh-Hant',
       title: '苦難鑄進彩虹之約｜姊妹見證分享',
       resolvedLocale: 'zh-Hant',
       availableLocales: ['zh-Hant', 'zh-Hans', 'en'],
@@ -25,6 +27,7 @@ export const newsByLocale: LocalizedRecord<NewsItem[]> = {
     },
     {
       id: 'family-seminar',
+      requestedLocale: 'zh-Hant',
       title: '神國寶貝養成記｜親子系列講座',
       resolvedLocale: 'zh-Hant',
       availableLocales: ['zh-Hant', 'zh-Hans', 'en'],
@@ -37,6 +40,7 @@ export const newsByLocale: LocalizedRecord<NewsItem[]> = {
   'zh-Hans': [
     {
       id: 'formation-sharing',
+      requestedLocale: 'zh-Hans',
       title: '十年养成计划｜满心怡姊妹分享会',
       resolvedLocale: 'zh-Hans',
       availableLocales: ['zh-Hant', 'zh-Hans', 'en'],
@@ -47,6 +51,7 @@ export const newsByLocale: LocalizedRecord<NewsItem[]> = {
     },
     {
       id: 'rainbow-testimony',
+      requestedLocale: 'zh-Hans',
       title: '苦难铸进彩虹之约｜姊妹见证分享',
       resolvedLocale: 'zh-Hans',
       availableLocales: ['zh-Hant', 'zh-Hans', 'en'],
@@ -57,6 +62,7 @@ export const newsByLocale: LocalizedRecord<NewsItem[]> = {
     },
     {
       id: 'family-seminar',
+      requestedLocale: 'zh-Hans',
       title: '神国宝贝养成记｜亲子系列讲座',
       resolvedLocale: 'zh-Hans',
       availableLocales: ['zh-Hant', 'zh-Hans', 'en'],
@@ -69,6 +75,7 @@ export const newsByLocale: LocalizedRecord<NewsItem[]> = {
   en: [
     {
       id: 'formation-sharing',
+      requestedLocale: 'en',
       title: 'Ten-Year Formation Plan | Sharing Gathering',
       resolvedLocale: 'en',
       availableLocales: ['zh-Hant', 'zh-Hans', 'en'],
@@ -79,6 +86,7 @@ export const newsByLocale: LocalizedRecord<NewsItem[]> = {
     },
     {
       id: 'rainbow-testimony',
+      requestedLocale: 'en',
       title: 'A Rainbow Covenant Through Suffering | Testimony',
       resolvedLocale: 'en',
       availableLocales: ['zh-Hant', 'zh-Hans', 'en'],
@@ -89,6 +97,7 @@ export const newsByLocale: LocalizedRecord<NewsItem[]> = {
     },
     {
       id: 'family-seminar',
+      requestedLocale: 'en',
       title: 'Raising Kingdom Children | Family Seminar',
       resolvedLocale: 'en',
       availableLocales: ['zh-Hant', 'zh-Hans', 'en'],

@@ -1,5 +1,10 @@
-import type {LocalizedRecord} from '@/i18n/locales';
+import type {ContentLocaleMetadata} from '@/features/content/locale';
+import type {Locale, LocalizedRecord} from '@/i18n/locales';
 import type {VideoItem} from './types';
+
+function videoItems(locale: Locale, items: Array<Omit<VideoItem, keyof ContentLocaleMetadata>>): VideoItem[] {
+  return items.map((item) => ({...item, requestedLocale: locale, resolvedLocale: locale, availableLocales: [locale]}));
+}
 
 const videoLinks = {
   breakthrough: 'https://youtu.be/K3ckFWeSQ-k?si=RRGK8h5JROAFqbCf',
@@ -14,19 +19,19 @@ const videoThumbnails = {
 } as const;
 
 export const videosByLocale: LocalizedRecord<VideoItem[]> = {
-  'zh-Hant': [
+  'zh-Hant': videoItems('zh-Hant', [
     {id: 'breakthrough', title: '為祢而闖', imageSrc: videoThumbnails.breakthrough, imageAlt: '為祢而闖', href: videoLinks.breakthrough},
     {id: 'earthshaking', title: '驚天動地', imageSrc: videoThumbnails.earthshaking, imageAlt: '驚天動地', href: videoLinks.earthshaking},
     {id: 'all-is-you', title: '全部攏是祢', imageSrc: videoThumbnails.allIsYou, imageAlt: '全部攏是祢', href: videoLinks.allIsYou}
-  ],
-  'zh-Hans': [
+  ]),
+  'zh-Hans': videoItems('zh-Hans', [
     {id: 'breakthrough', title: '为祢而闯', imageSrc: videoThumbnails.breakthrough, imageAlt: '为祢而闯', href: videoLinks.breakthrough},
     {id: 'earthshaking', title: '惊天动地', imageSrc: videoThumbnails.earthshaking, imageAlt: '惊天动地', href: videoLinks.earthshaking},
     {id: 'all-is-you', title: '全部拢是祢', imageSrc: videoThumbnails.allIsYou, imageAlt: '全部拢是祢', href: videoLinks.allIsYou}
-  ],
-  en: [
+  ]),
+  en: videoItems('en', [
     {id: 'breakthrough', title: '為祢而闖', imageSrc: videoThumbnails.breakthrough, imageAlt: '為祢而闖', href: videoLinks.breakthrough},
     {id: 'earthshaking', title: '驚天動地', imageSrc: videoThumbnails.earthshaking, imageAlt: '驚天動地', href: videoLinks.earthshaking},
     {id: 'all-is-you', title: '全部攏是祢', imageSrc: videoThumbnails.allIsYou, imageAlt: '全部攏是祢', href: videoLinks.allIsYou}
-  ]
+  ])
 };

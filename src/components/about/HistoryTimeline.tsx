@@ -47,13 +47,14 @@ export function HistoryTimeline({content, timeline, scriptureLanguage, errorMess
           {timeline.events.map((event, index) => (
             <li
               key={`${event.date}-${event.body}`}
+              lang={event.resolvedLocale}
               className={`relative rounded-2xl border border-line/80 bg-[image:var(--hhc-panel-gradient)] px-6 py-5 shadow-warm before:absolute before:top-[30px] before:size-3.5 before:rounded-full before:shadow-[0_0_0_6px_var(--hhc-timeline-ring)] max-[760px]:col-start-1 max-[760px]:translate-y-0 max-[760px]:before:-left-[21px] ${
                 index % 2 === 0
                   ? 'col-start-1 translate-y-2.5 before:-right-[34px] before:bg-rose'
                   : 'col-start-2 translate-y-[54px] before:-left-[34px] before:bg-teal'
               }`}
             >
-              <time className={`mb-2.5 inline-flex rounded-full bg-[var(--hhc-footer)] px-3 py-1.5 text-base font-black leading-none ${event.continued ? 'text-muted' : 'text-[var(--hhc-brand-strong)]'}`}>
+              <time lang={event.resolvedLocale} className={`mb-2.5 inline-flex rounded-full bg-[var(--hhc-footer)] px-3 py-1.5 text-base font-black leading-none ${event.continued ? 'text-muted' : 'text-[var(--hhc-brand-strong)]'}`}>
                 {event.date}
               </time>
               <p className="m-0 text-base leading-[1.8] text-ink">{event.body}</p>

@@ -4,25 +4,28 @@ import {getHistoryTimeline, getHistoryTimelinePage} from './api';
 
 describe('getHistoryTimeline', () => {
   it('maps published history projections', async () => {
-    const client = clientWith([{id: 'event-1', title: '教會沿革', eventDate: '1984-03-01', dateLabel: 'legacy label', body: '領受建造家庭祭壇的異象。'}]);
-    const payload = await getHistoryTimeline('zh-Hant', client);
+    const client = clientWith([{id: 'event-1', title: '教會沿革', resolvedLocale: 'zh-Hant', availableLocales: ['zh-Hant', 'en'], eventDate: '1984-03-01', dateLabel: 'legacy label', body: '領受建造家庭祭壇的異象。'}]);
+    const payload = await getHistoryTimeline('ja', client);
 
     expect(payload.events).toHaveLength(1);
     expect(payload.events[0]).toMatchObject({
       date: '1984年3月1日',
-      body: expect.stringContaining('家庭祭壇')
+      body: expect.stringContaining('家庭祭壇'),
+      requestedLocale: 'ja',
+      resolvedLocale: 'zh-Hant',
+      availableLocales: ['zh-Hant', 'en']
     });
   });
 
   it('formats partial canonical dates for the active locale', async () => {
     const client = clientWith([
-      {id: 'year', eventDate: '1984', body: 'Year'},
-      {id: 'month', eventDate: '1984-03', body: 'Month'},
+      {id: 'year', resolvedLocale: 'en', availableLocales: ['en'], eventDate: '1984', body: 'Year'},
+      {id: 'month', resolvedLocale: 'en', availableLocales: ['en'], eventDate: '1984-03', body: 'Month'},
     ]);
 
     await expect(getHistoryTimeline('en', client)).resolves.toEqual({events: [
-      {date: '1984', body: 'Year'},
-      {date: 'March 1984', body: 'Month'},
+      {date: '1984', body: 'Year', requestedLocale: 'en', resolvedLocale: 'en', availableLocales: ['en']},
+      {date: 'March 1984', body: 'Month', requestedLocale: 'en', resolvedLocale: 'en', availableLocales: ['en']},
     ]});
   });
 
@@ -32,7 +35,7 @@ describe('getHistoryTimeline', () => {
     ]);
 
     await expect(getHistoryTimeline('zh-Hant', client)).resolves.toEqual({events: [
-      {date: '2005年9月18日', body: 'Legacy'},
+      {date: '2005年9月18日', body: 'Legacy', requestedLocale: 'zh-Hant', resolvedLocale: 'zh-Hant', availableLocales: []},
     ]});
   });
 
@@ -43,7 +46,7 @@ describe('getHistoryTimeline', () => {
     })} as unknown as HhcWebClient;
 
     await expect(getHistoryTimelinePage('en', 2, 12, client)).resolves.toEqual({
-      events: [{date: '1984', body: 'Year'}],
+      events: [{date: '1984', body: 'Year', requestedLocale: 'en', resolvedLocale: 'en', availableLocales: []}],
       meta: {page: 2, pageSize: 12, total: 20}
     });
   });
@@ -58,8 +61,8 @@ describe('getHistoryTimeline', () => {
     const client = {listPublicContentPage} as unknown as HhcWebClient;
 
     await expect(getHistoryTimeline('en', client)).resolves.toEqual({events: [
-      {date: '1984', body: 'First'},
-      {date: '1985', body: 'Second'},
+      {date: '1984', body: 'First', requestedLocale: 'en', resolvedLocale: 'en', availableLocales: []},
+      {date: '1985', body: 'Second', requestedLocale: 'en', resolvedLocale: 'en', availableLocales: []},
     ]});
   });
 });

@@ -7,7 +7,7 @@ import type {Locale} from '@/i18n/locales';
 export async function getHomeContent(locale: Locale, client: HhcWebClient = publicContentClient()) {
   const home = await client.getHome(locale);
   return {
-    news: home.news.map(mapNewsItem),
-    videos: home.videos.map(mapVideoItem)
+    news: home.news.map((value) => mapNewsItem(value, locale)),
+    videos: home.videos.map((value) => mapVideoItem(value, locale))
   };
 }
