@@ -4,7 +4,7 @@ import {useEffect, useState} from 'react';
 import {DownloadButton} from '@/components/ui/DownloadButton';
 import {fetchLatestWeekly} from '@/features/weekly/public-api';
 import {formatIssueNumber} from '@/features/weekly/format';
-import type {WeeklyBulletin} from '@/features/weekly/types';
+import {weeklyEditionLabels, type WeeklyIssue} from '@/features/weekly/types';
 import type {Locale} from '@/i18n/locales';
 
 type WeeklyCardProps = {
@@ -15,11 +15,11 @@ type WeeklyCardProps = {
 
 export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
   const [retryKey, setRetryKey] = useState(0);
-  const requestKey = `${locale}:${retryKey}`;
+  const requestKey = String(retryKey);
   const [result, setResult] = useState<{
     key: string;
     state: 'ready' | 'error';
-    weekly: WeeklyBulletin | null;
+    weekly: WeeklyIssue | null;
   } | null>(null);
   const state = result?.key === requestKey ? result.state : 'loading';
   const weekly = result?.key === requestKey ? result.weekly : null;
@@ -27,7 +27,7 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchLatestWeekly(locale, {signal: controller.signal})
+    fetchLatestWeekly({signal: controller.signal})
       .then((value) => {
         setResult({key: requestKey, state: 'ready', weekly: value});
       })
@@ -37,17 +37,26 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
         }
       });
     return () => controller.abort();
-  }, [locale, requestKey]);
+  }, [requestKey]);
 
   return (
     <aside className="grid min-h-[350px] place-items-center rounded-[14px] border border-panel-border bg-panel px-6 py-8 text-center shadow-[inset_0_1px_0_var(--hhc-inset-highlight)] max-[900px]:order-first" aria-labelledby="weekly-title">
       {state === 'ready' && weekly ? (
         <div>
           <BulletinMark />
+          <h3 id="weekly-title" className="sr-only">{ctaLabel}</h3>
           {issueLabel ? <p className="mb-1 text-[21px] font-semibold text-[var(--hhc-brand-strong)]">{issueLabel}</p> : null}
-          <h3 id="weekly-title" className="mb-1 text-[18px] font-semibold text-ink">{weekly.title}</h3>
-          {weekly.subtitle ? <p className="mb-6 text-[15px] text-ink">{weekly.subtitle}</p> : <div className="mb-5" />}
-          <DownloadButton href={weekly.href} label={ctaLabel} />
+          <div className="mt-5 grid grid-cols-3 gap-2.5">
+            {weekly.versions.map((version) => (
+              <DownloadButton
+                key={version.locale}
+                href={version.href}
+                label={weeklyEditionLabels[version.locale]}
+                ariaLabel={`${ctaLabel}: ${weeklyEditionLabels[version.locale]}`}
+                className="px-3 text-sm"
+              />
+            ))}
+          </div>
         </div>
       ) : state === 'error' ? (
         <div>

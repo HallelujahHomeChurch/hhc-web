@@ -1,5 +1,4 @@
-import type {LocalizedRecord} from '@/i18n/locales';
-import type {WeeklyBulletin, WeeklyIssue} from './types';
+import type {WeeklyIssue} from './types';
 
 export const weeklyIssues: WeeklyIssue[] = [
   {
@@ -57,9 +56,3 @@ export const weeklyIssues: WeeklyIssue[] = [
     ]
   }
 ];
-
-export const weeklyByLocale: LocalizedRecord<WeeklyBulletin> = {
-  'zh-Hant': weeklyIssues[0].versions[0],
-  'zh-Hans': weeklyIssues[0].versions[1],
-  en: weeklyIssues[0].versions[2]
-};

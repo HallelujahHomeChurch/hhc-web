@@ -1,6 +1,10 @@
+import type {Locale} from '@/i18n/locales';
+
 export type NewsItem = {
   id: string;
   title: string;
+  resolvedLocale: Locale;
+  availableLocales: Locale[];
   summary: string;
   date: string;
   imageAlt: string;

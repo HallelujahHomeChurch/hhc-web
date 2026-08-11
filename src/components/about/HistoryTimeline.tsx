@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import type {HistoryTimelinePayload} from '@/features/history/types';
+import type {Locale} from '@/i18n/locales';
 
 type HistoryTimelineProps = {
   content: {
@@ -9,16 +10,17 @@ type HistoryTimelineProps = {
     title: string;
   };
   timeline: HistoryTimelinePayload;
+  scriptureLanguage: Locale;
   errorMessage?: string;
 };
 
-export function HistoryTimeline({content, timeline, errorMessage}: HistoryTimelineProps) {
+export function HistoryTimeline({content, timeline, scriptureLanguage, errorMessage}: HistoryTimelineProps) {
   return (
     <article className="shell mt-7 overflow-hidden rounded-2xl border border-line/80 bg-paper/90 px-[38px] py-[34px] shadow-warm max-[620px]:px-5 max-[620px]:py-6">
       <div className="mb-[34px] grid grid-cols-[minmax(0,1.15fr)_minmax(280px,.85fr)] items-center gap-[30px] overflow-hidden rounded-[14px] border border-panel-border bg-panel p-[clamp(24px,4vw,44px)] shadow-[inset_0_1px_0_var(--hhc-inset-highlight)] max-[900px]:grid-cols-1">
         <div className="grid gap-7 font-display text-[clamp(16px,1.55vw,20px)] leading-[1.8] tracking-[0.04em] text-[var(--hhc-brand-strong)]">
           {content.scripture.map((quote) => (
-            <blockquote key={quote.cite} className="m-0">
+            <blockquote key={quote.cite} className="m-0" lang={scriptureLanguage}>
               {quote.lines.map((line) => (
                 <span key={line} className="block">
                   {line}

@@ -205,7 +205,8 @@ describe('AccountControl', () => {
     );
 
     await user.click(await screen.findByRole('button', {name: 'Account menu'}));
-    expect(screen.getByText('Hi Ada')).toBeInTheDocument();
+    expect(screen.getByText('Ada')).toBeInTheDocument();
+    expect(screen.getByText('ada@example.com')).toBeInTheDocument();
     expect(screen.getByRole('menuitem', {name: 'Manage account'})).toHaveAttribute(
       'href',
       'https://account.alive.org.tw/profile'

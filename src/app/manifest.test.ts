@@ -7,6 +7,7 @@ describe('web app manifest', () => {
   it('is installable as a standalone HHC app', () => {
     expect(manifest()).toMatchObject({
       name: '哈利路亞家教會',
+      lang: 'zh-Hant',
       id: '/',
       start_url: '/',
       display: 'standalone'

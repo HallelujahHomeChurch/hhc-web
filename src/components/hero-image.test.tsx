@@ -19,3 +19,13 @@ describe.each([
     expect(image?.getAttribute('src')).toContain('hero.jpg');
   });
 });
+
+describe('HomeHero mobile bounds', () => {
+  it('allows a long Japanese title to wrap inside the mobile shell', () => {
+    const {container} = render(<HomeHero locale="ja" title="ハレルヤ・ホームチャーチ" subtitle="愛の中で家庭を築く" />);
+    const title = container.querySelector('h1');
+
+    expect(title?.parentElement).toHaveClass('min-w-0');
+    expect(title).toHaveClass('max-[620px]:whitespace-normal');
+  });
+});

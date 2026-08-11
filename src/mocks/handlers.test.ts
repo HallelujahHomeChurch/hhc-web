@@ -8,6 +8,17 @@ describe('mock handlers', () => {
   it('serves payloads from the same fixtures used by local APIs', () => {
     expect(getMockPayload('news', 'zh-Hant')).toBe(newsByLocale['zh-Hant']);
     expect(getMockPayload('history', 'zh-Hant')).toBe(historyByLocale['zh-Hant']);
-    expect(getMockPayload('weekly', 'zh-Hant')).toBe(weeklyIssues[0].versions[0]);
+    expect(getMockPayload('weekly', 'zh-Hant')).toBe(weeklyIssues[0]);
+  });
+
+  it('mirrors the existing Traditional Chinese fallback for new product locales', () => {
+    expect(getMockPayload('news', 'ja')).toBe(newsByLocale['zh-Hant']);
+    expect(getMockPayload('history', 'ko')).toBe(historyByLocale['zh-Hant']);
+  });
+
+  it('does not use a product locale to select a weekly edition', () => {
+    for (const locale of ['zh-Hant', 'zh-Hans', 'en', 'ja', 'ko'] as const) {
+      expect(getMockPayload('weekly', locale)).toBe(weeklyIssues[0]);
+    }
   });
 });

@@ -11,7 +11,9 @@ describe('seo utilities', () => {
     expect(getAlternates('/about')).toEqual({
       'zh-Hant': 'https://www.alive.org.tw/zh-Hant/about',
       'zh-Hans': 'https://www.alive.org.tw/zh-Hans/about',
-      en: 'https://www.alive.org.tw/en/about'
+      en: 'https://www.alive.org.tw/en/about',
+      ja: 'https://www.alive.org.tw/ja/about',
+      ko: 'https://www.alive.org.tw/ko/about'
     });
   });
 
@@ -19,5 +21,7 @@ describe('seo utilities', () => {
     expect(getOpenGraphLocale('zh-Hant')).toBe('zh_TW');
     expect(getOpenGraphLocale('zh-Hans')).toBe('zh_CN');
     expect(getOpenGraphLocale('en')).toBe('en_US');
+    expect(getOpenGraphLocale('ja')).toBe('ja_JP');
+    expect(getOpenGraphLocale('ko')).toBe('ko_KR');
   });
 });

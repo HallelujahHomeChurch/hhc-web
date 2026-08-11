@@ -17,6 +17,8 @@ export function mapNewsItem(value: Awaited<ReturnType<HhcWebClient['listPublicCo
   return {
     id: value.id,
     title: value.title,
+    resolvedLocale: value.resolvedLocale,
+    availableLocales: value.availableLocales,
     summary: value.summary ?? '',
     date: value.displayDate?.replaceAll('-', ' / ') ?? '',
     imageAlt: value.imageAlt ?? value.title,
@@ -30,6 +32,8 @@ export async function getNewsBySlug(locale: Locale, slug: string, client: HhcWeb
   return {
     id: value.id,
     title: value.title,
+    resolvedLocale: value.resolvedLocale,
+    availableLocales: value.availableLocales,
     summary: value.summary ?? '',
     body: value.body ?? '',
     date: value.displayDate?.replaceAll('-', ' / ') ?? '',

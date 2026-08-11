@@ -21,7 +21,7 @@ describe('HistoryTimeline', () => {
   it('renders timeline events', () => {
     const messages = getMessages('zh-Hant');
 
-    render(<HistoryTimeline content={messages.about.history} timeline={timeline} />);
+    render(<HistoryTimeline content={messages.about.history} timeline={timeline} scriptureLanguage="zh-Hant" />);
 
     expect(screen.getByRole('heading', {name: '家教會沿革'})).toBeInTheDocument();
     expect(screen.getByText('1984年')).toBeInTheDocument();
@@ -31,11 +31,20 @@ describe('HistoryTimeline', () => {
   it('renders localized English scripture content', () => {
     const messages = getMessages('en');
 
-    render(<HistoryTimeline content={messages.about.history} timeline={englishTimeline} />);
+    render(<HistoryTimeline content={messages.about.history} timeline={englishTimeline} scriptureLanguage="en" />);
 
     expect(screen.getByText(/Before I was born the Lord called me/)).toBeInTheDocument();
     expect(screen.getByText(/that my salvation may reach to the ends of the earth/)).toBeInTheDocument();
     expect(screen.getByText('Isaiah 49:1-3 NIV')).toBeInTheDocument();
     expect(screen.getByRole('heading', {name: 'Church History'})).toBeInTheDocument();
+    expect(screen.getAllByRole('blockquote')).toSatisfy((quotes: HTMLElement[]) => quotes.every((quote) => quote.lang === 'en'));
+  });
+
+  it('marks the Japanese NIV fallback as English', () => {
+    const messages = getMessages('ja');
+
+    render(<HistoryTimeline content={messages.about.history} timeline={{events: []}} scriptureLanguage="en" />);
+
+    expect(screen.getAllByRole('blockquote')).toSatisfy((quotes: HTMLElement[]) => quotes.every((quote) => quote.lang === 'en'));
   });
 });

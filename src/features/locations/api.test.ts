@@ -10,4 +10,9 @@ describe('getLocations', () => {
       'https://maps.app.goo.gl/A1SDTSZC2XLHqkST7'
     ]);
   });
+
+  it('keeps static locations available before locale-specific CMS content exists', () => {
+    expect(getLocations('ja')).toEqual(getLocations('zh-Hant'));
+    expect(getLocations('ko')).toEqual(getLocations('zh-Hant'));
+  });
 });

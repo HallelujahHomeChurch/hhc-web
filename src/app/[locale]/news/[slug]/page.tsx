@@ -35,16 +35,17 @@ export async function generateMetadata({params}: NewsDetailPageProps): Promise<M
   const messages = getMessages(locale);
   const news = await loadNews(locale, slug);
   const path = `/news/${slug}`;
+  const canonicalPath = getLocalizedPath(news.resolvedLocale, path);
   return {
     title: `${news.title} | ${messages.site.name}`,
     description: news.summary || messages.news.description,
-    alternates: {canonical: getLocalizedPath(locale, path), languages: getAlternates(path)},
+    alternates: {canonical: canonicalPath, languages: getAlternates(path, news.availableLocales)},
     openGraph: {
       title: news.title,
       description: news.summary || messages.news.description,
       images: [{url: news.imageSrc || siteConfig.defaultOgImage, alt: news.imageAlt || messages.site.name}],
-      locale: getOpenGraphLocale(locale),
-      url: `${siteConfig.url}${getLocalizedPath(locale, path)}`,
+      locale: getOpenGraphLocale(news.resolvedLocale),
+      url: `${siteConfig.url}${canonicalPath}`,
       siteName: siteConfig.name
     },
     twitter: {

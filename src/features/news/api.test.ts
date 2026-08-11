@@ -4,7 +4,7 @@ import {getNews, getNewsBySlug, getNewsPage} from './api';
 
 describe('getNews', () => {
   it('maps published news projections without using fixtures', async () => {
-    const client = {listPublicContent: async () => [{id: 'news-1', title: '消息', summary: '摘要', displayDate: '2026-07-13', imageAlt: '封面', imageUrl: '/assets/detail/large', homeImageUrl: '/assets/home/large', href: '/zh-Hant/news/news-1'}]} as unknown as HhcWebClient;
+    const client = {listPublicContent: async () => [{id: 'news-1', title: '消息', resolvedLocale: 'zh-Hant', availableLocales: ['zh-Hant', 'en'], summary: '摘要', displayDate: '2026-07-13', imageAlt: '封面', imageUrl: '/assets/detail/large', homeImageUrl: '/assets/home/large', href: '/zh-Hant/news/news-1'}]} as unknown as HhcWebClient;
     const [item] = await getNews('zh-Hant', client);
 
     expect(item).toMatchObject({
@@ -14,13 +14,16 @@ describe('getNews', () => {
       href: expect.any(String)
     });
     expect(item.imageSrc).toBe('/assets/home/large');
+    expect(item).toMatchObject({resolvedLocale: 'zh-Hant', availableLocales: ['zh-Hant', 'en']});
   });
 
   it('maps a news detail without treating its body as markup', async () => {
-    const client = {getNewsBySlug: async () => ({id: 'news-1', title: '消息', body: '<script>alert(1)</script>', detailLayout: 'left', href: '/zh-Hant/news/news-1'})} as unknown as HhcWebClient;
+    const client = {getNewsBySlug: async () => ({id: 'news-1', title: '消息', resolvedLocale: 'zh-Hant', availableLocales: ['zh-Hant', 'en'], body: '<script>alert(1)</script>', detailLayout: 'left', href: '/zh-Hant/news/news-1'})} as unknown as HhcWebClient;
 
     await expect(getNewsBySlug('zh-Hant', 'news-1', client)).resolves.toMatchObject({
       title: '消息',
+      resolvedLocale: 'zh-Hant',
+      availableLocales: ['zh-Hant', 'en'],
       body: '<script>alert(1)</script>',
       layout: 'left'
     });

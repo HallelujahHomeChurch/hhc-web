@@ -80,7 +80,7 @@ export default async function HomePage({params}: HomePageProps) {
             <NewsSection title={messages.home.newsTitle} moreHref={`/${locale}/news`} moreLabel={`${messages.home.moreNews} →`} items={news} errorMessage={homeResult.status === 'rejected' ? messages.home.newsLoadError : undefined} />
             <WeeklyCard
               locale={locale}
-              ctaLabel={`${messages.home.downloadWeekly} ↓`}
+              ctaLabel={messages.home.downloadWeekly}
               messages={{
                 loading: messages.home.weeklyLoading,
                 downloading: messages.home.weeklyDownloading,

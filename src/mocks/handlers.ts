@@ -5,20 +5,20 @@ import {isLocale} from '@/i18n/locales';
 import {locationsByLocale} from '@/features/locations/mock-data';
 import {newsByLocale} from '@/features/news/mock-data';
 import {videosByLocale} from '@/features/videos/mock-data';
-import {weeklyByLocale} from '@/features/weekly/mock-data';
+import {weeklyIssues} from '@/features/weekly/mock-data';
 
 const payloads = {
   locations: locationsByLocale,
   history: historyByLocale,
   news: newsByLocale,
-  videos: videosByLocale,
-  weekly: weeklyByLocale
+  videos: videosByLocale
 };
 
-type PayloadKey = keyof typeof payloads;
+type PayloadKey = keyof typeof payloads | 'weekly';
 
 export function getMockPayload(key: PayloadKey, locale: Locale) {
-  return payloads[key][locale];
+  if (key === 'weekly') return weeklyIssues[0];
+  return payloads[key][locale] ?? payloads[key]['zh-Hant'];
 }
 
 function getLocale(url: URL) {
