@@ -9,11 +9,16 @@ import {isIOSDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 const installationKey = 'hhc_push_installation_id';
 const promptVisitKey = 'hhc_push_prompt_visits';
 const promptSnoozeKey = 'hhc_push_prompt_snooze_until';
-const registrationSyncKey = 'hhc_push_registration_sync';
+const legacyRegistrationSyncKey = 'hhc_push_registration_sync';
+const registrationStateKey = 'hhc_push_registration_state';
+const registrationLeaseKey = 'hhc_push_registration_lease';
+const registrationCooldownKey = 'hhc_push_registration_cooldown';
 const accountBindingSyncKey = 'hhc_push_account_binding_sync';
 const promptDelay = 8000;
 const laterCooldown = 14 * 24 * 60 * 60 * 1000;
 const dismissCooldown = 30 * 24 * 60 * 60 * 1000;
+const registrationLeaseDuration = 30_000;
+const minimumRetryCooldown = 60_000;
 
 type Labels = {
   enable: string;
@@ -51,6 +56,7 @@ function installationId() {
 }
 
 const pendingSyncs = new Map<string, Promise<boolean>>();
+const pendingRegistrations = new Map<string, Promise<boolean>>();
 
 function syncOnce(key: string, value: string, operation: () => Promise<boolean>) {
   if (sessionStorage.getItem(key) === value) return Promise.resolve(true);
@@ -67,8 +73,42 @@ function syncOnce(key: string, value: string, operation: () => Promise<boolean>)
 }
 
 function clearPushSyncState() {
-  sessionStorage.removeItem(registrationSyncKey);
+  sessionStorage.removeItem(legacyRegistrationSyncKey);
   sessionStorage.removeItem(accountBindingSyncKey);
+  localStorage.removeItem(registrationStateKey);
+  localStorage.removeItem(registrationLeaseKey);
+  localStorage.removeItem(registrationCooldownKey);
+}
+
+function storedFingerprint(key: string) {
+  const [fingerprint = '', timestamp = ''] = (localStorage.getItem(key) ?? '').split(':');
+  const value = Number(timestamp);
+  return /^[0-9a-f]{64}$/.test(fingerprint) && Number.isFinite(value) ? {fingerprint, timestamp: value} : null;
+}
+
+function storeFingerprint(key: string, fingerprint: string, timestamp: number) {
+  localStorage.setItem(key, `${fingerprint}:${Math.floor(timestamp)}`);
+}
+
+async function subscriptionFingerprint(subscription: PushSubscription, locale: Locale) {
+  const value = subscription.toJSON();
+  const input = JSON.stringify([
+    locale,
+    value.endpoint ?? '',
+    value.expirationTime ?? null,
+    value.keys?.p256dh ?? '',
+    value.keys?.auth ?? ''
+  ]);
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function retryDelay(response: Response) {
+  const value = response.headers.get('Retry-After')?.trim() ?? '';
+  const seconds = Number(value);
+  if (value && Number.isFinite(seconds)) return Math.max(minimumRetryCooldown, seconds * 1000);
+  const date = Date.parse(value);
+  return Math.max(minimumRetryCooldown, Number.isFinite(date) ? date - Date.now() : 0);
 }
 
 async function bindInstallationToAccount() {
@@ -112,15 +152,42 @@ async function bindInstallationToAccount() {
 
 async function registerSubscription(subscription: PushSubscription, locale: Locale) {
   try {
+    const fingerprint = await subscriptionFingerprint(subscription, locale);
+    if (storedFingerprint(registrationStateKey)?.fingerprint === fingerprint) return true;
+
+    const cooldown = storedFingerprint(registrationCooldownKey);
+    if (cooldown?.fingerprint === fingerprint && cooldown.timestamp > Date.now()) return false;
+
+    const existing = pendingRegistrations.get(fingerprint);
+    if (existing) return existing;
+
+    const lease = storedFingerprint(registrationLeaseKey);
+    if (lease?.fingerprint === fingerprint && lease.timestamp > Date.now()) return false;
+    storeFingerprint(registrationLeaseKey, fingerprint, Date.now() + registrationLeaseDuration);
+
     const installation = installationId();
-    return syncOnce(registrationSyncKey, `${installation}:${locale}`, async () => {
+    const pending = (async () => {
       const response = await fetch('/api/engagement/v1/push/subscriptions', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({installationId: installation, locale, subscription: subscription.toJSON()})
       });
-      return response.ok;
+      if (response.status === 429) {
+        storeFingerprint(registrationCooldownKey, fingerprint, Date.now() + retryDelay(response));
+        return false;
+      }
+      if (!response.ok) return false;
+      storeFingerprint(registrationStateKey, fingerprint, Date.now());
+      localStorage.removeItem(registrationCooldownKey);
+      return true;
+    })().finally(() => {
+      pendingRegistrations.delete(fingerprint);
+      if (storedFingerprint(registrationLeaseKey)?.fingerprint === fingerprint) {
+        localStorage.removeItem(registrationLeaseKey);
+      }
     });
+    pendingRegistrations.set(fingerprint, pending);
+    return pending;
   } catch {
     return false;
   }
