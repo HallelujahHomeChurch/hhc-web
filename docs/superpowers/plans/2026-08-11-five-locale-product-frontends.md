@@ -14,6 +14,7 @@
 - No runtime LLM calls from either frontend.
 - No global `loading.tsx` or central text-only Loading page.
 - Public CMS fallback remains `zh-Hant`; only the fallback block uses `lang="zh-Hant"`.
+- **2026-08-11 domain correction:** Japanese/Korean product routes display the same three weekly-paper edition links (`zh-Hant`, `zh-Hans`, `en`); `BulletinEdition` is not a product locale and no `ja`/`ko` PDF edition exists.
 - Japanese/Korean banner fonts are local WOFF2 subsets under 250 KiB each with `display: swap` and `preload: false`.
 - Public website discovery is released only after account and messaging smoke pass.
 

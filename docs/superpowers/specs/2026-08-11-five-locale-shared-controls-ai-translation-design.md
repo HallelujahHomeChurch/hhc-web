@@ -22,11 +22,21 @@ CMS editors will also be able to generate missing language drafts from a saved T
 
 Japanese and Korean banners retain the site's handwritten brand character through locale-specific display fonts. Generated CMS translations target natural, contemporary local expression rather than literal Traditional Chinese sentence structure.
 
+## Authoritative Domain Correction (2026-08-11)
+
+| Domain | Values | Owns |
+| --- | --- | --- |
+| `ProductLocale`, `ContentLocale`, `MessageLocale` | `zh-Hant`, `zh-Hans`, `en`, `ja`, `ko` | Product routes/preferences, generic CMS content, and recipient/message copy. |
+| `AdminUiLocale` | `zh-Hant`, `zh-Hans`, `en` | Admin console chrome only. |
+| `BulletinEdition` | `zh-Hant`, `zh-Hans`, `en` | Weekly-paper metadata, PDF assets, editor tabs, and public downloads. |
+
+`BulletinEdition` is independent of the five-locale domains. Japanese and Korean product/message routes display links to all three weekly-paper editions; Japanese/Korean notification copy may use the English message fallback, but no Japanese or Korean PDF edition exists. Generic CMS translation previews target `zh-Hans`, `en`, `ja`, and `ko`; bulletin metadata previews target only `zh-Hans` and `en`. Any later requirement in this document for a Japanese/Korean bulletin upload, preview, or download lifecycle is superseded by this correction. Migration 022 is immutable; inventory any legacy `ja`/`ko` bulletin rows before a reviewed remediation, and do not silently relabel, delete, or rewrite them.
+
 ## Goals
 
 1. Keep the Admin console interface limited to `zh-Hant`, `zh-Hans`, and `en`.
 2. Support `zh-Hant`, `zh-Hans`, `en`, `ja`, and `ko` in `hhc-web` and `account-fe`.
-3. Let Admin editors create and publish all five content locales, including Japanese and Korean weekly-paper PDF slots.
+3. Let Admin editors create and publish all five generic CMS content locales while keeping weekly-paper PDFs at exactly three independent editions.
 4. Carry Japanese and Korean through account security email, newsletter, campaign, Web Push, and subscription contracts.
 5. Give CMS editors an explicit, audited way to generate missing translations from Traditional Chinese without weakening the existing draft, revision, or publish boundaries.
 6. Make the shared avatar menu and selector visually consistent, accessible, compact, and reusable by all three frontends.
@@ -38,7 +48,7 @@ Japanese and Korean banners retain the site's handwritten brand character throug
 
 ## Non-Goals
 
-- Translating weekly-paper PDF contents. Editors continue to upload one PDF per content locale.
+- Translating weekly-paper PDF contents or creating Japanese/Korean PDF editions. Editors continue to upload one PDF for each of the three `BulletinEdition` values.
 - Generating account security emails with an LLM at send time.
 - Automatically translating static product copy, privacy policies, or terms at runtime. Those translations remain reviewed source files.
 - Translating or paraphrasing canonical scripture with an LLM.
@@ -110,11 +120,17 @@ export type ProductLocale = (typeof productLocales)[number]
 
 export const contentLocales = productLocales
 export type ContentLocale = ProductLocale
+
+export const messageLocales = productLocales
+export type MessageLocale = ProductLocale
+
+export const bulletinEditions = ['zh-Hant', 'zh-Hans', 'en'] as const
+export type BulletinEdition = (typeof bulletinEditions)[number]
 ```
 
 These names express ownership at call sites. No consumer should import an unqualified shared `Locale` after the migration.
 
-Generated API clients may retain a domain-specific name such as `BulletinLocale` or `ContentLocale`, but its enum must contain the five canonical content values.
+Generated API clients retain the domain split: `ContentLocale` contains the five canonical content values, while `BulletinEdition` contains only `zh-Hant`, `zh-Hans`, and `en`. A deprecated `BulletinLocale` alias may temporarily point to `BulletinEdition` during consumer migration, but it must not contain `ja` or `ko`.
 
 ### Locale metadata registry
 
@@ -268,11 +284,11 @@ Rights sources:
 
 ### `hhc-web-api`
 
-- Expand content, bulletin, public projection, OpenAPI, and service validation to five content locales.
-- Add forward-only PostgreSQL migrations that replace three-value locale checks with five-value checks.
+- Expand generic content, public projections, OpenAPI, and service validation to five content locales while enforcing exactly three weekly-paper editions.
+- Keep migration 022 byte-for-byte immutable. Inventory legacy bulletin rows before any separate remediation; do not delete or relabel evidence during this rollout.
 - Continue publishing exact per-locale public projections and preserve the existing requested-locale-to-`zh-Hant` public read fallback.
 - Expose `resolvedLocale` and `availableLocales` on public content and normalize navigation links to the requested route locale.
-- Generate five-locale bulletin notification translations with exact-locale copy and English fallback instead of a three-locale `zh-Hant` fallback map.
+- Generate five-locale bulletin notification messages from the three-edition issue: `ja`/`ko` message copy may fall back to English and links still expose only the three editions.
 - Add CMS translation-preview endpoints and the server-side LLM adapter.
 - Keep a versioned shared translation prompt with explicit Japanese and Korean voice rules.
 - Use existing `cms:write` authorization for translation previews; this is an editing operation and does not grant publish rights.
@@ -282,9 +298,9 @@ Rights sources:
 ### `admin-fe`
 
 - Use `AdminUiLocale` for the console provider and console messages.
-- Use API-generated `ContentLocale` for content, bulletin, campaign, and schedule editors.
+- Use API-generated `ContentLocale` for generic CMS content, `BulletinEdition` for weekly papers, and the appropriate five-value message/engagement locale for campaign and schedule editors.
 - Add the three-language Admin header selector and persist it through `hhc_admin_locale`.
-- Show five content tabs and five-language completion counts.
+- Show five tabs/counts for generic CMS and message content, and exactly three edition tabs/counts for weekly papers.
 - Add the approved “generate all missing translations” action to supported CMS editors.
 - Preserve unsaved-change protection after generated values enter the local draft.
 - Keep publish permissions and confirmation flows unchanged.
@@ -406,10 +422,10 @@ Visible compact labels do not replace accessible full locale names. The trigger 
 
 ### Product behavior
 
-The approved interaction is **Generate all missing translations**. A locale is “missing” only when the saved resource has no translation row for that locale. A partially populated locale is treated as existing and is skipped by the batch action; it can be regenerated only through the explicit per-language replacement preview.
+The approved interaction is **Generate all missing translations**. For generic CMS content, targets are `zh-Hans`, `en`, `ja`, and `ko`; for bulletin metadata, targets are only `zh-Hans` and `en`. A locale/edition is “missing” only when the saved resource has no corresponding row. A partially populated row is treated as existing and is skipped by the batch action; it can be regenerated only through the explicit per-language replacement preview.
 
 1. The editor completes and saves the Traditional Chinese version.
-2. Admin shows which of `zh-Hans`, `en`, `ja`, and `ko` are empty.
+2. Admin shows which allowed targets are empty: `zh-Hans`, `en`, `ja`, and `ko` for generic CMS, or `zh-Hans` and `en` for bulletin metadata.
 3. The editor presses one action to generate every missing target.
 4. Admin issues independent preview requests for the missing targets with a maximum concurrency of two.
 5. Successful results populate the corresponding local draft tabs and mark the form dirty.
@@ -433,7 +449,7 @@ Slugs, IDs, display dates, event dates, YouTube IDs, asset IDs, layouts, flags, 
 
 The first release intentionally excludes hidden or non-editable summary/date-label fields. Translation support expands only after Admin exposes a reviewable field and the same value survives its save normalization.
 
-Weekly-paper PDF contents remain manual. The Japanese and Korean bulletin tabs can upload and publish their own PDFs after metadata is generated or entered.
+Weekly-paper PDF contents remain manual and have exactly three edition tabs. The former Japanese/Korean bulletin upload and publication requirement is superseded; those product routes link to the existing Traditional Chinese, Simplified Chinese, and English editions.
 
 ### API contracts
 
@@ -473,13 +489,11 @@ Success returns a typed translation preview and the source version. It does not 
 {
   "data": {
     "sourceLocale": "zh-Hant",
-    "targetLocale": "ja",
+    "targetLocale": "en",
     "sourceVersion": 12,
     "translation": {
-      "title": "愛は家庭から始まる",
-      "summary": "",
-      "body": "...",
-      "imageAlt": "..."
+      "title": "Love Begins at Home",
+      "subtitle": "..."
     }
   }
 }
@@ -564,7 +578,7 @@ Before calling the provider, the backend:
 - verifies the expected version;
 - verifies that the Traditional Chinese source exists;
 - verifies that source and target differ;
-- rejects targets outside the five content locales;
+- rejects targets outside the endpoint's domain: four non-source targets for generic CMS and only `zh-Hans`/`en` for bulletin metadata;
 - rejects populated target translations for the batch path;
 - enforces per-field and aggregate source-size limits.
 
@@ -637,7 +651,7 @@ If measured LCP regresses materially, investigate image sizing and server respon
 
 Migrations are forward-only and backward compatible with existing three-locale deployments.
 
-`hhc-web-api` migrations expand locale checks for content translations, bulletin versions, public projections, and any related revision/projection records that constrain locale values.
+`hhc-web-api` expands generic content and public-projection locale checks to five values while keeping bulletin versions at the three-value `BulletinEdition` boundary. The already-applied migration 022 is historical evidence and remains byte-for-byte immutable; legacy `ja`/`ko` bulletin rows are inventoried before any separate, reviewed remediation and are not silently deleted, relabelled, or rewritten.
 
 Before those values are used, the content write contract adds `deleteLocales: ContentLocale[]` and compares the submitted locale set with persisted translations. Omitting an existing locale without naming it in `deleteLocales` returns `409 locale_set_mismatch`; the repository never reaches its delete-and-reinsert transaction. The upgraded Admin submits every existing translation it loaded and uses `deleteLocales` only after a dedicated confirmation. Cached or rolled-back three-locale Admin clients therefore fail closed instead of deleting Japanese or Korean rows.
 
@@ -660,7 +674,7 @@ Every repository uses its own branch, PR, CI, merge, release, and live smoke tes
    - package tests and packed-consumer checks;
    - publish the first package version for locale/preferences/UI changes.
 3. **Backend five-locale compatibility**
-   - `hhc-web-api`: five-locale validation, contracts, migrations, bulletin notification copy, and rollback floor;
+   - `hhc-web-api`: five-locale content/message validation, three-edition weekly-paper contracts, bulletin notification copy, and rollback floor;
    - `engagement-api`: five-locale subscriptions/campaigns/deliveries and exact-to-English fallback;
    - `notification-api`: new immutable Japanese/Korean template versions;
    - `account-api`: accept and propagate Japanese/Korean locale;
@@ -700,9 +714,9 @@ Backend changes must be compatible with the existing three-locale frontends befo
 ### CMS and public content
 
 - Admin console chrome remains available only in three languages.
-- Content, bulletin, campaign, and schedule editors expose five language tabs.
+- Generic content, campaign, and schedule editors expose five language tabs; the weekly-paper editor exposes exactly three edition tabs.
 - Five-locale content can be created, revised, published, queried, unpublished, restored, and deleted.
-- Japanese and Korean bulletin PDFs can be uploaded, scanned, granted, published, downloaded, revoked, and replaced.
+- The former Japanese/Korean bulletin PDF lifecycle is superseded. Every product route, including `ja` and `ko`, exposes the same three valid edition links, and invalid/legacy edition values are never rendered.
 - A missing public CMS translation resolves to the complete published `zh-Hant` projection; exact locale wins when both exist, and no response mixes fields across locales.
 - Fallback CMS content exposes and renders `lang="zh-Hant"`, while Admin still reports the requested locale as incomplete.
 - Japanese Isaiah uses `聖書 新共同訳`; Korean Isaiah uses the English NIV passage with `lang="en"` until approved `성경전서 개역개정판` text replaces it.
@@ -786,6 +800,7 @@ Backend changes must be compatible with the existing three-locale frontends befo
 
 - Admin console interface: three locales.
 - Website, account, CMS content, subscriptions, campaigns, and notifications: five locales.
+- Weekly-paper PDFs: exactly three `BulletinEdition` values (`zh-Hant`, `zh-Hans`, `en`), independent of product/content/message locales.
 - Avatar menu and selector visual direction: Compact Utility.
 - CMS translation interaction: generate all missing translations from a saved Traditional Chinese source.
 - LLM integration owner: `hhc-web-api`; provider: Azure OpenAI Responses API.

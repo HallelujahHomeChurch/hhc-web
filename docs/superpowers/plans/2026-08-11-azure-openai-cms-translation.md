@@ -10,7 +10,8 @@
 
 ## Global Constraints
 
-- Source locale is exactly `zh-Hant`; targets are `zh-Hans`, `en`, `ja`, or `ko`.
+- **2026-08-11 domain correction:** `ProductLocale`, `ContentLocale`, and `MessageLocale` have five values; `AdminUiLocale` has three; weekly-paper `BulletinEdition` is independently and exactly `zh-Hant | zh-Hans | en`. No Japanese/Korean PDF edition or bulletin preview target exists.
+- Source locale is exactly `zh-Hant`. Generic CMS targets are `zh-Hans`, `en`, `ja`, and `ko`; bulletin metadata targets are only `zh-Hans` and `en`.
 - Source aggregate limit is 20,000 characters.
 - Azure timeout 40 seconds; handler 45 seconds; route write deadline 50 seconds; gateway 60 seconds.
 - Per-actor limit is 10/minute; deployment limit is 60/minute.
@@ -263,8 +264,8 @@ Merge and release with `CMS_TRANSLATION_ENABLED=false`; verify ordinary endpoint
 - Modify: `src/pages/CampaignSchedulePages.tsx`
 
 **Interfaces:**
-- Consumes: shared `AdminUiLocale`, `ContentLocale`, `adminUiLocales`, `contentLocales`, `localeMetadata`, and utility `Select`.
-- Produces: `LocaleContextValue.setLocale(locale: AdminUiLocale): void`; five-locale editor tabs/counts; explicit translation deletion intent.
+- Consumes: shared `AdminUiLocale`, `ContentLocale`, `BulletinEdition`, `adminUiLocales`, `contentLocales`, `bulletinEditions`, `localeMetadata`, and utility `Select`.
+- Produces: `LocaleContextValue.setLocale(locale: AdminUiLocale): void`; five-locale generic CMS/message tabs, three-edition weekly-paper tabs, and explicit translation deletion intent.
 
 - [ ] **Step 1: Add failing Admin preference tests**
 
@@ -272,11 +273,11 @@ Test `hhc_admin_locale` read/write, host-only cookie serialization, Admin `ja/ko
 
 - [ ] **Step 2: Add failing editor compatibility tests**
 
-Load an item containing `ja`/`ko`, save without editing, and assert all translations are retained. Confirm a dedicated delete action adds the locale to `deleteLocales` only after confirmation. Assert completion counts use `/5` while console messages remain `/3` locales.
+Load generic CMS content containing `ja`/`ko`, save without editing, and assert all translations are retained. Confirm a dedicated delete action adds the locale to `deleteLocales` only after confirmation. Assert generic completion counts use `/5`, weekly papers use exactly three editions, and console messages remain `/3` locales. Legacy bulletin `ja`/`ko` rows render a bounded warning with no edit or silent mutation.
 
 - [ ] **Step 3: Implement the selector and generated locale types**
 
-Place the three-language utility selector in `AppLayout` header before `AccountMenu`. Derive content tabs from generated `ContentLocale` plus shared metadata; remove page-local locale tuples.
+Place the three-language utility selector in `AppLayout` header before `AccountMenu`. Derive generic content tabs from generated `ContentLocale` and weekly-paper tabs from generated `BulletinEdition`; remove page-local locale tuples.
 
 - [ ] **Step 4: Run focused and full frontend verification**
 
@@ -311,9 +312,9 @@ git commit -m "feat: separate Admin and content locales"
 - Produces:
 
 ```ts
-export type TranslationPreview = {
+export type TranslationPreview<Target extends ContentLocale | BulletinEdition> = {
   sourceLocale: 'zh-Hant'
-  targetLocale: ContentLocale
+  targetLocale: Target
   sourceVersion: number
   translation: Record<string, string>
 }
@@ -321,9 +322,11 @@ export type TranslationPreview = {
 export async function mapWithConcurrency<T, R>(values: readonly T[], limit: 2, run: (value: T) => Promise<R>): Promise<PromiseSettledResult<R>[]>
 ```
 
+The content endpoint returns `TranslationPreview<Exclude<ContentLocale, 'zh-Hant'>>`; the bulletin endpoint returns `TranslationPreview<Exclude<BulletinEdition, 'zh-Hant'>>`.
+
 - [ ] **Step 1: Add failing API and concurrency tests**
 
-Test exact endpoints/body/`If-Match`, concurrency never above two, populated/partial locale rows skipped by batch, successes retained when another target fails, per-language retry, and `replaceExisting:true` only after confirmation.
+Test exact endpoints/body/`If-Match`, concurrency never above two, populated/partial rows skipped by batch, successes retained when another target fails, per-language retry, and `replaceExisting:true` only after confirmation. Generic CMS accepts `zh-Hans`/`en`/`ja`/`ko`; bulletin preview accepts only `zh-Hans`/`en` and rejects `ja`/`ko` before the provider call.
 
 - [ ] **Step 2: Run tests and confirm failure**
 
@@ -333,7 +336,7 @@ Expected: FAIL because preview methods/UI do not exist.
 
 - [ ] **Step 3: Implement preview-only local draft updates**
 
-Generate only currently reviewable fields: news title/body/imageAlt, history event title/body, video title, bulletin title/subtitle. Mark generated tabs dirty and AI-generated; do not call save or publish.
+Generate only currently reviewable fields: news title/body/imageAlt, history event title/body, video title, and bulletin title/subtitle. Generic CMS uses all four non-source targets; bulletin metadata uses only `zh-Hans` and `en`. Mark generated tabs dirty and AI-generated; do not call save or publish.
 
 - [ ] **Step 4: Add typed error UX**
 
@@ -367,11 +370,11 @@ Record resource region, deployment name/model version, structured-output support
 
 - [ ] **Step 2: Run representative fluent review**
 
-For news, history, video, and bulletin, review at least one Japanese and one Korean preview for meaning, naturalness, register, and terminology. Record only record IDs and pass/fail evidence, not draft text.
+For news, history, and video, review at least one Japanese and one Korean preview; for bulletin metadata, review Simplified Chinese and English previews. Check meaning, naturalness, register, and terminology, recording only record IDs and pass/fail evidence rather than draft text.
 
 - [ ] **Step 3: Enable through the normal configuration PR/release path**
 
-Set `CMS_TRANSLATION_ENABLED=true`, merge only with green CI, and smoke one Japanese plus one Korean preview.
+Set `CMS_TRANSLATION_ENABLED=true`, merge only with green CI, and smoke one Japanese plus one Korean generic CMS preview and one valid bulletin metadata preview; confirm bulletin `ja`/`ko` requests fail before provider use.
 
 - [ ] **Step 4: Verify timeout and privacy behavior**
 
