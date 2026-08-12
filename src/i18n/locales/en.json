@@ -2,6 +2,7 @@
   "site": {
     "name": "Hallelujah Home Church",
     "englishName": "Hallelujah Home Church",
+    "loading": "Loading website",
     "nav": {
       "home": "Home",
       "primary": "Primary navigation",

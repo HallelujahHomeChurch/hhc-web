@@ -2,6 +2,7 @@
   "site": {
     "name": "할렐루야 가정교회",
     "englishName": "Hallelujah Home Church",
+    "loading": "웹사이트를 불러오는 중입니다",
     "nav": {
       "home": "홈",
       "primary": "주요 메뉴",

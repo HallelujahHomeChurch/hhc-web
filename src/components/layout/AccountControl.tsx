@@ -4,7 +4,6 @@ import {createContext, useCallback, useContext, useEffect, useMemo, useRef, useS
 import {UserRound} from 'lucide-react';
 import {
   buildAuthorizeUrl,
-  createAccountSessionClient,
   createOAuthTransactionOnce,
   currentReturnTo,
   resolveAccountAuth,
@@ -13,6 +12,7 @@ import {
   type OAuthClientConfig
 } from '@hallelujahhomechurch/account-client';
 import {AccountMenu, Toast} from '@hallelujahhomechurch/ui';
+import {clearSharedAccountSession, getSharedAccountSessionClient, revalidateSharedAccountSession} from '@/lib/browser-bootstrap';
 
 export const webOAuthTransactionKey = 'hhc_web_oauth_transaction';
 export const webPassiveSsoAttemptKey = 'hhc_web_passive_sso_attempted';
@@ -66,16 +66,16 @@ export function AccountControlProvider({
   navigateExternal = defaultNavigateExternal,
   oauth
 }: AccountControlProps & {children: ReactNode}) {
-  const sessionClient = useMemo(() => client ?? createAccountSessionClient(), [client]);
+  const sessionClient = useMemo(() => client ?? getSharedAccountSessionClient(), [client]);
   const oauthConfig = useMemo(() => oauth ?? webOAuthConfigForBrowser(), [oauth]);
   const [auth, setAuth] = useState<AccountControlState>({status: 'loading'});
   const [logoutError, setLogoutError] = useState('');
   const requestRevision = useRef(0);
   const authorizationStarted = useRef(false);
 
-  const refreshSession = useCallback(async () => {
+  const refreshSession = useCallback(async (force = false) => {
     const revision = ++requestRevision.current;
-    const result = await resolveAccountAuth(sessionClient);
+    const result = await resolveAccountAuth(force && !client ? {getSession: revalidateSharedAccountSession} : sessionClient);
     if (revision !== requestRevision.current) return result;
 
     if (result.status === 'authenticated') {
@@ -87,7 +87,7 @@ export function AccountControlProvider({
       return current.status === 'authenticated' ? current : {status: 'unavailable'};
     });
     return result;
-  }, [sessionClient]);
+  }, [client, sessionClient]);
 
   const beginAuthorization = useCallback((prompt?: 'none') => {
     if (authorizationStarted.current) return;
@@ -121,7 +121,7 @@ export function AccountControlProvider({
     let timer: ReturnType<typeof setTimeout> | undefined;
     const scheduleRefresh = () => {
       clearTimeout(timer);
-      timer = setTimeout(() => void refreshSession(), 100);
+      timer = setTimeout(() => void refreshSession(true), 100);
     };
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible') scheduleRefresh();
@@ -150,6 +150,7 @@ export function AccountControlProvider({
     setLogoutError('');
     try {
       await sessionClient.logoutAll();
+      if (!client) clearSharedAccountSession();
       setAuth({status: 'anonymous'});
       notifyAccountStateChange('sign-out');
       return true;
@@ -162,7 +163,7 @@ export function AccountControlProvider({
       setLogoutError(labels.signOutError);
       return false;
     }
-  }, [labels.signOutError, refreshSession, sessionClient]);
+  }, [client, labels.signOutError, refreshSession, sessionClient]);
 
   return (
     <AccountControlContext.Provider value={{accountSiteUrl, auth, beginAuthorization, labels, signOut}}>

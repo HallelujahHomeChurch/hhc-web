@@ -2,6 +2,7 @@
   "site": {
     "name": "哈利路亚家教会",
     "englishName": "Hallelujah Home Church",
+    "loading": "正在加载网站",
     "nav": {
       "home": "首页",
       "primary": "主要导航",
