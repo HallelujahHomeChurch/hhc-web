@@ -3,7 +3,9 @@
 import {useEffect, useId, useRef, useState} from 'react';
 import {Bell, BellOff, LoaderCircle, X} from 'lucide-react';
 import {IconButton} from '@hallelujahhomechurch/ui';
+import {resolveAccountAuth} from '@hallelujahhomechurch/account-client';
 import type {Locale} from '@/i18n/locales';
+import {getSharedAccountSessionClient, getSharedPushConfig} from '@/lib/browser-bootstrap';
 import {isIOSDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 
 const installationKey = 'hhc_push_installation_id';
@@ -113,21 +115,15 @@ function retryDelay(response: Response) {
 
 async function bindInstallationToAccount() {
   try {
-    const session = await fetch('/api/account/v1/session', {
-      credentials: 'include',
-      headers: {Accept: 'application/json'},
-      cache: 'no-store'
-    });
-    if (!session.ok) return false;
-    const payload = await session.json() as {authenticated?: boolean; user?: {id?: string}};
-    if (!payload.authenticated) {
+    const account = await resolveAccountAuth(getSharedAccountSessionClient());
+    if (account.status === 'anonymous') {
       sessionStorage.removeItem(accountBindingSyncKey);
       return true;
     }
-    if (!payload.user?.id) return false;
+    if (account.status !== 'authenticated') return false;
 
     const installation = installationId();
-    return syncOnce(accountBindingSyncKey, `${installation}:${payload.user.id}`, async () => {
+    return syncOnce(accountBindingSyncKey, `${installation}:${account.user.id}`, async () => {
       const csrf = await fetch('/api/account/v1/csrf-token', {
         credentials: 'include',
         headers: {Accept: 'application/json'},
@@ -209,15 +205,12 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
         return;
       }
       try {
-        const [serviceWorker, response] = await Promise.all([
+        const [serviceWorker, config] = await Promise.all([
           navigator.serviceWorker.register('/sw.js'),
-          fetch('/api/engagement/v1/push/config', {headers: {Accept: 'application/json'}})
+          getSharedPushConfig()
         ]);
-        if (!response.ok) throw new Error('push config unavailable');
-        const payload = await response.json() as {data?: {vapidPublicKey?: string}};
-        if (!payload.data?.vapidPublicKey) throw new Error('push config invalid');
         registration.current = serviceWorker;
-        vapidPublicKey.current = payload.data.vapidPublicKey;
+        vapidPublicKey.current = config.vapidPublicKey;
         const subscription = await serviceWorker.pushManager.getSubscription();
         if (subscription) {
           void Promise.all([

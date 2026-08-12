@@ -1,6 +1,7 @@
 import {act, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {resetBrowserBootstrap} from '@/lib/browser-bootstrap';
 import {WebPushControl} from './WebPushControl';
 
 const labels = {
@@ -34,6 +35,7 @@ describe('WebPushControl', () => {
   const registration = {pushManager: {getSubscription, subscribe}};
 
   beforeEach(() => {
+    resetBrowserBootstrap();
     localStorage.clear();
     sessionStorage.clear();
     requestPermission.mockReset().mockResolvedValue('granted');
@@ -112,7 +114,7 @@ describe('WebPushControl', () => {
         return new Response(JSON.stringify({data: {vapidPublicKey: 'AQID'}}), {status: 200});
       }
       if (url.endsWith('/session')) {
-        return new Response(JSON.stringify({authenticated: true, user: {id: 'private-user-id'}}), {status: 200});
+        return Response.json({authenticated: true, user: {id: 'private-user-id', email: 'user@example.test', display_name: 'User', avatar_url: null}});
       }
       if (url.endsWith('/csrf-token')) {
         return new Response(JSON.stringify({csrf_token: 'csrf-value'}), {status: 200});
@@ -159,7 +161,7 @@ describe('WebPushControl', () => {
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.endsWith('/push/config')) return new Response(JSON.stringify({data: {vapidPublicKey: 'AQID'}}), {status: 200});
-      if (url.endsWith('/session')) return new Response(JSON.stringify({authenticated: true, user: {id: 'user-id'}}), {status: 200});
+      if (url.endsWith('/session')) return Response.json({authenticated: true, user: {id: 'user-id', email: 'user@example.test', display_name: 'User', avatar_url: null}});
       if (url.endsWith('/csrf-token')) return new Response(JSON.stringify({csrf_token: 'csrf-value'}), {status: 200});
       if (url.endsWith('/push-subscriptions/bind') && init?.method === 'POST') return new Response(null, {status: 204});
       if (url.endsWith('/push/subscriptions') && init?.method === 'POST') return new Response(JSON.stringify({data: {status: 'active'}}), {status: 201});

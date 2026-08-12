@@ -2,6 +2,7 @@
   "site": {
     "name": "哈利路亞家教會",
     "englishName": "Hallelujah Home Church",
+    "loading": "正在載入網站",
     "nav": {
       "home": "首頁",
       "primary": "主要導覽",

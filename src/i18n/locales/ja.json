@@ -2,6 +2,7 @@
   "site": {
     "name": "ハレルヤ・ホームチャーチ",
     "englishName": "Hallelujah Home Church",
+    "loading": "ウェブサイトを読み込んでいます",
     "nav": {
       "home": "ホーム",
       "primary": "メインナビゲーション",
