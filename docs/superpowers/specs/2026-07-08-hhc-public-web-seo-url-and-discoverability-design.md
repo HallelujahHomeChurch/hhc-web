@@ -42,6 +42,8 @@ Allowed v1 locales:
 - `zh-Hant`
 - `zh-Hans`
 - `en`
+- `ja`
+- `ko`
 
 Default locale:
 
@@ -118,7 +120,10 @@ Locale appears in the page URL path:
 
 Rules:
 
-- `/` redirects to `/zh-Hant`.
+- `/` is the crawlable `x-default` language entry. It redirects with `307`
+  only when a valid locale cookie or supported `Accept-Language` identifies a
+  locale; otherwise it returns the language selector with `200`.
+- Localized routes never redirect because of browser language.
 - Unsupported locale returns `404` or redirects only if a deliberate locale negotiation rule exists.
 - Do not silently map unsupported locale to default for detail pages.
 - Detail pages missing in the requested locale return `404` unless the public API explicitly returns `meta.fallbackLocale`.
