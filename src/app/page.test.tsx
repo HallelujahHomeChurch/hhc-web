@@ -49,6 +49,27 @@ describe('RootPage', () => {
     });
   });
 
+  it('publishes HHC with all localized full names as the website identity', async () => {
+    const markup = renderToStaticMarkup(await RootPage());
+    const jsonLd = markup.match(
+      /<script type="application\/ld\+json">([^<]+)<\/script>/
+    )?.[1];
+
+    expect(jsonLd).toBeDefined();
+    expect(JSON.parse(jsonLd!)).toMatchObject({
+      '@type': 'WebSite',
+      name: 'HHC',
+      alternateName: [
+        '哈利路亞家教會',
+        '哈利路亚家教会',
+        'Hallelujah Home Church',
+        'ハレルヤ・ホームチャーチ',
+        '할렐루야 가정교회'
+      ]
+    });
+    expect(metadata.openGraph).toMatchObject({siteName: 'HHC'});
+  });
+
   it('redirects a Japanese browser to the Japanese home page', async () => {
     request.headers.set('accept-language', 'ja-JP,en;q=0.8');
 
