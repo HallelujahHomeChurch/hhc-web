@@ -14,10 +14,14 @@ describe('static sitemap', () => {
       'https://www.alive.org.tw/ja',
       'https://www.alive.org.tw/ko'
     ]);
+    expect(entries.find((entry) => entry.url === 'https://www.alive.org.tw/zh-Hant')?.alternates?.languages).toMatchObject({
+      'x-default': 'https://www.alive.org.tw/'
+    });
     expect(entries.find((entry) => entry.url === 'https://www.alive.org.tw/ja/privacy-policy')?.alternates?.languages).toMatchObject({
       ja: 'https://www.alive.org.tw/ja/privacy-policy',
       ko: 'https://www.alive.org.tw/ko/privacy-policy'
     });
+    expect(entries.find((entry) => entry.url === 'https://www.alive.org.tw/ja/privacy-policy')?.alternates?.languages).not.toHaveProperty('x-default');
   });
 });
 
