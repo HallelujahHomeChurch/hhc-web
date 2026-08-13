@@ -2,15 +2,20 @@ import type {Locale} from '@/i18n/locales';
 import {productLocales} from '@/i18n/locales';
 import {siteConfig} from './site';
 
+export type LanguageAlternates = Partial<Record<Locale | 'x-default', string>>;
+
 export function getLocalizedPath(locale: Locale, pathname: string) {
   const normalizedPath = pathname === '/' ? '' : pathname;
   return `/${locale}${normalizedPath}`;
 }
 
-export function getAlternates(pathname: string, locales: readonly Locale[] = productLocales) {
-  return Object.fromEntries(
+export function getAlternates(pathname: string, locales: readonly Locale[] = productLocales): LanguageAlternates {
+  const alternates: LanguageAlternates = Object.fromEntries(
     locales.map((locale) => [locale, `${siteConfig.url}${getLocalizedPath(locale, pathname)}`])
-  ) as Partial<Record<Locale, string>>;
+  );
+
+  if (pathname === '/') alternates['x-default'] = `${siteConfig.url}/`;
+  return alternates;
 }
 
 export function getOpenGraphLocale(locale: Locale) {

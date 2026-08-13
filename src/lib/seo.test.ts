@@ -17,6 +17,16 @@ describe('seo utilities', () => {
     });
   });
 
+  it('uses the bare domain as x-default only for home pages', () => {
+    expect(getAlternates('/')).toMatchObject({
+      'zh-Hant': 'https://www.alive.org.tw/zh-Hant',
+      ja: 'https://www.alive.org.tw/ja',
+      ko: 'https://www.alive.org.tw/ko',
+      'x-default': 'https://www.alive.org.tw/'
+    });
+    expect(getAlternates('/about')).not.toHaveProperty('x-default');
+  });
+
   it('maps locales to Open Graph locales', () => {
     expect(getOpenGraphLocale('zh-Hant')).toBe('zh_TW');
     expect(getOpenGraphLocale('zh-Hans')).toBe('zh_CN');
