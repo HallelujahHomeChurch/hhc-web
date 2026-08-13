@@ -1,13 +1,25 @@
-import {describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {readFileSync} from 'node:fs';
 import {renderToStaticMarkup} from 'react-dom/server';
 import RootLayout from './layout';
 
-vi.mock('next/navigation', () => ({usePathname: () => '/ja/about'}));
+const navigation = vi.hoisted(() => ({pathname: '/ja/about'}));
+
+vi.mock('next/navigation', () => ({usePathname: () => navigation.pathname}));
 
 describe('RootLayout', () => {
+  beforeEach(() => {
+    navigation.pathname = '/ja/about';
+  });
+
   it('sets the document language from the localized route', () => {
     expect(renderToStaticMarkup(<RootLayout><main /></RootLayout>)).toContain('<html lang="ja"');
+  });
+
+  it('leaves the language undetermined on the neutral root route', () => {
+    navigation.pathname = '/';
+
+    expect(renderToStaticMarkup(<RootLayout><main /></RootLayout>)).toContain('<html lang="und"');
   });
   it('keeps the before-paint theme bootstrap without making the root layout dynamic', () => {
     const layout = RootLayout({children: <main />});

@@ -243,7 +243,7 @@ In `src/app/page.tsx`:
   `localeMetadata` as ordinary links;
 - set `hrefLang` and `lang` on each link;
 - render one safely serialized `WebSite` JSON-LD object with the official name
-  and the English, Japanese, Korean, and `HHC` alternatives;
+  and the Simplified Chinese, English, Japanese, Korean, and `HHC` alternatives;
 - use existing utility classes and `/assets/brand/logo.png`; add no component,
   stylesheet, or dependency.
 

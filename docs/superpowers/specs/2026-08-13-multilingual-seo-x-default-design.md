@@ -82,6 +82,7 @@ The page includes one `WebSite` JSON-LD node:
   "url": "https://www.alive.org.tw/",
   "name": "哈利路亞家教會",
   "alternateName": [
+    "哈利路亚家教会",
     "Hallelujah Home Church",
     "ハレルヤ・ホームチャーチ",
     "할렐루야 가정교회",
