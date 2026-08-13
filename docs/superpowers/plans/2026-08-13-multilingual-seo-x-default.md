@@ -60,6 +60,8 @@ it('resolves every supported product language', () => {
 
 it('skips unsupported languages before a supported preference', () => {
   expect(resolveRootLocale('', 'fr-FR,ja-JP;q=0.9')).toBe('ja');
+  expect(resolveRootLocale('', 'ja;q=0,en;q=1')).toBe('en');
+  expect(resolveRootLocale('', 'ja;q=garbage')).toBeUndefined();
 });
 ```
 
@@ -302,7 +304,7 @@ Expected: all commands exit `0`; build output includes `/`, `/zh-Hant`,
 - [ ] **Step 2: Start the production build locally**
 
 ```sh
-corepack pnpm start -p 3100
+PORT=3100 HOSTNAME=127.0.0.1 node .next/standalone/server.js
 ```
 
 Run the following checks from another terminal:

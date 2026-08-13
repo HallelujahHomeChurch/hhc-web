@@ -23,7 +23,8 @@ Use `/` as a crawlable `x-default` language entry:
 
 - A valid `hhc_locale` cookie redirects with `307` to that locale.
 - A supported `Accept-Language` redirects with `307` to the best supported
-  locale using the existing detector.
+  locale using valid quality weights and the existing detector. Languages with
+  `q=0` are excluded; malformed weights fall back to the neutral entry.
 - No supported language signal returns `200` and renders a small language
   selector linking to all five localized home pages.
 - Localized URLs never redirect because of browser language.
@@ -40,6 +41,8 @@ locale. It does not receive CMS content, navigation, or application controls.
 | `GET /`, `Accept-Language: ko-KR` | `307 /ko` |
 | `GET /`, `Accept-Language: en-US` | `307 /en` |
 | `GET /`, `Accept-Language: zh-TW` | `307 /zh-Hant` |
+| `GET /`, `Accept-Language: ja;q=0,en;q=1` | `307 /en` |
+| `GET /`, malformed `Accept-Language` quality | `200` neutral selector |
 | `GET /`, no cookie or language header | `200` neutral selector |
 | `GET /`, unsupported languages only | `200` neutral selector |
 | `GET /ja` from an English browser | `200 /ja`; no redirect |

@@ -23,4 +23,14 @@ describe('resolveRootLocale', () => {
   it('skips unsupported languages before a supported preference', () => {
     expect(resolveRootLocale('', 'fr-FR,ja-JP;q=0.9')).toBe('ja');
   });
+
+  it('honors quality weights and rejected languages', () => {
+    expect(resolveRootLocale('', 'ja;q=0,en;q=1')).toBe('en');
+    expect(resolveRootLocale('', 'ko;q=0.5,ja;q=0.9')).toBe('ja');
+    expect(resolveRootLocale('', 'ja;q=0')).toBeUndefined();
+  });
+
+  it('returns no locale for a malformed language header', () => {
+    expect(resolveRootLocale('', 'ja;q=garbage')).toBeUndefined();
+  });
 });

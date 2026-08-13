@@ -138,7 +138,8 @@ Public pages should generate alternates only for published/indexable locales.
 For a content item:
 
 - Include `hreflang` for each published locale variant.
-- Include `x-default` pointing to default locale when appropriate.
+- For home-page locale groups, include `x-default` pointing to
+  `https://www.alive.org.tw/`.
 - Do not include alternate links for drafts, missing translations, unpublished locales, or archived content.
 - If slugs differ by locale, alternate URLs must use the locale-specific slug.
 
@@ -151,7 +152,8 @@ Every indexable public page should have exactly one canonical URL.
 Canonical rules:
 
 - Use `https://www.alive.org.tw`.
-- Include locale prefix.
+- Include the locale prefix, except for the canonical language-neutral `/`
+  entry.
 - Use the current published slug.
 - Exclude tracking query parameters.
 - Exclude preview/admin paths.
@@ -426,7 +428,8 @@ Unexpected 404 spikes after a publish are a release risk and should be visible i
 ## Acceptance Criteria
 
 - No v1 standalone `seo-api` is required.
-- Public canonical URLs use `www.alive.org.tw` with locale prefix.
+- Public canonical URLs use `www.alive.org.tw`; localized pages include a
+  locale prefix and the language-neutral `/` entry does not.
 - CMS slug changes preserve old published URLs through redirects.
 - Legal and system slugs are protected.
 - Sitemap includes only published, indexable public routes.
