@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {renderToStaticMarkup} from 'react-dom/server';
-import RootPage, {metadata} from './page';
+import RootPage, {dynamic, metadata} from './page';
 
 const request = vi.hoisted(() => ({
   headers: new Map<string, string>(),
@@ -39,6 +39,7 @@ describe('RootPage', () => {
   });
 
   it('publishes root canonical and x-default metadata', () => {
+    expect(dynamic).toBe('force-dynamic');
     expect(metadata).toMatchObject({
       title: 'HHC',
       alternates: {

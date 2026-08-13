@@ -7,6 +7,8 @@ import {resolveRootLocale} from '@/lib/root-locale';
 import {getAlternates} from '@/lib/seo';
 import {siteConfig} from '@/lib/site';
 
+export const dynamic = 'force-dynamic';
+
 const description = '繁體中文・简体中文・English・日本語・한국어';
 const websiteStructuredData = {
   '@context': 'https://schema.org',
@@ -58,8 +60,7 @@ export default async function RootPage() {
     <main className="grid min-h-dvh place-items-center bg-[image:var(--hhc-page-gradient)] px-5 py-10">
       <section className="w-full max-w-[620px] rounded-[28px] border border-line/80 bg-paper/90 px-6 py-9 text-center shadow-warm backdrop-blur-sm sm:px-10 sm:py-12" aria-labelledby="language-entry-title">
         <Image className="mx-auto size-20 object-contain" src="/assets/brand/logo.png" alt="" width={80} height={80} priority />
-        <p className="mt-5 text-xs font-bold uppercase tracking-[0.32em] text-muted">Hallelujah Home Church</p>
-        <h1 id="language-entry-title" className="mt-2 text-[clamp(42px,10vw,68px)] font-semibold tracking-[0.12em] text-[var(--hhc-brand-strong)]">HHC</h1>
+        <h1 id="language-entry-title" className="mt-5 text-[clamp(42px,10vw,68px)] font-semibold tracking-[0.12em] text-[var(--hhc-brand-strong)]">HHC</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted">{description}</p>
         <nav className="mt-8" aria-label="Language">
           <ul className="grid list-none gap-3 p-0 sm:grid-cols-2">
