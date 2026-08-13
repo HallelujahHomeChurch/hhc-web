@@ -1,5 +1,5 @@
 export const siteConfig = {
-  name: '哈利路亞家教會',
+  name: 'HHC',
   url: 'https://www.alive.org.tw',
   defaultOgImage: '/opengraph-image',
   social: {

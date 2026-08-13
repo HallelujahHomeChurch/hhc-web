@@ -16,11 +16,11 @@ const websiteStructuredData = {
   url: `${siteConfig.url}/`,
   name: siteConfig.name,
   alternateName: [
+    '哈利路亞家教會',
     '哈利路亚家教会',
     'Hallelujah Home Church',
     'ハレルヤ・ホームチャーチ',
-    '할렐루야 가정교회',
-    'HHC'
+    '할렐루야 가정교회'
   ]
 };
 
