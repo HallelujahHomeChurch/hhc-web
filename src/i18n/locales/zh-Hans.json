@@ -79,7 +79,10 @@
     "empty": "目前尚无最新消息。",
     "loadError": "最新消息暂时无法加载。",
     "back": "返回最新消息",
-    "publishedAt": "发布日期"
+    "activityDate": "活动日期",
+    "author": "作者",
+    "publishedAt": "发布日期",
+    "updatedAt": "更新日期"
   },
   "accountHelp": {
     "eyebrow": "帐户服务",

@@ -6,12 +6,12 @@ import {localeMetadata} from '@/i18n/locales';
 import {resolveRootLocale} from '@/lib/root-locale';
 import {getAlternates} from '@/lib/seo';
 import {siteConfig} from '@/lib/site';
+import {organizationStructuredData, serializeJsonLd} from '@/lib/structured-data';
 
 export const dynamic = 'force-dynamic';
 
 const description = '繁體中文・简体中文・English・日本語・한국어';
 const websiteStructuredData = {
-  '@context': 'https://schema.org',
   '@type': 'WebSite',
   url: `${siteConfig.url}/`,
   name: siteConfig.name,
@@ -22,6 +22,10 @@ const websiteStructuredData = {
     'ハレルヤ・ホームチャーチ',
     '할렐루야 가정교회'
   ]
+};
+const rootStructuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [websiteStructuredData, organizationStructuredData]
 };
 
 export const metadata: Metadata = {
@@ -81,7 +85,7 @@ export default async function RootPage() {
       </section>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{__html: JSON.stringify(websiteStructuredData).replace(/</g, '\\u003c')}}
+        dangerouslySetInnerHTML={{__html: serializeJsonLd(rootStructuredData)}}
       />
     </main>
   );

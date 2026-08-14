@@ -79,7 +79,10 @@
     "empty": "아직 등록된 소식이 없습니다.",
     "loadError": "새소식을 잠시 불러올 수 없습니다.",
     "back": "새소식으로 돌아가기",
-    "publishedAt": "게시일"
+    "activityDate": "행사일",
+    "author": "작성자",
+    "publishedAt": "게시일",
+    "updatedAt": "수정일"
   },
   "accountHelp": {
     "eyebrow": "계정 서비스",
