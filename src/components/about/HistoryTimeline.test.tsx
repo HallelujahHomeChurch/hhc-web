@@ -61,8 +61,8 @@ describe('HistoryTimeline', () => {
 
     expect(screen.getByText('島々よ、わたしに聞け／遠い国々よ、耳を傾けよ。主は母の胎にあるわたしを呼び／母の腹にあるわたしの名を呼ばれた。')).toBeInTheDocument();
     expect(screen.getByText('わたしはあなたを国々の光とし／わたしの救いを地の果てまで、もたらす者とする。')).toBeInTheDocument();
-    expect(screen.getByText('イザヤ書 49章1–3節（聖書 新共同訳）')).toBeInTheDocument();
-    expect(screen.getByText('イザヤ書 49章5–6節（聖書 新共同訳）')).toBeInTheDocument();
+    expect(screen.getByText('日本聖書協会『聖書 新共同訳』イザヤ書 49章1–3節')).toBeInTheDocument();
+    expect(screen.getByText('日本聖書協会『聖書 新共同訳』イザヤ書 49章5–6節')).toBeInTheDocument();
     expect(screen.getAllByRole('blockquote')).toSatisfy((quotes: HTMLElement[]) => quotes.every((quote) => quote.lang === 'ja'));
     expect(screen.getByRole('heading', {name: '教会の歩み'})).not.toHaveAttribute('lang', 'zh-Hant');
     expect(screen.getByText('領受建造家庭祭壇的異象。').closest('li')).toHaveAttribute('lang', 'zh-Hant');
