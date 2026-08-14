@@ -18,7 +18,19 @@ describe('getNews', () => {
   });
 
   it('maps a news detail without treating its body as markup', async () => {
-    const client = {getNewsBySlug: async () => ({id: 'news-1', title: 'お知らせ', resolvedLocale: 'ja', availableLocales: ['zh-Hant', 'ja'], body: '<script>alert(1)</script>', detailLayout: 'left', href: '/ja/news/news-1'})} as unknown as HhcWebClient;
+    const client = {getNewsBySlug: async () => ({
+      id: 'news-1',
+      title: 'お知らせ',
+      resolvedLocale: 'ja',
+      availableLocales: ['zh-Hant', 'ja'],
+      body: '<script>alert(1)</script>',
+      displayDate: '2026-08-14',
+      authorName: 'Pastor Wang',
+      firstPublishedAt: '2026-08-14T01:00:00Z',
+      lastPublishedAt: '2026-08-14T02:00:00Z',
+      detailLayout: 'left',
+      href: '/ja/news/news-1'
+    })} as unknown as HhcWebClient;
 
     await expect(getNewsBySlug('ja', 'news-1', client)).resolves.toMatchObject({
       title: 'お知らせ',
@@ -26,6 +38,10 @@ describe('getNews', () => {
       resolvedLocale: 'ja',
       availableLocales: ['zh-Hant', 'ja'],
       body: '<script>alert(1)</script>',
+      displayDate: '2026-08-14',
+      authorName: 'Pastor Wang',
+      firstPublishedAt: '2026-08-14T01:00:00Z',
+      lastPublishedAt: '2026-08-14T02:00:00Z',
       layout: 'left'
     });
   });

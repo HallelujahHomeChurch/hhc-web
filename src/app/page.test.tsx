@@ -57,14 +57,20 @@ describe('RootPage', () => {
 
     expect(jsonLd).toBeDefined();
     expect(JSON.parse(jsonLd!)).toMatchObject({
-      '@type': 'WebSite',
-      name: 'HHC',
-      alternateName: [
-        '哈利路亞家教會',
-        '哈利路亚家教会',
-        'Hallelujah Home Church',
-        'ハレルヤ・ホームチャーチ',
-        '할렐루야 가정교회'
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'WebSite',
+          name: 'HHC',
+          alternateName: [
+            '哈利路亞家教會',
+            '哈利路亚家教会',
+            'Hallelujah Home Church',
+            'ハレルヤ・ホームチャーチ',
+            '할렐루야 가정교회'
+          ]
+        },
+        {'@type': 'Organization', '@id': 'https://www.alive.org.tw/#organization'}
       ]
     });
     expect(metadata.openGraph).toMatchObject({siteName: 'HHC'});

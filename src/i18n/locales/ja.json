@@ -79,7 +79,10 @@
     "empty": "現在、お知らせはありません。",
     "loadError": "お知らせを一時的に読み込めません。",
     "back": "お知らせ一覧へ戻る",
-    "publishedAt": "公開日"
+    "activityDate": "開催日",
+    "author": "著者",
+    "publishedAt": "公開日",
+    "updatedAt": "更新日"
   },
   "accountHelp": {
     "eyebrow": "アカウントサービス",

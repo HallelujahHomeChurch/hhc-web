@@ -12,6 +12,10 @@ export type NewsItem = ContentLocaleMetadata & {
 
 export type NewsDetail = NewsItem & {
   body: string;
+  displayDate: string;
+  authorName: string;
+  firstPublishedAt?: string;
+  lastPublishedAt?: string;
   layout: 'top' | 'left' | 'right';
 };
 

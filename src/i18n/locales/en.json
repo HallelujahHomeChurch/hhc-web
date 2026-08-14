@@ -79,7 +79,10 @@
     "empty": "There is no news yet.",
     "loadError": "Latest news is temporarily unavailable.",
     "back": "Back to latest news",
-    "publishedAt": "Published"
+    "activityDate": "Event date",
+    "author": "Author",
+    "publishedAt": "Published",
+    "updatedAt": "Updated"
   },
   "accountHelp": {
     "eyebrow": "Account service",

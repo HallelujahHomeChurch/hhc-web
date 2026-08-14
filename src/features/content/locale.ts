@@ -38,3 +38,9 @@ export function formatContentDate(value: string, locale: Locale): string {
   if (locale === 'ko') return `${year}년 ${Number(month)}월${day ? ` ${Number(day)}일` : ''}`;
   return `${year}年${Number(month)}月${day ? `${Number(day)}日` : ''}`;
 }
+
+export function formatContentTimestamp(value: string, locale: Locale): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '';
+  return new Intl.DateTimeFormat(locale, {dateStyle: 'medium', timeZone: 'Asia/Taipei'}).format(parsed);
+}
