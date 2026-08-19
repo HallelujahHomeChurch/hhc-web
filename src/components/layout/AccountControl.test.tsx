@@ -245,6 +245,30 @@ describe('AccountControl', () => {
     expect(client.getSession).toHaveBeenCalledTimes(2);
   });
 
+  it('revalidates only when pageshow restores a BFCache page', async () => {
+    const client = authenticatedClient();
+
+    render(
+      <AccountControl
+        accountSiteUrl="https://account.alive.org.tw"
+        client={client}
+        labels={labels}
+      />
+    );
+
+    expect(await screen.findByRole('button', {name: 'Account menu'})).toBeInTheDocument();
+    const initialPageShow = new Event('pageshow') as PageTransitionEvent;
+    Object.defineProperty(initialPageShow, 'persisted', {value: false});
+    window.dispatchEvent(initialPageShow);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(client.getSession).toHaveBeenCalledTimes(1);
+
+    const restoredPageShow = new Event('pageshow') as PageTransitionEvent;
+    Object.defineProperty(restoredPageShow, 'persisted', {value: true});
+    window.dispatchEvent(restoredPageShow);
+    await waitFor(() => expect(client.getSession).toHaveBeenCalledTimes(2));
+  });
+
   it('revalidates when another same-origin account control reports sign out', async () => {
     const client = authenticatedClient();
     vi.mocked(client.getSession)
