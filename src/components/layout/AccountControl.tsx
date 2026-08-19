@@ -126,20 +126,23 @@ export function AccountControlProvider({
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible') scheduleRefresh();
     };
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) scheduleRefresh();
+    };
     const onAccountState = () => scheduleRefresh();
     const channel = typeof BroadcastChannel === 'undefined'
       ? null
       : new BroadcastChannel(accountStateEventName);
 
     window.addEventListener('focus', scheduleRefresh);
-    window.addEventListener('pageshow', scheduleRefresh);
+    window.addEventListener('pageshow', onPageShow);
     window.addEventListener(accountStateEventName, onAccountState);
     document.addEventListener('visibilitychange', onVisibilityChange);
     channel?.addEventListener('message', onAccountState);
     return () => {
       clearTimeout(timer);
       window.removeEventListener('focus', scheduleRefresh);
-      window.removeEventListener('pageshow', scheduleRefresh);
+      window.removeEventListener('pageshow', onPageShow);
       window.removeEventListener(accountStateEventName, onAccountState);
       document.removeEventListener('visibilitychange', onVisibilityChange);
       channel?.close();
