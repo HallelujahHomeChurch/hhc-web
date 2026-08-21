@@ -338,11 +338,38 @@ not created -> extracting -> review required -> draft -> published
                          \-> extraction failed
 ```
 
-The editor uses three fixed regions:
+The approved Admin layout keeps the existing application navigation and opens
+with canonical bulletin metadata, PDF/Online status, last-saved evidence, and
+the page-level `Save Draft` and `Confirm Online Version` actions. Confirmation
+stays disabled while blocking findings remain.
+
+The workspace has three top-level modes:
+
+- `Content Editing`: routine structured editing and synchronized preview;
+- `Issue Review`: an exception-first queue for parser, AI, metadata, and layout
+  findings;
+- `Compare New Version`: Base/Local/Incoming review and merge choices after a
+  later PDF upload.
+
+Content Editing uses three fixed regions:
 
 - left: page/component tree, status, and warning counts;
 - center: forms and block editor for the selected component;
 - right: live desktop, iPad, mobile, and original-PDF comparison previews.
+
+The component tree groups Cover, Body, Worship, and Back content, shows source
+page numbers, and marks verified and review-required nodes without relying on
+color alone. The center form shows the selected component path, typed fields,
+paragraph formatting, semantic text roles, sentence boundaries, and source
+page evidence. The preview is read-only and supports Online, Original PDF, and
+Overlay modes plus Desktop, iPad, and Mobile device views. Editing always
+happens through the structured form, never by manipulating the preview.
+
+Issue Review presents only unresolved findings in a left queue and shows the
+source evidence and required choice together. Resolving one item can advance
+to the next. Compare New Version displays Base, Local, and Incoming side by
+side at block scope, then offers `Keep Local`, `Use Incoming`, or `Manual
+Merge`; applying decisions creates a draft and never publishes directly.
 
 Editors can change array items, contributors, paragraphs, indentation,
 semantic roles, and sentence split/merge relationships. Layout comes from the
