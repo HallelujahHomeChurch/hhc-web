@@ -1,22 +1,25 @@
+import type {SiteLayout} from '@hallelujahhomechurch/hhc-web-client';
 import {siteConfig} from './site';
 
 export const organizationId = 'https://www.alive.org.tw/#organization';
 
-export const organizationStructuredData = {
-  '@type': 'Organization',
-  '@id': organizationId,
-  name: 'HHC',
-  alternateName: [
-    '哈利路亞家教會',
-    '哈利路亚家教会',
-    'Hallelujah Home Church',
-    'ハレルヤ・ホームチャーチ',
-    '할렐루야 가정교회'
-  ],
-  url: `${siteConfig.url}/`,
-  logo: `${siteConfig.url}/assets/brand/logo.png`,
-  sameAs: [siteConfig.social.youtube, siteConfig.social.facebook]
-} as const;
+export function organizationStructuredData(links: SiteLayout['links']) {
+  return {
+    '@type': 'Organization',
+    '@id': organizationId,
+    name: 'HHC',
+    alternateName: [
+      '哈利路亞家教會',
+      '哈利路亚家教会',
+      'Hallelujah Home Church',
+      'ハレルヤ・ホームチャーチ',
+      '할렐루야 가정교회'
+    ],
+    url: `${siteConfig.url}/`,
+    logo: `${siteConfig.url}/assets/brand/logo.png`,
+    sameAs: [links.churchYoutube, links.churchFacebook]
+  } as const;
+}
 
 export function normalizeMetaDescription(value: string) {
   return value.trim().replace(/\s+/g, ' ');

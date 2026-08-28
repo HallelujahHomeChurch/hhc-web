@@ -7,15 +7,15 @@ import {LocationSection} from '@/components/home/LocationSection';
 import {NewsSection} from '@/components/home/NewsSection';
 import {VideoSection} from '@/components/home/VideoSection';
 import {WeeklyCard} from '@/components/home/WeeklyCard';
-import {SiteFooter} from '@/components/layout/SiteFooter';
-import {SiteHeader} from '@/components/layout/SiteHeader';
+import {SiteFooterServer} from '@/components/layout/SiteFooterServer';
+import {SiteHeaderServer} from '@/components/layout/SiteHeaderServer';
 import {SectionCard} from '@/components/ui/SectionCard';
 import {getHomeContent} from '@/features/home/api';
 import {getLocations} from '@/features/locations/api';
+import {getSiteLayout} from '@/features/site-layout/api';
 import {getMessages} from '@/i18n/messages';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
-import {getHomePageTitle} from '@/lib/home-metadata';
 import {siteConfig} from '@/lib/site';
 
 type HomePageProps = {
@@ -36,25 +36,26 @@ export async function generateMetadata({params}: HomePageProps): Promise<Metadat
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
+  const layout = await getSiteLayout(locale);
 
   return {
-    title: getHomePageTitle(locale),
+    title: layout.seoTitleSuffix,
     description: messages.home.heroSubtitle,
     alternates: {
       canonical: getLocalizedPath(locale, '/'),
       languages: getAlternates('/')
     },
     openGraph: {
-      title: `${messages.site.name} | ${messages.home.heroTitle}`,
+      title: `${layout.seoTitleSuffix} | ${messages.home.heroTitle}`,
       description: messages.home.heroSubtitle,
       locale: getOpenGraphLocale(locale),
       url: `${siteConfig.url}${getLocalizedPath(locale, '/')}`,
-      siteName: siteConfig.name,
+      siteName: layout.siteName,
       images: [siteConfig.defaultOgImage]
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${messages.site.name} | ${messages.home.heroTitle}`,
+      title: `${layout.seoTitleSuffix} | ${messages.home.heroTitle}`,
       description: messages.home.heroSubtitle,
       images: [siteConfig.defaultOgImage]
     }
@@ -65,11 +66,11 @@ export default async function HomePage({params}: HomePageProps) {
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
-  const [home, locations] = await Promise.all([getHomeContent(locale), getLocations(locale)]);
+  const [home, locations, layout] = await Promise.all([getHomeContent(locale), getLocations(locale), getSiteLayout(locale)]);
 
   return (
     <>
-      <SiteHeader locale={locale} pathname={`/${locale}`} />
+      <SiteHeaderServer locale={locale} pathname={`/${locale}`} />
       <main>
         <HomeHero locale={locale} title={messages.home.heroTitle} subtitle={messages.home.heroSubtitle} />
         <div className="relative z-[3] bg-[image:var(--hhc-page-gradient)] py-8 pb-11">
@@ -86,12 +87,12 @@ export default async function HomePage({params}: HomePageProps) {
               }}
             />
           </SectionCard>
-          <VideoSection title={messages.home.videosTitle} subtitle={messages.home.videosSubtitle} ctaLabel={messages.home.watchMore} channelHref={siteConfig.music.youtube} items={home.videos} errorMessage={home.videosFailed ? messages.home.videosLoadError : undefined} />
+          <VideoSection title={messages.home.videosTitle} subtitle={messages.home.videosSubtitle} ctaLabel={messages.home.watchMore} channelHref={layout.links.musicYoutube} items={home.videos} errorMessage={home.videosFailed ? messages.home.videosLoadError : undefined} />
           <AboutTeaser locale={locale} title={messages.home.aboutTitle} body={messages.home.aboutBody} ctaLabel={`${messages.home.aboutCta} →`} />
           <LocationSection title={messages.home.locationsTitle} mapLabel={messages.home.mapLink} items={locations} />
         </div>
       </main>
-      <SiteFooter locale={locale} pathname={`/${locale}`} />
+      <SiteFooterServer locale={locale} pathname={`/${locale}`} />
     </>
   );
 }

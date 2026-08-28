@@ -3,6 +3,7 @@ import Image from 'next/image';
 import {headers} from 'next/headers';
 import {redirect} from 'next/navigation';
 import {localeMetadata} from '@/i18n/locales';
+import {getSiteLayout} from '@/features/site-layout/api';
 import {resolveRootLocale} from '@/lib/root-locale';
 import {getAlternates} from '@/lib/seo';
 import {siteConfig} from '@/lib/site';
@@ -11,45 +12,32 @@ import {organizationStructuredData, serializeJsonLd} from '@/lib/structured-data
 export const dynamic = 'force-dynamic';
 
 const description = '繁體中文・简体中文・English・日本語・한국어';
-const websiteStructuredData = {
-  '@type': 'WebSite',
-  url: `${siteConfig.url}/`,
-  name: siteConfig.name,
-  alternateName: [
-    '哈利路亞家教會',
-    '哈利路亚家教会',
-    'Hallelujah Home Church',
-    'ハレルヤ・ホームチャーチ',
-    '할렐루야 가정교회'
-  ]
-};
-const rootStructuredData = {
-  '@context': 'https://schema.org',
-  '@graph': [websiteStructuredData, organizationStructuredData]
-};
 
-export const metadata: Metadata = {
-  title: 'HHC',
-  description,
-  alternates: {
-    canonical: '/',
-    languages: getAlternates('/')
-  },
-  openGraph: {
-    type: 'website',
-    title: 'HHC',
-    description,
-    url: `${siteConfig.url}/`,
-    siteName: siteConfig.name,
-    images: [siteConfig.defaultOgImage]
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'HHC',
-    description,
-    images: [siteConfig.defaultOgImage]
-  }
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const layout = await getSiteLayout('zh-Hant');
+  return {
+    title: layout.seoTitleSuffix,
+    description: layout.seoDescriptionFallback,
+    alternates: {
+      canonical: '/',
+      languages: getAlternates('/')
+    },
+    openGraph: {
+      type: 'website',
+      title: layout.seoTitleSuffix,
+      description: layout.seoDescriptionFallback,
+      url: `${siteConfig.url}/`,
+      siteName: layout.siteName,
+      images: [siteConfig.defaultOgImage]
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: layout.seoTitleSuffix,
+      description: layout.seoDescriptionFallback,
+      images: [siteConfig.defaultOgImage]
+    }
+  };
+}
 
 export default async function RootPage() {
   const requestHeaders = await headers();
@@ -59,6 +47,26 @@ export default async function RootPage() {
   );
 
   if (locale) redirect(`/${locale}`);
+
+  const layout = await getSiteLayout('zh-Hant');
+  const rootStructuredData = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebSite',
+        url: `${siteConfig.url}/`,
+        name: layout.siteName,
+        alternateName: [
+          '哈利路亞家教會',
+          '哈利路亚家教会',
+          'Hallelujah Home Church',
+          'ハレルヤ・ホームチャーチ',
+          '할렐루야 가정교회'
+        ]
+      },
+      organizationStructuredData(layout.links)
+    ]
+  };
 
   return (
     <main className="grid min-h-dvh place-items-center bg-[image:var(--hhc-page-gradient)] px-5 py-10">

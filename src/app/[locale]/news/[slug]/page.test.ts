@@ -6,8 +6,8 @@ const {getNewsBySlug, getNewsPage} = vi.hoisted(() => ({getNewsBySlug: vi.fn(), 
 vi.mock('@/features/news/api', () => ({getNewsBySlug, getNewsPage}));
 vi.mock('next-intl/server', () => ({setRequestLocale: vi.fn()}));
 vi.mock('next/navigation', () => ({notFound: vi.fn()}));
-vi.mock('@/components/layout/SiteHeader', () => ({SiteHeader: () => null}));
-vi.mock('@/components/layout/SiteFooter', () => ({SiteFooter: () => null}));
+vi.mock('@/components/layout/SiteHeaderServer', () => ({SiteHeaderServer: () => null}));
+vi.mock('@/components/layout/SiteFooterServer', () => ({SiteFooterServer: () => null}));
 
 import NewsDetailPage, {generateMetadata} from './page';
 
@@ -72,7 +72,7 @@ describe('news detail metadata', () => {
     const metadata = await generateMetadata({params: Promise.resolve({locale: 'ja', slug: 'announcement'})});
 
     expect(metadata.title).toBe('消息 | ハレルヤ・ホームチャーチ');
-    expect(metadata.description).toBe('ハレルヤ・ホームチャーチからの最新情報やイベントのお知らせをご覧いただけます。');
+    expect(metadata.description).toBe('愛の中で家庭を築き、真理の中で成長する');
     expect(metadata.openGraph).toMatchObject({images: [expect.objectContaining({alt: 'ハレルヤ・ホームチャーチ'})]});
   });
 

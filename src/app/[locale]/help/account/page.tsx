@@ -2,9 +2,10 @@ import type {Metadata} from 'next';
 import Link from 'next/link';
 import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
-import {SiteFooter} from '@/components/layout/SiteFooter';
-import {SiteHeader} from '@/components/layout/SiteHeader';
+import {SiteFooterServer} from '@/components/layout/SiteFooterServer';
+import {SiteHeaderServer} from '@/components/layout/SiteHeaderServer';
 import {Button} from '@/components/ui/Button';
+import {getSiteLayout} from '@/features/site-layout/api';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
@@ -24,21 +25,22 @@ export async function generateMetadata({params}: AccountHelpPageProps): Promise<
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
+  const layout = await getSiteLayout(locale);
   const path = '/help/account';
 
   return {
-    title: `${messages.accountHelp.title} | ${messages.site.name}`,
+    title: `${messages.accountHelp.title} | ${layout.seoTitleSuffix}`,
     description: messages.accountHelp.intro,
     alternates: {
       canonical: getLocalizedPath(locale, path),
       languages: getAlternates(path)
     },
     openGraph: {
-      title: `${messages.accountHelp.title} | ${messages.site.name}`,
+      title: `${messages.accountHelp.title} | ${layout.seoTitleSuffix}`,
       description: messages.accountHelp.intro,
       locale: getOpenGraphLocale(locale),
       url: `${siteConfig.url}${getLocalizedPath(locale, path)}`,
-      siteName: siteConfig.name,
+      siteName: layout.siteName,
       images: [siteConfig.defaultOgImage]
     }
   };
@@ -54,7 +56,7 @@ export default async function AccountHelpPage({params}: AccountHelpPageProps) {
 
   return (
     <>
-      <SiteHeader locale={locale} pathname={pathname} />
+      <SiteHeaderServer locale={locale} pathname={pathname} />
       <main className="bg-[image:var(--hhc-page-gradient)] px-6 py-12 max-[620px]:px-4 max-[620px]:py-8">
         <article className="mx-auto w-full max-w-[880px]">
           <header className="border-b border-line pb-9">
@@ -80,7 +82,7 @@ export default async function AccountHelpPage({params}: AccountHelpPageProps) {
           </footer>
         </article>
       </main>
-      <SiteFooter locale={locale} pathname={pathname} />
+      <SiteFooterServer locale={locale} pathname={pathname} />
     </>
   );
 }

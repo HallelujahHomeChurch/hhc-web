@@ -1,11 +1,29 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {readFileSync} from 'node:fs';
 import {renderToStaticMarkup} from 'react-dom/server';
-import RootLayout from './layout';
+import RootLayout, {generateMetadata} from './layout';
 
 const navigation = vi.hoisted(() => ({pathname: '/ja/about'}));
 
 vi.mock('next/navigation', () => ({usePathname: () => navigation.pathname}));
+vi.mock('@/features/site-layout/api', () => ({getSiteLayout: async () => ({
+  locale: 'zh-Hant',
+  siteName: 'CMS 中文站',
+  englishName: 'CMS English Name',
+  copyrightHolder: 'CMS 著作權人',
+  allRightsReserved: 'CMS 保留權利',
+  seoTitleSuffix: 'CMS SEO 標題',
+  seoDescriptionFallback: 'CMS SEO 說明',
+  header: [],
+  legal: [],
+  links: {
+    churchYoutube: 'https://youtube.com/@cms-church',
+    churchFacebook: 'https://www.facebook.com/cms-church',
+    musicYoutube: 'https://youtube.com/@cms-music'
+  },
+  version: 6,
+  publishedAt: '2026-08-28T18:13:22.234929Z'
+})}));
 
 describe('RootLayout', () => {
   beforeEach(() => {
@@ -20,6 +38,16 @@ describe('RootLayout', () => {
     navigation.pathname = '/';
 
     expect(renderToStaticMarkup(<RootLayout><main /></RootLayout>)).toContain('<html lang="und"');
+  });
+
+  it('uses the published Traditional Chinese projection for global metadata', async () => {
+    const metadata = await generateMetadata();
+
+    expect(metadata).toMatchObject({
+      title: 'CMS SEO 標題',
+      description: 'CMS SEO 說明',
+      openGraph: {title: 'CMS SEO 標題', description: 'CMS SEO 說明', siteName: 'CMS 中文站'}
+    });
   });
   it('keeps the before-paint theme bootstrap without making the root layout dynamic', () => {
     const layout = RootLayout({children: <main />});

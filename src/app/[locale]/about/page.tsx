@@ -4,9 +4,10 @@ import {notFound} from 'next/navigation';
 import {AboutHero} from '@/components/about/AboutHero';
 import {HistoryTimeline} from '@/components/about/HistoryTimeline';
 import {VisionContent} from '@/components/about/VisionContent';
-import {SiteFooter} from '@/components/layout/SiteFooter';
-import {SiteHeader} from '@/components/layout/SiteHeader';
+import {SiteFooterServer} from '@/components/layout/SiteFooterServer';
+import {SiteHeaderServer} from '@/components/layout/SiteHeaderServer';
 import {getHistoryTimeline} from '@/features/history/api';
+import {getSiteLayout} from '@/features/site-layout/api';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
@@ -30,26 +31,27 @@ export async function generateMetadata({params}: AboutPageProps): Promise<Metada
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
+  const layout = await getSiteLayout(locale);
   const path = '/about';
 
   return {
-    title: `${messages.about.heroTitle} | ${messages.site.name}`,
+    title: `${messages.about.heroTitle} | ${layout.seoTitleSuffix}`,
     description: messages.about.heroSubtitle,
     alternates: {
       canonical: getLocalizedPath(locale, path),
       languages: getAlternates(path)
     },
     openGraph: {
-      title: `${messages.about.heroTitle} | ${messages.site.name}`,
+      title: `${messages.about.heroTitle} | ${layout.seoTitleSuffix}`,
       description: messages.about.heroSubtitle,
       locale: getOpenGraphLocale(locale),
       url: `${siteConfig.url}${getLocalizedPath(locale, path)}`,
-      siteName: siteConfig.name,
+      siteName: layout.siteName,
       images: [siteConfig.defaultOgImage]
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${messages.about.heroTitle} | ${messages.site.name}`,
+      title: `${messages.about.heroTitle} | ${layout.seoTitleSuffix}`,
       description: messages.about.heroSubtitle,
       images: [siteConfig.defaultOgImage]
     }
@@ -64,7 +66,7 @@ export default async function AboutPage({params}: AboutPageProps) {
 
   return (
     <>
-      <SiteHeader locale={locale} pathname={`/${locale}/about`} />
+      <SiteHeaderServer locale={locale} pathname={`/${locale}/about`} />
       <main>
           <AboutHero locale={locale} title={messages.about.heroTitle} subtitle={messages.about.heroSubtitle} />
         <div className="bg-[image:var(--hhc-page-gradient)] py-10 pb-14">
@@ -72,7 +74,7 @@ export default async function AboutPage({params}: AboutPageProps) {
           <HistoryTimeline content={messages.about.history} timeline={timelineResult.value} scriptureLanguage={locale === 'ko' ? 'en' : locale} errorMessage={timelineResult.failed ? messages.about.historyLoadError : undefined} />
         </div>
       </main>
-      <SiteFooter locale={locale} pathname={`/${locale}/about`} />
+      <SiteFooterServer locale={locale} pathname={`/${locale}/about`} />
     </>
   );
 }
