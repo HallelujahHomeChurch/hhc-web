@@ -6,11 +6,13 @@ import Image from 'next/image';
 import {BookOpenText, Newspaper, UsersRound} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
+import type {SiteLayout} from '@hallelujahhomechurch/hhc-web-client';
 import type {Locale} from '@/i18n/locales';
 import {isIPhoneDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 import {AccountControlProvider, AccountControlView} from './AccountControl';
 
-type SiteHeaderProps = {
+export type SiteHeaderProps = {
+  layout: SiteLayout;
   locale: Locale;
   pathname: string;
   sessionClient?: AccountSessionClient;
@@ -20,13 +22,15 @@ const subscribeToStandaloneMode = () => () => undefined;
 const getIPhoneStandaloneSnapshot = () => isIPhoneDevice() && isStandaloneWebApp();
 const getServerStandaloneSnapshot = () => false;
 
-export function SiteHeader({locale, pathname, sessionClient}: SiteHeaderProps) {
+const icons = {
+  about: UsersRound,
+  news: Newspaper,
+  'literature-ministry': BookOpenText
+};
+
+export function SiteHeader({layout, locale, pathname, sessionClient}: SiteHeaderProps) {
   const t = useTranslations('site');
-  const navItems = [
-    {href: `/${locale}/about`, label: t('nav.about'), icon: UsersRound},
-    {href: `/${locale}/news`, label: t('nav.news'), icon: Newspaper},
-    {href: `/${locale}/literature-ministry`, label: t('nav.literatureMinistry'), icon: BookOpenText}
-  ];
+  const navItems = layout.header.filter(({visible}) => visible).map((item) => ({...item, icon: icons[item.key]}));
   const accountLabels = {
     menu: t('account.menu'),
     manageAccount: t('account.manageAccount'),
@@ -86,10 +90,10 @@ export function SiteHeader({locale, pathname, sessionClient}: SiteHeaderProps) {
             <Image src="/assets/brand/logo.png" alt="" width={40} height={40} className="h-full w-full object-contain" />
           </span>
           <span className="grid min-w-0 gap-0.5 leading-none">
-            <strong className="truncate text-[19px] font-medium tracking-[0.02em] text-[var(--hhc-brand-ui)] max-[767px]:text-[17px]">{t('name')}</strong>
+            <strong className="truncate text-[19px] font-medium tracking-[0.02em] text-[var(--hhc-brand-ui)] max-[767px]:text-[17px]">{layout.siteName}</strong>
             {locale !== 'en' ? (
               <small className="text-[9px] font-extrabold uppercase tracking-[0.02em] text-[var(--hhc-brand-muted)] max-[767px]:text-[8px]">
-                {t('englishName')}
+                {layout.englishName}
               </small>
             ) : null}
           </span>
@@ -116,7 +120,7 @@ export function SiteHeader({locale, pathname, sessionClient}: SiteHeaderProps) {
         </div>
       </div>
       </header>
-      <nav className="site-mobile-tab-bar" aria-label={t('nav.menu')} data-mobile-hidden={!mobileChromeVisible} data-iphone-standalone={iphoneStandalone || undefined}>
+      {navItems.length ? <nav className="site-mobile-tab-bar" style={{gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))`}} aria-label={t('nav.menu')} data-mobile-hidden={!mobileChromeVisible} data-iphone-standalone={iphoneStandalone || undefined}>
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
@@ -127,7 +131,7 @@ export function SiteHeader({locale, pathname, sessionClient}: SiteHeaderProps) {
             </Link>
           );
         })}
-      </nav>
+      </nav> : null}
     </AccountControlProvider>
   );
 }

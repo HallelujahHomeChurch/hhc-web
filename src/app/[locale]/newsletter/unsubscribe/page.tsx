@@ -3,6 +3,7 @@ import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {LegalPageShell} from '@/components/legal/LegalPageShell';
 import {UnsubscribePanel} from '@/components/newsletter/UnsubscribePanel';
+import {getSiteLayout} from '@/features/site-layout/api';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 
@@ -20,9 +21,10 @@ async function getLocale(params: UnsubscribePageProps['params']): Promise<Locale
 export async function generateMetadata({params}: UnsubscribePageProps): Promise<Metadata> {
   const locale = await getLocale(params);
   const messages = getMessages(locale);
+  const layout = await getSiteLayout(locale);
 
   return {
-    title: `${messages.newsletterUnsubscribe.title} | ${messages.site.name}`,
+    title: `${messages.newsletterUnsubscribe.title} | ${layout.seoTitleSuffix}`,
     robots: {index: false, follow: false}
   };
 }
@@ -31,6 +33,7 @@ export default async function UnsubscribePage({params, searchParams}: Unsubscrib
   const locale = await getLocale(params);
   const token = (await searchParams).token?.trim() ?? '';
   const messages = getMessages(locale);
+  const layout = await getSiteLayout(locale);
   setRequestLocale(locale);
 
   return (
@@ -38,7 +41,7 @@ export default async function UnsubscribePage({params, searchParams}: Unsubscrib
       languageLabel={messages.site.language}
       locale={locale}
       pathname={`/${locale}/newsletter/unsubscribe${token ? `?token=${encodeURIComponent(token)}` : ''}`}
-      siteName={messages.site.name}
+      siteName={layout.siteName}
     >
       <UnsubscribePanel homeHref={`/${locale}`} labels={messages.newsletterUnsubscribe} token={token} />
     </LegalPageShell>

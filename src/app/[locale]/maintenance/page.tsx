@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {LegalPageShell} from '@/components/legal/LegalPageShell';
+import {getSiteLayout} from '@/features/site-layout/api';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 
@@ -21,9 +22,10 @@ export async function generateMetadata({params}: MaintenancePageProps): Promise<
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
+  const layout = await getSiteLayout(locale);
 
   return {
-    title: `${messages.maintenance.title} | ${messages.site.name}`,
+    title: `${messages.maintenance.title} | ${layout.seoTitleSuffix}`,
     description: messages.maintenance.description,
     robots: {index: false, follow: false}
   };
@@ -33,13 +35,14 @@ export default async function MaintenancePage({params}: MaintenancePageProps) {
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
+  const layout = await getSiteLayout(locale);
 
   return (
     <LegalPageShell
       languageLabel={messages.site.language}
       locale={locale}
       pathname={`/${locale}/maintenance`}
-      siteName={messages.site.name}
+      siteName={layout.siteName}
     >
       <section className="maintenance-status" aria-labelledby="maintenance-title">
         <h1 id="maintenance-title">{messages.maintenance.title}</h1>

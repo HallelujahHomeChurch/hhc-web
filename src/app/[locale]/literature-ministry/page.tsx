@@ -3,9 +3,10 @@ import {Suspense} from 'react';
 import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {AboutHero} from '@/components/about/AboutHero';
-import {SiteFooter} from '@/components/layout/SiteFooter';
-import {SiteHeader} from '@/components/layout/SiteHeader';
+import {SiteFooterServer} from '@/components/layout/SiteFooterServer';
+import {SiteHeaderServer} from '@/components/layout/SiteHeaderServer';
 import {WeeklyArchive} from '@/components/literature-ministry/WeeklyArchive';
+import {getSiteLayout} from '@/features/site-layout/api';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
@@ -27,25 +28,26 @@ export async function generateMetadata({params}: LiteratureMinistryPageProps): P
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
+  const layout = await getSiteLayout(locale);
 
   return {
-    title: `${messages.literatureMinistry.heroTitle} | ${messages.site.name}`,
+    title: `${messages.literatureMinistry.heroTitle} | ${layout.seoTitleSuffix}`,
     description: messages.literatureMinistry.heroSubtitle,
     alternates: {
       canonical: getLocalizedPath(locale, '/literature-ministry'),
       languages: getAlternates('/literature-ministry')
     },
     openGraph: {
-      title: `${messages.literatureMinistry.heroTitle} | ${messages.site.name}`,
+      title: `${messages.literatureMinistry.heroTitle} | ${layout.seoTitleSuffix}`,
       description: messages.literatureMinistry.heroSubtitle,
       locale: getOpenGraphLocale(locale),
       url: `${siteConfig.url}${getLocalizedPath(locale, '/literature-ministry')}`,
-      siteName: siteConfig.name,
+      siteName: layout.siteName,
       images: [siteConfig.defaultOgImage]
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${messages.literatureMinistry.heroTitle} | ${messages.site.name}`,
+      title: `${messages.literatureMinistry.heroTitle} | ${layout.seoTitleSuffix}`,
       description: messages.literatureMinistry.heroSubtitle,
       images: [siteConfig.defaultOgImage]
     }
@@ -59,7 +61,7 @@ export default async function LiteratureMinistryPage({params}: LiteratureMinistr
 
   return (
     <>
-      <SiteHeader locale={locale} pathname={`/${locale}/literature-ministry`} />
+      <SiteHeaderServer locale={locale} pathname={`/${locale}/literature-ministry`} />
       <main>
         <AboutHero locale={locale} title={messages.literatureMinistry.heroTitle} subtitle={messages.literatureMinistry.heroSubtitle} />
         <div className="bg-[image:var(--hhc-page-gradient)] py-10 pb-14">
@@ -68,7 +70,7 @@ export default async function LiteratureMinistryPage({params}: LiteratureMinistr
           </Suspense>
         </div>
       </main>
-      <SiteFooter locale={locale} pathname={`/${locale}/literature-ministry`} />
+      <SiteFooterServer locale={locale} pathname={`/${locale}/literature-ministry`} />
     </>
   );
 }

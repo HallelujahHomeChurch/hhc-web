@@ -3,10 +3,11 @@ import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {NewsSection} from '@/components/home/NewsSection';
 import {AboutHero} from '@/components/about/AboutHero';
-import {SiteFooter} from '@/components/layout/SiteFooter';
-import {SiteHeader} from '@/components/layout/SiteHeader';
+import {SiteFooterServer} from '@/components/layout/SiteFooterServer';
+import {SiteHeaderServer} from '@/components/layout/SiteHeaderServer';
 import {PageNavigation} from '@/components/ui/PageNavigation';
 import {getNewsPage} from '@/features/news/api';
+import {getSiteLayout} from '@/features/site-layout/api';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
@@ -23,23 +24,24 @@ async function resolveLocale(params: NewsPageProps['params']): Promise<Locale> {
 export async function generateMetadata({params, searchParams}: NewsPageProps): Promise<Metadata> {
   const locale = await resolveLocale(params);
   const messages = getMessages(locale);
+  const layout = await getSiteLayout(locale);
   const page = Math.max(1, Number.parseInt((await searchParams).page ?? '1', 10) || 1);
   const path = page === 1 ? '/news' : `/news?page=${page}`;
   return {
-    title: `${messages.news.title} | ${messages.site.name}`,
+    title: `${messages.news.title} | ${layout.seoTitleSuffix}`,
     description: messages.news.description,
     alternates: {canonical: getLocalizedPath(locale, path), languages: getAlternates(path)},
     openGraph: {
-      title: `${messages.news.title} | ${messages.site.name}`,
+      title: `${messages.news.title} | ${layout.seoTitleSuffix}`,
       description: messages.news.description,
       locale: getOpenGraphLocale(locale),
       url: `${siteConfig.url}${getLocalizedPath(locale, path)}`,
-      siteName: siteConfig.name,
+      siteName: layout.siteName,
       images: [siteConfig.defaultOgImage]
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${messages.news.title} | ${messages.site.name}`,
+      title: `${messages.news.title} | ${layout.seoTitleSuffix}`,
       description: messages.news.description,
       images: [siteConfig.defaultOgImage]
     }
@@ -57,7 +59,7 @@ export default async function NewsPage({params, searchParams}: NewsPageProps) {
 
   return (
     <>
-      <SiteHeader locale={locale} pathname={pathname} />
+      <SiteHeaderServer locale={locale} pathname={pathname} />
       <main className="min-h-[calc(100vh-76px)] bg-[image:var(--hhc-page-gradient)]">
         <AboutHero locale={locale} title={messages.news.title} subtitle={messages.news.heroSubtitle} />
         <section className="shell py-10 max-[620px]:py-6" aria-label={messages.news.allNews}>
@@ -69,7 +71,7 @@ export default async function NewsPage({params, searchParams}: NewsPageProps) {
           <PageNavigation basePath={pathname} page={page} totalPages={totalPages} labels={messages.site.pagination} />
         </section>
       </main>
-      <SiteFooter locale={locale} pathname={pathname} />
+      <SiteFooterServer locale={locale} pathname={pathname} />
     </>
   );
 }

@@ -1,11 +1,30 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {renderToStaticMarkup} from 'react-dom/server';
-import RootPage, {dynamic, metadata} from './page';
+import RootPage, {dynamic, generateMetadata} from './page';
 
 const request = vi.hoisted(() => ({
   headers: new Map<string, string>(),
   redirect: vi.fn()
 }));
+
+vi.mock('@/features/site-layout/api', () => ({getSiteLayout: async () => ({
+  locale: 'zh-Hant',
+  siteName: 'CMS 中文站',
+  englishName: 'CMS English Name',
+  copyrightHolder: 'CMS 著作權人',
+  allRightsReserved: 'CMS 保留權利',
+  seoTitleSuffix: 'CMS SEO 標題',
+  seoDescriptionFallback: 'CMS SEO 說明',
+  header: [],
+  legal: [],
+  links: {
+    churchYoutube: 'https://youtube.com/@cms-church',
+    churchFacebook: 'https://www.facebook.com/cms-church',
+    musicYoutube: 'https://youtube.com/@cms-music'
+  },
+  version: 6,
+  publishedAt: '2026-08-28T18:13:22.234929Z'
+})}));
 
 vi.mock('next/headers', () => ({
   headers: async () => ({get: (name: string) => request.headers.get(name) ?? null})
@@ -38,14 +57,18 @@ describe('RootPage', () => {
     expect(request.redirect).not.toHaveBeenCalled();
   });
 
-  it('publishes root canonical and x-default metadata', () => {
+  it('publishes projected root metadata with canonical and x-default links', async () => {
+    const metadata = await generateMetadata();
+
     expect(dynamic).toBe('force-dynamic');
     expect(metadata).toMatchObject({
-      title: 'HHC',
+      title: 'CMS SEO 標題',
+      description: 'CMS SEO 說明',
       alternates: {
         canonical: '/',
         languages: {'x-default': 'https://www.alive.org.tw/'}
-      }
+      },
+      openGraph: {siteName: 'CMS 中文站'}
     });
   });
 
@@ -61,7 +84,7 @@ describe('RootPage', () => {
       '@graph': [
         {
           '@type': 'WebSite',
-          name: 'HHC',
+          name: 'CMS 中文站',
           alternateName: [
             '哈利路亞家教會',
             '哈利路亚家教会',
@@ -70,10 +93,13 @@ describe('RootPage', () => {
             '할렐루야 가정교회'
           ]
         },
-        {'@type': 'Organization', '@id': 'https://www.alive.org.tw/#organization'}
+        {
+          '@type': 'Organization',
+          '@id': 'https://www.alive.org.tw/#organization',
+          sameAs: ['https://youtube.com/@cms-church', 'https://www.facebook.com/cms-church']
+        }
       ]
     });
-    expect(metadata.openGraph).toMatchObject({siteName: 'HHC'});
   });
 
   it('redirects a Japanese browser to the Japanese home page', async () => {

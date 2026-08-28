@@ -8,11 +8,16 @@ describe('structured data helpers', () => {
   });
 
   it('defines the canonical HHC organization', () => {
-    expect(organizationStructuredData).toMatchObject({
+    expect(organizationStructuredData({
+      churchYoutube: 'https://youtube.com/@cms-church',
+      churchFacebook: 'https://www.facebook.com/cms-church',
+      musicYoutube: 'https://youtube.com/@cms-music'
+    })).toMatchObject({
       '@type': 'Organization',
       '@id': 'https://www.alive.org.tw/#organization',
       name: 'HHC',
-      url: 'https://www.alive.org.tw/'
+      url: 'https://www.alive.org.tw/',
+      sameAs: ['https://youtube.com/@cms-church', 'https://www.facebook.com/cms-church']
     });
   });
 

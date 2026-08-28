@@ -2,11 +2,12 @@ import type {Metadata} from 'next';
 import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
 import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
-import {SiteFooter} from '@/components/layout/SiteFooter';
-import {SiteHeader} from '@/components/layout/SiteHeader';
+import {SiteFooterServer} from '@/components/layout/SiteFooterServer';
+import {SiteHeaderServer} from '@/components/layout/SiteHeaderServer';
 import {NewsDetailArticle} from '@/components/news/NewsDetailArticle';
 import {NewsSection} from '@/components/home/NewsSection';
 import {getNewsBySlug, getNewsPage} from '@/features/news/api';
+import {getSiteLayout} from '@/features/site-layout/api';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
@@ -34,22 +35,21 @@ async function loadNews(locale: Locale, slug: string) {
 
 export async function generateMetadata({params}: NewsDetailPageProps): Promise<Metadata> {
   const {locale, slug} = await resolveParams(params);
-  const messages = getMessages(locale);
-  const news = await loadNews(locale, slug);
+  const [news, layout] = await Promise.all([loadNews(locale, slug), getSiteLayout(locale)]);
   const path = `/news/${slug}`;
   const canonicalPath = getLocalizedPath(news.resolvedLocale, path);
-  const description = normalizeMetaDescription(news.summary) || messages.news.description;
+  const description = normalizeMetaDescription(news.summary) || layout.seoDescriptionFallback;
   return {
-    title: `${news.title} | ${messages.site.name}`,
+    title: `${news.title} | ${layout.seoTitleSuffix}`,
     description,
     alternates: {canonical: canonicalPath, languages: getAlternates(path, news.availableLocales)},
     openGraph: {
       title: news.title,
       description,
-      images: [{url: news.imageSrc || siteConfig.defaultOgImage, alt: news.imageAlt || messages.site.name}],
+      images: [{url: news.imageSrc || siteConfig.defaultOgImage, alt: news.imageAlt || layout.siteName}],
       locale: getOpenGraphLocale(news.resolvedLocale),
       url: `${siteConfig.url}${canonicalPath}`,
-      siteName: siteConfig.name
+      siteName: layout.siteName
     },
     twitter: {
       card: 'summary_large_image',
@@ -64,14 +64,14 @@ export default async function NewsDetailPage({params}: NewsDetailPageProps) {
   const {locale, slug} = await resolveParams(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
-  const news = await loadNews(locale, slug);
+  const [news, layout] = await Promise.all([loadNews(locale, slug), getSiteLayout(locale)]);
   const resolvedMessages = getMessages(news.resolvedLocale);
   const pathname = `/${locale}/news/${slug}`;
   const canonicalPath = getLocalizedPath(news.resolvedLocale, `/news/${slug}`);
   const canonicalUrl = new URL(canonicalPath, siteConfig.url).toString();
   const newsListUrl = new URL(`/${news.resolvedLocale}/news`, siteConfig.url).toString();
   const homeUrl = new URL(`/${news.resolvedLocale}`, siteConfig.url).toString();
-  const description = normalizeMetaDescription(news.summary) || messages.news.description;
+  const description = normalizeMetaDescription(news.summary) || layout.seoDescriptionFallback;
   const image = toAbsoluteHttpsUrl(news.imageSrc);
   const datePublished = news.firstPublishedAt && !Number.isNaN(Date.parse(news.firstPublishedAt)) ? news.firstPublishedAt : undefined;
   const dateModified = datePublished && news.lastPublishedAt && Date.parse(news.lastPublishedAt) > Date.parse(datePublished)
@@ -80,7 +80,7 @@ export default async function NewsDetailPage({params}: NewsDetailPageProps) {
   const structuredData = {
     '@context': 'https://schema.org',
     '@graph': [
-      organizationStructuredData,
+      organizationStructuredData(layout.links),
       {
         '@type': 'NewsArticle',
         mainEntityOfPage: canonicalUrl,
@@ -109,7 +109,7 @@ export default async function NewsDetailPage({params}: NewsDetailPageProps) {
 
   return (
     <>
-      <SiteHeader locale={locale} pathname={pathname} />
+      <SiteHeaderServer locale={locale} pathname={pathname} />
       <main className="min-h-[calc(100vh-76px)] bg-[image:var(--hhc-page-gradient)] py-10 max-[620px]:py-6">
         <NewsDetailArticle
           news={news}
@@ -119,14 +119,14 @@ export default async function NewsDetailPage({params}: NewsDetailPageProps) {
           authorLabel={messages.news.author}
           publishedAtLabel={messages.news.publishedAt}
           updatedAtLabel={messages.news.updatedAt}
-          organizationName={resolvedMessages.site.name}
+          organizationName={layout.siteName}
         />
         {recentNews.length ? <section className="shell mt-16 max-w-[1120px] border-t border-line pt-10">
           <NewsSection title={messages.news.title} moreHref={`/${news.resolvedLocale}/news`} moreLabel={messages.news.allNews} items={recentNews} />
         </section> : null}
         <script type="application/ld+json" dangerouslySetInnerHTML={{__html: serializeJsonLd(structuredData)}} />
       </main>
-      <SiteFooter locale={locale} pathname={pathname} />
+      <SiteFooterServer locale={locale} pathname={pathname} />
     </>
   );
 }

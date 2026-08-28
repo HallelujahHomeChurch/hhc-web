@@ -2,6 +2,7 @@ import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/
 import {NextIntlClientProvider} from 'next-intl';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
+import type {SiteLayout} from '@hallelujahhomechurch/hhc-web-client';
 import en from '@/i18n/locales/en.json';
 import ja from '@/i18n/locales/ja.json';
 import ko from '@/i18n/locales/ko.json';
@@ -10,7 +11,28 @@ import {SiteHeader} from './SiteHeader';
 
 const anonymousSessionClient: AccountSessionClient = {
   getSession: async () => ({authenticated: false}),
-  logout: async () => undefined
+  issueAccessToken: async () => ({accessToken: '', expiresIn: 0}),
+  logout: async () => undefined,
+  logoutAll: async () => undefined
+};
+
+const layout: SiteLayout = {
+  locale: 'zh-Hant',
+  siteName: '哈利路亞家教會',
+  englishName: 'Hallelujah Home Church',
+  copyrightHolder: '社團法人中華民國哈利路亞社區關懷協會',
+  allRightsReserved: 'All rights reserved.',
+  seoTitleSuffix: '哈利路亞家教會',
+  seoDescriptionFallback: '在愛中建造家庭，在真理中成長',
+  header: [
+    {key: 'about', label: '關於我們', href: '/zh-Hant/about', visible: true},
+    {key: 'news', label: '最新消息', href: '/zh-Hant/news', visible: true},
+    {key: 'literature-ministry', label: '文字事工', href: '/zh-Hant/literature-ministry', visible: true}
+  ],
+  legal: [],
+  links: {churchYoutube: 'https://youtube.com', churchFacebook: 'https://facebook.com', musicYoutube: 'https://youtube.com'},
+  version: 6,
+  publishedAt: '2026-08-28T18:13:22.234929Z'
 };
 
 afterEach(() => {
@@ -22,7 +44,7 @@ describe('SiteHeader', () => {
   it('renders brand, navigation, and account entry point', async () => {
     render(
       <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
-        <SiteHeader locale="zh-Hant" pathname="/zh-Hant/about" sessionClient={anonymousSessionClient} />
+        <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/about" sessionClient={anonymousSessionClient} />
       </NextIntlClientProvider>
     );
 
@@ -57,7 +79,7 @@ describe('SiteHeader', () => {
 
     render(
       <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
-        <SiteHeader locale="zh-Hant" pathname="/zh-Hant/about" sessionClient={{...anonymousSessionClient, getSession}} />
+        <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/about" sessionClient={{...anonymousSessionClient, getSession}} />
       </NextIntlClientProvider>
     );
 
@@ -72,7 +94,7 @@ describe('SiteHeader', () => {
   it('lets long localized branding shrink before the fixed account slot at mobile zoom widths', async () => {
     render(
       <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
-        <SiteHeader locale="zh-Hant" pathname="/zh-Hant" sessionClient={anonymousSessionClient} />
+        <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" sessionClient={anonymousSessionClient} />
       </NextIntlClientProvider>
     );
 
@@ -90,7 +112,7 @@ describe('SiteHeader', () => {
 
     render(
       <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
-        <SiteHeader locale="zh-Hant" pathname="/zh-Hant/about" sessionClient={anonymousSessionClient} />
+        <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/about" sessionClient={anonymousSessionClient} />
       </NextIntlClientProvider>
     );
 
@@ -108,7 +130,7 @@ describe('SiteHeader', () => {
 
     render(
       <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
-        <SiteHeader locale="zh-Hant" pathname="/zh-Hant/about" sessionClient={anonymousSessionClient} />
+        <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/about" sessionClient={anonymousSessionClient} />
       </NextIntlClientProvider>
     );
 
@@ -135,7 +157,7 @@ describe('SiteHeader', () => {
   it('does not repeat the English brand subtitle', () => {
     render(
       <NextIntlClientProvider locale="en" messages={en}>
-        <SiteHeader locale="en" pathname="/en" sessionClient={anonymousSessionClient} />
+        <SiteHeader layout={{...layout, locale: 'en', siteName: 'Hallelujah Home Church'}} locale="en" pathname="/en" sessionClient={anonymousSessionClient} />
       </NextIntlClientProvider>
     );
 
@@ -148,11 +170,74 @@ describe('SiteHeader', () => {
   ] as const)('localizes the primary navigation name for %s', async (locale, messages, navigationName) => {
     render(
       <NextIntlClientProvider locale={locale} messages={messages}>
-        <SiteHeader locale={locale} pathname={`/${locale}`} sessionClient={anonymousSessionClient} />
+        <SiteHeader layout={{...layout, locale}} locale={locale} pathname={`/${locale}`} sessionClient={anonymousSessionClient} />
       </NextIntlClientProvider>
     );
 
     expect(screen.getByRole('navigation', {name: navigationName})).toBeInTheDocument();
     expect(await screen.findByRole('link', {name: messages.site.account.signIn})).toBeInTheDocument();
+  });
+
+  it('renders projected branding and visible navigation while retaining i18n navigation labels', async () => {
+    render(
+      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <SiteHeader
+          layout={{
+            ...layout,
+            siteName: 'CMS 教會名稱',
+            englishName: 'CMS English Name',
+            header: [
+              {key: 'about', label: 'CMS 關於', href: '/zh-Hant/about', visible: true},
+              {key: 'news', label: 'CMS 隱藏消息', href: '/zh-Hant/news', visible: false},
+              {key: 'literature-ministry', label: 'CMS 文字', href: '/zh-Hant/literature-ministry', visible: true}
+            ]
+          }}
+          locale="zh-Hant"
+          pathname="/zh-Hant/about"
+          sessionClient={anonymousSessionClient}
+        />
+      </NextIntlClientProvider>
+    );
+
+    expect(screen.getByRole('link', {name: /CMS 教會名稱/})).toHaveAttribute('href', '/zh-Hant');
+    expect(screen.getAllByRole('link', {name: 'CMS 關於'})[0]).toHaveAttribute('href', '/zh-Hant/about');
+    expect(screen.queryByRole('link', {name: 'CMS 隱藏消息'})).not.toBeInTheDocument();
+    expect(screen.getByRole('navigation', {name: '主要導覽'})).toBeInTheDocument();
+    expect(screen.getByRole('navigation', {name: '選單'})).toBeInTheDocument();
+    expect(await screen.findByRole('link', {name: '登入'})).toBeInTheDocument();
+  });
+
+  it('sizes the mobile navigation from the visible projected items', async () => {
+    render(
+      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <SiteHeader
+          layout={{...layout, header: layout.header.map((item) => ({...item, visible: item.key !== 'news'}))}}
+          locale="zh-Hant"
+          pathname="/zh-Hant/about"
+          sessionClient={anonymousSessionClient}
+        />
+      </NextIntlClientProvider>
+    );
+
+    await screen.findByRole('link', {name: '登入'});
+    expect(screen.getByRole('navigation', {name: '選單'})).toHaveStyle({
+      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
+    });
+  });
+
+  it('does not render an empty mobile navigation landmark when all projected items are hidden', async () => {
+    render(
+      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <SiteHeader
+          layout={{...layout, header: layout.header.map((item) => ({...item, visible: false}))}}
+          locale="zh-Hant"
+          pathname="/zh-Hant"
+          sessionClient={anonymousSessionClient}
+        />
+      </NextIntlClientProvider>
+    );
+
+    await screen.findByRole('link', {name: '登入'});
+    expect(screen.queryByRole('navigation', {name: '選單'})).not.toBeInTheDocument();
   });
 });

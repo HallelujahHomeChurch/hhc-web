@@ -12,13 +12,13 @@ describe('LegalPageShell', () => {
         languageLabel="語言"
         locale="zh-Hant"
         pathname="/zh-Hant/privacy-policy"
-        siteName="哈利路亞家教會"
+        siteName="CMS 法律站名"
       >
         <article>法律內容</article>
       </LegalPageShell>
     );
 
-    expect(screen.getByRole('link', {name: '哈利路亞家教會'})).toHaveAttribute('href', '/zh-Hant');
+    expect(screen.getByRole('link', {name: 'CMS 法律站名'})).toHaveAttribute('href', '/zh-Hant');
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
     expect(screen.getByText('法律內容')).toBeInTheDocument();
 
