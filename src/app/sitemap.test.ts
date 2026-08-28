@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {PageProjectionError} from '@/features/pages/api';
+import {PageNotFoundError, PageProjectionError} from '@/features/pages/api';
 import sitemap, {buildNewsSitemap} from './sitemap';
 
 vi.mock('@/features/news/api', () => ({getNewsPage: vi.fn(async () => ({items: []}))}));
@@ -49,6 +49,17 @@ describe('static sitemap', () => {
     expect(entries).toHaveLength(18);
     expect(entries.some((entry) => entry.url === 'https://www.alive.org.tw/zh-Hant')).toBe(false);
     expect(entries.some((entry) => entry.url.endsWith('/about'))).toBe(true);
+  });
+
+  it('omits only a fixed route that is not published', async () => {
+    pageMocks.home.mockRejectedValueOnce(new PageNotFoundError('home is not published'));
+
+    const entries = await sitemap();
+
+    expect(entries).toHaveLength(18);
+    expect(entries.some((entry) => entry.url === 'https://www.alive.org.tw/zh-Hant')).toBe(false);
+    expect(entries.some((entry) => entry.url.endsWith('/about'))).toBe(true);
+    expect(entries.some((entry) => entry.url.endsWith('/privacy-policy'))).toBe(true);
   });
 
   it('fails loud when fixed-page projection data is corrupt', async () => {

@@ -1,7 +1,7 @@
 import type {MetadataRoute} from 'next';
 import type {NewsItem} from '@/features/news/types';
 import {getNewsPage} from '@/features/news/api';
-import {getAboutPage, getHomePage, getLegalPage, isPageAvailabilityError} from '@/features/pages/api';
+import {getAboutPage, getHomePage, getLegalPage, isPageAvailabilityError, PageNotFoundError} from '@/features/pages/api';
 import {productLocales, type Locale} from '@/i18n/locales';
 import {getAlternates, getLocalizedPath} from '@/lib/seo';
 import {siteConfig} from '@/lib/site';
@@ -35,7 +35,7 @@ async function fixedPage(path: string, load: () => Promise<{source: string; inde
   try {
     page = await load();
   } catch (error) {
-    if (isPageAvailabilityError(error)) return [];
+    if (error instanceof PageNotFoundError || isPageAvailabilityError(error)) return [];
     throw error;
   }
   if (page.source !== 'cms' || !page.indexable) return [];
