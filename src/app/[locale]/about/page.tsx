@@ -48,7 +48,7 @@ export default async function AboutPage({params}: AboutPageProps) {
   return (
     <>
       <SiteHeaderServer locale={locale} pathname={`/${locale}/about`} />
-      <main>
+      <main data-cms-fallback={page.source === 'migration-fallback' ? 'about' : undefined}>
         <AboutHero locale={locale} title={page.content.heroTitle} subtitle={page.content.heroSubtitle} />
         <div className="bg-[image:var(--hhc-page-gradient)] py-10 pb-14">
           <VisionContent content={page.content.vision} />

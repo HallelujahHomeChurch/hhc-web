@@ -1,7 +1,7 @@
 import type {MetadataRoute} from 'next';
 import type {NewsItem} from '@/features/news/types';
 import {getNewsPage} from '@/features/news/api';
-import {getAboutPage, getHomePage, getLegalPage} from '@/features/pages/api';
+import {getAboutPage, getHomePage, getLegalPage, isPageAvailabilityError} from '@/features/pages/api';
 import {productLocales, type Locale} from '@/i18n/locales';
 import {getAlternates, getLocalizedPath} from '@/lib/seo';
 import {siteConfig} from '@/lib/site';
@@ -31,8 +31,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 }
 
 async function fixedPage(path: string, load: () => Promise<{source: string; indexable: boolean; availableLocales: Locale[]}>): Promise<MetadataRoute.Sitemap> {
-  const page = await load().catch(() => null);
-  if (!page || page.source !== 'cms' || !page.indexable) return [];
+  let page;
+  try {
+    page = await load();
+  } catch (error) {
+    if (isPageAvailabilityError(error)) return [];
+    throw error;
+  }
+  if (page.source !== 'cms' || !page.indexable) return [];
   return page.availableLocales.map((locale) => ({
     url: `${siteConfig.url}${getLocalizedPath(locale, path)}`,
     alternates: {languages: getAlternates(path, page.availableLocales)}

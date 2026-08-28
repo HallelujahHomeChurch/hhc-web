@@ -1,14 +1,27 @@
-import {describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {PageProjectionError} from '@/features/pages/api';
 import sitemap, {buildNewsSitemap} from './sitemap';
 
 vi.mock('@/features/news/api', () => ({getNewsPage: vi.fn(async () => ({items: []}))}));
-vi.mock('@/features/pages/api', () => ({
-  getHomePage: vi.fn(async () => fixedPage(['zh-Hant', 'en'])),
-  getAboutPage: vi.fn(async () => fixedPage(['ja'])),
-  getLegalPage: vi.fn(async (key: string) => key === 'privacy-policy' ? fixedPage(['zh-Hant', 'ja']) : fixedPage(['en'], false))
+const pageMocks = vi.hoisted(() => ({
+  home: vi.fn(),
+  about: vi.fn(),
+  legal: vi.fn()
+}));
+vi.mock('@/features/pages/api', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/features/pages/api')>(),
+  getHomePage: pageMocks.home,
+  getAboutPage: pageMocks.about,
+  getLegalPage: pageMocks.legal
 }));
 
 describe('static sitemap', () => {
+  beforeEach(() => {
+    pageMocks.home.mockReset().mockResolvedValue(fixedPage(['zh-Hant', 'en']));
+    pageMocks.about.mockReset().mockResolvedValue(fixedPage(['ja']));
+    pageMocks.legal.mockReset().mockImplementation(async (key: string) => key === 'privacy-policy' ? fixedPage(['zh-Hant', 'ja']) : fixedPage(['en'], false));
+  });
+
   it('publishes fixed routes only for API published/indexable locales', async () => {
     const entries = await sitemap();
     expect(entries).toHaveLength(20);
@@ -26,6 +39,22 @@ describe('static sitemap', () => {
     expect(entries.map((entry) => entry.url)).not.toContain('https://www.alive.org.tw/ko/privacy-policy');
     expect(entries.some((entry) => entry.url.endsWith('/terms-of-use'))).toBe(false);
     expect(entries.find((entry) => entry.url === 'https://www.alive.org.tw/ja/privacy-policy')?.alternates?.languages).not.toHaveProperty('x-default');
+  });
+
+  it('omits only a fixed route whose CMS projection is unavailable', async () => {
+    pageMocks.home.mockRejectedValueOnce(new TypeError('network unavailable'));
+
+    const entries = await sitemap();
+
+    expect(entries).toHaveLength(18);
+    expect(entries.some((entry) => entry.url === 'https://www.alive.org.tw/zh-Hant')).toBe(false);
+    expect(entries.some((entry) => entry.url.endsWith('/about'))).toBe(true);
+  });
+
+  it('fails loud when fixed-page projection data is corrupt', async () => {
+    pageMocks.home.mockRejectedValueOnce(new PageProjectionError('corrupt projection'));
+
+    await expect(sitemap()).rejects.toThrow('corrupt projection');
   });
 });
 

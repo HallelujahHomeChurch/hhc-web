@@ -39,12 +39,27 @@ describe('fixed editorial page adapters', () => {
     await expect(getAboutPage('en', rejectingClient(new HhcWebApiError(404, 'not_found', 'missing')))).rejects.toBeInstanceOf(PageNotFoundError);
   });
 
-  it('uses migration-only static fallback for Home and About request failures, never Legal', async () => {
-    const client = rejectingClient(new Error('unavailable'));
+  it.each([
+    new TypeError('network unavailable'),
+    new HhcWebApiError(503, 'service_unavailable', 'unavailable')
+  ])('uses migration-only static fallback for Home and About availability failures: %s', async (error) => {
+    const client = rejectingClient(error);
 
     await expect(getHomePage('ja', client)).resolves.toMatchObject({content: homeContent('ja').data, source: 'migration-fallback'});
     await expect(getAboutPage('ko', client)).resolves.toMatchObject({content: aboutContent('ko').data, source: 'migration-fallback'});
-    await expect(getLegalPage('terms-of-use', 'en', client)).rejects.toThrow('unavailable');
+  });
+
+  it.each([
+    new HhcWebApiError(200, 'invalid_response', 'invalid response'),
+    new HhcWebApiError(403, 'forbidden', 'forbidden'),
+    new Error('plain failure')
+  ])('fails loud instead of falling back for non-availability failures: %s', async (error) => {
+    await expect(getHomePage('ja', rejectingClient(error))).rejects.toBe(error);
+    await expect(getAboutPage('ko', rejectingClient(error))).rejects.toBe(error);
+  });
+
+  it('never falls back for Legal availability failures', async () => {
+    await expect(getLegalPage('terms-of-use', 'en', rejectingClient(new TypeError('network unavailable')))).rejects.toThrow('network unavailable');
   });
 
   it('preserves only the API published/indexable locale membership', async () => {

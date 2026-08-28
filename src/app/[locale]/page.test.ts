@@ -56,8 +56,20 @@ describe('home page metadata', () => {
     expect(markup).toContain('CMS Videos heading');
     expect(markup).toContain('CMS About heading');
     expect(markup).toContain('CMS Locations heading');
+    expect(markup).not.toContain('data-cms-fallback');
     expect(mocks.getHomeContent).toHaveBeenCalledWith('ja');
     expect(mocks.getLocations).toHaveBeenCalledWith('ja');
+  });
+
+  it('marks only migration-fallback Home output for the live observation gate', async () => {
+    mocks.getHomePage.mockResolvedValue({...cmsHomePage(), source: 'migration-fallback'});
+    mocks.getHomeContent.mockResolvedValue({news: [], newsFailed: false, videos: [], videosFailed: false});
+    mocks.getLocations.mockResolvedValue([]);
+    mocks.getSiteLayout.mockResolvedValue({links: {musicYoutube: 'https://youtube.com/@cms-music'}});
+
+    const markup = renderToStaticMarkup(await HomePage({params: Promise.resolve({locale: 'ja'})}));
+
+    expect(markup).toContain('<main data-cms-fallback="home">');
   });
 
   it('uses CMS copy and published locale membership for metadata', async () => {

@@ -50,7 +50,7 @@ export default async function HomePage({params}: HomePageProps) {
   return (
     <>
       <SiteHeaderServer locale={locale} pathname={`/${locale}`} />
-      <main>
+      <main data-cms-fallback={page.source === 'migration-fallback' ? 'home' : undefined}>
         <HomeHero locale={locale} title={content.heroTitle} subtitle={content.heroSubtitle} />
         <div className="relative z-[3] bg-[image:var(--hhc-page-gradient)] py-8 pb-11">
           <SectionCard className="shell grid grid-cols-[minmax(0,1.45fr)_minmax(300px,.9fr)] gap-8 p-7 max-[900px]:grid-cols-1 max-[620px]:p-5" ariaLabel={`${content.newsTitle} · ${content.weeklyTitle}`}>

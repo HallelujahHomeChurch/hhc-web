@@ -23,7 +23,17 @@ describe('CMS-managed About page', () => {
     expect(markup).toContain('CMS vision intro');
     expect(markup).toContain('CMS scripture line');
     expect(markup).toContain('CMS timeline event');
+    expect(markup).not.toContain('data-cms-fallback');
     expect(mocks.getHistoryTimeline).toHaveBeenCalledWith('en');
+  });
+
+  it('marks only migration-fallback About output for the live observation gate', async () => {
+    mocks.getAboutPage.mockResolvedValue({...aboutPage(), source: 'migration-fallback'});
+    mocks.getHistoryTimeline.mockResolvedValue({events: []});
+
+    const markup = renderToStaticMarkup(await AboutPage({params: Promise.resolve({locale: 'en'})}));
+
+    expect(markup).toContain('<main data-cms-fallback="about">');
   });
 
   it('uses CMS hero copy and published locales for metadata', async () => {

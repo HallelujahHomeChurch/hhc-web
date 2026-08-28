@@ -18,13 +18,17 @@ type PageResult<T> = {
 export class PageNotFoundError extends Error {}
 export class PageProjectionError extends Error {}
 
+export function isPageAvailabilityError(error: unknown): boolean {
+  return error instanceof TypeError || (error instanceof HhcWebApiError && error.status >= 500 && error.status < 600);
+}
+
 export async function getHomePage(locale: Locale, client: HhcWebClient = publicContentClient()): Promise<PageResult<HomeContent>> {
   let page: PublicEditorialPage;
   try {
     page = await requestPage('home', locale, client);
   } catch (error) {
-    if (error instanceof PageNotFoundError) throw error;
-    return migrationHome(locale);
+    if (isPageAvailabilityError(error)) return migrationHome(locale);
+    throw error;
   }
   assertPage(page, locale, 'home', 'home.v1', '/');
   if (page.content.template !== 'home.v1') throw new PageProjectionError('Home page content template mismatch.');
@@ -36,8 +40,8 @@ export async function getAboutPage(locale: Locale, client: HhcWebClient = public
   try {
     page = await requestPage('about', locale, client);
   } catch (error) {
-    if (error instanceof PageNotFoundError) throw error;
-    return migrationAbout(locale);
+    if (isPageAvailabilityError(error)) return migrationAbout(locale);
+    throw error;
   }
   assertPage(page, locale, 'about', 'about.v1', '/about');
   if (page.content.template !== 'about.v1') throw new PageProjectionError('About page content template mismatch.');
