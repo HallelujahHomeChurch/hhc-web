@@ -65,8 +65,7 @@ export default async function HomePage({params}: HomePageProps) {
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
-  const home = await getHomeContent(locale);
-  const locations = getLocations(locale);
+  const [home, locations] = await Promise.all([getHomeContent(locale), getLocations(locale)]);
 
   return (
     <>

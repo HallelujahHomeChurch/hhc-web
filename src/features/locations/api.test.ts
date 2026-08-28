@@ -1,24 +1,62 @@
+import type {HhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
 import {describe, expect, it} from 'vitest';
 import {getLocations} from './api';
 
 describe('getLocations', () => {
-  it('returns Google Maps links for each location', () => {
-    const locations = getLocations('zh-Hant');
+  it('maps published locations to the public website model', async () => {
+    const client = {
+      listLocations: async () => [{
+        id: 'taipei',
+        name: '台北哈利路亞家教會',
+        address: '地址',
+        mapHref: 'https://maps.app.goo.gl/fDus6nVswbuhSEAd8',
+        sortOrder: 10,
+        resolvedLocale: 'zh-Hant' as const,
+        availableLocales: ['zh-Hant' as const]
+      }]
+    } as unknown as HhcWebClient;
 
-    expect(locations.map((location) => location.mapHref)).toEqual([
-      'https://maps.app.goo.gl/fDus6nVswbuhSEAd8',
-      'https://maps.app.goo.gl/A1SDTSZC2XLHqkST7'
-    ]);
+    await expect(getLocations('zh-Hant', client)).resolves.toEqual([{
+      id: 'taipei',
+      name: '台北哈利路亞家教會',
+      address: '地址',
+      mapHref: 'https://maps.app.goo.gl/fDus6nVswbuhSEAd8'
+    }]);
   });
 
-  it('localizes location names and uses English addresses outside Chinese locales', () => {
-    expect(getLocations('en')).toEqual(expect.arrayContaining([
-      expect.objectContaining({name: 'Taipei Hallelujah Home Church', address: "B1, No. 29, Sec. 3, Ren'ai Rd., Da'an Dist., Taipei City 106675, Taiwan (R.O.C.)."}),
-      expect.objectContaining({name: 'Zhongli Hallelujah Home Church', address: '2 F., No. 25, Fuzhou Rd., Zhongli Dist., Taoyuan City 320048, Taiwan (R.O.C.).'})
+  it.each([
+    ['zh-Hant', '台北哈利路亞家教會', '106臺北市大安區民輝里仁愛路三段29號B1'],
+    ['zh-Hans', '台北哈利路亚家教会', '106台北市大安区民辉里仁爱路三段29号B1'],
+    ['en', 'Taipei Hallelujah Home Church', "B1, No. 29, Sec. 3, Ren'ai Rd., Da'an Dist., Taipei City 106675, Taiwan (R.O.C.)."],
+    ['ja', '台北ハレルヤ・ホームチャーチ', "B1, No. 29, Sec. 3, Ren'ai Rd., Da'an Dist., Taipei City 106675, Taiwan (R.O.C.)."],
+    ['ko', '타이베이 할렐루야 가정교회', "B1, No. 29, Sec. 3, Ren'ai Rd., Da'an Dist., Taipei City 106675, Taiwan (R.O.C.)."]
+  ] as const)('preserves the %s CMS values', async (locale, name, address) => {
+    const client = {
+      listLocations: async (requestedLocale: typeof locale) => [{
+        id: 'taipei',
+        name: requestedLocale === locale ? name : 'wrong locale',
+        address,
+        mapHref: 'https://maps.app.goo.gl/fDus6nVswbuhSEAd8',
+        sortOrder: 10,
+        resolvedLocale: locale,
+        availableLocales: ['zh-Hant', 'zh-Hans', 'en', 'ja', 'ko']
+      }]
+    } as unknown as HhcWebClient;
+
+    await expect(getLocations(locale, client)).resolves.toEqual([{
+      id: 'taipei',
+      name,
+      address,
+      mapHref: 'https://maps.app.goo.gl/fDus6nVswbuhSEAd8'
+    }]);
+  });
+
+  it('uses the existing localized locations while the CMS request fails', async () => {
+    const client = {listLocations: async () => Promise.reject(new Error('unavailable'))} as unknown as HhcWebClient;
+
+    await expect(getLocations('ja', client)).resolves.toEqual(expect.arrayContaining([
+      expect.objectContaining({name: '台北ハレルヤ・ホームチャーチ'}),
+      expect.objectContaining({name: '中壢ハレルヤ・ホームチャーチ'})
     ]));
-    expect(getLocations('ja').map(({name}) => name)).toEqual(['台北ハレルヤ・ホームチャーチ', '中壢ハレルヤ・ホームチャーチ']);
-    expect(getLocations('ko').map(({name}) => name)).toEqual(['타이베이 할렐루야 가정교회', '중리 할렐루야 가정교회']);
-    expect(getLocations('ja').map(({address}) => address)).toEqual(getLocations('en').map(({address}) => address));
-    expect(getLocations('ko').map(({address}) => address)).toEqual(getLocations('en').map(({address}) => address));
   });
 });
