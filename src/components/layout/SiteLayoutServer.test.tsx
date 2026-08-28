@@ -1,5 +1,6 @@
 import type {SiteLayout} from '@hallelujahhomechurch/hhc-web-client';
-import {describe, expect, it, vi} from 'vitest';
+import {describe, expect, expectTypeOf, it, vi} from 'vitest';
+import type {Locale} from '@/i18n/locales';
 
 const getSiteLayout = vi.hoisted(() => vi.fn());
 vi.mock('@/features/site-layout/api', () => ({getSiteLayout}));
@@ -27,6 +28,13 @@ const layout = {
 } satisfies SiteLayout;
 
 describe('site layout server wrappers', () => {
+  it('exposes only route-owned props at the server header boundary', () => {
+    expectTypeOf<Parameters<typeof SiteHeaderServer>[0]>().toEqualTypeOf<{
+      locale: Locale;
+      pathname: string;
+    }>();
+  });
+
   it('fetches and injects the exact-locale header projection', async () => {
     getSiteLayout.mockResolvedValue(layout);
 
@@ -34,6 +42,7 @@ describe('site layout server wrappers', () => {
 
     expect(getSiteLayout).toHaveBeenCalledWith('ja');
     expect(element.props).toMatchObject({layout, locale: 'ja', pathname: '/ja/about'});
+    expect(Object.keys(element.props).sort()).toEqual(['layout', 'locale', 'pathname']);
   });
 
   it('fetches and injects the exact-locale footer projection', async () => {

@@ -120,7 +120,7 @@ export function SiteHeader({layout, locale, pathname, sessionClient}: SiteHeader
         </div>
       </div>
       </header>
-      <nav className="site-mobile-tab-bar" aria-label={t('nav.menu')} data-mobile-hidden={!mobileChromeVisible} data-iphone-standalone={iphoneStandalone || undefined}>
+      {navItems.length ? <nav className="site-mobile-tab-bar" style={{gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))`}} aria-label={t('nav.menu')} data-mobile-hidden={!mobileChromeVisible} data-iphone-standalone={iphoneStandalone || undefined}>
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
@@ -131,7 +131,7 @@ export function SiteHeader({layout, locale, pathname, sessionClient}: SiteHeader
             </Link>
           );
         })}
-      </nav>
+      </nav> : null}
     </AccountControlProvider>
   );
 }

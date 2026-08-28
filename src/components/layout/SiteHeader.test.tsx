@@ -11,7 +11,9 @@ import {SiteHeader} from './SiteHeader';
 
 const anonymousSessionClient: AccountSessionClient = {
   getSession: async () => ({authenticated: false}),
-  logout: async () => undefined
+  issueAccessToken: async () => ({accessToken: '', expiresIn: 0}),
+  logout: async () => undefined,
+  logoutAll: async () => undefined
 };
 
 const layout: SiteLayout = {
@@ -203,5 +205,39 @@ describe('SiteHeader', () => {
     expect(screen.getByRole('navigation', {name: '主要導覽'})).toBeInTheDocument();
     expect(screen.getByRole('navigation', {name: '選單'})).toBeInTheDocument();
     expect(await screen.findByRole('link', {name: '登入'})).toBeInTheDocument();
+  });
+
+  it('sizes the mobile navigation from the visible projected items', async () => {
+    render(
+      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <SiteHeader
+          layout={{...layout, header: layout.header.map((item) => ({...item, visible: item.key !== 'news'}))}}
+          locale="zh-Hant"
+          pathname="/zh-Hant/about"
+          sessionClient={anonymousSessionClient}
+        />
+      </NextIntlClientProvider>
+    );
+
+    await screen.findByRole('link', {name: '登入'});
+    expect(screen.getByRole('navigation', {name: '選單'})).toHaveStyle({
+      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
+    });
+  });
+
+  it('does not render an empty mobile navigation landmark when all projected items are hidden', async () => {
+    render(
+      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <SiteHeader
+          layout={{...layout, header: layout.header.map((item) => ({...item, visible: false}))}}
+          locale="zh-Hant"
+          pathname="/zh-Hant"
+          sessionClient={anonymousSessionClient}
+        />
+      </NextIntlClientProvider>
+    );
+
+    await screen.findByRole('link', {name: '登入'});
+    expect(screen.queryByRole('navigation', {name: '選單'})).not.toBeInTheDocument();
   });
 });
