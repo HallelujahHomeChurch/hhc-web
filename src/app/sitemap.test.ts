@@ -67,6 +67,12 @@ describe('static sitemap', () => {
 
     await expect(sitemap()).rejects.toThrow('corrupt projection');
   });
+
+  it('fails loud when a fixed-page projection resolves the wrong locale', async () => {
+    pageMocks.home.mockRejectedValueOnce(new PageProjectionError('home projection locale mismatch'));
+
+    await expect(sitemap()).rejects.toThrow('home projection locale mismatch');
+  });
 });
 
 function fixedPage(availableLocales: ('zh-Hant' | 'zh-Hans' | 'en' | 'ja' | 'ko')[], indexable = true) {

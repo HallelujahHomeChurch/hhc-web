@@ -66,7 +66,7 @@ async function requestPage(key: PublicEditorialPage['pageKey'], locale: Locale, 
 }
 
 function assertPage(page: PublicEditorialPage, locale: Locale, key: PublicEditorialPage['pageKey'], template: PublicEditorialPage['template'], routePath: PublicEditorialPage['routePath']) {
-  if (page.resolvedLocale !== locale || !page.availableLocales.includes(locale)) throw new PageNotFoundError(`${key} is not published in ${locale}.`);
+  if (page.resolvedLocale !== locale || !page.availableLocales.includes(locale)) throw new PageProjectionError(`${key} projection locale mismatch.`);
   if (page.pageKey !== key || page.template !== template || page.routePath !== routePath || page.content.template !== template) throw new PageProjectionError(`${key} projection metadata mismatch.`);
 }
 

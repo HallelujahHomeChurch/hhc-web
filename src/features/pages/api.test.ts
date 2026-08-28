@@ -33,10 +33,16 @@ describe('fixed editorial page adapters', () => {
     await expect(getHomePage('en', clientWith(mismatch))).rejects.toBeInstanceOf(PageProjectionError);
   });
 
-  it('treats a non-exact locale response and a 404 as not found instead of falling back', async () => {
-    const fallbackLocale = {...pageFixture('home', 'en', homeContent('en')), resolvedLocale: 'zh-Hant' as const};
-    await expect(getHomePage('en', clientWith(fallbackLocale))).rejects.toBeInstanceOf(PageNotFoundError);
+  it('treats only a real HTTP 404 as not found', async () => {
     await expect(getAboutPage('en', rejectingClient(new HhcWebApiError(404, 'not_found', 'missing')))).rejects.toBeInstanceOf(PageNotFoundError);
+  });
+
+  it.each([
+    {name: 'resolved locale', change: {resolvedLocale: 'zh-Hant' as const}},
+    {name: 'available locale membership', change: {availableLocales: ['zh-Hant'] as Locale[]}}
+  ])('fails loud on a mismatched $name projection', async ({change}) => {
+    const mismatch = {...pageFixture('home', 'en', homeContent('en')), ...change};
+    await expect(getHomePage('en', clientWith(mismatch))).rejects.toBeInstanceOf(PageProjectionError);
   });
 
   it.each([
