@@ -1,29 +1,83 @@
-import {describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {PageNotFoundError, PageProjectionError} from '@/features/pages/api';
 import sitemap, {buildNewsSitemap} from './sitemap';
 
 vi.mock('@/features/news/api', () => ({getNewsPage: vi.fn(async () => ({items: []}))}));
+const pageMocks = vi.hoisted(() => ({
+  home: vi.fn(),
+  about: vi.fn(),
+  legal: vi.fn()
+}));
+vi.mock('@/features/pages/api', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/features/pages/api')>(),
+  getHomePage: pageMocks.home,
+  getAboutPage: pageMocks.about,
+  getLegalPage: pageMocks.legal
+}));
 
 describe('static sitemap', () => {
-  it('publishes every static route in all five locales', async () => {
+  beforeEach(() => {
+    pageMocks.home.mockReset().mockResolvedValue(fixedPage(['zh-Hant', 'en']));
+    pageMocks.about.mockReset().mockResolvedValue(fixedPage(['ja']));
+    pageMocks.legal.mockReset().mockImplementation(async (key: string) => key === 'privacy-policy' ? fixedPage(['zh-Hant', 'ja']) : fixedPage(['en'], false));
+  });
+
+  it('publishes fixed routes only for API published/indexable locales', async () => {
     const entries = await sitemap();
-    expect(entries).toHaveLength(35);
-    expect(entries.map((entry) => entry.url).slice(0, 5)).toEqual([
-      'https://www.alive.org.tw/zh-Hant',
-      'https://www.alive.org.tw/zh-Hans',
-      'https://www.alive.org.tw/en',
-      'https://www.alive.org.tw/ja',
-      'https://www.alive.org.tw/ko'
-    ]);
+    expect(entries).toHaveLength(20);
+    expect(entries.map((entry) => entry.url)).toContain('https://www.alive.org.tw/zh-Hant');
+    expect(entries.map((entry) => entry.url)).toContain('https://www.alive.org.tw/en');
+    expect(entries.map((entry) => entry.url)).not.toContain('https://www.alive.org.tw/ja');
+    expect(entries.map((entry) => entry.url)).toContain('https://www.alive.org.tw/ja/about');
     expect(entries.find((entry) => entry.url === 'https://www.alive.org.tw/zh-Hant')?.alternates?.languages).toMatchObject({
       'x-default': 'https://www.alive.org.tw/'
     });
     expect(entries.find((entry) => entry.url === 'https://www.alive.org.tw/ja/privacy-policy')?.alternates?.languages).toMatchObject({
       ja: 'https://www.alive.org.tw/ja/privacy-policy',
-      ko: 'https://www.alive.org.tw/ko/privacy-policy'
+      'zh-Hant': 'https://www.alive.org.tw/zh-Hant/privacy-policy'
     });
+    expect(entries.map((entry) => entry.url)).not.toContain('https://www.alive.org.tw/ko/privacy-policy');
+    expect(entries.some((entry) => entry.url.endsWith('/terms-of-use'))).toBe(false);
     expect(entries.find((entry) => entry.url === 'https://www.alive.org.tw/ja/privacy-policy')?.alternates?.languages).not.toHaveProperty('x-default');
   });
+
+  it('omits only a fixed route whose CMS projection is unavailable', async () => {
+    pageMocks.home.mockRejectedValueOnce(new TypeError('network unavailable'));
+
+    const entries = await sitemap();
+
+    expect(entries).toHaveLength(18);
+    expect(entries.some((entry) => entry.url === 'https://www.alive.org.tw/zh-Hant')).toBe(false);
+    expect(entries.some((entry) => entry.url.endsWith('/about'))).toBe(true);
+  });
+
+  it('omits only a fixed route that is not published', async () => {
+    pageMocks.home.mockRejectedValueOnce(new PageNotFoundError('home is not published'));
+
+    const entries = await sitemap();
+
+    expect(entries).toHaveLength(18);
+    expect(entries.some((entry) => entry.url === 'https://www.alive.org.tw/zh-Hant')).toBe(false);
+    expect(entries.some((entry) => entry.url.endsWith('/about'))).toBe(true);
+    expect(entries.some((entry) => entry.url.endsWith('/privacy-policy'))).toBe(true);
+  });
+
+  it('fails loud when fixed-page projection data is corrupt', async () => {
+    pageMocks.home.mockRejectedValueOnce(new PageProjectionError('corrupt projection'));
+
+    await expect(sitemap()).rejects.toThrow('corrupt projection');
+  });
+
+  it('fails loud when a fixed-page projection resolves the wrong locale', async () => {
+    pageMocks.home.mockRejectedValueOnce(new PageProjectionError('home projection locale mismatch'));
+
+    await expect(sitemap()).rejects.toThrow('home projection locale mismatch');
+  });
 });
+
+function fixedPage(availableLocales: ('zh-Hant' | 'zh-Hans' | 'en' | 'ja' | 'ko')[], indexable = true) {
+  return {source: 'cms', availableLocales, indexable, content: {}};
+}
 
 describe('news sitemap', () => {
   it('adds one canonical entry per locale', () => {

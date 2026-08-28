@@ -3,15 +3,17 @@ import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {LegalDocument} from '@/components/legal/LegalDocument';
 import {LegalPageShell} from '@/components/legal/LegalPageShell';
+import {getLegalPage, PageNotFoundError} from '@/features/pages/api';
 import {getSiteLayout} from '@/features/site-layout/api';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
-import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
-import {siteConfig} from '@/lib/site';
+import {getEditorialMetadata} from '@/lib/seo';
 
 type PrivacyPolicyPageProps = {
   params: Promise<{locale: string}>;
 };
+
+export const dynamic = 'force-dynamic';
 
 async function getLocale(params: Promise<{locale: string}>): Promise<Locale> {
   const {locale} = await params;
@@ -24,40 +26,16 @@ async function getLocale(params: Promise<{locale: string}>): Promise<Locale> {
 export async function generateMetadata({params}: PrivacyPolicyPageProps): Promise<Metadata> {
   const locale = await getLocale(params);
   setRequestLocale(locale);
-  const messages = getMessages(locale);
-  const layout = await getSiteLayout(locale);
-
-  const description = messages.privacyPolicy.heroSubtitle || messages.privacyPolicy.intro;
-
-  return {
-    title: `${messages.privacyPolicy.heroTitle} | ${layout.seoTitleSuffix}`,
-    description,
-    alternates: {
-      canonical: getLocalizedPath(locale, '/privacy-policy'),
-      languages: getAlternates('/privacy-policy')
-    },
-    openGraph: {
-      title: `${messages.privacyPolicy.heroTitle} | ${layout.seoTitleSuffix}`,
-      description,
-      locale: getOpenGraphLocale(locale),
-      url: `${siteConfig.url}${getLocalizedPath(locale, '/privacy-policy')}`,
-      siteName: layout.siteName,
-      images: [siteConfig.defaultOgImage]
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: `${messages.privacyPolicy.heroTitle} | ${layout.seoTitleSuffix}`,
-      description,
-      images: [siteConfig.defaultOgImage]
-    }
-  };
+  const [page, layout] = await Promise.all([privacyPage(locale), getSiteLayout(locale)]);
+  const description = page.content.heroSubtitle || page.content.intro || layout.seoDescriptionFallback;
+  return getEditorialMetadata({locale, path: '/privacy-policy', title: `${page.content.heroTitle} | ${layout.seoTitleSuffix}`, description, siteName: layout.siteName, availableLocales: page.availableLocales, indexable: page.indexable});
 }
 
 export default async function PrivacyPolicyPage({params}: PrivacyPolicyPageProps) {
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
-  const layout = await getSiteLayout(locale);
+  const [page, layout] = await Promise.all([privacyPage(locale), getSiteLayout(locale)]);
 
   return (
     <LegalPageShell
@@ -66,7 +44,16 @@ export default async function PrivacyPolicyPage({params}: PrivacyPolicyPageProps
       pathname={`/${locale}/privacy-policy`}
       siteName={layout.siteName}
     >
-      <LegalDocument content={messages.privacyPolicy} />
+      <LegalDocument content={page.content} />
     </LegalPageShell>
   );
+}
+
+async function privacyPage(locale: Locale) {
+  try {
+    return await getLegalPage('privacy-policy', locale);
+  } catch (error) {
+    if (error instanceof PageNotFoundError) notFound();
+    throw error;
+  }
 }

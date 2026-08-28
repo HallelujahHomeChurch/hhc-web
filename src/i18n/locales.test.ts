@@ -38,7 +38,7 @@ describe('locales', () => {
   it('uses the released exact HHC frontend package versions', () => {
     expect(Object.fromEntries(Object.entries(packageJson.dependencies).filter(([name]) => name.startsWith('@hallelujahhomechurch/')))).toEqual({
       '@hallelujahhomechurch/account-client': '0.6.14',
-      '@hallelujahhomechurch/hhc-web-client': '0.6.16',
+      '@hallelujahhomechurch/hhc-web-client': '0.6.17',
       '@hallelujahhomechurch/preferences': '0.6.14',
       '@hallelujahhomechurch/ui': '0.6.14'
     });

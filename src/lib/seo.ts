@@ -1,3 +1,4 @@
+import type {Metadata} from 'next';
 import type {Locale} from '@/i18n/locales';
 import {productLocales} from '@/i18n/locales';
 import {siteConfig} from './site';
@@ -28,4 +29,33 @@ export function getOpenGraphLocale(locale: Locale) {
   };
 
   return map[locale];
+}
+
+export function getEditorialMetadata({locale, path, title, socialTitle = title, description, siteName, availableLocales, indexable}: {
+  locale: Locale;
+  path: string;
+  title: string;
+  socialTitle?: string;
+  description: string;
+  siteName: string;
+  availableLocales: readonly Locale[];
+  indexable: boolean;
+}): Metadata {
+  const indexedLocales = indexable ? availableLocales : [];
+  return {
+    title,
+    description,
+    alternates: indexable ? {canonical: getLocalizedPath(locale, path), languages: getAlternates(path, availableLocales)} : undefined,
+    robots: indexable ? undefined : {index: false, follow: true},
+    openGraph: {
+      title: socialTitle,
+      description,
+      locale: getOpenGraphLocale(locale),
+      alternateLocale: indexedLocales.filter((value) => value !== locale).map(getOpenGraphLocale),
+      url: `${siteConfig.url}${getLocalizedPath(locale, path)}`,
+      siteName,
+      images: [siteConfig.defaultOgImage]
+    },
+    twitter: {card: 'summary_large_image', title: socialTitle, description, images: [siteConfig.defaultOgImage]}
+  };
 }

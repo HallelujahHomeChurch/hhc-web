@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {getAlternates, getLocalizedPath, getOpenGraphLocale} from './seo';
+import {getAlternates, getEditorialMetadata, getLocalizedPath, getOpenGraphLocale} from './seo';
 
 describe('seo utilities', () => {
   it('builds locale-prefixed paths', () => {
@@ -33,5 +33,29 @@ describe('seo utilities', () => {
     expect(getOpenGraphLocale('en')).toBe('en_US');
     expect(getOpenGraphLocale('ja')).toBe('ja_JP');
     expect(getOpenGraphLocale('ko')).toBe('ko_KR');
+  });
+
+  it('limits editorial hreflang and Open Graph alternates to published locales', () => {
+    const metadata = getEditorialMetadata({
+      locale: 'ja', path: '/about', title: 'CMS About', description: 'CMS summary', siteName: 'CMS Site',
+      availableLocales: ['zh-Hant', 'ja'], indexable: true
+    });
+
+    expect(metadata.alternates?.languages).toEqual({
+      'zh-Hant': 'https://www.alive.org.tw/zh-Hant/about',
+      ja: 'https://www.alive.org.tw/ja/about'
+    });
+    expect(metadata.openGraph).toMatchObject({locale: 'ja_JP', alternateLocale: ['zh_TW']});
+  });
+
+  it('omits discoverability metadata for a non-indexable editorial page', () => {
+    const metadata = getEditorialMetadata({
+      locale: 'en', path: '/terms-of-use', title: 'Terms', description: 'Terms summary', siteName: 'CMS Site',
+      availableLocales: ['en'], indexable: false
+    });
+
+    expect(metadata.alternates).toBeUndefined();
+    expect(metadata.robots).toMatchObject({index: false});
+    expect(metadata.openGraph).toMatchObject({alternateLocale: []});
   });
 });

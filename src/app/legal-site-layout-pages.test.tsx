@@ -3,7 +3,9 @@ import {render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 
 const getSiteLayout = vi.hoisted(() => vi.fn());
+const getLegalPage = vi.hoisted(() => vi.fn());
 vi.mock('@/features/site-layout/api', () => ({getSiteLayout}));
+vi.mock('@/features/pages/api', () => ({getLegalPage}));
 vi.mock('next-intl/server', () => ({setRequestLocale: vi.fn()}));
 vi.mock('next/navigation', () => ({notFound: vi.fn()}));
 
@@ -39,9 +41,29 @@ describe('standalone legal page site layout', () => {
     ['terms', () => TermsOfUsePage({params: Promise.resolve({locale: 'zh-Hant'})})]
   ] as const)('renders the projected site name on %s', async (_name, page) => {
     getSiteLayout.mockResolvedValue(layout);
+    getLegalPage.mockImplementation((key: 'privacy-policy' | 'terms-of-use') => Promise.resolve(legalPage(key)));
     render(await page());
 
     expect(screen.getByRole('link', {name: 'CMS 法律站名'})).toHaveAttribute('href', '/zh-Hant');
     expect(getSiteLayout).toHaveBeenCalledWith('zh-Hant');
   });
+
+  it.each([
+    ['privacy-policy', () => PrivacyPolicyPage({params: Promise.resolve({locale: 'zh-Hant'})})],
+    ['terms-of-use', () => TermsOfUsePage({params: Promise.resolve({locale: 'zh-Hant'})})]
+  ] as const)('renders %s through the existing LegalDocument component', async (key, page) => {
+    getSiteLayout.mockResolvedValue(layout);
+    getLegalPage.mockResolvedValue(legalPage(key));
+    render(await page());
+
+    expect(screen.getByRole('heading', {level: 1, name: `CMS ${key}`})).toBeInTheDocument();
+    expect(screen.getByText(`CMS ${key} paragraph`)).toBeInTheDocument();
+  });
 });
+
+function legalPage(key: 'privacy-policy' | 'terms-of-use') {
+  return {source: 'cms', indexable: true, availableLocales: ['zh-Hant', 'en'], content: {
+    heroTitle: `CMS ${key}`, heroSubtitle: `CMS ${key} summary`, updatedAtLabel: 'CMS updated', updatedAt: '2026-08-29',
+    intro: `CMS ${key} intro`, sections: [{title: `CMS ${key} section`, body: [`CMS ${key} paragraph`]}]
+  }};
+}

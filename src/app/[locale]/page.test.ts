@@ -5,11 +5,13 @@ import {getAlternates, getLocalizedPath} from '@/lib/seo';
 import {getHomePageTitle} from '@/lib/home-metadata';
 
 const mocks = vi.hoisted(() => ({
+  getHomePage: vi.fn(),
   getHomeContent: vi.fn(),
   getLocations: vi.fn(),
   getSiteLayout: vi.fn()
 }));
 
+vi.mock('@/features/pages/api', () => ({getHomePage: mocks.getHomePage}));
 vi.mock('@/features/home/api', () => ({getHomeContent: mocks.getHomeContent}));
 vi.mock('@/features/locations/api', () => ({getLocations: mocks.getLocations}));
 vi.mock('@/features/site-layout/api', () => ({getSiteLayout: mocks.getSiteLayout}));
@@ -20,7 +22,7 @@ vi.mock('@/components/layout/SiteFooterServer', () => ({SiteFooterServer: () => 
 vi.mock('next-intl/server', () => ({setRequestLocale: vi.fn()}));
 vi.mock('next/navigation', () => ({notFound: vi.fn()}));
 
-import HomePage from './page';
+import HomePage, {generateMetadata} from './page';
 
 describe('home page metadata', () => {
   it('uses only the site name as the browser title', async () => {
@@ -40,6 +42,7 @@ describe('home page metadata', () => {
   });
 
   it('uses the projected music channel for the home video CTA', async () => {
+    mocks.getHomePage.mockResolvedValue(cmsHomePage());
     mocks.getHomeContent.mockResolvedValue({news: [], newsFailed: false, videos: [], videosFailed: false});
     mocks.getLocations.mockResolvedValue([]);
     mocks.getSiteLayout.mockResolvedValue({links: {musicYoutube: 'https://youtube.com/@cms-music'}});
@@ -47,5 +50,49 @@ describe('home page metadata', () => {
     const markup = renderToStaticMarkup(await HomePage({params: Promise.resolve({locale: 'ja'})}));
 
     expect(markup).toContain('href="https://youtube.com/@cms-music"');
+    expect(markup).toContain('CMS Home hero');
+    expect(markup).toContain('CMS News heading');
+    expect(markup).toContain('CMS Weekly heading');
+    expect(markup).toContain('CMS Videos heading');
+    expect(markup).toContain('CMS About heading');
+    expect(markup).toContain('CMS Locations heading');
+    expect(markup).not.toContain('data-cms-fallback');
+    expect(mocks.getHomeContent).toHaveBeenCalledWith('ja');
+    expect(mocks.getLocations).toHaveBeenCalledWith('ja');
+  });
+
+  it('marks only migration-fallback Home output for the live observation gate', async () => {
+    mocks.getHomePage.mockResolvedValue({...cmsHomePage(), source: 'migration-fallback'});
+    mocks.getHomeContent.mockResolvedValue({news: [], newsFailed: false, videos: [], videosFailed: false});
+    mocks.getLocations.mockResolvedValue([]);
+    mocks.getSiteLayout.mockResolvedValue({links: {musicYoutube: 'https://youtube.com/@cms-music'}});
+
+    const markup = renderToStaticMarkup(await HomePage({params: Promise.resolve({locale: 'ja'})}));
+
+    expect(markup).toContain('<main data-cms-fallback="home">');
+  });
+
+  it('uses CMS copy and published locale membership for metadata', async () => {
+    mocks.getHomePage.mockResolvedValue(cmsHomePage());
+    mocks.getSiteLayout.mockResolvedValue({seoTitleSuffix: 'CMS SEO', seoDescriptionFallback: 'Layout fallback', siteName: 'CMS Site'});
+
+    const metadata = await generateMetadata({params: Promise.resolve({locale: 'ja'})});
+
+    expect(metadata.description).toBe('CMS Home subtitle');
+    expect(metadata.alternates?.languages).toEqual({
+      'zh-Hant': 'https://www.alive.org.tw/zh-Hant',
+      ja: 'https://www.alive.org.tw/ja',
+      'x-default': 'https://www.alive.org.tw/'
+    });
+    expect(metadata.openGraph).toMatchObject({title: 'CMS SEO | CMS Home hero', alternateLocale: ['zh_TW']});
   });
 });
+
+function cmsHomePage() {
+  return {source: 'cms', indexable: true, availableLocales: ['zh-Hant', 'ja'], content: {
+    heroTitle: 'CMS Home hero', heroSubtitle: 'CMS Home subtitle', newsTitle: 'CMS News heading', moreNews: 'CMS More news',
+    weeklyTitle: 'CMS Weekly heading', downloadWeekly: 'CMS Download', videosTitle: 'CMS Videos heading', videosSubtitle: 'CMS Videos subtitle',
+    watchMore: 'CMS Watch more', aboutTitle: 'CMS About heading', aboutBody: 'CMS About body', aboutCta: 'CMS About CTA',
+    locationsTitle: 'CMS Locations heading', mapLink: 'CMS Map link'
+  }};
+}
