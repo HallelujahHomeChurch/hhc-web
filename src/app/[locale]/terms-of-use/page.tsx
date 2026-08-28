@@ -3,15 +3,17 @@ import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {LegalDocument} from '@/components/legal/LegalDocument';
 import {LegalPageShell} from '@/components/legal/LegalPageShell';
+import {getLegalPage, PageNotFoundError} from '@/features/pages/api';
 import {getSiteLayout} from '@/features/site-layout/api';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
-import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
-import {siteConfig} from '@/lib/site';
+import {getEditorialMetadata} from '@/lib/seo';
 
 type TermsOfUsePageProps = {
   params: Promise<{locale: string}>;
 };
+
+export const dynamic = 'force-dynamic';
 
 async function getLocale(params: Promise<{locale: string}>): Promise<Locale> {
   const {locale} = await params;
@@ -24,39 +26,16 @@ async function getLocale(params: Promise<{locale: string}>): Promise<Locale> {
 export async function generateMetadata({params}: TermsOfUsePageProps): Promise<Metadata> {
   const locale = await getLocale(params);
   setRequestLocale(locale);
-  const messages = getMessages(locale);
-  const layout = await getSiteLayout(locale);
-  const description = messages.termsOfUse.heroSubtitle || messages.termsOfUse.intro;
-
-  return {
-    title: `${messages.termsOfUse.heroTitle} | ${layout.seoTitleSuffix}`,
-    description,
-    alternates: {
-      canonical: getLocalizedPath(locale, '/terms-of-use'),
-      languages: getAlternates('/terms-of-use')
-    },
-    openGraph: {
-      title: `${messages.termsOfUse.heroTitle} | ${layout.seoTitleSuffix}`,
-      description,
-      locale: getOpenGraphLocale(locale),
-      url: `${siteConfig.url}${getLocalizedPath(locale, '/terms-of-use')}`,
-      siteName: layout.siteName,
-      images: [siteConfig.defaultOgImage]
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: `${messages.termsOfUse.heroTitle} | ${layout.seoTitleSuffix}`,
-      description,
-      images: [siteConfig.defaultOgImage]
-    }
-  };
+  const [page, layout] = await Promise.all([termsPage(locale), getSiteLayout(locale)]);
+  const description = page.content.heroSubtitle || page.content.intro || layout.seoDescriptionFallback;
+  return getEditorialMetadata({locale, path: '/terms-of-use', title: `${page.content.heroTitle} | ${layout.seoTitleSuffix}`, description, siteName: layout.siteName, availableLocales: page.availableLocales, indexable: page.indexable});
 }
 
 export default async function TermsOfUsePage({params}: TermsOfUsePageProps) {
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
-  const layout = await getSiteLayout(locale);
+  const [page, layout] = await Promise.all([termsPage(locale), getSiteLayout(locale)]);
 
   return (
     <LegalPageShell
@@ -65,7 +44,16 @@ export default async function TermsOfUsePage({params}: TermsOfUsePageProps) {
       pathname={`/${locale}/terms-of-use`}
       siteName={layout.siteName}
     >
-      <LegalDocument content={messages.termsOfUse} />
+      <LegalDocument content={page.content} />
     </LegalPageShell>
   );
+}
+
+async function termsPage(locale: Locale) {
+  try {
+    return await getLegalPage('terms-of-use', locale);
+  } catch (error) {
+    if (error instanceof PageNotFoundError) notFound();
+    throw error;
+  }
 }

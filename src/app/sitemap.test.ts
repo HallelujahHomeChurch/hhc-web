@@ -2,28 +2,36 @@ import {describe, expect, it, vi} from 'vitest';
 import sitemap, {buildNewsSitemap} from './sitemap';
 
 vi.mock('@/features/news/api', () => ({getNewsPage: vi.fn(async () => ({items: []}))}));
+vi.mock('@/features/pages/api', () => ({
+  getHomePage: vi.fn(async () => fixedPage(['zh-Hant', 'en'])),
+  getAboutPage: vi.fn(async () => fixedPage(['ja'])),
+  getLegalPage: vi.fn(async (key: string) => key === 'privacy-policy' ? fixedPage(['zh-Hant', 'ja']) : fixedPage(['en'], false))
+}));
 
 describe('static sitemap', () => {
-  it('publishes every static route in all five locales', async () => {
+  it('publishes fixed routes only for API published/indexable locales', async () => {
     const entries = await sitemap();
-    expect(entries).toHaveLength(35);
-    expect(entries.map((entry) => entry.url).slice(0, 5)).toEqual([
-      'https://www.alive.org.tw/zh-Hant',
-      'https://www.alive.org.tw/zh-Hans',
-      'https://www.alive.org.tw/en',
-      'https://www.alive.org.tw/ja',
-      'https://www.alive.org.tw/ko'
-    ]);
+    expect(entries).toHaveLength(20);
+    expect(entries.map((entry) => entry.url)).toContain('https://www.alive.org.tw/zh-Hant');
+    expect(entries.map((entry) => entry.url)).toContain('https://www.alive.org.tw/en');
+    expect(entries.map((entry) => entry.url)).not.toContain('https://www.alive.org.tw/ja');
+    expect(entries.map((entry) => entry.url)).toContain('https://www.alive.org.tw/ja/about');
     expect(entries.find((entry) => entry.url === 'https://www.alive.org.tw/zh-Hant')?.alternates?.languages).toMatchObject({
       'x-default': 'https://www.alive.org.tw/'
     });
     expect(entries.find((entry) => entry.url === 'https://www.alive.org.tw/ja/privacy-policy')?.alternates?.languages).toMatchObject({
       ja: 'https://www.alive.org.tw/ja/privacy-policy',
-      ko: 'https://www.alive.org.tw/ko/privacy-policy'
+      'zh-Hant': 'https://www.alive.org.tw/zh-Hant/privacy-policy'
     });
+    expect(entries.map((entry) => entry.url)).not.toContain('https://www.alive.org.tw/ko/privacy-policy');
+    expect(entries.some((entry) => entry.url.endsWith('/terms-of-use'))).toBe(false);
     expect(entries.find((entry) => entry.url === 'https://www.alive.org.tw/ja/privacy-policy')?.alternates?.languages).not.toHaveProperty('x-default');
   });
 });
+
+function fixedPage(availableLocales: ('zh-Hant' | 'zh-Hans' | 'en' | 'ja' | 'ko')[], indexable = true) {
+  return {source: 'cms', availableLocales, indexable, content: {}};
+}
 
 describe('news sitemap', () => {
   it('adds one canonical entry per locale', () => {

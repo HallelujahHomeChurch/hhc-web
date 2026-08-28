@@ -3,11 +3,15 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   getSiteLayout: vi.fn(),
-  getNewsBySlug: vi.fn()
+  getNewsBySlug: vi.fn(),
+  getHomePage: vi.fn(),
+  getAboutPage: vi.fn(),
+  getLegalPage: vi.fn()
 }));
 
 vi.mock('@/features/site-layout/api', () => ({getSiteLayout: mocks.getSiteLayout}));
 vi.mock('@/features/news/api', () => ({getNewsBySlug: mocks.getNewsBySlug}));
+vi.mock('@/features/pages/api', () => ({getHomePage: mocks.getHomePage, getAboutPage: mocks.getAboutPage, getLegalPage: mocks.getLegalPage}));
 vi.mock('next-intl/server', () => ({setRequestLocale: vi.fn()}));
 vi.mock('next/navigation', () => ({notFound: vi.fn()}));
 
@@ -44,6 +48,11 @@ const layout: SiteLayout = {
 describe('localized route metadata site layout', () => {
   beforeEach(() => {
     mocks.getSiteLayout.mockReset().mockResolvedValue(layout);
+    mocks.getHomePage.mockReset().mockResolvedValue(page({heroTitle: '愛は家庭から始まる', heroSubtitle: '愛の中で家庭を築き、真理の中で成長する'}));
+    mocks.getAboutPage.mockReset().mockResolvedValue(page({heroTitle: '私たちについて', heroSubtitle: '教会のビジョンと歩み'}));
+    mocks.getLegalPage.mockReset().mockImplementation((key: string) => Promise.resolve(page(key === 'privacy-policy'
+      ? {heroTitle: 'プライバシーポリシー', heroSubtitle: '', intro: 'プライバシー'}
+      : {heroTitle: '利用規約', heroSubtitle: '', intro: '利用規約'})));
     mocks.getNewsBySlug.mockReset().mockResolvedValue({
       id: 'news-1',
       title: 'CMS記事',
@@ -95,3 +104,7 @@ describe('localized route metadata site layout', () => {
     expect(metadata.twitter).toMatchObject({title: 'CMS SEO サフィックス | 愛は家庭から始まる'});
   });
 });
+
+function page(content: Record<string, unknown>) {
+  return {source: 'cms', indexable: true, availableLocales: ['ja'], content};
+}
