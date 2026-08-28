@@ -115,9 +115,8 @@ mutation idempotency, and account-erasure handling.
 
 ### `asset-api`
 
-Owns the source PDF and fixed asset bytes, malware status, storage lifecycle,
-and stable downloads. It does not interpret components or own online
-publication state.
+Owns the uploaded source PDF, malware status, storage lifecycle, and stable
+downloads. It does not interpret components or own online publication state.
 
 ### `admin-fe`
 
@@ -128,7 +127,8 @@ PDF/online comparison, preview, three-way merge, and online publish controls.
 
 Owns public routing, server-rendered semantic HTML, locale resolution, the
 desktop/iPad and mobile renderers, in-bulletin search, interaction UI, PWA
-shell, explicit offline content management, and private offline mutation sync.
+shell, permanent code-owned versioned template/font bytes, explicit offline
+content management, and private offline mutation sync.
 
 ### `account-api` and `api-gateway`
 
@@ -172,6 +172,11 @@ locale edition/version remains authoritative for content locale, title,
 subtitle, PDF asset, and PDF publication state. Online content references these
 fields rather than copying them into editable JSON.
 
+Because published and historical Online revisions depend on those records, V1
+rejects canonical metadata mutation and locale-version/issue deletion while
+any Online Document or revision exists, even after PDF unpublish. Source PDF
+replacement/re-upload remains available through the comparison flow.
+
 ### Online document and revisions
 
 One `OnlineDocument` exists per issue and content locale. It keeps independent
@@ -181,11 +186,18 @@ revision.
 Each immutable `OnlineRevision` contains:
 
 - a versioned structured JSON document;
-- a deterministic layout manifest;
+- a deterministic layout manifest with page instances, normalized boxes/slots,
+  explicit continuations, template version, and permanent versioned
+  template/font asset URLs plus SHA-256 checksums;
 - source PDF asset checksum;
 - template, extractor, and content-schema versions;
 - revision authorship and timestamps;
 - validation and human-confirmation evidence.
+
+The mutable source asset ID is not part of `OnlineRevision`; it belongs to the
+extraction job/current PDF edition pointer. Re-upload may retire old PDF bytes
+without dangling an immutable Online reference; revision provenance keeps the
+checksum, and Admin Original PDF/Overlay refers only to the current upload.
 
 The published pointer changes atomically. Editing or restoring always creates
 a new draft/revision; published rows are never modified in place.
@@ -201,6 +213,13 @@ An immutable `TemplateVersion` supplies fixed elements and layout tokens:
 
 V1 has one operational template and no template canvas UI. Versioning exists
 to keep old published revisions reproducible when the fixed template changes.
+Its licensed font/decorative bytes live at permanent content-hashed website
+paths below `/assets/weekly/v1/`; the directory is published before extraction
+and remains append-only while any revision references it. Later templates add
+new version directories instead of replacing old bytes.
+The Admin host proxies only `/assets/weekly/` to the same website origin path,
+so preview consumes identical URLs/checksums without cross-origin font or CSP
+exceptions.
 
 ### Extraction job and snapshot
 
@@ -220,11 +239,15 @@ the worker state.
 
 Every component, block, and sentence has a stable opaque ID. A sentence keeps
 display text, semantic spans, source page/bounding box, paragraph formatting,
-font role, and an original-text snapshot.
+font role, and an internal original-text snapshot.
 
 Revision-to-revision mappings explicitly represent `unchanged`, `moved`,
 `split`, `merged`, `removed`, and `requires_review`. They are proposed by
 deterministic matching/AI and confirmed by Admin when ambiguous.
+Client-facing checkpoints are written only from previous published revision to
+new published revision; draft saves create none. The server retains and
+composes any historical published checkpoints into one bounded direct sentence
+mapping to current, so editing frequency does not consume a client limit.
 
 ### Private records
 
@@ -235,7 +258,19 @@ deterministic matching/AI and confirmed by Admin when ambiguous.
   a sentence.
 - `ReadingProgress`: account, Online Document, revision, device-independent
   sentence anchor, desktop page or mobile section, and timestamp.
-- processed client mutation IDs provide bounded idempotency for offline writes.
+- `ReaderMigrationState`: account, Online Document, last transactionally
+  applied published revision, and unresolved mapping conflicts. Reading state
+  lazily and idempotently advances cloud Highlight/Note/Progress rows before
+  returning them; repeated reads cannot duplicate split/merge effects.
+- processed client mutation IDs/results provide bounded idempotency for offline
+  writes. V1 retains seen terminal results for 91 days and supports a 90-day
+  offline-mutation window; older unseen local operations require user action
+  and are never silently dropped or assigned new IDs.
+
+A differing-color merged-highlight conflict has a stable conflict ID. The user
+chooses red/yellow/blue through a new idempotent mutation carrying that conflict
+ID and current revision; acknowledgement applies the chosen target color,
+resolves the conflict, and advances migration state when no blockers remain.
 
 Private records are relational because they require account isolation,
 concurrency, and deletion. Per-revision bulletin content remains one validated
@@ -426,6 +461,17 @@ Unpublishing a PDF warns that Online is still live and offers a simultaneous
 Online unpublish checkbox. The default leaves Online available and hides its
 PDF download action until the PDF is republished.
 
+Public bulletin discovery therefore exposes Online editions through a separate
+combined projection that unions PDF/Online editions before authoritative
+issue/date sorting and pagination, independently from and without changing the
+existing PDF list/latest/by-number contracts. An Online projection carries
+`pdfPublished` and a nullable PDF download URL; PDF unpublish never removes or
+404s an independently published Online projection.
+
+Home and Archive consume this combined projection. If it fails, they fall back
+to the unchanged legacy PDF endpoint and hide Online actions; a healthy
+combined response does not depend on a second PDF request.
+
 Admin cannot view, search, or export reader notes or highlights. It may show
 anonymous affected-record counts for revision migration.
 
@@ -453,6 +499,9 @@ Title, subtitle, Online action, and PDF action always come from that same
 resolved content locale. If a Simplified Chinese PDF exists but its Online
 Document does not, Home shows that PDF and no Online action; it does not mix in
 the Traditional Chinese Online action.
+Conversely, if that locale's Online Document remains published after its PDF is
+unpublished, Home/Archive keep the Online action and omit Download; discovery
+does not depend on the PDF projection row.
 
 The literature-ministry archive remains the only surface that presents all
 three bulletin editions. V1 publishes structured `zh-Hant` only; `read/zh-Hans`
@@ -460,8 +509,9 @@ and `read/en` do not exist until those independent Online Documents are
 supported and published.
 
 Each content locale has one canonical reader URL. UI-localized duplicates
-point to that content-locale canonical. Published readers appear in the
-dynamic sitemap; unpublished readers return 404 and are not indexed.
+point to that content-locale canonical. The dynamic sitemap contains exactly
+that canonical URL per published content edition, never other UI wrappers;
+unpublished readers return 404 and are not indexed.
 
 ## Public Reader
 
@@ -470,8 +520,11 @@ dynamic sitemap; unpublished readers return 404 and are not indexed.
 `hhc-web` server-renders the Published Revision as complete semantic HTML and
 hydrates interaction afterward. Body text remains present with JavaScript
 disabled. Public cache revalidation follows the existing approximately
-60-second content pattern. Drafts, private records, and source extraction
-evidence never appear in public HTML.
+60-second content pattern. A closed public mapper includes only renderable
+content, public anchors, and layout manifest; drafts, private records, source
+asset IDs/checksum, original snapshots, parser/review/authorship/extraction
+evidence never appear in public JSON or HTML. Its strong ETag hashes the entire
+serialized public representation, including mutable PDF-action availability.
 
 ### Desktop and iPad
 
@@ -605,6 +658,11 @@ Use native platform storage already available to the application:
 - the existing native service worker, extended with the minimum fetch/cache
   behavior. Do not add Workbox unless native APIs measurably fail the design.
 
+Exact reader-route navigations are network-first. Offline failure returns one
+stable cached reader shell, which loads only the requested issue/locale's
+explicitly saved active revision from IndexedDB; it never substitutes cached
+SSR HTML from another or older revision.
+
 ### Offline capabilities
 
 Saved documents support reading, navigation, zoom, in-bulletin search, copy,
@@ -613,7 +671,9 @@ An unsaved unavailable document shows an explicit offline state, never a blank
 page or an unrelated stale revision.
 
 Every private offline mutation receives a client-generated idempotency ID and
-updates the local UI immediately. Status is one of `synced`, `waiting for
+immutable local creation time and updates the local UI immediately. A
+`revision_changed` response does not consume the ID; terminal results bind the
+ID to the request fingerprint. Status is one of `synced`, `waiting for
 connection`, `syncing`, or `action required`.
 
 Highlights use last successfully synchronized change per sentence without a
@@ -627,8 +687,10 @@ Offline documents remain pinned to their exact revision until the user accepts
 an update:
 
 1. show that an update is available;
-2. synchronize pending mutations for the current revision;
-3. migrate private anchors through sentence mappings;
+2. fetch the server-composed direct published mapping and rebase pending
+   mutation anchors/versions to the current published revision;
+3. resolve mapping conflicts, then replay those same mutation IDs against the
+   current revision while idempotently migrating cloud private rows;
 4. fully download and validate the new revision and required assets;
 5. atomically switch local pointers;
 6. retain the old working revision on any failure.
@@ -689,6 +751,10 @@ pauses on authentication failure, and never retries through a note conflict.
 content. Account deactivation/grace keeps data. Final hard deletion triggers an
 idempotent erasure of all three record classes. Audit retains only the erasure
 event and result, not private content.
+The authorized erasure endpoint returns `204` for first, zero-row, and repeated
+completed deletion. Account hard delete accepts only that explicit success;
+`404` is deployment/route drift and fails closed rather than being treated as
+idempotent completion.
 
 ### Observability
 
