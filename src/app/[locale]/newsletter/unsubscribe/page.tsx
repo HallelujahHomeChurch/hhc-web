@@ -33,17 +33,11 @@ export default async function UnsubscribePage({params, searchParams}: Unsubscrib
   const locale = await getLocale(params);
   const token = (await searchParams).token?.trim() ?? '';
   const messages = getMessages(locale);
-  const layout = await getSiteLayout(locale);
   setRequestLocale(locale);
 
-  return (
-    <LegalPageShell
-      languageLabel={messages.site.language}
-      locale={locale}
-      pathname={`/${locale}/newsletter/unsubscribe${token ? `?token=${encodeURIComponent(token)}` : ''}`}
-      siteName={layout.siteName}
-    >
-      <UnsubscribePanel homeHref={`/${locale}`} labels={messages.newsletterUnsubscribe} token={token} />
-    </LegalPageShell>
-  );
+  return LegalPageShell({
+    locale,
+    pathname: `/${locale}/newsletter/unsubscribe${token ? `?token=${encodeURIComponent(token)}` : ''}`,
+    children: <UnsubscribePanel homeHref={`/${locale}`} labels={messages.newsletterUnsubscribe} token={token} />
+  });
 }

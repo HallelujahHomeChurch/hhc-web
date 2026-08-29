@@ -136,47 +136,15 @@
   }
 
   .legal-page-shell {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
     min-height: 100vh;
     background: var(--color-cream);
     color: var(--color-ink);
   }
 
-  .legal-page-header {
-    width: min(100% - 48px, 1110px);
-    margin-inline: auto;
-    padding-block: 24px;
-  }
-
-  .legal-page-brand {
-    display: inline-flex;
-    min-height: 48px;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .legal-page-brand img {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
-  }
-
-  .legal-page-brand strong {
-    font-size: 19px;
-    font-weight: 600;
-  }
-
-  .legal-page-main {
-    min-height: calc(100vh - 184px);
-  }
-
   .legal-document {
     padding-block: 48px 64px;
-  }
-
-  .legal-page-footer {
-    width: min(100% - 48px, 880px);
-    margin-inline: auto;
-    padding-block: 0 32px;
   }
 
   .maintenance-status {
@@ -418,31 +386,8 @@
       width: min(100% - 28px, 1110px);
     }
 
-    .legal-page-header {
-      width: min(100% - 32px, 1110px);
-      padding-block: 16px;
-    }
-
-    .legal-page-brand {
-      min-height: 40px;
-    }
-
-    .legal-page-brand img {
-      width: 36px;
-      height: 36px;
-    }
-
-    .legal-page-brand strong {
-      font-size: 17px;
-    }
-
     .legal-document {
       padding-block: 32px 48px;
-    }
-
-    .legal-page-footer {
-      width: min(100% - 32px, 880px);
-      padding-bottom: 24px;
     }
 
     .maintenance-status {

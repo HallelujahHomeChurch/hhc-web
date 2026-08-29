@@ -240,4 +240,31 @@ describe('SiteHeader', () => {
     await screen.findByRole('link', {name: '登入'});
     expect(screen.queryByRole('navigation', {name: '選單'})).not.toBeInTheDocument();
   });
+
+  it('keeps account access and branding while navigation is disabled', async () => {
+    const authenticatedClient: AccountSessionClient = {
+      ...anonymousSessionClient,
+      getSession: async () => ({
+        authenticated: true,
+        user: {id: 'u1', email: 'member@example.com', display_name: '會員', avatar_url: null, admin_access: false}
+      })
+    };
+
+    render(
+      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <SiteHeader
+          layout={layout}
+          locale="zh-Hant"
+          pathname="/zh-Hant/privacy-policy"
+          sessionClient={authenticatedClient}
+          showNavigation={false}
+        />
+      </NextIntlClientProvider>
+    );
+
+    expect(screen.queryByRole('navigation', {name: '主要導覽'})).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation', {name: '選單'})).not.toBeInTheDocument();
+    expect(screen.getByRole('link', {name: /哈利路亞家教會/})).toHaveAttribute('href', '/zh-Hant');
+    expect(await screen.findByRole('button', {name: '帳號選單'})).toBeInTheDocument();
+  });
 });

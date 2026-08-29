@@ -16,6 +16,7 @@ export type SiteHeaderProps = {
   locale: Locale;
   pathname: string;
   sessionClient?: AccountSessionClient;
+  showNavigation?: boolean;
 };
 
 const subscribeToStandaloneMode = () => () => undefined;
@@ -28,7 +29,7 @@ const icons = {
   'literature-ministry': BookOpenText
 };
 
-export function SiteHeader({layout, locale, pathname, sessionClient}: SiteHeaderProps) {
+export function SiteHeader({layout, locale, pathname, sessionClient, showNavigation = true}: SiteHeaderProps) {
   const t = useTranslations('site');
   const navItems = layout.header.filter(({visible}) => visible).map((item) => ({...item, icon: icons[item.key]}));
   const accountLabels = {
@@ -98,7 +99,7 @@ export function SiteHeader({layout, locale, pathname, sessionClient}: SiteHeader
             ) : null}
           </span>
         </Link>
-        <nav
+        {showNavigation ? <nav
           id="site-navigation"
           className="absolute left-1/2 top-0 flex h-full -translate-x-1/2 items-stretch max-[767px]:hidden"
           aria-label={t('nav.primary')}
@@ -114,13 +115,13 @@ export function SiteHeader({layout, locale, pathname, sessionClient}: SiteHeader
                 {item.label}
               </Link>
             ))}
-        </nav>
+        </nav> : null}
         <div className="ml-auto shrink-0">
           <AccountControlView />
         </div>
       </div>
       </header>
-      {navItems.length ? <nav className="site-mobile-tab-bar" style={{gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))`}} aria-label={t('nav.menu')} data-mobile-hidden={!mobileChromeVisible} data-iphone-standalone={iphoneStandalone || undefined}>
+      {showNavigation && navItems.length ? <nav className="site-mobile-tab-bar" style={{gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))`}} aria-label={t('nav.menu')} data-mobile-hidden={!mobileChromeVisible} data-iphone-standalone={iphoneStandalone || undefined}>
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);

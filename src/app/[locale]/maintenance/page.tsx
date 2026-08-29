@@ -35,19 +35,13 @@ export default async function MaintenancePage({params}: MaintenancePageProps) {
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
-  const layout = await getSiteLayout(locale);
 
-  return (
-    <LegalPageShell
-      languageLabel={messages.site.language}
-      locale={locale}
-      pathname={`/${locale}/maintenance`}
-      siteName={layout.siteName}
-    >
-      <section className="maintenance-status" aria-labelledby="maintenance-title">
-        <h1 id="maintenance-title">{messages.maintenance.title}</h1>
-        <p>{messages.maintenance.description}</p>
-      </section>
-    </LegalPageShell>
-  );
+  return LegalPageShell({
+    locale,
+    pathname: `/${locale}/maintenance`,
+    children: <section className="maintenance-status" aria-labelledby="maintenance-title">
+      <h1 id="maintenance-title">{messages.maintenance.title}</h1>
+      <p>{messages.maintenance.description}</p>
+    </section>
+  });
 }

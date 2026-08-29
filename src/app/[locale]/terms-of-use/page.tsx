@@ -6,7 +6,6 @@ import {LegalPageShell} from '@/components/legal/LegalPageShell';
 import {getLegalPage, PageNotFoundError} from '@/features/pages/api';
 import {getSiteLayout} from '@/features/site-layout/api';
 import {isLocale, type Locale} from '@/i18n/locales';
-import {getMessages} from '@/i18n/messages';
 import {getEditorialMetadata} from '@/lib/seo';
 
 type TermsOfUsePageProps = {
@@ -34,19 +33,13 @@ export async function generateMetadata({params}: TermsOfUsePageProps): Promise<M
 export default async function TermsOfUsePage({params}: TermsOfUsePageProps) {
   const locale = await getLocale(params);
   setRequestLocale(locale);
-  const messages = getMessages(locale);
-  const [page, layout] = await Promise.all([termsPage(locale), getSiteLayout(locale)]);
+  const page = await termsPage(locale);
 
-  return (
-    <LegalPageShell
-      languageLabel={messages.site.language}
-      locale={locale}
-      pathname={`/${locale}/terms-of-use`}
-      siteName={layout.siteName}
-    >
-      <LegalDocument content={page.content} />
-    </LegalPageShell>
-  );
+  return LegalPageShell({
+    locale,
+    pathname: `/${locale}/terms-of-use`,
+    children: <LegalDocument content={page.content} />
+  });
 }
 
 async function termsPage(locale: Locale) {
