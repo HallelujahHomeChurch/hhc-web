@@ -34,6 +34,8 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
   const navItems = layout.header.filter(({visible}) => visible).map((item) => ({...item, icon: icons[item.key]}));
   const accountLabels = {
     menu: t('account.menu'),
+    projectionSystem: t('account.projectionSystem'),
+    adminManagement: t('account.adminManagement'),
     manageAccount: t('account.manageAccount'),
     signIn: t('account.signIn'),
     signOut: t('account.signOut'),
