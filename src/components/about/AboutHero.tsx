@@ -26,7 +26,7 @@ export function AboutHero({locale, title, subtitle}: AboutHeroProps) {
       className="relative min-h-[clamp(430px,56vw,610px)] overflow-hidden bg-paper"
       aria-labelledby="page-title"
     >
-      <picture>
+      <picture className="absolute inset-0">
         <Image
           src="/assets/banners/hero.jpg"
           alt=""

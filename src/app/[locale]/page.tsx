@@ -44,14 +44,32 @@ export default async function HomePage({params}: HomePageProps) {
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
-  const [page, home, locations, layout] = await Promise.all([homePage(locale), getHomeContent(locale), getLocations(locale), getSiteLayout(locale)]);
-  const content = page.content;
+  const [page, home, layout] = await Promise.all([homePage(locale), getHomeContent(locale), getSiteLayout(locale)]);
+  const locations = page.template === 'home.v2'
+    ? page.content.locations.toSorted((left, right) => left.sortOrder - right.sortOrder).map(({key, name, address, mapHref}) => ({id: key, name, address, mapHref}))
+    : await getLocations(locale);
+  const content = page.template === 'home.v2' ? {
+    heroTitle: page.content.heroTitle,
+    heroSubtitle: page.content.heroSubtitle,
+    newsTitle: messages.home.newsTitle,
+    moreNews: messages.home.moreNews,
+    weeklyTitle: messages.home.weeklyTitle,
+    downloadWeekly: messages.home.downloadWeekly,
+    videosTitle: messages.home.videosTitle,
+    videosSubtitle: page.content.kingdomJoyDescription,
+    watchMore: messages.home.watchMore,
+    aboutTitle: messages.home.aboutTitle,
+    aboutBody: page.content.aboutDescription,
+    aboutCta: messages.home.aboutCta,
+    locationsTitle: messages.home.locationsTitle,
+    mapLink: messages.home.mapLink
+  } : page.content;
 
   return (
     <>
       <SiteHeaderServer locale={locale} pathname={`/${locale}`} />
       <main data-cms-fallback={page.source === 'migration-fallback' ? 'home' : undefined}>
-        <HomeHero locale={locale} title={content.heroTitle} subtitle={content.heroSubtitle} />
+        <HomeHero locale={locale} title={content.heroTitle} subtitle={content.heroSubtitle} imageUrl={page.template === 'home.v2' ? page.content.bannerImageUrl : undefined} />
         <div className="relative z-[3] bg-[image:var(--hhc-page-gradient)] py-8 pb-11">
           <SectionCard className="shell grid grid-cols-[minmax(0,1.45fr)_minmax(300px,.9fr)] gap-8 p-7 max-[900px]:grid-cols-1 max-[620px]:p-5" ariaLabel={`${content.newsTitle} · ${content.weeklyTitle}`}>
             <NewsSection title={content.newsTitle} moreHref={`/${locale}/news`} moreLabel={`${content.moreNews} →`} items={home.news} errorMessage={home.newsFailed ? messages.home.newsLoadError : undefined} />

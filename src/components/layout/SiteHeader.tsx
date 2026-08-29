@@ -6,7 +6,7 @@ import Image from 'next/image';
 import {BookOpenText, Newspaper, UsersRound} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
-import type {SiteLayout} from '@hallelujahhomechurch/hhc-web-client';
+import type {SiteLayout} from '@/features/site-layout/types';
 import type {Locale} from '@/i18n/locales';
 import {isIPhoneDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 import {AccountControlProvider, AccountControlView} from './AccountControl';

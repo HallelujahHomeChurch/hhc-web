@@ -1,5 +1,5 @@
 import {renderToStaticMarkup} from 'react-dom/server';
-import {describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {getMessages} from '@/i18n/messages';
 import {getAlternates, getLocalizedPath} from '@/lib/seo';
 import {getHomePageTitle} from '@/lib/home-metadata';
@@ -23,6 +23,8 @@ vi.mock('next-intl/server', () => ({setRequestLocale: vi.fn()}));
 vi.mock('next/navigation', () => ({notFound: vi.fn()}));
 
 import HomePage, {generateMetadata} from './page';
+
+beforeEach(() => vi.clearAllMocks());
 
 describe('home page metadata', () => {
   it('uses only the site name as the browser title', async () => {
@@ -61,6 +63,29 @@ describe('home page metadata', () => {
     expect(mocks.getLocations).toHaveBeenCalledWith('ja');
   });
 
+  it('renders Home v2 aggregate data without standalone Locations and keeps labels in i18n', async () => {
+    mocks.getHomePage.mockResolvedValue(cmsHomeV2Page());
+    mocks.getHomeContent.mockResolvedValue({news: [], newsFailed: false, videos: [], videosFailed: false});
+    mocks.getSiteLayout.mockResolvedValue({links: cmsHomeV2Page().content.links});
+
+    const markup = renderToStaticMarkup(await HomePage({params: Promise.resolve({locale: 'en'})}));
+
+    expect(markup).toContain('V2 Home hero');
+    expect(markup).toContain('V2 Home subtitle');
+    expect(markup).toContain('V2 Kingdom Joy description');
+    expect(markup).toContain('V2 About description');
+    expect(markup).toContain('Taipei Home Church');
+    expect(markup).toContain('Taipei address');
+    expect(markup).toContain('Latest News');
+    expect(markup).toContain('Weekly Paper');
+    expect(markup).toContain('Kingdom Joy');
+    expect(markup).toContain('About Us');
+    expect(markup).toContain('Locations');
+    expect(markup).toContain('%2Fapi%2Fassets%2Fhome-banner%2Foriginal');
+    expect(mocks.getLocations).not.toHaveBeenCalled();
+    expect(mocks.getHomeContent).toHaveBeenCalledWith('en');
+  });
+
   it('marks only migration-fallback Home output for the live observation gate', async () => {
     mocks.getHomePage.mockResolvedValue({...cmsHomePage(), source: 'migration-fallback'});
     mocks.getHomeContent.mockResolvedValue({news: [], newsFailed: false, videos: [], videosFailed: false});
@@ -94,5 +119,14 @@ function cmsHomePage() {
     weeklyTitle: 'CMS Weekly heading', downloadWeekly: 'CMS Download', videosTitle: 'CMS Videos heading', videosSubtitle: 'CMS Videos subtitle',
     watchMore: 'CMS Watch more', aboutTitle: 'CMS About heading', aboutBody: 'CMS About body', aboutCta: 'CMS About CTA',
     locationsTitle: 'CMS Locations heading', mapLink: 'CMS Map link'
+  }};
+}
+
+function cmsHomeV2Page() {
+  return {template: 'home.v2', source: 'cms', indexable: true, availableLocales: ['zh-Hant', 'zh-Hans', 'en', 'ja', 'ko'], content: {
+    heroTitle: 'V2 Home hero', heroSubtitle: 'V2 Home subtitle', kingdomJoyDescription: 'V2 Kingdom Joy description', aboutDescription: 'V2 About description',
+    bannerImageUrl: '/api/assets/home-banner/original',
+    links: {churchYoutube: 'https://youtube.com/@v2-church', churchFacebook: 'https://facebook.com/v2-church', musicYoutube: 'https://youtube.com/@v2-music'},
+    locations: [{key: 'taipei', name: 'Taipei Home Church', address: 'Taipei address', mapHref: 'https://maps.example/taipei', sortOrder: 10}]
   }};
 }

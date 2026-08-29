@@ -1,7 +1,7 @@
 import {render, screen} from '@testing-library/react';
 import {NextIntlClientProvider} from 'next-intl';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import type {SiteLayout} from '@hallelujahhomechurch/hhc-web-client';
+import type {SiteLayout} from '@/features/site-layout/types';
 import ja from '@/i18n/locales/ja.json';
 import ko from '@/i18n/locales/ko.json';
 import zhHant from '@/i18n/locales/zh-Hant.json';

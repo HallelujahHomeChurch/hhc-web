@@ -2,7 +2,7 @@ import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/
 import {NextIntlClientProvider} from 'next-intl';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
-import type {SiteLayout} from '@hallelujahhomechurch/hhc-web-client';
+import type {SiteLayout} from '@/features/site-layout/types';
 import en from '@/i18n/locales/en.json';
 import ja from '@/i18n/locales/ja.json';
 import ko from '@/i18n/locales/ko.json';
