@@ -150,7 +150,7 @@
   .maintenance-status {
     display: flex;
     width: min(100% - 48px, 880px);
-    min-height: calc(100vh - 184px);
+    height: 100%;
     justify-content: center;
     flex-direction: column;
     margin-inline: auto;
@@ -186,7 +186,7 @@
   .newsletter-unsubscribe {
     display: flex;
     width: min(100% - 48px, 620px);
-    min-height: calc(100vh - 184px);
+    height: 100%;
     align-items: flex-start;
     justify-content: center;
     flex-direction: column;
@@ -392,7 +392,6 @@
 
     .maintenance-status {
       width: min(100% - 32px, 880px);
-      min-height: calc(100vh - 152px);
       padding-block: 48px;
     }
 

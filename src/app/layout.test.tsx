@@ -77,4 +77,13 @@ describe('RootLayout', () => {
 
     expect(fonts.match(/preload: false/g)).toHaveLength(5);
   });
+
+  it('uses the legal shell middle row instead of standalone viewport subtractions', () => {
+    const styles = readFileSync('src/app/globals.css', 'utf8');
+
+    expect(styles).toMatch(/\.maintenance-status\s*\{[^}]*height: 100%/);
+    expect(styles).toMatch(/\.newsletter-unsubscribe\s*\{[^}]*height: 100%/);
+    expect(styles).not.toContain('calc(100vh - 184px)');
+    expect(styles).not.toContain('calc(100vh - 152px)');
+  });
 });
