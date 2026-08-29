@@ -1,4 +1,4 @@
-import type {SiteLayout} from '@hallelujahhomechurch/hhc-web-client';
+import type {SiteLayout} from '@/features/site-layout/types';
 import {siteConfig} from './site';
 
 export const organizationId = 'https://www.alive.org.tw/#organization';

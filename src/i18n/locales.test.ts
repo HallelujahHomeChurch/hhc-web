@@ -38,10 +38,19 @@ describe('locales', () => {
   it('uses the released exact HHC frontend package versions', () => {
     expect(Object.fromEntries(Object.entries(packageJson.dependencies).filter(([name]) => name.startsWith('@hallelujahhomechurch/')))).toEqual({
       '@hallelujahhomechurch/account-client': '0.6.18',
-      '@hallelujahhomechurch/hhc-web-client': '0.6.17',
+      '@hallelujahhomechurch/hhc-web-client': '0.6.19',
       '@hallelujahhomechurch/preferences': '0.6.14',
       '@hallelujahhomechurch/ui': '0.6.18'
     });
+  });
+
+  it('keeps Home v2 labels and calls to action frontend-owned in every locale', () => {
+    for (const messages of [zhHant, zhHans, en, ja, ko]) {
+      expect(messages.home).toMatchObject({
+        newsTitle: expect.any(String), moreNews: expect.any(String), weeklyTitle: expect.any(String), downloadWeekly: expect.any(String),
+        videosTitle: expect.any(String), watchMore: expect.any(String), aboutTitle: expect.any(String), aboutCta: expect.any(String), locationsTitle: expect.any(String), mapLink: expect.any(String)
+      });
+    }
   });
 
   it('defines account product labels in every locale', () => {

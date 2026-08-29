@@ -1,6 +1,7 @@
-import type {HhcWebClient, SiteLayout} from '@hallelujahhomechurch/hhc-web-client';
+import type {HhcWebClient, PublicEditorialPage} from '@hallelujahhomechurch/hhc-web-client';
 import {describe, expect, it, vi} from 'vitest';
 import {getSiteLayout} from './api';
+import type {SiteLayout} from './types';
 
 const publishedLayout: SiteLayout = {
   locale: 'ja',
@@ -28,9 +29,44 @@ const publishedLayout: SiteLayout = {
 };
 
 describe('getSiteLayout', () => {
+  it('composes v2 layout from typed locale config and Home-projected links without the deprecated request', async () => {
+    const requestLayout = vi.fn();
+    const client = {
+      getPublicPage: vi.fn().mockResolvedValue(homeV2Page()),
+      getSiteLayout: requestLayout
+    } as unknown as HhcWebClient;
+
+    await expect(getSiteLayout('ja', client)).resolves.toMatchObject({
+      locale: 'ja',
+      siteName: 'ハレルヤ・ホームチャーチ',
+      englishName: 'Hallelujah Home Church',
+      seoTitleSuffix: 'ハレルヤ・ホームチャーチ',
+      header: [
+        {key: 'about', label: '私たちについて', href: '/ja/about', visible: true},
+        {key: 'news', label: 'お知らせ', href: '/ja/news', visible: true},
+        {key: 'literature-ministry', label: '文書ミニストリー', href: '/ja/literature-ministry', visible: true}
+      ],
+      links: homeV2Page().content.data.links,
+      version: 9,
+      publishedAt: '2026-08-29T00:00:00Z'
+    });
+    expect(requestLayout).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the legacy layout when Home v2 projection metadata does not match the requested locale', async () => {
+    const requestLayout = vi.fn().mockResolvedValue(publishedLayout);
+    const client = {
+      getPublicPage: vi.fn().mockResolvedValue({...homeV2Page(), resolvedLocale: 'en'}),
+      getSiteLayout: requestLayout
+    } as unknown as HhcWebClient;
+
+    await expect(getSiteLayout('ja', client)).resolves.toEqual(publishedLayout);
+    expect(requestLayout).toHaveBeenCalledWith('ja');
+  });
+
   it('returns the exact requested-locale public projection', async () => {
     const request = vi.fn().mockResolvedValue(publishedLayout);
-    const client = {getSiteLayout: request} as unknown as HhcWebClient;
+    const client = {getPublicPage: vi.fn().mockResolvedValue({template: 'home.v1', content: {template: 'home.v1'}}), getSiteLayout: request} as unknown as HhcWebClient;
 
     await expect(getSiteLayout('ja', client)).resolves.toEqual(publishedLayout);
     expect(request).toHaveBeenCalledWith('ja');
@@ -97,3 +133,13 @@ describe('getSiteLayout', () => {
     });
   });
 });
+
+function homeV2Page(): PublicEditorialPage & {content: Extract<PublicEditorialPage['content'], {template: 'home.v2'}>} {
+  return {
+    pageKey: 'home', template: 'home.v2', routePath: '/', indexable: true, resolvedLocale: 'ja', availableLocales: ['zh-Hant', 'zh-Hans', 'en', 'ja', 'ko'], version: 9, publishedAt: '2026-08-29T00:00:00Z',
+    content: {schemaVersion: 2, template: 'home.v2', data: {
+      heroTitle: 'V2 hero', heroSubtitle: 'V2 subtitle', kingdomJoyDescription: 'V2 joy', aboutDescription: 'V2 about', bannerImageUrl: '/api/assets/banner/original',
+      links: {churchYoutube: 'https://youtube.com/@v2-church', churchFacebook: 'https://facebook.com/v2-church', musicYoutube: 'https://youtube.com/@v2-music'}, locations: []
+    }}
+  };
+}

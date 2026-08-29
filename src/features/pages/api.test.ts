@@ -10,7 +10,17 @@ describe('fixed editorial page adapters', () => {
     const content = homeContent(locale);
     const page = await getHomePage(locale, clientWith(pageFixture('home', locale, content)));
 
-    expect(page).toMatchObject({content: content.data, availableLocales: productLocales, indexable: true, source: 'cms'});
+    expect(page).toMatchObject({template: 'home.v1', content: content.data, availableLocales: productLocales, indexable: true, source: 'cms'});
+  });
+
+  it.each(productLocales)('maps the exact %s Home v2 projection without legacy copy', async (locale) => {
+    const content = homeV2Content(locale);
+    const page = await getHomePage(locale, clientWith({
+      pageKey: 'home', template: 'home.v2', routePath: '/', indexable: true, content,
+      resolvedLocale: locale, availableLocales: [...productLocales], version: 9, publishedAt: '2026-08-29T00:00:00Z'
+    }));
+
+    expect(page).toMatchObject({template: 'home.v2', content: content.data, availableLocales: productLocales, indexable: true, source: 'cms'});
   });
 
   it.each(productLocales)('maps the exact %s About projection to unchanged component props', async (locale) => {
@@ -100,6 +110,15 @@ function homeContent(locale: Locale): Extract<PageContent, {template: 'home.v1'}
     weeklyTitle: home.weeklyTitle, downloadWeekly: home.downloadWeekly, videosTitle: home.videosTitle,
     videosSubtitle: home.videosSubtitle, watchMore: home.watchMore, aboutTitle: home.aboutTitle,
     aboutBody: home.aboutBody, aboutCta: home.aboutCta, locationsTitle: home.locationsTitle, mapLink: home.mapLink
+  }};
+}
+
+function homeV2Content(locale: Locale): Extract<PageContent, {template: 'home.v2'}> {
+  return {schemaVersion: 2, template: 'home.v2', data: {
+    heroTitle: `V2 ${locale} hero`, heroSubtitle: `V2 ${locale} subtitle`, kingdomJoyDescription: `V2 ${locale} joy`, aboutDescription: `V2 ${locale} about`,
+    bannerImageUrl: '/api/assets/home-banner/original',
+    links: {churchYoutube: 'https://youtube.com/@church', churchFacebook: 'https://facebook.com/church', musicYoutube: 'https://youtube.com/@music'},
+    locations: [{key: 'taipei', name: 'Taipei', address: 'Taipei address', mapHref: 'https://maps.example/taipei', sortOrder: 10}]
   }};
 }
 

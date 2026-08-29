@@ -1,4 +1,4 @@
-import type {SiteLayout} from '@hallelujahhomechurch/hhc-web-client';
+import type {SiteLayout} from '@/features/site-layout/types';
 import {render, screen} from '@testing-library/react';
 import {NextIntlClientProvider} from 'next-intl';
 import {describe, expect, it, vi} from 'vitest';

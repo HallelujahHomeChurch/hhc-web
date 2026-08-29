@@ -17,7 +17,7 @@ describe.each([
 
     expect(section).toHaveClass('relative');
     expect(section?.style.backgroundImage).toBe('');
-    expect(picture?.style.position).toBe('');
+    expect(picture).toHaveClass('absolute', 'inset-0');
     expect(image?.style.position).toBe('absolute');
     expect(image?.closest('section')).toBe(section);
     expect(image).toHaveAttribute('alt', '');

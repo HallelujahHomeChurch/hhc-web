@@ -4,7 +4,8 @@ import {publicContentClient} from '@/features/content/client';
 import {productLocales, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 
-type HomeContent = Extract<PageContent, {template: 'home.v1'}>['data'];
+type HomeContentV1 = Extract<PageContent, {template: 'home.v1'}>['data'];
+type HomeContentV2 = Extract<PageContent, {template: 'home.v2'}>['data'];
 type AboutContent = Extract<PageContent, {template: 'about.v1'}>['data'];
 type LegalPageData = Extract<PageContent, {template: 'legal.v1'}>['data'];
 type LegalContent = Omit<LegalPageData, 'heroSubtitle'> & {heroSubtitle: string};
@@ -14,6 +15,7 @@ type PageResult<T> = {
   indexable: boolean;
   source: 'cms' | 'migration-fallback';
 };
+export type HomePageResult = (PageResult<HomeContentV1> & {template: 'home.v1'}) | (PageResult<HomeContentV2> & {template: 'home.v2'});
 
 export class PageNotFoundError extends Error {}
 export class PageProjectionError extends Error {}
@@ -22,7 +24,7 @@ export function isPageAvailabilityError(error: unknown): boolean {
   return error instanceof TypeError || (error instanceof HhcWebApiError && error.status >= 500 && error.status < 600);
 }
 
-export async function getHomePage(locale: Locale, client: HhcWebClient = publicContentClient()): Promise<PageResult<HomeContent>> {
+export async function getHomePage(locale: Locale, client: HhcWebClient = publicContentClient()): Promise<HomePageResult> {
   let page: PublicEditorialPage;
   try {
     page = await requestPage('home', locale, client);
@@ -30,9 +32,10 @@ export async function getHomePage(locale: Locale, client: HhcWebClient = publicC
     if (isPageAvailabilityError(error)) return migrationHome(locale);
     throw error;
   }
-  assertPage(page, locale, 'home', 'home.v1', '/');
-  if (page.content.template !== 'home.v1') throw new PageProjectionError('Home page content template mismatch.');
-  return result(page, page.content.data);
+  if (page.resolvedLocale !== locale || !page.availableLocales.includes(locale)) throw new PageProjectionError('home projection locale mismatch.');
+  if (page.pageKey !== 'home' || page.routePath !== '/' || page.template !== page.content.template || (page.content.template !== 'home.v1' && page.content.template !== 'home.v2')) throw new PageProjectionError('home projection metadata mismatch.');
+  if (page.content.template === 'home.v2') return {...result(page, page.content.data), template: 'home.v2'};
+  return {...result(page, page.content.data), template: 'home.v1'};
 }
 
 export async function getAboutPage(locale: Locale, client: HhcWebClient = publicContentClient()): Promise<PageResult<AboutContent>> {
@@ -74,9 +77,9 @@ function result<T>(page: PublicEditorialPage, content: T): PageResult<T> {
   return {content, availableLocales: [...page.availableLocales], indexable: page.indexable, source: 'cms'};
 }
 
-function migrationHome(locale: Locale): PageResult<HomeContent> {
+function migrationHome(locale: Locale): HomePageResult {
   const home = getMessages(locale).home;
-  return {source: 'migration-fallback', indexable: true, availableLocales: [...productLocales], content: {
+  return {template: 'home.v1', source: 'migration-fallback', indexable: true, availableLocales: [...productLocales], content: {
     heroTitle: home.heroTitle, heroSubtitle: home.heroSubtitle, newsTitle: home.newsTitle, moreNews: home.moreNews,
     weeklyTitle: home.weeklyTitle, downloadWeekly: home.downloadWeekly, videosTitle: home.videosTitle,
     videosSubtitle: home.videosSubtitle, watchMore: home.watchMore, aboutTitle: home.aboutTitle,

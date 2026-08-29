@@ -1,4 +1,4 @@
-import type {SiteLayout} from '@hallelujahhomechurch/hhc-web-client';
+import type {SiteLayout} from '@/features/site-layout/types';
 import {describe, expect, expectTypeOf, it, vi} from 'vitest';
 import type {Locale} from '@/i18n/locales';
 

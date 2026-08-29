@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import {useTranslations} from 'next-intl';
-import type {SiteLayout} from '@hallelujahhomechurch/hhc-web-client';
+import type {SiteLayout} from '@/features/site-layout/types';
 import type {Locale} from '@/i18n/locales';
 import {Button} from '@/components/ui/Button';
 import {LanguageSwitcher} from './LanguageSwitcher';
