@@ -13,6 +13,7 @@ import {
 } from '@hallelujahhomechurch/account-client';
 import {AccountMenu, Toast} from '@hallelujahhomechurch/ui';
 import {clearSharedAccountSession, getSharedAccountSessionClient, revalidateSharedAccountSession} from '@/lib/browser-bootstrap';
+import {siteConfig} from '@/lib/site';
 
 export const webOAuthTransactionKey = 'hhc_web_oauth_transaction';
 export const webPassiveSsoAttemptKey = 'hhc_web_passive_sso_attempted';
@@ -26,6 +27,8 @@ type AccountControlState =
 
 interface AccountControlLabels {
   menu: string;
+  projectionSystem: string;
+  adminManagement: string;
   manageAccount: string;
   signIn: string;
   signOut: string;
@@ -217,6 +220,12 @@ export function AccountControlView() {
         manageAccount: labels.manageAccount,
         signOut: labels.signOut
       }}
+      links={[
+        {id: 'projection', label: labels.projectionSystem, href: siteConfig.apps.projection},
+        ...(user.admin_access
+          ? [{id: 'admin', label: labels.adminManagement, href: siteConfig.apps.admin}]
+          : [])
+      ]}
       manageAccountHref={`${accountSiteUrl}/profile`}
       onSignOut={() => void signOut()}
       user={{

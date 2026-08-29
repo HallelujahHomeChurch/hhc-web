@@ -6,6 +6,8 @@ import {AccountControl, accountStateEventName} from './AccountControl';
 
 const labels = {
   menu: 'Account menu',
+  projectionSystem: 'Projection system',
+  adminManagement: 'Admin console',
   manageAccount: 'Manage account',
   signIn: 'Sign in',
   signOut: 'Sign out',
@@ -27,11 +29,11 @@ function anonymousClient(): AccountSessionClient {
   };
 }
 
-function authenticatedClient(logoutAll = vi.fn().mockResolvedValue(undefined)): AccountSessionClient {
+function authenticatedClient(adminAccess = false, logoutAll = vi.fn().mockResolvedValue(undefined)): AccountSessionClient {
   return {
     getSession: vi.fn().mockResolvedValue({
       authenticated: true,
-      user: {id: 'u1', email: 'ada@example.com', display_name: 'Ada', avatar_url: null}
+      user: {id: 'u1', email: 'ada@example.com', display_name: 'Ada', avatar_url: null, admin_access: adminAccess}
     }),
     logout: vi.fn(),
     logoutAll
@@ -173,6 +175,48 @@ describe('AccountControl', () => {
     expect(navigateExternal).not.toHaveBeenCalled();
   });
 
+  it('shows the projection system but not admin management for a non-admin user', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <AccountControl
+        accountSiteUrl="https://account.alive.org.tw"
+        client={authenticatedClient(false)}
+        labels={labels}
+      />
+    );
+
+    await user.click(await screen.findByRole('button', {name: 'Account menu'}));
+
+    expect(screen.getByRole('menuitem', {name: 'Projection system'})).toHaveAttribute(
+      'href',
+      'https://client.alive.org.tw/'
+    );
+    expect(screen.queryByRole('menuitem', {name: 'Admin console'})).not.toBeInTheDocument();
+  });
+
+  it('orders admin management between the projection system and account actions for an admin user', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <AccountControl
+        accountSiteUrl="https://account.alive.org.tw"
+        client={authenticatedClient(true)}
+        labels={labels}
+      />
+    );
+
+    await user.click(await screen.findByRole('button', {name: 'Account menu'}));
+
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+      'Projection system', 'Admin console', 'Manage account', 'Sign out'
+    ]);
+    expect(screen.getByRole('menuitem', {name: 'Admin console'})).toHaveAttribute(
+      'href',
+      'https://admin.alive.org.tw/'
+    );
+  });
+
   it('keeps the account menu visible when global sign out fails', async () => {
     const user = userEvent.setup();
     const logoutAll = vi.fn().mockRejectedValue(new Error('unavailable'));
@@ -180,7 +224,7 @@ describe('AccountControl', () => {
     render(
       <AccountControl
         accountSiteUrl="https://account.alive.org.tw"
-        client={authenticatedClient(logoutAll)}
+        client={authenticatedClient(false, logoutAll)}
         labels={labels}
       />
     );
@@ -199,7 +243,7 @@ describe('AccountControl', () => {
     render(
       <AccountControl
         accountSiteUrl="https://account.alive.org.tw"
-        client={authenticatedClient(logoutAll)}
+        client={authenticatedClient(false, logoutAll)}
         labels={labels}
       />
     );
@@ -226,7 +270,7 @@ describe('AccountControl', () => {
     vi.mocked(client.getSession)
       .mockResolvedValueOnce({
         authenticated: true,
-        user: {id: 'u1', email: 'ada@example.com', display_name: 'Ada', avatar_url: null}
+        user: {id: 'u1', email: 'ada@example.com', display_name: 'Ada', avatar_url: null, admin_access: false}
       })
       .mockResolvedValueOnce({authenticated: false});
 
@@ -274,7 +318,7 @@ describe('AccountControl', () => {
     vi.mocked(client.getSession)
       .mockResolvedValueOnce({
         authenticated: true,
-        user: {id: 'u1', email: 'ada@example.com', display_name: 'Ada', avatar_url: null}
+        user: {id: 'u1', email: 'ada@example.com', display_name: 'Ada', avatar_url: null, admin_access: false}
       })
       .mockResolvedValueOnce({authenticated: false});
 

@@ -15,6 +15,8 @@
     },
     "account": {
       "menu": "帳號選單",
+      "projectionSystem": "投影系統",
+      "adminManagement": "後台管理",
       "manageAccount": "管理帳號",
       "signIn": "登入",
       "signOut": "登出",

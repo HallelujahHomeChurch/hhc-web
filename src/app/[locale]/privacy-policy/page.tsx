@@ -6,7 +6,6 @@ import {LegalPageShell} from '@/components/legal/LegalPageShell';
 import {getLegalPage, PageNotFoundError} from '@/features/pages/api';
 import {getSiteLayout} from '@/features/site-layout/api';
 import {isLocale, type Locale} from '@/i18n/locales';
-import {getMessages} from '@/i18n/messages';
 import {getEditorialMetadata} from '@/lib/seo';
 
 type PrivacyPolicyPageProps = {
@@ -34,19 +33,13 @@ export async function generateMetadata({params}: PrivacyPolicyPageProps): Promis
 export default async function PrivacyPolicyPage({params}: PrivacyPolicyPageProps) {
   const locale = await getLocale(params);
   setRequestLocale(locale);
-  const messages = getMessages(locale);
-  const [page, layout] = await Promise.all([privacyPage(locale), getSiteLayout(locale)]);
+  const page = await privacyPage(locale);
 
-  return (
-    <LegalPageShell
-      languageLabel={messages.site.language}
-      locale={locale}
-      pathname={`/${locale}/privacy-policy`}
-      siteName={layout.siteName}
-    >
-      <LegalDocument content={page.content} />
-    </LegalPageShell>
-  );
+  return LegalPageShell({
+    locale,
+    pathname: `/${locale}/privacy-policy`,
+    children: <LegalDocument content={page.content} />
+  });
 }
 
 async function privacyPage(locale: Locale) {

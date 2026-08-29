@@ -1,11 +1,26 @@
 import type {SiteLayout} from '@hallelujahhomechurch/hhc-web-client';
-import {render, screen} from '@testing-library/react';
+import {render, screen, within} from '@testing-library/react';
+import {NextIntlClientProvider} from 'next-intl';
+import type {ReactNode} from 'react';
 import {describe, expect, it, vi} from 'vitest';
+import zhHant from '@/i18n/locales/zh-Hant.json';
 
 const getSiteLayout = vi.hoisted(() => vi.fn());
 const getLegalPage = vi.hoisted(() => vi.fn());
+const getSharedAccountSessionClient = vi.hoisted(() => vi.fn(() => ({
+  getSession: async () => ({authenticated: false}),
+  issueAccessToken: async () => ({accessToken: '', expiresIn: 0}),
+  logout: async () => undefined,
+  logoutAll: async () => undefined
+})));
 vi.mock('@/features/site-layout/api', () => ({getSiteLayout}));
 vi.mock('@/features/pages/api', () => ({getLegalPage}));
+vi.mock('@/lib/browser-bootstrap', () => ({
+  clearSharedAccountSession: vi.fn(),
+  getSharedAccountSessionClient,
+  getSharedPushConfig: vi.fn(),
+  revalidateSharedAccountSession: vi.fn()
+}));
 vi.mock('next-intl/server', () => ({setRequestLocale: vi.fn()}));
 vi.mock('next/navigation', () => ({notFound: vi.fn()}));
 
@@ -42,9 +57,10 @@ describe('standalone legal page site layout', () => {
   ] as const)('renders the projected site name on %s', async (_name, page) => {
     getSiteLayout.mockResolvedValue(layout);
     getLegalPage.mockImplementation((key: 'privacy-policy' | 'terms-of-use') => Promise.resolve(legalPage(key)));
-    render(await page());
+    renderLegalPage(await page());
 
-    expect(screen.getByRole('link', {name: 'CMS 法律站名'})).toHaveAttribute('href', '/zh-Hant');
+    expect(await screen.findByRole('link', {name: '登入'})).toBeInTheDocument();
+    expect(within(screen.getByRole('banner')).getByRole('link', {name: /CMS 法律站名/})).toHaveAttribute('href', '/zh-Hant');
     expect(getSiteLayout).toHaveBeenCalledWith('zh-Hant');
   });
 
@@ -54,12 +70,20 @@ describe('standalone legal page site layout', () => {
   ] as const)('renders %s through the existing LegalDocument component', async (key, page) => {
     getSiteLayout.mockResolvedValue(layout);
     getLegalPage.mockResolvedValue(legalPage(key));
-    render(await page());
+    renderLegalPage(await page());
 
     expect(screen.getByRole('heading', {level: 1, name: `CMS ${key}`})).toBeInTheDocument();
     expect(screen.getByText(`CMS ${key} paragraph`)).toBeInTheDocument();
   });
 });
+
+function renderLegalPage(page: ReactNode) {
+  return render(
+    <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+      {page}
+    </NextIntlClientProvider>
+  );
+}
 
 function legalPage(key: 'privacy-policy' | 'terms-of-use') {
   return {source: 'cms', indexable: true, availableLocales: ['zh-Hant', 'en'], content: {

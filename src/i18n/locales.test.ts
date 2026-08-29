@@ -37,11 +37,18 @@ describe('locales', () => {
 
   it('uses the released exact HHC frontend package versions', () => {
     expect(Object.fromEntries(Object.entries(packageJson.dependencies).filter(([name]) => name.startsWith('@hallelujahhomechurch/')))).toEqual({
-      '@hallelujahhomechurch/account-client': '0.6.14',
+      '@hallelujahhomechurch/account-client': '0.6.18',
       '@hallelujahhomechurch/hhc-web-client': '0.6.17',
       '@hallelujahhomechurch/preferences': '0.6.14',
-      '@hallelujahhomechurch/ui': '0.6.14'
+      '@hallelujahhomechurch/ui': '0.6.18'
     });
+  });
+
+  it('defines account product labels in every locale', () => {
+    for (const messages of [zhHant, zhHans, en, ja, ko]) {
+      expect(messages.site.account.projectionSystem).toBeTruthy();
+      expect(messages.site.account.adminManagement).toBeTruthy();
+    }
   });
 
   it('keeps Japanese and Korean message schemas complete', () => {
