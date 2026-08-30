@@ -86,6 +86,42 @@ describe('home page metadata', () => {
     expect(mocks.getHomeContent).toHaveBeenCalledWith('en');
   });
 
+  it('renders the backend-selected Home arrays in order', async () => {
+    mocks.getHomePage.mockResolvedValue(cmsHomeV2Page());
+    mocks.getHomeContent.mockResolvedValue({
+      news: ['A', 'B', 'C', 'D'].map((title, index) => ({
+        id: String(index + 1),
+        title: `News ${title}`,
+        summary: '',
+        date: '2026-08-31',
+        imageAlt: `News ${title}`,
+        href: `/en/news/${index + 1}`,
+        requestedLocale: 'en',
+        resolvedLocale: 'en',
+        availableLocales: ['en']
+      })),
+      newsFailed: false,
+      videosFailed: false,
+      videos: ['A', 'B', 'C'].map((title, index) => ({
+        id: String(index + 1),
+        title: `Video ${title}`,
+        imageSrc: `https://i.ytimg.com/vi/${index + 1}/hqdefault.jpg`,
+        imageAlt: `Video ${title}`,
+        href: `https://www.youtube.com/watch?v=${index + 1}`,
+        requestedLocale: 'en',
+        resolvedLocale: 'en',
+        availableLocales: ['en']
+      }))
+    });
+    mocks.getSiteLayout.mockResolvedValue({links: cmsHomeV2Page().content.links});
+
+    const markup = renderToStaticMarkup(await HomePage({params: Promise.resolve({locale: 'en'})}));
+
+    expect(markup).toContain('News D');
+    expect(markup.indexOf('Video A')).toBeLessThan(markup.indexOf('Video B'));
+    expect(markup.indexOf('Video B')).toBeLessThan(markup.indexOf('Video C'));
+  });
+
   it('marks only migration-fallback Home output for the live observation gate', async () => {
     mocks.getHomePage.mockResolvedValue({...cmsHomePage(), source: 'migration-fallback'});
     mocks.getHomeContent.mockResolvedValue({news: [], newsFailed: false, videos: [], videosFailed: false});

@@ -1,62 +1,50 @@
-import {describe, expect, it, vi} from 'vitest';
 import type {HhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
+import {describe, expect, it, vi} from 'vitest';
 import {getHomeContent} from './api';
 
 describe('getHomeContent', () => {
-  it('keeps videos when news fails', async () => {
-    const listPublicContent = vi.fn().mockImplementation((module: string) => module === 'news'
-      ? Promise.reject(new Error('news unavailable'))
-      : Promise.resolve([{
-          id: 'video-1',
-          title: '影片',
-          resolvedLocale: 'zh-Hant',
-          availableLocales: ['zh-Hant'],
-          youtubeVideoId: 'K3ckFWeSQ-k',
-          homeEligible: true
-        }]));
-    const client = {listPublicContent} as unknown as HhcWebClient;
-
-    const content = await getHomeContent('ja', client);
-
-    expect(content.news).toEqual([]);
-    expect(content.newsFailed).toBe(true);
-    expect(content.videosFailed).toBe(false);
-    expect(content.videos).toEqual([expect.objectContaining({
-      title: '影片',
-      requestedLocale: 'ja',
-      resolvedLocale: 'zh-Hant'
-    })]);
-  });
-
-  it('keeps news when videos fail', async () => {
-    const listPublicContent = vi.fn().mockImplementation((module: string) => module === 'videos'
-      ? Promise.reject(new Error('videos unavailable'))
-      : Promise.resolve([{
+  it('uses the backend Home selection without slicing videos', async () => {
+    const getHome = vi.fn().mockResolvedValue({
+      news: [{
         id: 'news-1',
         title: '消息',
         resolvedLocale: 'zh-Hant',
         availableLocales: ['zh-Hant', 'en'],
         displayDate: '2026-08-09',
         homeImageUrl: '/assets/news-home',
-        imageUrl: '/assets/news-detail',
         href: '/ja/news/news-1'
-      }]));
-    const client = {listPublicContent} as unknown as HhcWebClient;
+      }],
+      videos: ['c', 'a', 'd', 'b'].map((id) => ({
+        id,
+        title: `影片 ${id}`,
+        resolvedLocale: 'zh-Hant',
+        availableLocales: ['zh-Hant'],
+        youtubeVideoId: `youtube-${id}`,
+        homeEligible: id !== 'a'
+      }))
+    });
+    const listPublicContent = vi.fn();
 
-    const content = await getHomeContent('ja', client);
+    const content = await getHomeContent('ja', {getHome, listPublicContent} as unknown as HhcWebClient);
 
-    expect(listPublicContent).toHaveBeenCalledTimes(2);
+    expect(getHome).toHaveBeenCalledWith('ja');
+    expect(getHome).toHaveBeenCalledTimes(1);
+    expect(listPublicContent).not.toHaveBeenCalled();
+    expect(content.news).toEqual([expect.objectContaining({id: 'news-1', title: '消息'})]);
+    expect(content.videos.map((item) => item.id)).toEqual(['c', 'a', 'd', 'b']);
     expect(content.newsFailed).toBe(false);
-    expect(content.videosFailed).toBe(true);
-    expect(content.news).toEqual([expect.objectContaining({
-      title: '消息',
-      date: '2026年8月9日',
-      imageSrc: '/assets/news-home',
-      href: '/ja/news/news-1',
-      requestedLocale: 'ja',
-      resolvedLocale: 'zh-Hant',
-      availableLocales: ['zh-Hant', 'en']
-    })]);
-    expect(content.videos).toEqual([]);
+    expect(content.videosFailed).toBe(false);
+  });
+
+  it('marks both sections failed when the Home endpoint fails', async () => {
+    const getHome = vi.fn().mockRejectedValue(new Error('home unavailable'));
+    const listPublicContent = vi.fn();
+
+    const content = await getHomeContent('en', {getHome, listPublicContent} as unknown as HhcWebClient);
+
+    expect(getHome).toHaveBeenCalledWith('en');
+    expect(getHome).toHaveBeenCalledTimes(1);
+    expect(listPublicContent).not.toHaveBeenCalled();
+    expect(content).toEqual({news: [], videos: [], newsFailed: true, videosFailed: true});
   });
 });
