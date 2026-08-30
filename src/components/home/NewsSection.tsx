@@ -23,7 +23,7 @@ export function NewsSection({title, moreHref, moreLabel, items, errorMessage}: N
         ) : null}
       </div>
       {errorMessage ? <p role="status" className="rounded-lg border border-line bg-panel p-4 text-sm text-muted">{errorMessage}</p> : <ul className="m-0 grid list-none gap-3 p-0">
-        {items.slice(0, 3).map((item) => (
+        {items.map((item) => (
           <li key={item.id} lang={item.resolvedLocale}>
             <Link className="group grid min-h-[82px] grid-cols-[132px_minmax(0,1fr)] items-center gap-4 max-[620px]:grid-cols-[112px_minmax(0,1fr)]" href={item.href}>
               <span className="relative grid aspect-video w-[132px] place-items-center overflow-hidden rounded-[10px] bg-[var(--hhc-news-panel)] text-primary ring-1 ring-panel-border transition group-hover:ring-primary max-[620px]:w-28">

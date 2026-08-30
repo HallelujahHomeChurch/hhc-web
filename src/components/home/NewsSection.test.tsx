@@ -23,8 +23,8 @@ describe('NewsSection', () => {
     expect(screen.getByRole('link', {name: '查看更多'})).toHaveAttribute('href', '/zh-Hant/news');
     expect(screen.getAllByRole('link').length).toBeGreaterThan(1);
     expect(screen.getByText('十年養成計畫｜滿心怡姊妹分享會')).toBeInTheDocument();
-    expect(screen.getAllByText('2026 / 07 / 13')).toHaveLength(3);
-    expect(screen.queryByText('消息 4')).not.toBeInTheDocument();
+    expect(screen.getAllByText('2026 / 07 / 13')).toHaveLength(4);
+    expect(screen.getByText('消息 4')).toBeInTheDocument();
     expect(screen.queryByText('活動摘要')).not.toBeInTheDocument();
     const image = screen.getByRole('img', {name: '活動封面'});
     expect(image).toHaveAttribute('sizes', '(max-width: 620px) 112px, 132px');
