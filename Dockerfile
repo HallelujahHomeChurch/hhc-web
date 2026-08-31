@@ -31,7 +31,7 @@ RUN --mount=type=secret,id=sentry_auth_token,required=false \
     find .next -type f -name '*.map' -delete; \
   fi
 
-FROM node:22-alpine AS runtime
+FROM gcr.io/distroless/nodejs22-debian13@sha256:4e4fb0ce55fd73901600796ef079a9490369d2515d7da31633a91608c82ca13b AS runtime
 
 WORKDIR /app
 ENV NODE_ENV=production \
@@ -39,13 +39,14 @@ ENV NODE_ENV=production \
     PORT=10000 \
     HOSTNAME=0.0.0.0
 
-COPY --from=build /app/.next/standalone ./
-COPY --from=build /app/.next/static ./.next/static
-COPY --from=build /app/public ./public
+COPY --from=build --chown=nonroot:nonroot /app/.next/standalone ./
+COPY --from=build --chown=nonroot:nonroot /app/.next/static ./.next/static
+COPY --from=build --chown=nonroot:nonroot /app/public ./public
 
 EXPOSE 10000
+USER nonroot:nonroot
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:10000/health || exit 1
+  CMD ["/nodejs/bin/node", "-e", "fetch('http://127.0.0.1:10000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
 
-CMD ["node", "server.js"]
+CMD ["server.js"]
