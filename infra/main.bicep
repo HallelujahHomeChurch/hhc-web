@@ -87,7 +87,7 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             {
               type: 'Liveness'
               httpGet: { path: '/health', port: 10000 }
-              initialDelaySeconds: 10
+              initialDelaySeconds: 20
               periodSeconds: 30
               timeoutSeconds: 3
               failureThreshold: 3
@@ -95,7 +95,7 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             {
               type: 'Readiness'
               httpGet: { path: '/health', port: 10000 }
-              initialDelaySeconds: 5
+              initialDelaySeconds: 20
               periodSeconds: 10
               timeoutSeconds: 3
               failureThreshold: 3

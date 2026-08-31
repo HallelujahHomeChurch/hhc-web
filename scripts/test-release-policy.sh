@@ -27,6 +27,8 @@ grep -q -- '--image "$PREVIOUS_IMAGE_REF"' "$workflow"
 grep -q "name: 'hhc-web'" "$infra"
 grep -q "appId: 'hhc-web'" "$infra"
 grep -q "path: '/health'" "$infra"
+grep -A4 "type: 'Liveness'" "$infra" | grep -q 'initialDelaySeconds: 20'
+grep -A4 "type: 'Readiness'" "$infra" | grep -q 'initialDelaySeconds: 20'
 grep -q "minReplicas: 1" "$infra"
 
 if grep -q 'external:' "$infra"; then
