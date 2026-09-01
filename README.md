@@ -2,6 +2,11 @@
 
 Next.js public website for `www.alive.org.tw`.
 
+## License
+
+The source and first-party content are publicly visible but remain all rights
+reserved. See [LICENSE](LICENSE) and [ASSET_RIGHTS.md](ASSET_RIGHTS.md).
+
 ## Local development
 
 ```sh
