@@ -13,8 +13,6 @@ export function generateStaticParams() {
   return productLocales.map((locale) => ({locale}));
 }
 
-export const dynamicParams = false;
-
 async function getMessages(locale: Locale) {
   const messages = (await import(`../../i18n/locales/${locale}.json`)).default;
   return {site: messages.site};

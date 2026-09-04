@@ -42,8 +42,8 @@ grep -q -- '--image "$PREVIOUS_IMAGE_REF"' "$workflow"
 grep -q "name: 'hhc-web'" "$infra"
 grep -q "appId: 'hhc-web'" "$infra"
 grep -q "path: '/health'" "$infra"
-grep -q "cpu: json('0.25')" "$infra"
-grep -q "memory: '0.5Gi'" "$infra"
+grep -q "cpu: json('0.5')" "$infra"
+grep -q "memory: '1Gi'" "$infra"
 grep -A4 "type: 'Liveness'" "$infra" | grep -q 'initialDelaySeconds: 20'
 grep -A4 "type: 'Readiness'" "$infra" | grep -q 'initialDelaySeconds: 20'
 grep -q "minReplicas: 1" "$infra"
