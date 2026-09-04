@@ -78,6 +78,12 @@ describe('RootLayout', () => {
     expect(fonts.match(/preload: false/g)).toHaveLength(5);
   });
 
+  it('lets unsupported locale segments reach the explicit not-found handling', () => {
+    const localeLayout = readFileSync('src/app/[locale]/layout.tsx', 'utf8');
+
+    expect(localeLayout).not.toContain('dynamicParams = false');
+  });
+
   it('uses the legal shell middle row instead of standalone viewport subtractions', () => {
     const styles = readFileSync('src/app/globals.css', 'utf8');
 
