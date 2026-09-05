@@ -117,7 +117,15 @@ describe('SiteHeader', () => {
     expect(within(mobileNavigation).getByRole('link', {name: '關於我們'})).toHaveAttribute('aria-current', 'page');
   });
 
-  it('starts moving the shared mobile indicator when navigation begins', async () => {
+  it('starts moving the shared mobile indicator and replays only the latest rapid navigation', async () => {
+    let nextFrame = 0;
+    const frames = new Map<number, FrameRequestCallback>();
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      const id = ++nextFrame;
+      frames.set(id, callback);
+      return id;
+    });
+    const cancelFrame = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation((id) => { frames.delete(id); });
     const {container} = render(
       <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
         <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" sessionClient={anonymousSessionClient} />
@@ -125,13 +133,25 @@ describe('SiteHeader', () => {
     );
 
     await screen.findByRole('link', {name: '登入'});
-    const newsLink = within(screen.getByRole('navigation', {name: '選單'})).getByRole('link', {name: '最新消息'});
+    const mobileNavigation = within(screen.getByRole('navigation', {name: '選單'}));
+    const newsLink = mobileNavigation.getByRole('link', {name: '最新消息'});
+    const aboutLink = mobileNavigation.getByRole('link', {name: '關於我們'});
     newsLink.addEventListener('click', (event) => event.preventDefault());
+    aboutLink.addEventListener('click', (event) => event.preventDefault());
+    const aboutClick = vi.spyOn(aboutLink, 'click');
     fireEvent.click(newsLink);
 
     expect(container.querySelector('[data-mobile-nav-indicator]')).toHaveStyle({transform: 'translate3d(200%, 0, 0)'});
     expect(newsLink).toHaveAttribute('data-active', 'true');
-    expect(within(screen.getByRole('navigation', {name: '選單'})).getByRole('link', {name: '首頁'})).not.toHaveAttribute('data-active');
+    act(() => frames.get(1)?.(0));
+    fireEvent.click(aboutLink);
+
+    expect(cancelFrame).toHaveBeenCalledWith(2);
+    expect(container.querySelector('[data-mobile-nav-indicator]')).toHaveStyle({transform: 'translate3d(100%, 0, 0)'});
+    act(() => frames.get(3)?.(16));
+    act(() => frames.get(4)?.(32));
+    expect(aboutClick).toHaveBeenCalledOnce();
+    expect(mobileNavigation.getByRole('link', {name: '首頁'})).not.toHaveAttribute('data-active');
   });
 
   it('lets long localized branding shrink before the fixed account slot at mobile zoom widths', async () => {
