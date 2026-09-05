@@ -74,7 +74,7 @@ describe('SiteHeader', () => {
     expect(aboutLink.className).toContain('data-[active=true]:after:scale-x-100');
   });
 
-  it('renders three mobile tabs and keeps account access in the header', async () => {
+  it('renders Home first in the four-item mobile navigation and keeps account access in the header', async () => {
     const getSession = vi.fn().mockResolvedValue({authenticated: false});
 
     render(
@@ -83,12 +83,55 @@ describe('SiteHeader', () => {
       </NextIntlClientProvider>
     );
 
+    expect(await screen.findByRole('link', {name: '登入'})).toBeInTheDocument();
     const mobileNavigation = screen.getByRole('navigation', {name: '選單'});
     expect(mobileNavigation).toHaveClass('site-mobile-tab-bar');
-    expect(mobileNavigation.querySelectorAll('a')).toHaveLength(3);
+    expect(within(mobileNavigation).getAllByRole('link').map((link) => link.textContent)).toEqual([
+      '首頁',
+      '關於我們',
+      '最新消息',
+      '文字事工'
+    ]);
     expect(screen.queryByRole('button', {name: '開啟選單'})).not.toBeInTheDocument();
-    expect(await screen.findByRole('link', {name: '登入'})).toBeInTheDocument();
     expect(getSession).toHaveBeenCalledOnce();
+  });
+
+  it('selects Home only on the locale root', async () => {
+    const {rerender} = render(
+      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" sessionClient={anonymousSessionClient} />
+      </NextIntlClientProvider>
+    );
+
+    await screen.findByRole('link', {name: '登入'});
+    const mobileNavigation = screen.getByRole('navigation', {name: '選單'});
+    expect(within(mobileNavigation).getByRole('link', {name: '首頁'})).toHaveAttribute('aria-current', 'page');
+
+    rerender(
+      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/about" sessionClient={anonymousSessionClient} />
+      </NextIntlClientProvider>
+    );
+
+    expect(within(mobileNavigation).getByRole('link', {name: '首頁'})).not.toHaveAttribute('aria-current');
+    expect(within(mobileNavigation).getByRole('link', {name: '關於我們'})).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('starts moving the shared mobile indicator when navigation begins', async () => {
+    const {container} = render(
+      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" sessionClient={anonymousSessionClient} />
+      </NextIntlClientProvider>
+    );
+
+    await screen.findByRole('link', {name: '登入'});
+    const newsLink = within(screen.getByRole('navigation', {name: '選單'})).getByRole('link', {name: '最新消息'});
+    newsLink.addEventListener('click', (event) => event.preventDefault());
+    fireEvent.click(newsLink);
+
+    expect(container.querySelector('[data-mobile-nav-indicator]')).toHaveStyle({transform: 'translate3d(200%, 0, 0)'});
+    expect(newsLink).toHaveAttribute('data-active', 'true');
+    expect(within(screen.getByRole('navigation', {name: '選單'})).getByRole('link', {name: '首頁'})).not.toHaveAttribute('data-active');
   });
 
   it('lets long localized branding shrink before the fixed account slot at mobile zoom widths', async () => {
@@ -221,11 +264,11 @@ describe('SiteHeader', () => {
 
     await screen.findByRole('link', {name: '登入'});
     expect(screen.getByRole('navigation', {name: '選單'})).toHaveStyle({
-      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
+      gridTemplateColumns: 'repeat(3, minmax(0, 1fr))'
     });
   });
 
-  it('does not render an empty mobile navigation landmark when all projected items are hidden', async () => {
+  it('keeps Home in the mobile navigation when all projected items are hidden', async () => {
     render(
       <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
         <SiteHeader
@@ -238,7 +281,10 @@ describe('SiteHeader', () => {
     );
 
     await screen.findByRole('link', {name: '登入'});
-    expect(screen.queryByRole('navigation', {name: '選單'})).not.toBeInTheDocument();
+    const mobileNavigation = screen.getByRole('navigation', {name: '選單'});
+    expect(within(mobileNavigation).getAllByRole('link')).toHaveLength(1);
+    expect(within(mobileNavigation).getByRole('link', {name: '首頁'})).toHaveAttribute('aria-current', 'page');
+    expect(mobileNavigation).toHaveStyle({gridTemplateColumns: 'repeat(1, minmax(0, 1fr))'});
   });
 
   it('keeps account access and branding while navigation is disabled', async () => {

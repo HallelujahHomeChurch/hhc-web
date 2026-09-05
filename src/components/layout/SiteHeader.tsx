@@ -3,7 +3,7 @@
 import {useEffect, useState, useSyncExternalStore} from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import {BookOpenText, Newspaper, UsersRound} from 'lucide-react';
+import {BookOpenText, House, Newspaper, UsersRound} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
 import type {SiteLayout} from '@/features/site-layout/types';
@@ -31,7 +31,9 @@ const icons = {
 
 export function SiteHeader({layout, locale, pathname, sessionClient, showNavigation = true}: SiteHeaderProps) {
   const t = useTranslations('site');
+  const homeHref = `/${locale}`;
   const navItems = layout.header.filter(({visible}) => visible).map((item) => ({...item, icon: icons[item.key]}));
+  const mobileNavItems = [{key: 'home', label: t('nav.home'), href: homeHref, icon: House}, ...navItems];
   const accountLabels = {
     menu: t('account.menu'),
     projectionSystem: t('account.projectionSystem'),
@@ -41,7 +43,10 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
     signOut: t('account.signOut'),
     signOutError: t('account.signOutError')
   };
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = (href: string) => pathname === href || (href !== homeHref && pathname.startsWith(`${href}/`));
+  const mobileActiveIndex = mobileNavItems.findIndex(({href}) => isActive(href));
+  const [mobileSelection, setMobileSelection] = useState({pathname, index: mobileActiveIndex});
+  const mobileIndicatorIndex = mobileSelection.pathname === pathname ? mobileSelection.index : mobileActiveIndex;
   const [mobileChrome, setMobileChrome] = useState({pathname, visible: true});
   const iphoneStandalone = useSyncExternalStore(
     subscribeToStandaloneMode,
@@ -123,12 +128,14 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
         </div>
       </div>
       </header>
-      {showNavigation && navItems.length ? <nav className="site-mobile-tab-bar" style={{gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))`}} aria-label={t('nav.menu')} data-mobile-hidden={!mobileChromeVisible} data-iphone-standalone={iphoneStandalone || undefined}>
-        {navItems.map((item) => {
+      {showNavigation ? <nav className="site-mobile-tab-bar" style={{gridTemplateColumns: `repeat(${mobileNavItems.length}, minmax(0, 1fr))`}} aria-label={t('nav.menu')} data-mobile-hidden={!mobileChromeVisible} data-iphone-standalone={iphoneStandalone || undefined}>
+        <span aria-hidden="true" className="site-mobile-tab-indicator" data-mobile-nav-indicator data-visible={mobileIndicatorIndex >= 0} style={{transform: `translate3d(${Math.max(0, mobileIndicatorIndex) * 100}%, 0, 0)`}} />
+        {mobileNavItems.map((item, index) => {
           const Icon = item.icon;
           const active = isActive(item.href);
+          const visualActive = mobileIndicatorIndex === index;
           return (
-            <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined} data-active={active || undefined}>
+            <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined} data-active={visualActive || undefined} style={{gridColumn: index + 1, gridRow: 1}} onClick={() => setMobileSelection({pathname, index})}>
               <Icon aria-hidden="true" />
               <span>{item.label}</span>
             </Link>
