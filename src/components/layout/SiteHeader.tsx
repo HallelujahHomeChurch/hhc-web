@@ -9,7 +9,7 @@ import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
 import type {SiteLayout} from '@/features/site-layout/types';
 import type {Locale} from '@/i18n/locales';
 import {isIPhoneDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
-import {AccountControlProvider, AccountControlView} from './AccountControl';
+import {AccountControlSlot} from './AccountControl';
 
 export type SiteHeaderProps = {
   layout: SiteLayout;
@@ -110,8 +110,8 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
   }, [pathname]);
 
   return (
-    <AccountControlProvider client={sessionClient} labels={accountLabels}>
-      <header className="site-header sticky top-0 z-10 border-b border-line/70 bg-paper/90 backdrop-blur-xl" data-mobile-hidden={!mobileChromeVisible}>
+    <>
+      <header className="site-header sticky top-0 z-10 border-b border-line/70 backdrop-blur-xl" data-mobile-hidden={!mobileChromeVisible} data-iphone-standalone={iphoneStandalone || undefined}>
       <div className="relative flex min-h-[76px] w-full items-center gap-6 px-6 max-[767px]:min-h-[68px] max-[767px]:px-4">
         <Link href={`/${locale}`} className="inline-flex min-h-11 min-w-max items-center gap-2.5 max-[767px]:min-w-0 max-[767px]:flex-1">
           <span className="grid size-10 shrink-0 place-items-center max-[767px]:size-9" aria-hidden="true">
@@ -144,7 +144,7 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
             ))}
         </nav> : null}
         <div className="ml-auto shrink-0">
-          <AccountControlView />
+          <AccountControlSlot client={sessionClient} labels={accountLabels} />
         </div>
       </div>
       </header>
@@ -162,6 +162,6 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
           );
         })}
       </nav> : null}
-    </AccountControlProvider>
+    </>
   );
 }

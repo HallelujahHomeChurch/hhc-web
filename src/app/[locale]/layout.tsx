@@ -2,6 +2,7 @@ import {NextIntlClientProvider} from 'next-intl';
 import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {isLocale, productLocales, type Locale} from '@/i18n/locales';
+import {AccountControlProvider} from '@/components/layout/AccountControl';
 import {InitialLoadingBoundary} from '@/components/layout/InitialLoadingBoundary';
 import {TranslationNotice} from '@/components/layout/TranslationNotice';
 
@@ -31,12 +32,14 @@ export default async function LocaleLayout({children, params}: LocaleLayoutProps
   const messages = await getMessages(rawLocale);
   return (
     <NextIntlClientProvider locale={rawLocale} messages={messages}>
-      <InitialLoadingBoundary label={messages.site.loading}>
-        <div data-locale={rawLocale} lang={rawLocale}>
-          <TranslationNotice locale={rawLocale} message={messages.site.translationNotice} dismissLabel={messages.site.translationNoticeDismiss} regionLabel={messages.site.translationNoticeRegion} />
-          {children}
-        </div>
-      </InitialLoadingBoundary>
+      <AccountControlProvider labels={messages.site.account}>
+        <InitialLoadingBoundary label={messages.site.loading}>
+          <div data-locale={rawLocale} lang={rawLocale}>
+            <TranslationNotice locale={rawLocale} message={messages.site.translationNotice} dismissLabel={messages.site.translationNoticeDismiss} regionLabel={messages.site.translationNoticeRegion} />
+            {children}
+          </div>
+        </InitialLoadingBoundary>
+      </AccountControlProvider>
     </NextIntlClientProvider>
   );
 }
