@@ -7,6 +7,7 @@ import en from '@/i18n/locales/en.json';
 import ja from '@/i18n/locales/ja.json';
 import ko from '@/i18n/locales/ko.json';
 import zhHant from '@/i18n/locales/zh-Hant.json';
+import {AccountControlProvider} from './AccountControl';
 import {SiteHeader} from './SiteHeader';
 
 const anonymousSessionClient: AccountSessionClient = {
@@ -14,6 +15,16 @@ const anonymousSessionClient: AccountSessionClient = {
   issueAccessToken: async () => ({accessToken: '', expiresIn: 0}),
   logout: async () => undefined,
   logoutAll: async () => undefined
+};
+
+const accountLabels = {
+  menu: '帳號選單',
+  projectionSystem: '投影系統',
+  adminManagement: '後台管理',
+  manageAccount: '管理帳號',
+  signIn: '登入',
+  signOut: '登出',
+  signOutError: '登出失敗'
 };
 
 const layout: SiteLayout = {
@@ -94,6 +105,31 @@ describe('SiteHeader', () => {
     ]);
     expect(screen.queryByRole('button', {name: '開啟選單'})).not.toBeInTheDocument();
     expect(getSession).toHaveBeenCalledOnce();
+  });
+
+  it('keeps the account item visible when a route replaces the header', async () => {
+    const getSession = vi.fn()
+      .mockResolvedValueOnce({authenticated: false})
+      .mockImplementation(() => new Promise(() => undefined));
+    const routeSessionClient = {...anonymousSessionClient, getSession};
+    const {rerender} = render(
+      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <AccountControlProvider client={anonymousSessionClient} labels={accountLabels}>
+          <SiteHeader key="home" layout={layout} locale="zh-Hant" pathname="/zh-Hant" sessionClient={routeSessionClient} />
+        </AccountControlProvider>
+      </NextIntlClientProvider>
+    );
+
+    await screen.findByRole('link', {name: '登入'});
+    rerender(
+      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <AccountControlProvider client={anonymousSessionClient} labels={accountLabels}>
+          <SiteHeader key="about" layout={layout} locale="zh-Hant" pathname="/zh-Hant/about" sessionClient={routeSessionClient} />
+        </AccountControlProvider>
+      </NextIntlClientProvider>
+    );
+
+    expect(screen.getByRole('link', {name: '登入'})).toBeInTheDocument();
   });
 
   it('selects Home only on the locale root', async () => {
@@ -179,7 +215,10 @@ describe('SiteHeader', () => {
       </NextIntlClientProvider>
     );
 
-    await waitFor(() => expect(screen.getByRole('navigation', {name: '選單'})).toHaveAttribute('data-iphone-standalone', 'true'));
+    await waitFor(() => {
+      expect(screen.getByRole('banner')).toHaveAttribute('data-iphone-standalone', 'true');
+      expect(screen.getByRole('navigation', {name: '選單'})).toHaveAttribute('data-iphone-standalone', 'true');
+    });
   });
 
   it('hides mobile chrome when scrolling down and restores it when scrolling up', () => {

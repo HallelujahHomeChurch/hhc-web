@@ -61,6 +61,10 @@ export function AccountControl(props: AccountControlProps) {
   );
 }
 
+export function AccountControlSlot(props: AccountControlProps) {
+  return useContext(AccountControlContext) ? <AccountControlView /> : <AccountControl {...props} />;
+}
+
 export function AccountControlProvider({
   accountSiteUrl = accountSiteUrlForBrowser(),
   children,
