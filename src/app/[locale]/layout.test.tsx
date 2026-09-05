@@ -22,7 +22,7 @@ describe('LocaleLayout', () => {
         children: <main />,
         params: Promise.resolve({locale})
       });
-      expect(layout.props.children.props.lang).toBe(locale);
+      expect(layout.props.children.props.children.props.lang).toBe(locale);
     }
   });
 
