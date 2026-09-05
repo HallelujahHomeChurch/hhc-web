@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useState, useSyncExternalStore} from 'react';
+import {useEffect, useRef, useState, useSyncExternalStore, type MouseEvent} from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {BookOpenText, House, Newspaper, UsersRound} from 'lucide-react';
@@ -47,6 +47,8 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
   const mobileActiveIndex = mobileNavItems.findIndex(({href}) => isActive(href));
   const [mobileSelection, setMobileSelection] = useState({pathname, index: mobileActiveIndex});
   const mobileIndicatorIndex = mobileSelection.pathname === pathname ? mobileSelection.index : mobileActiveIndex;
+  const delayedMobileHref = useRef<string | null>(null);
+  const mobileNavigationFrame = useRef(0);
   const [mobileChrome, setMobileChrome] = useState({pathname, visible: true});
   const iphoneStandalone = useSyncExternalStore(
     subscribeToStandaloneMode,
@@ -54,6 +56,24 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
     getServerStandaloneSnapshot
   );
   const mobileChromeVisible = mobileChrome.pathname === pathname ? mobileChrome.visible : true;
+  const navigateMobile = (event: MouseEvent<HTMLAnchorElement>, href: string, index: number) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.currentTarget.target === '_blank') return;
+    if (delayedMobileHref.current === href) {
+      delayedMobileHref.current = null;
+      return;
+    }
+    if (mobileNavigationFrame.current) window.cancelAnimationFrame(mobileNavigationFrame.current);
+    event.preventDefault();
+    setMobileSelection({pathname, index});
+    const link = event.currentTarget;
+    mobileNavigationFrame.current = window.requestAnimationFrame(() => {
+      mobileNavigationFrame.current = window.requestAnimationFrame(() => {
+        mobileNavigationFrame.current = 0;
+        delayedMobileHref.current = href;
+        link.click();
+      });
+    });
+  };
 
   useEffect(() => {
     let previousY = window.scrollY;
@@ -135,7 +155,7 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
           const active = isActive(item.href);
           const visualActive = mobileIndicatorIndex === index;
           return (
-            <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined} data-active={visualActive || undefined} style={{gridColumn: index + 1, gridRow: 1}} onClick={() => setMobileSelection({pathname, index})}>
+            <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined} data-active={visualActive || undefined} style={{gridColumn: index + 1, gridRow: 1}} onClick={(event) => navigateMobile(event, item.href, index)}>
               <Icon aria-hidden="true" />
               <span>{item.label}</span>
             </Link>
