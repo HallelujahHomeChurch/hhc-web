@@ -1,4 +1,4 @@
-import {act, fireEvent, render, screen, waitFor, cleanup} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor, cleanup, within} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {StatementProvider} from './StatementProvider';
 import {StatementStrip} from './StatementStrip';
@@ -19,7 +19,10 @@ describe('statement entry', () => {
   const id = `statement-${++sequence}`;
   vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({data: payload(id), meta: {}}))));
   const view = mount();
-  await screen.findByRole('dialog');
+  const dialog = await screen.findByRole('dialog');
+  expect(within(dialog).queryByRole('link')).not.toBeInTheDocument();
+  expect(within(dialog).getByRole('checkbox', {name: '今天不再顯示'})).toBeInTheDocument();
+  expect(within(dialog).getByText('第一段原文 第二段原文', {exact: false}).textContent).toBe(payload(id).statement.body);
   expect(screen.getByText('第一段原文 第二段原文', {exact: false})).toBeInTheDocument();
   fireEvent.click(screen.getAllByRole('button', {name: '關閉'})[0]);
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
