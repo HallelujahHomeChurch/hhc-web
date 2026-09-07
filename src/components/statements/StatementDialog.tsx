@@ -1,6 +1,5 @@
 'use client';
 import {useEffect, useRef, useState} from 'react';
-import Link from 'next/link';
 import type {PublicContentItem} from '@hallelujahhomechurch/hhc-web-client';
 import {StatementBody} from './StatementBody';
 export type StatementLabels = {close: string; hideToday: string; readFull: string; notice: string; date: string; notifications: string; notificationDescription: string; email: string};
@@ -30,7 +29,6 @@ export function StatementDialog({statement, labels, onClose}: {statement: Public
       <div className="min-h-0 overflow-y-auto overscroll-contain px-6 py-6 max-[620px]:px-4"><StatementBody body={statement.body ?? ''} locale={statement.resolvedLocale} /></div>
       <footer className="flex shrink-0 flex-wrap items-center gap-3 border-t border-line px-6 py-4 max-[620px]:px-4">
         <label className="mr-auto flex min-h-11 cursor-pointer items-center gap-2 text-sm"><input type="checkbox" checked={hideToday} onChange={(event) => setHideToday(event.target.checked)} className="h-4 w-4 accent-primary" />{labels.hideToday}</label>
-        <Link href={statement.href ?? '#'} onClick={() => onClose(hideToday)} className="inline-flex min-h-11 items-center px-3 text-sm font-semibold text-primary">{labels.readFull}</Link>
         <button type="button" onClick={() => onClose(hideToday)} className="min-h-11 rounded-lg bg-primary-solid px-5 text-sm font-semibold text-primary-foreground hover:bg-primary-solid-hover">{labels.close}</button>
       </footer>
     </div>
