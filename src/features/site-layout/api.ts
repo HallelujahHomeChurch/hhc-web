@@ -14,7 +14,7 @@ export async function getSiteLayout(locale: Locale, client: HhcWebClient = publi
   try {
     const home = await client.getPublicPage('home', locale);
     if (home.pageKey === 'home' && home.template === 'home.v2' && home.content.template === 'home.v2' && home.routePath === '/' && home.resolvedLocale === locale && home.availableLocales.includes(locale)) {
-      return configuredLayout(locale, home.content.data.links, home.version, home.publishedAt);
+      return {...configuredLayout(locale, home.content.data.links, home.version, home.publishedAt), bannerImageUrl: home.content.data.bannerImageUrl};
     }
   } catch {
     return legacyLayout(locale, client);

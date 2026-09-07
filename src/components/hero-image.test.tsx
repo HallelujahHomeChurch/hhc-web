@@ -8,6 +8,12 @@ describe.each([
   ['HomeHero', HomeHero],
   ['AboutHero', AboutHero]
 ] as const)('%s artwork', (_name, Hero) => {
+  it('uses the published banner while preserving centered cover cropping', () => {
+    const {container} = render(<Hero locale="zh-Hant" title="標題" subtitle="副標題" imageUrl="/assets/published-banner" />);
+    expect(container.querySelector('img')?.getAttribute('src')).toContain('published-banner');
+    expect(container.querySelector('img')).toHaveClass('object-cover', 'object-center');
+  });
+
   it('loads the responsive decorative image eagerly without emitting a preload resource', () => {
     const {container} = render(<Hero locale="zh-Hant" title="標題" subtitle="副標題" />);
     const markup = renderToStaticMarkup(<Hero locale="zh-Hant" title="標題" subtitle="副標題" />);

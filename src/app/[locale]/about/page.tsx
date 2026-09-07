@@ -40,16 +40,17 @@ export default async function AboutPage({params}: AboutPageProps) {
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
-  const [page, timelineResult] = await Promise.all([
+  const [page, timelineResult, layout] = await Promise.all([
     aboutPage(locale),
-    getHistoryTimeline(locale).then((value) => ({value, failed: false})).catch(() => ({value: {events: []}, failed: true}))
+    getHistoryTimeline(locale).then((value) => ({value, failed: false})).catch(() => ({value: {events: []}, failed: true})),
+    getSiteLayout(locale)
   ]);
 
   return (
     <>
       <SiteHeaderServer locale={locale} pathname={`/${locale}/about`} />
       <main data-cms-fallback={page.source === 'migration-fallback' ? 'about' : undefined}>
-        <AboutHero locale={locale} title={page.content.heroTitle} subtitle={page.content.heroSubtitle} />
+        <AboutHero imageUrl={layout.bannerImageUrl} locale={locale} title={page.content.heroTitle} subtitle={page.content.heroSubtitle} />
         <div className="bg-[image:var(--hhc-page-gradient)] py-10 pb-14">
           <VisionContent content={page.content.vision} />
           <HistoryTimeline content={page.content.history} timeline={timelineResult.value} scriptureLanguage={locale === 'ko' ? 'en' : locale} errorMessage={timelineResult.failed ? messages.about.historyLoadError : undefined} />

@@ -7,6 +7,7 @@ export type SiteExternalLinks = {
 };
 
 export type SiteLayout = {
+  bannerImageUrl?: string;
   locale: Locale;
   siteName: string;
   englishName: string;

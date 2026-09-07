@@ -53,7 +53,7 @@ export default async function NewsPage({params, searchParams}: NewsPageProps) {
   setRequestLocale(locale);
   const messages = getMessages(locale);
   const page = Math.max(1, Number.parseInt((await searchParams).page ?? '1', 10) || 1);
-  const result = await getNewsPage(locale, page, 12).then((value) => ({...value, failed: false})).catch(() => ({items: [], meta: {page, pageSize: 12, total: 0}, failed: true}));
+  const [result, layout] = await Promise.all([getNewsPage(locale, page, 12).then((value) => ({...value, failed: false})).catch(() => ({items: [], meta: {page, pageSize: 12, total: 0}, failed: true})), getSiteLayout(locale)]);
   const totalPages = Math.max(1, Math.ceil(result.meta.total / result.meta.pageSize));
   const pathname = `/${locale}/news`;
 
@@ -61,7 +61,7 @@ export default async function NewsPage({params, searchParams}: NewsPageProps) {
     <>
       <SiteHeaderServer locale={locale} pathname={pathname} />
       <main className="min-h-[calc(100vh-76px)] bg-[image:var(--hhc-page-gradient)]">
-        <AboutHero locale={locale} title={messages.news.title} subtitle={messages.news.heroSubtitle} />
+        <AboutHero imageUrl={layout.bannerImageUrl} locale={locale} title={messages.news.title} subtitle={messages.news.heroSubtitle} />
         <section className="shell py-10 max-[620px]:py-6" aria-label={messages.news.allNews}>
           <NewsSection
             title={messages.news.allNews}
