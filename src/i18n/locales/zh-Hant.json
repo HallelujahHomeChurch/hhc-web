@@ -59,7 +59,7 @@
       "hideToday": "今天不再顯示",
       "readFull": "閱讀全文",
       "notice": "教會聲明",
-      "date": "聲明日期",
+      "date": "日期",
       "notifications": "網站通知",
       "notificationDescription": "訂閱網站通知，接收週報與重要消息。",
       "email": "Email 訂閱設定"
@@ -95,7 +95,7 @@
     "empty": "目前尚無最新消息。",
     "loadError": "最新消息暫時無法載入。",
     "back": "返回最新消息",
-    "activityDate": "活動日期",
+    "activityDate": "日期",
     "author": "作者",
     "publishedAt": "發布日期",
     "updatedAt": "更新日期"
