@@ -6,7 +6,6 @@ vi.mock('@/features/news/api', () => ({getNewsBySlug: news}));
 vi.mock('next-intl/server', () => ({setRequestLocale: vi.fn()}));
 vi.mock('next/navigation', () => ({notFound: () => {throw new Error('404');}}));
 vi.mock('@/components/legal/LegalPageShell', () => ({LegalPageShell: ({children}: {children: ReactNode}) => children}));
-vi.mock('@/components/layout/WebPushControl', () => ({WebPushControl: () => null}));
 vi.mock('@/features/site-layout/api', () => ({getSiteLayout: async () => ({seoTitleSuffix: 'HHC', siteName: 'HHC'})}));
 import StatementPage, {generateMetadata} from './page';
 const params = Promise.resolve({locale: 'en', slug: 'notice'});
@@ -19,7 +18,8 @@ it('keeps an expired statement readable with noindex and source-locale metadata'
   expect(markup).toContain('lang="zh-Hant"');
   expect(markup).toContain('第一段\n\n署名');
   expect(markup).not.toContain('expired');
-  expect(markup).toContain('Website notifications');
+  expect(markup).not.toContain('Website notifications');
+  expect(markup).not.toContain('account.alive.org.tw/profile');
 });
 it('does not expose general news through a statement URL', async () => {
   news.mockResolvedValue({kind: 'general'});
