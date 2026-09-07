@@ -4,7 +4,6 @@ import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {LegalPageShell} from '@/components/legal/LegalPageShell';
 import {StatementBody} from '@/components/statements/StatementBody';
-import {WebPushControl} from '@/components/layout/WebPushControl';
 import {publicContentClient} from '@/features/content/client';
 import {getNewsBySlug} from '@/features/news/api';
 import {getSiteLayout} from '@/features/site-layout/api';
@@ -48,6 +47,5 @@ export default async function StatementPage({params}: Props) {
   return LegalPageShell({locale, pathname: `/${locale}/statements/${slug}`, children: <article className="mx-auto max-w-[760px] px-5 py-10 max-[620px]:py-6">
     <header className="mb-8 border-b border-line pb-6"><p className="mb-3 text-sm font-semibold tracking-widest text-primary">{labels.notice}</p><h1 lang={news.resolvedLocale} className="text-[clamp(28px,4vw,42px)] font-semibold leading-snug text-ink">{news.title}</h1><p className="mt-4 text-sm text-muted">{labels.date} · <time dateTime={news.displayDate} lang={news.resolvedLocale}>{news.date}</time></p></header>
     <StatementBody body={news.body} locale={news.resolvedLocale} />
-    <section className="mt-12 border-t border-line pt-6"><h2 className="font-semibold text-ink">{labels.notifications}</h2><p className="mt-2 text-sm text-muted">{labels.notificationDescription}</p><div className="mt-4 flex flex-wrap items-center gap-4"><a href={`${process.env.NEXT_PUBLIC_ACCOUNT_SITE_URL ?? 'https://account.alive.org.tw'}/profile`} className="inline-flex min-h-11 items-center font-semibold text-primary">{labels.email}</a><WebPushControl locale={locale} labels={messages.site.notifications} autoPrompt={false} /></div></section>
   </article>});
 }

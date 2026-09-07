@@ -31,9 +31,11 @@ describe('statement entry', () => {
  it('direct detail bypass also suppresses the modal after SPA departure', async () => {
   const id = `statement-${++sequence}`;route.path = `/en/statements/${id}`;
   vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({data: payload(id), meta: {}}))));
-  const view = mount();await screen.findByRole('link');
+  const view = mount();await act(async () => {});
+  expect(screen.queryByRole('link')).not.toBeInTheDocument();
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   route.path = '/zh-Hant';view.rerender(<StatementProvider locale="zh-Hant" labels={labels}><StatementStrip /></StatementProvider>);
+  expect(await screen.findByRole('link')).toBeInTheDocument();
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
  });
  it('saves the Taipei day only when the checkbox is selected', async () => {

@@ -22,7 +22,7 @@ vi.mock('@/lib/browser-bootstrap', () => ({
   revalidateSharedAccountSession: vi.fn()
 }));
 vi.mock('next-intl/server', () => ({setRequestLocale: vi.fn()}));
-vi.mock('next/navigation', () => ({notFound: vi.fn()}));
+vi.mock('next/navigation', () => ({notFound: vi.fn(), usePathname: () => '/zh-Hant/privacy-policy'}));
 
 import MaintenancePage from './[locale]/maintenance/page';
 import UnsubscribePage from './[locale]/newsletter/unsubscribe/page';
