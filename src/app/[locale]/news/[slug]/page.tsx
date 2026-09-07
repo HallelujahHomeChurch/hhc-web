@@ -1,7 +1,7 @@
 import type {Metadata} from 'next';
 import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
 import {setRequestLocale} from 'next-intl/server';
-import {notFound} from 'next/navigation';
+import {notFound, permanentRedirect} from 'next/navigation';
 import {SiteFooterServer} from '@/components/layout/SiteFooterServer';
 import {SiteHeaderServer} from '@/components/layout/SiteHeaderServer';
 import {NewsDetailArticle} from '@/components/news/NewsDetailArticle';
@@ -26,7 +26,9 @@ async function resolveParams(params: NewsDetailPageProps['params']): Promise<{lo
 
 async function loadNews(locale: Locale, slug: string) {
   try {
-    return await getNewsBySlug(locale, slug);
+    const news = await getNewsBySlug(locale, slug);
+    if (news.kind === 'statement') permanentRedirect(`/${locale}/statements/${slug}`);
+    return news;
   } catch (error) {
     if (error instanceof HhcWebApiError && error.status === 404) notFound();
     throw error;

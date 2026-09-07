@@ -9,6 +9,7 @@ import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
 import type {SiteLayout} from '@/features/site-layout/types';
 import type {Locale} from '@/i18n/locales';
 import {isIPhoneDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
+import {StatementStrip} from '@/components/statements/StatementStrip';
 import {AccountControlSlot} from './AccountControl';
 
 export type SiteHeaderProps = {
@@ -148,6 +149,7 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
         </div>
       </div>
       </header>
+      <StatementStrip />
       {showNavigation ? <nav className="site-mobile-tab-bar" style={{gridTemplateColumns: `repeat(${mobileNavItems.length}, minmax(0, 1fr))`}} aria-label={t('nav.menu')} data-mobile-hidden={!mobileChromeVisible} data-iphone-standalone={iphoneStandalone || undefined}>
         <span aria-hidden="true" className="site-mobile-tab-indicator" data-mobile-nav-indicator data-visible={mobileIndicatorIndex >= 0} style={{transform: `translate3d(${Math.max(0, mobileIndicatorIndex) * 100}%, 0, 0)`}} />
         {mobileNavItems.map((item, index) => {

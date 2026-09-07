@@ -29,7 +29,11 @@
     "privacyPolicy": "Privacy",
     "termsOfUse": "Terms",
     "legalNavigation": "Legal information",
-    "pagination": {"navigation": "Content pagination", "previous": "Previous page", "next": "Next page"},
+    "pagination": {
+      "navigation": "Content pagination",
+      "previous": "Previous page",
+      "next": "Next page"
+    },
     "copyrightHolder": "Hallelujah Home Church",
     "allRightsReserved": "All rights reserved.",
     "notifications": {
@@ -49,6 +53,16 @@
       "navigation": "Social media",
       "youtube": "YouTube",
       "facebook": "Facebook"
+    },
+    "statement": {
+      "close": "Close",
+      "hideToday": "Do not show again today",
+      "readFull": "Read full statement",
+      "notice": "Church statement",
+      "date": "Statement date",
+      "notifications": "Website notifications",
+      "notificationDescription": "Receive weekly bulletins and important website updates.",
+      "email": "Email subscription settings"
     }
   },
   "home": {

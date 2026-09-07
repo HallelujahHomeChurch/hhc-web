@@ -24,11 +24,14 @@ const nextConfig: NextConfig = {
       {protocol: 'https', hostname: 'i.ytimg.com', pathname: '/vi/**'}
     ]
   },
-  headers: async () => [{
+  headers: async () => [{source: '/:locale/statements/:slug', headers: [{key: 'X-Robots-Tag', value: 'noindex, follow'}]}, {
     source: '/(.*)',
     headers: [{key: 'Content-Security-Policy-Report-Only', value: reportOnlyCsp}]
   }],
-  rewrites: async () => accountProxyRewrites(process.env.ACCOUNT_API_PROXY_TARGET)
+  rewrites: async () => [
+    ...accountProxyRewrites(process.env.ACCOUNT_API_PROXY_TARGET),
+    ...(process.env.NODE_ENV === 'development' && process.env.HHC_WEB_API_BASE_URL ? [{source: '/api/statements/active', destination: `${process.env.HHC_WEB_API_BASE_URL.replace(/\/$/, '')}/statements/active`}] : [])
+  ]
 };
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');

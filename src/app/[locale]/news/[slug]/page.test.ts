@@ -5,7 +5,7 @@ const {getNewsBySlug, getNewsPage} = vi.hoisted(() => ({getNewsBySlug: vi.fn(), 
 
 vi.mock('@/features/news/api', () => ({getNewsBySlug, getNewsPage}));
 vi.mock('next-intl/server', () => ({setRequestLocale: vi.fn()}));
-vi.mock('next/navigation', () => ({notFound: vi.fn()}));
+vi.mock('next/navigation', () => ({notFound: vi.fn(), permanentRedirect: (href: string) => {throw new Error(`redirect:${href}`);}}));
 vi.mock('@/components/layout/SiteHeaderServer', () => ({SiteHeaderServer: () => null}));
 vi.mock('@/components/layout/SiteFooterServer', () => ({SiteFooterServer: () => null}));
 
@@ -31,6 +31,11 @@ const japaneseNews = {
 };
 
 describe('news detail metadata', () => {
+  it('redirects a known statement from its legacy news URL', async () => {
+    getNewsBySlug.mockResolvedValue({...japaneseNews, kind: 'statement'});
+    await expect(generateMetadata({params: Promise.resolve({locale: 'ja', slug: 'current'})})).rejects.toThrow('redirect:/ja/statements/current');
+  });
+
   it('uses the resolved locale and only exact available translations', async () => {
     getNewsBySlug.mockResolvedValue({
       id: 'news-1',

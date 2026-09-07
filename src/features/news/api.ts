@@ -18,6 +18,7 @@ export function mapNewsItem(value: Awaited<ReturnType<HhcWebClient['listPublicCo
   const metadata = getContentLocaleMetadata(requestedLocale, value);
   return {
     ...metadata,
+    kind: value.kind ?? 'general',
     id: value.id,
     title: value.title,
     summary: value.summary ?? '',
@@ -33,6 +34,7 @@ export async function getNewsBySlug(locale: Locale, slug: string, client: HhcWeb
   const metadata = getContentLocaleMetadata(locale, value);
   return {
     ...metadata,
+    kind: value.kind ?? 'general',
     id: value.id,
     title: value.title,
     summary: value.summary ?? '',
