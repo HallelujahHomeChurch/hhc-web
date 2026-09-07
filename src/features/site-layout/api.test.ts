@@ -48,6 +48,7 @@ describe('getSiteLayout', () => {
         {key: 'literature-ministry', label: '文書ミニストリー', href: '/ja/literature-ministry', visible: true}
       ],
       links: homeV2Page().content.data.links,
+      bannerImageUrl: homeV2Page().content.data.bannerImageUrl,
       version: 9,
       publishedAt: '2026-08-29T00:00:00Z'
     });

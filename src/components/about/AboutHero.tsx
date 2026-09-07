@@ -6,9 +6,10 @@ type AboutHeroProps = {
   locale: Locale;
   title: string;
   subtitle: string;
+  imageUrl?: string;
 };
 
-export function AboutHero({locale, title, subtitle}: AboutHeroProps) {
+export function AboutHero({locale, title, subtitle, imageUrl = '/assets/banners/hero.jpg'}: AboutHeroProps) {
   const displayFont = bannerFontByLocale[locale].className;
   const titleTypography = locale === 'ja'
     ? 'text-[clamp(44px,5.8vw,76px)] tracking-[0.03em] max-[620px]:whitespace-normal max-[620px]:text-[clamp(34px,10vw,46px)] max-[620px]:tracking-[0.01em]'
@@ -28,7 +29,7 @@ export function AboutHero({locale, title, subtitle}: AboutHeroProps) {
     >
       <picture className="absolute inset-0">
         <Image
-          src="/assets/banners/hero.jpg"
+          src={imageUrl}
           alt=""
           fill
           loading="eager"

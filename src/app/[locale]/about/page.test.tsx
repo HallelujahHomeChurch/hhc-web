@@ -1,5 +1,5 @@
 import {renderToStaticMarkup} from 'react-dom/server';
-import {describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 
 const mocks = vi.hoisted(() => ({getAboutPage: vi.fn(), getHistoryTimeline: vi.fn(), getSiteLayout: vi.fn()}));
 vi.mock('@/features/pages/api', () => ({getAboutPage: mocks.getAboutPage}));
@@ -13,6 +13,7 @@ vi.mock('next/navigation', () => ({notFound: vi.fn()}));
 import AboutPage, {generateMetadata} from './page';
 
 describe('CMS-managed About page', () => {
+  beforeEach(() => mocks.getSiteLayout.mockResolvedValue({bannerImageUrl: '/assets/shared-banner'}));
   it('passes CMS fixed content to existing components and preserves the history API', async () => {
     mocks.getAboutPage.mockResolvedValue(aboutPage());
     mocks.getHistoryTimeline.mockResolvedValue({events: [{date: '2026', body: 'CMS timeline event', resolvedLocale: 'en', availableLocales: ['en']}]});
@@ -20,6 +21,7 @@ describe('CMS-managed About page', () => {
     const markup = renderToStaticMarkup(await AboutPage({params: Promise.resolve({locale: 'en'})}));
 
     expect(markup).toContain('CMS About hero');
+    expect(markup).toContain('shared-banner');
     expect(markup).toContain('CMS vision intro');
     expect(markup).toContain('CMS scripture line');
     expect(markup).toContain('CMS timeline event');

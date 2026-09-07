@@ -58,12 +58,13 @@ export default async function LiteratureMinistryPage({params}: LiteratureMinistr
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
+  const layout = await getSiteLayout(locale);
 
   return (
     <>
       <SiteHeaderServer locale={locale} pathname={`/${locale}/literature-ministry`} />
       <main>
-        <AboutHero locale={locale} title={messages.literatureMinistry.heroTitle} subtitle={messages.literatureMinistry.heroSubtitle} />
+        <AboutHero imageUrl={layout.bannerImageUrl} locale={locale} title={messages.literatureMinistry.heroTitle} subtitle={messages.literatureMinistry.heroSubtitle} />
         <div className="bg-[image:var(--hhc-page-gradient)] py-10 pb-14">
           <Suspense fallback={null}>
             <WeeklyArchive locale={locale} messages={messages.literatureMinistry} />
