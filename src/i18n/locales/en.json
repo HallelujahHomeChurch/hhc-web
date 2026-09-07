@@ -30,7 +30,7 @@
     "termsOfUse": "Terms",
     "legalNavigation": "Legal information",
     "pagination": {"navigation": "Content pagination", "previous": "Previous page", "next": "Next page"},
-    "copyrightHolder": "Hallelujah Community Care Association, R.O.C.",
+    "copyrightHolder": "Hallelujah Home Church",
     "allRightsReserved": "All rights reserved.",
     "notifications": {
       "enable": "Enable notifications",
@@ -208,13 +208,13 @@
     "heroTitle": "Privacy Policy",
     "heroSubtitle": "",
     "updatedAtLabel": "Last updated",
-    "updatedAt": "August 10, 2026",
+    "updatedAt": "September 7, 2026",
     "intro": "This policy explains how the Hallelujah Home Church website and HHC Account services collect, use, retain, and protect personal information. Please read it before using the website or creating an account.",
     "sections": [
       {
         "title": "Scope and data controller",
         "body": [
-          "This policy applies to the public website, HHC Account, and related online services provided through alive.org.tw and its subdomains. They are provided and maintained by Hallelujah Community Care Association, R.O.C. (the Association).",
+          "This policy applies to the public website, HHC Account, and related online services provided through alive.org.tw and its subdomains. They are provided and maintained by Hallelujah Home Church (the Church).",
           "If this website links to third-party websites, video platforms, social platforms, or map services, those services are governed by their own privacy policies."
         ]
       },
@@ -256,8 +256,8 @@
       {
         "title": "Processing locations, recipients, and vendors",
         "body": [
-          "Information may be processed where the Association and its cloud hosting, storage, email, security, and third-party sign-in providers operate, which may involve cross-border processing.",
-          "Recipients are limited to authorized Association personnel, contracted service providers, your selected sign-in provider, and authorities legally entitled to request information. Vendors may process information only for the contracted purpose and must use appropriate confidentiality and security measures."
+          "Information may be processed where the Church and its cloud hosting, storage, email, security, and third-party sign-in providers operate, which may involve cross-border processing.",
+          "Recipients are limited to authorized Church personnel, contracted service providers, your selected sign-in provider, and authorities legally entitled to request information. Vendors may process information only for the contracted purpose and must use appropriate confidentiality and security measures."
         ]
       },
       {
@@ -288,8 +288,8 @@
     "heroTitle": "Terms of Use",
     "heroSubtitle": "",
     "updatedAtLabel": "Last updated",
-    "updatedAt": "August 4, 2026",
-    "intro": "By using the Hallelujah Home Church website, HHC Account, or related online services, you agree to these terms.",
+    "updatedAt": "September 7, 2026",
+    "intro": "This website and HHC Account services are provided and managed by Hallelujah Home Church (the Church). By using this website, HHC Account, or related online services, you agree to these terms.",
     "sections": [
       {
         "title": "HHC Account",
@@ -308,7 +308,7 @@
       {
         "title": "Intellectual property",
         "body": [
-          "Unless otherwise stated, text, images, design, weekly papers, media, and other content on this website are owned by Hallelujah Community Care Association, R.O.C. or the relevant rights holders.",
+          "Copyright in the text, images, design, weekly papers, media, and other content on this website is held by the Church or the relevant rights holders in accordance with applicable law. Rights in content used under license remain with the original rights holders.",
           "You may read, download, and share public content for personal, family, or non-commercial church use. Without permission, you may not use content commercially, create derivative works, sublicense it, or remove rights notices.",
           "English Scripture quotations are from the Holy Bible, New International Version® (NIV®). Copyright © 1973, 1978, 1984, 2011 by Biblica, Inc. All rights reserved worldwide. Japanese Scripture quotations are from 『聖書 新共同訳』. ©1987, 1988 共同訳聖書実行委員会、日本聖書協会。"
         ]
@@ -318,13 +318,13 @@
         "body": [
           "You may not use this website in a way that interferes with its operation, attempts unauthorized access, distributes malicious code, impersonates others, or violates applicable law.",
           "If you submit messages, registration details, or other content, you are responsible for making sure it is accurate, lawful, and does not infringe the rights of others.",
-          "If conduct is unlawful, violates these terms, harms users or system security, or involves fraud or abuse, the Association may reasonably restrict or disable accounts, revoke sessions, or remove related content. Where legally permitted and consistent with a security investigation, we will provide appropriate notice or a way to raise concerns."
+          "If conduct is unlawful, violates these terms, harms users or system security, or involves fraud or abuse, the Church may reasonably restrict or disable accounts, revoke sessions, or remove related content. Where legally permitted and consistent with a security investigation, we will provide appropriate notice or a way to raise concerns."
         ]
       },
       {
         "title": "Third-party services and links",
         "body": [
-          "This website may use or link to Google, Microsoft, LINE, YouTube, Facebook, maps, or other third-party services. Their own terms and policies govern them, and the Association does not control their content, data handling, or availability.",
+          "This website may use or link to Google, Microsoft, LINE, YouTube, Facebook, maps, or other third-party services. Their own terms and policies govern them, and the Church does not control their content, data handling, or availability.",
           "A third-party outage, restriction, or policy change may affect sign-in or website functions. We will make reasonable efforts to provide an alternative where practical, but we do not guarantee continued availability of a third-party service."
         ]
       },

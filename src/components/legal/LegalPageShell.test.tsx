@@ -26,7 +26,7 @@ const layout: SiteLayout = {
   locale: 'zh-Hant',
   siteName: '哈利路亞家教會',
   englishName: 'Hallelujah Home Church',
-  copyrightHolder: '社團法人中華民國哈利路亞社區關懷協會',
+  copyrightHolder: '哈利路亞家教會',
   allRightsReserved: 'All rights reserved.',
   seoTitleSuffix: '哈利路亞家教會',
   seoDescriptionFallback: '在愛中建造家庭，在真理中成長',
