@@ -1,0 +1,525 @@
+{
+  "status": "preview-only",
+  "changes": [
+    {
+      "pageKey": "privacy-policy",
+      "locale": "zh-Hant",
+      "translationPatch": [
+        {
+          "op": "test",
+          "path": "/bodyJson/data/updatedAt",
+          "value": "2026年8月10日"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/updatedAt",
+          "value": "2026年9月7日"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/0/body/0",
+          "value": "本政策適用於 alive.org.tw 及其子網域所提供的公開網站、HHC 帳戶與相關線上服務，由社團法人中華民國哈利路亞社區關懷協會（以下簡稱本會）提供並維護。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/0/body/0",
+          "value": "本政策適用於 alive.org.tw 及其子網域所提供的公開網站、HHC 帳戶與相關線上服務，由哈利路亞家教會（以下簡稱本教會）提供並維護。"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/5/body/0",
+          "value": "資料利用地區包含本會所在地及提供雲端主機、儲存、電子郵件、安全防護與第三方登入服務之供應商所在地，因此可能涉及跨境處理。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/5/body/0",
+          "value": "資料利用地區包含本教會所在地及提供雲端主機、儲存、電子郵件、安全防護與第三方登入服務之供應商所在地，因此可能涉及跨境處理。"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/5/body/1",
+          "value": "利用對象限於本會獲授權人員、受託服務廠商、您選擇的登入服務提供者，以及依法有權要求提供資料的機關。受託者僅得在委託目的範圍內處理資料，並應採取適當保密與安全措施。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/5/body/1",
+          "value": "利用對象限於本教會獲授權人員、受託服務廠商、您選擇的登入服務提供者，以及依法有權要求提供資料的機關。受託者僅得在委託目的範圍內處理資料，並應採取適當保密與安全措施。"
+        }
+      ]
+    },
+    {
+      "pageKey": "terms-of-use",
+      "locale": "zh-Hant",
+      "translationPatch": [
+        {
+          "op": "test",
+          "path": "/bodyJson/data/updatedAt",
+          "value": "2026年8月4日"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/updatedAt",
+          "value": "2026年9月7日"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/intro",
+          "value": "使用哈利路亞家教會網站、HHC 帳戶或相關線上服務，即表示您同意遵守以下條款。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/intro",
+          "value": "本網站及 HHC 帳戶服務由哈利路亞家教會（以下簡稱本教會）提供與管理。使用本網站、HHC 帳戶或相關線上服務，即表示您同意遵守以下條款。"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/2/body/0",
+          "value": "本網站文字、圖片、設計、週報、影音與其他內容，除另有註明外，由社團法人中華民國哈利路亞社區關懷協會或相關權利人所有。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/2/body/0",
+          "value": "本網站文字、圖片、設計、週報、影音與其他內容之著作權，由本教會或相關權利人依法享有；經授權使用之內容，其權利仍歸原權利人所有。"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/3/body/2",
+          "value": "如有違法、違反本條款、危害其他使用者或系統安全、詐欺或濫用情形，本會得在合理必要範圍內限制或停用帳戶、撤銷工作階段或移除相關內容；法令允許且不影響安全調查時，我們會提供適當通知或申訴管道。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/3/body/2",
+          "value": "如有違法、違反本條款、危害其他使用者或系統安全、詐欺或濫用情形，本教會得在合理必要範圍內限制或停用帳戶、撤銷工作階段或移除相關內容；法令允許且不影響安全調查時，我們會提供適當通知或申訴管道。"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/4/body/0",
+          "value": "本網站可能使用或連結 Google、Microsoft、LINE、YouTube、Facebook、地圖或其他第三方服務。第三方服務由其各自條款與政策規範，本會不控制其內容、資料處理或服務可用性。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/4/body/0",
+          "value": "本網站可能使用或連結 Google、Microsoft、LINE、YouTube、Facebook、地圖或其他第三方服務。第三方服務由其各自條款與政策規範，本教會不控制其內容、資料處理或服務可用性。"
+        }
+      ]
+    },
+    {
+      "pageKey": "privacy-policy",
+      "locale": "zh-Hans",
+      "translationPatch": [
+        {
+          "op": "test",
+          "path": "/bodyJson/data/updatedAt",
+          "value": "2026年8月10日"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/updatedAt",
+          "value": "2026年9月7日"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/0/body/0",
+          "value": "本政策适用于 alive.org.tw 及其子域名所提供的公开网站、HHC 帐户与相关在线服务，由社团法人中华民国哈利路亚社区关怀协会（以下简称本会）提供并维护。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/0/body/0",
+          "value": "本政策适用于 alive.org.tw 及其子域名所提供的公开网站、HHC 帐户与相关在线服务，由哈利路亚家教会（以下简称本教会）提供并维护。"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/5/body/0",
+          "value": "资料利用地区包含本会所在地及提供云端主机、存储、电子邮件、安全防护与第三方登录服务之供应商所在地，因此可能涉及跨境处理。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/5/body/0",
+          "value": "资料利用地区包含本教会所在地及提供云端主机、存储、电子邮件、安全防护与第三方登录服务之供应商所在地，因此可能涉及跨境处理。"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/5/body/1",
+          "value": "利用对象限于本会获授权人员、受托服务厂商、您选择的登录服务提供者，以及依法有权要求提供资料的机关。受托者仅得在委托目的范围内处理资料，并应采取适当保密与安全措施。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/5/body/1",
+          "value": "利用对象限于本教会获授权人员、受托服务厂商、您选择的登录服务提供者，以及依法有权要求提供资料的机关。受托者仅得在委托目的范围内处理资料，并应采取适当保密与安全措施。"
+        }
+      ]
+    },
+    {
+      "pageKey": "terms-of-use",
+      "locale": "zh-Hans",
+      "translationPatch": [
+        {
+          "op": "test",
+          "path": "/bodyJson/data/updatedAt",
+          "value": "2026年8月4日"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/updatedAt",
+          "value": "2026年9月7日"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/intro",
+          "value": "使用哈利路亚家教会网站、HHC 帐户或相关在线服务，即表示您同意遵守以下条款。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/intro",
+          "value": "本网站及 HHC 帐户服务由哈利路亚家教会（以下简称本教会）提供与管理。使用本网站、HHC 帐户或相关在线服务，即表示您同意遵守以下条款。"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/2/body/0",
+          "value": "本网站文字、图片、设计、周报、影音与其他内容，除另有注明外，由社团法人中华民国哈利路亚社区关怀协会或相关权利人所有。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/2/body/0",
+          "value": "本网站文字、图片、设计、周报、影音与其他内容之著作权，由本教会或相关权利人依法享有；经授权使用之内容，其权利仍归原权利人所有。"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/3/body/2",
+          "value": "如有违法、违反本条款、危害其他用户或系统安全、欺诈或滥用情形，本会可在合理必要范围内限制或停用帐户、撤销会话或移除相关内容；法令允许且不影响安全调查时，我们会提供适当通知或申诉渠道。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/3/body/2",
+          "value": "如有违法、违反本条款、危害其他用户或系统安全、欺诈或滥用情形，本教会可在合理必要范围内限制或停用帐户、撤销会话或移除相关内容；法令允许且不影响安全调查时，我们会提供适当通知或申诉渠道。"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/4/body/0",
+          "value": "本网站可能使用或链接 Google、Microsoft、LINE、YouTube、Facebook、地图或其他第三方服务。第三方服务由其各自条款与政策规范，本会不控制其内容、资料处理或服务可用性。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/4/body/0",
+          "value": "本网站可能使用或链接 Google、Microsoft、LINE、YouTube、Facebook、地图或其他第三方服务。第三方服务由其各自条款与政策规范，本教会不控制其内容、资料处理或服务可用性。"
+        }
+      ]
+    },
+    {
+      "pageKey": "privacy-policy",
+      "locale": "en",
+      "translationPatch": [
+        {
+          "op": "test",
+          "path": "/bodyJson/data/updatedAt",
+          "value": "August 10, 2026"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/updatedAt",
+          "value": "September 7, 2026"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/0/body/0",
+          "value": "This policy applies to the public website, HHC Account, and related online services provided through alive.org.tw and its subdomains. They are provided and maintained by Hallelujah Community Care Association, R.O.C. (the Association)."
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/0/body/0",
+          "value": "This policy applies to the public website, HHC Account, and related online services provided through alive.org.tw and its subdomains. They are provided and maintained by Hallelujah Home Church (the Church)."
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/5/body/0",
+          "value": "Information may be processed where the Association and its cloud hosting, storage, email, security, and third-party sign-in providers operate, which may involve cross-border processing."
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/5/body/0",
+          "value": "Information may be processed where the Church and its cloud hosting, storage, email, security, and third-party sign-in providers operate, which may involve cross-border processing."
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/5/body/1",
+          "value": "Recipients are limited to authorized Association personnel, contracted service providers, your selected sign-in provider, and authorities legally entitled to request information. Vendors may process information only for the contracted purpose and must use appropriate confidentiality and security measures."
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/5/body/1",
+          "value": "Recipients are limited to authorized Church personnel, contracted service providers, your selected sign-in provider, and authorities legally entitled to request information. Vendors may process information only for the contracted purpose and must use appropriate confidentiality and security measures."
+        }
+      ]
+    },
+    {
+      "pageKey": "terms-of-use",
+      "locale": "en",
+      "translationPatch": [
+        {
+          "op": "test",
+          "path": "/bodyJson/data/updatedAt",
+          "value": "August 4, 2026"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/updatedAt",
+          "value": "September 7, 2026"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/intro",
+          "value": "By using the Hallelujah Home Church website, HHC Account, or related online services, you agree to these terms."
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/intro",
+          "value": "This website and HHC Account services are provided and managed by Hallelujah Home Church (the Church). By using this website, HHC Account, or related online services, you agree to these terms."
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/2/body/0",
+          "value": "Unless otherwise stated, text, images, design, weekly papers, media, and other content on this website are owned by Hallelujah Community Care Association, R.O.C. or the relevant rights holders."
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/2/body/0",
+          "value": "Copyright in the text, images, design, weekly papers, media, and other content on this website is held by the Church or the relevant rights holders in accordance with applicable law. Rights in content used under license remain with the original rights holders."
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/3/body/2",
+          "value": "If conduct is unlawful, violates these terms, harms users or system security, or involves fraud or abuse, the Association may reasonably restrict or disable accounts, revoke sessions, or remove related content. Where legally permitted and consistent with a security investigation, we will provide appropriate notice or a way to raise concerns."
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/3/body/2",
+          "value": "If conduct is unlawful, violates these terms, harms users or system security, or involves fraud or abuse, the Church may reasonably restrict or disable accounts, revoke sessions, or remove related content. Where legally permitted and consistent with a security investigation, we will provide appropriate notice or a way to raise concerns."
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/4/body/0",
+          "value": "This website may use or link to Google, Microsoft, LINE, YouTube, Facebook, maps, or other third-party services. Their own terms and policies govern them, and the Association does not control their content, data handling, or availability."
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/4/body/0",
+          "value": "This website may use or link to Google, Microsoft, LINE, YouTube, Facebook, maps, or other third-party services. Their own terms and policies govern them, and the Church does not control their content, data handling, or availability."
+        }
+      ]
+    },
+    {
+      "pageKey": "privacy-policy",
+      "locale": "ja",
+      "translationPatch": [
+        {
+          "op": "test",
+          "path": "/bodyJson/data/updatedAt",
+          "value": "2026年8月10日"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/updatedAt",
+          "value": "2026年9月7日"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/0/body/0",
+          "value": "本ポリシーは、alive.org.twおよびそのサブドメインで提供される公開ウェブサイト、HHCアカウント、関連オンラインサービスに適用されます。これらのサービスは、中華民国ハレルヤ地域ケア協会（以下「当協会」）が提供し、運営します。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/0/body/0",
+          "value": "本ポリシーは、alive.org.twおよびそのサブドメインで提供される公開ウェブサイト、HHCアカウント、関連オンラインサービスに適用されます。これらのサービスは、ハレルヤ・ホームチャーチ（以下「当教会」）が提供し、運営します。"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/1/body/4",
+          "value": "当協会は、フロントエンドのエラーおよびパフォーマンス上の問題を検知するためSentryを利用します。送信する情報は、匿名化されたエラー、ブラウザ、端末、ページパス、リリース、トレースデータに限定し、Cookie、認証ヘッダー、フォーム内容または完全なURLクエリパラメータを意図的に送信することはありません。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/1/body/4",
+          "value": "当教会は、フロントエンドのエラーおよびパフォーマンス上の問題を検知するためSentryを利用します。送信する情報は、匿名化されたエラー、ブラウザ、端末、ページパス、リリース、トレースデータに限定し、Cookie、認証ヘッダー、フォーム内容または完全なURLクエリパラメータを意図的に送信することはありません。"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/5/body/0",
+          "value": "情報は、当協会ならびにクラウドホスティング、ストレージ、電子メール、セキュリティおよび第三者ログインの各サービス提供者が事業を行う地域で取り扱われる場合があり、国境を越えた取扱いを伴うことがあります。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/5/body/0",
+          "value": "情報は、当教会ならびにクラウドホスティング、ストレージ、電子メール、セキュリティおよび第三者ログインの各サービス提供者が事業を行う地域で取り扱われる場合があり、国境を越えた取扱いを伴うことがあります。"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/5/body/1",
+          "value": "情報の提供先は、当協会の権限を有する担当者、委託先、ご本人が選択したログインサービス提供者、および法令に基づき情報を要求する権限を有する機関に限定されます。委託先は委託目的の範囲でのみ情報を取り扱い、適切な守秘義務および安全管理措置を講じなければなりません。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/5/body/1",
+          "value": "情報の提供先は、当教会の権限を有する担当者、委託先、ご本人が選択したログインサービス提供者、および法令に基づき情報を要求する権限を有する機関に限定されます。委託先は委託目的の範囲でのみ情報を取り扱い、適切な守秘義務および安全管理措置を講じなければなりません。"
+        }
+      ]
+    },
+    {
+      "pageKey": "terms-of-use",
+      "locale": "ja",
+      "translationPatch": [
+        {
+          "op": "test",
+          "path": "/bodyJson/data/updatedAt",
+          "value": "2026年8月4日"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/updatedAt",
+          "value": "2026年9月7日"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/intro",
+          "value": "ハレルヤ・ホームチャーチのウェブサイト、HHCアカウントまたは関連オンラインサービスを利用することにより、本規約に同意したものとみなされます。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/intro",
+          "value": "本ウェブサイトおよびHHCアカウントサービスは、ハレルヤ・ホームチャーチ（以下「当教会」）が提供し、管理します。本ウェブサイト、HHCアカウントまたは関連オンラインサービスを利用することにより、本規約に同意したものとみなされます。"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/2/body/0",
+          "value": "別段の記載がない限り、本ウェブサイトの文章、画像、デザイン、週報、映像その他のコンテンツは、中華民国ハレルヤ地域ケア協会または各権利者に帰属します。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/2/body/0",
+          "value": "本ウェブサイトの文章、画像、デザイン、週報、映像その他のコンテンツの著作権は、法令に従い当教会または各権利者に帰属します。利用許諾を受けて使用するコンテンツの権利は、引き続き元の権利者に帰属します。"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/3/body/2",
+          "value": "違法行為、本規約への違反、利用者またはシステムの安全への危害、詐欺もしくは濫用が認められる場合、当協会は合理的に必要な範囲でアカウントを制限もしくは停止し、セッションを無効化し、または関連コンテンツを削除することがあります。法令上許容され、かつセキュリティ調査に支障がない場合、適切な通知または異議申立ての方法を提供します。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/3/body/2",
+          "value": "違法行為、本規約への違反、利用者またはシステムの安全への危害、詐欺もしくは濫用が認められる場合、当教会は合理的に必要な範囲でアカウントを制限もしくは停止し、セッションを無効化し、または関連コンテンツを削除することがあります。法令上許容され、かつセキュリティ調査に支障がない場合、適切な通知または異議申立ての方法を提供します。"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/4/body/0",
+          "value": "本ウェブサイトは、Google、Microsoft、LINE、YouTube、Facebook、地図その他の第三者サービスを利用し、またはそれらにリンクすることがあります。第三者サービスには各事業者の規約およびポリシーが適用され、当協会はそのコンテンツ、情報の取扱いまたは利用可能性を管理しません。"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/4/body/0",
+          "value": "本ウェブサイトは、Google、Microsoft、LINE、YouTube、Facebook、地図その他の第三者サービスを利用し、またはそれらにリンクすることがあります。第三者サービスには各事業者の規約およびポリシーが適用され、当教会はそのコンテンツ、情報の取扱いまたは利用可能性を管理しません。"
+        }
+      ]
+    },
+    {
+      "pageKey": "privacy-policy",
+      "locale": "ko",
+      "translationPatch": [
+        {
+          "op": "test",
+          "path": "/bodyJson/data/updatedAt",
+          "value": "2026년 8월 10일"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/updatedAt",
+          "value": "2026년 9월 7일"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/0/body/0",
+          "value": "본 방침은 alive.org.tw 및 그 하위 도메인을 통해 제공되는 공개 웹사이트, HHC 계정과 관련 온라인 서비스에 적용됩니다. 해당 서비스는 중화민국 할렐루야 지역사회 돌봄 협회(이하 ‘협회’)가 제공하고 운영합니다."
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/0/body/0",
+          "value": "본 방침은 alive.org.tw 및 그 하위 도메인을 통해 제공되는 공개 웹사이트, HHC 계정과 관련 온라인 서비스에 적용됩니다. 해당 서비스는 할렐루야 가정교회(이하 ‘본 교회’)가 제공하고 운영합니다."
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/5/body/0",
+          "value": "정보는 협회와 클라우드 호스팅, 저장소, 이메일, 보안 및 제3자 로그인 서비스 제공자가 운영되는 지역에서 처리될 수 있으며 국외 처리가 포함될 수 있습니다."
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/5/body/0",
+          "value": "정보는 본 교회와 클라우드 호스팅, 저장소, 이메일, 보안 및 제3자 로그인 서비스 제공자가 운영되는 지역에서 처리될 수 있으며 국외 처리가 포함될 수 있습니다."
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/5/body/1",
+          "value": "정보 제공 대상은 협회의 권한 있는 담당자, 위탁 서비스 제공자, 사용자가 선택한 로그인 서비스 제공자와 법령에 따라 정보 제공을 요구할 권한이 있는 기관으로 제한됩니다. 수탁업체는 위탁 목적 범위에서만 정보를 처리하고 적절한 비밀 유지 및 보안 조치를 마련해야 합니다."
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/5/body/1",
+          "value": "정보 제공 대상은 본 교회의 권한 있는 담당자, 위탁 서비스 제공자, 사용자가 선택한 로그인 서비스 제공자와 법령에 따라 정보 제공을 요구할 권한이 있는 기관으로 제한됩니다. 수탁업체는 위탁 목적 범위에서만 정보를 처리하고 적절한 비밀 유지 및 보안 조치를 마련해야 합니다."
+        }
+      ]
+    },
+    {
+      "pageKey": "terms-of-use",
+      "locale": "ko",
+      "translationPatch": [
+        {
+          "op": "test",
+          "path": "/bodyJson/data/updatedAt",
+          "value": "2026년 8월 4일"
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/updatedAt",
+          "value": "2026년 9월 7일"
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/intro",
+          "value": "할렐루야 가정교회 웹사이트, HHC 계정 또는 관련 온라인 서비스를 이용하면 본 약관에 동의한 것으로 봅니다."
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/intro",
+          "value": "본 웹사이트와 HHC 계정 서비스는 할렐루야 가정교회(이하 ‘본 교회’)가 제공하고 관리합니다. 본 웹사이트, HHC 계정 또는 관련 온라인 서비스를 이용하면 본 약관에 동의한 것으로 봅니다."
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/2/body/0",
+          "value": "별도 표시가 없는 한 본 웹사이트의 글, 이미지, 디자인, 주보, 영상과 그 밖의 콘텐츠는 중화민국 할렐루야 지역사회 돌봄 협회 또는 관련 권리자에게 귀속됩니다."
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/2/body/0",
+          "value": "본 웹사이트의 글, 이미지, 디자인, 주보, 영상과 그 밖의 콘텐츠에 대한 저작권은 관련 법령에 따라 본 교회 또는 관련 권리자에게 귀속됩니다. 이용 허락을 받아 사용하는 콘텐츠의 권리는 원래 권리자에게 있습니다."
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/3/body/2",
+          "value": "위법 행위, 본 약관 위반, 이용자 또는 시스템 보안에 대한 위해, 사기 또는 오용이 있는 경우 협회는 합리적으로 필요한 범위에서 계정을 제한하거나 정지하고 세션을 취소하거나 관련 콘텐츠를 삭제할 수 있습니다. 법령상 허용되고 보안 조사에 지장이 없는 경우 적절한 통지 또는 이의 제기 방법을 제공합니다."
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/3/body/2",
+          "value": "위법 행위, 본 약관 위반, 이용자 또는 시스템 보안에 대한 위해, 사기 또는 오용이 있는 경우 본 교회는 합리적으로 필요한 범위에서 계정을 제한하거나 정지하고 세션을 취소하거나 관련 콘텐츠를 삭제할 수 있습니다. 법령상 허용되고 보안 조사에 지장이 없는 경우 적절한 통지 또는 이의 제기 방법을 제공합니다."
+        },
+        {
+          "op": "test",
+          "path": "/bodyJson/data/sections/4/body/0",
+          "value": "본 웹사이트는 Google, Microsoft, LINE, YouTube, Facebook, 지도 또는 그 밖의 제3자 서비스를 이용하거나 해당 서비스로 연결할 수 있습니다. 제3자 서비스에는 각 사업자의 약관과 방침이 적용되며 협회는 그 콘텐츠, 정보 처리 또는 이용 가능성을 관리하지 않습니다."
+        },
+        {
+          "op": "replace",
+          "path": "/bodyJson/data/sections/4/body/0",
+          "value": "본 웹사이트는 Google, Microsoft, LINE, YouTube, Facebook, 지도 또는 그 밖의 제3자 서비스를 이용하거나 해당 서비스로 연결할 수 있습니다. 제3자 서비스에는 각 사업자의 약관과 방침이 적용되며 본 교회는 그 콘텐츠, 정보 처리 또는 이용 가능성을 관리하지 않습니다."
+        }
+      ]
+    }
+  ]
+}

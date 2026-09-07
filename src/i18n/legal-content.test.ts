@@ -1,9 +1,18 @@
 import {describe, expect, it} from 'vitest';
 import en from './locales/en.json';
+import {messagesByLocale} from './messages';
 import zhHans from './locales/zh-Hans.json';
 import zhHant from './locales/zh-Hant.json';
 
 describe('legal content', () => {
+  it.each(Object.entries(messagesByLocale))('identifies the church as operator and preserves licensed rights in %s', (_locale, messages) => {
+    expect(messages.site.copyrightHolder).toBe(messages.site.name);
+    expect(messages.privacyPolicy.sections[0].body[0]).toContain(messages.site.name);
+    expect(messages.termsOfUse.intro).toContain(messages.site.name);
+    expect(JSON.stringify([messages.privacyPolicy, messages.termsOfUse])).not.toMatch(/關懷協會|关怀协会|Association|ケア協会|当協会|협회|本會|本会/);
+    expect(messages.termsOfUse.sections[2].body[0]).toMatch(/授權|授权|licens|許諾|이용 허락/);
+  });
+
   it.each([
     ['zh-Hant', zhHant],
     ['zh-Hans', zhHans],

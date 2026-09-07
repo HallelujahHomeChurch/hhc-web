@@ -11,7 +11,7 @@ const layout: SiteLayout = {
   locale: 'zh-Hant',
   siteName: '哈利路亞家教會',
   englishName: 'Hallelujah Home Church',
-  copyrightHolder: '社團法人中華民國哈利路亞社區關懷協會',
+  copyrightHolder: '哈利路亞家教會',
   allRightsReserved: 'All rights reserved.',
   seoTitleSuffix: '哈利路亞家教會',
   seoDescriptionFallback: '在愛中建造家庭，在真理中成長',
@@ -72,7 +72,7 @@ describe('SiteFooter', () => {
     expect(social).toHaveClass('gap-3');
     expect(controls).toHaveClass('max-[620px]:justify-between');
     expect(controls?.parentElement).toHaveClass('max-[620px]:flex-col', 'max-[620px]:items-start');
-    expect(screen.getByText(/社團法人中華民國哈利路亞社區關懷協會/)).toBeInTheDocument();
+    expect(screen.getByText(/©.*哈利路亞家教會/)).toBeInTheDocument();
     expect(screen.getByRole('link', {name: '隱私權'})).toHaveAttribute('href', '/zh-Hant/privacy-policy');
     expect(screen.getByRole('link', {name: '條款'})).toHaveAttribute('href', '/zh-Hant/terms-of-use');
   });
