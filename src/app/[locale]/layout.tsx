@@ -4,6 +4,7 @@ import {notFound} from 'next/navigation';
 import {isLocale, productLocales, type Locale} from '@/i18n/locales';
 import {AccountControlProvider} from '@/components/layout/AccountControl';
 import {InitialLoadingBoundary} from '@/components/layout/InitialLoadingBoundary';
+import {StatementProvider} from '@/components/statements/StatementProvider';
 import {TranslationNotice} from '@/components/layout/TranslationNotice';
 
 type LocaleLayoutProps = {
@@ -34,10 +35,12 @@ export default async function LocaleLayout({children, params}: LocaleLayoutProps
     <NextIntlClientProvider locale={rawLocale} messages={messages}>
       <AccountControlProvider labels={messages.site.account}>
         <InitialLoadingBoundary label={messages.site.loading}>
+          <StatementProvider locale={rawLocale} labels={messages.site.statement}>
           <div data-locale={rawLocale} lang={rawLocale}>
             <TranslationNotice locale={rawLocale} message={messages.site.translationNotice} dismissLabel={messages.site.translationNoticeDismiss} regionLabel={messages.site.translationNoticeRegion} />
             {children}
           </div>
+          </StatementProvider>
         </InitialLoadingBoundary>
       </AccountControlProvider>
     </NextIntlClientProvider>

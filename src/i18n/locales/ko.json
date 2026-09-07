@@ -29,7 +29,11 @@
     "privacyPolicy": "개인정보 처리방침",
     "termsOfUse": "이용약관",
     "legalNavigation": "법적 정보",
-    "pagination": {"navigation": "콘텐츠 페이지 이동", "previous": "이전 페이지", "next": "다음 페이지"},
+    "pagination": {
+      "navigation": "콘텐츠 페이지 이동",
+      "previous": "이전 페이지",
+      "next": "다음 페이지"
+    },
     "copyrightHolder": "할렐루야 가정교회",
     "allRightsReserved": "All rights reserved.",
     "notifications": {
@@ -49,6 +53,16 @@
       "navigation": "소셜 미디어",
       "youtube": "YouTube",
       "facebook": "Facebook"
+    },
+    "statement": {
+      "close": "닫기",
+      "hideToday": "오늘 다시 표시하지 않기",
+      "readFull": "전문 읽기",
+      "notice": "교회 성명",
+      "date": "성명 날짜",
+      "notifications": "웹사이트 알림",
+      "notificationDescription": "주보와 중요한 소식을 받아보세요.",
+      "email": "이메일 구독 설정"
     }
   },
   "home": {

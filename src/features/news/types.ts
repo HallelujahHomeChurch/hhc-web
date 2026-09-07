@@ -1,6 +1,7 @@
 import type {ContentLocaleMetadata} from '@/features/content/locale';
 
 export type NewsItem = ContentLocaleMetadata & {
+  kind?: 'general' | 'statement';
   id: string;
   title: string;
   summary: string;

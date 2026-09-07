@@ -7,6 +7,7 @@ import type {SiteLayout} from '@/features/site-layout/types';
 import type {Locale} from '@/i18n/locales';
 import {Button} from '@/components/ui/Button';
 import {LanguageSwitcher} from './LanguageSwitcher';
+import {useStatement} from '@/components/statements/StatementProvider';
 import {WebPushControl} from './WebPushControl';
 
 export type SiteFooterProps = {
@@ -17,6 +18,7 @@ export type SiteFooterProps = {
 
 export function SiteFooter({layout, locale, pathname}: SiteFooterProps) {
   const t = useTranslations('site');
+  const statement = useStatement();
   const year = new Date().getFullYear();
 
   return (
@@ -37,7 +39,7 @@ export function SiteFooter({layout, locale, pathname}: SiteFooterProps) {
               <LanguageSwitcher locale={locale} pathname={pathname} label={t('language')} />
               <WebPushControl
                 locale={locale}
-                autoPrompt={pathname === `/${locale}`}
+                autoPrompt={!statement?.statement && pathname === `/${locale}`}
                 labels={{
                   enable: t('notifications.enable'),
                   disable: t('notifications.disable'),

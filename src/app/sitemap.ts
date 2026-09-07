@@ -47,6 +47,7 @@ async function fixedPage(path: string, load: () => Promise<{source: string; inde
 
 export function buildNewsSitemap(news: NewsItem[]): MetadataRoute.Sitemap {
   return news.flatMap((item) => {
+    if (item.kind === 'statement') return [];
     const slug = item.href.split('/').filter(Boolean).at(-1);
     if (!slug) return [];
     const path = `/news/${slug}`;

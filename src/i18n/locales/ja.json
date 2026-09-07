@@ -29,7 +29,11 @@
     "privacyPolicy": "プライバシー",
     "termsOfUse": "利用規約",
     "legalNavigation": "法的情報",
-    "pagination": {"navigation": "コンテンツのページ移動", "previous": "前のページ", "next": "次のページ"},
+    "pagination": {
+      "navigation": "コンテンツのページ移動",
+      "previous": "前のページ",
+      "next": "次のページ"
+    },
     "copyrightHolder": "ハレルヤ・ホームチャーチ",
     "allRightsReserved": "All rights reserved.",
     "notifications": {
@@ -49,6 +53,16 @@
       "navigation": "ソーシャルメディア",
       "youtube": "YouTube",
       "facebook": "Facebook"
+    },
+    "statement": {
+      "close": "閉じる",
+      "hideToday": "今日は再表示しない",
+      "readFull": "全文を読む",
+      "notice": "教会声明",
+      "date": "声明日",
+      "notifications": "サイト通知",
+      "notificationDescription": "週報や重要なお知らせを受け取れます。",
+      "email": "メール購読設定"
     }
   },
   "home": {

@@ -80,6 +80,10 @@ function fixedPage(availableLocales: ('zh-Hant' | 'zh-Hans' | 'en' | 'ja' | 'ko'
 }
 
 describe('news sitemap', () => {
+  it('excludes statement URLs and their locale alternatives', () => {
+    expect(buildNewsSitemap([{kind: 'statement', id: 'statement-1', title: '聲明', requestedLocale: 'ja', resolvedLocale: 'zh-Hant', availableLocales: ['zh-Hant', 'en'], summary: '', date: '', imageAlt: '', href: '/zh-Hant/statements/notice'}])).toEqual([]);
+  });
+
   it('adds one canonical entry per locale', () => {
     const entries = buildNewsSitemap([{
       id: 'news-1', title: 'News', requestedLocale: 'ja', resolvedLocale: 'zh-Hant', availableLocales: ['zh-Hant', 'en'],
