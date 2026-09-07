@@ -59,7 +59,7 @@
       "hideToday": "Do not show again today",
       "readFull": "Read full statement",
       "notice": "Church statement",
-      "date": "Statement date",
+      "date": "Date",
       "notifications": "Website notifications",
       "notificationDescription": "Receive weekly bulletins and important website updates.",
       "email": "Email subscription settings"
@@ -95,7 +95,7 @@
     "empty": "There is no news yet.",
     "loadError": "Latest news is temporarily unavailable.",
     "back": "Back to latest news",
-    "activityDate": "Event date",
+    "activityDate": "Date",
     "author": "Author",
     "publishedAt": "Published",
     "updatedAt": "Updated"

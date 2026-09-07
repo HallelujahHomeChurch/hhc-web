@@ -59,7 +59,7 @@
       "hideToday": "今天不再显示",
       "readFull": "阅读全文",
       "notice": "教会声明",
-      "date": "声明日期",
+      "date": "日期",
       "notifications": "网站通知",
       "notificationDescription": "订阅网站通知，接收周报与重要消息。",
       "email": "Email 订阅设置"
@@ -95,7 +95,7 @@
     "empty": "目前尚无最新消息。",
     "loadError": "最新消息暂时无法加载。",
     "back": "返回最新消息",
-    "activityDate": "活动日期",
+    "activityDate": "日期",
     "author": "作者",
     "publishedAt": "发布日期",
     "updatedAt": "更新日期"
