@@ -13,8 +13,8 @@ importers:
   .:
     dependencies:
       '@hallelujahhomechurch/account-client':
-        specifier: 0.6.18
-        version: 0.6.18
+        specifier: 0.6.24
+        version: 0.6.24
       '@hallelujahhomechurch/hhc-web-client':
         specifier: 0.6.23
         version: 0.6.23
@@ -307,8 +307,8 @@ packages:
   '@formatjs/intl-localematcher@0.8.13':
     resolution: {integrity: sha512-kHEAFOkeJSPNi7c5PaKaRjxcBrJwzzt81ifUu+8uve1EDW/VJl83KsxmqgqNZLzcFEhSliZGvx3+pk/RH0IOmg==}
 
-  '@hallelujahhomechurch/account-client@0.6.18':
-    resolution: {integrity: sha512-P74Ie4OSqFsvtkXS5NRux0iOt2F0NzHU9e2P+dEK8CJe2BddOaGo3Z1riNnzOae05tOTAk7j5RCtS35a6Pr9Yw==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/account-client/0.6.18/cbe6fc5e3ab090366c3fe462f4204fcf96a79b78}
+  '@hallelujahhomechurch/account-client@0.6.24':
+    resolution: {integrity: sha512-3ruUfguQybdpNxNg07TLJQGDkgle3YFfTrgFAWt4Fr1oN62JYTnBwY2BrK3l7FkRHd8wpu+5w4r9QfLMf53QQA==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/account-client/0.6.24/c415327cdf63a52b50a03139f68408ee07f9b62e}
 
   '@hallelujahhomechurch/hhc-web-client@0.6.23':
     resolution: {integrity: sha512-BqSjWb09bhPJ+kE+ZzAXdpNsEoY317Irgc+Moh6uxUjXUyoNARHKltbvyfk233oCJLbIF9CDLQUysCsfncqSHA==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/hhc-web-client/0.6.23/88b02356d18cd62b9165fb281eb931309856890d}
@@ -3476,7 +3476,7 @@ snapshots:
     dependencies:
       '@formatjs/fast-memoize': 3.1.7
 
-  '@hallelujahhomechurch/account-client@0.6.18': {}
+  '@hallelujahhomechurch/account-client@0.6.24': {}
 
   '@hallelujahhomechurch/hhc-web-client@0.6.23':
     dependencies:
