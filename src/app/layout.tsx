@@ -11,19 +11,19 @@ export async function generateMetadata(): Promise<Metadata> {
   const layout = await getSiteLayout('zh-Hant');
   return {
     metadataBase: new URL(siteConfig.url),
-    title: layout.seoTitleSuffix,
+    title: siteConfig.name,
     description: layout.seoDescriptionFallback,
     openGraph: {
       type: 'website',
-      title: layout.seoTitleSuffix,
+      title: siteConfig.name,
       description: layout.seoDescriptionFallback,
-      siteName: layout.siteName,
+      siteName: siteConfig.name,
       url: siteConfig.url,
-      images: [{url: siteConfig.defaultOgImage, width: 1200, height: 630, alt: layout.siteName}]
+      images: [{url: siteConfig.defaultOgImage, width: 1200, height: 630, alt: siteConfig.name}]
     },
     twitter: {
       card: 'summary_large_image',
-      title: layout.seoTitleSuffix,
+      title: siteConfig.name,
       description: layout.seoDescriptionFallback,
       images: [siteConfig.defaultOgImage]
     }
