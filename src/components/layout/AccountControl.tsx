@@ -87,19 +87,19 @@ export function AccountControlProvider({
     const result = await resolveAccountAuth(force && !client ? {getSession: revalidateSharedAccountSession} : sessionClient);
     if (revision !== requestRevision.current) return result;
 
-    if (result.status === 'authenticated' && !isPermissionList(result.user.permissions)) {
-      setAuth({status: 'unavailable'});
-      return {status: 'unavailable' as const, error: new Error('Invalid account permissions')};
-    }
+    const invalidPermissions = result.status === 'authenticated' && !isPermissionList(result.user.permissions);
     if (result.status === 'authenticated') {
       sessionStorage.removeItem(webPassiveSsoAttemptKey);
     }
     setAuth((current) => {
+      if (invalidPermissions) return {status: 'unavailable'};
       if (result.status === 'authenticated') return {status: 'authenticated', user: result.user};
       if (result.status === 'anonymous') return {status: 'anonymous'};
       return current.status === 'authenticated' ? current : {status: 'unavailable'};
     });
-    return result;
+    return invalidPermissions
+      ? {status: 'unavailable' as const, error: new Error('Invalid account permissions')}
+      : result;
   }, [client, sessionClient]);
 
   const beginAuthorization = useCallback((prompt?: 'none') => {
