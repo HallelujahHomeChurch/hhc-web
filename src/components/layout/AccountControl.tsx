@@ -4,6 +4,8 @@ import {createContext, useCallback, useContext, useEffect, useMemo, useRef, useS
 import {UserRound} from 'lucide-react';
 import {
   buildAuthorizeUrl,
+  canAccessAdmin,
+  isPermissionList,
   createOAuthTransactionOnce,
   currentReturnTo,
   resolveAccountAuth,
@@ -85,15 +87,19 @@ export function AccountControlProvider({
     const result = await resolveAccountAuth(force && !client ? {getSession: revalidateSharedAccountSession} : sessionClient);
     if (revision !== requestRevision.current) return result;
 
+    const invalidPermissions = result.status === 'authenticated' && !isPermissionList(result.user.permissions);
     if (result.status === 'authenticated') {
       sessionStorage.removeItem(webPassiveSsoAttemptKey);
     }
     setAuth((current) => {
+      if (invalidPermissions) return {status: 'unavailable'};
       if (result.status === 'authenticated') return {status: 'authenticated', user: result.user};
       if (result.status === 'anonymous') return {status: 'anonymous'};
       return current.status === 'authenticated' ? current : {status: 'unavailable'};
     });
-    return result;
+    return invalidPermissions
+      ? {status: 'unavailable' as const, error: new Error('Invalid account permissions')}
+      : result;
   }, [client, sessionClient]);
 
   const beginAuthorization = useCallback((prompt?: 'none') => {
@@ -226,7 +232,7 @@ export function AccountControlView() {
       }}
       links={[
         {id: 'projection', label: labels.projectionSystem, href: siteConfig.apps.projection},
-        ...(user.admin_access
+        ...(canAccessAdmin(user.permissions ?? [])
           ? [{id: 'admin', label: labels.adminManagement, href: siteConfig.apps.admin}]
           : [])
       ]}
