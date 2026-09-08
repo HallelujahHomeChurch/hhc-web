@@ -351,7 +351,7 @@ describe('SiteHeader', () => {
       ...anonymousSessionClient,
       getSession: async () => ({
         authenticated: true,
-        user: {id: 'u1', email: 'member@example.com', display_name: '會員', avatar_url: null, admin_access: false, permissions: []}
+        user: {id: 'u1', email: 'member@example.com', display_name: '會員', avatar_url: null, permissions: []}
       })
     };
 
