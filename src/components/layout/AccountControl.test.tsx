@@ -33,7 +33,7 @@ function authenticatedClient(adminAccess = false, logoutAll = vi.fn().mockResolv
   return {
     getSession: vi.fn().mockResolvedValue({
       authenticated: true,
-      user: {id: 'u1', email: 'ada@example.com', display_name: 'Ada', avatar_url: null, admin_access: !adminAccess, permissions: adminAccess ? ['dsr:read'] : []}
+      user: {id: 'u1', email: 'ada@example.com', display_name: 'Ada', avatar_url: null, permissions: adminAccess ? ['dsr:read'] : []}
     }),
     logout: vi.fn(),
     logoutAll
@@ -270,7 +270,7 @@ describe('AccountControl', () => {
     vi.mocked(client.getSession)
       .mockResolvedValueOnce({
         authenticated: true,
-        user: {id: 'u1', email: 'ada@example.com', display_name: 'Ada', avatar_url: null, admin_access: false, permissions: []}
+        user: {id: 'u1', email: 'ada@example.com', display_name: 'Ada', avatar_url: null, permissions: []}
       })
       .mockResolvedValueOnce({authenticated: false});
 
@@ -318,7 +318,7 @@ describe('AccountControl', () => {
     vi.mocked(client.getSession)
       .mockResolvedValueOnce({
         authenticated: true,
-        user: {id: 'u1', email: 'ada@example.com', display_name: 'Ada', avatar_url: null, admin_access: false, permissions: []}
+        user: {id: 'u1', email: 'ada@example.com', display_name: 'Ada', avatar_url: null, permissions: []}
       })
       .mockResolvedValueOnce({authenticated: false});
 
