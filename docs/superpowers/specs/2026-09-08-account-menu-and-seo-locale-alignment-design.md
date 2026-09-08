@@ -94,8 +94,9 @@ subdirectory. The domain-wide preferred site name is therefore exactly
 The neutral root page publishes consistent site-name signals:
 
 - `WebSite.name = 哈利路亞家教會`;
+- the root page title and visible primary heading use `哈利路亞家教會`;
 - root `og:site_name = 哈利路亞家教會`;
-- root title and other homepage references do not contradict that preference;
+- other homepage references do not contradict that preference;
 - localized full names are removed from `WebSite.alternateName`, so Google is
   not invited to choose a different language as the domain site name.
 

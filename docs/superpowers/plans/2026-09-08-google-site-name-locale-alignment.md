@@ -4,7 +4,7 @@
 
 **Goal:** Keep the Google domain site name fixed as Traditional Chinese while preserving five independently localized page titles and descriptions.
 
-**Architecture:** Change only the neutral-root `WebSite` identity in `hhc-web`. Continue sourcing page metadata from the existing locale-owned site layout, keep localized organization aliases, and remove cross-language `WebSite.alternateName` candidates that Google can select as the single domain name.
+**Architecture:** Restore `siteConfig.name` as the fixed domain-brand source and use it consistently on the neutral root. Continue sourcing descriptions and localized-route metadata from the existing locale-owned site layout, keep localized organization aliases, and remove cross-language `WebSite.alternateName` candidates that Google can select as the single domain name.
 
 **Tech Stack:** Next.js 16, TypeScript, React 19, Vitest, pnpm
 
@@ -23,12 +23,13 @@
 
 **Files:**
 - Modify: `src/app/page.test.tsx`
+- Modify: `src/app/layout.test.tsx`
 - Verify: `src/app/site-layout-metadata.test.ts`
 - Verify: `src/i18n/locales.test.ts`
 
 **Interfaces:**
 - Consumes: `RootPage()` rendered JSON-LD and `generateMetadata()` from `src/app/page.tsx`.
-- Produces: a failing contract requiring `WebSite.name = 哈利路亞家教會`, no `WebSite.alternateName`, and unchanged localized metadata.
+- Produces: a failing contract requiring fixed root title/Open Graph/H1/`WebSite.name`, no `WebSite.alternateName`, and unchanged localized metadata.
 
 - [ ] **Step 1: Replace the stale root identity expectation**
 
@@ -43,49 +44,74 @@ expect(website).toMatchObject({
 expect(website).not.toHaveProperty('alternateName');
 expect(organization.alternateName).toContain('哈利路亚家教会');
 expect(metadata.openGraph).toMatchObject({siteName: '哈利路亞家教會'});
+expect(metadata.title).toBe('哈利路亞家教會');
+expect(markup).toContain('>哈利路亞家教會</h1>');
 ```
 
-- [ ] **Step 2: Run focused tests and confirm RED**
+- [ ] **Step 2: Require the default root layout to use the domain brand**
+
+Update the existing root-layout metadata assertion:
+
+```ts
+expect(metadata).toMatchObject({
+  title: '哈利路亞家教會',
+  openGraph: {title: '哈利路亞家教會', siteName: '哈利路亞家教會'}
+});
+```
+
+- [ ] **Step 3: Run focused tests and confirm RED**
 
 Run:
 
 ```bash
-corepack pnpm vitest run src/app/page.test.tsx src/app/site-layout-metadata.test.ts src/i18n/locales.test.ts
+corepack pnpm vitest run src/app/page.test.tsx src/app/layout.test.tsx src/app/site-layout-metadata.test.ts src/i18n/locales.test.ts
 ```
 
-Expected: `src/app/page.test.tsx` fails because the current `WebSite` node still contains cross-language `alternateName`; localized metadata assertions remain green.
+Expected: root tests fail because the current root still uses CMS site-name values, `HHC` in the visible heading, and cross-language `WebSite.alternateName`; localized metadata assertions remain green.
 
 ### Task 2: Remove the ambiguous root site-name alternatives
 
 **Files:**
+- Modify: `src/lib/site.ts`
 - Modify: `src/app/page.tsx`
+- Modify: `src/app/layout.tsx`
 - Test: `src/app/page.test.tsx`
+- Test: `src/app/layout.test.tsx`
 - Verify: `src/lib/structured-data.ts`
 
 **Interfaces:**
-- Consumes: `layout.siteName`, currently `哈利路亞家教會` for the root `zh-Hant` layout.
-- Produces: one `WebSite` graph node with `name` and `url` only; the existing `Organization` node remains unchanged.
+- Consumes: the fixed domain brand `siteConfig.name` and locale-owned descriptions.
+- Produces: consistent root metadata/heading plus one `WebSite` graph node with `name` and `url` only; localized route metadata and the existing `Organization` node remain unchanged.
 
 - [ ] **Step 1: Make the minimum production change**
 
-Delete only the `alternateName` property from the root `WebSite` node:
+Add the domain brand to the existing site config:
+
+```ts
+name: '哈利路亞家教會',
+```
+
+Use `siteConfig.name` for the neutral root title, Open Graph title/site name,
+image alt, visible `h1`, and `WebSite.name`. Delete the `alternateName` property
+from the root `WebSite` node:
 
 ```ts
 {
   '@type': 'WebSite',
   url: `${siteConfig.url}/`,
-  name: layout.siteName
+  name: siteConfig.name
 }
 ```
 
-Do not change `organizationStructuredData(layout.links)`.
+Keep the locale-owned root description and do not change
+`organizationStructuredData(layout.links)` or any `[locale]` route.
 
 - [ ] **Step 2: Run focused tests and confirm GREEN**
 
 Run:
 
 ```bash
-corepack pnpm vitest run src/app/page.test.tsx src/app/site-layout-metadata.test.ts src/i18n/locales.test.ts
+corepack pnpm vitest run src/app/page.test.tsx src/app/layout.test.tsx src/app/site-layout-metadata.test.ts src/i18n/locales.test.ts
 ```
 
 Expected: both files pass.
@@ -93,7 +119,7 @@ Expected: both files pass.
 - [ ] **Step 3: Commit the focused SEO change**
 
 ```bash
-git add src/app/page.tsx src/app/page.test.tsx
+git add src/lib/site.ts src/app/page.tsx src/app/page.test.tsx src/app/layout.tsx src/app/layout.test.tsx
 git commit -m "fix: keep Google site name in Traditional Chinese"
 ```
 
