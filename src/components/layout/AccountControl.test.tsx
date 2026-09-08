@@ -289,6 +289,46 @@ describe('AccountControl', () => {
     expect(client.getSession).toHaveBeenCalledTimes(2);
   });
 
+  it('clears a host session when another HHC site publishes the shared sign-out marker', async () => {
+    document.cookie = 'hhc_sso_hint=1; Path=/';
+    const client = authenticatedClient();
+
+    render(
+      <AccountControl
+        accountSiteUrl="https://account.alive.org.tw"
+        client={client}
+        labels={labels}
+      />
+    );
+
+    expect(await screen.findByRole('button', {name: 'Account menu'})).toBeInTheDocument();
+    document.cookie = 'hhc_sso_hint=0; Path=/';
+    fireEvent.focus(window);
+
+    await waitFor(() => expect(screen.getByRole('link', {name: 'Sign in'})).toBeInTheDocument());
+    expect(client.logoutAll).toHaveBeenCalledOnce();
+  });
+
+  it('hides a stale account menu when host cleanup after shared sign-out fails', async () => {
+    const client = authenticatedClient(false, vi.fn().mockRejectedValue(new Error('network unavailable')));
+
+    render(
+      <AccountControl
+        accountSiteUrl="https://account.alive.org.tw"
+        client={client}
+        labels={labels}
+      />
+    );
+
+    expect(await screen.findByRole('button', {name: 'Account menu'})).toBeInTheDocument();
+    document.cookie = 'hhc_sso_hint=0; Path=/';
+    fireEvent.focus(window);
+
+    await waitFor(() => expect(screen.queryByRole('button', {name: 'Account menu'})).not.toBeInTheDocument());
+    expect(screen.queryByRole('link', {name: 'Sign in'})).not.toBeInTheDocument();
+    expect(client.logoutAll).toHaveBeenCalledOnce();
+  });
+
   it('revalidates only when pageshow restores a BFCache page', async () => {
     const client = authenticatedClient();
 
