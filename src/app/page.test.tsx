@@ -57,49 +57,51 @@ describe('RootPage', () => {
     expect(request.redirect).not.toHaveBeenCalled();
   });
 
-  it('publishes projected root metadata with canonical and x-default links', async () => {
+  it('publishes the Traditional Chinese domain identity with projected description', async () => {
     const metadata = await generateMetadata();
 
     expect(dynamic).toBe('force-dynamic');
     expect(metadata).toMatchObject({
-      title: 'CMS SEO 標題',
+      title: '哈利路亞家教會',
       description: 'CMS SEO 說明',
       alternates: {
         canonical: '/',
         languages: {'x-default': 'https://www.alive.org.tw/'}
       },
-      openGraph: {siteName: 'CMS 中文站'}
+      openGraph: {title: '哈利路亞家教會', siteName: '哈利路亞家教會'}
     });
   });
 
-  it('publishes HHC with all localized full names as the website identity', async () => {
+  it('publishes one Traditional Chinese website name and localized organization names', async () => {
     const markup = renderToStaticMarkup(await RootPage());
     const jsonLd = markup.match(
       /<script type="application\/ld\+json">([^<]+)<\/script>/
     )?.[1];
 
     expect(jsonLd).toBeDefined();
-    expect(JSON.parse(jsonLd!)).toMatchObject({
-      '@context': 'https://schema.org',
-      '@graph': [
-        {
-          '@type': 'WebSite',
-          name: 'CMS 中文站',
-          alternateName: [
+    const structuredData = JSON.parse(jsonLd!);
+    const website = structuredData['@graph'].find((entry: {'@type': string}) => entry['@type'] === 'WebSite');
+    const organization = structuredData['@graph'].find((entry: {'@type': string}) => entry['@type'] === 'Organization');
+
+    expect(website).toMatchObject({
+      '@type': 'WebSite',
+      name: '哈利路亞家教會',
+      url: 'https://www.alive.org.tw/'
+    });
+    expect(website).not.toHaveProperty('alternateName');
+    expect(organization).toMatchObject({
+      '@type': 'Organization',
+      '@id': 'https://www.alive.org.tw/#organization',
+      alternateName: [
             '哈利路亞家教會',
             '哈利路亚家教会',
             'Hallelujah Home Church',
             'ハレルヤ・ホームチャーチ',
             '할렐루야 가정교회'
-          ]
-        },
-        {
-          '@type': 'Organization',
-          '@id': 'https://www.alive.org.tw/#organization',
-          sameAs: ['https://youtube.com/@cms-church', 'https://www.facebook.com/cms-church']
-        }
-      ]
+      ],
+      sameAs: ['https://youtube.com/@cms-church', 'https://www.facebook.com/cms-church']
     });
+    expect(markup).toContain('>哈利路亞家教會</h1>');
   });
 
   it('redirects a Japanese browser to the Japanese home page', async () => {

@@ -40,13 +40,13 @@ describe('RootLayout', () => {
     expect(renderToStaticMarkup(<RootLayout><main /></RootLayout>)).toContain('<html lang="und"');
   });
 
-  it('uses the published Traditional Chinese projection for global metadata', async () => {
+  it('keeps the domain identity in Traditional Chinese while using the published description', async () => {
     const metadata = await generateMetadata();
 
     expect(metadata).toMatchObject({
-      title: 'CMS SEO 標題',
+      title: '哈利路亞家教會',
       description: 'CMS SEO 說明',
-      openGraph: {title: 'CMS SEO 標題', description: 'CMS SEO 說明', siteName: 'CMS 中文站'}
+      openGraph: {title: '哈利路亞家教會', description: 'CMS SEO 說明', siteName: '哈利路亞家教會'}
     });
   });
   it('keeps the before-paint theme bootstrap without making the root layout dynamic', () => {
