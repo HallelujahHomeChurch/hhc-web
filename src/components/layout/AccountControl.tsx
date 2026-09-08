@@ -84,7 +84,20 @@ export function AccountControlProvider({
 
   const refreshSession = useCallback(async (force = false) => {
     const revision = ++requestRevision.current;
-    const result = await resolveAccountAuth(force && !client ? {getSession: revalidateSharedAccountSession} : sessionClient);
+    let sharedSignOutFailed = false;
+    let result = await resolveAccountAuth(force && !client ? {getSession: revalidateSharedAccountSession} : sessionClient);
+    if (result.status === 'authenticated' && hasSharedSignOut()) {
+      try {
+        await sessionClient.logoutAll();
+        if (!client) clearSharedAccountSession();
+        notifyAccountStateChange('sign-out');
+        result = {status: 'anonymous'};
+      } catch (error) {
+        sharedSignOutFailed = true;
+        if (!client) clearSharedAccountSession();
+        result = {status: 'unavailable', error: error instanceof Error ? error : new Error('Unable to clear account session')};
+      }
+    }
     if (revision !== requestRevision.current) return result;
 
     const invalidPermissions = result.status === 'authenticated' && !isPermissionList(result.user.permissions);
@@ -95,7 +108,7 @@ export function AccountControlProvider({
       if (invalidPermissions) return {status: 'unavailable'};
       if (result.status === 'authenticated') return {status: 'authenticated', user: result.user};
       if (result.status === 'anonymous') return {status: 'anonymous'};
-      return current.status === 'authenticated' ? current : {status: 'unavailable'};
+      return !sharedSignOutFailed && current.status === 'authenticated' ? current : {status: 'unavailable'};
     });
     return invalidPermissions
       ? {status: 'unavailable' as const, error: new Error('Invalid account permissions')}
@@ -255,10 +268,19 @@ export function notifyAccountStateChange(type: 'profile-changed' | 'sign-out') {
 }
 
 function shouldAttemptPassiveSso() {
-  const hasHint = document.cookie
+  return hasSsoHint() && sessionStorage.getItem(webPassiveSsoAttemptKey) !== '1';
+}
+
+function hasSsoHint() {
+  return document.cookie
     .split(';')
     .some((cookie) => cookie.trim() === 'hhc_sso_hint=1');
-  return hasHint && sessionStorage.getItem(webPassiveSsoAttemptKey) !== '1';
+}
+
+function hasSharedSignOut() {
+  return document.cookie
+    .split(';')
+    .some((cookie) => cookie.trim() === 'hhc_sso_hint=0');
 }
 
 function defaultNavigateExternal(url: string) {
