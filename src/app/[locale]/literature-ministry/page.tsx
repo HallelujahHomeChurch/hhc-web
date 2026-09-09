@@ -7,6 +7,7 @@ import {SiteFooterServer} from '@/components/layout/SiteFooterServer';
 import {SiteHeaderServer} from '@/components/layout/SiteHeaderServer';
 import {WeeklyArchive} from '@/components/literature-ministry/WeeklyArchive';
 import {getSiteLayout} from '@/features/site-layout/api';
+import {getBulletinAccess} from '@/features/weekly/access';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
@@ -26,6 +27,7 @@ async function getLocale(params: Promise<{locale: string}>): Promise<Locale> {
 
 export async function generateMetadata({params}: LiteratureMinistryPageProps): Promise<Metadata> {
   const locale = await getLocale(params);
+  if (!(await getBulletinAccess()).enabled) notFound();
   setRequestLocale(locale);
   const messages = getMessages(locale);
   const layout = await getSiteLayout(locale);
@@ -56,6 +58,7 @@ export async function generateMetadata({params}: LiteratureMinistryPageProps): P
 
 export default async function LiteratureMinistryPage({params}: LiteratureMinistryPageProps) {
   const locale = await getLocale(params);
+  if (!(await getBulletinAccess()).enabled) notFound();
   setRequestLocale(locale);
   const messages = getMessages(locale);
   const layout = await getSiteLayout(locale);

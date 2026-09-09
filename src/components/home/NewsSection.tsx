@@ -9,11 +9,12 @@ type NewsSectionProps = {
   moreLabel?: string;
   items: NewsItem[];
   errorMessage?: string;
+  fillSpace?: boolean;
 };
 
-export function NewsSection({title, moreHref, moreLabel, items, errorMessage}: NewsSectionProps) {
+export function NewsSection({title, moreHref, moreLabel, items, errorMessage, fillSpace = false}: NewsSectionProps) {
   return (
-    <div className="min-w-0">
+    <div className={fillSpace ? "flex min-w-0 flex-col" : "min-w-0"}>
       <div className="mb-5 flex items-center justify-between gap-5">
         <h2 className="m-0 text-2xl font-semibold tracking-[0.03em] text-ink">{title}</h2>
         {moreHref && moreLabel ? (
@@ -22,10 +23,10 @@ export function NewsSection({title, moreHref, moreLabel, items, errorMessage}: N
           </Link>
         ) : null}
       </div>
-      {errorMessage ? <p role="status" className="rounded-lg border border-line bg-panel p-4 text-sm text-muted">{errorMessage}</p> : <ul className="m-0 grid list-none gap-3 p-0">
+      {errorMessage ? <p role="status" className="rounded-lg border border-line bg-panel p-4 text-sm text-muted">{errorMessage}</p> : <ul className={`m-0 grid list-none gap-3 p-0${fillSpace ? " flex-1 auto-rows-fr" : ""}`}>
         {items.map((item) => (
           <li key={item.id} lang={item.resolvedLocale}>
-            <Link className="group grid min-h-[82px] grid-cols-[132px_minmax(0,1fr)] items-center gap-4 max-[620px]:grid-cols-[112px_minmax(0,1fr)]" href={item.href}>
+            <Link className={`group grid min-h-[82px] grid-cols-[132px_minmax(0,1fr)] items-center gap-4 max-[620px]:grid-cols-[112px_minmax(0,1fr)]${fillSpace ? " h-full" : ""}`} href={item.href}>
               <span className="relative grid aspect-video w-[132px] place-items-center overflow-hidden rounded-[10px] bg-[var(--hhc-news-panel)] text-primary ring-1 ring-panel-border transition group-hover:ring-primary max-[620px]:w-28">
                 {item.imageSrc ? (
                   <Image

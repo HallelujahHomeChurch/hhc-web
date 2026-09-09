@@ -16,6 +16,12 @@ const items = Array.from({length: 4}, (_, index) => ({
 }));
 
 describe('NewsSection', () => {
+  it('distributes the same three stories across the available space when weekly is absent', () => {
+    const {container} = render(<NewsSection items={items.slice(0, 3)} title="News" fillSpace />);
+    expect(screen.getAllByRole('listitem')).toHaveLength(3);
+    expect(container.firstElementChild).toHaveClass('flex', 'flex-col');
+    expect(screen.getByRole('list')).toHaveClass('flex-1');
+  });
   it('renders news item links', () => {
     const {container} = render(<NewsSection items={items} moreHref="/zh-Hant/news" moreLabel="查看更多" title="最新消息" />);
 

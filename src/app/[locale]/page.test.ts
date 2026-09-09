@@ -5,12 +5,14 @@ import {getAlternates, getLocalizedPath} from '@/lib/seo';
 import {getHomePageTitle} from '@/lib/home-metadata';
 
 const mocks = vi.hoisted(() => ({
+  isBulletinEnabled: vi.fn().mockResolvedValue(true),
   getHomePage: vi.fn(),
   getHomeContent: vi.fn(),
   getLocations: vi.fn(),
   getSiteLayout: vi.fn()
 }));
 
+vi.mock('@/features/weekly/access', () => ({isBulletinEnabled: mocks.isBulletinEnabled}));
 vi.mock('@/features/pages/api', () => ({getHomePage: mocks.getHomePage}));
 vi.mock('@/features/home/api', () => ({getHomeContent: mocks.getHomeContent}));
 vi.mock('@/features/locations/api', () => ({getLocations: mocks.getLocations}));
@@ -27,6 +29,18 @@ import HomePage, {generateMetadata} from './page';
 beforeEach(() => vi.clearAllMocks());
 
 describe('home page metadata', () => {
+  it('removes the weekly component and keeps all three news items in a full-width card when off', async () => {
+    mocks.isBulletinEnabled.mockResolvedValueOnce(false);
+    mocks.getHomePage.mockResolvedValue(cmsHomeV2Page());
+    mocks.getHomeContent.mockResolvedValue({news: [1, 2, 3].map(id => ({id, title: `News ${id}`, href: `/en/news/${id}`, date: ''})), videos: []});
+    mocks.getSiteLayout.mockResolvedValue({links: cmsHomeV2Page().content.links});
+    const markup = renderToStaticMarkup(await HomePage({params: Promise.resolve({locale: 'en'})}));
+    expect(markup).not.toContain('weekly-title');
+    expect(markup).not.toContain('Weekly Paper');
+    expect(markup).toContain('aria-label="Latest News"');
+    expect(markup).toContain('grid-cols-1');
+    for (const id of [1, 2, 3]) expect(markup).toContain(`News ${id}`);
+  });
   it('uses only the site name as the browser title', async () => {
     expect(getHomePageTitle('zh-Hant')).toBe('哈利路亞家教會');
     expect(getHomePageTitle('ja')).toBe('ハレルヤ・ホームチャーチ');

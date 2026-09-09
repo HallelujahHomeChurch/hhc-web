@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   getLegalPage: vi.fn()
 }));
 
+vi.mock('@/features/weekly/access', () => ({getBulletinAccess: vi.fn().mockResolvedValue({enabled: true})}));
 vi.mock('@/features/site-layout/api', () => ({getSiteLayout: mocks.getSiteLayout}));
 vi.mock('@/features/news/api', () => ({getNewsBySlug: mocks.getNewsBySlug}));
 vi.mock('@/features/pages/api', () => ({getHomePage: mocks.getHomePage, getAboutPage: mocks.getAboutPage, getLegalPage: mocks.getLegalPage}));

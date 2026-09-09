@@ -1,7 +1,11 @@
 import type {HhcWebClient, PublicEditorialPage} from '@hallelujahhomechurch/hhc-web-client';
-import {describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {getSiteLayout} from './api';
 import type {SiteLayout} from './types';
+
+const access = vi.hoisted(() => vi.fn().mockResolvedValue(true));
+vi.mock('@/features/weekly/access', () => ({isBulletinEnabled: access}));
+beforeEach(() => access.mockResolvedValue(true));
 
 const publishedLayout: SiteLayout = {
   locale: 'ja',
@@ -29,6 +33,14 @@ const publishedLayout: SiteLayout = {
 };
 
 describe('getSiteLayout', () => {
+  it.each(['v2', 'legacy', 'fallback'])('gates the %s navigation after all layout resolution', async (source) => {
+    access.mockResolvedValue(false);
+    const client = {getPublicPage: vi.fn().mockResolvedValue(source === 'v2' ? homeV2Page() : {}), getSiteLayout: vi.fn().mockImplementation(async () => {
+      if (source === 'fallback') throw new Error('unavailable');
+      return {...publishedLayout, header: [{key: 'literature-ministry', href: '/ja/literature-ministry', label: 'Weekly', visible: true}]};
+    })} as unknown as HhcWebClient;
+    expect((await getSiteLayout('ja', client)).header.some(item => item.key === 'literature-ministry' && item.visible)).toBe(false);
+  });
   it('composes v2 layout from typed locale config and Home-projected links without the deprecated request', async () => {
     const requestLayout = vi.fn();
     const client = {
