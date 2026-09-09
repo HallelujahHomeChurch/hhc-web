@@ -14,6 +14,7 @@ const labels = {
   promptBody: 'Receive important church updates on this device.',
   promptAction: 'Enable notifications',
   promptLater: 'Later',
+  promptDismiss: 'Dismiss',
   installPrompt: 'Add this website to your Home Screen to enable notifications.'
 };
 

@@ -24,6 +24,7 @@ const oauth = {
 function anonymousClient(): AccountSessionClient {
   return {
     getSession: vi.fn().mockResolvedValue({authenticated: false}),
+    issueAccessToken: vi.fn(),
     logout: vi.fn(),
     logoutAll: vi.fn()
   };
@@ -35,6 +36,7 @@ function authenticatedClient(adminAccess = false, logoutAll = vi.fn().mockResolv
       authenticated: true,
       user: {id: 'u1', email: 'ada@example.com', display_name: 'Ada', avatar_url: null, permissions: adminAccess ? ['dsr:read'] : []}
     }),
+    issueAccessToken: vi.fn(),
     logout: vi.fn(),
     logoutAll
   };

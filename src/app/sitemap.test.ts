@@ -2,6 +2,8 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {PageNotFoundError, PageProjectionError} from '@/features/pages/api';
 import sitemap, {buildNewsSitemap} from './sitemap';
 
+const access = vi.hoisted(() => vi.fn().mockResolvedValue(true));
+vi.mock('@/features/weekly/access', () => ({isBulletinEnabled: access}));
 vi.mock('@/features/news/api', () => ({getNewsPage: vi.fn(async () => ({items: []}))}));
 const pageMocks = vi.hoisted(() => ({
   home: vi.fn(),
@@ -17,9 +19,15 @@ vi.mock('@/features/pages/api', async (importOriginal) => ({
 
 describe('static sitemap', () => {
   beforeEach(() => {
+    access.mockResolvedValue(true);
     pageMocks.home.mockReset().mockResolvedValue(fixedPage(['zh-Hant', 'en']));
     pageMocks.about.mockReset().mockResolvedValue(fixedPage(['ja']));
     pageMocks.legal.mockReset().mockImplementation(async (key: string) => key === 'privacy-policy' ? fixedPage(['zh-Hant', 'ja']) : fixedPage(['en'], false));
+  });
+
+  it('omits literature ministry in every locale when access is off', async () => {
+    access.mockResolvedValue(false);
+    expect((await sitemap()).some(entry => entry.url.includes('literature-ministry'))).toBe(false);
   });
 
   it('publishes fixed routes only for API published/indexable locales', async () => {

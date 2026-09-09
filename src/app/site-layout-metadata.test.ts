@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   getLegalPage: vi.fn()
 }));
 
+vi.mock('@/features/weekly/access', () => ({getBulletinAccess: vi.fn().mockResolvedValue({enabled: true})}));
 vi.mock('@/features/site-layout/api', () => ({getSiteLayout: mocks.getSiteLayout}));
 vi.mock('@/features/news/api', () => ({getNewsBySlug: mocks.getNewsBySlug}));
 vi.mock('@/features/pages/api', () => ({getHomePage: mocks.getHomePage, getAboutPage: mocks.getAboutPage, getLegalPage: mocks.getLegalPage}));
@@ -76,7 +77,7 @@ describe('localized route metadata site layout', () => {
     ['news', () => newsMetadata({params: Promise.resolve({locale: 'ja'}), searchParams: Promise.resolve({})}), 'お知らせ | CMS SEO サフィックス'],
     ['news detail', () => newsDetailMetadata({params: Promise.resolve({locale: 'ja', slug: 'cms-news'})}), 'CMS記事 | CMS SEO サフィックス'],
     ['maintenance', () => maintenanceMetadata({params: Promise.resolve({locale: 'ja'})}), 'ウェブサイトを更新しています | CMS SEO サフィックス'],
-    ['unsubscribe', () => unsubscribeMetadata({params: Promise.resolve({locale: 'ja'})}), 'ニュースレターの配信停止 | CMS SEO サフィックス'],
+    ['unsubscribe', () => unsubscribeMetadata({params: Promise.resolve({locale: 'ja'}), searchParams: Promise.resolve({})}), 'ニュースレターの配信停止 | CMS SEO サフィックス'],
     ['privacy', () => privacyMetadata({params: Promise.resolve({locale: 'ja'})}), 'プライバシーポリシー | CMS SEO サフィックス'],
     ['terms', () => termsMetadata({params: Promise.resolve({locale: 'ja'})}), '利用規約 | CMS SEO サフィックス']
   ] as const)('uses the requested locale projection for %s', async (_name, generate, title) => {

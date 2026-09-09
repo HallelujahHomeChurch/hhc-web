@@ -1,4 +1,5 @@
 import type {MetadataRoute} from 'next';
+import {isBulletinEnabled} from '@/features/weekly/access';
 import type {NewsItem} from '@/features/news/types';
 import {getNewsPage} from '@/features/news/api';
 import {getAboutPage, getHomePage, getLegalPage, isPageAvailabilityError, PageNotFoundError} from '@/features/pages/api';
@@ -11,7 +12,8 @@ const staticPaths = ['/help/account', '/news', '/literature-ministry'] as const;
 export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const staticEntries = staticPaths.flatMap((path) =>
+  const enabled = await isBulletinEnabled();
+  const staticEntries = staticPaths.filter(path => enabled || path !== '/literature-ministry').flatMap((path) =>
     productLocales.map((locale) => ({
       url: `${siteConfig.url}${getLocalizedPath(locale, path)}`,
       alternates: {
