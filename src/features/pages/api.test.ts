@@ -124,7 +124,13 @@ function homeV2Content(locale: Locale): Extract<PageContent, {template: 'home.v2
 
 function aboutContent(locale: Locale): Extract<PageContent, {template: 'about.v1'}> {
   const about = getMessages(locale).about;
-  return {schemaVersion: 1, template: 'about.v1', data: {heroTitle: about.heroTitle, heroSubtitle: about.heroSubtitle, vision: about.vision, history: about.history}};
+  const [first, second, third, fourth] = about.vision.sections;
+  if (!first?.body || !second?.body || !third?.cards || !fourth?.cards || about.vision.sections.length !== 4) throw new Error('Invalid About fixture sections');
+  const vision = {...about.vision, sections: [
+    {...first, body: first.body}, {...second, body: second.body},
+    {...third, cards: third.cards}, {...fourth, cards: fourth.cards}
+  ] satisfies Extract<PageContent, {template: 'about.v1'}>['data']['vision']['sections']};
+  return {schemaVersion: 1, template: 'about.v1', data: {heroTitle: about.heroTitle, heroSubtitle: about.heroSubtitle, vision, history: about.history}};
 }
 
 function legalContent(locale: Locale, key: 'privacy-policy' | 'terms-of-use'): Extract<PageContent, {template: 'legal.v1'}> {
