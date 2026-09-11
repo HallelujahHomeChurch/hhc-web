@@ -46,6 +46,19 @@ describe('weekly public api', () => {
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
+  it('uses protected list and download routes in member mode', async () => {
+    const fetcher = vi.fn().mockResolvedValue(Response.json({
+      data: [{issueDate: '2026-09-13', versions: [{issueDate: '2026-09-13', locale: 'zh-Hant', title: '週報', downloadUrl: '/api/assets/public/asset-1', publishedAt: '2026-09-13T04:00:00Z', version: 1}]}],
+      meta: {page: 1, pageSize: 12, total: 1}, error: null
+    }));
+
+    const archive = await fetchWeeklyArchive({}, {fetcher, baseUrl: '/api', memberMode: true, getAccessToken: async () => 'member-token'});
+
+    expect(fetcher).toHaveBeenCalledWith('/api/member/bulletins?page=1&pageSize=12', expect.any(Object));
+    expect(fetcher.mock.calls[0]?.[1]).toMatchObject({headers: expect.objectContaining({Authorization: 'Bearer member-token'})});
+    expect(archive.items[0].versions[0].href).toBe('/api/member/bulletin-downloads/2026-09-13?locale=zh-Hant');
+  });
+
   it('keeps bulletin editions limited to Traditional Chinese, Simplified Chinese, and English', async () => {
     const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       data: [{

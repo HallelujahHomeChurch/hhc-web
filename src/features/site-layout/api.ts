@@ -1,6 +1,5 @@
 import type {HhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
 import {publicContentClient} from '@/features/content/client';
-import {isBulletinEnabled} from '@/features/weekly/access';
 import type {Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import type {SiteExternalLinks, SiteLayout} from './types';
@@ -12,8 +11,7 @@ const fallbackLinks: SiteExternalLinks = {
 };
 
 export async function getSiteLayout(locale: Locale, client: HhcWebClient = publicContentClient()): Promise<SiteLayout> {
-  const [layout, enabled] = await Promise.all([resolveSiteLayout(locale, client), isBulletinEnabled()]);
-  return {...layout, header: layout.header.filter(item => enabled || item.key !== 'literature-ministry')};
+  return resolveSiteLayout(locale, client);
 }
 
 async function resolveSiteLayout(locale: Locale, client: HhcWebClient): Promise<SiteLayout> {

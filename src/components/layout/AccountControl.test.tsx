@@ -1,8 +1,8 @@
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
-import {AccountControl, accountStateEventName} from './AccountControl';
+import {AccountControl, AccountControlProvider, BulletinAccessGate, useBulletinMemberMode, accountStateEventName} from './AccountControl';
 
 const labels = {
   menu: 'Account menu',
@@ -377,4 +377,67 @@ describe('AccountControl', () => {
 
     await waitFor(() => expect(screen.getByRole('link', {name: 'Sign in'})).toBeInTheDocument());
   });
+});
+
+it('uses live member availability instead of the session permission alone', async () => {
+ const client=authenticatedClient();
+ vi.mocked(client.getSession).mockResolvedValue({authenticated:true,user:{id:'u1',email:'test@example.invalid',display_name:'Test',avatar_url:null,permissions:['bulletin:read']}});
+ vi.mocked(client.issueAccessToken).mockResolvedValue({accessToken:'member-token',expiresIn:900});
+ const fetcher=vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response(JSON.stringify({data:{canRead:false,publicEnabled:false,policyVersion:2},meta:{},error:null}),{headers:{'Content-Type':'application/json'}}));
+ render(<AccountControlProvider client={client} labels={labels} oauth={oauth}><BulletinAccessGate publicEnabled={false}><span>Member content</span></BulletinAccessGate></AccountControlProvider>);
+ await waitFor(()=>expect(fetcher).toHaveBeenCalled());
+ expect(screen.queryByText('Member content')).not.toBeInTheDocument();
+ fetcher.mockImplementation(async()=>new Response(JSON.stringify({data:{canRead:true,publicEnabled:false,policyVersion:3},meta:{},error:null}),{headers:{'Content-Type':'application/json'}}));
+ fireEvent.focus(window);
+ expect(await screen.findByText('Member content')).toBeVisible();
+});
+
+it('switches download mode when live access supersedes the server snapshot', async () => {
+ function Mode(){return <span>{useBulletinMemberMode(false)?'Member download mode':'Public download mode'}</span>;}
+ const client=authenticatedClient();
+ vi.mocked(client.getSession).mockResolvedValue({authenticated:true,user:{id:'u1',email:'test@example.invalid',display_name:'Test',avatar_url:null,permissions:['bulletin:read']}});
+ vi.mocked(client.issueAccessToken).mockResolvedValue({accessToken:'member-token',expiresIn:900});
+ vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response(JSON.stringify({data:{canRead:true,publicEnabled:false,policyVersion:3},meta:{},error:null}),{headers:{'Content-Type':'application/json'}}));
+ render(<AccountControlProvider client={client} labels={labels} oauth={oauth}><Mode/></AccountControlProvider>);
+ expect(await screen.findByText('Member download mode')).toBeVisible();
+});
+
+it('invalidates member A download and eligibility when a focus refresh switches to member B', async () => {
+  const bootstrap = await import('@/lib/browser-bootstrap');
+  const {DownloadButton} = await import('@/components/ui/DownloadButton');
+  const client = authenticatedClient();
+  const session = (id: string) => ({authenticated: true as const, user: {id, email: `${id}@example.com`, display_name: id, avatar_url: null, permissions: ['bulletin:read']}});
+  vi.mocked(client.getSession).mockResolvedValue(session('A'));
+  vi.mocked(client.issueAccessToken).mockResolvedValue({accessToken: 'token', expiresIn: 900});
+  vi.spyOn(bootstrap, 'getSharedAccountSessionClient').mockReturnValue(client);
+  let finishBlob!: (blob: Blob) => void;
+  let finishAccess!: (response: Response) => void;
+  let downloadSignal: AbortSignal | undefined;
+  let accessReads = 0;
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+    const url = input instanceof Request ? input.url : String(input);
+    if (url.includes('/member/bulletin-access')) {
+      if (++accessReads > 1) return new Promise(resolve => {finishAccess = resolve;});
+      return new Response(JSON.stringify({data: {canRead: true, publicEnabled: false}}), {headers: {'content-type': 'application/json'}});
+    }
+    downloadSignal = init?.signal ?? undefined;
+    return {ok: true, blob: () => new Promise<Blob>(resolve => {finishBlob = resolve;})} as Response;
+  });
+  const create = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:old-account');
+  render(<AccountControlProvider client={client} labels={labels} oauth={oauth}>
+    <BulletinAccessGate publicEnabled={false}><span>Eligible member</span></BulletinAccessGate>
+    <DownloadButton href="/api/member/bulletin-downloads/2026-09-13" authenticated label="Download" />
+  </AccountControlProvider>);
+  await screen.findByText('Eligible member');
+  fireEvent.click(screen.getByRole('link', {name: 'Download'}));
+  await waitFor(() => expect(finishBlob).toBeDefined());
+  vi.mocked(client.getSession).mockResolvedValue(session('B'));
+  fireEvent.focus(window);
+  await waitFor(() => expect(finishAccess).toBeDefined());
+  expect(screen.queryByText('Eligible member')).not.toBeInTheDocument();
+  expect(downloadSignal?.aborted).toBe(true);
+  await act(async () => finishBlob(new Blob(['A document'])));
+  expect(create).not.toHaveBeenCalled();
+  await act(async () => finishAccess(new Response(JSON.stringify({data: {canRead: true, publicEnabled: false}}), {headers: {'content-type': 'application/json'}})));
+  expect(await screen.findByText('Eligible member')).toBeVisible();
 });

@@ -6,16 +6,20 @@ import {fetchLatestWeekly} from '@/features/weekly/public-api';
 import {formatIssueNumber, resolveWeeklyCopy} from '@/features/weekly/format';
 import {weeklyEditionLabels, type WeeklyIssue} from '@/features/weekly/types';
 import type {Locale} from '@/i18n/locales';
+import {useCanReadBulletin, useBulletinMemberMode} from '@/components/layout/AccountControl';
 
 type WeeklyCardProps = {
   locale: Locale;
+  memberMode?: boolean;
   ctaLabel: string;
   messages: {loading: string; downloading: string; error: string; retry: string};
 };
 
-export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
+export function WeeklyCard({locale, memberMode: initialMemberMode = false, ctaLabel, messages}: WeeklyCardProps) {
+  const memberMode = useBulletinMemberMode(initialMemberMode);
+  const canRead = useCanReadBulletin(!memberMode);
   const [retryKey, setRetryKey] = useState(0);
-  const requestKey = String(retryKey);
+  const requestKey = `${memberMode}:${retryKey}`;
   const [result, setResult] = useState<{
     key: string;
     state: 'ready' | 'error';
@@ -27,9 +31,11 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
   const copy = weekly ? resolveWeeklyCopy(weekly, locale) : null;
 
   useEffect(() => {
+    if (!canRead) return;
     const controller = new AbortController();
-    fetchLatestWeekly({signal: controller.signal})
+    fetchLatestWeekly({signal: controller.signal, memberMode})
       .then((value) => {
+        if (controller.signal.aborted) return;
         setResult({key: requestKey, state: 'ready', weekly: value});
       })
       .catch((error: unknown) => {
@@ -38,10 +44,12 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
         }
       });
     return () => controller.abort();
-  }, [requestKey]);
+  }, [canRead, memberMode, requestKey]);
+
+  if (!canRead) return null;
 
   return (
-    <aside className="grid min-h-[350px] place-items-center rounded-[14px] border border-panel-border bg-panel px-6 py-8 text-center shadow-[inset_0_1px_0_var(--hhc-inset-highlight)] max-[900px]:order-first" aria-labelledby="weekly-title">
+    <aside data-weekly-card className="grid min-h-[350px] place-items-center rounded-[14px] border border-panel-border bg-panel px-6 py-8 text-center shadow-[inset_0_1px_0_var(--hhc-inset-highlight)] max-[900px]:order-first" aria-labelledby="weekly-title">
       {state === 'ready' && weekly ? (
         <div>
           <BulletinMark />
@@ -56,6 +64,7 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
                 label={weeklyEditionLabels[version.locale]}
                 ariaLabel={`${ctaLabel}: ${weeklyEditionLabels[version.locale]}`}
                 className="px-3 text-sm"
+                authenticated={memberMode}
               />
             ))}
           </div>
