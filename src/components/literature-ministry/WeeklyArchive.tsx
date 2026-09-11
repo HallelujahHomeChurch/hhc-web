@@ -23,6 +23,7 @@ type WeeklyArchiveMessages = {
   pageLabel: string;
   loading: string;
   downloading: string;
+  downloadError: string;
   loadError: string;
   retry: string;
   empty: string;
@@ -91,7 +92,7 @@ export function WeeklyArchive({locale, memberMode: initialMemberMode = false, me
               {latestIssueLabel ? <p className="mt-3 text-[21px] font-semibold text-[var(--hhc-brand-strong)]">{latestIssueLabel}</p> : null}
               {latestCopy ? <h3 lang={latestCopy.locale} className="mt-2 text-lg font-semibold leading-snug text-ink">{latestCopy.title}</h3> : null}
               {latestCopy?.subtitle ? <p lang={latestCopy.locale} className="mt-1 text-sm leading-relaxed text-muted">{latestCopy.subtitle}</p> : null}
-              <VersionLinks issue={latestIssue} memberMode={memberMode} className="mt-5" />
+              <VersionLinks issue={latestIssue} memberMode={memberMode} preparingLabel={messages.downloading} errorLabel={messages.downloadError} className="mt-5" />
             </>
           ) : state === 'error' ? (
             <div className="mt-4 grid justify-items-start gap-4">
@@ -120,7 +121,7 @@ export function WeeklyArchive({locale, memberMode: initialMemberMode = false, me
                   {copy ? <h4 lang={copy.locale} className="text-lg font-semibold leading-snug text-ink">{copy.title}</h4> : null}
                   {copy?.subtitle ? <p lang={copy.locale} className="mt-1 text-sm leading-relaxed text-muted">{copy.subtitle}</p> : null}
                 </div>
-                <VersionLinks issue={issue} memberMode={memberMode} />
+                <VersionLinks issue={issue} memberMode={memberMode} preparingLabel={messages.downloading} errorLabel={messages.downloadError} />
               </article>
             ) : null;
           }) : state === 'ready' ? <p className="text-muted">{messages.empty}</p> : null}
@@ -139,10 +140,10 @@ export function WeeklyArchive({locale, memberMode: initialMemberMode = false, me
   );
 }
 
-function VersionLinks({issue, memberMode, className = ''}: {issue: WeeklyIssue; memberMode: boolean; className?: string}) {
+function VersionLinks({issue, memberMode, preparingLabel, errorLabel, className = ''}: {issue: WeeklyIssue; memberMode: boolean; preparingLabel: string; errorLabel: string; className?: string}) {
   return (
     <div className={`flex justify-end gap-2.5 max-[860px]:grid max-[860px]:grid-flow-col max-[860px]:auto-cols-fr ${className}`}>
-      {issue.versions.map((version) => <DownloadButton key={version.locale} href={version.href} label={weeklyEditionLabels[version.locale]} variant="outline" authenticated={memberMode} />)}
+      {issue.versions.map((version) => <DownloadButton key={version.locale} href={version.href} label={weeklyEditionLabels[version.locale]} variant="outline" authenticated={memberMode} preparingLabel={preparingLabel} errorLabel={errorLabel} />)}
     </div>
   );
 }

@@ -19,7 +19,7 @@ describe('WeeklyCard', () => {
     const fetcher = vi.fn().mockResolvedValue(apiResponse([latestIssue()]));
     vi.stubGlobal('fetch', fetcher);
 
-    render(<WeeklyCard locale={locale} ctaLabel="Download weekly" messages={{loading: 'Loading', downloading: 'Preparing download', error: 'Unavailable', retry: 'Retry'}} />);
+    render(<WeeklyCard locale={locale} ctaLabel="Download weekly" messages={{loading: 'Loading', downloading: 'Preparing download', downloadError: 'Download unavailable', error: 'Unavailable', retry: 'Retry'}} />);
 
     expect(await screen.findByRole('link', {name: 'Download weekly: 繁中'})).toHaveAttribute('href', '/zh-Hant.pdf');
     expect(screen.getByRole('link', {name: 'Download weekly: 简中'})).toHaveAttribute('href', '/zh-Hans.pdf');
@@ -39,7 +39,7 @@ describe('WeeklyCard', () => {
       .mockResolvedValueOnce(apiResponse(null, {code: 'unavailable', message: 'Unavailable'}, 503))
       .mockResolvedValueOnce(apiResponse([latestIssue()]));
     vi.stubGlobal('fetch', fetcher);
-    render(<WeeklyCard locale="en" ctaLabel="Download" messages={{loading: 'Loading', downloading: 'Preparing download', error: 'Unavailable', retry: 'Retry'}} />);
+    render(<WeeklyCard locale="en" ctaLabel="Download" messages={{loading: 'Loading', downloading: 'Preparing download', downloadError: 'Download unavailable', error: 'Unavailable', retry: 'Retry'}} />);
 
     expect(await screen.findByText('Unavailable')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', {name: 'Retry'}));
@@ -53,7 +53,7 @@ describe('WeeklyCard', () => {
     }));
     vi.stubGlobal('fetch', fetcher);
 
-    const {unmount} = render(<WeeklyCard locale="en" ctaLabel="Download" messages={{loading: 'Loading', downloading: 'Preparing download', error: 'Unavailable', retry: 'Retry'}} />);
+    const {unmount} = render(<WeeklyCard locale="en" ctaLabel="Download" messages={{loading: 'Loading', downloading: 'Preparing download', downloadError: 'Download unavailable', error: 'Unavailable', retry: 'Retry'}} />);
     const signal = fetcher.mock.calls[0]?.[1]?.signal;
 
     unmount();
