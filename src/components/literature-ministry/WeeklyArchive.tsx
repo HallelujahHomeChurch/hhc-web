@@ -8,7 +8,7 @@ import {fetchWeeklyArchive} from '@/features/weekly/public-api';
 import {formatIssueNumber, resolveWeeklyCopy} from '@/features/weekly/format';
 import {weeklyEditionLabels, type WeeklyIssue, type WeeklyIssuePage} from '@/features/weekly/types';
 import type {Locale} from '@/i18n/locales';
-import {useCanReadBulletin} from '@/components/layout/AccountControl';
+import {useCanReadBulletin, useBulletinMemberMode} from '@/components/layout/AccountControl';
 
 type WeeklyArchiveMessages = {
   eyebrow: string;
@@ -39,12 +39,13 @@ function getPageHref(locale: Locale, page: number) {
   return page <= 1 ? `/${locale}/literature-ministry` : `/${locale}/literature-ministry?page=${page}`;
 }
 
-export function WeeklyArchive({locale, memberMode = false, messages}: WeeklyArchiveProps) {
+export function WeeklyArchive({locale, memberMode: initialMemberMode = false, messages}: WeeklyArchiveProps) {
+  const memberMode = useBulletinMemberMode(initialMemberMode);
   const canRead = useCanReadBulletin(!memberMode);
   const searchParams = useSearchParams();
   const page = getPageValue(searchParams.get('page'));
   const [retryKey, setRetryKey] = useState(0);
-  const requestKey = `${page}:${retryKey}`;
+  const requestKey = `${memberMode}:${page}:${retryKey}`;
   const [result, setResult] = useState<{
     key: string;
     state: 'ready' | 'error';
@@ -58,6 +59,7 @@ export function WeeklyArchive({locale, memberMode = false, messages}: WeeklyArch
     const controller = new AbortController();
     fetchWeeklyArchive({page, pageSize: 12}, {signal: controller.signal, memberMode})
       .then((value) => {
+        if (controller.signal.aborted) return;
         setResult({key: requestKey, state: 'ready', archive: value});
       })
       .catch((error: unknown) => {

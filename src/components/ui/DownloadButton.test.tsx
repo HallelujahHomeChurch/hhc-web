@@ -4,6 +4,7 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 const issueAccessToken = vi.hoisted(() => vi.fn().mockResolvedValue({accessToken: 'member-token', expiresIn: 900}));
 vi.mock('@/lib/browser-bootstrap', () => ({getSharedAccountSessionClient: () => ({issueAccessToken})}));
 import {DownloadButton} from './DownloadButton';
+import * as AccountControl from '@/components/layout/AccountControl';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -39,4 +40,34 @@ describe('DownloadButton', () => {
     })));
     expect(click).toHaveBeenCalled();
   });
+});
+
+it('announces authenticated download errors instead of silently swallowing them', async () => {
+ vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('', {status: 503}));
+ render(<DownloadButton href="/api/member/bulletin-downloads/2026-09-13" label="會員週報" authenticated />);
+ fireEvent.click(screen.getByRole('link', {name: '會員週報'}));
+ expect(await screen.findByRole('alert')).toBeVisible();
+});
+it('aborts an in-flight download when account signs out', async () => {
+ const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation((_input, init) => new Promise((_resolve, reject) => init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))));
+ render(<DownloadButton href="/api/member/bulletin-downloads/2026-09-13" label="會員週報" authenticated />);
+ fireEvent.click(screen.getByRole('link', {name: '會員週報'}));
+ await waitFor(() => expect(fetcher).toHaveBeenCalled());
+ window.dispatchEvent(new CustomEvent('hhc:account-state', {detail: {type: 'sign-out'}}));
+ expect(fetcher.mock.calls[0]![1]!.signal!.aborted).toBe(true);
+});
+
+it('releases a public download button when the account identity changes', () => {
+  const identity = vi.spyOn(AccountControl, 'useAccountIdentity').mockReturnValue(null);
+  const {rerender} = render(<DownloadButton href="/assets/weekly.pdf" label="Download" />);
+  const link = screen.getByRole('link', {name: 'Download'});
+  link.addEventListener('click', event => event.preventDefault());
+  fireEvent.click(link);
+  expect(link).toHaveAttribute('aria-busy', 'true');
+  identity.mockReturnValue('member-B');
+  rerender(<DownloadButton href="/assets/weekly.pdf" label="Download" />);
+  expect(link).toHaveAttribute('aria-busy', 'false');
+  expect(link).toHaveAttribute('aria-disabled', 'false');
+  fireEvent.click(link);
+  expect(link).toHaveAttribute('aria-busy', 'true');
 });

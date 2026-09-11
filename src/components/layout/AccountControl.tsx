@@ -16,6 +16,7 @@ import {
 } from '@hallelujahhomechurch/account-client';
 import {AccountMenu, Toast} from '@hallelujahhomechurch/ui';
 import {clearSharedAccountSession, getSharedAccountSessionClient, revalidateSharedAccountSession} from '@/lib/browser-bootstrap';
+import {createHhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
 import {siteConfig} from '@/lib/site';
 
 export const webOAuthTransactionKey = 'hhc_web_oauth_transaction';
@@ -49,6 +50,8 @@ interface AccountControlProps {
 type AccountControlContextValue = {
   accountSiteUrl: string;
   auth: AccountControlState;
+  bulletinCanRead: boolean;
+  bulletinPublicEnabled: boolean | null;
   beginAuthorization: () => void;
   labels: AccountControlLabels;
   signOut: () => Promise<boolean>;
@@ -56,9 +59,19 @@ type AccountControlContextValue = {
 
 const AccountControlContext = createContext<AccountControlContextValue | null>(null);
 
+export function useAccountIdentity() {
+  const account = useContext(AccountControlContext);
+  return account?.auth.status === 'authenticated' ? account.auth.user.id : null;
+}
+
 export function useCanReadBulletin(publicEnabled: boolean) {
   const account = useContext(AccountControlContext);
-  return publicEnabled || (account?.auth.status === 'authenticated' && hasPermission(account.auth.user.permissions, 'bulletin:read'));
+  return (account?.bulletinPublicEnabled ?? publicEnabled) || (account?.auth.status === 'authenticated' && hasPermission(account.auth.user.permissions, 'bulletin:read') && account.bulletinCanRead);
+}
+
+export function useBulletinMemberMode(initialMode: boolean) {
+  const account = useContext(AccountControlContext);
+  return account?.bulletinPublicEnabled == null ? initialMode : !account.bulletinPublicEnabled;
 }
 
 export function BulletinAccessGate({children, publicEnabled}: {children: ReactNode; publicEnabled: boolean}) {
@@ -88,6 +101,9 @@ export function AccountControlProvider({
   const sessionClient = useMemo(() => client ?? getSharedAccountSessionClient(), [client]);
   const oauthConfig = useMemo(() => oauth ?? webOAuthConfigForBrowser(), [oauth]);
   const [auth, setAuth] = useState<AccountControlState>({status: 'loading'});
+  const [bulletinCanRead, setBulletinCanRead] = useState(false);
+  const [bulletinSubject, setBulletinSubject] = useState<string | null>(null);
+  const [bulletinPublicEnabled, setBulletinPublicEnabled] = useState<boolean | null>(null);
   const [logoutError, setLogoutError] = useState('');
   const requestRevision = useRef(0);
   const authorizationStarted = useRef(false);
@@ -124,6 +140,29 @@ export function AccountControlProvider({
       ? {status: 'unavailable' as const, error: new Error('Invalid account permissions')}
       : result;
   }, [client, sessionClient]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function refreshBulletinAccess() {
+      if (auth.status === 'loading') return;
+      let canRead = false;
+      let publicEnabled = false;
+      try {
+        if (auth.status === 'authenticated' && hasPermission(auth.user.permissions, 'bulletin:read')) {
+          const {accessToken} = await sessionClient.issueAccessToken();
+          if (controller.signal.aborted) return;
+          const api = createHhcWebClient({baseUrl: '/api', getAccessToken: () => accessToken});
+          const access = await api.getMemberBulletinAccess(controller.signal);
+          canRead = access.canRead; publicEnabled = access.publicEnabled;
+        } else {
+          publicEnabled = (await createHhcWebClient({baseUrl: '/api', getAccessToken: () => null}).getBulletinAccess(controller.signal)).enabled;
+        }
+      } catch { /* Live availability fails closed; the account menu stays usable. */ }
+      if (!controller.signal.aborted) {setBulletinCanRead(canRead); setBulletinSubject(auth.status === 'authenticated' ? auth.user.id : null); setBulletinPublicEnabled(publicEnabled);}
+    }
+    void refreshBulletinAccess();
+    return () => controller.abort();
+  }, [auth, sessionClient]);
 
   const beginAuthorization = useCallback((prompt?: 'none') => {
     if (authorizationStarted.current) return;
@@ -165,7 +204,7 @@ export function AccountControlProvider({
     const onPageShow = (event: PageTransitionEvent) => {
       if (event.persisted) scheduleRefresh();
     };
-    const onAccountState = () => scheduleRefresh();
+    const onAccountState = () => {setBulletinCanRead(false); scheduleRefresh();};
     const channel = typeof BroadcastChannel === 'undefined'
       ? null
       : new BroadcastChannel(accountStateEventName);
@@ -191,6 +230,7 @@ export function AccountControlProvider({
       await sessionClient.logoutAll();
       if (!client) clearSharedAccountSession();
       setAuth({status: 'anonymous'});
+      setBulletinCanRead(false);
       notifyAccountStateChange('sign-out');
       return true;
     } catch {
@@ -205,7 +245,7 @@ export function AccountControlProvider({
   }, [client, labels.signOutError, refreshSession, sessionClient]);
 
   return (
-    <AccountControlContext.Provider value={{accountSiteUrl, auth, beginAuthorization, labels, signOut}}>
+    <AccountControlContext.Provider value={{accountSiteUrl, auth, bulletinCanRead: bulletinCanRead && auth.status === 'authenticated' && bulletinSubject === auth.user.id, bulletinPublicEnabled, beginAuthorization, labels, signOut}}>
       {children}
       {logoutError ? (
         <div className="fixed right-6 top-20 z-50 max-w-[min(360px,calc(100vw-32px))]">
@@ -271,6 +311,7 @@ export function AccountControlView() {
 }
 
 export function notifyAccountStateChange(type: 'profile-changed' | 'sign-out') {
+  window.dispatchEvent(new CustomEvent(accountStateEventName, {detail: {type}}));
   if (typeof BroadcastChannel === 'undefined') return;
   const channel = new BroadcastChannel(accountStateEventName);
   channel.postMessage({type});

@@ -1,62 +1,72 @@
 'use client';
 
-import {useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
+import {useAccountIdentity} from '@/components/layout/AccountControl';
 import {getSharedAccountSessionClient} from '@/lib/browser-bootstrap';
 
 type DownloadButtonProps = {
-  href: string;
-  label: string;
-  ariaLabel?: string;
-  className?: string;
-  variant?: 'primary' | 'outline';
-  authenticated?: boolean;
+  href: string; label: string; ariaLabel?: string; className?: string;
+  variant?: 'primary' | 'outline'; authenticated?: boolean; errorLabel?: string;
 };
-
 const variants = {
   primary: 'border-primary-solid bg-primary-solid text-primary-foreground hover:bg-primary-solid-hover',
   outline: 'border-[var(--hhc-control-border)] bg-paper text-[var(--hhc-control)] hover:border-primary hover:bg-primary hover:text-primary-foreground'
 };
-
-export function DownloadButton({href, label, ariaLabel, authenticated = false, className = '', variant = 'primary'}: DownloadButtonProps) {
+export function DownloadButton({href, label, ariaLabel, authenticated = false, className = '', variant = 'primary', errorLabel = '下載失敗，請確認登入狀態後重試。 / Download failed. Check your sign-in and retry.'}: DownloadButtonProps) {
+  const accountIdentity = useAccountIdentity();
   const [preparing, setPreparing] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const controller = useRef<AbortController | null>(null);
+  const objectURL = useRef<string | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => {
+    const cancel = () => {
+      controller.current?.abort();
+      clearTimeout(timer.current);
+      if (objectURL.current) URL.revokeObjectURL(objectURL.current);
+      objectURL.current = null;
+      setPreparing(false);
+    };
+    const accountChanged = cancel;
+    const channel = typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel('hhc:account-state');
+    window.addEventListener('hhc:account-state', accountChanged);
+    channel?.addEventListener('message', accountChanged);
+    return () => {cancel(); window.removeEventListener('hhc:account-state', accountChanged); channel?.close();};
+  }, [href, authenticated, accountIdentity]);
 
-  return (
-    <a
-      href={href}
-      download
-      aria-label={ariaLabel}
-      aria-busy={preparing}
-      aria-disabled={preparing}
+  async function download() {
+    controller.current?.abort();
+    const request = new AbortController(); controller.current = request;
+    setPreparing(true); setFailed(false);
+    try {
+      const {accessToken} = await getSharedAccountSessionClient().issueAccessToken();
+      request.signal.throwIfAborted();
+      const response = await fetch(href, {headers: {Authorization: `Bearer ${accessToken}`}, cache: 'no-store', signal: request.signal});
+      if (!response.ok) throw new Error('Bulletin download failed');
+      const blob = await response.blob();
+      request.signal.throwIfAborted();
+      const url = URL.createObjectURL(blob); objectURL.current = url;
+      const link = document.createElement('a'); link.href = url;
+      link.download = response.headers.get('content-disposition')?.match(/filename\*?=(?:UTF-8'')?"?([^";]+)/i)?.[1] ?? '';
+      link.click();
+      timer.current = setTimeout(() => {URL.revokeObjectURL(url); if (objectURL.current === url) objectURL.current = null;}, 1000);
+    } catch {
+      if (!request.signal.aborted) setFailed(true);
+    } finally {
+      if (controller.current === request) setPreparing(false);
+    }
+  }
+  return <>
+    <a href={href} download aria-label={ariaLabel} aria-busy={preparing} aria-disabled={preparing}
       className={`relative inline-flex min-h-11 items-center justify-center rounded-full border px-5 font-semibold transition ${variants[variant]} ${className}`}
       onClick={(event) => {
-        if (preparing) {
-          event.preventDefault();
-          return;
-        }
-        if (authenticated) {
-          event.preventDefault();
-          setPreparing(true);
-          void downloadAuthenticated(href).catch(() => undefined).finally(() => setPreparing(false));
-          return;
-        }
-        setPreparing(true);
-        window.setTimeout(() => setPreparing(false), 1500);
-      }}
-    >
+        if (preparing) {event.preventDefault(); return;}
+        if (authenticated) {event.preventDefault(); void download(); return;}
+        setPreparing(true); timer.current = setTimeout(() => setPreparing(false), 1500);
+      }}>
       {preparing ? <span data-download-spinner className="absolute size-4 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none" aria-hidden="true" /> : null}
       <span className={preparing ? 'opacity-0' : undefined}>{label}</span>
     </a>
-  );
-}
-
-async function downloadAuthenticated(href: string) {
-  const {accessToken} = await getSharedAccountSessionClient().issueAccessToken();
-  const response = await fetch(href, {headers: {Authorization: `Bearer ${accessToken}`}, cache: 'no-store'});
-  if (!response.ok) throw new Error('Bulletin download failed');
-  const url = URL.createObjectURL(await response.blob());
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = response.headers.get('content-disposition')?.match(/filename\*?=(?:UTF-8'')?"?([^";]+)/i)?.[1] ?? '';
-  link.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    {failed ? <span role="alert" className="block text-sm text-red-700">{errorLabel}</span> : null}
+  </>;
 }

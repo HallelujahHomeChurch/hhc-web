@@ -6,7 +6,7 @@ import {fetchLatestWeekly} from '@/features/weekly/public-api';
 import {formatIssueNumber, resolveWeeklyCopy} from '@/features/weekly/format';
 import {weeklyEditionLabels, type WeeklyIssue} from '@/features/weekly/types';
 import type {Locale} from '@/i18n/locales';
-import {useCanReadBulletin} from '@/components/layout/AccountControl';
+import {useCanReadBulletin, useBulletinMemberMode} from '@/components/layout/AccountControl';
 
 type WeeklyCardProps = {
   locale: Locale;
@@ -15,10 +15,11 @@ type WeeklyCardProps = {
   messages: {loading: string; downloading: string; error: string; retry: string};
 };
 
-export function WeeklyCard({locale, memberMode = false, ctaLabel, messages}: WeeklyCardProps) {
+export function WeeklyCard({locale, memberMode: initialMemberMode = false, ctaLabel, messages}: WeeklyCardProps) {
+  const memberMode = useBulletinMemberMode(initialMemberMode);
   const canRead = useCanReadBulletin(!memberMode);
   const [retryKey, setRetryKey] = useState(0);
-  const requestKey = String(retryKey);
+  const requestKey = `${memberMode}:${retryKey}`;
   const [result, setResult] = useState<{
     key: string;
     state: 'ready' | 'error';
@@ -34,6 +35,7 @@ export function WeeklyCard({locale, memberMode = false, ctaLabel, messages}: Wee
     const controller = new AbortController();
     fetchLatestWeekly({signal: controller.signal, memberMode})
       .then((value) => {
+        if (controller.signal.aborted) return;
         setResult({key: requestKey, state: 'ready', weekly: value});
       })
       .catch((error: unknown) => {
