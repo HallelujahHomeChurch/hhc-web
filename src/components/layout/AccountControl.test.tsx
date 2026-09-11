@@ -51,6 +51,7 @@ describe('AccountControl', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it('renders sign in without a passive redirect when no SSO hint exists', async () => {
@@ -376,6 +377,100 @@ describe('AccountControl', () => {
     window.dispatchEvent(new CustomEvent(accountStateEventName, {detail: {type: 'sign-out'}}));
 
     await waitFor(() => expect(screen.getByRole('link', {name: 'Sign in'})).toBeInTheDocument());
+  });
+
+  it.each([
+    ['direct sign out', async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(await screen.findByRole('button', {name: 'Account menu'}));
+      await user.click(screen.getByRole('menuitem', {name: 'Sign out'}));
+    }],
+    ['focus revalidation', async () => {
+      fireEvent.focus(window);
+    }],
+    ['an account-state event', async () => {
+      window.dispatchEvent(new CustomEvent(accountStateEventName, {detail: {type: 'sign-out'}}));
+    }]
+  ])('replaces the closed member page after %s makes the account anonymous', async (_trigger, trigger) => {
+    window.history.replaceState({}, '', '/zh-Hant/literature-ministry');
+    const browserWindow = window;
+    const replace = vi.fn();
+    vi.stubGlobal('window', new Proxy(browserWindow, {
+      get(target, property) {
+        if (property === 'location') {
+          return {pathname: target.location.pathname, replace};
+        }
+        const value = Reflect.get(target, property, target);
+        return typeof value === 'function' ? value.bind(target) : value;
+      }
+    }));
+    const client = authenticatedClient();
+    vi.mocked(client.getSession)
+      .mockResolvedValueOnce({
+        authenticated: true,
+        user: {id: 'u1', email: 'ada@example.com', display_name: 'Ada', avatar_url: null, permissions: ['bulletin:read']}
+      })
+      .mockResolvedValueOnce({authenticated: false});
+    vi.mocked(client.issueAccessToken).mockResolvedValue({accessToken: 'member-token', expiresIn: 900});
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({
+      data: {canRead: true, publicEnabled: false, policyVersion: 1}, meta: {}, error: null
+    }), {headers: {'content-type': 'application/json'}}));
+    const user = userEvent.setup();
+
+    render(<AccountControl accountSiteUrl="https://account.alive.org.tw" client={client} labels={labels} />);
+
+    await screen.findByRole('button', {name: 'Account menu'});
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
+    await trigger(user);
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/zh-Hant'));
+  });
+
+  it.each([
+    ['the session is still loading', '/en/literature-ministry', 'loading'],
+    ['bulletin access is still loading', '/en/literature-ministry', 'access-loading'],
+    ['public access is open', '/en/literature-ministry', 'public'],
+    ['the member remains eligible', '/en/literature-ministry', 'eligible'],
+    ['the route is unrelated', '/en/literature-ministry/archive', 'unrelated']
+  ] as const)('does not replace the route while %s', async (_case, path, state) => {
+    window.history.replaceState({}, '', path);
+    const browserWindow = window;
+    const replace = vi.fn();
+    vi.stubGlobal('window', new Proxy(browserWindow, {
+      get(target, property) {
+        if (property === 'location') {
+          return {pathname: target.location.pathname, replace};
+        }
+        const value = Reflect.get(target, property, target);
+        return typeof value === 'function' ? value.bind(target) : value;
+      }
+    }));
+    const client = state === 'loading'
+      ? anonymousClient()
+      : state === 'eligible'
+        ? authenticatedClient()
+        : anonymousClient();
+    if (state === 'loading') vi.mocked(client.getSession).mockReturnValue(new Promise(() => {}));
+    if (state === 'eligible') {
+      vi.mocked(client.getSession).mockResolvedValue({
+        authenticated: true,
+        user: {id: 'u1', email: 'ada@example.com', display_name: 'Ada', avatar_url: null, permissions: ['bulletin:read']}
+      });
+      vi.mocked(client.issueAccessToken).mockResolvedValue({accessToken: 'member-token', expiresIn: 900});
+    }
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => state === 'access-loading'
+      ? new Promise(() => {})
+      : Promise.resolve(new Response(JSON.stringify({data: state === 'public'
+        ? {enabled: true}
+        : {canRead: true, publicEnabled: false, policyVersion: 1}, meta: {}, error: null
+      }), {headers: {'content-type': 'application/json'}})));
+
+    render(<AccountControl accountSiteUrl="https://account.alive.org.tw" client={client} labels={labels} />);
+
+    if (state !== 'loading' && state !== 'access-loading') {
+      await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
+    }
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(replace).not.toHaveBeenCalled();
   });
 });
 

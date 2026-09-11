@@ -89,5 +89,6 @@ const messages = {
   eyebrow: 'Weekly Paper', archiveTitle: 'Downloads', archiveIntro: 'Available languages', latestLabel: 'Latest',
   allIssuesTitle: 'History', paginationNote: 'Newest first', paginationLabel: 'Pages', previousPage: 'Previous',
   nextPage: 'Next', pageLabel: 'Page', loading: 'Loading', loadError: 'Unavailable', retry: 'Retry', empty: 'No bulletins',
-  downloading: 'Preparing download'
+  downloading: 'Preparing download',
+  downloadError: 'Download unavailable'
 };

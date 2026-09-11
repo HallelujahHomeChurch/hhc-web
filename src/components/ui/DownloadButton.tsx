@@ -1,18 +1,19 @@
 'use client';
 
 import {useEffect, useRef, useState} from 'react';
+import {Toast} from '@hallelujahhomechurch/ui';
 import {useAccountIdentity} from '@/components/layout/AccountControl';
 import {getSharedAccountSessionClient} from '@/lib/browser-bootstrap';
 
 type DownloadButtonProps = {
   href: string; label: string; ariaLabel?: string; className?: string;
-  variant?: 'primary' | 'outline'; authenticated?: boolean; errorLabel?: string;
+  variant?: 'primary' | 'outline'; authenticated?: boolean; preparingLabel?: string; errorLabel?: string;
 };
 const variants = {
   primary: 'border-primary-solid bg-primary-solid text-primary-foreground hover:bg-primary-solid-hover',
   outline: 'border-[var(--hhc-control-border)] bg-paper text-[var(--hhc-control)] hover:border-primary hover:bg-primary hover:text-primary-foreground'
 };
-export function DownloadButton({href, label, ariaLabel, authenticated = false, className = '', variant = 'primary', errorLabel = '下載失敗，請確認登入狀態後重試。 / Download failed. Check your sign-in and retry.'}: DownloadButtonProps) {
+export function DownloadButton({href, label, ariaLabel, authenticated = false, className = '', variant = 'primary', preparingLabel = '正在準備週報，完成後會自動下載。', errorLabel = '週報暫時無法下載，請稍後再試。'}: DownloadButtonProps) {
   const accountIdentity = useAccountIdentity();
   const [preparing, setPreparing] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -26,6 +27,7 @@ export function DownloadButton({href, label, ariaLabel, authenticated = false, c
       if (objectURL.current) URL.revokeObjectURL(objectURL.current);
       objectURL.current = null;
       setPreparing(false);
+      setFailed(false);
     };
     const accountChanged = cancel;
     const channel = typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel('hhc:account-state');
@@ -67,6 +69,7 @@ export function DownloadButton({href, label, ariaLabel, authenticated = false, c
       {preparing ? <span data-download-spinner className="absolute size-4 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none" aria-hidden="true" /> : null}
       <span className={preparing ? 'opacity-0' : undefined}>{label}</span>
     </a>
-    {failed ? <span role="alert" className="block text-sm text-red-700">{errorLabel}</span> : null}
+    {authenticated && preparing ? <Toast>{preparingLabel}</Toast> : null}
+    {failed ? <Toast tone="danger">{errorLabel}</Toast> : null}
   </>;
 }
