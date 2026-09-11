@@ -17,6 +17,7 @@ import {
 import {AccountMenu, Toast} from '@hallelujahhomechurch/ui';
 import {clearSharedAccountSession, getSharedAccountSessionClient, revalidateSharedAccountSession} from '@/lib/browser-bootstrap';
 import {createHhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
+import {isLocale} from '@/i18n/locales';
 import {siteConfig} from '@/lib/site';
 
 export const webOAuthTransactionKey = 'hhc_web_oauth_transaction';
@@ -163,6 +164,12 @@ export function AccountControlProvider({
     void refreshBulletinAccess();
     return () => controller.abort();
   }, [auth, sessionClient]);
+
+  useEffect(() => {
+    if (auth.status !== 'anonymous' || bulletinPublicEnabled !== false) return;
+    const match = window.location.pathname.match(/^\/([^/]+)\/literature-ministry$/);
+    if (match && isLocale(match[1])) window.location.replace(`/${match[1]}`);
+  }, [auth.status, bulletinPublicEnabled]);
 
   const beginAuthorization = useCallback((prompt?: 'none') => {
     if (authorizationStarted.current) return;
