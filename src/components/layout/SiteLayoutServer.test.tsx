@@ -3,7 +3,9 @@ import {describe, expect, expectTypeOf, it, vi} from 'vitest';
 import type {Locale} from '@/i18n/locales';
 
 const getSiteLayout = vi.hoisted(() => vi.fn());
+const getBulletinAccess = vi.hoisted(() => vi.fn().mockResolvedValue({enabled: true}));
 vi.mock('@/features/site-layout/api', () => ({getSiteLayout}));
+vi.mock('@/features/weekly/access', () => ({getBulletinAccess}));
 
 import {SiteFooterServer} from './SiteFooterServer';
 import {SiteHeaderServer} from './SiteHeaderServer';
@@ -41,8 +43,8 @@ describe('site layout server wrappers', () => {
     const element = await SiteHeaderServer({locale: 'ja', pathname: '/ja/about'});
 
     expect(getSiteLayout).toHaveBeenCalledWith('ja');
-    expect(element.props).toMatchObject({layout, locale: 'ja', pathname: '/ja/about'});
-    expect(Object.keys(element.props).sort()).toEqual(['layout', 'locale', 'pathname']);
+    expect(element.props).toMatchObject({layout, locale: 'ja', pathname: '/ja/about', bulletinPublicEnabled: true});
+    expect(Object.keys(element.props).sort()).toEqual(['bulletinPublicEnabled', 'layout', 'locale', 'pathname']);
   });
 
   it('fetches and injects the exact-locale footer projection', async () => {

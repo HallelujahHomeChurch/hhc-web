@@ -8,6 +8,7 @@ import {fetchWeeklyArchive} from '@/features/weekly/public-api';
 import {formatIssueNumber, resolveWeeklyCopy} from '@/features/weekly/format';
 import {weeklyEditionLabels, type WeeklyIssue, type WeeklyIssuePage} from '@/features/weekly/types';
 import type {Locale} from '@/i18n/locales';
+import {useCanReadBulletin} from '@/components/layout/AccountControl';
 
 type WeeklyArchiveMessages = {
   eyebrow: string;
@@ -27,7 +28,7 @@ type WeeklyArchiveMessages = {
   empty: string;
 };
 
-type WeeklyArchiveProps = {locale: Locale; messages: WeeklyArchiveMessages};
+type WeeklyArchiveProps = {locale: Locale; memberMode?: boolean; messages: WeeklyArchiveMessages};
 
 function getPageValue(value: string | null) {
   const page = Number(value);
@@ -38,7 +39,8 @@ function getPageHref(locale: Locale, page: number) {
   return page <= 1 ? `/${locale}/literature-ministry` : `/${locale}/literature-ministry?page=${page}`;
 }
 
-export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
+export function WeeklyArchive({locale, memberMode = false, messages}: WeeklyArchiveProps) {
+  const canRead = useCanReadBulletin(!memberMode);
   const searchParams = useSearchParams();
   const page = getPageValue(searchParams.get('page'));
   const [retryKey, setRetryKey] = useState(0);
@@ -52,8 +54,9 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
   const archive = result?.key === requestKey ? result.archive : null;
 
   useEffect(() => {
+    if (!canRead) return;
     const controller = new AbortController();
-    fetchWeeklyArchive({page, pageSize: 12}, {signal: controller.signal})
+    fetchWeeklyArchive({page, pageSize: 12}, {signal: controller.signal, memberMode})
       .then((value) => {
         setResult({key: requestKey, state: 'ready', archive: value});
       })
@@ -63,7 +66,9 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
         }
       });
     return () => controller.abort();
-  }, [page, requestKey]);
+  }, [canRead, memberMode, page, requestKey]);
+
+  if (!canRead) return null;
 
   const latestIssue = archive?.items[0];
   const latestIssueLabel = formatIssueNumber(locale, latestIssue?.issueNumber);
@@ -84,7 +89,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
               {latestIssueLabel ? <p className="mt-3 text-[21px] font-semibold text-[var(--hhc-brand-strong)]">{latestIssueLabel}</p> : null}
               {latestCopy ? <h3 lang={latestCopy.locale} className="mt-2 text-lg font-semibold leading-snug text-ink">{latestCopy.title}</h3> : null}
               {latestCopy?.subtitle ? <p lang={latestCopy.locale} className="mt-1 text-sm leading-relaxed text-muted">{latestCopy.subtitle}</p> : null}
-              <VersionLinks issue={latestIssue} className="mt-5" />
+              <VersionLinks issue={latestIssue} memberMode={memberMode} className="mt-5" />
             </>
           ) : state === 'error' ? (
             <div className="mt-4 grid justify-items-start gap-4">
@@ -113,7 +118,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
                   {copy ? <h4 lang={copy.locale} className="text-lg font-semibold leading-snug text-ink">{copy.title}</h4> : null}
                   {copy?.subtitle ? <p lang={copy.locale} className="mt-1 text-sm leading-relaxed text-muted">{copy.subtitle}</p> : null}
                 </div>
-                <VersionLinks issue={issue} />
+                <VersionLinks issue={issue} memberMode={memberMode} />
               </article>
             ) : null;
           }) : state === 'ready' ? <p className="text-muted">{messages.empty}</p> : null}
@@ -132,10 +137,10 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
   );
 }
 
-function VersionLinks({issue, className = ''}: {issue: WeeklyIssue; className?: string}) {
+function VersionLinks({issue, memberMode, className = ''}: {issue: WeeklyIssue; memberMode: boolean; className?: string}) {
   return (
     <div className={`flex justify-end gap-2.5 max-[860px]:grid max-[860px]:grid-flow-col max-[860px]:auto-cols-fr ${className}`}>
-      {issue.versions.map((version) => <DownloadButton key={version.locale} href={version.href} label={weeklyEditionLabels[version.locale]} variant="outline" />)}
+      {issue.versions.map((version) => <DownloadButton key={version.locale} href={version.href} label={weeklyEditionLabels[version.locale]} variant="outline" authenticated={memberMode} />)}
     </div>
   );
 }

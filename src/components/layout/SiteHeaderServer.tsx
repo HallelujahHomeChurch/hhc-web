@@ -1,4 +1,5 @@
 import {getSiteLayout} from '@/features/site-layout/api';
+import {getBulletinAccess} from '@/features/weekly/access';
 import type {Locale} from '@/i18n/locales';
 import {SiteHeader} from './SiteHeader';
 
@@ -8,6 +9,6 @@ type SiteHeaderServerProps = {
 };
 
 export async function SiteHeaderServer(props: SiteHeaderServerProps) {
-  const layout = await getSiteLayout(props.locale);
-  return <SiteHeader {...props} layout={layout} />;
+  const [layout, access] = await Promise.all([getSiteLayout(props.locale), getBulletinAccess()]);
+  return <SiteHeader {...props} layout={layout} bulletinPublicEnabled={access.enabled} />;
 }

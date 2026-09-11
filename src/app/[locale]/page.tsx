@@ -14,7 +14,7 @@ import {getHomeContent} from '@/features/home/api';
 import {getLocations} from '@/features/locations/api';
 import {getHomePage, PageNotFoundError} from '@/features/pages/api';
 import {getSiteLayout} from '@/features/site-layout/api';
-import {isBulletinEnabled} from '@/features/weekly/access';
+import {getBulletinAccess} from '@/features/weekly/access';
 import {getMessages} from '@/i18n/messages';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getEditorialMetadata} from '@/lib/seo';
@@ -45,7 +45,7 @@ export default async function HomePage({params}: HomePageProps) {
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
-  const [page, home, layout, enabled] = await Promise.all([homePage(locale), getHomeContent(locale), getSiteLayout(locale), isBulletinEnabled()]);
+  const [page, home, layout, bulletinAccess] = await Promise.all([homePage(locale), getHomeContent(locale), getSiteLayout(locale), getBulletinAccess()]);
   const locations = page.template === 'home.v2'
     ? page.content.locations.toSorted((left, right) => left.sortOrder - right.sortOrder).map(({key, name, address, mapHref}) => ({id: key, name, address, mapHref}))
     : await getLocations(locale);
@@ -72,10 +72,11 @@ export default async function HomePage({params}: HomePageProps) {
       <main data-cms-fallback={page.source === 'migration-fallback' ? 'home' : undefined}>
         <HomeHero locale={locale} title={content.heroTitle} subtitle={content.heroSubtitle} imageUrl={page.template === 'home.v2' ? page.content.bannerImageUrl : undefined} />
         <div className="relative z-[3] bg-[image:var(--hhc-page-gradient)] py-8 pb-11">
-          <SectionCard className={enabled ? "shell grid grid-cols-[minmax(0,1.45fr)_minmax(300px,.9fr)] gap-8 p-7 max-[900px]:grid-cols-1 max-[620px]:p-5" : "shell grid grid-cols-1 min-h-[408px] gap-8 p-7 max-[900px]:min-h-[774px] max-[620px]:min-h-[758px] max-[620px]:p-5"} ariaLabel={enabled ? `${content.newsTitle} · ${content.weeklyTitle}` : content.newsTitle}>
-            <NewsSection fillSpace={!enabled} title={content.newsTitle} moreHref={`/${locale}/news`} moreLabel={`${content.moreNews} →`} items={home.news} errorMessage={home.newsFailed ? messages.home.newsLoadError : undefined} />
-            {enabled ? <WeeklyCard
+          <SectionCard className="shell grid min-h-[408px] grid-cols-1 gap-8 p-7 [&:has(>[data-weekly-card])]:min-h-0 [&:has(>[data-weekly-card])]:grid-cols-[minmax(0,1.45fr)_minmax(300px,.9fr)] max-[900px]:min-h-[774px] max-[900px]:[&:has(>[data-weekly-card])]:grid-cols-1 max-[620px]:min-h-[758px] max-[620px]:p-5" ariaLabel={bulletinAccess.enabled ? `${content.newsTitle} · ${content.weeklyTitle}` : content.newsTitle}>
+            <NewsSection fillSpace={!bulletinAccess.enabled} title={content.newsTitle} moreHref={`/${locale}/news`} moreLabel={`${content.moreNews} →`} items={home.news} errorMessage={home.newsFailed ? messages.home.newsLoadError : undefined} />
+            <WeeklyCard
               locale={locale}
+              memberMode={!bulletinAccess.enabled}
               ctaLabel={content.downloadWeekly}
               messages={{
                 loading: messages.home.weeklyLoading,
@@ -83,7 +84,7 @@ export default async function HomePage({params}: HomePageProps) {
                 error: messages.home.weeklyLoadError,
                 retry: messages.home.retry
               }}
-            /> : null}
+            />
           </SectionCard>
           <VideoSection title={content.videosTitle} subtitle={content.videosSubtitle} ctaLabel={content.watchMore} channelHref={layout.links.musicYoutube} items={home.videos} errorMessage={home.videosFailed ? messages.home.videosLoadError : undefined} />
           <AboutTeaser locale={locale} title={content.aboutTitle} body={content.aboutBody} ctaLabel={`${content.aboutCta} →`} />

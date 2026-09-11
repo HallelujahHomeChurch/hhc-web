@@ -10,12 +10,13 @@ import type {SiteLayout} from '@/features/site-layout/types';
 import type {Locale} from '@/i18n/locales';
 import {isIPhoneDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 import {StatementStrip} from '@/components/statements/StatementStrip';
-import {AccountControlSlot} from './AccountControl';
+import {AccountControlSlot, useCanReadBulletin} from './AccountControl';
 
 export type SiteHeaderProps = {
   layout: SiteLayout;
   locale: Locale;
   pathname: string;
+  bulletinPublicEnabled?: boolean;
   sessionClient?: AccountSessionClient;
   showNavigation?: boolean;
 };
@@ -30,10 +31,11 @@ const icons = {
   'literature-ministry': BookOpenText
 };
 
-export function SiteHeader({layout, locale, pathname, sessionClient, showNavigation = true}: SiteHeaderProps) {
+export function SiteHeader({layout, locale, pathname, bulletinPublicEnabled = true, sessionClient, showNavigation = true}: SiteHeaderProps) {
   const t = useTranslations('site');
   const homeHref = `/${locale}`;
-  const navItems = layout.header.filter(({visible}) => visible).map((item) => ({...item, icon: icons[item.key]}));
+  const canReadBulletin = useCanReadBulletin(bulletinPublicEnabled);
+  const navItems = layout.header.filter(({key, visible}) => visible && (key !== 'literature-ministry' || canReadBulletin)).map((item) => ({...item, icon: icons[item.key]}));
   const mobileNavItems = [{key: 'home', label: t('nav.home'), href: homeHref, icon: House}, ...navItems];
   const accountLabels = {
     menu: t('account.menu'),

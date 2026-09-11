@@ -1,6 +1,7 @@
 'use client';
 
 import {useState} from 'react';
+import {getSharedAccountSessionClient} from '@/lib/browser-bootstrap';
 
 type DownloadButtonProps = {
   href: string;
@@ -8,6 +9,7 @@ type DownloadButtonProps = {
   ariaLabel?: string;
   className?: string;
   variant?: 'primary' | 'outline';
+  authenticated?: boolean;
 };
 
 const variants = {
@@ -15,7 +17,7 @@ const variants = {
   outline: 'border-[var(--hhc-control-border)] bg-paper text-[var(--hhc-control)] hover:border-primary hover:bg-primary hover:text-primary-foreground'
 };
 
-export function DownloadButton({href, label, ariaLabel, className = '', variant = 'primary'}: DownloadButtonProps) {
+export function DownloadButton({href, label, ariaLabel, authenticated = false, className = '', variant = 'primary'}: DownloadButtonProps) {
   const [preparing, setPreparing] = useState(false);
 
   return (
@@ -31,6 +33,12 @@ export function DownloadButton({href, label, ariaLabel, className = '', variant 
           event.preventDefault();
           return;
         }
+        if (authenticated) {
+          event.preventDefault();
+          setPreparing(true);
+          void downloadAuthenticated(href).catch(() => undefined).finally(() => setPreparing(false));
+          return;
+        }
         setPreparing(true);
         window.setTimeout(() => setPreparing(false), 1500);
       }}
@@ -39,4 +47,16 @@ export function DownloadButton({href, label, ariaLabel, className = '', variant 
       <span className={preparing ? 'opacity-0' : undefined}>{label}</span>
     </a>
   );
+}
+
+async function downloadAuthenticated(href: string) {
+  const {accessToken} = await getSharedAccountSessionClient().issueAccessToken();
+  const response = await fetch(href, {headers: {Authorization: `Bearer ${accessToken}`}, cache: 'no-store'});
+  if (!response.ok) throw new Error('Bulletin download failed');
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = response.headers.get('content-disposition')?.match(/filename\*?=(?:UTF-8'')?"?([^";]+)/i)?.[1] ?? '';
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }

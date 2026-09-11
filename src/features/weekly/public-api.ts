@@ -1,4 +1,5 @@
 import {bulletinEditions, isBulletinEdition, type BulletinEdition} from '@hallelujahhomechurch/preferences';
+import {getSharedAccountSessionClient} from '@/lib/browser-bootstrap';
 import {type WeeklyBulletin, type WeeklyIssue, type WeeklyIssuePage} from './types';
 
 type Fetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -23,7 +24,7 @@ type Envelope<T> = {
   meta: {page?: number; pageSize?: number; total?: number};
   error: {code: string; message: string} | null;
 };
-type ClientOptions = {fetcher?: Fetcher; baseUrl?: string; signal?: AbortSignal};
+type ClientOptions = {fetcher?: Fetcher; baseUrl?: string; signal?: AbortSignal; memberMode?: boolean; getAccessToken?: () => Promise<string>};
 
 export class WeeklyApiError extends Error {
   constructor(readonly code: string, message: string) {
@@ -47,7 +48,7 @@ export async function fetchWeeklyArchive(
   const normalizedPage = Math.max(1, Math.floor(page));
   const normalizedPageSize = Math.max(1, Math.floor(pageSize));
   const query = `page=${normalizedPage}&pageSize=${normalizedPageSize}`;
-  const response = await request<PublicIssue[]>(`/bulletins?${query}`, options);
+  const response = await request<PublicIssue[]>(`${options.memberMode ? '/member' : ''}/bulletins?${query}`, options);
   const order = new Map(bulletinEditions.map((locale, index) => [locale, index]));
   const items: WeeklyIssue[] = response.data.map((issue) => ({
     id: issue.issueDate,
@@ -55,7 +56,7 @@ export async function fetchWeeklyArchive(
     date: issue.issueDate,
     versions: issue.versions
       .filter((version): version is PublicBulletin & {locale: BulletinEdition} => isBulletinEdition(version.locale))
-      .map(toWeekly)
+      .map((version) => toWeekly(version, options.memberMode === true))
       .sort((left, right) => (order.get(left.locale) ?? 0) - (order.get(right.locale) ?? 0))
   }));
   const totalItems = response.meta.total ?? items.length;
@@ -69,17 +70,30 @@ export async function fetchWeeklyArchive(
   };
 }
 
-function toWeekly(value: PublicBulletin & {locale: BulletinEdition}): WeeklyBulletin {
+function toWeekly(value: PublicBulletin & {locale: BulletinEdition}, memberMode: boolean): WeeklyBulletin {
+  if (memberMode) {
+    return {...weeklyFields(value), href: `/api/member/bulletin-downloads/${value.issueDate}?locale=${value.locale}`};
+  }
   const href = value.downloadFileName && !value.downloadUrl.includes('filename=')
     ? `${value.downloadUrl}${value.downloadUrl.includes('?') ? '&' : '?'}filename=${encodeURIComponent(value.downloadFileName)}`
     : value.downloadUrl;
-  return {locale: value.locale, issueNumber: value.issueNumber, date: value.issueDate, title: value.title, subtitle: value.subtitle ?? '', href};
+  return {...weeklyFields(value), href};
+}
+
+function weeklyFields(value: PublicBulletin & {locale: BulletinEdition}) {
+  return {locale: value.locale, issueNumber: value.issueNumber, date: value.issueDate, title: value.title, subtitle: value.subtitle ?? ''};
 }
 
 async function request<T>(path: string, options: ClientOptions) {
   const fetcher = options.fetcher ?? globalThis.fetch.bind(globalThis);
   const baseUrl = (options.baseUrl ?? process.env.NEXT_PUBLIC_HHC_WEB_API_BASE_URL ?? '/api').replace(/\/$/, '');
-  const response = await fetcher(`${baseUrl}${path}`, {headers: {Accept: 'application/json'}, signal: options.signal});
+  const accessToken = options.memberMode
+    ? await (options.getAccessToken ?? (async () => (await getSharedAccountSessionClient().issueAccessToken()).accessToken))()
+    : '';
+  const response = await fetcher(`${baseUrl}${path}`, {
+    headers: {Accept: 'application/json', ...(accessToken ? {Authorization: `Bearer ${accessToken}`} : {})},
+    signal: options.signal
+  });
   const envelope = await response.json() as Envelope<T>;
   if (!response.ok || envelope.error) {
     throw new WeeklyApiError(envelope.error?.code ?? 'request_failed', envelope.error?.message ?? response.statusText);

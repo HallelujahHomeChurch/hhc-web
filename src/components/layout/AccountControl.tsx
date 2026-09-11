@@ -5,6 +5,7 @@ import {UserRound} from 'lucide-react';
 import {
   buildAuthorizeUrl,
   canAccessAdmin,
+  hasPermission,
   isPermissionList,
   createOAuthTransactionOnce,
   currentReturnTo,
@@ -54,6 +55,15 @@ type AccountControlContextValue = {
 };
 
 const AccountControlContext = createContext<AccountControlContextValue | null>(null);
+
+export function useCanReadBulletin(publicEnabled: boolean) {
+  const account = useContext(AccountControlContext);
+  return publicEnabled || (account?.auth.status === 'authenticated' && hasPermission(account.auth.user.permissions, 'bulletin:read'));
+}
+
+export function BulletinAccessGate({children, publicEnabled}: {children: ReactNode; publicEnabled: boolean}) {
+  return useCanReadBulletin(publicEnabled) ? children : null;
+}
 
 export function AccountControl(props: AccountControlProps) {
   return (
@@ -293,7 +303,7 @@ export function webOAuthConfigForBrowser(): OAuthClientConfig {
     authorizeBaseUrl: accountAuthorizeBaseUrlForBrowser(),
     clientId: 'www-web',
     redirectUri: `${origin}/oauth/callback`,
-    scope: 'openid profile email'
+    scope: 'openid profile email bulletin:read'
   };
 }
 
