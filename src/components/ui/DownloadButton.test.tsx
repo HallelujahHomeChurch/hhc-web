@@ -48,7 +48,9 @@ describe('DownloadButton', () => {
     const link = screen.getByRole('link', {name: '會員週報'});
     fireEvent.click(link);
 
-    expect(await screen.findByRole('status')).toHaveTextContent('正在準備週報，完成後會自動下載。');
+    const toast = await screen.findByRole('status');
+    expect(toast).toHaveTextContent('正在準備週報，完成後會自動下載。');
+    expect(toast.parentElement).toHaveClass('hhc-toast-region');
     expect(link).toHaveAttribute('aria-busy', 'true');
     fireEvent.click(link);
     expect(fetcher).toHaveBeenCalledTimes(1);
