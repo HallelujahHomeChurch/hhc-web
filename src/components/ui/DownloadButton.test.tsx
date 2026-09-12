@@ -6,7 +6,7 @@ vi.mock('@/lib/browser-bootstrap', () => ({getSharedAccountSessionClient: () => 
 import {DownloadButton} from './DownloadButton';
 import * as AccountControl from '@/components/layout/AccountControl';
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {vi.restoreAllMocks(); issueAccessToken.mockClear(); vi.useRealTimers();});
 
 describe('DownloadButton', () => {
   it('keeps its label and dimensions while preventing duplicate downloads', () => {
@@ -25,9 +25,10 @@ describe('DownloadButton', () => {
   });
 
   it('downloads member files with a session access token', async () => {
-    const fetcher = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('pdf', {
-      headers: {'content-disposition': "attachment; filename*=UTF-8''weekly.pdf"}
-    }));
+    const id = '00000000-0000-4000-8000-000000000001';
+    const fetcher = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(Response.json({data: {id, status: 'ready', createdAt: '2026-09-13T00:00:00Z', expiresAt: '2027-09-13T00:00:00Z'}}))
+      .mockResolvedValueOnce(new Response('pdf', {headers: {'content-disposition': "attachment; filename*=UTF-8''1737-%E8%A9%A9%E7%AF%87.pdf"}}));
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:weekly');
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
@@ -35,10 +36,37 @@ describe('DownloadButton', () => {
 
     fireEvent.click(screen.getByRole('link', {name: '會員週報'}));
 
-    await waitFor(() => expect(fetcher).toHaveBeenCalledWith('/api/member/bulletin-downloads/2026-09-13', expect.objectContaining({
-      headers: {Authorization: 'Bearer member-token'}, cache: 'no-store'
-    })));
+    await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
+    expect(fetcher).toHaveBeenNthCalledWith(1, '/api/member/bulletin-download-jobs', expect.objectContaining({
+      method: 'POST', headers: expect.objectContaining({Authorization: 'Bearer member-token'}), cache: 'no-store'
+    }));
+    expect(fetcher).toHaveBeenNthCalledWith(2, `/api/member/bulletin-download-jobs/${id}/file`, expect.objectContaining({headers: {Authorization: 'Bearer member-token'}}));
     expect(click).toHaveBeenCalled();
+    expect(click.mock.instances[0]).toHaveProperty('download', '1737-詩篇.pdf');
+    expect(issueAccessToken).toHaveBeenCalledTimes(1);
+  });
+
+  it('polls an accepted preparation before downloading', async () => {
+    vi.useFakeTimers();
+    const id = '00000000-0000-4000-8000-000000000002';
+    const pending = () => new Response(JSON.stringify({data: {id, status: 'queued', createdAt: '2026-09-13T00:00:00Z', expiresAt: '2027-09-13T00:00:00Z'}}), {status: 202, headers: {'Content-Type': 'application/json', 'Retry-After': '1'}});
+    const fetcher = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(pending())
+      .mockResolvedValueOnce(Response.json({data: {id, status: 'ready', createdAt: '2026-09-13T00:00:00Z', expiresAt: '2027-09-13T00:00:00Z'}}))
+      .mockResolvedValueOnce(new Response('pdf'));
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:weekly');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    render(<DownloadButton href="/api/member/bulletin-downloads/2026-09-13?locale=zh-Hant" label="會員週報" authenticated />);
+
+    fireEvent.click(screen.getByRole('link', {name: '會員週報'}));
+    await vi.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(fetcher).toHaveBeenCalledTimes(3);
+    expect(fetcher).toHaveBeenNthCalledWith(2, `/api/member/bulletin-download-jobs/${id}`, expect.anything());
+    expect(fetcher).toHaveBeenNthCalledWith(3, `/api/member/bulletin-download-jobs/${id}/file`, expect.anything());
+    expect(issueAccessToken).toHaveBeenCalledTimes(1);
   });
 
   it('shows one preparation toast while an authenticated download is pending', async () => {
