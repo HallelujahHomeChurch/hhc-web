@@ -1,239 +1,149 @@
-# Account Legal Operations Rebaseline Design
+# Account Legal Operations Launch Design
 
-**Status:** Approved design direction, pending written-spec review
+**Status:** Approved for implementation and production activation
 
-**Date:** 2026-09-07
+**Original date:** 2026-09-07
+**Rebased:** 2026-09-12
 
 ## Purpose
 
-Rebaseline the five Account legal-operations phases for the current HHC website so production readiness does not depend on building speculative privacy, incident, retention, or vendor platforms.
+Complete the five Account legal-operations phases without building speculative privacy, retention, incident, or vendor platforms. The launch must provide visible notice, versioned acceptance, data-subject request handling, factual data inventories, bounded retention, personal-data incident handling, and a processor register.
 
-The control objectives remain: give clear notice, fulfill data-subject requests, know and safely retire Account-attributable data, respond to incidents, and supervise external processors. The implementation stops at the smallest operationally reliable mechanism for the current traffic, data volume, team size, and product surface.
-
-This is an engineering design, not a legal opinion. External review owns final public copy, legal bases, retention periods and exceptions, notification obligations, and processor contract terms.
+This is an engineering baseline, not a legal opinion. The current Traditional Chinese Terms and Privacy Notice are the governing launch draft. A lawyer may later revise wording, legal bases, retention periods, notification obligations, and processor terms without blocking the existing code or service boundaries.
 
 ## Current Baseline
 
-The following capabilities are already merged and released:
+The following capabilities are merged and released:
 
 - versioned Terms and Privacy Notice acceptance across password, OAuth, MFA, and resumed authorization flows;
-- Account DSR orchestration plus owner contracts in Account, Asset, Engagement, and Notification;
-- Account, Asset, Engagement, and Notification data-governance inventories with CI verification and immutable publication;
-- MFA, RBAC, session and device lifecycle, encrypted notification targets and payloads, malware scanning, release rollback, and platform incident-command foundations.
+- self-service and Admin DSR UI, Account orchestration, and owner contracts in Account, Asset, Engagement, Notification, and Website watermark data;
+- service-owned data-governance inventories with CI verification and immutable publication;
+- Account security controls, private asset lifecycle, encrypted notification data, release rollback, and platform incident-command foundations.
 
-Production intentionally keeps `POLICY_ACCEPTANCE_ENFORCED=false`. DSR remains unavailable to ordinary users. Asset retention remains a Manual job with apply disabled. Governance entries without an approved legal decision retain `legal_basis.status: pending_legal` and `retention.status: pending_legal`.
+Production currently reports:
 
-The public Privacy Notice already describes the organization, categories, purposes, retention, regions, recipients, processors, security, data-subject rights, and `support@alive.org.tw`. The registration UI currently renders its combined Terms and Privacy acknowledgement only while policy enforcement is enabled. Collection notice must no longer depend on that enforcement flag.
+- `POLICY_ACCEPTANCE_ENFORCED=false`;
+- Terms version `terms-2026-08-04`, while the current public Terms were published 2026-09-07;
+- Privacy Notice version `privacy-2026-09-11`, matching the current public publication;
+- `dsr.enabled=false`;
+- Asset retention as a Manual job with apply disabled.
+
+The public Traditional Chinese Privacy Notice already states the collector, purposes, data categories, use period, regions, recipients, methods, data-subject rights, non-provision impact, security handling, third-party login, notification preferences, and `support@alive.org.tw`. The Account collection screen must link to it even before acceptance enforcement is enabled.
 
 ## Decision
 
-Use a launch-first, platform-later model with three independent tracks:
+Ship four small owner-local deliverables:
 
-1. **Engineering baseline:** small code or documentation changes may pass CI, merge, and release without waiting for external review when they do not activate policy or destructive behavior.
-2. **External review:** legal and policy owners review public wording, retention decisions, incident-notification rules, and processor terms independently.
-3. **Activation:** policy enforcement, public DSR, and destructive retention each require their own reviewed production change. One blocked activation must not block unrelated website delivery.
+1. **Account notice:** show an informational Privacy Notice link wherever password registration or OAuth onboarding collects Account data. This notice never fabricates acceptance evidence.
+2. **Operational baseline:** add a DSR runbook, personal-data incident checklist and tabletop record, processor register, and a versioned legal-review packet.
+3. **Account activation:** align the Terms version to `terms-2026-09-07`, keep Privacy at `privacy-2026-09-11`, provision the DSR subject-reference key, then enable policy enforcement and DSR through the normal Account API release.
+4. **Retention activation:** keep the Asset retention job Manual, run a production dry-run, enable apply through the normal Asset release, and perform one bounded manual execution only against the existing `line.group.media-sync` predicate. Do not enable a recurring schedule.
 
-Do not create a privacy service, retention service, incident service, vendor service, new database, central case-management platform, or new Admin UI for this scope.
+Do not create a privacy service, retention service, incident service, vendor service, new database, central case-management platform, or new Admin UI.
 
-## Revised Five-Phase Scope
+## Revised Five Phases
 
-### Phase 1: Policy Acceptance
+### Phase 1: Notice And Policy Acceptance
 
-Keep the released versioned acceptance mechanism. Make the collection notice visible at password registration and OAuth onboarding independently of `POLICY_ACCEPTANCE_ENFORCED`.
-
-- Privacy Notice presentation is informational and always visible when Account data is collected.
-- Terms acceptance and persisted policy evidence remain controlled by the server capability and enforcement flag.
-- The UI must not report policy acceptance or send a policy acceptance payload while enforcement is false.
-- Newsletter consent remains a separate optional control.
-- Final wording, translations, age or guardian requirements, version identifiers, and enforcement timing remain external-review inputs.
-
-Phase 1 development completion does not authorize `POLICY_ACCEPTANCE_ENFORCED=true`.
+- Privacy Notice presentation is informational and always visible at password registration and OAuth onboarding.
+- Terms acceptance and persisted evidence remain controlled by the server capability.
+- No policy payload is sent while enforcement is false.
+- Newsletter consent remains separate and optional.
+- Enable enforcement only after the Account FE release is live and both public legal URLs return the configured versions.
+- A later legal-copy change receives a new version identifier and another acceptance decision; it does not require an auth redesign.
 
 ### Phase 2: Data-Subject Requests
 
-Keep the released DSR API, Gateway routes, Account UI, and service-owner contracts disabled for ordinary users until an operator drill succeeds.
+Use the released DSR system rather than creating another portal or API. The operating contract covers:
 
-The launch baseline is an operator runbook, not a public self-service portal. It must define:
-
-- intake through `support@alive.org.tw`;
-- request identity and Account subject;
+- authenticated self-service requests and `support@alive.org.tw` assisted intake;
+- access/export, correction, restriction, and erasure;
 - identity or representative verification;
-- request type: access or copy, correction, restriction, or deletion;
-- decision due date and documented extension;
-- refusal or retention-exception reason;
-- execution evidence and response completion;
-- escalation when an owner service cannot export, restrict, correct, or erase safely.
+- decision date, extension, refusal, or retention-exception evidence;
+- owner execution evidence and retryable partial failure;
+- Admin approval, retry, and manual-resolution paths.
 
-One synthetic Account request must exercise intake through completion without using production personal data. Public DSR activation remains a separate gate after an operating owner accepts the workload.
+Production activation requires capability readback plus a non-destructive authenticated smoke. A destructive erasure drill must use a dedicated synthetic account, never an existing member account.
 
 ### Phase 3A: Data Governance
 
-Treat the released owner inventories and immutable evidence pipeline as complete. Continue to use the service-owned manifests; do not create a duplicate central data catalog.
-
-- Every Account-attributable field retains a classification or explicit exclusion reason.
-- `pending_legal` is an intentional state, not a publication failure.
-- Governance publication proves reviewed implementation evidence, not legal compliance.
-- New Account-attributable datasets extend their owner manifest in the same feature PR.
-- Donation and other future sensitive domains must pass a separate launch review before production routing.
+The existing owner manifests remain authoritative. `pending_legal` remains a valid factual state and is not rewritten as legal approval. New Account-attributable datasets update their owner manifest in the same feature PR. Donation and other future sensitive domains require their own launch review.
 
 ### Phase 3B: Retention Execution
 
-Replace full automation with the following owner-local flow:
+The initial production retention capability remains owner-local:
 
 ```text
-dry-run report -> data-owner approval -> manual apply -> immutable result evidence
+dry-run report -> bounded approval -> manual apply -> result evidence
 ```
 
-Rules:
+- The Asset predicate is fixed to active `line.group.media-sync` collections owned by `hhc-line-function-bot`, expired by the collection's configured `retention_days`, and excludes `retention_exempt=true` items.
+- Dry-run and apply use the same repository predicate.
+- Apply is idempotent and records counts without personal record values.
+- The first apply remains Manual; the 19:00 UTC recurring schedule stays disabled.
+- Other datasets with `retention.status: pending_legal` receive no new destructive rule.
+- Restore orchestration and a global scheduler remain out of scope.
 
-- A dataset with `retention.status: pending_legal` is never eligible for a new destructive policy.
-- Existing tested retention behavior may continue unchanged.
-- Each newly approved rule is delivered by the owning service in a focused PR and release.
-- The dry run and apply use the same selection predicate; apply adds mutation but does not broaden eligibility.
-- Execution is idempotent and records selected, skipped, failed, and completed counts without personal record values.
-- A partial failure remains retryable and cannot mark unprocessed owners complete.
-- Backup expiry and restore reconciliation remain documented operational constraints. Do not build a restore orchestrator until an actual restore or request volume demonstrates the need.
-- Do not add a global scheduler. Manual triggering remains the default until repeated, measured operator toil justifies scheduling.
+### Phase 4: Personal-Data Incidents
 
-### Phase 4: Security And Incident Operations
+Extend `docs/runbooks/platform-incident-command.md`; do not build an incident platform. The checklist covers suspected exposure, unauthorized access, loss, alteration, unsafe restore, containment, evidence preservation, affected owners and processors, credential/session action, notification escalation, subject communication tracking, and closeout evidence. Record one synthetic tabletop exercise without real personal data or external notification.
 
-Extend the existing `docs/runbooks/platform-incident-command.md`; do not build an incident platform.
+### Phase 5: Processors And Data Flow
 
-Add a personal-data incident section covering:
+Maintain one version-controlled factual register; do not build a vendor system. It covers Azure, Cloudflare Turnstile, Sentry, Google, Microsoft, LINE, Azure Communication Services email, and browser-selected Web Push services. Unknown contract, region, subprocessor, deletion, or incident terms are recorded as `pending_external_review`, never invented.
 
-- suspected exposure, unauthorized access, loss, alteration, or unsafe restore;
-- immediate containment and evidence preservation;
-- affected data-owner and processor identification;
-- Account credential and session revocation decisions;
-- notification-decision escalation to the policy or legal owner;
-- affected-subject communication tracking without copying sensitive payloads into incident notes;
-- retention of the decision, actions, and closeout evidence.
+## Public Legal Draft V1
 
-Run one tabletop exercise using synthetic facts. Automation is added only when the exercise exposes a specific repeatable failure that existing Azure, GitHub, monitoring, audit, or service controls cannot cover.
+The launch draft is the content currently published at:
 
-### Phase 5: Vendors And Data Flow
+- `https://www.alive.org.tw/zh-Hant/privacy-policy`, published 2026-09-11;
+- `https://www.alive.org.tw/zh-Hant/terms-of-use`, published 2026-09-07.
 
-Maintain one version-controlled processor register; do not build a vendor system.
+The engineering review checks that the Privacy Notice contains the six collection-notice categories reflected in Article 8 of Taiwan's Personal Data Protection Act and the rights reflected in Article 3. It also keeps purpose limitation, correction/deletion handling, incident notification, and non-marketing-without-choice language explicit. Legal counsel remains responsible for confirming the organization's formal identity, sector-specific rules, age treatment, cross-border terms, statutory retention, limitation clauses, and future donation requirements.
 
-The register covers every processor or identity provider used in production, initially Azure, Google, Microsoft, LINE, email and Web Push providers, and any enabled error or performance telemetry provider. Each entry records:
+## Delivery And Activation Order
 
-- service and business purpose;
-- data categories and HHC owner services;
-- processing or storage regions when known;
-- subprocessors or authoritative subprocessor-list location;
-- deletion, export, and contract-termination handling;
-- security-incident contact or notification channel;
-- contract or DPA source;
-- external-review state and last evidence date.
+1. Merge and release the Account FE notice.
+2. Merge the operational documentation package.
+3. Create the Account DSR HMAC secret without disclosing it, merge Account API activation, wait for CI/CD, and verify the deployed revision and live capability response.
+4. Run authenticated Policy and DSR live smoke tests. Do not erase a real account.
+5. Merge the Asset manual-apply activation, wait for CI/CD, rerun dry-run, then execute one bounded manual apply and preserve counts.
 
-`pending_external_review` is valid for merging the factual register. It is not approval to send a new data category, enable a new provider, or accept unresolved production risk.
-
-## Repository Ownership
-
-Only two initial delivery batches are defined by this design. Implementation still requires the normal user approval and repository delivery gates.
-
-### Batch A: Registration Notice
-
-Repository: `account-fe`
-
-- Modify the existing registration and OAuth onboarding presentation.
-- Reuse the current legal links, locale handling, and capability response.
-- Add focused tests proving the Privacy Notice is visible with enforcement off and no acceptance payload is emitted.
-- Preserve existing enforced Terms acceptance behavior.
-
-### Batch B: Legal Operations Baseline
-
-Repository: `hhc-web`
-
-- Add one privacy-request operator runbook under `docs/runbooks/`.
-- Extend the existing platform incident-command runbook with the personal-data incident checklist and tabletop record format.
-- Add one vendor and data-flow register under `docs/governance/`.
-- Link these artifacts from the runbook index.
-
-This documentation batch contains no runtime, dependency, API, schema, infrastructure, or production configuration change.
-
-Retention changes are not part of either batch. They begin only after a specific owner manifest receives an externally approved rule.
-
-## External Review Packages
-
-External work is split into four packages and may proceed in parallel:
-
-1. **Public policy:** governing `zh-Hant` Terms and Privacy Notice, reviewed translations, age and guardian treatment, material-change notification, and version activation.
-2. **Retention:** purpose, legal basis, period, trigger, action, and statutory or operational exceptions for each `pending_legal` dataset.
-3. **Incident:** notification threshold, recipients, deadlines, regulator routing, approved communication content, and evidence retention.
-4. **Processors:** processor terms, DPA or equivalent, processing regions, cross-border constraints, subprocessor notice, breach notice, DSR assistance, and termination deletion or return.
-
-External review may create narrowly scoped remediation work. It does not reopen completed platform architecture unless an approved requirement contradicts an existing technical assumption.
-
-## Independent Activation Gates
-
-### Policy Enforcement Gate
-
-Requires approved governing copy and translations, approved age treatment, configured version identifiers, Account FE live verification, rollback configuration, and an explicit production change setting `POLICY_ACCEPTANCE_ENFORCED=true`.
-
-### Public DSR Gate
-
-Requires a completed synthetic operator drill, named primary and backup operators, verified support-mail delivery, request deadline tracking, successful owner responses, safe failure handling, and authenticated UI and API smoke tests.
-
-### Retention Apply Gate
-
-Applies per dataset and owner service. Requires an approved manifest rule, dry-run review, tested selection parity, idempotent mutation, rollback or recovery procedure where deletion is reversible, immutable result evidence, and explicit production authorization.
-
-No global legal-operations switch exists.
+Every repository keeps its own branch, PR, CI, merge, release, and live evidence. No unmerged commit is deployed.
 
 ## Failure Handling
 
-- If the public policy cannot be loaded, collection screens fail closed only when policy enforcement is active. With enforcement off, the stable Privacy Notice link remains visible and registration behavior remains compatible.
-- If a DSR owner is unavailable or returns inconsistent evidence, keep the request open, record the owner failure, and escalate; never report completion from partial owner success.
-- If retention dry-run evidence is missing, stale, or broader than the approved predicate, do not apply.
-- If retention apply partially fails, retry only failed idempotent owner actions and preserve the original execution identity.
-- If processor facts are unknown, record `pending_external_review`; do not invent a region, contractual protection, or deletion guarantee.
-- If an incident may involve personal data, preserve evidence and escalate the notification decision. Absence of a final legal decision must not delay containment.
+- If legal pages are unavailable, enforced registration or onboarding fails closed.
+- If the DSR key or any owner dependency is unavailable, Account API must not become ready or the request remains open; partial owner success never becomes completion.
+- If retention dry-run changes scope, reports failures, or includes an unexpected namespace/owner, do not apply.
+- If retention apply partially fails, retry the same idempotent operation and preserve the original evidence.
+- If processor facts are unknown, keep `pending_external_review` and do not infer protections.
+- If an incident may involve personal data, containment and evidence preservation proceed immediately while notification decisions escalate.
 
 ## Verification
 
-### Batch A
+- Account FE: focused red/green tests, full test, lint, build, PR CI, release, and live locale/link smoke.
+- HHC Web docs: link check, placeholder/secret scan, `git diff --check`, and PR CI.
+- Account API: configuration tests, `go test ./...`, `go vet ./...`, Bicep build/what-if, PR CI, release, ready revision, capability readback, and authenticated smoke.
+- Asset: release-policy test, `go test ./...` with the required PostgreSQL gate, `go vet ./...`, Bicep build/what-if, PR CI, release, dry-run/apply executions, and result counts.
 
-- focused component and page tests for password registration and OAuth onboarding with enforcement on and off;
-- Account FE full test, lint, and build gates;
-- PR CI, merge, release, and live locale smoke;
-- production readback confirms no server enforcement configuration changed.
-
-### Batch B
-
-- Markdown links and repository path checks;
-- register schema and required-entry assertions using existing repository tooling or a minimal checked-in script only if plain review cannot enforce structure;
-- placeholder and secret scans;
-- `git diff --check` and repository CI;
-- no application release is required unless the repository workflow unavoidably performs one for documentation changes.
-
-### Operational Drills
-
-- one synthetic DSR lifecycle record;
-- one synthetic personal-data incident tabletop record;
-- one retention dry-run only after an approved owner rule exists.
-
-Drills must not use real personal data, send external user notifications, delete production data, or enable a production feature.
-
-## Explicit Non-Goals
+## Non-Goals
 
 - automatic cross-service retention scheduling;
-- public DSR activation in the initial batches;
 - central privacy, retention, incident, recovery, or vendor services;
-- case-management databases or Admin consoles;
-- processor contract negotiation or legal approval inside engineering;
 - automatic regulator or affected-user notification;
+- deletion of an existing member account for testing;
 - donation collection, payment processing, tax receipts, fundraising permits, accounting, or donor-data policy.
 
 ## Completion Criteria
 
-The rebaseline is complete when:
+The launch is complete when:
 
-- registration collection notice is visible independently of Terms enforcement;
-- the DSR operator runbook can drive a synthetic request to a documented outcome;
-- existing governance inventories remain authoritative and no speculative catalog is added;
-- destructive retention remains owner-local, approval-gated, and disabled where decisions are pending;
-- the existing incident runbook covers personal-data containment and notification escalation and has one synthetic exercise record;
-- every production processor has a factual register entry, including explicit unknowns;
-- policy enforcement, public DSR, and retention apply remain separate production gates;
+- collection notice is visible independently of Terms enforcement;
+- the current legal draft is versioned and linked from Account collection flows;
+- policy enforcement and public DSR are enabled and verified live;
+- DSR operator instructions and a synthetic incident tabletop are recorded;
+- owner data-governance manifests remain authoritative;
+- Asset retention manual apply is enabled, the bounded first run is evidenced, and recurring scheduling remains off;
+- all current production processors have factual register entries;
 - no new platform service, database, or Admin UI was introduced.
