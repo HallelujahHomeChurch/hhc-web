@@ -69,7 +69,9 @@ export function DownloadButton({href, label, ariaLabel, authenticated = false, c
       {preparing ? <span data-download-spinner className="absolute size-4 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none" aria-hidden="true" /> : null}
       <span className={preparing ? 'opacity-0' : undefined}>{label}</span>
     </a>
-    {authenticated && preparing ? <Toast>{preparingLabel}</Toast> : null}
-    {failed ? <Toast tone="danger">{errorLabel}</Toast> : null}
+    {(authenticated && preparing) || failed ? <div className="hhc-toast-region">
+      {authenticated && preparing ? <Toast>{preparingLabel}</Toast> : null}
+      {failed ? <Toast tone="danger">{errorLabel}</Toast> : null}
+    </div> : null}
   </>;
 }
