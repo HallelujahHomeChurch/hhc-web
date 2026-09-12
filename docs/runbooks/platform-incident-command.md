@@ -67,6 +67,32 @@ Close SEV1 and SEV2 only after:
 - incident note has impact window and mitigation summary
 - follow-up item has an owner
 
+## Personal-Data Incident Checklist
+
+Use this checklist whenever confidentiality, integrity, availability, unlawful processing, or unintended deletion of personal data may be involved.
+
+1. Preserve incident id, discovery time, reporter, affected service boundary, release revision, request ids, and sanitized evidence. Do not paste personal data into the incident channel.
+2. Contain access without destroying evidence: revoke credentials or grants, block the affected route, pause the worker/provider, or roll back the release.
+3. Identify categories of people and data, approximate record count, exposure window, recipients, regions, encryption/protection state, and whether access or exfiltration is confirmed.
+4. Ask each owning service to reconcile source data, projections, queues, exports, backups, and lifecycle ledgers. Treat unknown as unknown, not zero.
+5. Notify the security owner and policy owner for impact assessment. Record who decides regulatory or individual notification, the decision time, basis, channel, and deadline. Counsel review is required for the legal conclusion but not for containment.
+6. Restore service only after the exposure path is closed, affected credentials/grants are rotated or revoked, privacy state is reconciled, and a controlled smoke test passes.
+7. Preserve a factual timeline, decision log, notification evidence, and follow-up owner. Do not retain copied incident data longer than needed for investigation.
+
+### Synthetic Tabletop Record — 2026-09-12
+
+Scenario: a fictional release exposes a short-lived Account export download to the wrong authenticated test identity. No real personal data, credential, message, or production mutation was used.
+
+| Check | Result |
+| --- | --- |
+| Classification | SEV1 personal-data exposure path |
+| Containment | Disable export download issuance, revoke outstanding test grants, preserve sanitized request ids |
+| Owners contacted | Incident commander, Account owner, security owner, policy owner |
+| Scope method | Account audit plus owner execution and download-grant reconciliation |
+| Notification decision | Assigned to policy owner with counsel input; no legal conclusion simulated |
+| Recovery gate | Fixed authorization test, expired/revoked grants, reconciliation, authenticated smoke |
+| Outcome | Runbook path complete; no production data involved |
+
 ## Post-Incident Review
 
 Record:
