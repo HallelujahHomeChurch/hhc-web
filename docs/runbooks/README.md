@@ -5,6 +5,7 @@ This directory contains the production runbooks for the HHC web platform. Each d
 ## Operating Rules
 
 - Start with `platform-incident-command.md` for SEV1 and SEV2 incidents.
+- Use `privacy-requests.md` for Account-linked access, correction, restriction, and erasure requests.
 - Use the owning service runbook after the failing route class or dependency is identified.
 - Keep request ids, correlation ids, release manifest ids, and config fingerprints in incident evidence.
 - Never paste secrets, tokens, cookies, authorization headers, Blob SAS URLs, provider keys, or private member data into runbooks or incident notes.
@@ -22,6 +23,7 @@ Use `_service-runbook-template.md` when adding a new deployable service or servi
 | Runbook | Service |
 | --- | --- |
 | `platform-incident-command.md` | cross-service incident command |
+| `privacy-requests.md` | cross-service privacy requests coordinated by `account-api` |
 | `api-gateway.md` | `api-gateway` |
 | `account-api.md` | `account-api` |
 | `hhc-web.md` | `hhc-web` |
