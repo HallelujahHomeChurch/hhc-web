@@ -1,11 +1,14 @@
 'use client';
 
-import {createAccountSessionClient, type AccountSession} from '@hallelujahhomechurch/account-client';
+import {createAccountSessionClient, type AccountAccessToken, type AccountSession} from '@hallelujahhomechurch/account-client';
 
 export type PushConfig = {vapidPublicKey: string};
 
 const rawAccountClient = createAccountSessionClient({fetcher: (input, init) => fetch(input, init)});
 let sessionRequest: Promise<AccountSession> | undefined;
+let accessToken: AccountAccessToken | undefined;
+let accessTokenExpiresAt = 0;
+let accessTokenRequest: Promise<AccountAccessToken> | undefined;
 let pushConfigRequest: Promise<PushConfig> | undefined;
 
 const sharedAccountClient = {
@@ -15,6 +18,16 @@ const sharedAccountClient = {
       sessionRequest = undefined;
       throw error;
     });
+  },
+  issueAccessToken() {
+    if (accessToken && Date.now() < accessTokenExpiresAt - 30_000) return Promise.resolve(accessToken);
+    return accessTokenRequest ??= rawAccountClient.issueAccessToken()
+      .then((value) => {
+        accessToken = value;
+        accessTokenExpiresAt = Date.now() + value.expiresIn * 1000;
+        return value;
+      })
+      .finally(() => {accessTokenRequest = undefined;});
   }
 };
 
@@ -32,10 +45,13 @@ export function revalidateSharedAccountSession() {
 
 export function clearSharedAccountSession() {
   sessionRequest = undefined;
+  accessToken = undefined;
+  accessTokenExpiresAt = 0;
+  accessTokenRequest = undefined;
 }
 
 export function resetBrowserBootstrap() {
-  sessionRequest = undefined;
+  clearSharedAccountSession();
   pushConfigRequest = undefined;
 }
 
