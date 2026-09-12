@@ -515,6 +515,9 @@ it('invalidates member A download and eligibility when a focus refresh switches 
       if (++accessReads > 1) return new Promise(resolve => {finishAccess = resolve;});
       return new Response(JSON.stringify({data: {canRead: true, publicEnabled: false}}), {headers: {'content-type': 'application/json'}});
     }
+    if (url.endsWith('/member/bulletin-download-jobs')) {
+      return new Response(JSON.stringify({data: {id: '00000000-0000-4000-8000-000000000001', status: 'ready'}}), {headers: {'content-type': 'application/json'}});
+    }
     downloadSignal = init?.signal ?? undefined;
     return {ok: true, blob: () => new Promise<Blob>(resolve => {finishBlob = resolve;})} as Response;
   });
