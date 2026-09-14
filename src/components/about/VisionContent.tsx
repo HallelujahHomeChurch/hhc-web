@@ -38,7 +38,7 @@ export function VisionContent({content}: VisionContentProps) {
               alt={content.imageAlt}
               width={720}
               height={540}
-              className="aspect-[4/3] h-full w-full rounded-[10px] object-cover"
+              className="aspect-[4/3] h-full w-full rounded-[10px] object-cover object-[center_35%]"
             />
           </div>
         </div>
