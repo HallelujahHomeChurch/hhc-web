@@ -16,15 +16,25 @@ const variants = {
   outline: 'border-[var(--hhc-control-border)] bg-paper text-[var(--hhc-control)] hover:border-primary hover:bg-primary hover:text-primary-foreground'
 };
 
-type DownloadJob = {id: string; status: 'queued' | 'running' | 'ready' | 'failed' | 'expired'};
+type DownloadJob = {id: string; status: 'queued' | 'running' | 'ready' | 'failed' | 'expired'; progress?: number};
 const jobId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function downloadTarget(href: string) {
+  const requested = new URL(href, window.location.origin);
+  const issueDate = requested.pathname.match(/^\/api\/member\/bulletin-downloads\/(\d{4}-\d{2}-\d{2})$/)?.[1];
+  if (!issueDate) return null;
+  const locale = requested.searchParams.get('locale') ?? 'zh-Hant';
+  return {issueDate, locale, storageKey: `hhc:bulletin-download:${issueDate}:${locale}`};
+}
 
 function waitForPoll(ms: number, signal: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
     const handle = setTimeout(done, ms);
-    function done() { signal.removeEventListener('abort', aborted); resolve(); }
-    function aborted() { clearTimeout(handle); reject(new DOMException('Aborted', 'AbortError')); }
+    function done() { clearTimeout(handle); signal.removeEventListener('abort', aborted); document.removeEventListener('visibilitychange', visible); resolve(); }
+    function aborted() { clearTimeout(handle); document.removeEventListener('visibilitychange', visible); reject(new DOMException('Aborted', 'AbortError')); }
+    function visible() { if (!document.hidden) done(); }
     signal.addEventListener('abort', aborted, {once: true});
+    document.addEventListener('visibilitychange', visible);
   });
 }
 
@@ -39,6 +49,7 @@ export function DownloadButton({href, label, ariaLabel, authenticated = false, c
   const [preparing, setPreparing] = useState(false);
   const [readyDownload, setReadyDownload] = useState<{url: string; filename: string} | null>(null);
   const [failed, setFailed] = useState(false);
+  const [progress, setProgress] = useState(5);
   const controller = useRef<AbortController | null>(null);
   const objectURL = useRef<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -51,6 +62,7 @@ export function DownloadButton({href, label, ariaLabel, authenticated = false, c
       setReadyDownload(null);
       setPreparing(false);
       setFailed(false);
+      setProgress(5);
     };
     const accountChanged = cancel;
     const channel = typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel('hhc:account-state');
@@ -59,30 +71,40 @@ export function DownloadButton({href, label, ariaLabel, authenticated = false, c
     return () => {cancel(); window.removeEventListener('hhc:account-state', accountChanged); channel?.close();};
   }, [href, authenticated, accountIdentity]);
 
-  async function download() {
+  async function download(existingID?: string) {
     controller.current?.abort();
     const request = new AbortController(); controller.current = request;
     setPreparing(true); setFailed(false);
     try {
+      const target = downloadTarget(href);
+      if (!target) throw new Error('Invalid bulletin URL');
       const {accessToken} = await getSharedAccountSessionClient().issueAccessToken();
       request.signal.throwIfAborted();
-      const requested = new URL(href, window.location.origin);
-      const issueDate = requested.pathname.match(/^\/api\/member\/bulletin-downloads\/(\d{4}-\d{2}-\d{2})$/)?.[1];
-      if (!issueDate) throw new Error('Invalid bulletin URL');
       const headers = {Authorization: `Bearer ${accessToken}`};
-      let response = await fetch('/api/member/bulletin-download-jobs', {
-        method: 'POST', headers: {...headers, 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID()},
-        body: JSON.stringify({issueDate, locale: requested.searchParams.get('locale') ?? 'zh-Hant'}), cache: 'no-store', signal: request.signal,
-      });
-      let job = await readJob(response);
+      let response: Response;
+      let job: DownloadJob;
+      if (existingID) {
+        response = await fetch(`/api/member/bulletin-download-jobs/${existingID}`, {headers, cache: 'no-store', signal: request.signal});
+        if (response.status === 404 || response.status === 409) {localStorage.removeItem(target.storageKey); return;}
+        job = await readJob(response);
+      } else {
+        response = await fetch('/api/member/bulletin-download-jobs', {
+          method: 'POST', headers: {...headers, 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID()},
+          body: JSON.stringify({issueDate: target.issueDate, locale: target.locale}), cache: 'no-store', signal: request.signal,
+        });
+        job = await readJob(response);
+        localStorage.setItem(target.storageKey, job.id);
+      }
+      setProgress(job.progress ?? (job.status === 'ready' ? 100 : 5));
       const statusURL = `/api/member/bulletin-download-jobs/${job.id}`;
       while (job.status === 'queued' || job.status === 'running') {
         const seconds = Math.min(5, Math.max(1, Number(response.headers.get('Retry-After')) || 2));
-        await waitForPoll(seconds * 1000, request.signal);
+        await waitForPoll((document.hidden ? Math.max(5, seconds) : seconds) * 1000, request.signal);
         response = await fetch(statusURL, {headers, cache: 'no-store', signal: request.signal});
         job = await readJob(response);
+        setProgress(job.progress ?? (job.status === 'ready' ? 100 : 5));
       }
-      if (job.status !== 'ready') throw new Error('Bulletin preparation failed');
+      if (job.status !== 'ready') {localStorage.removeItem(target.storageKey); throw new Error('Bulletin preparation failed');}
       response = await fetch(`${statusURL}/file`, {headers, cache: 'no-store', signal: request.signal});
       if (!response.ok) throw new Error('Bulletin download failed');
       const blob = await response.blob();
@@ -96,6 +118,7 @@ export function DownloadButton({href, label, ariaLabel, authenticated = false, c
       const link = document.createElement('a'); link.href = url;
       link.download = filename;
       link.click();
+      localStorage.removeItem(target.storageKey);
       timer.current = setTimeout(() => {URL.revokeObjectURL(url); if (objectURL.current === url) objectURL.current = null;}, 1000);
     } catch {
       if (!request.signal.aborted) setFailed(true);
@@ -103,12 +126,21 @@ export function DownloadButton({href, label, ariaLabel, authenticated = false, c
       if (controller.current === request) setPreparing(false);
     }
   }
+  useEffect(() => {
+    if (!authenticated) return;
+    const target = downloadTarget(href);
+    const stored = target ? localStorage.getItem(target.storageKey) : null;
+    const handle = stored && jobId.test(stored) ? setTimeout(() => void download(stored), 0) : undefined;
+    return () => clearTimeout(handle);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [href, authenticated]);
   return <>
     <a href={readyDownload?.url ?? href} download={readyDownload?.filename ?? true} target={readyDownload ? '_blank' : undefined} rel={readyDownload ? 'noopener' : undefined} aria-label={ariaLabel} aria-busy={preparing} aria-disabled={preparing}
       className={`relative inline-flex min-h-11 items-center justify-center rounded-full border px-5 font-semibold transition ${variants[variant]} ${className}`}
       onClick={(event) => {
         if (preparing) {event.preventDefault(); return;}
         if (readyDownload) {
+          const target = downloadTarget(href); if (target) localStorage.removeItem(target.storageKey);
           timer.current = setTimeout(() => {
             URL.revokeObjectURL(readyDownload.url);
             if (objectURL.current === readyDownload.url) objectURL.current = null;
@@ -123,7 +155,7 @@ export function DownloadButton({href, label, ariaLabel, authenticated = false, c
       <span className={preparing ? 'opacity-0' : undefined}>{label}</span>
     </a>
     {(authenticated && preparing) || readyDownload || failed ? <div className="hhc-toast-region fixed bottom-4 right-4 z-50 max-w-[min(24rem,calc(100vw-2rem))]">
-      {authenticated && preparing ? <Toast>{preparingLabel}</Toast> : null}
+      {authenticated && preparing ? <Toast>{preparingLabel.replace('{progress}', String(progress))}</Toast> : null}
       {readyDownload ? <Toast>{readyLabel}</Toast> : null}
       {failed ? <Toast tone="danger">{errorLabel}</Toast> : null}
     </div> : null}

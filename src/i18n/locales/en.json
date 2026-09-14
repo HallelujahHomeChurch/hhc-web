@@ -73,7 +73,7 @@
     "newsLoadError": "Latest news is temporarily unavailable",
     "weeklyTitle": "Weekly Paper",
     "downloadWeekly": "Download weekly paper",
-    "weeklyDownloading": "Your weekly paper is being prepared and will download automatically when ready.",
+    "weeklyDownloading": "Your weekly paper is about {progress}% ready and will download automatically.",
     "weeklyDownloadReady": "Your weekly paper is ready. Tap the button again to open it.",
     "weeklyDownloadError": "The weekly paper is temporarily unavailable. Please try again later.",
     "weeklyLoading": "Loading weekly paper",
