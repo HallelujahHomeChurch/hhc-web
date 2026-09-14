@@ -68,7 +68,8 @@ This design does not introduce:
 - OPA, Cedar, OpenFGA, Zanzibar, or another runtime policy engine;
 - an `authorization-api`;
 - administrator-authored conditional policies;
-- arbitrary custom roles or role inheritance;
+- arbitrary permission expressions or role inheritance; custom roles may use
+  only the reviewed capability groups and levels described below;
 - resource ids or locale values in staff permission codes;
 - a global permission row for every user-resource pair;
 - organization memberships or member entitlements in access-token claims;
