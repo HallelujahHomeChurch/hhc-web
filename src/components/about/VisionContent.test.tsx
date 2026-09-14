@@ -11,5 +11,6 @@ describe('VisionContent', () => {
 
     expect(screen.getByRole('heading', {name: 'Unity and Mission'})).toBeInTheDocument();
     expect(screen.getByText(/Home Church is built to bring people into unity/)).toBeInTheDocument();
+    expect(screen.getByAltText(messages.about.vision.imageAlt)).toHaveClass('object-[center_35%]');
   });
 });
