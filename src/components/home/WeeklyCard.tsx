@@ -12,7 +12,7 @@ type WeeklyCardProps = {
   locale: Locale;
   memberMode?: boolean;
   ctaLabel: string;
-  messages: {loading: string; downloading: string; downloadError: string; error: string; retry: string};
+  messages: {loading: string; downloading: string; downloadReady: string; downloadError: string; error: string; retry: string};
 };
 
 export function WeeklyCard({locale, memberMode: initialMemberMode = false, ctaLabel, messages}: WeeklyCardProps) {
@@ -66,6 +66,7 @@ export function WeeklyCard({locale, memberMode: initialMemberMode = false, ctaLa
                 className="px-3 text-sm"
                 authenticated={memberMode}
                 preparingLabel={messages.downloading}
+                readyLabel={messages.downloadReady}
                 errorLabel={messages.downloadError}
               />
             ))}

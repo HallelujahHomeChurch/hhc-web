@@ -81,6 +81,7 @@ export default async function HomePage({params}: HomePageProps) {
               messages={{
                 loading: messages.home.weeklyLoading,
                 downloading: messages.home.weeklyDownloading,
+                downloadReady: messages.home.weeklyDownloadReady,
                 downloadError: messages.home.weeklyDownloadError,
                 error: messages.home.weeklyLoadError,
                 retry: messages.home.retry
