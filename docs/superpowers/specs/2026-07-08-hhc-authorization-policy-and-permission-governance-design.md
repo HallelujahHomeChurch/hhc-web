@@ -1,5 +1,12 @@
 # HHC Authorization Policy And Permission Governance Design
 
+> **Supersession notice (2026-09-15):**
+> `2026-09-15-hhc-unified-authorization-membership-and-entitlement-design.md`
+> is canonical for the direct-breaking staff permission catalog, role bundles,
+> organization scope, membership qualification, member entitlements, protected
+> weekly bulletins, and shared access projection. This older document remains
+> authoritative only where it does not conflict with that design.
+
 ## Purpose
 
 This spec defines how HHC platform services govern roles, scopes, route policy, resource-level authorization, policy drift checks, and authorization release evidence.

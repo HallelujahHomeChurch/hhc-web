@@ -1,5 +1,13 @@
 # HHC Service Catalog And Ownership Design
 
+> **Supersession notice (2026-09-15):**
+> `2026-09-15-hhc-unified-authorization-membership-and-entitlement-design.md`
+> admits `operations-api` as the target owner for the complete existing
+> operations kernel plus organization, membership, entitlement, registration,
+> attendance, and paper-distribution facts. It also makes electronic bulletins
+> protected rather than public projections. This older catalog remains
+> authoritative only where it does not conflict with that design.
+
 ## Purpose
 
 This spec is the operating catalog for the HHC web platform. It answers:
