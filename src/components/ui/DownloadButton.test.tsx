@@ -5,6 +5,7 @@ const issueAccessToken = vi.hoisted(() => vi.fn().mockResolvedValue({accessToken
 vi.mock('@/lib/browser-bootstrap', () => ({getSharedAccountSessionClient: () => ({issueAccessToken})}));
 import {DownloadButton} from './DownloadButton';
 import * as AccountControl from '@/components/layout/AccountControl';
+import * as PwaCapabilities from '@/lib/pwa-capabilities';
 
 afterEach(() => {vi.restoreAllMocks(); issueAccessToken.mockClear(); vi.useRealTimers();});
 
@@ -44,6 +45,27 @@ describe('DownloadButton', () => {
     expect(click).toHaveBeenCalled();
     expect(click.mock.instances[0]).toHaveProperty('download', '1737-詩篇.pdf');
     expect(issueAccessToken).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits for a fresh user tap before opening a prepared file in a standalone app', async () => {
+    vi.spyOn(PwaCapabilities, 'isStandaloneWebApp').mockReturnValue(true);
+    const id = '00000000-0000-4000-8000-000000000009';
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(Response.json({data: {id, status: 'ready'}}))
+      .mockResolvedValueOnce(new Response('pdf', {headers: {'content-disposition': "attachment; filename*=UTF-8''1737-%E8%A9%A9%E7%AF%87.pdf"}}));
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:weekly');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const syntheticClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    render(<DownloadButton href="/api/member/bulletin-downloads/2026-09-13" label="會員週報" authenticated readyLabel="週報已準備完成，請再次點選按鈕開啟。" />);
+
+    fireEvent.click(screen.getByRole('link', {name: '會員週報'}));
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('週報已準備完成，請再次點選按鈕開啟。'));
+    const link = screen.getByRole('link', {name: '會員週報'});
+    expect(link).toHaveAttribute('href', 'blob:weekly');
+    expect(link).toHaveAttribute('download', '1737-詩篇.pdf');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(syntheticClick).not.toHaveBeenCalled();
   });
 
   it('polls an accepted preparation before downloading', async () => {

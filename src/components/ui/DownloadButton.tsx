@@ -5,10 +5,11 @@ import {Toast} from '@hallelujahhomechurch/ui';
 import {useAccountIdentity} from '@/components/layout/AccountControl';
 import {getSharedAccountSessionClient} from '@/lib/browser-bootstrap';
 import {parseDownloadFilename} from '@/lib/content-disposition';
+import {isStandaloneWebApp} from '@/lib/pwa-capabilities';
 
 type DownloadButtonProps = {
   href: string; label: string; ariaLabel?: string; className?: string;
-  variant?: 'primary' | 'outline'; authenticated?: boolean; preparingLabel?: string; errorLabel?: string;
+  variant?: 'primary' | 'outline'; authenticated?: boolean; preparingLabel?: string; readyLabel?: string; errorLabel?: string;
 };
 const variants = {
   primary: 'border-primary-solid bg-primary-solid text-primary-foreground hover:bg-primary-solid-hover',
@@ -33,9 +34,10 @@ async function readJob(response: Response) {
   if (!payload.data || !jobId.test(payload.data.id)) throw new Error('Invalid bulletin preparation');
   return payload.data;
 }
-export function DownloadButton({href, label, ariaLabel, authenticated = false, className = '', variant = 'primary', preparingLabel = '正在準備週報，完成後會自動下載。', errorLabel = '週報暫時無法下載，請稍後再試。'}: DownloadButtonProps) {
+export function DownloadButton({href, label, ariaLabel, authenticated = false, className = '', variant = 'primary', preparingLabel = '正在準備週報，完成後會自動下載。', readyLabel = '週報已準備完成，請再次點選按鈕開啟。', errorLabel = '週報暫時無法下載，請稍後再試。'}: DownloadButtonProps) {
   const accountIdentity = useAccountIdentity();
   const [preparing, setPreparing] = useState(false);
+  const [readyDownload, setReadyDownload] = useState<{url: string; filename: string} | null>(null);
   const [failed, setFailed] = useState(false);
   const controller = useRef<AbortController | null>(null);
   const objectURL = useRef<string | null>(null);
@@ -46,6 +48,7 @@ export function DownloadButton({href, label, ariaLabel, authenticated = false, c
       clearTimeout(timer.current);
       if (objectURL.current) URL.revokeObjectURL(objectURL.current);
       objectURL.current = null;
+      setReadyDownload(null);
       setPreparing(false);
       setFailed(false);
     };
@@ -85,8 +88,13 @@ export function DownloadButton({href, label, ariaLabel, authenticated = false, c
       const blob = await response.blob();
       request.signal.throwIfAborted();
       const url = URL.createObjectURL(blob); objectURL.current = url;
+      const filename = parseDownloadFilename(response.headers.get('content-disposition'));
+      if (isStandaloneWebApp()) {
+        setReadyDownload({url, filename});
+        return;
+      }
       const link = document.createElement('a'); link.href = url;
-      link.download = parseDownloadFilename(response.headers.get('content-disposition'));
+      link.download = filename;
       link.click();
       timer.current = setTimeout(() => {URL.revokeObjectURL(url); if (objectURL.current === url) objectURL.current = null;}, 1000);
     } catch {
@@ -96,18 +104,27 @@ export function DownloadButton({href, label, ariaLabel, authenticated = false, c
     }
   }
   return <>
-    <a href={href} download aria-label={ariaLabel} aria-busy={preparing} aria-disabled={preparing}
+    <a href={readyDownload?.url ?? href} download={readyDownload?.filename ?? true} target={readyDownload ? '_blank' : undefined} rel={readyDownload ? 'noopener' : undefined} aria-label={ariaLabel} aria-busy={preparing} aria-disabled={preparing}
       className={`relative inline-flex min-h-11 items-center justify-center rounded-full border px-5 font-semibold transition ${variants[variant]} ${className}`}
       onClick={(event) => {
         if (preparing) {event.preventDefault(); return;}
+        if (readyDownload) {
+          timer.current = setTimeout(() => {
+            URL.revokeObjectURL(readyDownload.url);
+            if (objectURL.current === readyDownload.url) objectURL.current = null;
+            setReadyDownload(null);
+          }, 1000);
+          return;
+        }
         if (authenticated) {event.preventDefault(); void download(); return;}
         setPreparing(true); timer.current = setTimeout(() => setPreparing(false), 1500);
       }}>
       {preparing ? <span data-download-spinner className="absolute size-4 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none" aria-hidden="true" /> : null}
       <span className={preparing ? 'opacity-0' : undefined}>{label}</span>
     </a>
-    {(authenticated && preparing) || failed ? <div className="hhc-toast-region fixed bottom-4 right-4 z-50 max-w-[min(24rem,calc(100vw-2rem))]">
+    {(authenticated && preparing) || readyDownload || failed ? <div className="hhc-toast-region fixed bottom-4 right-4 z-50 max-w-[min(24rem,calc(100vw-2rem))]">
       {authenticated && preparing ? <Toast>{preparingLabel}</Toast> : null}
+      {readyDownload ? <Toast>{readyLabel}</Toast> : null}
       {failed ? <Toast tone="danger">{errorLabel}</Toast> : null}
     </div> : null}
   </>;

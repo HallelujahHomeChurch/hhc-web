@@ -90,5 +90,6 @@ const messages = {
   allIssuesTitle: 'History', paginationNote: 'Newest first', paginationLabel: 'Pages', previousPage: 'Previous',
   nextPage: 'Next', pageLabel: 'Page', loading: 'Loading', loadError: 'Unavailable', retry: 'Retry', empty: 'No bulletins',
   downloading: 'Preparing download',
+  downloadReady: 'Ready to open',
   downloadError: 'Download unavailable'
 };
