@@ -73,7 +73,7 @@
     "newsLoadError": "お知らせを一時的に読み込めません",
     "weeklyTitle": "週報",
     "downloadWeekly": "週報をダウンロード",
-    "weeklyDownloading": "週報を準備しています。完了すると自動的にダウンロードされます。",
+    "weeklyDownloading": "週報を準備しています（約{progress}%）。完了すると自動的にダウンロードされます。",
     "weeklyDownloadReady": "週報の準備ができました。もう一度ボタンをタップして開いてください。",
     "weeklyDownloadError": "週報を現在ダウンロードできません。しばらくしてからもう一度お試しください。",
     "weeklyLoading": "週報を読み込んでいます",

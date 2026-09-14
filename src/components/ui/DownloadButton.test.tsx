@@ -7,7 +7,7 @@ import {DownloadButton} from './DownloadButton';
 import * as AccountControl from '@/components/layout/AccountControl';
 import * as PwaCapabilities from '@/lib/pwa-capabilities';
 
-afterEach(() => {vi.restoreAllMocks(); issueAccessToken.mockClear(); vi.useRealTimers();});
+afterEach(() => {vi.restoreAllMocks(); issueAccessToken.mockClear(); vi.useRealTimers(); localStorage.clear();});
 
 describe('DownloadButton', () => {
   it('keeps its label and dimensions while preventing duplicate downloads', () => {
@@ -104,6 +104,36 @@ describe('DownloadButton', () => {
     expect(link).toHaveAttribute('aria-busy', 'true');
     fireEvent.click(link);
     expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the approximate server progress while preparing', async () => {
+    vi.useFakeTimers();
+    const id = '00000000-0000-4000-8000-000000000003';
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({data: {id, status: 'running', progress: 5}}), {headers: {'Retry-After': '1'}}))
+      .mockResolvedValueOnce(Response.json({data: {id, status: 'running', progress: 35}}))
+      .mockImplementationOnce((_input, init) => new Promise((_resolve, reject) => init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))));
+    render(<DownloadButton href="/api/member/bulletin-downloads/2026-09-13?locale=zh-Hant" label="會員週報" authenticated preparingLabel="正在準備週報，約 {progress}%。" />);
+    fireEvent.click(screen.getByRole('link', {name: '會員週報'}));
+    await vi.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(screen.getByRole('status')).toHaveTextContent('正在準備週報，約 35%。');
+  });
+
+  it('resumes a stored preparation after the page reloads without creating another job', async () => {
+    const id = '00000000-0000-4000-8000-000000000004';
+    localStorage.setItem('hhc:bulletin-download:2026-09-13:zh-Hant', id);
+    const fetcher = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(Response.json({data: {id, status: 'ready', progress: 100}}))
+      .mockResolvedValueOnce(new Response('pdf'));
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:weekly');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    render(<DownloadButton href="/api/member/bulletin-downloads/2026-09-13?locale=zh-Hant" label="會員週報" authenticated />);
+    await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
+    expect(fetcher.mock.calls[0]![0]).toBe(`/api/member/bulletin-download-jobs/${id}`);
+    expect(fetcher.mock.calls.some(call => call[0] === '/api/member/bulletin-download-jobs')).toBe(false);
+    expect(issueAccessToken).toHaveBeenCalledTimes(1);
   });
 });
 
