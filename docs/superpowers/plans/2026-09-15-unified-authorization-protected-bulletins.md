@@ -30,7 +30,9 @@
 - Modify: `hhc-web-api/internal/httpapi/site_settings_handlers_test.go`
 - Modify: `hhc-web-api/internal/httpapi/auth.go`
 
-- [ ] First add route-table tests for exact Page Settings, News, Bulletin, Campaign, and Operations permissions.
+- [ ] First add route-table tests for exact Page Settings, News, Bulletin, and
+  Campaign permissions, and assert the extracted Operations routes are absent
+  from `hhc-web-api`.
 - [ ] Require `cms:bulletins:read/write/publish/investigate` on bulletin routes.
 - [ ] Require `cms:pages:*` for site settings, fixed pages, history, videos, and their embedded asset actions.
 - [ ] Require `cms:news:*` for news and its embedded asset actions.

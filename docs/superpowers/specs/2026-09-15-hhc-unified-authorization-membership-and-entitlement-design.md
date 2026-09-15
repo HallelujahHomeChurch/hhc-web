@@ -37,9 +37,11 @@ asset bytes are retained; only their access model changes.
 ## Decisions
 
 1. Staff administration uses RBAC: users receive roles and roles contain
-   atomic staff permissions.
-2. Church organization access uses scoped relationships, not global
-   permissions.
+   atomic staff permissions with church-wide effect.
+2. Church organization access uses scoped role assignments. An Operations
+   administrative action is allowed by either its church-wide Account staff
+   permission or a matching active operational OrgRoleAssignment for the
+   target OrgUnit; the owning API evaluates the union.
 3. Membership qualification, member entitlements, and staff permissions are
    separate concepts and separate data.
 4. Workflow records such as registration, attendance, and paper distribution
@@ -111,6 +113,11 @@ administrative functions the user may perform. Organization relationships
 answer where the user belongs or leads. Qualification and entitlements answer
 which member benefits the user may consume.
 
+Account staff roles and Operations organization roles are separate assignment
+surfaces. A staff role grants church-wide administration. An organization role
+grants only its reviewed action bundle inside its compiled organization scope.
+Neither assignment surface accepts per-user permission expressions.
+
 ## Layered Decision Model
 
 Every protected operation is expressed conceptually as:
@@ -137,6 +144,20 @@ No layer can widen a denial from another required layer. Unknown permissions,
 entitlements, actions, subjects, resource types, or relationship types deny by
 default.
 
+For scoped Operations administrative actions:
+
+```text
+hasOperationAccess(principal, action, targetOrgUnit) =
+  hasGlobalStaffPermission(principal, action)
+  OR hasScopedOperationalRole(principal, action, targetOrgUnit)
+```
+
+The alternative branch applies only to Meetings, Resources, Reservations, and
+later explicitly reviewed organization-owned workflows. Membership,
+qualification, entitlement, CMS, IAM, DSR, Audit, Asset Library, Campaign, and
+Presenter administration remain global staff-permission decisions unless a
+future design explicitly scopes that domain.
+
 ## Service Ownership
 
 | Domain | Source Of Truth | Responsibilities | Must Not Own |
@@ -147,7 +168,7 @@ default.
 | File mechanics | `asset-api` | upload sessions, bytes, scan state, derivatives, grants, protected downloads, deletion lifecycle | CMS meaning, member qualification, event eligibility |
 | Engagement | `engagement-api` | consent, suppression, audience snapshots, campaigns, schedules | membership source data, provider delivery |
 | Delivery | `notification-api` | durable Email/Web Push delivery, provider retry and state | audience eligibility and domain timing |
-| Public ingress | `api-gateway` | JWT validation, trusted headers, coarse route permission, route ownership | resource-level policy, business aggregation |
+| Public ingress | `api-gateway` | JWT validation, trusted headers, route authentication mode, route ownership | organization-scope policy, resource-level policy, business aggregation |
 | Shared frontend contract | `frontend-platform` | generated clients, permission predicates, access-projection types, destination resolver | security decisions or feature-specific booleans |
 | Central audit | `audit-log` | append-only normalized Admin/security events, bounded query, retention class, audit-query self-event | domain mutation, authentication, DSR orchestration, business data ownership |
 
@@ -328,7 +349,7 @@ seeded, transported, accepted, or mapped. The compatibility map remains empty.
 bundled into IAM roles. Presenter LINE access never accepts
 `media-sync:manage` as an alias.
 
-The three Operations capability families separate Meeting configuration,
+The three Operations staff capability families separate church-wide Meeting configuration,
 Resource/maintenance configuration, and reservation review. Self-service
 request/cancel is not a staff permission: `operations-api` evaluates the
 authenticated subject's active qualification, organization relationship,
@@ -339,6 +360,12 @@ other two powers nor member-management access merely because the domains share
 one service. Future registration or attendance permissions are added only when
 those administrative features are implemented and distinct duties are
 confirmed.
+
+These Account permission codes retain church-wide meaning. They are not
+renamed, duplicated by OrgUnit, or expanded with organization ids. Scoped
+Operations access reuses the same domain actions inside `operations-api`; it
+does not add scoped permissions to Account roles, access-token scopes, or JWT
+claims.
 
 The `*` staff wildcard grants the canonical staff permission catalog only. It
 never creates membership qualification, organization relationships, member
@@ -439,6 +466,13 @@ Operations rows use `None | View | Edit` for Meetings/Resources and
 Administrators select these business levels; they never select internal audit
 append permissions or service credentials.
 
+Organization-scoped responsibility is managed on a separate user or OrgUnit
+surface with three fields: person, organization scope, and operational role.
+It is not another column in the global role capability table. The UI labels
+the two concepts as system roles (church-wide) and organization
+responsibilities (scoped), and shows effective scope plus expiry before
+confirmation.
+
 ## Church Organization Model
 
 The existing untyped `ChurchUnit` is directly renamed to `OrgUnit`.
@@ -507,8 +541,8 @@ OrgRoleAssignment
 - id
 - user_id
 - org_unit_id
-- role: pastor | family_leader | small_group_leader | event_operator
-- status: active | suspended | expired | revoked
+- role: pastor | family_leader | small_group_leader | meeting_manager | resource_manager | reservation_approver
+- status: active | revoked
 - valid_from
 - valid_to
 - assigned_by
@@ -519,12 +553,52 @@ OrgRoleAssignment
 
 Initial scope behavior is compiled policy, not administrator configuration:
 
+| Org role | Allowed assignment kind |
+| --- | --- |
+| `pastor` | `organization` or `congregation` |
+| `family_leader` | `family` |
+| `small_group_leader` | `small_group` |
+| `meeting_manager` | `congregation`, `family`, or `small_group` |
+| `resource_manager` | `congregation`, `family`, or `small_group` |
+| `reservation_approver` | `congregation`, `family`, or `small_group` |
+
+The organization root accepts a pastoral relationship but not an operational
+role. Church-wide Operations administration uses the matching Account staff
+role. Invalid role/kind pairs are rejected.
+
+Effective scopes are:
+
 | Org role | Effective scope |
 | --- | --- |
 | `small_group_leader` | assigned small group only |
 | `family_leader` | assigned family and descendant small groups |
-| `pastor` on congregation | assigned congregation and all descendants |
-| `event_operator` | explicitly assigned occurrence or event only |
+| `pastor` | assigned organization or congregation and all descendants |
+| `meeting_manager` | assigned OrgUnit and descendants |
+| `resource_manager` | assigned OrgUnit and descendants |
+| `reservation_approver` | assigned OrgUnit and descendants |
+
+Initial operational action bundles are fixed code, not administrator-authored
+policy:
+
+| Operational org role | Scoped actions |
+| --- | --- |
+| `meeting_manager` | read and write Meetings owned by the effective scope |
+| `resource_manager` | read and write Resources and maintenance owned by the effective scope |
+| `reservation_approver` | read and approve, reject, or Admin-cancel reservations for Resources owned by the effective scope |
+
+Pastoral roles describe church responsibility and do not automatically grant
+Meeting, Resource, Reservation, CMS, membership-management, or other system
+actions. Later roster or pastoral views may deliberately consume those
+relationships, but each action must first be added to the compiled owner
+policy and negative access matrix. V1 organization-role grant and revoke
+remains behind church-wide `memberships:manage`; scoped leaders cannot
+delegate roles.
+
+OrgMembership alone grants no administrative action. A scoped operational role
+is an explicit, audited assignment and is not inferred from membership. This
+keeps ordinary member self-service policy separate from delegated management
+and permits a reviewed cross-unit staff assignment without fabricating a
+pastoral membership.
 
 Do not store a single `leader_user_id` on OrgUnit. Multiple leaders, temporary
 delegation, expiry, revocation, and history must be supported by assignments.
@@ -807,10 +881,44 @@ type AccessSnapshot = {
 }
 ```
 
+The Operations contract freezes the active role summary used for navigation:
+
+```ts
+type OrgRoleSummary = {
+  assignmentId: string
+  role:
+    | 'pastor'
+    | 'family_leader'
+    | 'small_group_leader'
+    | 'meeting_manager'
+    | 'resource_manager'
+    | 'reservation_approver'
+  orgUnit: {
+    id: string
+    kind: 'organization' | 'congregation' | 'family' | 'small_group'
+    name: string
+  }
+  validFrom: string
+  validTo?: string
+}
+```
+
+Only assignments with `status=active` inside their effective period appear.
+Revoked or out-of-period assignments remain in management/history APIs but do
+not appear in this projection. Expiry is derived from `valid_to`, not written as
+a second status transition.
+
 `account-api` remains the source of staff permissions. `operations-api`
 provides organization and member facts. `frontend-platform` owns the DTOs,
 clients, and pure destination resolver; it does not add feature-specific
 Account booleans.
+
+`OrgRoleSummary` exposes only presentation-safe active assignment data needed
+to label the role and scope. A frontend may show an Operations destination when
+the subject has either the global Account permission or a corresponding active
+operational OrgRoleSummary. Lists and mutations are still filtered and
+authorized by `operations-api`; the frontend does not calculate authoritative
+descendant scope.
 
 Before parallel consumer work begins, the Operations OpenAPI must freeze two
 small provider contracts:
@@ -841,6 +949,13 @@ The snapshot is presentation input only. Direct URLs, stale snapshots, hidden
 controls, and locally modified clients cannot bypass backend policy. Dynamic
 organization and entitlement facts are not embedded into long-lived tokens.
 
+If Account staff-permission resolution is unavailable, global staff branches
+fail closed. The subject remains authenticated, and an independently available
+Operations projection may still expose an active scoped Operations assignment;
+it cannot restore any global staff destination. If Operations role resolution
+is unavailable, scoped branches fail closed without invalidating otherwise
+available Account staff permissions.
+
 ## Decision Reasons And Error Policy
 
 Internal decisions use stable reasons:
@@ -848,6 +963,7 @@ Internal decisions use stable reasons:
 ```text
 authentication_required
 staff_permission_required
+operation_access_required
 membership_required
 membership_suspended
 entitlement_required
@@ -856,11 +972,20 @@ assignment_expired
 registration_required
 resource_unavailable
 caller_not_allowed
+authorization_unavailable
 ```
 
 Admin and self-service views may expose an appropriate explanation. Public or
 cross-scope resource probes return non-enumerating errors and must not reveal
 the protected resource, membership, or roster.
+
+A resolved absence of both global and scoped Operations authority is a `403`
+with internal reason `operation_access_required` (or non-enumerating `404`
+where resource disclosure matters). Failure to resolve a required organization
+role or scope is `503 authorization_unavailable`, not a false `403`; it never
+refreshes, signs out, or restarts login. When a verified global staff permission
+already allows the action, an unavailable scoped-role lookup cannot narrow that
+independent positive branch.
 
 ## Lifecycle, History, And Revocation
 
@@ -875,6 +1000,8 @@ the protected resource, membership, or roster.
   decisions immediately and is not delayed by access-token expiry.
 - Access projections may be cached briefly for UI, but protected writes and
   content downloads revalidate authoritative facts.
+- Organization-role changes affect new Operations decisions immediately and
+  are not delayed by access-token expiry.
 - Downloaded or previously shared files cannot be recalled. Revocation prevents
   later access through HHC-controlled routes.
 
@@ -996,8 +1123,8 @@ Recommended workstreams:
 
 | Workstream | Primary repositories | Boundary |
 | --- | --- | --- |
-| Staff RBAC | `account-api`, then `frontend-platform` | permission catalog, role bundles, token/session behavior |
-| Church operations | new `operations-api` | OrgUnit, membership, org roles, qualification, entitlement, operational kernel |
+| Staff RBAC | `account-api`, then `frontend-platform` | church-wide permission catalog, role bundles, token/session behavior |
+| Church operations | new `operations-api` | OrgUnit, membership, scoped pastoral/operational roles, qualification, entitlement, operational kernel |
 | Resource reservation | `operations-api`, `account-fe`, `admin-fe` | member policy, availability, request/cancel, Resource management, approval |
 | Legal and erasure | `account-api` plus registered domain owners | DSR case orchestration, step-specific cleanup, retention and counsel gates |
 | Central audit | `audit-log` plus each domain owner | append-only catalog/query and transactional producer outboxes |
@@ -1080,14 +1207,19 @@ Minimum required cases:
 | Reservation Approver | Resource configuration or Meeting write | deny |
 | Membership Manager | membership, qualification, and entitlement administration | allow |
 | Membership Manager | Meeting/Resource/reservation administration | deny without the exact Operations permission |
+| global Meeting Editor | Meeting read/write in any active OrgUnit | allow |
+| scoped `meeting_manager` on family A | Meeting read/write in family A and descendant groups | allow |
+| scoped `meeting_manager` on family A | Meeting read/write in sibling family B | deny without disclosure |
+| scoped `resource_manager` on congregation A | Resource/maintenance read/write in congregation A descendants | allow |
+| scoped `resource_manager` | reservation approval or Meeting mutation | deny |
+| scoped `reservation_approver` on congregation A | reservation review for Resources owned by congregation A descendants | allow |
+| scoped `reservation_approver` | Resource configuration or Meeting mutation | deny |
+| pastor/family/small-group leader without operational role | Meeting/Resource/reservation mutation | deny |
+| staff wildcard | global staff Operations branch | allow without creating organization membership or member benefit |
 | active qualified member in eligible OrgUnit | create own Resource request | allow when Resource policy and availability permit |
 | authenticated Account without active qualification | create Resource request | deny |
 | Audit Reader | Audit list/detail | allow |
 | Audit Reader | any audited domain mutation | deny without that domain permission |
-| small-group leader A | group A roster/check-in | allow when policy and occurrence state permit |
-| small-group leader A | group B roster/check-in | deny without disclosure |
-| family leader A | descendant group A roster | allow when action policy grants descendant scope |
-| expired temporary operator | occurrence roster/check-in | deny |
 | unallowlisted service | protected internal entitlement or asset route | deny |
 
 ## Test And Evidence Requirements
@@ -1102,7 +1234,10 @@ Minimum required cases:
 - exact bulletin series/locale entitlement matching;
 - staff permission never satisfies member entitlement;
 - embedded content upload does not require human Asset permissions;
-- descendant scope follows compiled role policy only.
+- descendant scope follows compiled role policy only;
+- global Operations permission OR matching scoped operational role allows, and
+  every sibling/cross-scope case denies;
+- pastoral roles do not imply operational action bundles.
 
 ### Contract And Drift
 
@@ -1119,6 +1254,9 @@ Minimum required cases:
 
 - each authorization-matrix row has a positive or negative test;
 - direct Admin URLs and APIs enforce page/news/bulletin isolation;
+- Operations routes accept global staff permissions or matching scoped
+  operational roles, filter returned records to effective scope, and deny
+  sibling/cross-scope direct requests;
 - member list, metadata, PDF, derivative, ETag, and Range paths all authorize
   before response processing; the post-launch online reader is not a launch
   gate;
@@ -1177,6 +1315,9 @@ boundaries rather than adding a feature-specific Account role or Boolean.
 - Broad CMS scopes and their compatibility fallbacks are absent.
 - Page Settings, News, Bulletin, and Operations Admin access are independently
   assignable and backend-enforced.
+- Church-wide system roles and organization-scoped responsibilities are
+  separately assignable and separately presented; scoped Operations access is
+  the union of a matching global permission or matching operational OrgRole.
 - Embedded CMS file operations use service identity and do not require generic
   human Asset permissions.
 - OrgUnit models organization, congregation, family, and small group with

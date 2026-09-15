@@ -4,7 +4,7 @@
 
 **Goal:** Complete the pre-launch authorization/governance foundation by replacing broad permissions, extracting church operations, adding qualified Resource reservations, protecting bulletins, closing DSR/account deletion, and finishing centralized Admin audit.
 
-**Architecture:** `account-api` remains the staff RBAC and DSR orchestration authority; a new `operations-api` owns organization, membership, entitlement, the extracted operations kernel, and Resource reservations; `audit-log` receives domain-owner outboxes and serves exact protected queries; `hhc-web-api` owns bulletin policy and calls `operations-api` plus `asset-api`. Shared access projection drives navigation but never replaces backend enforcement. The release is an intentional coordinated breaking cutover with no legacy assignment migration or compatibility aliases.
+**Architecture:** `account-api` remains the church-wide staff RBAC and DSR orchestration authority; a new `operations-api` owns organization, scoped pastoral/operational roles, membership, entitlement, the extracted operations kernel, and Resource reservations. Operations administrative actions allow the matching global Account permission or matching scoped operational role for the target OrgUnit; other domains keep their stated owner policy. `audit-log` receives domain-owner outboxes and serves exact protected queries; `hhc-web-api` owns bulletin policy and calls `operations-api` plus `asset-api`. Shared access projection drives navigation but never replaces backend enforcement. The release is an intentional coordinated breaking cutover with no legacy assignment migration or compatibility aliases.
 
 **Tech Stack:** Go 1.25, PostgreSQL 17, `net/http`, TypeScript, React, Vite/Next.js/Electron, pnpm, OpenAPI, Nginx/Dapr, Azure Container Apps.
 
@@ -22,6 +22,11 @@
 - Do not migrate test user role, qualification, or entitlement assignments. Do preserve bulletin and operations domain records, stable IDs, revisions, scans, and audit history.
 - Human CMS roles never receive `assets:*` implicitly. `hhc-web-api` performs embedded asset actions using its allowlisted service identity after checking the matching CMS write permission.
 - Access projection controls discovery and destination only. `account-api`, `operations-api`, `hhc-web-api`, and `asset-api` enforce their own authoritative decisions.
+- Account staff permissions are church-wide. Only Meetings, Resources, and
+  Reservations initially add an alternative scoped OrgRole branch, evaluated
+  by `operations-api`; no OrgUnit id or organization role enters JWT scopes.
+- Pastoral organization roles grant no Operations action implicitly. Scoped
+  operational-role grant/revoke remains global `memberships:manage` in V1.
 - Authentication depends only on identity/session transport. Authorization may
   read the authenticated session; AuthN must not import product permissions,
   capability groups, member entitlements, organization policy, or LINE ACLs.
@@ -78,6 +83,10 @@ These are the fetched `origin/main` commits used to write this plan. Each execut
 
 - [ ] Record the starting `origin/main` SHA for every affected repository in the release issue.
 - [ ] Copy the canonical permission and role tables from the spec into the release issue without alteration.
+- [ ] Freeze the operational OrgRole catalog (`meeting_manager`,
+  `resource_manager`, `reservation_approver`) and the formula global Account
+  permission OR matching active scoped role for the target OrgUnit. Confirm the
+  Account permission codes and 20 default system roles are otherwise unchanged.
 - [ ] Freeze these routes and ownership:
 
 ```text
@@ -90,6 +99,9 @@ GET  /api/operations/me/resources/{resourceKey}/availability operations-api
 POST /api/operations/me/resource-reservations         operations-api
 GET  /api/operations/me/resource-reservations         operations-api
 GET  /api/admin/operations/resource-reservations      operations-api
+GET  /api/admin/operations/org-role-assignments       operations-api
+POST /api/admin/operations/org-role-assignments       operations-api
+POST /api/admin/operations/org-role-assignments/{assignmentId}/revoke operations-api
 GET  /api/admin/audit/events                          audit-log
 GET  /api/admin/audit/events/{eventId}                audit-log
 POST /priv/audit/events                               audit-log
@@ -140,14 +152,20 @@ is exactly `{}`. AuthN does not import domain capability names. The integrated
 breaking `frontend-platform` package set is version `1.0.0`; version drift is a
 contract-ledger stop gate.
 
+Operations administrative routes require authenticated identity at Gateway,
+which forwards verified scopes without requiring a global Operations scope.
+`operations-api` maps the existing six Operations permission strings to its
+fixed scoped role bundles and performs the authoritative target-OrgUnit
+decision. Membership and role-assignment administration stays global-only.
+
 - [ ] Confirm all consumers treat resolver-produced destinations as presentation data and still handle `401`, `403`, and `404` from feature APIs.
 
 ## Dependency And Release Graph
 
 ```text
-account-api session/scope + RBAC ───┐
+account-api session/scope + global RBAC ─┐
                                     ├─> frontend-platform ─> Admin/Website/Account/Presenter
-operations-api contract/reservations ┤                └────> LINE client types if reused
+operations-api scoped roles/reservations ┤          └────> LINE client types if reused
                                     │
 operations kernel import ─> hhc-web-api removal ─> protected bulletin ─> asset grant policy
                                                                      └─> LINE protected download
@@ -166,6 +184,9 @@ all green artifacts ─> api-gateway/infrastructure ─> staging matrix ─> one
 - [ ] Every atomic staff permission appears once in the Account catalog.
 - [ ] Every default role contains only canonical permissions.
 - [ ] Meetings, Resources, Reservations, Memberships, and Audit remain separate permission families.
+- [ ] The six existing Operations permission codes have church-wide meaning;
+      scoped roles reuse their actions internally without new permission codes,
+      JWT claims, or compatibility mapping.
 - [ ] The three initial bulletin entitlement codes exactly match the spec.
 - [ ] No Asset permission appears in Page Settings, News, or Bulletin roles.
 - [ ] OpenAPI auth metadata and the authorization matrix agree.
@@ -179,8 +200,13 @@ all green artifacts ─> api-gateway/infrastructure ─> staging matrix ─> one
 ### Gate B — Producer Readiness
 
 - [ ] Account tests prove role expansion, removed-code denial, and session invalidation behavior.
-- [ ] Operations tests prove hierarchy, cycles, primary membership, effective periods, qualification, entitlement, and access projection.
-- [ ] Resource tests prove qualified-member request policy, privacy, conflict serialization, owner cancellation, exact Admin permissions, and disabled-by-default rollout.
+- [ ] Operations tests prove hierarchy, cycles, primary membership, effective
+      periods, qualification, entitlement, access projection, global-or-scoped
+      authorization, descendant scope, sibling denial, pastoral-role denial,
+      and immediate scoped-role revocation.
+- [ ] Resource tests prove qualified-member request policy, privacy, conflict
+      serialization, owner cancellation, independent global/scoped Admin
+      actions, and disabled-by-default rollout.
 - [ ] Operations governance inventory and DSR export/restrict/erase behavior cover member and organization-linked personal data.
 - [ ] Account deletion diagnostics name the failing cleanup step internally, the evidenced root cause is fixed, and no failure deletes the Account.
 - [ ] Audit owner and producer tests prove append-only catalog validation, transactional outboxes, idempotent retry, DSR metadata minimization, and owner-correct action names.
@@ -199,9 +225,15 @@ all green artifacts ─> api-gateway/infrastructure ─> staging matrix ─> one
       cooldown conformance. Presenter Desktop passes the same semantics while
       retaining main-process `safeStorage`.
 - [ ] Admin capability table exposes only each business-valid level: CMS `None | View | Edit | Publish`, Reservations `None | View | Approve`, Audit `None | View`, and an advanced read-only code view.
+- [ ] Admin presents church-wide System Roles separately from Organization
+      Responsibilities; the latter binds person, OrgUnit, fixed operational
+      role, and effective period without action checkboxes.
 - [ ] Bulletin-only staff see only bulletin navigation and common account links.
 - [ ] Direct URL and API tests deny Page Settings, News, Campaigns, Operations, IAM, DSR, Asset Library, and Presenter administration.
-- [ ] Meeting, Resource, Reservation, Membership, and Audit-only roles deny every sibling Admin route/API.
+- [ ] Global and scoped Meeting, Resource, Reservation, Membership, and
+      Audit-only roles deny every sibling Admin route/API; scoped operational
+      roles additionally deny sibling OrgUnits, and pastoral-only roles deny
+      Operations mutations.
 - [ ] All labels use `頁面設定`; the parent remains `網站內容`.
 - [ ] Website, Account, Presenter, and LINE use the shared access projection or the protected feature API, not removed permission aliases.
 
@@ -211,6 +243,9 @@ all green artifacts ─> api-gateway/infrastructure ─> staging matrix ─> one
 - [ ] Verify old public bulletin routes return a non-disclosing failure.
 - [ ] Verify public bulletin grants reconcile to zero for originals and derivatives.
 - [ ] Verify member revocation is effective without waiting for access-token expiry.
+- [ ] Verify scoped operational-role revocation is effective without waiting
+      for access-token expiry and global permission unavailability cannot be
+      widened by a scoped role outside its Operations action/scope.
 - [ ] Verify Account, Operations, Asset, and Website dependency failures deny protected access.
 - [ ] Verify each deployed revision and immutable artifact independently.
 - [ ] Verify Audit query routes and service-append routes cannot be confused, producer backlog drains without duplicates, and a 24-hour observation window passes.
@@ -251,6 +286,7 @@ all green artifacts ─> api-gateway/infrastructure ─> staging matrix ─> one
 | Independent Meeting, Resource, Reservation, Membership, and Audit administration | Account Tasks 1-2; Operations Task 6; Audit Tasks 2-4; Frontend Tasks 2-5 |
 | Embedded CMS files need no human Asset permission | Bulletin Tasks 1 and 4; Gate B and Gate C |
 | Typed OrgUnit hierarchy and scoped leadership | Operations Tasks 2-3 |
+| Church-wide staff RBAC plus scoped Operations responsibilities | Account Tasks 1-4; Operations Tasks 3-4 and 6; Frontend Tasks 1-5; Cutover Tasks 1-4 and 9 |
 | Qualification independent from Account/Admin/email verification | Account Task 3; Operations Tasks 3-4 |
 | Independent Traditional, Simplified, and English bulletin entitlements | Operations Tasks 3-4; Bulletin Tasks 2-3 |
 | All historical electronic bulletins protected | Bulletin Tasks 3-5; Cutover Tasks 2, 6, and 8-9 |

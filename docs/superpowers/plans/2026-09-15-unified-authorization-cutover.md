@@ -13,7 +13,10 @@
 ## Global Constraints
 
 - No Gateway route, infrastructure, merge, release, session reset, or production data mutation without explicit authorization.
-- Gateway owns coarse authentication and routing only; it must not evaluate organization or entitlement policy.
+- Gateway owns coarse authentication and routing only; it must not evaluate
+  organization or entitlement policy. Operations administrative routes require
+  authentication at the edge, not a global Operations scope, so scoped
+  organization-role users can reach the owning API decision.
 - Old public bulletin routes fail closed with no redirect or legacy upstream.
 - Audit Browser query is exact authenticated GET traffic to `audit-log`; private append is never exposed and `hhc-web-api` is not an Audit BFF.
 - Roll forward from immutable artifacts; rollback must never reopen bulletin public access.
@@ -36,6 +39,9 @@
 - [ ] Prove client-supplied `X-HHC-*` and service identity headers are stripped.
 - [ ] Prove verified access-token `scope` is the only staff-permission input
       rebuilt as `X-HHC-Scopes`; no `X-HHC-Permissions` path exists.
+- [ ] Prove exact `/api/admin/operations/*` routes require authenticated trusted
+  identity but do not require a global Operations scope at the edge; the
+  verified scope header is still forwarded for the downstream union decision.
 - [ ] Prove `/priv/*` remains unreachable from public hosts.
 - [ ] Prove old `/api/bulletins*` routes have no upstream and protected `/api/member/bulletins*` requires authentication.
 - [ ] Prove exact Audit list/detail GET routes require `audit:read`, all other methods fail, and `/priv/audit/*` has no public upstream.
@@ -53,11 +59,16 @@
 - Modify: `api-gateway/docs/openapi.yaml`
 
 - [ ] Add the Operations Dapr app ID/upstream and route exact `/api/operations/*`, `/api/admin/operations/*`, meetings, and occurrence surfaces.
-- [ ] Include exact self-service Resource availability/request/cancel and Admin Meeting/Resource/Reservation routes from the released Operations OpenAPI; do not use a broad permission at the edge.
+- [ ] Include exact self-service Resource availability/request/cancel and Admin
+  Meeting/Resource/Reservation routes from the released Operations OpenAPI.
+  Require authentication but no global Operations permission at the edge;
+  `operations-api` enforces global permission OR matching scoped operational
+  role for the target OrgUnit.
 - [ ] Add only `GET /api/admin/audit/events` and `GET /api/admin/audit/events/{eventId}` to the Audit upstream.
 - [ ] Route protected bulletin member endpoints to `hhc-web-api` with trusted subject context.
 - [ ] Remove public bulletin and old member-access switch routes.
-- [ ] Keep permission-specific Admin enforcement in downstream APIs.
+- [ ] Keep permission-specific or global-or-scoped owner-policy enforcement in
+  downstream APIs.
 - [ ] Run Gateway CI parity, image runtime route tests, and API catalog validation.
 - [ ] Commit: `feat: route unified operations and member access`
 
@@ -85,12 +96,19 @@
 - Create: `api-gateway/docs/operations/unified-authorization-cutover.md`
 
 - [ ] Use named synthetic principals created specifically for each authorization-matrix row; do not reuse real member data.
-- [ ] Cover anonymous, authenticated non-member, active/suspended qualification, each locale entitlement, Admin-without-membership, all scoped staff roles, leader cross-scope denial, expired operator, and unallowlisted service.
+- [ ] Cover anonymous, authenticated non-member, active/suspended
+  qualification, each locale entitlement, Admin-without-membership, every
+  global Operations role, every scoped operational role, pastoral-only roles,
+  descendant and sibling targets, expired/revoked assignments, wildcard, and
+  unallowlisted service.
 - [ ] Cover member list, metadata, PDF, derivative, ETag, Range, Resource request/cancel, each granular Operations Admin surface, Audit list/detail, direct Admin URL, and direct API paths. The post-launch structured reader is excluded.
 - [ ] Force Account, Operations, Website, and Asset dependency failures and prove protected access fails closed.
 - [ ] Cover available authenticated `permissions: []` separately from
       authenticated `permission_unavailable`; neither may become anonymous,
-      and unavailable permission state must expose no staff destination.
+      and unavailable permission state must expose no global staff destination.
+      A separately available scoped Operations assignment may expose only its
+      matching Operations destination; Operations dependency failure closes
+      only the scoped branch.
 - [ ] Cover concurrent token issuance, stale 401 fencing, one refresh/one
       original retry, 403 no-refresh, 429 cooldown, hosted-login return, and
       sanitized telemetry for Website, Account, Admin, Presenter Web, and
@@ -175,7 +193,10 @@ activation.
 - [ ] Verify public old bulletin URLs from an unauthenticated network and browser cache state.
 - [ ] Verify Bulletin Viewer/Editor Admin isolation with direct navigation and API calls.
 - [ ] Verify entitlement revocation becomes effective on the next protected request.
-- [ ] Verify Meeting Editor, Resource Editor, Reservation Approver, Membership Manager, and Audit Reader sibling-route/API isolation.
+- [ ] Verify global Meeting Editor, Resource Editor, and Reservation Approver
+  church-wide behavior; scoped Meeting Manager, Resource Manager, and
+  Reservation Approver descendant access and sibling denial; pastoral-only
+  denial; and Membership Manager/Audit Reader sibling-route/API isolation.
 - [ ] Verify an authenticated non-member cannot request a Resource, an eligible active member can request only in policy scope, and every real Resource remains disabled until explicitly approved.
 - [ ] Verify Audit producer backlog/dead-letter state, representative owner events, DSR metadata minimization, query self-audit, and the separately required 24-hour observation gate.
 - [ ] Verify real Website, Account, Admin, Presenter, and LINE-user behavior; synthetic probes do not substitute for these checks.

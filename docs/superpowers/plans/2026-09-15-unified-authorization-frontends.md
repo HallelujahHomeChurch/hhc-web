@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Give administrators a role/capability table instead of raw API dependency choices and make every client show only destinations authorized by the shared access projection.
+**Goal:** Give administrators separate church-wide system-role and organization-responsibility experiences instead of raw API dependency choices, and make every client show only destinations authorized by the shared access projection.
 
-**Architecture:** `frontend-platform` publishes one breaking package set that combines the product-neutral auth runtime from the Auth convergence plan with types and pure AuthZ resolvers generated from final provider OpenAPI. Each client uses the same projection for navigation while feature APIs remain the enforcement boundary. Admin role editing selects product capability levels; atomic codes are advanced read-only detail.
+**Architecture:** `frontend-platform` publishes one breaking package set that combines the product-neutral auth runtime from the Auth convergence plan with types and pure AuthZ resolvers generated from final provider OpenAPI. Each client uses the same projection for navigation while feature APIs remain the enforcement boundary. Admin system-role editing selects church-wide product capability levels; organization responsibilities bind a fixed operational role to one OrgUnit scope. Atomic codes are advanced read-only detail.
 
 **Tech Stack:** TypeScript, React, Vitest, pnpm, Vite, Next.js, Electron.
 
@@ -62,10 +62,19 @@
 - [ ] Keep `hasPermission()` generic. Put the final capability identifiers and
       their permission expansion in the domain AuthZ module, with an explicit
       empty compatibility map; auth runtime files must not import that module.
-- [ ] Add pure helpers for `canAccessAdmin`, first authorized Admin destination, and exact destination lookup.
+- [ ] Add pure helpers for `canAccessAdmin`, first authorized Admin destination,
+  and exact destination lookup. Operations destinations allow either the
+  matching global staff permission or the corresponding active operational
+  OrgRoleSummary; all other Admin destinations remain global-permission only.
 - [ ] Add the Operations-owned portion of `AccessSnapshot` in `@hallelujahhomechurch/operations-client`; combine it with Account `staffPermissions` only inside a pure shared resolver. Do not create a generic authorization service or copy staff RBAC into Operations.
+- [ ] Preserve separate `loading | available | unavailable` state for the
+  Operations projection. A global staff branch may resolve without it; a
+  scoped-only user sees a recoverable authorization-unavailable state rather
+  than anonymous, forbidden, or an empty Admin shell when Operations is down.
 - [ ] Regenerate the Operations client from final `operations-api/openapi.yaml` and the Website client from final `hhc-web-api/openapi.yaml`.
-- [ ] Test unknown permissions/destinations deny and wildcard affects staff destinations only.
+- [ ] Test unknown permissions/destinations deny, wildcard affects staff
+  destinations only, and an Operations-owned scoped role cannot expose CMS,
+  Membership, IAM, DSR, Audit, Asset, Campaign, or Presenter destinations.
 - [ ] Run `corepack pnpm test`, `lint`, `build`, `check:packages`, `pack:packages`, and `test:consumers`.
 - [ ] Publish the single coordinated breaking package version `1.0.0` only
       with explicit authorization; if fresh `origin/main` has already reached
@@ -90,7 +99,10 @@
 - Create: `admin-fe/src/pages/AuditLogPage.tsx`
 - Create: `admin-fe/src/pages/AuditLogPage.test.tsx`
 
-- [ ] Map Page Settings, News, Bulletin, Meetings, Resources, Reservations, Membership, Campaign, IAM, DSR, Audit Log, Asset, and Presenter routes to exact canonical permissions.
+- [ ] Map Page Settings, News, Bulletin, Membership, Campaign, IAM, DSR, Audit
+  Log, Asset, and Presenter routes to exact canonical global permissions. Map
+  Meetings, Resources, and Reservations to a global-permission OR active
+  scoped-operational-role presentation requirement.
 - [ ] In this same `admin-fe` PR, replace local required-auth token/session
       lifecycle with the shared runtime. Keep capability expansion in Admin's
       AuthZ adapter and never import it from AuthN runtime code.
@@ -101,24 +113,40 @@ const routeCapabilities = {
   '/content/pages': 'cms:pages:read',
   '/content/news': 'cms:news:read',
   '/content/bulletins': 'cms:bulletins:read',
-  '/operations/meetings': 'operations:meetings:read',
-  '/operations/resources': 'operations:resources:read',
-  '/operations/reservations': 'operations:reservations:read',
+  '/operations/meetings': {
+    global: 'operations:meetings:read',
+    scopedRole: 'meeting_manager',
+  },
+  '/operations/resources': {
+    global: 'operations:resources:read',
+    scopedRole: 'resource_manager',
+  },
+  '/operations/reservations': {
+    global: 'operations:reservations:read',
+    scopedRole: 'reservation_approver',
+  },
   '/memberships': 'memberships:read',
+  '/memberships/organization-responsibilities': 'memberships:read',
   '/audit': 'audit:read',
 } as const
 ```
 
 - [ ] Fix the existing bulletin wrapper so `/content/bulletins*` uses bulletin capability, not News capability.
 - [ ] Hide the global dashboard from scoped staff and redirect `/` to the first authorized route.
+- [ ] Wait for every access source required by the candidate destination before
+  redirecting. Do not flash a global dashboard or redirect a scoped-only user
+  to login while the Operations projection is loading or unavailable.
 - [ ] Prove Bulletin Viewer/Editor sees only bulletin navigation plus common account links.
-- [ ] Prove direct routes for every unrelated area redirect to forbidden and corresponding APIs return backend denial.
+- [ ] Prove direct routes for every unrelated area redirect to forbidden and
+  corresponding APIs return backend denial. Prove a scoped Operations user can
+  enter only the matching Operations destination and sees only records
+  returned by Operations API.
 - [ ] Build `/audit` on the released direct Audit query contract with bounded time/action/outcome/resource filters, cursor pagination, detail disclosure, accessible loading/error/empty states, and localized timestamps. Audit-only users enter at `/audit`; queries never accept unrestricted metadata.
 - [ ] Prove a successful query produces one `audit.query.read` self-event without recursive event generation.
 - [ ] Remove `media-sync:manage` and broad CMS fallbacks.
 - [ ] Commit: `feat: isolate admin destinations by capability`
 
-### Task 3: Build The Role Capability Table
+### Task 3: Build The Church-Wide System Role Capability Table
 
 **Files:**
 - Modify: `admin-fe/src/pages/RoleDetailPage.tsx`
@@ -129,7 +157,9 @@ const routeCapabilities = {
 - Modify: `admin-fe/src/index.css`
 - Modify: `admin-fe/src/preferences/locale-context.tsx`
 
-- [ ] Render grouped rows with `None | View | Edit | Publish` where valid.
+- [ ] Label this surface System Roles and explain that its grants apply
+  church-wide. Render grouped rows with `None | View | Edit | Publish` where
+  valid.
 - [ ] Compile each selected level to the exact cumulative permissions from the spec; do not expose Asset dependencies.
 - [ ] Render Meetings and Resources as `None | View | Edit`, Reservations as `None | View | Approve`, Membership as `None | View | Manage`, and Audit Log as `None | View`; do not force every group into the CMS publish ladder.
 - [ ] Keep the capability compilation explicit and cumulative:
@@ -221,6 +251,8 @@ const operationsLevels = {
 - Create: `admin-fe/src/lib/operations-api.test.ts`
 - Create: `admin-fe/src/pages/operations/OrgUnitPage.tsx`
 - Create: `admin-fe/src/pages/operations/OrgUnitPage.test.tsx`
+- Create: `admin-fe/src/pages/operations/OrgResponsibilityPage.tsx`
+- Create: `admin-fe/src/pages/operations/OrgResponsibilityPage.test.tsx`
 - Create: `admin-fe/src/pages/operations/ResourceListPage.tsx`
 - Create: `admin-fe/src/pages/operations/ResourceListPage.test.tsx`
 - Create: `admin-fe/src/pages/operations/ReservationListPage.tsx`
@@ -234,11 +266,27 @@ const operationsLevels = {
 - Modify: `admin-fe/src/preferences/locale-context.tsx`
 
 - [ ] Remove operations types and methods from the Website CMS wrapper and consume `@hallelujahhomechurch/operations-client` through one Admin wrapper.
-- [ ] Keep Meetings/OrgUnits behind `operations:meetings:read/write`, Resources/maintenance behind `operations:resources:read/write`, reservation review behind `operations:reservations:read/approve`, and placement/qualification/org roles/entitlements behind `memberships:read/manage`.
+- [ ] Use the shared presentation resolver for Meetings, Resources, and
+  Reservations, allowing a corresponding global permission or scoped
+  operational role. Keep placement, qualification, entitlement, and every
+  OrgRoleAssignment grant/revoke behind global `memberships:read` or
+  `memberships:manage` as appropriate; scoped roles satisfy neither.
+- [ ] Add a separate Organization Responsibilities surface that assigns a
+  person, OrgUnit scope, fixed role, effective dates, and optional expiry. Show
+  the selected OrgUnit and fixed descendant rule before confirmation; do not
+  expose action checkboxes, calculate an authoritative descendant set, or mix
+  scoped assignments into the System Role capability table.
+- [ ] Offer exactly `meeting_manager`, `resource_manager`, and
+  `reservation_approver` as current scoped operational roles. Show pastoral
+  roles separately and never claim that pastor, family leader, or small-group
+  leader automatically grants Operations actions.
 - [ ] Add the minimal Resource settings, maintenance, reservation list/detail, approve/reject/cancel screens using only the final generated Operations client. A reservation approver cannot edit Resource settings or Meetings.
 - [ ] Provide explicit assignment/revocation forms for the three initial bulletin entitlements; never expose entitlement codes as staff permissions.
 - [ ] Require effective dates, actor confirmation, optimistic concurrency, and a visible audit result for sensitive membership changes.
-- [ ] Test each Meeting, Resource, Reservation, and Membership role against every sibling route and direct API; each exact permission must deny unrelated mutations.
+- [ ] Test each global and scoped Meeting, Resource, Reservation, and
+  Membership role against every sibling route and direct API. Include own
+  scope, descendant scope, sibling scope, expired/revoked assignment,
+  pastoral-only role, wildcard, and independent permission-unavailable states.
 - [ ] Commit: `feat: manage organization membership and entitlements`
 
 ### Task 6: Update Website Member Bulletin Experience
@@ -309,7 +357,11 @@ const operationsLevels = {
 ### Task 8: Consumer Drift And Isolation Gate
 
 - [ ] Run `rg` across all four client repos for every removed permission and old public bulletin route; require zero runtime hits.
-- [ ] Run Admin direct-navigation tests for Page Settings Editor, News Editor, Bulletin Viewer, Bulletin Editor, Meeting Editor, Resource Editor, Reservation Approver, Membership Manager, and Audit Reader.
+- [ ] Run Admin direct-navigation tests for Page Settings Editor, News Editor,
+  Bulletin Viewer, Bulletin Editor, global Meeting Editor, global Resource
+  Editor, global Reservation Approver, scoped Meeting Manager, scoped Resource
+  Manager, scoped Reservation Approver, pastoral-only leader, Membership
+  Manager, and Audit Reader.
 - [ ] Record packed package version/digest and exact consumer lockfile versions.
 - [ ] Keep consumer PRs unmerged until coordinated cutover approval.
 - [ ] Run the Auth convergence conformance suite in `hhc-web`, `account-fe`,

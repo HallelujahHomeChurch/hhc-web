@@ -17,6 +17,10 @@
 - Preserve `*` as staff-only wildcard; it must not imply qualification or entitlement.
 - Keep direct `assets:*` roles only for generic Asset Library administration.
 - Keep `campaigns:*`, Presenter, DSR, OAuth, user, and RBAC permissions independent.
+- The six `operations:*` permissions and their Account default roles are
+  church-wide. Do not add OrgUnit ids, scoped-role names, or organization facts
+  to Account roles, sessions, or token scopes; `operations-api` owns the
+  alternative scoped branch.
 
 ## Frozen AuthN/AuthZ Consumer Contract
 
@@ -158,7 +162,10 @@ func TestEffectivePermissionCodesDoesNotDeriveMemberBenefits(t *testing.T) {
       Presenter callers; fold the former auth-convergence service-documentation
       task into this Account contract PR.
 - [ ] Remove member-verification and removed-permission response examples.
-- [ ] Document that organization, qualification, and entitlement are owned by `operations-api`.
+- [ ] Document that organization, scoped pastoral/operational roles,
+      qualification, and entitlement are owned by `operations-api`. State that
+      the existing Operations scopes are global and no additional Account
+      permission code is introduced for scoped access.
 - [ ] Run `npx --yes @redocly/cli@2.47.0 lint docs/openapi.yaml`.
 - [ ] Run full local CI parity:
 
