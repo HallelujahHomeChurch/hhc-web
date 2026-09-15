@@ -1,6 +1,9 @@
 import type {HhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {getLocations} from './api';
+
+const captureHandledError = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/observability', () => ({captureHandledError}));
 
 describe('getLocations', () => {
   it('maps published locations to the public website model', async () => {
@@ -58,5 +61,6 @@ describe('getLocations', () => {
       expect.objectContaining({name: '台北ハレルヤ・ホームチャーチ'}),
       expect.objectContaining({name: '中壢ハレルヤ・ホームチャーチ'})
     ]));
+    expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'locations.list', level: 'warning', tags: {locale: 'ja'}});
   });
 });

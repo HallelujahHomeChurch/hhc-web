@@ -3,6 +3,9 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {getSiteLayout} from './api';
 import type {SiteLayout} from './types';
 
+const captureHandledError = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/observability', () => ({captureHandledError}));
+
 beforeEach(() => vi.clearAllMocks());
 
 const publishedLayout: SiteLayout = {
@@ -106,6 +109,7 @@ describe('getSiteLayout', () => {
         musicYoutube: 'https://youtube.com/@gkpmusic777?si=JqJyfjM8FCmWD5MY'
       }
     });
+    expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'site_layout.legacy', level: 'warning', tags: {locale}});
   });
 
   it('preserves the complete current Traditional Chinese editorial fallback', async () => {

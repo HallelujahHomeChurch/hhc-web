@@ -12,6 +12,7 @@ import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
 import {siteConfig} from '@/lib/site';
+import {captureHandledError} from '@/lib/observability';
 
 type NewsPageProps = {params: Promise<{locale: string}>; searchParams: Promise<{page?: string}>};
 
@@ -53,7 +54,10 @@ export default async function NewsPage({params, searchParams}: NewsPageProps) {
   setRequestLocale(locale);
   const messages = getMessages(locale);
   const page = Math.max(1, Number.parseInt((await searchParams).page ?? '1', 10) || 1);
-  const [result, layout] = await Promise.all([getNewsPage(locale, page, 12).then((value) => ({...value, failed: false})).catch(() => ({items: [], meta: {page, pageSize: 12, total: 0}, failed: true})), getSiteLayout(locale)]);
+  const [result, layout] = await Promise.all([getNewsPage(locale, page, 12).then((value) => ({...value, failed: false})).catch((error) => {
+    captureHandledError(error, {operation: 'news.list', tags: {locale, page}});
+    return {items: [], meta: {page, pageSize: 12, total: 0}, failed: true};
+  }), getSiteLayout(locale)]);
   const totalPages = Math.max(1, Math.ceil(result.meta.total / result.meta.pageSize));
   const pathname = `/${locale}/news`;
 

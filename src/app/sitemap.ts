@@ -6,6 +6,7 @@ import {getAboutPage, getHomePage, getLegalPage, isPageAvailabilityError, PageNo
 import {productLocales, type Locale} from '@/i18n/locales';
 import {getAlternates, getLocalizedPath} from '@/lib/seo';
 import {siteConfig} from '@/lib/site';
+import {captureHandledError} from '@/lib/observability';
 
 const staticPaths = ['/help/account', '/news', '/literature-ministry'] as const;
 
@@ -28,7 +29,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     fixedPage('/terms-of-use', () => getLegalPage('terms-of-use', 'zh-Hant'))
   ]);
   // ponytail: index the first 100 published items; paginate when the site exceeds that ceiling.
-  const news = await getNewsPage('zh-Hant', 1, 100).then((result) => result.items).catch(() => []);
+  const news = await getNewsPage('zh-Hant', 1, 100).then((result) => result.items).catch((error) => {
+    captureHandledError(error, {operation: 'sitemap.news', level: 'warning'});
+    return [];
+  });
   return [...staticEntries, ...fixedPages.flat(), ...buildNewsSitemap(news)];
 }
 
