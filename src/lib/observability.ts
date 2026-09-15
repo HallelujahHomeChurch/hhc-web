@@ -1,4 +1,5 @@
-import type { Breadcrumb } from '@sentry/react'
+import * as Sentry from '@sentry/nextjs'
+import type { Breadcrumb } from '@sentry/nextjs'
 
 const sensitiveValue = /\b(code|token|access_token|refresh_token|id_token|verification_token|reset_token|sig|signature)=([^\s&#]+)/gi
 const email = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi
@@ -49,3 +50,20 @@ export function sanitizeSentryEvent(event: Record<string, unknown>): Record<stri
 }
 
 export const sanitizeBreadcrumb = (breadcrumb: Breadcrumb) => sanitizeValue(breadcrumb) as Breadcrumb
+
+type ErrorContext = {
+  operation: string
+  level?: 'warning' | 'error'
+  tags?: Record<string, string | number | boolean | null | undefined>
+}
+
+export function captureHandledError(error: unknown, { operation, level = 'error', tags = {} }: ErrorContext) {
+  return Sentry.withScope((scope) => {
+    scope.setLevel(level)
+    scope.setTag('operation', operation)
+    for (const [key, value] of Object.entries(tags)) {
+      if (value !== undefined && value !== null) scope.setTag(key.slice(0, 64), String(value).slice(0, 200))
+    }
+    return Sentry.captureException(error instanceof Error ? error : new Error(String(error)))
+  })
+}
