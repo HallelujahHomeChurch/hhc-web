@@ -10,6 +10,10 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-07-account-legal-operations-rebaseline-design.md`
 
+**Status:** Tasks 1-5 record delivered runtime/documentation evidence. The
+pre-launch program remains open for Tasks 6-8: permanent-deletion root cause,
+new DSR owner integration, and external legal/retention closure.
+
 ## Global Constraints
 
 - No new service, database, API, Admin screen, dependency, or global scheduler.
@@ -18,6 +22,8 @@
 - Retention applies only to the existing `line.group.media-sync` and `hhc-line-function-bot` predicate; recurring scheduling remains false.
 - Never print or commit the DSR subject-reference key.
 - Every repository uses a separate branch, PR, required CI, squash merge, release, and live verification.
+- DSR case management and permanent deletion may invoke the same owner erasure contract, but they remain separate workflows and audit records.
+- A cleanup failure never deletes the Account. It must identify the failing owner/step internally without exposing personal data or downstream bodies to the browser.
 
 ---
 
@@ -124,3 +130,61 @@
 - [x] Record every PR, CI, merge, release, deployed revision/image, and smoke result without secrets or personal data.
 - [x] Reconcile all checklist items against the spec; leave any unavailable authenticated or mailbox evidence explicitly open rather than calling it complete.
 - [x] Commit the evidence update through a final HHC Web docs PR and required CI.
+
+### Task 6: Diagnose And Fix Permanent-Deletion Cleanup
+
+**Repository:** `account-api`
+
+**Files:**
+- Modify: `internal/services/user_service.go`
+- Modify: `internal/services/user_service_test.go`
+- Modify: `internal/handlers/admin_user_handler.go`
+- Modify: `internal/handlers/admin_user_handler_test.go`
+- Modify: `internal/engagementclient/client.go`
+- Modify: `internal/engagementclient/client_test.go`
+- Modify: `internal/services/avatar_service.go`
+- Modify: `internal/services/avatar_service_test.go`
+
+**Interfaces:**
+- Consumes: existing session revoke, newsletter unsubscribe, push revoke, and avatar removal calls.
+- Produces: one typed internal cleanup failure containing a fixed owner/step code, bounded failure category, downstream status when available, and request ID; public response remains non-sensitive.
+
+- [ ] Write a table-driven failing test for each current cleanup step and assert no Account delete occurs after any failure. Require the internal error/log fields to name only `sessions`, `newsletter`, `push`, or `avatar`, never a URL, token, email, body, or asset key.
+- [ ] Preserve the existing public `409 ACC_ACCOUNT_DELETE_CLEANUP` compatibility for this diagnostic release while emitting the typed internal step and request correlation. Do not guess the failing adapter from the generic status.
+- [ ] Deploy the backward-safe diagnostic release, reproduce or correlate one authorized deletion attempt, and record only the step, category, status, request ID, revision, and time.
+- [ ] Fix only the evidenced adapter/root cause, add its focused regression and sibling-caller test, then verify idempotent retry completes every cleanup before Account deletion.
+- [ ] Run `go test -race ./... -count=1 -p=1`, `go vet ./...`, governance, migration, OpenAPI, and release-policy checks; release and live-smoke through the normal Account workflow.
+- [ ] After the new owner-orchestration contract in Task 7 is active, replace the generic public response with its reviewed bounded owner-result model in one coordinated contract release; do not add ad-hoc per-owner response fields.
+
+### Task 7: Register Every DSR And Erasure Owner
+
+**Repositories:** `operations-api`, `account-api`, and each retained personal-data owner
+
+**Files:**
+- Create: `account-api/internal/operationsclient/client.go`
+- Create: `account-api/internal/operationsclient/client_test.go`
+- Modify: `account-api/internal/services/dsr_worker.go`
+- Modify: `account-api/internal/services/dsr_worker_test.go`
+- Modify: `account-api/internal/tests/dsr_integration_test.go`
+- Modify: `account-api/internal/dsrcontract/validation.go`
+- Modify: `account-api/docs/data-governance.yaml`
+
+- [ ] Inventory the final owner registry from governance manifests; require export and supported action behavior for Account, Engagement, Asset, HHC Web, Operations, and any other owner that actually stores subject-linked data. Do not create a speculative owner.
+- [ ] Add Operations only after its private DSR endpoints are deployed dark. Preserve partial-failure state and one result per owner; unknown/missing/malformed owner results fail closed.
+- [ ] Make DSR erasure and permanent deletion reuse the same idempotent owner action client and bounded result type while retaining separate case/lifecycle orchestration.
+- [ ] Verify zero-row and repeated erasure success, retention/anonymization exceptions, unavailable owner retry, no unrelated-record mutation, and no Account deletion before all required owner cleanups succeed.
+- [ ] Emit central Audit events only for Admin DSR decisions/retries/resolution; owner export/action payload and personal data never enter central audit metadata.
+
+### Task 8: Close External Legal And Retention Gates
+
+**Repository:** `hhc-web`
+
+**Files:**
+- Modify: `docs/governance/account-legal-review-v1.md`
+- Modify: `docs/governance/processor-register.md`
+- Modify: `docs/operations/account-legal-launch-evidence.md`
+
+- [ ] Obtain and record counsel disposition for controlling language, minors/guardian treatment, DSR timing/exceptions, policy-version binding, and retention/legal-hold rules without converting engineering notes into legal approval.
+- [ ] Close or explicitly block every `pending_external_review` processor/DPA/region/subprocessor item with dated owner evidence.
+- [ ] Reconcile governance manifests, actual retention jobs, DSR owner registry, deletion smoke, central Audit decision coverage, public policy versions, and live authenticated request behavior.
+- [ ] Launch legal/DSR readiness requires every required external disposition and technical gate; delivered pages or enabled flags alone are insufficient.

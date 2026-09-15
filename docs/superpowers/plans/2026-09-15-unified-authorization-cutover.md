@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Route the new service and protected surfaces correctly, prove the full authorization matrix, then execute one authorized breaking production cutover without restoring public bulletin access.
+**Goal:** Route Operations, Audit, and protected surfaces correctly, prove the full authorization/DSR matrix, then execute one authorized breaking production cutover without restoring public bulletin access.
 
 **Architecture:** Gateway performs authentication, strips untrusted identity headers, injects trusted subject/service context, and routes by exact host/path/method. Feature services keep fine-grained authorization. Operations deploys dark before ownership switches; production changes happen in one controlled window after staging proof.
 
@@ -15,6 +15,7 @@
 - No Gateway route, infrastructure, merge, release, session reset, or production data mutation without explicit authorization.
 - Gateway owns coarse authentication and routing only; it must not evaluate organization or entitlement policy.
 - Old public bulletin routes fail closed with no redirect or legacy upstream.
+- Audit Browser query is exact authenticated GET traffic to `audit-log`; private append is never exposed and `hhc-web-api` is not an Audit BFF.
 - Roll forward from immutable artifacts; rollback must never reopen bulletin public access.
 - The release manifest also owns AuthN conformance evidence: token
   single-flight, stale-token fencing, one `401` refresh and retry, `403`
@@ -37,6 +38,7 @@
       rebuilt as `X-HHC-Scopes`; no `X-HHC-Permissions` path exists.
 - [ ] Prove `/priv/*` remains unreachable from public hosts.
 - [ ] Prove old `/api/bulletins*` routes have no upstream and protected `/api/member/bulletins*` requires authentication.
+- [ ] Prove exact Audit list/detail GET routes require `audit:read`, all other methods fail, and `/priv/audit/*` has no public upstream.
 - [ ] Run tests and confirm they fail against the current Gateway.
 - [ ] Commit: `test: lock unified authorization route policy`
 
@@ -51,6 +53,8 @@
 - Modify: `api-gateway/docs/openapi.yaml`
 
 - [ ] Add the Operations Dapr app ID/upstream and route exact `/api/operations/*`, `/api/admin/operations/*`, meetings, and occurrence surfaces.
+- [ ] Include exact self-service Resource availability/request/cancel and Admin Meeting/Resource/Reservation routes from the released Operations OpenAPI; do not use a broad permission at the edge.
+- [ ] Add only `GET /api/admin/audit/events` and `GET /api/admin/audit/events/{eventId}` to the Audit upstream.
 - [ ] Route protected bulletin member endpoints to `hhc-web-api` with trusted subject context.
 - [ ] Remove public bulletin and old member-access switch routes.
 - [ ] Keep permission-specific Admin enforcement in downstream APIs.
@@ -82,7 +86,7 @@
 
 - [ ] Use named synthetic principals created specifically for each authorization-matrix row; do not reuse real member data.
 - [ ] Cover anonymous, authenticated non-member, active/suspended qualification, each locale entitlement, Admin-without-membership, all scoped staff roles, leader cross-scope denial, expired operator, and unallowlisted service.
-- [ ] Cover list, metadata, online-reader, PDF, derivative, ETag, Range, direct Admin URL, and direct API paths.
+- [ ] Cover member list, metadata, PDF, derivative, ETag, Range, Resource request/cancel, each granular Operations Admin surface, Audit list/detail, direct Admin URL, and direct API paths. The post-launch structured reader is excluded.
 - [ ] Force Account, Operations, Website, and Asset dependency failures and prove protected access fails closed.
 - [ ] Cover available authenticated `permissions: []` separately from
       authenticated `permission_unavailable`; neither may become anonymous,
@@ -95,22 +99,15 @@
 - [ ] Require every row pass; no ignored or quarantined authorization test.
 - [ ] Commit: `test: add unified authorization staging matrix`
 
-### Task 5: Register Operations As A DSR Owner
+### Task 5: Activate And Verify The Final DSR Owner Registry
 
 **Files:**
-- Create: `account-api/internal/operationsclient/client.go`
-- Create: `account-api/internal/operationsclient/client_test.go`
-- Modify: `account-api/internal/services/dsr_worker.go`
-- Modify: `account-api/internal/services/dsr_worker_test.go`
-- Modify: `account-api/internal/tests/dsr_integration_test.go`
-- Modify: `account-api/internal/dsrcontract/validation.go`
-- Modify: `account-api/docs/data-governance.yaml`
+- Modify: `api-gateway/docs/operations/unified-authorization-cutover.md`
 
-- [ ] Add Operations export and action clients using the established owner contract and caller authentication.
-- [ ] Include Operations in access export, correction/restriction where supported, and erasure orchestration without weakening partial-failure reporting.
-- [ ] Test unavailable, malformed, wrong-owner, retry, and successful owner results.
-- [ ] Release this Account integration only inside the coordinated window, after Operations DSR endpoints are deployed dark.
-- [ ] Commit: `feat: include operations in account data requests`
+- [ ] Consume the already implemented and reviewed owner registry from Account Legal Tasks 6-7; do not reimplement its clients, worker, validation, or governance files here.
+- [ ] Confirm every required owner endpoint, including Operations, is deployed dark and its allowlisted Account caller succeeds before Account activation.
+- [ ] Run unavailable, malformed, wrong-owner, retry, zero-row, repeated-success, DSR erasure, and permanent-deletion smoke with the same bounded owner result and separate workflow state.
+- [ ] Record owner/version/result evidence without subject data. Any required owner failure blocks deletion and cutover.
 
 ### Task 6: Rehearse Retained-Data And Grant Reconciliation
 
@@ -134,14 +131,18 @@
 
 ```text
 operations-api dark
+audit-log dark
 asset-api
 engagement-api
-account-api + hhc-web-api coordinated producer activation
+account-api cleanup root-cause release, then final RBAC/DSR + hhc-web-api coordinated producer activation
+operations-api Resource reservation activation with every Resource disabled
+domain audit producers dispatch disabled
 frontend-platform packages (already published; verify digest only)
 admin-fe / hhc-web / account-fe / hhc-client-v2 / hhc-line-function-bot coordinated consumers
-api-gateway route switch
+api-gateway Operations/Audit/protected-bulletin route switch
 operations source-table removal after counted import
 session invalidation and final grant/cache reconciliation
+enable one test Resource and audit producers one owner at a time
 ```
 
 `frontend-platform` is a build-time release and must be published before
@@ -165,6 +166,7 @@ activation.
 - [ ] Switch Gateway routes and remove old public routes.
 - [ ] Invalidate existing test sessions and sign in with newly assigned test roles/qualification/entitlements.
 - [ ] Run the full runtime authorization matrix.
+- [ ] Run permanent-deletion and DSR partial-owner/retry smoke before enabling any feature that introduces another subject-linked owner.
 - [ ] Stop immediately on any count mismatch, public byte exposure, cross-scope allow, or non-fail-closed dependency behavior; use the documented roll-forward path.
 
 ### Task 9: Production Acceptance
@@ -173,7 +175,9 @@ activation.
 - [ ] Verify public old bulletin URLs from an unauthenticated network and browser cache state.
 - [ ] Verify Bulletin Viewer/Editor Admin isolation with direct navigation and API calls.
 - [ ] Verify entitlement revocation becomes effective on the next protected request.
-- [ ] Verify Page Settings Editor, News Editor, Operations Editor, and Membership Manager separation.
+- [ ] Verify Meeting Editor, Resource Editor, Reservation Approver, Membership Manager, and Audit Reader sibling-route/API isolation.
+- [ ] Verify an authenticated non-member cannot request a Resource, an eligible active member can request only in policy scope, and every real Resource remains disabled until explicitly approved.
+- [ ] Verify Audit producer backlog/dead-letter state, representative owner events, DSR metadata minimization, query self-audit, and the separately required 24-hour observation gate.
 - [ ] Verify real Website, Account, Admin, Presenter, and LINE-user behavior; synthetic probes do not substitute for these checks.
 - [ ] Verify optional Website auth, required Account/Admin auth, Presenter Web
       callback, Presenter Desktop deep link, permission-unavailable recovery,

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Admit `operations-api`, move the existing operations kernel intact, and add organization membership, scoped roles, qualification, entitlements, and the shared access projection.
+**Goal:** Admit `operations-api`, move the existing operations kernel intact, and add organization membership, scoped roles, qualification, entitlements, resource reservations, and the shared access projection.
 
 **Architecture:** Reuse the minimal Go/PostgreSQL/`net/http` shape already proven in `hhc-web-api`; do not build a generic authorization service or DSL. `operations-api` owns operations facts, exposes one subject access projection, and answers exact entitlement checks for allowlisted services.
 
@@ -16,6 +16,8 @@
 - Preserve existing operations IDs and history through counted export/import; do not use runtime cross-schema reads or dual-read.
 - The service trusts only gateway/Dapr-injected identity and allowlisted service identity.
 - No custom policy language, role inheritance, per-user-resource permission rows, or speculative workflow tables.
+- The Phase 2 Resource reservation design commit `c792305` is evidence, not an executable owner contract. `operations-api` replaces its `hhc-web-api` ownership and Account-only request rule.
+- Self-service request/cancel uses Operations membership policy, not staff permission. Admin routes use only the granular `operations:meetings:*`, `operations:resources:*`, and `operations:reservations:*` codes.
 
 ### Task 1: Admit The Minimal Service Foundation
 
@@ -97,7 +99,7 @@ bulletin.general.zh-Hans.access
 bulletin.general.en.access
 ```
 
-- [ ] Add Admin routes protected separately by `operations:*` and `memberships:*`.
+- [ ] Add Admin routes protected separately by the exact Meetings, Resources, Reservations, and Membership permission families.
 - [ ] Test cross-OrgUnit denial and compiled descendant rules for leader roles.
 - [ ] Write immutable audit rows for every membership, qualification, entitlement, OrgUnit, org-role, resource, meeting, occurrence, override, and binding mutation; preserve actor, request ID, before/after state, and stable resource ID.
 - [ ] Commit: `feat: add membership qualification and entitlements`
@@ -141,7 +143,36 @@ bulletin.general.en.access
 - [ ] Test wrong caller, malformed subject, retry/idempotency, retained audit, and zero unrelated-record mutation.
 - [ ] Commit: `feat: govern operations member data`
 
-### Task 6: Counted Kernel Export And Import
+### Task 6: Add Resource Reservation And Maintenance
+
+**Files:**
+- Create: `operations-api/internal/migrations/sql/003_resource_reservations.sql`
+- Create: `operations-api/internal/reservations/model.go`
+- Create: `operations-api/internal/reservations/service.go`
+- Create: `operations-api/internal/reservations/service_test.go`
+- Create: `operations-api/internal/postgres/reservation_repository.go`
+- Create: `operations-api/internal/postgres/reservation_repository_integration_test.go`
+- Create: `operations-api/internal/httpapi/reservation_handlers.go`
+- Create: `operations-api/internal/httpapi/reservation_handlers_test.go`
+- Modify: `operations-api/internal/httpapi/handler.go`
+- Modify: `operations-api/openapi.yaml`
+
+**Interfaces:**
+- Consumes: trusted Account subject; imported `OrgUnit`, `OrgMembership`, `MembershipQualification`, `Meeting`, occurrence, and `Resource`; canonical granular Operations scopes.
+- Produces: owner-scoped availability/request/cancel APIs and Admin Resource, maintenance, list/detail, approve/reject/cancel APIs from the canonical Operations OpenAPI.
+
+- [ ] Write failing model/repository tests for one Resource per request, half-open intervals, maximum 366-day request/maintenance range, immutable terminal rejected/cancelled states, optimistic version, and idempotency uniqueness.
+- [ ] Write failing concurrency tests proving requested rows do not occupy time; approved reservations, fixed Meeting occurrences, and active maintenance do; approval and conflicting Meeting/maintenance changes serialize on the Resource row; force overwrite is impossible.
+- [ ] Add the minimum tables and indexes for `ResourceReservation` and `ResourceMaintenanceBlock`; extend Resource only with reviewed `kind`, owner OrgUnit, and `reservation_enabled` fields. Preserve every imported Resource stable ID and default reservation to disabled.
+- [ ] Implement compiled self-service policy: authentication plus active qualification plus eligible active OrgMembership for the Resource owner scope. Return only merged busy intervals to ordinary callers and never reveal requester, purpose, Meeting name, maintenance reason, approver, or blocker type.
+- [ ] Require `operations:reservations:read` for Admin list/detail, `operations:reservations:approve` for approve/reject/Admin cancel, and `operations:resources:read/write` for Resource and maintenance management. Meeting routes remain on `operations:meetings:read/write`.
+- [ ] Add exact self-service OpenAPI routes: `GET /api/operations/me/resources`, `GET /api/operations/me/resources/{resourceKey}/availability`, `POST/GET /api/operations/me/resource-reservations`, `GET /api/operations/me/resource-reservations/{reservationId}`, and `POST /api/operations/me/resource-reservations/{reservationId}/cancel`.
+- [ ] Add exact Admin OpenAPI routes: `GET/PUT /api/admin/operations/resources/{resourceId}/reservation-settings`, `GET /api/admin/operations/resource-reservations`, `GET /api/admin/operations/resource-reservations/{reservationId}`, `POST /api/admin/operations/resource-reservations/{reservationId}/approve|reject|cancel`, `POST/GET /api/admin/operations/resource-maintenance-blocks`, and `GET/PUT /api/admin/operations/resource-maintenance-blocks/{blockId}` plus `POST .../{blockId}/cancel`. Require `Idempotency-Key` on create and `If-Match` on transitions; document non-enumerating `404`, `409 resource_time_conflict`, and `412 version_mismatch`.
+- [ ] Write an immutable domain audit row and transactional central-audit outbox row for each committed Resource, maintenance, and reservation Admin mutation. Self-service request/cancel remains domain history and operational telemetry, not Admin Audit Log v1.
+- [ ] Run focused race/integration tests, OpenAPI lint, then `go test -race ./... -count=1 -p=1` and `go vet ./...`.
+- [ ] Commit: `feat: add qualified resource reservations`
+
+### Task 7: Counted Kernel Export And Import
 
 **Files:**
 - Create: `hhc-web-api/cmd/operations-export/main.go`
@@ -156,7 +187,7 @@ bulletin.general.en.access
 - [ ] Do not remove source tables yet.
 - [ ] Commit in each owned repository with a migration-specific message.
 
-### Task 7: Remove The Source Kernel After Verified Import
+### Task 8: Remove The Source Kernel After Verified Import
 
 **Files:**
 - Modify: `hhc-web-api/cmd/server/main.go`
@@ -173,8 +204,9 @@ bulletin.general.en.access
 - [ ] Run `go test -race ./... -count=1 -p=1`, `go vet ./...`, OpenAPI lint, migration-policy tests, and image build.
 - [ ] Commit: `refactor: complete operations kernel extraction`
 
-### Task 8: PR And Release Stop Gate
+### Task 9: PR And Release Stop Gate
 
 - [ ] Keep the new service and `hhc-web-api` extraction PRs independently reviewable.
 - [ ] Release `operations-api` dark first with no public Gateway ownership.
 - [ ] Do not merge source-kernel removal until import, route switch, and rollback/roll-forward rehearsal are approved.
+- [ ] Keep every Resource disabled until the target import, member-policy matrix, privacy response, conflict race, and Admin permission-isolation smoke pass; enable one test Resource before any real Resource.

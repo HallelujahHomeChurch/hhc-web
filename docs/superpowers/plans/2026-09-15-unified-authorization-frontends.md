@@ -85,8 +85,12 @@
 - Modify: `admin-fe/package.json`
 - Modify: `admin-fe/pnpm-lock.yaml`
 - Modify: `admin-fe/src/lib/admin-route-title.ts`
+- Create: `admin-fe/src/lib/audit-api.ts`
+- Create: `admin-fe/src/lib/audit-api.test.ts`
+- Create: `admin-fe/src/pages/AuditLogPage.tsx`
+- Create: `admin-fe/src/pages/AuditLogPage.test.tsx`
 
-- [ ] Map Page Settings, News, Bulletin, Operations, Membership, Campaign, IAM, DSR, Asset, and Presenter routes to exact canonical permissions.
+- [ ] Map Page Settings, News, Bulletin, Meetings, Resources, Reservations, Membership, Campaign, IAM, DSR, Audit Log, Asset, and Presenter routes to exact canonical permissions.
 - [ ] In this same `admin-fe` PR, replace local required-auth token/session
       lifecycle with the shared runtime. Keep capability expansion in Admin's
       AuthZ adapter and never import it from AuthN runtime code.
@@ -97,8 +101,11 @@ const routeCapabilities = {
   '/content/pages': 'cms:pages:read',
   '/content/news': 'cms:news:read',
   '/content/bulletins': 'cms:bulletins:read',
-  '/operations/meetings': 'operations:read',
+  '/operations/meetings': 'operations:meetings:read',
+  '/operations/resources': 'operations:resources:read',
+  '/operations/reservations': 'operations:reservations:read',
   '/memberships': 'memberships:read',
+  '/audit': 'audit:read',
 } as const
 ```
 
@@ -106,6 +113,8 @@ const routeCapabilities = {
 - [ ] Hide the global dashboard from scoped staff and redirect `/` to the first authorized route.
 - [ ] Prove Bulletin Viewer/Editor sees only bulletin navigation plus common account links.
 - [ ] Prove direct routes for every unrelated area redirect to forbidden and corresponding APIs return backend denial.
+- [ ] Build `/audit` on the released direct Audit query contract with bounded time/action/outcome/resource filters, cursor pagination, detail disclosure, accessible loading/error/empty states, and localized timestamps. Audit-only users enter at `/audit`; queries never accept unrestricted metadata.
+- [ ] Prove a successful query produces one `audit.query.read` self-event without recursive event generation.
 - [ ] Remove `media-sync:manage` and broad CMS fallbacks.
 - [ ] Commit: `feat: isolate admin destinations by capability`
 
@@ -122,6 +131,7 @@ const routeCapabilities = {
 
 - [ ] Render grouped rows with `None | View | Edit | Publish` where valid.
 - [ ] Compile each selected level to the exact cumulative permissions from the spec; do not expose Asset dependencies.
+- [ ] Render Meetings and Resources as `None | View | Edit`, Reservations as `None | View | Approve`, Membership as `None | View | Manage`, and Audit Log as `None | View`; do not force every group into the CMS publish ladder.
 - [ ] Keep the capability compilation explicit and cumulative:
 
 ```ts
@@ -143,6 +153,35 @@ const websiteContentLevels = {
     view: ['cms:bulletins:read'],
     edit: ['cms:bulletins:read', 'cms:bulletins:write'],
     publish: ['cms:bulletins:read', 'cms:bulletins:write', 'cms:bulletins:publish'],
+  },
+} as const
+```
+
+```ts
+const operationsLevels = {
+  meetings: {
+    none: [],
+    view: ['operations:meetings:read'],
+    edit: ['operations:meetings:read', 'operations:meetings:write'],
+  },
+  resources: {
+    none: [],
+    view: ['operations:resources:read'],
+    edit: ['operations:resources:read', 'operations:resources:write'],
+  },
+  reservations: {
+    none: [],
+    view: ['operations:reservations:read'],
+    approve: ['operations:reservations:read', 'operations:reservations:approve'],
+  },
+  memberships: {
+    none: [],
+    view: ['memberships:read'],
+    manage: ['memberships:read', 'memberships:manage'],
+  },
+  auditLog: {
+    none: [],
+    view: ['audit:read'],
   },
 } as const
 ```
@@ -182,6 +221,10 @@ const websiteContentLevels = {
 - Create: `admin-fe/src/lib/operations-api.test.ts`
 - Create: `admin-fe/src/pages/operations/OrgUnitPage.tsx`
 - Create: `admin-fe/src/pages/operations/OrgUnitPage.test.tsx`
+- Create: `admin-fe/src/pages/operations/ResourceListPage.tsx`
+- Create: `admin-fe/src/pages/operations/ResourceListPage.test.tsx`
+- Create: `admin-fe/src/pages/operations/ReservationListPage.tsx`
+- Create: `admin-fe/src/pages/operations/ReservationListPage.test.tsx`
 - Create: `admin-fe/src/pages/memberships/MembershipListPage.tsx`
 - Create: `admin-fe/src/pages/memberships/MembershipListPage.test.tsx`
 - Create: `admin-fe/src/pages/memberships/MembershipDetailPage.tsx`
@@ -191,10 +234,11 @@ const websiteContentLevels = {
 - Modify: `admin-fe/src/preferences/locale-context.tsx`
 
 - [ ] Remove operations types and methods from the Website CMS wrapper and consume `@hallelujahhomechurch/operations-client` through one Admin wrapper.
-- [ ] Keep meetings/resources/OrgUnits behind `operations:read/write`; keep placement, qualification, org roles, and entitlement assignment behind `memberships:read/manage`.
+- [ ] Keep Meetings/OrgUnits behind `operations:meetings:read/write`, Resources/maintenance behind `operations:resources:read/write`, reservation review behind `operations:reservations:read/approve`, and placement/qualification/org roles/entitlements behind `memberships:read/manage`.
+- [ ] Add the minimal Resource settings, maintenance, reservation list/detail, approve/reject/cancel screens using only the final generated Operations client. A reservation approver cannot edit Resource settings or Meetings.
 - [ ] Provide explicit assignment/revocation forms for the three initial bulletin entitlements; never expose entitlement codes as staff permissions.
 - [ ] Require effective dates, actor confirmation, optimistic concurrency, and a visible audit result for sensitive membership changes.
-- [ ] Test Operations Editor cannot read member records and Membership Manager cannot write meetings without the second role.
+- [ ] Test each Meeting, Resource, Reservation, and Membership role against every sibling route and direct API; each exact permission must deny unrelated mutations.
 - [ ] Commit: `feat: manage organization membership and entitlements`
 
 ### Task 6: Update Website Member Bulletin Experience
@@ -230,6 +274,12 @@ const websiteContentLevels = {
 - Modify: `account-fe/src/lib/api.ts`
 - Modify: `account-fe/src/lib/api.test.ts`
 - Modify: `account-fe/src/i18n/messages.ts`
+- Create: `account-fe/src/pages/ResourceListPage.tsx`
+- Create: `account-fe/src/pages/ResourceListPage.test.tsx`
+- Create: `account-fe/src/pages/ResourceReservationPage.tsx`
+- Create: `account-fe/src/pages/ResourceReservationPage.test.tsx`
+- Create: `account-fe/src/pages/MyResourceReservationsPage.tsx`
+- Create: `account-fe/src/pages/MyResourceReservationsPage.test.tsx`
 - Modify: `account-fe/package.json`
 - Modify: `account-fe/pnpm-lock.yaml`
 
@@ -249,6 +299,8 @@ const websiteContentLevels = {
       runtime and align Desktop stale-token, cooldown, refresh, IPC, and event
       behavior while retaining native OAuth and `safeStorage` in main process.
 - [ ] Show Admin, bulletin, Presenter cloud, and LINE destinations only when projected; common profile/security links remain authenticated-account links.
+- [ ] Show the Resource application destination only when the Operations access response says the caller is currently eligible. Use the generated client for availability, single-Resource request, own list/detail, and cancel; do not infer eligibility from staff permissions or duplicate the server policy.
+- [ ] Handle qualification/org-policy revocation, conflict, stale version, and permission-unavailable presentation without turning the authenticated Account anonymous.
 - [ ] Do not derive member access from Admin permissions or email verification.
 - [ ] Account verification: `corepack pnpm test:run && corepack pnpm lint && corepack pnpm build`.
 - [ ] Presenter verification: `npm run test && npm run lint && npm run typecheck && npm run build && npm run build:web`.
@@ -257,7 +309,7 @@ const websiteContentLevels = {
 ### Task 8: Consumer Drift And Isolation Gate
 
 - [ ] Run `rg` across all four client repos for every removed permission and old public bulletin route; require zero runtime hits.
-- [ ] Run Admin direct-navigation tests for Page Settings Editor, News Editor, Bulletin Viewer, Bulletin Editor, Operations Editor, and Membership Manager.
+- [ ] Run Admin direct-navigation tests for Page Settings Editor, News Editor, Bulletin Viewer, Bulletin Editor, Meeting Editor, Resource Editor, Reservation Approver, Membership Manager, and Audit Reader.
 - [ ] Record packed package version/digest and exact consumer lockfile versions.
 - [ ] Keep consumer PRs unmerged until coordinated cutover approval.
 - [ ] Run the Auth convergence conformance suite in `hhc-web`, `account-fe`,

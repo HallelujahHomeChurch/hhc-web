@@ -41,10 +41,11 @@ This plan is the authority consumed by the authentication convergence plan:
   `403` permits neither and cannot mutate authentication state.
 
 The canonical capability identifiers consumed by Admin authorization code are
-`pageSettings`, `news`, `bulletins`, `operations`, `memberships`, `campaigns`,
-`users`, `rbac`, `oauth`, `assets`, `presenterCloud`, `presenterLine`, and
-`dsr`. They expand only inside the domain AuthZ adapter; authentication runtime
-files must not import them.
+`pageSettings`, `news`, `bulletins`, `meetings`, `resources`, `reservations`,
+`memberships`, `campaigns`, `users`, `rbac`, `oauth`, `assets`,
+`presenterCloud`, `presenterLine`, `dsr`, and `auditLog`. They expand only
+inside the domain AuthZ adapter; authentication runtime files must not import
+them.
 
 ### Task 1: Lock The Canonical Catalog With Failing Tests
 
@@ -53,7 +54,7 @@ files must not import them.
 - Modify: `account-api/internal/services/user_service_test.go`
 - Modify: `account-api/internal/repository/rbac_repo_integration_test.go`
 
-- [ ] Add a table-driven catalog assertion for the exact canonical permission codes and 14 new default role bundles.
+- [ ] Add a table-driven catalog assertion for the exact canonical permission codes and 20 new default role bundles.
 - [ ] Use this exact new-role bundle fixture; append the unaffected existing roles from the spec without changing their boundaries:
 
 ```go
@@ -68,15 +69,22 @@ var granularRolePermissions = map[string][]string{
 	"bulletin_editor":         {"cms:bulletins:read", "cms:bulletins:write"},
 	"bulletin_publisher":      {"cms:bulletins:read", "cms:bulletins:write", "cms:bulletins:publish"},
 	"bulletin_investigator":   {"cms:bulletins:read", "cms:bulletins:investigate"},
-	"operations_viewer":       {"operations:read"},
-	"operations_editor":       {"operations:read", "operations:write"},
+	"meeting_viewer":          {"operations:meetings:read"},
+	"meeting_editor":          {"operations:meetings:read", "operations:meetings:write"},
+	"resource_viewer":         {"operations:resources:read"},
+	"resource_editor":         {"operations:resources:read", "operations:resources:write"},
+	"reservation_viewer":      {"operations:reservations:read"},
+	"reservation_approver":    {"operations:reservations:read", "operations:reservations:approve"},
+	"operations_manager":      {"operations:meetings:read", "operations:meetings:write", "operations:resources:read", "operations:resources:write", "operations:reservations:read", "operations:reservations:approve"},
 	"membership_viewer":       {"memberships:read"},
 	"membership_manager":      {"memberships:read", "memberships:manage"},
+	"audit_reader":            {"audit:read"},
 }
 ```
 
 - [ ] Assert the removed codes and roles are absent after migration.
-- [ ] Assert `iam_reader`/`iam_editor` do not contain `dsr:*`, and CMS roles do not contain `assets:*`.
+- [ ] Assert the unreleased draft codes `operations:read`, `operations:write`, `resources:approve`, and `resources:manage` are absent with no compatibility mapping.
+- [ ] Assert `iam_reader`/`iam_editor` do not contain `dsr:*` or `audit:read`, and CMS roles do not contain `assets:*`.
 - [ ] Replace derived-member tests with this invariant:
 
 ```go
@@ -96,8 +104,8 @@ func TestEffectivePermissionCodesDoesNotDeriveMemberBenefits(t *testing.T) {
 - Create: `account-api/migrations/000026_granular_staff_rbac.down.sql`
 - Modify: `account-api/internal/database/db.go`
 
-- [ ] Add the granular CMS, operations, and memberships permissions from the spec.
-- [ ] Add the 14 stable default roles and exact bundles.
+- [ ] Add the granular CMS, Meetings, Resources, Reservations, Membership, and Audit permissions from the spec.
+- [ ] Add the 20 stable default roles and exact bundles.
 - [ ] Delete join rows for removed permissions and roles, then delete their catalog rows. Do not translate assignments.
 - [ ] Remove DSR permissions from IAM role bundles.
 - [ ] Remove retired codes from the HHC Presenter OAuth client's allowed scopes and add only scopes actually consumed by that client.

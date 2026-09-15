@@ -4,8 +4,8 @@
 
 This is the canonical target design for HHC staff authorization, church
 organization scope, membership qualification, member entitlements, protected
-weekly bulletins, shared UI access projection, and coordinated breaking
-delivery.
+weekly bulletins, resource reservations, audit/DSR integration, shared UI
+access projection, and coordinated breaking delivery.
 
 It governs the following repositories and future deployable:
 
@@ -22,6 +22,7 @@ It governs the following repositories and future deployable:
 - `account-fe`
 - `hhc-client-v2`
 - `hhc-line-function-bot`
+- `audit-log` (new target owner described below)
 
 This design supersedes conflicting scope catalogs, role bundles, weekly
 bulletin public-projection rules, and compatibility guidance in older platform
@@ -63,6 +64,14 @@ asset bytes are retained; only their access model changes.
 13. Authentication is a product-neutral prerequisite for authorization. It
     transports identity and opaque staff permissions but never imports a
     product capability map or decides whether a feature is allowed.
+14. Resource reservation, formal Phase 1 media acceptance, account-erasure
+    diagnostics, and centralized audit are pre-launch workstreams that consume
+    this design. They may refine their own domain policy but may not restore a
+    broad permission, duplicate AuthN runtime, or move ownership back to a
+    superseded service.
+15. Online donations and the structured weekly-bulletin reader are post-launch
+    work. They receive no speculative permission, route, repository, or launch
+    gate in this release.
 
 ## Non-Goals
 
@@ -133,13 +142,14 @@ default.
 | Domain | Source Of Truth | Responsibilities | Must Not Own |
 | --- | --- | --- | --- |
 | Identity and staff RBAC | `account-api` | users, login, MFA, sessions, staff roles, staff permissions, access-token issuance | OrgMembership, member qualification, member entitlement, CMS resources |
-| Church operations | `operations-api` | OrgUnit, OrgMembership, OrgRoleAssignment, MembershipQualification, EntitlementAssignment, Meeting, occurrence, Resource, registration, attendance, paper distribution eligibility | identity credentials, CMS content bytes, provider delivery |
+| Church operations | `operations-api` | OrgUnit, OrgMembership, OrgRoleAssignment, MembershipQualification, EntitlementAssignment, Meeting, occurrence, Resource, reservation, maintenance, registration, attendance, paper distribution eligibility | identity credentials, CMS content bytes, provider delivery |
 | Website content | `hhc-web-api` | pages, news, bulletin series/issues/versions, publication state, protected content policy | account roles, organization membership source data, file mechanics |
 | File mechanics | `asset-api` | upload sessions, bytes, scan state, derivatives, grants, protected downloads, deletion lifecycle | CMS meaning, member qualification, event eligibility |
 | Engagement | `engagement-api` | consent, suppression, audience snapshots, campaigns, schedules | membership source data, provider delivery |
 | Delivery | `notification-api` | durable Email/Web Push delivery, provider retry and state | audience eligibility and domain timing |
 | Public ingress | `api-gateway` | JWT validation, trusted headers, coarse route permission, route ownership | resource-level policy, business aggregation |
 | Shared frontend contract | `frontend-platform` | generated clients, permission predicates, access-projection types, destination resolver | security decisions or feature-specific booleans |
+| Central audit | `audit-log` | append-only normalized Admin/security events, bounded query, retention class, audit-query self-event | domain mutation, authentication, DSR orchestration, business data ownership |
 
 ## Authentication And Authorization Seam
 
@@ -281,11 +291,17 @@ cms:bulletins:write
 cms:bulletins:publish
 cms:bulletins:investigate
 
-operations:read
-operations:write
+operations:meetings:read
+operations:meetings:write
+operations:resources:read
+operations:resources:write
+operations:reservations:read
+operations:reservations:approve
 
 memberships:read
 memberships:manage
+
+audit:read
 ```
 
 `cms:bulletins:investigate` replaces the staff-facing use of
@@ -304,17 +320,25 @@ bulletin:trace
 line:main:function:download_weekly_paper:execute
 ```
 
+The unreleased draft codes `operations:read`, `operations:write`,
+`resources:approve`, and `resources:manage` are superseded and must not be
+seeded, transported, accepted, or mapped. The compatibility map remains empty.
+
 `campaigns:*` never accepts `cms:*` as a fallback. DSR permissions are not
 bundled into IAM roles. Presenter LINE access never accepts
 `media-sync:manage` as an alias.
 
-`operations:*` covers organization structure, resources, meetings, and their
-current operational configuration. `memberships:*` separately protects member
-placement, qualification, and entitlement data. A Meeting editor must not gain
-member-management access merely because both domains are hosted by
-`operations-api`. Future registration or attendance permissions are added only
-when those administrative features are implemented and distinct staff duties
-are confirmed.
+The three Operations capability families separate Meeting configuration,
+Resource/maintenance configuration, and reservation review. Self-service
+request/cancel is not a staff permission: `operations-api` evaluates the
+authenticated subject's active qualification, organization relationship,
+Resource policy, ownership, and reservation lifecycle. `memberships:*`
+separately protects member placement, qualification, and entitlement data. A
+Meeting editor, Resource editor, or reservation approver gains neither of the
+other two powers nor member-management access merely because the domains share
+one service. Future registration or attendance permissions are added only when
+those administrative features are implemented and distinct duties are
+confirmed.
 
 The `*` staff wildcard grants the canonical staff permission catalog only. It
 never creates membership qualification, organization relationships, member
@@ -334,10 +358,16 @@ entitlements, registrations, or Asset collection ACLs.
 | `bulletin_editor` | Bulletin Editor | `cms:bulletins:read`, `cms:bulletins:write` |
 | `bulletin_publisher` | Bulletin Publisher | `cms:bulletins:read`, `cms:bulletins:write`, `cms:bulletins:publish` |
 | `bulletin_investigator` | Bulletin Investigator | `cms:bulletins:read`, `cms:bulletins:investigate` |
-| `operations_viewer` | Operations Viewer | `operations:read` |
-| `operations_editor` | Operations Editor | `operations:read`, `operations:write` |
+| `meeting_viewer` | Meeting Viewer | `operations:meetings:read` |
+| `meeting_editor` | Meeting Editor | `operations:meetings:read`, `operations:meetings:write` |
+| `resource_viewer` | Resource Viewer | `operations:resources:read` |
+| `resource_editor` | Resource Editor | `operations:resources:read`, `operations:resources:write` |
+| `reservation_viewer` | Reservation Viewer | `operations:reservations:read` |
+| `reservation_approver` | Reservation Approver | `operations:reservations:read`, `operations:reservations:approve` |
+| `operations_manager` | Operations Manager | `operations:meetings:read`, `operations:meetings:write`, `operations:resources:read`, `operations:resources:write`, `operations:reservations:read`, `operations:reservations:approve` |
 | `membership_viewer` | Membership Viewer | `memberships:read` |
 | `membership_manager` | Membership Manager | `memberships:read`, `memberships:manage` |
+| `audit_reader` | Audit Reader | `audit:read` |
 
 Existing campaign, IAM, Presenter, DSR, and break-glass administration roles
 remain separate. IAM Reader/Editor must not include DSR permissions. Generic
@@ -381,7 +411,10 @@ For example:
 | Website Content | Page Settings | Edit |
 | Website Content | News | None |
 | Website Content | Weekly Bulletin | View |
-| Church Operations | Meetings and resources | None |
+| Church Operations | Meetings | Edit |
+| Church Operations | Resources | View |
+| Church Operations | Reservations | Approve |
+| Security And Governance | Audit Log | None |
 
 The UI may show the atomic permission codes in an advanced read-only details
 panel, but administrators never select Asset API dependencies or service
@@ -400,6 +433,11 @@ A user with only Bulletin Viewer or Bulletin Editor access:
 
 All user-facing `網站設定` labels become `頁面設定`. The parent navigation
 label remains `網站內容`.
+
+Operations rows use `None | View | Edit` for Meetings/Resources and
+`None | View | Approve` for Reservations. Audit Log uses `None | View`.
+Administrators select these business levels; they never select internal audit
+append permissions or service credentials.
 
 ## Church Organization Model
 
@@ -624,8 +662,10 @@ GET /api/member/bulletins/{issueId}/versions/{locale}/download
 ```
 
 Exact paths are finalized in the owning `hhc-web-api` OpenAPI contract. Every
-list, latest, id/date lookup, online-reader, PDF, thumbnail, derivative, Range,
-and conditional request authorizes before returning metadata or bytes.
+list, latest, id/date lookup, PDF, thumbnail, derivative, Range, and
+conditional request authorizes before returning metadata or bytes. Any
+post-launch structured reader must use the same rule before its content,
+layout, revision, or offline payload is returned.
 
 Unauthorized or mismatched series/locale resources return a non-enumerating
 `404`. Missing authentication follows the gateway's `401` contract.
@@ -640,8 +680,9 @@ an allowlisted service identity. `asset-api` owns scan and byte-delivery
 mechanics and must not infer membership from Account roles or headers.
 
 Protected download authorization occurs before metadata, ETag/304, Range/206,
-or byte processing. Original PDFs, generated member copies, online-reader
-artifacts, thumbnails, and derivatives inherit the same series/locale policy.
+or byte processing. Original PDFs, generated member copies, thumbnails, and
+derivatives inherit the same series/locale policy. A future structured-reader
+artifact inherits it as well; no such artifact is required for this launch.
 
 ### LINE And Other Clients
 
@@ -685,6 +726,29 @@ tests, data-classification review, and shared client updates.
 ## Workflow Extensions
 
 Workflow state remains separate from authorization grants.
+
+### Resource Reservations
+
+Resource reservations are part of the existing Operations transaction
+boundary, not a CMS attachment or a new service. V1 keeps one Resource per
+request and half-open intervals. Requested reservations do not occupy time;
+approved reservations, fixed Meeting occurrences, and active maintenance
+blocks do. Approval and conflicting Meeting/maintenance mutations serialize on
+the Resource row and never offer force overwrite.
+
+An authenticated Account alone is insufficient to create a request. The
+requester must pass the compiled Operations request policy, initially requiring
+active MembershipQualification plus an eligible active OrgMembership for the
+Resource's owning OrgUnit. Owners may list and cancel their own requested or
+approved records. Admin review requires `operations:reservations:read` or
+`operations:reservations:approve`; Resource/maintenance configuration requires
+`operations:resources:*`. Request purpose and conflict provenance are never
+returned to unrelated users.
+
+The approved Phase 2 design at `c792305` is input evidence only. Its
+`hhc-web-api` ownership, any-authenticated request rule, global
+`resources:approve/manage` codes, and release sequence are superseded by this
+design and the Operations implementation plan.
 
 ### Registration And Attendance
 
@@ -816,6 +880,21 @@ the protected resource, membership, or roster.
 
 ## Audit And Privacy
 
+Central audit is downstream of domain ownership. Each mutable owner writes its
+own committed state and a minimal audit outbox atomically; delivery to
+`audit-log` is asynchronous and idempotent. Browser query uses an exact
+Gateway route to `audit-log`; `hhc-web-api` is not an audit BFF. Append remains
+private Dapr/service-token traffic. `audit-log` never becomes an authorization
+or DSR execution service.
+
+DSR cases and permanent account deletion share owner erasure contracts but are
+not the same workflow. DSR owns intake, identity verification, statutory
+decision state, owner execution tracking, response, and evidence. Permanent
+deletion is a lifecycle operation that may invoke the same idempotent owner
+cleanup actions. A failed cleanup must retain the failing owner/step, bounded
+error category, downstream status, and request ID; it must not delete the
+Account or collapse every failure into an untraceable generic 409.
+
 Audit at minimum:
 
 - staff role and permission changes;
@@ -919,6 +998,9 @@ Recommended workstreams:
 | --- | --- | --- |
 | Staff RBAC | `account-api`, then `frontend-platform` | permission catalog, role bundles, token/session behavior |
 | Church operations | new `operations-api` | OrgUnit, membership, org roles, qualification, entitlement, operational kernel |
+| Resource reservation | `operations-api`, `account-fe`, `admin-fe` | member policy, availability, request/cancel, Resource management, approval |
+| Legal and erasure | `account-api` plus registered domain owners | DSR case orchestration, step-specific cleanup, retention and counsel gates |
+| Central audit | `audit-log` plus each domain owner | append-only catalog/query and transactional producer outboxes |
 | Protected bulletin | `hhc-web-api`, `asset-api`, `hhc-line-function-bot` | series/locale policy, protected routes, grants, Bot binding |
 | Admin and website | `admin-fe`, `hhc-web`, `account-fe`, `frontend-platform` | role matrix, member entitlement UI, access projection, navigation |
 | Edge and infrastructure | `api-gateway`, infrastructure repo | protected routes, service identity, deployable admission |
@@ -944,21 +1026,28 @@ reviewable repository plans while preserving this dependency order:
 
 1. Freeze catalog, access matrix, target API paths, and service ownership.
 2. Create and pass the `operations-api` admission/readiness foundation.
-3. Implement Account staff RBAC and session-breaking changes.
-4. Implement operations membership, qualification, entitlement, and existing
-   kernel extraction.
-5. Implement protected bulletin routes and Asset protected-download contract.
-6. Freeze the Account session/scope transport and the authentication runtime
+3. Add step-specific Account cleanup diagnostics, reproduce the existing 409,
+   and fix only the identified owner adapter before adding new erasure owners.
+4. Implement Account staff RBAC and session-breaking changes.
+5. Implement operations membership, qualification, entitlement, existing
+   kernel extraction, and resource reservations in `operations-api`.
+6. Rebase the reviewed audit-log foundation, deploy it dark, then add each
+   domain owner's transactional audit outbox without changing domain ownership.
+7. Implement protected bulletin routes and Asset protected-download contract.
+8. Freeze the Account session/scope transport and the authentication runtime
    contract, then publish one breaking `frontend-platform` package set from
    the final producer OpenAPI contracts.
-7. Update Admin, Website, Account, Presenter Web/Desktop, and LINE consumers;
+9. Update Admin, Website, Account, Presenter Web/Desktop, and LINE consumers;
    retain only a conformance contract for a future mobile adapter.
-8. Update Gateway route policy and remove public bulletin routes.
-9. Run full positive and negative integration matrices in test/staging,
+10. Update Gateway route policy, add exact Audit routes, and remove public
+    bulletin routes.
+11. Complete Meeting/media Phase 1 formal SLO, security, scale-to-zero, cost,
+    and installed-device acceptance without conflating it with Phase 2.
+12. Run full positive and negative integration matrices in test/staging,
    including AuthN single-flight, stale-token fencing, `401`/`403`, `429`
    cooldown, hosted-login, and telemetry-redaction cases.
-10. Execute one coordinated breaking cutover and public-grant reconciliation.
-11. Verify deployed revisions, protected routes, public denials, Admin
+13. Execute one coordinated breaking cutover and public-grant reconciliation.
+14. Verify deployed revisions, protected routes, public denials, Admin
     isolation, entitlement revocation, and real clients.
 
 No PR, merge, package publication, release, infrastructure mutation, public
@@ -986,9 +1075,15 @@ Minimum required cases:
 | Bulletin Editor | generic Asset Library write | deny |
 | Page Settings Editor | Admin News/Bulletin pages and APIs | deny |
 | News Editor | Admin Page Settings/Bulletin pages and APIs | deny |
-| Operations Editor | membership, qualification, or entitlement administration | deny |
+| Meeting Editor | Resource or reservation mutation | deny |
+| Resource Editor | Meeting write or reservation approve | deny |
+| Reservation Approver | Resource configuration or Meeting write | deny |
 | Membership Manager | membership, qualification, and entitlement administration | allow |
-| Membership Manager | meeting/resource write | deny without `operations:write` |
+| Membership Manager | Meeting/Resource/reservation administration | deny without the exact Operations permission |
+| active qualified member in eligible OrgUnit | create own Resource request | allow when Resource policy and availability permit |
+| authenticated Account without active qualification | create Resource request | deny |
+| Audit Reader | Audit list/detail | allow |
+| Audit Reader | any audited domain mutation | deny without that domain permission |
 | small-group leader A | group A roster/check-in | allow when policy and occurrence state permit |
 | small-group leader A | group B roster/check-in | deny without disclosure |
 | family leader A | descendant group A roster | allow when action policy grants descendant scope |
@@ -1024,8 +1119,9 @@ Minimum required cases:
 
 - each authorization-matrix row has a positive or negative test;
 - direct Admin URLs and APIs enforce page/news/bulletin isolation;
-- member list, metadata, online-reader, PDF, derivative, ETag, and Range paths
-  all authorize before response processing;
+- member list, metadata, PDF, derivative, ETag, and Range paths all authorize
+  before response processing; the post-launch online reader is not a launch
+  gate;
 - public URLs and old sessions fail closed;
 - entitlement and qualification revocation take effect without waiting for
   access-token expiry;
@@ -1063,6 +1159,9 @@ The model deliberately leaves room for, but does not implement:
 - temporary event operators and managed check-in devices;
 - Household and GuardianRelationship;
 - organization-aware Campaign audience sources;
+- online donations, provider settlement, receipts, and tax export;
+- structured weekly-bulletin reader, annotations, notes, and private offline
+  synchronization;
 - an external relationship policy engine after measured duplication,
   performance, or policy-management pressure justifies it.
 
