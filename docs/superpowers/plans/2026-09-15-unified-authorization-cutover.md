@@ -88,6 +88,7 @@
 - [ ] Run `terraform fmt -check`, `terraform validate`, and a reviewed saved `terraform plan`; save redacted output as evidence.
 - [ ] Deploy dark only after explicit infrastructure authorization.
 - [ ] Verify revision, readiness, Dapr invocation, and unallowlisted denial.
+- [ ] Consume the already dark-deployed Audit owner and Gateway token reference from Audit Task 2; do not recreate Audit database, identity, caller secrets, image publication, or deployment in this task.
 
 ### Task 4: Build The Staging Authorization Harness
 
