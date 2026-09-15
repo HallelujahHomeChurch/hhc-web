@@ -1,9 +1,12 @@
 import type {HhcWebClient, PageContent, PublicEditorialPage} from '@hallelujahhomechurch/hhc-web-client';
 import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {getMessages} from '@/i18n/messages';
 import {productLocales, type Locale} from '@/i18n/locales';
 import {getAboutPage, getHomePage, getLegalPage, PageNotFoundError, PageProjectionError} from './api';
+
+const captureHandledError = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/observability', () => ({captureHandledError}));
 
 describe('fixed editorial page adapters', () => {
   it.each(productLocales)('maps the exact %s Home projection to the approved current keys', async (locale) => {
@@ -63,6 +66,8 @@ describe('fixed editorial page adapters', () => {
 
     await expect(getHomePage('ja', client)).resolves.toMatchObject({content: homeContent('ja').data, source: 'migration-fallback'});
     await expect(getAboutPage('ko', client)).resolves.toMatchObject({content: aboutContent('ko').data, source: 'migration-fallback'});
+    expect(captureHandledError).toHaveBeenCalledWith(error, {operation: 'page.home', level: 'warning', tags: {locale: 'ja'}});
+    expect(captureHandledError).toHaveBeenCalledWith(error, {operation: 'page.about', level: 'warning', tags: {locale: 'ko'}});
   });
 
   it.each([

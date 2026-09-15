@@ -3,6 +3,7 @@ import {publicContentClient} from '@/features/content/client';
 import type {Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import type {SiteExternalLinks, SiteLayout} from './types';
+import {captureHandledError} from '@/lib/observability';
 
 const fallbackLinks: SiteExternalLinks = {
   churchYoutube: 'https://youtube.com/@hhc33?si=SR2rSIVOTFX2dCmw',
@@ -20,7 +21,8 @@ async function resolveSiteLayout(locale: Locale, client: HhcWebClient): Promise<
     if (home.pageKey === 'home' && home.template === 'home.v2' && home.content.template === 'home.v2' && home.routePath === '/' && home.resolvedLocale === locale && home.availableLocales.includes(locale)) {
       return {...configuredLayout(locale, home.content.data.links, home.version, home.publishedAt), bannerImageUrl: home.content.data.bannerImageUrl};
     }
-  } catch {
+  } catch (error) {
+    captureHandledError(error, {operation: 'site_layout.home_projection', level: 'warning', tags: {locale}});
     return legacyLayout(locale, client);
   }
   return legacyLayout(locale, client);
@@ -29,7 +31,8 @@ async function resolveSiteLayout(locale: Locale, client: HhcWebClient): Promise<
 async function legacyLayout(locale: Locale, client: HhcWebClient): Promise<SiteLayout> {
   try {
     return await client.getSiteLayout(locale);
-  } catch {
+  } catch (error) {
+    captureHandledError(error, {operation: 'site_layout.legacy', level: 'warning', tags: {locale}});
     return configuredLayout(locale, fallbackLinks, 0, '');
   }
 }

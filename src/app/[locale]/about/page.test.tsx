@@ -2,6 +2,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 
 const mocks = vi.hoisted(() => ({getAboutPage: vi.fn(), getHistoryTimeline: vi.fn(), getSiteLayout: vi.fn()}));
+const captureHandledError = vi.hoisted(() => vi.fn());
 vi.mock('@/features/pages/api', () => ({getAboutPage: mocks.getAboutPage}));
 vi.mock('@/features/history/api', () => ({getHistoryTimeline: mocks.getHistoryTimeline}));
 vi.mock('@/features/site-layout/api', () => ({getSiteLayout: mocks.getSiteLayout}));
@@ -9,6 +10,7 @@ vi.mock('@/components/layout/SiteHeaderServer', () => ({SiteHeaderServer: () => 
 vi.mock('@/components/layout/SiteFooterServer', () => ({SiteFooterServer: () => null}));
 vi.mock('next-intl/server', () => ({setRequestLocale: vi.fn()}));
 vi.mock('next/navigation', () => ({notFound: vi.fn()}));
+vi.mock('@/lib/observability', () => ({captureHandledError}));
 
 import AboutPage, {generateMetadata} from './page';
 
@@ -36,6 +38,16 @@ describe('CMS-managed About page', () => {
     const markup = renderToStaticMarkup(await AboutPage({params: Promise.resolve({locale: 'en'})}));
 
     expect(markup).toContain('<main data-cms-fallback="about">');
+  });
+
+  it('reports a failed history timeline while preserving the About page', async () => {
+    mocks.getAboutPage.mockResolvedValue(aboutPage());
+    mocks.getHistoryTimeline.mockRejectedValue(new Error('history unavailable'));
+
+    const markup = renderToStaticMarkup(await AboutPage({params: Promise.resolve({locale: 'en'})}));
+
+    expect(markup).toContain('CMS About hero');
+    expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'history.timeline', tags: {locale: 'en'}});
   });
 
   it('uses CMS hero copy and published locales for metadata', async () => {

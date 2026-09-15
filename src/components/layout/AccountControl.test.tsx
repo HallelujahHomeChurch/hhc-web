@@ -1,8 +1,14 @@
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
+import {AccountSessionError, type AccountSessionClient} from '@hallelujahhomechurch/account-client';
 import {AccountControl, AccountControlProvider, BulletinAccessGate, useBulletinMemberMode, accountStateEventName} from './AccountControl';
+
+const captureHandledError = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/observability', () => ({
+  captureHandledError,
+  errorTags: (error: {status?: number; code?: string}) => ({status: error.status, code: error.code})
+}));
 
 const labels = {
   menu: 'Account menu',
@@ -44,6 +50,7 @@ function authenticatedClient(adminAccess = false, logoutAll = vi.fn().mockResolv
 
 describe('AccountControl', () => {
   beforeEach(() => {
+    captureHandledError.mockClear();
     document.cookie = 'hhc_sso_hint=; Max-Age=0; Path=/';
     sessionStorage.clear();
     window.history.replaceState({}, '', '/en/about?source=header#account');
@@ -90,6 +97,7 @@ describe('AccountControl', () => {
 
     await waitFor(() => expect(client.getSession).toHaveBeenCalledOnce());
     expect(screen.queryByRole('link', {name: 'Sign in'})).not.toBeInTheDocument();
+    expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'account.session'});
   });
 
   it('starts interactive OAuth from sign in and preserves the current URL', async () => {
@@ -485,6 +493,18 @@ it('uses live member availability instead of the session permission alone', asyn
  fetcher.mockImplementation(async()=>new Response(JSON.stringify({data:{canRead:true,publicEnabled:false,policyVersion:3},meta:{},error:null}),{headers:{'Content-Type':'application/json'}}));
  fireEvent.focus(window);
  expect(await screen.findByText('Member content')).toBeVisible();
+});
+
+it('reports a rate-limited member access bootstrap', async () => {
+ const client=authenticatedClient();
+ vi.mocked(client.getSession).mockResolvedValue({authenticated:true,user:{id:'u1',email:'test@example.invalid',display_name:'Test',avatar_url:null,permissions:['bulletin:read']}});
+ vi.mocked(client.issueAccessToken).mockRejectedValue(new AccountSessionError(429, 'RATE_LIMITED'));
+ render(<AccountControlProvider client={client} labels={labels} oauth={oauth}><BulletinAccessGate publicEnabled={false}><span>Member content</span></BulletinAccessGate></AccountControlProvider>);
+ await waitFor(()=>expect(client.issueAccessToken).toHaveBeenCalled());
+ expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {
+  operation: 'bulletin.access',
+  tags: {memberMode: true, status: 429, code: 'RATE_LIMITED'}
+ });
 });
 
 it('switches download mode when live access supersedes the server snapshot', async () => {

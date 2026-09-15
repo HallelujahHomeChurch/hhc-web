@@ -1,6 +1,9 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {getBulletinAccess, isBulletinEnabled} from './access';
 
+const captureHandledError = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/observability', () => ({captureHandledError}));
+
 afterEach(() => vi.unstubAllGlobals());
 describe('bulletin access', () => {
   it('reads each request using no-store and preserves disabled', async () => {
@@ -12,6 +15,7 @@ describe('bulletin access', () => {
   it('hides entry points on failure but leaves strict reads rejected', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('unavailable')));
     expect(await isBulletinEnabled()).toBe(false);
+    expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'bulletin.access_config', level: 'warning'});
     await expect(getBulletinAccess()).rejects.toThrow('unavailable');
   });
 });

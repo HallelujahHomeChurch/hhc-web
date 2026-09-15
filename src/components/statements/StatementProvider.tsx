@@ -5,6 +5,7 @@ import {createHhcWebClient, type ActiveStatement, type PublicContentItem} from '
 import type {Locale} from '@/i18n/locales';
 import {hiddenDayKey, statementIsActive, taipeiDay} from '@/features/statements/visibility';
 import {StatementDialog, type StatementLabels} from './StatementDialog';
+import {captureHandledError} from '@/lib/observability';
 
 // Document lifetime survives SPA route and locale-layout remounts, but not reloads.
 const prompted = new Set<string>();
@@ -36,8 +37,11 @@ export function StatementProvider({children, locale, labels}: {children: ReactNo
           setActive(null);
           void refresh();
         }, Math.min(2_147_483_647, Math.max(0, Date.parse(result.nextChangeAt) - Date.parse(result.serverNow))));
-      } catch {
-        if (!controller.signal.aborted) setActive(null);
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          captureHandledError(error, {operation: 'statement.active', tags: {locale}});
+          setActive(null);
+        }
       } finally {pending = false;}
     }
     const visibleRefresh = () => {if (document.visibilityState === 'visible') void refresh();};

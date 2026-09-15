@@ -12,6 +12,7 @@ import {getSiteLayout} from '@/features/site-layout/api';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import {getEditorialMetadata} from '@/lib/seo';
+import {captureHandledError} from '@/lib/observability';
 
 type AboutPageProps = {
   params: Promise<{locale: string}>;
@@ -42,7 +43,10 @@ export default async function AboutPage({params}: AboutPageProps) {
   const messages = getMessages(locale);
   const [page, timelineResult, layout] = await Promise.all([
     aboutPage(locale),
-    getHistoryTimeline(locale).then((value) => ({value, failed: false})).catch(() => ({value: {events: []}, failed: true})),
+    getHistoryTimeline(locale).then((value) => ({value, failed: false})).catch((error) => {
+      captureHandledError(error, {operation: 'history.timeline', tags: {locale}});
+      return {value: {events: []}, failed: true};
+    }),
     getSiteLayout(locale)
   ]);
 

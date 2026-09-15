@@ -3,8 +3,11 @@ import {PageNotFoundError, PageProjectionError} from '@/features/pages/api';
 import sitemap, {buildNewsSitemap} from './sitemap';
 
 const access = vi.hoisted(() => vi.fn().mockResolvedValue(true));
+const captureHandledError = vi.hoisted(() => vi.fn());
+const getNewsPage = vi.hoisted(() => vi.fn(async () => ({items: []})));
 vi.mock('@/features/weekly/access', () => ({isBulletinEnabled: access}));
-vi.mock('@/features/news/api', () => ({getNewsPage: vi.fn(async () => ({items: []}))}));
+vi.mock('@/features/news/api', () => ({getNewsPage}));
+vi.mock('@/lib/observability', () => ({captureHandledError}));
 const pageMocks = vi.hoisted(() => ({
   home: vi.fn(),
   about: vi.fn(),
@@ -19,6 +22,8 @@ vi.mock('@/features/pages/api', async (importOriginal) => ({
 
 describe('static sitemap', () => {
   beforeEach(() => {
+    captureHandledError.mockClear();
+    getNewsPage.mockReset().mockResolvedValue({items: []});
     access.mockResolvedValue(true);
     pageMocks.home.mockReset().mockResolvedValue(fixedPage(['zh-Hant', 'en']));
     pageMocks.about.mockReset().mockResolvedValue(fixedPage(['ja']));
@@ -80,6 +85,14 @@ describe('static sitemap', () => {
     pageMocks.home.mockRejectedValueOnce(new PageProjectionError('home projection locale mismatch'));
 
     await expect(sitemap()).rejects.toThrow('home projection locale mismatch');
+  });
+
+  it('reports and omits news when the sitemap news request fails', async () => {
+    getNewsPage.mockRejectedValue(new Error('news unavailable'));
+
+    await sitemap();
+
+    expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'sitemap.news', level: 'warning'});
   });
 });
 

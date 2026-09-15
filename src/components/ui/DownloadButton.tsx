@@ -6,6 +6,7 @@ import {useAccountIdentity} from '@/components/layout/AccountControl';
 import {getSharedAccountSessionClient} from '@/lib/browser-bootstrap';
 import {parseDownloadFilename} from '@/lib/content-disposition';
 import {isStandaloneWebApp} from '@/lib/pwa-capabilities';
+import {captureHandledError} from '@/lib/observability';
 
 type DownloadButtonProps = {
   href: string; label: string; ariaLabel?: string; className?: string;
@@ -120,8 +121,11 @@ export function DownloadButton({href, label, ariaLabel, authenticated = false, c
       link.click();
       localStorage.removeItem(target.storageKey);
       timer.current = setTimeout(() => {URL.revokeObjectURL(url); if (objectURL.current === url) objectURL.current = null;}, 1000);
-    } catch {
-      if (!request.signal.aborted) setFailed(true);
+    } catch (error) {
+      if (!request.signal.aborted) {
+        captureHandledError(error, {operation: 'weekly.download'});
+        setFailed(true);
+      }
     } finally {
       if (controller.current === request) setPreparing(false);
     }

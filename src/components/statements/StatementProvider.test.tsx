@@ -3,12 +3,15 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {StatementProvider} from './StatementProvider';
 import {StatementStrip} from './StatementStrip';
 const route = vi.hoisted(() => ({path: '/zh-Hant/about'}));
+const captureHandledError = vi.hoisted(() => vi.fn());
 vi.mock('next/navigation', () => ({usePathname: () => route.path}));
+vi.mock('@/lib/observability', () => ({captureHandledError}));
 const labels = {close: '關閉', hideToday: '今天不再顯示', readFull: '閱讀全文', notice: '教會聲明', date: '聲明日期', notifications: '網站通知', notificationDescription: '訂閱', email: 'Email'};
 let sequence = 0;
 function payload(id: string) {return {serverNow: '2026-09-07T10:01:16Z', nextChangeAt: '2026-09-21T10:01:16Z', statement: {id, title: '正式聲明', body: '第一段原文\n\n第二段原文', resolvedLocale: 'zh-Hant', availableLocales: ['zh-Hant'], href: `/zh-Hant/statements/${id}`, popupStartsAt: '2026-09-07T10:01:16Z', popupEndsAt: '2026-09-21T10:01:16Z'}};}
 function mount() {return render(<StatementProvider locale="zh-Hant" labels={labels}><StatementStrip /></StatementProvider>);}
 beforeEach(() => {
+ captureHandledError.mockClear();
  localStorage.clear(); route.path = '/zh-Hant/about';
  HTMLDialogElement.prototype.showModal = function() {this.setAttribute('open', '');};
  HTMLDialogElement.prototype.close = function() {this.removeAttribute('open');};
@@ -54,6 +57,7 @@ describe('statement entry', () => {
   const fetcher = vi.fn().mockRejectedValue(new Error('offline'));vi.stubGlobal('fetch', fetcher);
   const view = mount();await waitFor(() => expect(fetcher).toHaveBeenCalled());
   await act(async () => {});expect(view.container).toBeEmptyDOMElement();
+  expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'statement.active', tags: {locale: 'zh-Hant'}});
  });
  it('removes expired content at revalidation', async () => {
   const id = `statement-${++sequence}`;

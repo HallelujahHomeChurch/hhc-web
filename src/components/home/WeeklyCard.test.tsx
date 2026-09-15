@@ -4,7 +4,10 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 import {productLocales} from '@/i18n/locales';
 import {WeeklyCard} from './WeeklyCard';
 
-afterEach(() => vi.unstubAllGlobals());
+const captureHandledError = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/observability', () => ({captureHandledError}));
+
+afterEach(() => {vi.unstubAllGlobals(); captureHandledError.mockClear();});
 
 describe('WeeklyCard', () => {
   const issueLabels = {
@@ -42,6 +45,10 @@ describe('WeeklyCard', () => {
     render(<WeeklyCard locale="en" ctaLabel="Download" messages={{loading: 'Loading', downloading: 'Preparing download', downloadReady: 'Ready to open', downloadError: 'Download unavailable', error: 'Unavailable', retry: 'Retry'}} />);
 
     expect(await screen.findByText('Unavailable')).toBeInTheDocument();
+    expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {
+      operation: 'weekly.latest',
+      tags: {locale: 'en', memberMode: false}
+    });
     await userEvent.click(screen.getByRole('button', {name: 'Retry'}));
     expect(await screen.findByRole('link', {name: 'Download: English'})).toHaveAttribute('href', '/en.pdf');
     expect(fetcher).toHaveBeenCalledTimes(2);

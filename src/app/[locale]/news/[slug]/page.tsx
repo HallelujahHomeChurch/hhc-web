@@ -13,6 +13,7 @@ import {getMessages} from '@/i18n/messages';
 import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
 import {siteConfig} from '@/lib/site';
 import {normalizeMetaDescription, organizationId, organizationStructuredData, serializeJsonLd, toAbsoluteHttpsUrl} from '@/lib/structured-data';
+import {captureHandledError} from '@/lib/observability';
 
 type NewsDetailPageProps = {params: Promise<{locale: string; slug: string}>};
 
@@ -107,7 +108,10 @@ export default async function NewsDetailPage({params}: NewsDetailPageProps) {
   };
   const recentNews = await getNewsPage(news.resolvedLocale, 1, 4)
     .then(({items}) => items.filter((item) => item.id !== news.id).slice(0, 3))
-    .catch(() => []);
+    .catch((error) => {
+      captureHandledError(error, {operation: 'news.recent', level: 'warning', tags: {locale: news.resolvedLocale}});
+      return [];
+    });
 
   return (
     <>

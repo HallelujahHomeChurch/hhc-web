@@ -7,6 +7,7 @@ import {resolveAccountAuth} from '@hallelujahhomechurch/account-client';
 import type {Locale} from '@/i18n/locales';
 import {getSharedAccountSessionClient, getSharedPushConfig} from '@/lib/browser-bootstrap';
 import {isIOSDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
+import {captureHandledError} from '@/lib/observability';
 
 const installationKey = 'hhc_push_installation_id';
 const promptVisitKey = 'hhc_push_prompt_visits';
@@ -129,7 +130,10 @@ async function bindInstallationToAccount() {
         headers: {Accept: 'application/json'},
         cache: 'no-store'
       });
-      if (!csrf.ok) return false;
+      if (!csrf.ok) {
+        captureHandledError(new Error('Push binding CSRF request failed'), {operation: 'push.account_binding', level: 'warning', tags: {status: csrf.status}});
+        return false;
+      }
       const {csrf_token: csrfToken} = await csrf.json() as {csrf_token?: string};
       if (!csrfToken) return false;
 
@@ -139,9 +143,11 @@ async function bindInstallationToAccount() {
         headers: {'Content-Type': 'application/json', 'x-csrf-token': csrfToken},
         body: JSON.stringify({installation_id: installation})
       });
+      if (!response.ok) captureHandledError(new Error('Push account binding failed'), {operation: 'push.account_binding', level: 'warning', tags: {status: response.status}});
       return response.ok;
     });
-  } catch {
+  } catch (error) {
+    captureHandledError(error, {operation: 'push.account_binding', level: 'warning'});
     return false;
   }
 }
@@ -172,7 +178,10 @@ async function registerSubscription(subscription: PushSubscription, locale: Loca
         storeFingerprint(registrationCooldownKey, fingerprint, Date.now() + retryDelay(response));
         return false;
       }
-      if (!response.ok) return false;
+      if (!response.ok) {
+        captureHandledError(new Error('Push registration failed'), {operation: 'push.registration', level: 'warning', tags: {status: response.status, locale}});
+        return false;
+      }
       storeFingerprint(registrationStateKey, fingerprint, Date.now());
       localStorage.removeItem(registrationCooldownKey);
       return true;
@@ -184,7 +193,8 @@ async function registerSubscription(subscription: PushSubscription, locale: Loca
     });
     pendingRegistrations.set(fingerprint, pending);
     return pending;
-  } catch {
+  } catch (error) {
+    captureHandledError(error, {operation: 'push.registration', level: 'warning', tags: {locale}});
     return false;
   }
 }
@@ -221,8 +231,11 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
           });
         } else clearPushSyncState();
         if (active) setState(Notification.permission === 'denied' ? 'denied' : subscription ? 'on' : 'off');
-      } catch {
-        if (active) setState('error');
+      } catch (error) {
+        if (active) {
+          captureHandledError(error, {operation: 'push.setup', tags: {locale}});
+          setState('error');
+        }
       }
     });
 
@@ -306,7 +319,8 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
       setBindingPending(!bound);
       setState('on');
       setShowPrompt(false);
-    } catch {
+    } catch (error) {
+      captureHandledError(error, {operation: 'push.update', tags: {locale}});
       setState('error');
     }
   }

@@ -12,6 +12,7 @@ import {Button} from '@hallelujahhomechurch/ui';
 import {useEffect, useRef, useState} from 'react';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {webOAuthConfigForBrowser, webOAuthTransactionKey} from './AccountControl';
+import {captureHandledError, errorTags} from '@/lib/observability';
 
 type CallbackLabels = {
   completing: string;
@@ -62,6 +63,7 @@ export function WebOAuthCallback({
         navigate(buildAuthorizeUrl(oauth ?? webOAuthConfigForBrowser(), transaction).toString());
         return () => { active = false; };
       }
+      captureHandledError(new Error('OAuth callback state is invalid'), {operation: 'oauth.callback', level: 'warning', tags: {reason: 'invalid_state'}});
       reportError();
       return () => { active = false; };
     }
@@ -70,12 +72,16 @@ export function WebOAuthCallback({
     if (callbackError) {
       clearOAuthTransaction({storage: transactionStorage, storageKey: webOAuthTransactionKey});
       if (callbackError === 'login_required') navigate(transaction.returnTo);
-      else reportError();
+      else {
+        if (callbackError !== 'access_denied') captureHandledError(new Error('OAuth provider callback failed'), {operation: 'oauth.callback', level: 'warning', tags: {reason: 'provider_error'}});
+        reportError();
+      }
       return () => { active = false; };
     }
 
     const code = url.searchParams.get('code');
     if (!code) {
+      captureHandledError(new Error('OAuth callback code is missing'), {operation: 'oauth.callback', level: 'warning', tags: {reason: 'missing_code'}});
       reportError();
       return () => { active = false; };
     }
@@ -91,7 +97,10 @@ export function WebOAuthCallback({
         clearOAuthTransaction({storage: transactionStorage, storageKey: webOAuthTransactionKey});
         if (active) navigate(transaction.returnTo);
       })
-      .catch(() => reportError(true));
+      .catch((error) => {
+        captureHandledError(error, {operation: 'oauth.exchange', tags: {attempt, ...errorTags(error)}});
+        reportError(true);
+      });
 
     return () => { active = false; };
   }, [attempt, currentUrl, fetcher, labelsProp, navigate, oauth, storage]);
@@ -146,6 +155,7 @@ async function completeSignIn({
         const body: unknown = await session.json();
         if (isAuthenticatedSession(body)) return;
       } catch {
+        captureHandledError(new Error('OAuth recovery session response is invalid'), {operation: 'oauth.session_recovery', level: 'warning', tags: {status: session.status}});
         // Retry the original exchange when session recovery returned an invalid body.
       }
     }
@@ -166,7 +176,7 @@ async function completeSignIn({
       code_verifier: transaction.codeVerifier
     })
   });
-  if (!response.ok) throw new Error('Token exchange failed');
+  if (!response.ok) throw Object.assign(new Error('Token exchange failed'), {status: response.status});
 }
 
 function isAuthenticatedSession(value: unknown): value is {authenticated: true} {

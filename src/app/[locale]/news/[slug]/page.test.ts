@@ -2,8 +2,10 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {describe, expect, it, vi} from 'vitest';
 
 const {getNewsBySlug, getNewsPage} = vi.hoisted(() => ({getNewsBySlug: vi.fn(), getNewsPage: vi.fn()}));
+const captureHandledError = vi.hoisted(() => vi.fn());
 
 vi.mock('@/features/news/api', () => ({getNewsBySlug, getNewsPage}));
+vi.mock('@/lib/observability', () => ({captureHandledError}));
 vi.mock('next-intl/server', () => ({setRequestLocale: vi.fn()}));
 vi.mock('next/navigation', () => ({notFound: vi.fn(), permanentRedirect: (href: string) => {throw new Error(`redirect:${href}`);}}));
 vi.mock('@/components/layout/SiteHeaderServer', () => ({SiteHeaderServer: () => null}));
@@ -147,6 +149,7 @@ describe('news detail metadata', () => {
     expect(article).not.toHaveProperty('dateModified');
     expect(markup).toContain('本文');
     expect(markup).not.toContain('<h2');
+    expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'news.recent', level: 'warning', tags: {locale: 'ja'}});
   });
 
   it('omits invalid optional structured-data dates and non-HTTPS images', async () => {

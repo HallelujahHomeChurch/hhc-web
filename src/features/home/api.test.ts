@@ -2,6 +2,9 @@ import type {HhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
 import {describe, expect, it, vi} from 'vitest';
 import {getHomeContent} from './api';
 
+const captureHandledError = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/observability', () => ({captureHandledError}));
+
 describe('getHomeContent', () => {
   it('uses the backend Home selection without slicing videos', async () => {
     const getHome = vi.fn().mockResolvedValue({
@@ -46,5 +49,6 @@ describe('getHomeContent', () => {
     expect(getHome).toHaveBeenCalledTimes(1);
     expect(listPublicContent).not.toHaveBeenCalled();
     expect(content).toEqual({news: [], videos: [], newsFailed: true, videosFailed: true});
+    expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'home.content', tags: {locale: 'en'}});
   });
 });

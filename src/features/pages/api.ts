@@ -3,6 +3,7 @@ import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
 import {publicContentClient} from '@/features/content/client';
 import {productLocales, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
+import {captureHandledError} from '@/lib/observability';
 
 type HomeContentV1 = Extract<PageContent, {template: 'home.v1'}>['data'];
 type HomeContentV2 = Extract<PageContent, {template: 'home.v2'}>['data'];
@@ -29,7 +30,10 @@ export async function getHomePage(locale: Locale, client: HhcWebClient = publicC
   try {
     page = await requestPage('home', locale, client);
   } catch (error) {
-    if (isPageAvailabilityError(error)) return migrationHome(locale);
+    if (isPageAvailabilityError(error)) {
+      captureHandledError(error, {operation: 'page.home', level: 'warning', tags: {locale}});
+      return migrationHome(locale);
+    }
     throw error;
   }
   if (page.resolvedLocale !== locale || !page.availableLocales.includes(locale)) throw new PageProjectionError('home projection locale mismatch.');
@@ -43,7 +47,10 @@ export async function getAboutPage(locale: Locale, client: HhcWebClient = public
   try {
     page = await requestPage('about', locale, client);
   } catch (error) {
-    if (isPageAvailabilityError(error)) return migrationAbout(locale);
+    if (isPageAvailabilityError(error)) {
+      captureHandledError(error, {operation: 'page.about', level: 'warning', tags: {locale}});
+      return migrationAbout(locale);
+    }
     throw error;
   }
   assertPage(page, locale, 'about', 'about.v1', '/about');

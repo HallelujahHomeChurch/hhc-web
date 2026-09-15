@@ -19,6 +19,7 @@ import {clearSharedAccountSession, getSharedAccountSessionClient, revalidateShar
 import {createHhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
 import {isLocale} from '@/i18n/locales';
 import {siteConfig} from '@/lib/site';
+import {captureHandledError, errorTags} from '@/lib/observability';
 
 export const webOAuthTransactionKey = 'hhc_web_oauth_transaction';
 export const webPassiveSsoAttemptKey = 'hhc_web_passive_sso_attempted';
@@ -121,6 +122,7 @@ export function AccountControlProvider({
         result = {status: 'anonymous'};
       } catch (error) {
         sharedSignOutFailed = true;
+        captureHandledError(error, {operation: 'account.shared_signout'});
         if (!client) clearSharedAccountSession();
         result = {status: 'unavailable', error: error instanceof Error ? error : new Error('Unable to clear account session')};
       }
@@ -128,6 +130,11 @@ export function AccountControlProvider({
     if (revision !== requestRevision.current) return result;
 
     const invalidPermissions = result.status === 'authenticated' && !isPermissionList(result.user.permissions);
+    if (result.status === 'unavailable' && !sharedSignOutFailed) {
+      captureHandledError(result.error, {operation: 'account.session'});
+    } else if (invalidPermissions) {
+      captureHandledError(new Error('Invalid account permissions'), {operation: 'account.session'});
+    }
     if (result.status === 'authenticated') {
       sessionStorage.removeItem(webPassiveSsoAttemptKey);
     }
@@ -158,7 +165,11 @@ export function AccountControlProvider({
         } else {
           publicEnabled = (await createHhcWebClient({baseUrl: '/api', getAccessToken: () => null}).getBulletinAccess(controller.signal)).enabled;
         }
-      } catch { /* Live availability fails closed; the account menu stays usable. */ }
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
+          captureHandledError(error, {operation: 'bulletin.access', tags: {memberMode: auth.status === 'authenticated', ...errorTags(error)}});
+        }
+      }
       if (!controller.signal.aborted) {setBulletinCanRead(canRead); setBulletinSubject(auth.status === 'authenticated' ? auth.user.id : null); setBulletinPublicEnabled(publicEnabled);}
     }
     void refreshBulletinAccess();
@@ -181,8 +192,9 @@ export function AccountControlProvider({
       .then((transaction) => {
         navigateExternal(buildAuthorizeUrl(oauthConfig, transaction, {prompt}).toString());
       })
-      .catch(() => {
+      .catch((error) => {
         authorizationStarted.current = false;
+        captureHandledError(error, {operation: 'oauth.start'});
         setAuth({status: 'unavailable'});
       });
   }, [navigateExternal, oauthConfig]);
@@ -240,7 +252,8 @@ export function AccountControlProvider({
       setBulletinCanRead(false);
       notifyAccountStateChange('sign-out');
       return true;
-    } catch {
+    } catch (error) {
+      captureHandledError(error, {operation: 'account.signout'});
       const result = await refreshSession();
       if (result.status === 'anonymous') {
         notifyAccountStateChange('sign-out');

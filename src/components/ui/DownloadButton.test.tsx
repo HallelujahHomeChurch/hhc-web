@@ -2,12 +2,14 @@ import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 
 const issueAccessToken = vi.hoisted(() => vi.fn().mockResolvedValue({accessToken: 'member-token', expiresIn: 900}));
+const captureHandledError = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/browser-bootstrap', () => ({getSharedAccountSessionClient: () => ({issueAccessToken})}));
+vi.mock('@/lib/observability', () => ({captureHandledError}));
 import {DownloadButton} from './DownloadButton';
 import * as AccountControl from '@/components/layout/AccountControl';
 import * as PwaCapabilities from '@/lib/pwa-capabilities';
 
-afterEach(() => {vi.restoreAllMocks(); issueAccessToken.mockClear(); vi.useRealTimers(); localStorage.clear();});
+afterEach(() => {vi.restoreAllMocks(); issueAccessToken.mockClear(); captureHandledError.mockClear(); vi.useRealTimers(); localStorage.clear();});
 
 describe('DownloadButton', () => {
   it('keeps its label and dimensions while preventing duplicate downloads', () => {
@@ -145,6 +147,7 @@ it('shows a danger toast when an authenticated download fails', async () => {
 
   expect(await screen.findByRole('alert')).toHaveClass('hhc-toast', 'hhc-toast--danger');
   expect(screen.getByRole('alert')).toHaveTextContent('週報暫時無法下載，請稍後再試。');
+  expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'weekly.download'});
 });
 
 function pendingMemberDownload() {

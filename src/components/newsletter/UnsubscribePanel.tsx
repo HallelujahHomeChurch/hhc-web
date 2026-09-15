@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import {useState} from 'react';
+import {captureHandledError} from '@/lib/observability';
 
 type Labels = {
   title: string;
@@ -27,13 +28,19 @@ export function UnsubscribePanel({homeHref, labels, token}: UnsubscribePanelProp
 
   async function unsubscribe() {
     setState('pending');
-    const response = await fetch('/api/engagement/v1/newsletter/unsubscribe', {
-      body: JSON.stringify({token}),
-      headers: {'Content-Type': 'application/json'},
-      method: 'POST'
-    }).catch(() => null);
+    let response: Response | null = null;
+    try {
+      response = await fetch('/api/engagement/v1/newsletter/unsubscribe', {
+        body: JSON.stringify({token}),
+        headers: {'Content-Type': 'application/json'},
+        method: 'POST'
+      });
+    } catch (error) {
+      captureHandledError(error, {operation: 'newsletter.unsubscribe'});
+    }
 
     if (!response?.ok) {
+      if (response && response.status !== 400) captureHandledError(new Error('Newsletter unsubscribe failed'), {operation: 'newsletter.unsubscribe', tags: {status: response.status}});
       setMessage(response?.status === 400 ? labels.invalid : labels.error);
       setState('error');
       return;
