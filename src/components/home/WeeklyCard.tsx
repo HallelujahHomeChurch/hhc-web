@@ -46,7 +46,7 @@ export function WeeklyCard({locale, memberMode: initialMemberMode = false, ctaLa
         }
       });
     return () => controller.abort();
-  }, [canRead, memberMode, requestKey]);
+  }, [canRead, locale, memberMode, requestKey]);
 
   if (!canRead) return null;
 

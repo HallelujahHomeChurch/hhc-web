@@ -72,7 +72,7 @@ export function WeeklyArchive({locale, memberMode: initialMemberMode = false, me
         }
       });
     return () => controller.abort();
-  }, [canRead, memberMode, page, requestKey]);
+  }, [canRead, locale, memberMode, page, requestKey]);
 
   if (!canRead) return null;
 
