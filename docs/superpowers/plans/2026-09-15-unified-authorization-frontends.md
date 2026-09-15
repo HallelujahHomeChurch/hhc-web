@@ -4,7 +4,7 @@
 
 **Goal:** Give administrators a role/capability table instead of raw API dependency choices and make every client show only destinations authorized by the shared access projection.
 
-**Architecture:** `frontend-platform` owns types and pure resolvers generated from final provider OpenAPI. Each client uses the same projection for navigation while feature APIs remain the enforcement boundary. Admin role editing selects product capability levels; atomic codes are advanced read-only detail.
+**Architecture:** `frontend-platform` publishes one breaking package set that combines the product-neutral auth runtime from the Auth convergence plan with types and pure AuthZ resolvers generated from final provider OpenAPI. Each client uses the same projection for navigation while feature APIs remain the enforcement boundary. Admin role editing selects product capability levels; atomic codes are advanced read-only detail.
 
 **Tech Stack:** TypeScript, React, Vitest, pnpm, Vite, Next.js, Electron.
 
@@ -14,15 +14,24 @@
 
 - Start only from final provider OpenAPI; never hand-edit generated clients.
 - One `frontend-platform` owner publishes one package set and lockfile change.
+- Execute Auth convergence Tasks 2-4 inside Task 1 below. Do not publish an
+  intermediate auth-only release.
+- Auth runtime modules may import only product-neutral session, OAuth, error,
+  and generic permission helpers. Domain AuthZ modules may read session state;
+  the reverse import is forbidden by CI.
 - Navigation predicates cannot widen backend access.
 - Preserve accessibility: table headers, radio labels, focus order, and denied-route announcements.
 
-### Task 1: Replace Shared Admin Predicates And Add Access Projection
+### Task 1: Publish One Auth Runtime And Access Contract
 
 **Files:**
 - Modify: `frontend-platform/packages/account-client/src/admin-access.ts`
 - Modify: `frontend-platform/packages/account-client/src/admin-access.test.ts`
 - Modify: `frontend-platform/packages/account-client/src/index.ts`
+- Create: `frontend-platform/packages/account-client/src/session-client.ts`
+- Create: `frontend-platform/packages/account-client/src/browser-runtime.ts`
+- Create: `frontend-platform/packages/account-client/src/conformance.ts`
+- Create: focused tests for each file and `auth-contract.test.ts`
 - Create: `frontend-platform/packages/operations-client/package.json`
 - Create: `frontend-platform/packages/operations-client/tsconfig.json`
 - Create: `frontend-platform/packages/operations-client/tsconfig.build.json`
@@ -43,13 +52,26 @@
 - Regenerate: `frontend-platform/packages/hhc-web-client/src/generated.ts`
 
 - [ ] Replace broad Admin capabilities and legacy aliases with the canonical staff permission catalog.
+- [ ] Implement the Auth convergence session metadata, CSRF single-flight,
+      browser runtime, token single-flight, stale-token fencing, one-refresh /
+      one-retry, `429 Retry-After` cooldown, hosted OAuth, conformance, and
+      sanitized event contracts before adding domain projection.
+- [ ] Preserve authenticated identity for both available `permissions: []` and
+      `permission_unavailable`; the latter uses an empty fail-closed permission
+      list and never triggers refresh, logout, or login.
+- [ ] Keep `hasPermission()` generic. Put the final capability identifiers and
+      their permission expansion in the domain AuthZ module, with an explicit
+      empty compatibility map; auth runtime files must not import that module.
 - [ ] Add pure helpers for `canAccessAdmin`, first authorized Admin destination, and exact destination lookup.
 - [ ] Add the Operations-owned portion of `AccessSnapshot` in `@hallelujahhomechurch/operations-client`; combine it with Account `staffPermissions` only inside a pure shared resolver. Do not create a generic authorization service or copy staff RBAC into Operations.
 - [ ] Regenerate the Operations client from final `operations-api/openapi.yaml` and the Website client from final `hhc-web-api/openapi.yaml`.
 - [ ] Test unknown permissions/destinations deny and wildcard affects staff destinations only.
 - [ ] Run `corepack pnpm test`, `lint`, `build`, `check:packages`, `pack:packages`, and `test:consumers`.
-- [ ] Publish only with explicit authorization and record package provenance.
-- [ ] Commit: `feat: publish unified access contracts`
+- [ ] Publish the single coordinated breaking package version `1.0.0` only
+      with explicit authorization; if fresh `origin/main` has already reached
+      it, update the complete contract ledger first. Record provenance and do
+      not retain old runtime or permission aliases.
+- [ ] Commit: `feat: publish unified auth and access contracts`
 
 ### Task 2: Replace Admin Route Capabilities And Root Behavior
 
@@ -65,6 +87,9 @@
 - Modify: `admin-fe/src/lib/admin-route-title.ts`
 
 - [ ] Map Page Settings, News, Bulletin, Operations, Membership, Campaign, IAM, DSR, Asset, and Presenter routes to exact canonical permissions.
+- [ ] In this same `admin-fe` PR, replace local required-auth token/session
+      lifecycle with the shared runtime. Keep capability expansion in Admin's
+      AuthZ adapter and never import it from AuthN runtime code.
 - [ ] Lock the core route isolation with this fixture before changing navigation:
 
 ```ts
@@ -189,6 +214,9 @@ const websiteContentLevels = {
 - Modify: `hhc-web/pnpm-lock.yaml`
 
 - [ ] Remove server/public bulletin fetching and sitemap discovery.
+- [ ] In the same `hhc-web` PR, replace local browser token/session lifecycle
+      with the shared optional-auth runtime; do not ship a separate auth-only
+      consumer migration.
 - [ ] After authentication, use the access projection to show only entitled bulletin locales/series, then call protected routes.
 - [ ] Handle unauthenticated, unqualified, missing entitlement, revoked, and unavailable states without leaking bulletin metadata.
 - [ ] Keep URLs stable only within the protected member surface.
@@ -214,6 +242,12 @@ const websiteContentLevels = {
 - Modify: `hhc-client-v2/package-lock.json`
 
 - [ ] Replace `canAccessAdmin` legacy behavior with the shared destination resolver.
+- [ ] In the same `account-fe` PR, replace its required-auth token/session
+      lifecycle with the shared runtime and keep hosted credential flows in
+      Account.
+- [ ] In the same `hhc-client-v2` PR, delegate Presenter Web to the browser
+      runtime and align Desktop stale-token, cooldown, refresh, IPC, and event
+      behavior while retaining native OAuth and `safeStorage` in main process.
 - [ ] Show Admin, bulletin, Presenter cloud, and LINE destinations only when projected; common profile/security links remain authenticated-account links.
 - [ ] Do not derive member access from Admin permissions or email verification.
 - [ ] Account verification: `corepack pnpm test:run && corepack pnpm lint && corepack pnpm build`.
@@ -226,3 +260,7 @@ const websiteContentLevels = {
 - [ ] Run Admin direct-navigation tests for Page Settings Editor, News Editor, Bulletin Viewer, Bulletin Editor, Operations Editor, and Membership Manager.
 - [ ] Record packed package version/digest and exact consumer lockfile versions.
 - [ ] Keep consumer PRs unmerged until coordinated cutover approval.
+- [ ] Run the Auth convergence conformance suite in `hhc-web`, `account-fe`,
+      `admin-fe`, Presenter Web, and Presenter Desktop adapters. Future mobile
+      receives only the documented adapter interface and conformance cases;
+      do not create a mobile package or repository.

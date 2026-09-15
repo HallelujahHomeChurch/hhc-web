@@ -60,6 +60,9 @@ asset bytes are retained; only their access model changes.
 11. `網站設定` is renamed to `頁面設定` from RBAC labels through Admin UI copy.
 12. No legacy aliases, fallback scopes, dual-read, dual-write, deprecation
     period, or legacy session compatibility is retained for this redesign.
+13. Authentication is a product-neutral prerequisite for authorization. It
+    transports identity and opaque staff permissions but never imports a
+    product capability map or decides whether a feature is allowed.
 
 ## Non-Goals
 
@@ -137,6 +140,87 @@ default.
 | Delivery | `notification-api` | durable Email/Web Push delivery, provider retry and state | audience eligibility and domain timing |
 | Public ingress | `api-gateway` | JWT validation, trusted headers, coarse route permission, route ownership | resource-level policy, business aggregation |
 | Shared frontend contract | `frontend-platform` | generated clients, permission predicates, access-projection types, destination resolver | security decisions or feature-specific booleans |
+
+## Authentication And Authorization Seam
+
+The authentication runtime publishes this product-neutral state. The
+`permissionAvailability` discriminator is transport health, not an
+authorization decision:
+
+```ts
+type AccountIdentitySession = {
+  user: AccountSessionUser
+  permissions: readonly string[]
+  permissionAvailability:
+    | { status: 'available' }
+    | {
+        status: 'unavailable'
+        code: 'permission_unavailable'
+        requestId?: string
+        retryAt?: number
+      }
+}
+
+type AccountAuthState =
+  | { status: 'checking' }
+  | { status: 'anonymous' }
+  | { status: 'authenticated'; session: AccountIdentitySession }
+  | { status: 'unavailable'; error: AccountSessionError; retryAt?: number }
+```
+
+`permissions: []` with `permissionAvailability.status === 'available'` is a
+valid authenticated user with no staff permissions. If permission resolution
+fails after identity is established, the runtime remains `authenticated`,
+sets `permissions: []`, and marks `permissionAvailability` unavailable. It
+must not retain stale permissions, sign out, or restart login. Permission-gated
+discovery fails closed and may show a recoverable authorization-unavailable
+state; owning APIs remain authoritative.
+
+Account transports the same opaque set through two established paths:
+
+- the browser session wire response carries top-level `permissions: string[]`
+  and `permission_availability`; permission strings are removed from the
+  identity-only `user` object:
+
+```json
+{
+  "authenticated": true,
+  "user": { "id": "account-user-uuid" },
+  "permissions": [],
+  "permission_availability": { "status": "available" }
+}
+```
+
+- the TypeScript runtime normalizes that wire response to
+  `AccountIdentitySession`;
+- requested and granted product permissions use the access token's standard
+  space-delimited `scope` claim; Gateway validates the token, strips forged
+  identity headers, and injects the verified value as `X-HHC-Scopes`.
+
+Do not add `X-HHC-Permissions`, product capability fields to the session, or
+organization/member facts to the token. Authentication code may read and
+transport these strings but may not import the staff catalog.
+
+The shared generic predicate is intentionally small:
+
+```ts
+hasPermission(permissions: readonly string[], required: string): boolean
+```
+
+It returns true only for a non-empty exact match or the canonical staff `*`
+wildcard. It has no aliases, prefix wildcards, capability expansion,
+qualification, entitlement, organization, Presenter, or LINE semantics.
+
+For one protected request, `401` may invoke one single-flight
+`refreshAfterUnauthorized(rejectedToken)` and retry the original request once.
+`403` never refreshes, signs out, or starts login. Gateway and owning APIs
+enforce authorization; all frontend predicates are UX projection only.
+
+The compatibility mapping for this approved breaking redesign is explicitly
+empty. Removed permission codes have no successor accepted at runtime. Domain
+owners separately publish business capability maps from their own canonical
+permissions, relationships, entitlements, or ACLs; those maps are not AuthN
+dependencies.
 
 ### Why `operations-api` Is Admitted
 
@@ -864,11 +948,15 @@ reviewable repository plans while preserving this dependency order:
 4. Implement operations membership, qualification, entitlement, and existing
    kernel extraction.
 5. Implement protected bulletin routes and Asset protected-download contract.
-6. Publish producer OpenAPI contracts and generated `frontend-platform`
-   clients.
-7. Update Admin, Website, Account, Presenter, and LINE consumers.
+6. Freeze the Account session/scope transport and the authentication runtime
+   contract, then publish one breaking `frontend-platform` package set from
+   the final producer OpenAPI contracts.
+7. Update Admin, Website, Account, Presenter Web/Desktop, and LINE consumers;
+   retain only a conformance contract for a future mobile adapter.
 8. Update Gateway route policy and remove public bulletin routes.
-9. Run full positive and negative integration matrices in test/staging.
+9. Run full positive and negative integration matrices in test/staging,
+   including AuthN single-flight, stale-token fencing, `401`/`403`, `429`
+   cooldown, hosted-login, and telemetry-redaction cases.
 10. Execute one coordinated breaking cutover and public-grant reconciliation.
 11. Verify deployed revisions, protected routes, public denials, Admin
     isolation, entitlement revocation, and real clients.

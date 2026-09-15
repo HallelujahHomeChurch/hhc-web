@@ -10,6 +10,9 @@
 
 **Spec:** [2026-09-15-hhc-unified-authorization-membership-and-entitlement-design.md](../specs/2026-09-15-hhc-unified-authorization-membership-and-entitlement-design.md)
 
+**Integrated AuthN plan:**
+`frontend-platform/docs/superpowers/plans/2026-09-15-auth-platform-convergence.md`
+
 ## Global Constraints
 
 - Start every implementation repository in its own isolated worktree from freshly fetched `origin/main`.
@@ -19,6 +22,14 @@
 - Do not migrate test user role, qualification, or entitlement assignments. Do preserve bulletin and operations domain records, stable IDs, revisions, scans, and audit history.
 - Human CMS roles never receive `assets:*` implicitly. `hhc-web-api` performs embedded asset actions using its allowlisted service identity after checking the matching CMS write permission.
 - Access projection controls discovery and destination only. `account-api`, `operations-api`, `hhc-web-api`, and `asset-api` enforce their own authoritative decisions.
+- Authentication depends only on identity/session transport. Authorization may
+  read the authenticated session; AuthN must not import product permissions,
+  capability groups, member entitlements, organization policy, or LINE ACLs.
+- An available empty permission list is authenticated. Permission transport
+  failure remains authenticated with an empty fail-closed list and a distinct
+  `permission_unavailable` status.
+- One protected request may perform at most one coordinated refresh and one
+  retry after `401`. `403` never refreshes, signs out, or starts login.
 - Unknown permission, entitlement, action, subject, or organization kind denies by default.
 - No production mutation, repository creation, push, PR, package publication, merge, release, session invalidation, or grant revocation without the corresponding explicit authorization.
 - Migration numbers shown in subplans are reserved from the 2026-09-15 `origin/main` baselines. Recheck immediately after each fresh fetch; if occupied, update the plan set and contract ledger before writing SQL rather than creating a duplicate version.
@@ -27,15 +38,16 @@
 
 | Phase | Plan | Repository owner(s) | Start gate |
 | --- | --- | --- | --- |
-| 1 | [Operations Task 1 foundation](2026-09-15-unified-authorization-operations-api.md) | new `operations-api` | Explicit new-repository authorization; catalog and route freeze complete |
+| 1A | Auth convergence Task 1 contract freeze | documentation owners only | Canonical AuthN/AuthZ seam below is approved |
+| 1B | [Operations Task 1 foundation](2026-09-15-unified-authorization-operations-api.md) | new `operations-api` | Explicit new-repository authorization; catalog and route freeze complete |
 | 2A | [Account staff RBAC](2026-09-15-unified-authorization-account-rbac.md) | `account-api` | Operations foundation passes readiness; Account catalog frozen |
 | 2B | [Operations Tasks 2-6](2026-09-15-unified-authorization-operations-api.md) | `operations-api`, plus `hhc-web-api` export only | Operations foundation passes; Account subject contract frozen; may run alongside 2A |
 | 3 | [Operations Task 7 source removal](2026-09-15-unified-authorization-operations-api.md) | `hhc-web-api` | Counted import and target readiness pass |
 | 4 | [Protected bulletin and Asset boundary](2026-09-15-unified-authorization-protected-bulletins.md) | `hhc-web-api`, then `asset-api`, then `engagement-api`, then LINE bot | Operations entitlement-check contract frozen; operations extraction merged before editing `hhc-web-api` |
-| 5 | [Shared access and frontend experience](2026-09-15-unified-authorization-frontends.md) | `frontend-platform`, then separate consumer-repository owners in parallel | All producer OpenAPI contracts are final |
+| 5 | [Shared AuthN runtime, access contract, and frontend experience](2026-09-15-unified-authorization-frontends.md) plus Auth convergence Tasks 2-8 | one `frontend-platform` integration owner, then one owner per consumer repository | Account session/scope and all producer OpenAPI contracts are final |
 | 6 | [Edge, integration, and coordinated cutover](2026-09-15-unified-authorization-cutover.md) | `api-gateway`, `azure-infra`, integration owner | All application PRs green and release artifacts ready |
 
-This order intentionally limits parallelism. `account-api` and the new `operations-api` can be developed in parallel after their contracts are frozen. `hhc-web-api` cannot be owned by the extraction and bulletin workstreams simultaneously. `frontend-platform` has one integration owner and is published only after provider OpenAPI is final.
+This order intentionally limits parallelism. `account-api` and the new `operations-api` can be developed in parallel after their contracts are frozen. `hhc-web-api` cannot be owned by the extraction and bulletin workstreams simultaneously. `frontend-platform` has one integration owner and publishes one breaking package set containing the auth runtime, generic permission transport, domain AuthZ subpath, generated clients, and access resolver. The two frontend plans do not publish competing package releases.
 
 ## Reviewed Baseline Snapshot
 
@@ -95,12 +107,31 @@ export type AccessSnapshot = {
 }
 ```
 
+- [ ] Freeze the AuthN/AuthZ seam:
+
+```ts
+type AccountIdentitySession = {
+  user: AccountSessionUser
+  permissions: readonly string[]
+  permissionAvailability:
+    | { status: 'available' }
+    | { status: 'unavailable'; code: 'permission_unavailable'; requestId?: string; retryAt?: number }
+}
+```
+
+The session response transports `permissions`; the access token transports
+granted permissions in `scope`; Gateway injects verified `X-HHC-Scopes`.
+`hasPermission()` implements only exact match plus `*`. The compatibility map
+is exactly `{}`. AuthN does not import domain capability names. The integrated
+breaking `frontend-platform` package set is version `1.0.0`; version drift is a
+contract-ledger stop gate.
+
 - [ ] Confirm all consumers treat resolver-produced destinations as presentation data and still handle `401`, `403`, and `404` from feature APIs.
 
 ## Dependency And Release Graph
 
 ```text
-account-api contract ───────────────┐
+account-api session/scope + RBAC ───┐
                                     ├─> frontend-platform ─> Admin/Website/Account/Presenter
 operations-api contract ────────────┤                 └────> LINE client types if reused
                                     │
@@ -120,6 +151,11 @@ all green artifacts ─> api-gateway/infrastructure ─> staging matrix ─> one
 - [ ] The three initial bulletin entitlement codes exactly match the spec.
 - [ ] No Asset permission appears in Page Settings, News, or Bulletin roles.
 - [ ] OpenAPI auth metadata and the authorization matrix agree.
+- [ ] The Account session distinguishes available empty permissions from
+      `permission_unavailable` without changing authenticated identity.
+- [ ] Session, JWT `scope`, Gateway `X-HHC-Scopes`, generic
+      `hasPermission()`, capability names, and empty compatibility map agree
+      across both design documents and both implementation plans.
 
 ### Gate B — Producer Readiness
 
@@ -133,6 +169,13 @@ all green artifacts ─> api-gateway/infrastructure ─> staging matrix ─> one
 ### Gate C — Consumer Readiness
 
 - [ ] Generated clients come only from the final Account, Operations, and Website OpenAPI contracts.
+- [ ] The single published `frontend-platform` release contains both the
+      shared auth runtime and final access contracts; no intermediate auth-only
+      package is required by a consumer.
+- [ ] Every browser adapter passes token single-flight, stale-token fencing,
+      `401` one-refresh/one-retry, `403` no-refresh, and `429 Retry-After`
+      cooldown conformance. Presenter Desktop passes the same semantics while
+      retaining main-process `safeStorage`.
 - [ ] Admin capability table exposes `None | View | Edit | Publish` and an advanced read-only code view.
 - [ ] Bulletin-only staff see only bulletin navigation and common account links.
 - [ ] Direct URL and API tests deny Page Settings, News, Campaigns, Operations, IAM, DSR, Asset Library, and Presenter administration.
@@ -175,6 +218,7 @@ all green artifacts ─> api-gateway/infrastructure ─> staging matrix ─> one
 | --- | --- |
 | Distinct staff, organization, qualification, entitlement, audience, and workflow meanings | Account Tasks 2-3; Operations Tasks 2-5; Bulletin Task 7 |
 | No broad CMS scopes or compatibility fallbacks | Account Tasks 1-4; Bulletin Task 1; Frontend Tasks 1-2; Cutover Tasks 1-2 |
+| AuthN/AuthZ one-way dependency and stable recovery | Account Task 4; Auth Convergence Tasks 1-3; Frontend Task 1; Cutover Tasks 4, 9 |
 | Independent Page Settings, News, Bulletin, Operations, and Membership administration | Account Tasks 1-2; Bulletin Task 1; Frontend Tasks 2-5 |
 | Embedded CMS files need no human Asset permission | Bulletin Tasks 1 and 4; Gate B and Gate C |
 | Typed OrgUnit hierarchy and scoped leadership | Operations Tasks 2-3 |

@@ -16,6 +16,9 @@
 - Gateway owns coarse authentication and routing only; it must not evaluate organization or entitlement policy.
 - Old public bulletin routes fail closed with no redirect or legacy upstream.
 - Roll forward from immutable artifacts; rollback must never reopen bulletin public access.
+- The release manifest also owns AuthN conformance evidence: token
+  single-flight, stale-token fencing, one `401` refresh and retry, `403`
+  no-refresh, `429 Retry-After`, hosted login, and Sentry redaction.
 
 ### Task 1: Add Exact Operations Routing Tests
 
@@ -30,6 +33,8 @@
 
 - [ ] First write tests for exact public, authenticated, Admin, and private Operations paths and methods.
 - [ ] Prove client-supplied `X-HHC-*` and service identity headers are stripped.
+- [ ] Prove verified access-token `scope` is the only staff-permission input
+      rebuilt as `X-HHC-Scopes`; no `X-HHC-Permissions` path exists.
 - [ ] Prove `/priv/*` remains unreachable from public hosts.
 - [ ] Prove old `/api/bulletins*` routes have no upstream and protected `/api/member/bulletins*` requires authentication.
 - [ ] Run tests and confirm they fail against the current Gateway.
@@ -79,6 +84,13 @@
 - [ ] Cover anonymous, authenticated non-member, active/suspended qualification, each locale entitlement, Admin-without-membership, all scoped staff roles, leader cross-scope denial, expired operator, and unallowlisted service.
 - [ ] Cover list, metadata, online-reader, PDF, derivative, ETag, Range, direct Admin URL, and direct API paths.
 - [ ] Force Account, Operations, Website, and Asset dependency failures and prove protected access fails closed.
+- [ ] Cover available authenticated `permissions: []` separately from
+      authenticated `permission_unavailable`; neither may become anonymous,
+      and unavailable permission state must expose no staff destination.
+- [ ] Cover concurrent token issuance, stale 401 fencing, one refresh/one
+      original retry, 403 no-refresh, 429 cooldown, hosted-login return, and
+      sanitized telemetry for Website, Account, Admin, Presenter Web, and
+      Presenter Desktop.
 - [ ] Emit status, reason code, request correlation ID, and expected/actual result without tokens or personal data.
 - [ ] Require every row pass; no ignored or quarantined authorization test.
 - [ ] Commit: `test: add unified authorization staging matrix`
@@ -122,15 +134,22 @@
 
 ```text
 operations-api dark
-account-api
-hhc-web-api
 asset-api
-frontend-platform packages
-admin-fe / hhc-web / account-fe / hhc-client-v2 / hhc-line-function-bot
+engagement-api
+account-api + hhc-web-api coordinated producer activation
+frontend-platform packages (already published; verify digest only)
+admin-fe / hhc-web / account-fe / hhc-client-v2 / hhc-line-function-bot coordinated consumers
 api-gateway route switch
 operations source-table removal after counted import
 session invalidation and final grant/cache reconciliation
 ```
+
+`frontend-platform` is a build-time release and must be published before
+consumer PR CI, not for the first time during the production window. The
+production manifest verifies its immutable digest. `asset-api` and
+`engagement-api` may release earlier only when their changes are backward-safe;
+Account, Website API, consumers, and Gateway remain a coordinated incompatible
+activation.
 
 - [ ] For each repository record PR, CI, merge authorization, release workflow, deployed revision, health, and functional smoke separately.
 - [ ] Confirm no consumer artifact references removed codes or routes.
@@ -156,4 +175,8 @@ session invalidation and final grant/cache reconciliation
 - [ ] Verify entitlement revocation becomes effective on the next protected request.
 - [ ] Verify Page Settings Editor, News Editor, Operations Editor, and Membership Manager separation.
 - [ ] Verify real Website, Account, Admin, Presenter, and LINE-user behavior; synthetic probes do not substitute for these checks.
+- [ ] Verify optional Website auth, required Account/Admin auth, Presenter Web
+      callback, Presenter Desktop deep link, permission-unavailable recovery,
+      401/403 behavior, 429 cooldown, sanitized Sentry events, and production
+      token rates by host/client ID.
 - [ ] Archive redacted evidence and record unresolved gaps. Completion requires no unresolved security, data, contract, release, or client-validation gap.

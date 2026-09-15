@@ -18,6 +18,34 @@
 - Keep direct `assets:*` roles only for generic Asset Library administration.
 - Keep `campaigns:*`, Presenter, DSR, OAuth, user, and RBAC permissions independent.
 
+## Frozen AuthN/AuthZ Consumer Contract
+
+This plan is the authority consumed by the authentication convergence plan:
+
+- The session wire response keeps `user` identity-only and contains top-level
+  opaque `permissions: string[]` plus
+  `permissionAvailability: {status: 'available'} | {status: 'unavailable',
+  code: 'permission_unavailable', requestId?, retryAt?}`.
+- `permissions: []` with available status is authenticated with no staff
+  permissions. Unavailable resolution remains authenticated, clears the
+  permission list, and fails permission-gated UX closed without refresh,
+  logout, or login restart.
+- Access tokens carry requested and granted permissions in `scope`; Gateway
+  forwards verified space-delimited values through `X-HHC-Scopes`. No second
+  permission header or product capability claim is introduced.
+- `hasPermission()` supports only exact list membership and the staff `*`
+  wildcard. Product capability compilation is domain-owned.
+- The permission compatibility map is `{}`. Every removed code is rejected;
+  there are no runtime aliases or fallback scopes.
+- `401` permits one coordinated refresh and one retry of the original request.
+  `403` permits neither and cannot mutate authentication state.
+
+The canonical capability identifiers consumed by Admin authorization code are
+`pageSettings`, `news`, `bulletins`, `operations`, `memberships`, `campaigns`,
+`users`, `rbac`, `oauth`, `assets`, `presenterCloud`, `presenterLine`, and
+`dsr`. They expand only inside the domain AuthZ adapter; authentication runtime
+files must not import them.
+
 ### Task 1: Lock The Canonical Catalog With Failing Tests
 
 **Files:**
@@ -109,6 +137,18 @@ func TestEffectivePermissionCodesDoesNotDeriveMemberBenefits(t *testing.T) {
 - Modify: `account-api/README.md`
 
 - [ ] Replace permission examples and enums with the canonical catalog.
+- [ ] Freeze the session `permissions` and `permissionAvailability` response,
+      access-token `scope`, Gateway `X-HHC-Scopes`, empty compatibility map,
+      and `permission_unavailable` behavior exactly as stated above.
+- [ ] Remove permissions from the wire `user` object; publish top-level
+      `permissions` and snake-case `permission_availability`, which
+      `account-client` normalizes to `permissionAvailability`.
+- [ ] Add tests proving empty permissions remain authenticated, unavailable
+      resolution cannot reuse stale permissions, and AuthN does not import a
+      capability catalog.
+- [ ] Document `401`, `403`, and `429 Retry-After` for all current browser and
+      Presenter callers; fold the former auth-convergence service-documentation
+      task into this Account contract PR.
 - [ ] Remove member-verification and removed-permission response examples.
 - [ ] Document that organization, qualification, and entitlement are owned by `operations-api`.
 - [ ] Run `npx --yes @redocly/cli@2.47.0 lint docs/openapi.yaml`.
