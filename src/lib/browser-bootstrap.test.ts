@@ -63,4 +63,32 @@ describe('browser bootstrap sharing', () => {
 
     expect(fetcher.mock.calls.filter(([url]) => String(url).endsWith('/session/access-token'))).toHaveLength(2);
   });
+
+  it('respects access-token Retry-After without repeating the request', async () => {
+    let now = 1_000_000;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+    let tokenRequests = 0;
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/csrf-token')) return Response.json({csrf_token: 'csrf'});
+      if (url.endsWith('/session/access-token')) {
+        tokenRequests += 1;
+        if (tokenRequests === 1) {
+          return Response.json({error_code: 'RATE_LIMITED'}, {status: 429, headers: {'Retry-After': '60'}});
+        }
+        return Response.json({access_token: 'token', expires_in: 900});
+      }
+      return new Response(null, {status: 404});
+    });
+    vi.stubGlobal('fetch', fetcher);
+    const {getSharedAccountSessionClient} = await import('./browser-bootstrap');
+
+    await expect(getSharedAccountSessionClient().issueAccessToken()).rejects.toMatchObject({status: 429, code: 'RATE_LIMITED'});
+    await expect(getSharedAccountSessionClient().issueAccessToken()).rejects.toMatchObject({status: 429, code: 'RATE_LIMITED'});
+    expect(tokenRequests).toBe(1);
+
+    now += 60_000;
+    await expect(getSharedAccountSessionClient().issueAccessToken()).resolves.toMatchObject({accessToken: 'token'});
+    expect(tokenRequests).toBe(2);
+  });
 });
