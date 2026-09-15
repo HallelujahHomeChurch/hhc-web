@@ -3,8 +3,10 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 import {productLocales} from '@/i18n/locales';
 import {WeeklyArchive} from './WeeklyArchive';
 
+const captureHandledError = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/observability', () => ({captureHandledError}));
 vi.mock('next/navigation', () => ({useSearchParams: () => new URLSearchParams()}));
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {vi.unstubAllGlobals(); captureHandledError.mockClear();});
 
 describe('WeeklyArchive', () => {
   const issueLabels = {
@@ -59,6 +61,18 @@ describe('WeeklyArchive', () => {
     expect(screen.getAllByRole('heading', {name: 'Traditional title'}).length).toBeGreaterThan(0);
     expect(screen.queryByRole('link', {name: '简中'})).not.toBeInTheDocument();
     expect(screen.queryByRole('link', {name: 'English'})).not.toBeInTheDocument();
+  });
+
+  it('reports a user-visible archive failure', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({error: {code: 'unavailable'}}), {status: 503})));
+
+    render(<WeeklyArchive locale="zh-Hant" messages={messages} />);
+
+    expect(await screen.findByText('Unavailable')).toBeInTheDocument();
+    expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {
+      operation: 'weekly.archive',
+      tags: {locale: 'zh-Hant', memberMode: false, page: 1}
+    });
   });
 
   it('filters unexpected response editions without selecting a product-locale title', async () => {

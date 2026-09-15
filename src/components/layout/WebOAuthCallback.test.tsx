@@ -4,6 +4,15 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type {OAuthTransaction} from '@hallelujahhomechurch/account-client';
 import {WebOAuthCallback} from './WebOAuthCallback';
 
+const captureHandledError = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/observability', () => ({
+  captureHandledError,
+  errorTags: (error: {status?: number; code?: string}) => ({
+    ...(typeof error.status === 'number' ? {status: error.status} : {}),
+    ...(typeof error.code === 'string' ? {code: error.code} : {})
+  })
+}));
+
 const transaction: OAuthTransaction = {
   state: 'state-123',
   codeVerifier: 'verifier-123',
@@ -14,6 +23,7 @@ const transaction: OAuthTransaction = {
 
 describe('WebOAuthCallback', () => {
   beforeEach(() => {
+    captureHandledError.mockClear();
     sessionStorage.clear();
     sessionStorage.setItem('hhc_web_oauth_transaction', JSON.stringify(transaction));
   });
@@ -59,6 +69,7 @@ describe('WebOAuthCallback', () => {
 
     await waitFor(() => expect(navigate).toHaveBeenCalledWith(transaction.returnTo));
     expect(fetcher).not.toHaveBeenCalled();
+    expect(captureHandledError).not.toHaveBeenCalled();
     expect(sessionStorage.getItem('hhc_web_oauth_transaction')).toBeNull();
   });
 
@@ -101,6 +112,11 @@ describe('WebOAuthCallback', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('無法完成登入。');
     expect(fetcher).not.toHaveBeenCalled();
+    expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {
+      operation: 'oauth.callback',
+      level: 'warning',
+      tags: {reason: 'invalid_state'}
+    });
   });
 
   it.each([
@@ -147,6 +163,10 @@ describe('WebOAuthCallback', () => {
     );
 
     expect(await screen.findByRole('alert')).toHaveTextContent('無法完成登入。');
+    expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {
+      operation: 'oauth.exchange',
+      tags: {attempt: 0, status: 503}
+    });
     expect(navigate).not.toHaveBeenCalled();
     expect(sessionStorage.getItem('hhc_web_oauth_transaction')).not.toBeNull();
 

@@ -9,6 +9,7 @@ import {formatIssueNumber, resolveWeeklyCopy} from '@/features/weekly/format';
 import {weeklyEditionLabels, type WeeklyIssue, type WeeklyIssuePage} from '@/features/weekly/types';
 import type {Locale} from '@/i18n/locales';
 import {useCanReadBulletin, useBulletinMemberMode} from '@/components/layout/AccountControl';
+import {captureHandledError} from '@/lib/observability';
 
 type WeeklyArchiveMessages = {
   eyebrow: string;
@@ -66,6 +67,7 @@ export function WeeklyArchive({locale, memberMode: initialMemberMode = false, me
       })
       .catch((error: unknown) => {
         if (!(error instanceof DOMException && error.name === 'AbortError')) {
+          captureHandledError(error, {operation: 'weekly.archive', tags: {locale, memberMode, page}});
           setResult({key: requestKey, state: 'error', archive: null});
         }
       });

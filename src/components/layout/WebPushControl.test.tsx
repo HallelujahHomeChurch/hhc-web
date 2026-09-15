@@ -4,6 +4,9 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {resetBrowserBootstrap} from '@/lib/browser-bootstrap';
 import {WebPushControl} from './WebPushControl';
 
+const captureHandledError = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/observability', () => ({captureHandledError}));
+
 const labels = {
   enable: 'Enable notifications',
   disable: 'Disable notifications',
@@ -36,6 +39,7 @@ describe('WebPushControl', () => {
   const registration = {pushManager: {getSubscription, subscribe}};
 
   beforeEach(() => {
+    captureHandledError.mockClear();
     resetBrowserBootstrap();
     localStorage.clear();
     sessionStorage.clear();
@@ -97,6 +101,15 @@ describe('WebPushControl', () => {
       expect.objectContaining({method: 'POST'})
     );
     expect(screen.getByRole('button', {name: labels.disable})).toBeInTheDocument();
+  });
+
+  it('reports an initialization failure', async () => {
+    vi.mocked(navigator.serviceWorker.register).mockRejectedValue(new Error('registration failed'));
+
+    render(<WebPushControl locale="en" labels={labels} />);
+
+    expect(await screen.findByRole('button', {name: labels.error})).toBeInTheDocument();
+    expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'push.setup', tags: {locale: 'en'}});
   });
 
   it('binds an existing subscription to the authenticated account without exposing a user id', async () => {
@@ -303,6 +316,7 @@ describe('WebPushControl', () => {
 
     expect(await screen.findByRole('button', {name: labels.denied})).toBeInTheDocument();
     expect(screen.queryByRole('button', {name: labels.disable})).not.toBeInTheDocument();
+    expect(captureHandledError).not.toHaveBeenCalled();
   });
 
   it('shows a first-party prompt only on a later homepage visit', async () => {

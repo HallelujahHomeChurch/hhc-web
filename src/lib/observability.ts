@@ -57,6 +57,15 @@ type ErrorContext = {
   tags?: Record<string, string | number | boolean | null | undefined>
 }
 
+export function errorTags(error: unknown) {
+  if (!error || typeof error !== 'object') return {}
+  const value = error as { status?: unknown; code?: unknown }
+  return {
+    ...(typeof value.status === 'number' ? { status: value.status } : {}),
+    ...(typeof value.code === 'string' ? { code: value.code } : {}),
+  }
+}
+
 export function captureHandledError(error: unknown, { operation, level = 'error', tags = {} }: ErrorContext) {
   return Sentry.withScope((scope) => {
     scope.setLevel(level)

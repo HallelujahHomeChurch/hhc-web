@@ -7,6 +7,7 @@ import {formatIssueNumber, resolveWeeklyCopy} from '@/features/weekly/format';
 import {weeklyEditionLabels, type WeeklyIssue} from '@/features/weekly/types';
 import type {Locale} from '@/i18n/locales';
 import {useCanReadBulletin, useBulletinMemberMode} from '@/components/layout/AccountControl';
+import {captureHandledError} from '@/lib/observability';
 
 type WeeklyCardProps = {
   locale: Locale;
@@ -40,6 +41,7 @@ export function WeeklyCard({locale, memberMode: initialMemberMode = false, ctaLa
       })
       .catch((error: unknown) => {
         if (!(error instanceof DOMException && error.name === 'AbortError')) {
+          captureHandledError(error, {operation: 'weekly.latest', tags: {locale, memberMode}});
           setResult({key: requestKey, state: 'error', weekly: null});
         }
       });
