@@ -64,4 +64,3 @@ Allowed Sentry context is limited to operation name, runtime, HTTP status, stabl
 - Unit-test access-token cache, concurrent deduplication, and Retry-After cooldown.
 - Component-test representative weekly, OAuth, Account, download, push, statement, and unsubscribe error paths.
 - Run `pnpm test:run`, `pnpm lint`, and `pnpm build`.
-
