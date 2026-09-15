@@ -204,7 +204,7 @@ POST /api/admin/operations/org-role-assignments/{assignmentId}/revoke
 ### Task 6: Add Resource Reservation And Maintenance
 
 **Files:**
-- Create: `operations-api/internal/migrations/sql/003_resource_reservations.sql`
+- Create: `operations-api/internal/migrations/sql/004_resource_reservations.sql`
 - Create: `operations-api/internal/reservations/model.go`
 - Create: `operations-api/internal/reservations/service.go`
 - Create: `operations-api/internal/reservations/service_test.go`
