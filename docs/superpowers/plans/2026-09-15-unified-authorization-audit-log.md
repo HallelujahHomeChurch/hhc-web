@@ -43,11 +43,26 @@
 - Modify: `audit-log/docs/v1-event-catalog.json`
 - Modify: `audit-log/docs/openapi.yaml`
 - Modify: `audit-log/docs/openapi_test.go`
+- Modify: `audit-log/.github/workflows/release.yml`
+- Modify: `azure-infra/container_apps.tf`
+- Modify: `azure-infra/container_jobs.tf`
+- Modify: `azure-infra/postgresql.tf`
+- Modify: `azure-infra/identity.tf`
+- Modify: `azure-infra/key_vault.tf`
+- Modify: `azure-infra/diagnostics.tf`
+- Modify: `azure-infra/README.md`
+- Modify: `azure-infra/.github/workflows/terraform-plan.yml`
 
 - [ ] Rename Operations actions from `cms.operation.*` to owner-correct `operations.meeting.*`, `operations.resource.*`, `operations.reservation.*`, `operations.maintenance.*`, `operations.membership.*`, and `operations.entitlement.*` before any producer pins the catalog.
 - [ ] Keep DSR actions limited to Admin list/read/approve/reject/retry/resolve decisions. User intake, export content, and owner execution payloads remain outside central event metadata.
 - [ ] Generate the immutable catalog artifact and checksum; every producer vendors only its exact released subset fixture and checksum for contract tests.
-- [ ] Release `audit-log` dark before enabling any producer dispatch or public query route.
+- [ ] In a separate `azure-infra` bootstrap PR, create the Audit release OIDC federation for exact subject `repo:HallelujahHomeChurch/audit-log:environment:production` and least-privilege ACR push role. Verify the Audit release job declares `id-token: write`, set its documented `AZURE_CLIENT_ID` repository variable, and prove the identity has ACR push but no deployment, Key Vault, or database privilege.
+- [ ] Update the Audit release workflow to push the already verified immutable image digest to ACR. Publishing the image must not deploy a revision or expose a route.
+- [ ] In a second `azure-infra` workload PR, plan separate private production and test Audit databases, runtime and migration identities, migration jobs, internal-ingress Container Apps, Dapr app identities, probes, diagnostics, and least-privilege access by reusing the existing flat Terraform root. Update the Terraform policy workflow to assert the isolation and secret-reference contract.
+- [ ] From the reviewed workload plan, provision distinct production and test runtime/migration database credentials and seven independently rotatable caller tokens per environment in the existing Key Vault through the reviewed external secret operation, outside Git and Terraform state. Verify names, versions, access policy, and references without reading values; no production database or caller credential may be reused by test.
+- [ ] Apply the workload PR only after all referenced secret versions exist. Reference all seven environment-specific caller tokens from each Audit app because startup fails closed when any configured caller token is absent. The single Gateway app receives only separate `AUDIT_TOKEN_API_GATEWAY_PRODUCTION` and `AUDIT_TOKEN_API_GATEWAY_TEST` secret references and selects between them solely from the existing trusted host-derived `deployment_environment`; it must never send the production token to `audit-log-test` or the test token to `audit-log`. First roll and verify the existing Gateway image with only both new secret references, then record and rehearse its healthy rollback revision before the query-route PR may merge.
+- [ ] Run each environment's Audit migration job and deploy the exact published digest dark. Verify readiness, database isolation, no public ingress, correct and incorrect Dapr caller/token behavior, catalog checksum, diagnostics, and zero producer dispatch.
+- [ ] Do not merge or release the Gateway Audit query route until both compatible dark Audit revisions, Gateway `AUDIT_TOKEN_API_GATEWAY_PRODUCTION` and `AUDIT_TOKEN_API_GATEWAY_TEST` secret references, and the trusted selector/isolation behavior are verified. Release `audit-log` dark before enabling any producer dispatch or public query route.
 
 ### Task 3: Rebase Domain Producers On Their New Owners
 
@@ -67,12 +82,14 @@
 **Files:**
 - Modify: `api-gateway/nginx.conf`
 - Modify: `api-gateway/docker-entrypoint-hhc.sh`
+- Modify: `api-gateway/.github/workflows/release.yml`
 - Modify: `api-gateway/docs/openapi.yaml`
 - Modify: `api-gateway/docs/openapi_test.go`
 - Modify: `api-gateway/scripts/test-auth-method-matrix.sh`
 
 - [ ] Add only exact Admin-host GET routes `/api/admin/audit/events` and `/api/admin/audit/events/{eventId}` to the Audit upstream. Require verified `audit:read`; reject all other methods and keep `/priv/audit/*` unreachable.
 - [ ] Require `audit-log` to recheck trusted Gateway scope and `audit:read`; Gateway UX/coarse denial never replaces owner enforcement.
+- [ ] Fail release before deployment unless the live Gateway revision already has both reviewed `AUDIT_TOKEN_API_GATEWAY_PRODUCTION` and `AUDIT_TOKEN_API_GATEWAY_TEST` secret references, the trusted host-derived selector passes production/test token-isolation tests, its healthy rollback revision has been recorded and rehearsed, and both compatible dark Audit revisions are ready. Ensure any readiness failure after revision creation enters the existing rollback path.
 - [ ] Freeze list/detail/filter/cursor/error schemas for the Frontend plan. The Admin implementation, `auditLog -> audit:read` capability, redirect, page, and accessibility tests are owned once by Frontend Tasks 2-3; do not duplicate them here.
 - [ ] Verify querying Audit creates one `audit.query.read` self-event without recursive event generation.
 
