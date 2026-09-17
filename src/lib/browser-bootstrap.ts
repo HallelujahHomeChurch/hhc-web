@@ -1,11 +1,13 @@
 'use client';
 
 import {AccountSessionError, createAccountSessionClient, type AccountAccessToken, type AccountSession} from '@hallelujahhomechurch/account-client';
+import {accountApiBaseUrlForBrowser} from './account-origin';
 
 export type PushConfig = {vapidPublicKey: string};
 
 let accessTokenRetryAfterAt = 0;
 const rawAccountClient = createAccountSessionClient({
+  baseUrl: accountApiBaseUrlForBrowser(),
   fetcher: async (input, init) => {
     const response = await fetch(input, init);
     if (String(input).endsWith('/session/access-token') && response.status === 429) {

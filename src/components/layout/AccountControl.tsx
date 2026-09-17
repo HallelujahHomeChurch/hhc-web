@@ -20,6 +20,7 @@ import {createHhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
 import {isLocale} from '@/i18n/locales';
 import {siteConfig} from '@/lib/site';
 import {captureHandledError, errorTags} from '@/lib/observability';
+import {accountApiBaseUrlForBrowser, accountSiteUrlForBrowser} from '@/lib/account-origin';
 
 export const webOAuthTransactionKey = 'hhc_web_oauth_transaction';
 export const webPassiveSsoAttemptKey = 'hhc_web_passive_sso_attempted';
@@ -359,24 +360,9 @@ function defaultNavigateExternal(url: string) {
 export function webOAuthConfigForBrowser(): OAuthClientConfig {
   const origin = typeof window === 'undefined' ? 'https://www.alive.org.tw' : window.location.origin;
   return {
-    authorizeBaseUrl: accountAuthorizeBaseUrlForBrowser(),
+    authorizeBaseUrl: accountApiBaseUrlForBrowser(),
     clientId: 'www-web',
     redirectUri: `${origin}/oauth/callback`,
-    scope: 'openid profile email bulletin:read'
+    scope: 'openid profile email'
   };
-}
-
-function accountAuthorizeBaseUrlForBrowser() {
-  const configured = process.env.NEXT_PUBLIC_ACCOUNT_AUTHORIZE_BASE_URL?.replace(/\/$/, '');
-  if (configured) return configured;
-  return `${accountSiteUrlForBrowser()}/api/account/v1`;
-}
-
-function accountSiteUrlForBrowser() {
-  const configured = process.env.NEXT_PUBLIC_ACCOUNT_SITE_URL?.replace(/\/$/, '');
-  if (configured) return configured;
-  if (typeof window === 'undefined') return 'https://account.alive.org.tw';
-  if (window.location.hostname === 'www-test.alive.org.tw') return 'https://account-test.alive.org.tw';
-  if (window.location.hostname === 'www.alive.org.tw') return 'https://account.alive.org.tw';
-  return 'http://localhost:5173';
 }

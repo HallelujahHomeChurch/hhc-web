@@ -21,6 +21,13 @@ const transaction: OAuthTransaction = {
   createdAt: Date.now()
 };
 
+const oauth = {
+  authorizeBaseUrl: 'https://account.alive.org.tw/api/account/v1',
+  clientId: 'www-web',
+  redirectUri: 'https://www.alive.org.tw/oauth/callback',
+  scope: 'openid profile email'
+};
+
 describe('WebOAuthCallback', () => {
   beforeEach(() => {
     captureHandledError.mockClear();
@@ -40,6 +47,7 @@ describe('WebOAuthCallback', () => {
         currentUrl={new URL('https://www.alive.org.tw/oauth/callback?code=code-123&state=state-123')}
         fetcher={fetcher}
         navigate={navigate}
+        oauth={oauth}
         storage={sessionStorage}
       />
     );
@@ -47,7 +55,7 @@ describe('WebOAuthCallback', () => {
     await waitFor(() => expect(navigate).toHaveBeenCalledWith(transaction.returnTo));
     expect(fetcher).toHaveBeenCalledOnce();
     const [url, init] = fetcher.mock.calls[0];
-    expect(url).toBe('/api/account/v1/oauth/token');
+    expect(url).toBe('https://account.alive.org.tw/api/account/v1/oauth/token');
     expect(String(init.body)).toContain('grant_type=authorization_code');
     expect(String(init.body)).toContain('code_verifier=verifier-123');
     expect(init.credentials).toBe('include');
@@ -82,12 +90,7 @@ describe('WebOAuthCallback', () => {
         currentUrl={new URL('https://www.alive.org.tw/oauth/callback?code=code-123&state=wrong')}
         fetcher={fetcher}
         navigate={navigate}
-        oauth={{
-          authorizeBaseUrl: 'https://account.alive.org.tw/api/account/v1',
-          clientId: 'www-web',
-          redirectUri: 'https://www.alive.org.tw/oauth/callback',
-          scope: 'openid profile email'
-        }}
+        oauth={oauth}
         storage={sessionStorage}
       />
     );
@@ -158,6 +161,7 @@ describe('WebOAuthCallback', () => {
         currentUrl={new URL('https://www.alive.org.tw/oauth/callback?code=code-123&state=state-123')}
         fetcher={fetcher}
         navigate={navigate}
+        oauth={oauth}
         storage={sessionStorage}
       />
     );
@@ -174,7 +178,7 @@ describe('WebOAuthCallback', () => {
 
     await waitFor(() => expect(navigate).toHaveBeenCalledWith(transaction.returnTo));
     expect(fetcher).toHaveBeenCalledTimes(3);
-    expect(fetcher.mock.calls[1][0]).toBe('/api/account/v1/session');
+    expect(fetcher.mock.calls[1][0]).toBe('https://account.alive.org.tw/api/account/v1/session');
     expect(sessionStorage.getItem('hhc_web_oauth_transaction')).toBeNull();
   });
 });
