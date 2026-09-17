@@ -149,7 +149,9 @@ The session response transports `permissions`; the access token transports
 granted permissions in `scope`; Gateway injects verified `X-HHC-Scopes`.
 `hasPermission()` implements only exact match plus `*`. The compatibility map
 is exactly `{}`. AuthN does not import domain capability names. The integrated
-breaking `frontend-platform` package set is version `1.0.0`; version drift is a
+breaking `frontend-platform` package set is version `1.0.4`, published from
+immutable tag `v1.0.4` at `7c6de6c409518ab5966f71cb0ce96f43bb58cc5e`.
+Consumers must use that exact final package line; any other version is a
 contract-ledger stop gate.
 
 Operations administrative routes require authenticated identity at Gateway,
