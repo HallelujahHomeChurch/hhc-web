@@ -435,8 +435,6 @@ describe('AccountControl', () => {
 
   it.each([
     ['the session is still loading', '/en/literature-ministry', 'loading'],
-    ['bulletin access is still loading', '/en/literature-ministry', 'access-loading'],
-    ['public access is open', '/en/literature-ministry', 'public'],
     ['the member remains eligible', '/en/literature-ministry', 'eligible'],
     ['the route is unrelated', '/en/literature-ministry/archive', 'unrelated']
   ] as const)('does not replace the route while %s', async (_case, path, state) => {
@@ -465,19 +463,17 @@ describe('AccountControl', () => {
       });
       vi.mocked(client.issueAccessToken).mockResolvedValue({accessToken: 'member-token', expiresIn: 900});
     }
-    vi.spyOn(globalThis, 'fetch').mockImplementation(() => state === 'access-loading'
-      ? new Promise(() => {})
-      : Promise.resolve(new Response(JSON.stringify({data: state === 'public'
-        ? {enabled: true}
-        : {canRead: true, publicEnabled: false, policyVersion: 1}, meta: {}, error: null
-      }), {headers: {'content-type': 'application/json'}})));
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({data: {
+      canRead: true, publicEnabled: false, policyVersion: 1
+    }, meta: {}, error: null}), {headers: {'content-type': 'application/json'}}));
 
     render(<AccountControl accountSiteUrl="https://account.alive.org.tw" client={client} labels={labels} />);
 
-    if (state !== 'loading' && state !== 'access-loading') {
+    if (state === 'eligible') {
       await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
     }
     await new Promise((resolve) => setTimeout(resolve, 150));
+    if (state !== 'eligible') expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(replace).not.toHaveBeenCalled();
   });
 });
