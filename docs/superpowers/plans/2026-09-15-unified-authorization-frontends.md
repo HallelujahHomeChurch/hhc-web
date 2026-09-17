@@ -76,10 +76,10 @@
   destinations only, and an Operations-owned scoped role cannot expose CMS,
   Membership, IAM, DSR, Audit, Asset, Campaign, or Presenter destinations.
 - [ ] Run `corepack pnpm test`, `lint`, `build`, `check:packages`, `pack:packages`, and `test:consumers`.
-- [ ] Publish the single coordinated breaking package version `1.0.0` only
-      with explicit authorization; if fresh `origin/main` has already reached
-      it, update the complete contract ledger first. Record provenance and do
-      not retain old runtime or permission aliases.
+- [ ] Publish the final coordinated breaking package line as `1.0.4`, from
+      immutable tag `v1.0.4` at `7c6de6c409518ab5966f71cb0ce96f43bb58cc5e`.
+      Consumers must lock that exact final version; record its provenance and
+      do not retain old runtime or permission aliases.
 - [ ] Commit: `feat: publish unified auth and access contracts`
 
 ### Task 2: Replace Admin Route Capabilities And Root Behavior
