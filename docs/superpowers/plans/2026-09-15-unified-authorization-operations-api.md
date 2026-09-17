@@ -260,6 +260,15 @@ POST /api/admin/operations/org-role-assignments/{assignmentId}/revoke
 - Modify: `hhc-web-api/openapi.yaml`
 
 - [ ] Start only after the target import passes counts/digest and the Gateway route owner is staged.
+- [ ] First move the direct scan-warmer and LINE attachment-worker
+  `sync-windows` read to `GET /priv/operations/sync-windows` at
+  `operations-api`. Preserve the two exact platform-authenticated workload
+  principals and their existing audience; accept them only for this one read.
+  Do not add either identity to `PRIVATE_ALLOWED_CALLER_APP_IDS`, and do not
+  accept the former `/priv/meeting-sync-windows` path at the target. Release
+  the target authorization configuration, update each direct caller to the
+  target URL, and observe a successful execution before deleting the source
+  route.
 - [ ] Remove runtime ownership and route definitions from `hhc-web-api`.
 - [ ] Drop source tables only in the coordinated cutover after backup and import verification.
 - [ ] Run `go test -race ./... -count=1 -p=1`, `go vet ./...`, OpenAPI lint, migration-policy tests, and image build.
