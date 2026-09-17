@@ -1,11 +1,14 @@
 import {act, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import type {AccountAuthState} from '@hallelujahhomechurch/account-client';
 import {resetBrowserBootstrap} from '@/lib/browser-bootstrap';
 import {WebPushControl} from './WebPushControl';
 
 const captureHandledError = vi.hoisted(() => vi.fn());
+const account = vi.hoisted(() => ({current: {status: 'anonymous'} as AccountAuthState}));
 vi.mock('@/lib/observability', () => ({captureHandledError}));
+vi.mock('./AccountControl', () => ({useAccountAuth: () => account.current}));
 
 const labels = {
   enable: 'Enable notifications',
@@ -39,6 +42,7 @@ describe('WebPushControl', () => {
   const registration = {pushManager: {getSubscription, subscribe}};
 
   beforeEach(() => {
+    account.current = {status: 'anonymous'};
     captureHandledError.mockClear();
     resetBrowserBootstrap();
     localStorage.clear();
@@ -113,6 +117,7 @@ describe('WebPushControl', () => {
   });
 
   it('binds an existing subscription to the authenticated account without exposing a user id', async () => {
+    account.current = authenticatedAccount();
     const existingSubscription = {
       unsubscribe: vi.fn(),
       toJSON: () => ({
@@ -170,6 +175,7 @@ describe('WebPushControl', () => {
   });
 
   it('does not repeat successful subscription writes when remounted', async () => {
+    account.current = authenticatedAccount();
     const existingSubscription = pushSubscription();
     getSubscription.mockResolvedValue(existingSubscription);
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -335,3 +341,14 @@ describe('WebPushControl', () => {
     expect(requestPermission).not.toHaveBeenCalled();
   });
 });
+
+function authenticatedAccount(): AccountAuthState {
+  return {
+    status: 'authenticated',
+    session: {
+      user: {id: 'private-user-id', email: 'user@example.test', display_name: 'User', avatar_url: null},
+      permissions: [],
+      permissionAvailability: {status: 'available'}
+    }
+  };
+}

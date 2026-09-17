@@ -1,197 +1,61 @@
 'use client';
 
-import {
-  buildAuthorizeUrl,
-  claimOAuthRecovery,
-  clearOAuthTransaction,
-  readOAuthTransaction,
-  validateOAuthState,
-  type OAuthClientConfig
-} from '@hallelujahhomechurch/account-client';
-import {Button} from '@hallelujahhomechurch/ui';
-import {useEffect, useRef, useState} from 'react';
+import {createAccountSessionClient, createBrowserAccountAuthRuntime, readOAuthTransaction, type BrowserAccountAuthRuntime} from '@hallelujahhomechurch/account-client';
+import {useEffect, useMemo, useState} from 'react';
 import {isLocale, type Locale} from '@/i18n/locales';
-import {webOAuthConfigForBrowser, webOAuthTransactionKey} from './AccountControl';
-import {captureHandledError, errorTags} from '@/lib/observability';
+import {webOAuthConfigForBrowser} from './AccountControl';
+import {captureHandledError} from '@/lib/observability';
+import {accountApiBaseUrlForBrowser} from '@/lib/account-origin';
 
-type CallbackLabels = {
-  completing: string;
-  error: string;
-  retry: string;
-};
-
+type CallbackLabels = {completing: string; error: string};
 type WebOAuthCallbackProps = {
   currentUrl?: URL;
-  fetcher?: typeof fetch;
   labels?: CallbackLabels;
   navigate?: (url: string) => void;
-  oauth?: OAuthClientConfig;
-  storage?: Storage;
+  runtime?: Pick<BrowserAccountAuthRuntime, 'completeSignIn'>;
 };
 
-export function WebOAuthCallback({
-  currentUrl,
-  fetcher = fetch,
-  labels: labelsProp,
-  navigate = defaultNavigate,
-  oauth,
-  storage
-}: WebOAuthCallbackProps) {
-  const [error, setError] = useState<{message: string; retryable: boolean} | null>(null);
-  const [attempt, setAttempt] = useState(0);
-  const completion = useRef<{attempt: number; promise: Promise<void>} | null>(null);
+export function WebOAuthCallback({currentUrl, labels: labelsProp, navigate = defaultNavigate, runtime: providedRuntime}: WebOAuthCallbackProps) {
+  const sessionClient = useMemo(() => createAccountSessionClient({baseUrl: accountApiBaseUrlForBrowser()}), []);
+  const runtime = useMemo(() => providedRuntime ?? createBrowserAccountAuthRuntime({
+    client: sessionClient,
+    oauth: webOAuthConfigForBrowser()
+  }), [providedRuntime, sessionClient]);
+  const returnTo = typeof window === 'undefined'
+    ? '/'
+    : readOAuthTransaction({storage: sessionStorage, storageKey: 'hhc:oauth:www-web'})?.returnTo ?? '/';
+  const labels = labelsProp ?? callbackLabels(returnTo);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     let active = true;
     const url = currentUrl ?? new URL(window.location.href);
-    const transactionStorage = storage ?? sessionStorage;
-    const transaction = readOAuthTransaction({
-      storage: transactionStorage,
-      storageKey: webOAuthTransactionKey
-    });
-    const labels = labelsProp ?? callbackLabels(transaction?.returnTo);
-    const reportError = (retryable = false) => queueMicrotask(() => {
-      if (active) setError({message: labels.error, retryable});
-    });
-    const state = url.searchParams.get('state') ?? '';
-
-    if (!validateOAuthState(transaction, state)) {
-      if (transaction && claimOAuthRecovery({
-        storage: transactionStorage,
-        storageKey: webOAuthTransactionKey
-      })) {
-        navigate(buildAuthorizeUrl(oauth ?? webOAuthConfigForBrowser(), transaction).toString());
-        return () => { active = false; };
-      }
-      captureHandledError(new Error('OAuth callback state is invalid'), {operation: 'oauth.callback', level: 'warning', tags: {reason: 'invalid_state'}});
-      reportError();
-      return () => { active = false; };
-    }
-
-    const callbackError = url.searchParams.get('error');
-    if (callbackError) {
-      clearOAuthTransaction({storage: transactionStorage, storageKey: webOAuthTransactionKey});
-      if (callbackError === 'login_required') navigate(transaction.returnTo);
-      else {
-        if (callbackError !== 'access_denied') captureHandledError(new Error('OAuth provider callback failed'), {operation: 'oauth.callback', level: 'warning', tags: {reason: 'provider_error'}});
-        reportError();
-      }
-      return () => { active = false; };
-    }
-
-    const code = url.searchParams.get('code');
-    if (!code) {
-      captureHandledError(new Error('OAuth callback code is missing'), {operation: 'oauth.callback', level: 'warning', tags: {reason: 'missing_code'}});
-      reportError();
-      return () => { active = false; };
-    }
-
-    if (!completion.current || completion.current.attempt !== attempt) {
-      completion.current = {
-        attempt,
-        promise: completeSignIn({attempt, code, fetcher, oauth: oauth ?? webOAuthConfigForBrowser(), transaction})
-      };
-    }
-    completion.current.promise
-      .then(() => {
-        clearOAuthTransaction({storage: transactionStorage, storageKey: webOAuthTransactionKey});
-        if (active) navigate(transaction.returnTo);
+    void runtime.completeSignIn(url.toString())
+      .then((result) => {
+        if (active && result.status === 'authenticated') navigate(returnTo);
+        else if (active) setError(true);
       })
-      .catch((error) => {
-        captureHandledError(error, {operation: 'oauth.exchange', tags: {attempt, ...errorTags(error)}});
-        reportError(true);
+      .catch((cause) => {
+        captureHandledError(cause, {operation: 'oauth.callback'});
+        if (active) setError(true);
       });
-
     return () => { active = false; };
-  }, [attempt, currentUrl, fetcher, labelsProp, navigate, oauth, storage]);
-
-  const labelStorage = storage ?? (typeof window === 'undefined' ? null : sessionStorage);
-  const returnTo = labelStorage
-    ? readOAuthTransaction({storage: labelStorage, storageKey: webOAuthTransactionKey})?.returnTo
-    : undefined;
-  const labels = labelsProp ?? callbackLabels(returnTo);
+  }, [currentUrl, navigate, returnTo, runtime]);
 
   return (
     <main lang={callbackLocale(returnTo)} className="grid min-h-screen place-items-center bg-paper px-6 text-ink">
-      {error ? (
-        <div className="grid justify-items-center gap-4 text-center">
-          <p role="alert">{error.message}</p>
-          {error.retryable ? (
-            <Button variant="outline" onPress={() => {
-              setError(null);
-              setAttempt((value) => value + 1);
-            }}>
-              {labels.retry}
-            </Button>
-          ) : null}
-        </div>
-      ) : <p>{labels.completing}</p>}
+      {error ? <p role="alert">{labels.error}</p> : <p>{labels.completing}</p>}
     </main>
   );
 }
 
-async function completeSignIn({
-  attempt,
-  code,
-  fetcher,
-  oauth,
-  transaction
-}: {
-  attempt: number;
-  code: string;
-  fetcher: typeof fetch;
-  oauth: OAuthClientConfig;
-  transaction: NonNullable<ReturnType<typeof readOAuthTransaction>>;
-}) {
-  const accountApiBaseUrl = oauth.authorizeBaseUrl.replace(/\/$/, '');
-  if (attempt > 0) {
-    const session = await fetcher(`${accountApiBaseUrl}/session`, {
-      method: 'GET',
-      credentials: 'include',
-      headers: {accept: 'application/json'},
-      cache: 'no-store'
-    });
-    if (session.ok) {
-      try {
-        const body: unknown = await session.json();
-        if (isAuthenticatedSession(body)) return;
-      } catch {
-        captureHandledError(new Error('OAuth recovery session response is invalid'), {operation: 'oauth.session_recovery', level: 'warning', tags: {status: session.status}});
-        // Retry the original exchange when session recovery returned an invalid body.
-      }
-    }
-  }
-
-  const response = await fetcher(`${accountApiBaseUrl}/oauth/token`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      accept: 'application/json',
-      'content-type': 'application/x-www-form-urlencoded'
-    },
-    body: new URLSearchParams({
-      grant_type: 'authorization_code',
-      code,
-      redirect_uri: oauth.redirectUri,
-      client_id: oauth.clientId,
-      code_verifier: transaction.codeVerifier
-    })
-  });
-  if (!response.ok) throw Object.assign(new Error('Token exchange failed'), {status: response.status});
-}
-
-function isAuthenticatedSession(value: unknown): value is {authenticated: true} {
-  return typeof value === 'object' && value !== null
-    && 'authenticated' in value && value.authenticated === true;
-}
-
-function callbackLabels(returnTo = '/') : CallbackLabels {
+function callbackLabels(returnTo = '/'): CallbackLabels {
   switch (callbackLocale(returnTo)) {
-    case 'zh-Hant': return {completing: '正在完成登入…', error: '無法完成登入。', retry: '再試一次'};
-    case 'zh-Hans': return {completing: '正在完成登录…', error: '无法完成登录。', retry: '重试'};
-    case 'ja': return {completing: 'ログインを完了しています…', error: 'ログインを完了できませんでした。', retry: 'もう一度試す'};
-    case 'ko': return {completing: '로그인을 완료하는 중입니다…', error: '로그인을 완료할 수 없습니다.', retry: '다시 시도'};
-    default: return {completing: 'Completing sign in…', error: 'Unable to complete sign in.', retry: 'Try again'};
+    case 'zh-Hant': return {completing: '正在完成登入…', error: '無法完成登入。'};
+    case 'zh-Hans': return {completing: '正在完成登录…', error: '无法完成登录。'};
+    case 'ja': return {completing: 'ログインを完了しています…', error: 'ログインを完了できませんでした。'};
+    case 'ko': return {completing: '로그인을 완료하는 중입니다…', error: '로그인을 완료할 수 없습니다.'};
+    default: return {completing: 'Completing sign in…', error: 'Unable to complete sign in.'};
   }
 }
 

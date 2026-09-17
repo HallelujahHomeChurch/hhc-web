@@ -1,38 +1,25 @@
 'use client';
 
-import {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
+import {createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode} from 'react';
 import {UserRound} from 'lucide-react';
 import {
-  buildAuthorizeUrl,
-  canAccessAdmin,
-  hasPermission,
-  isPermissionList,
-  createOAuthTransactionOnce,
-  currentReturnTo,
-  resolveAccountAuth,
-  type AccountSessionUser,
+  createBrowserAccountAuthRuntime,
+  type AccountAuthState,
   type AccountSessionClient,
-  type OAuthClientConfig
+  type BrowserOAuthConfig
 } from '@hallelujahhomechurch/account-client';
+import {canAccessAdmin} from '@hallelujahhomechurch/account-client/admin-access';
+import {createOperationsClient} from '@hallelujahhomechurch/operations-client';
+import {bulletinEditions, type BulletinEdition} from '@hallelujahhomechurch/preferences';
 import {AccountMenu, Toast} from '@hallelujahhomechurch/ui';
-import {clearSharedAccountSession, getSharedAccountSessionClient, revalidateSharedAccountSession} from '@/lib/browser-bootstrap';
-import {createHhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
-import {isLocale} from '@/i18n/locales';
-import {siteConfig} from '@/lib/site';
-import {captureHandledError, errorTags} from '@/lib/observability';
+import {captureHandledError} from '@/lib/observability';
+import {getSharedAccountSessionClient} from '@/lib/browser-bootstrap';
 import {accountApiBaseUrlForBrowser, accountSiteUrlForBrowser} from '@/lib/account-origin';
+import {siteConfig} from '@/lib/site';
 
-export const webOAuthTransactionKey = 'hhc_web_oauth_transaction';
-export const webPassiveSsoAttemptKey = 'hhc_web_passive_sso_attempted';
 export const accountStateEventName = 'hhc:account-state';
 
-type AccountControlState =
-  | {status: 'loading'}
-  | {status: 'anonymous'}
-  | {status: 'unavailable'}
-  | {status: 'authenticated'; user: AccountSessionUser};
-
-interface AccountControlLabels {
+type AccountControlLabels = {
   menu: string;
   projectionSystem: string;
   adminManagement: string;
@@ -40,53 +27,74 @@ interface AccountControlLabels {
   signIn: string;
   signOut: string;
   signOutError: string;
-}
+};
 
-interface AccountControlProps {
+type BulletinAccess =
+  | {status: 'loading'; editions: readonly BulletinEdition[]}
+  | {status: 'available'; editions: readonly BulletinEdition[]}
+  | {status: 'unavailable'; editions: readonly BulletinEdition[]};
+
+type AccountControlProps = {
   accountSiteUrl?: string;
   client?: AccountSessionClient;
   labels: AccountControlLabels;
-  navigateExternal?: (url: string) => void;
-  oauth?: OAuthClientConfig;
-}
+  oauth?: BrowserOAuthConfig;
+};
 
 type AccountControlContextValue = {
   accountSiteUrl: string;
-  auth: AccountControlState;
-  bulletinCanRead: boolean;
-  bulletinPublicEnabled: boolean | null;
-  beginAuthorization: () => void;
+  auth: AccountAuthState;
+  bulletinAccess: BulletinAccess;
+  beginAuthorization: () => Promise<void>;
+  getAccessToken: () => Promise<string | null>;
+  refreshAfterUnauthorized: (rejectedToken: string) => Promise<string | null>;
   labels: AccountControlLabels;
   signOut: () => Promise<boolean>;
 };
 
 const AccountControlContext = createContext<AccountControlContextValue | null>(null);
+const noBulletinAccess: BulletinAccess = {status: 'available', editions: []};
+const unavailableBulletinAuthorization = {
+  getAccessToken: async () => null,
+  refreshAfterUnauthorized: async () => null
+};
+const entitlementByEdition: Readonly<Record<BulletinEdition, string>> = {
+  'zh-Hant': 'bulletin.general.zh-Hant.access',
+  'zh-Hans': 'bulletin.general.zh-Hans.access',
+  en: 'bulletin.general.en.access'
+};
 
 export function useAccountIdentity() {
   const account = useContext(AccountControlContext);
-  return account?.auth.status === 'authenticated' ? account.auth.user.id : null;
+  return account?.auth.status === 'authenticated' ? account.auth.session.user.id : null;
 }
 
-export function useCanReadBulletin(publicEnabled: boolean) {
+export function useAccountAuth(): AccountAuthState {
+  return useContext(AccountControlContext)?.auth ?? {status: 'checking'};
+}
+
+export function useBulletinAccess() {
+  return useContext(AccountControlContext)?.bulletinAccess ?? noBulletinAccess;
+}
+
+export function useCanReadBulletin() {
+  return useBulletinAccess().editions.length > 0;
+}
+
+export function useBulletinAuthorization() {
   const account = useContext(AccountControlContext);
-  return (account?.bulletinPublicEnabled ?? publicEnabled) || (account?.auth.status === 'authenticated' && hasPermission(account.auth.user.permissions, 'bulletin:read') && account.bulletinCanRead);
+  return useMemo(() => ({
+    getAccessToken: account?.getAccessToken ?? unavailableBulletinAuthorization.getAccessToken,
+    refreshAfterUnauthorized: account?.refreshAfterUnauthorized ?? unavailableBulletinAuthorization.refreshAfterUnauthorized
+  }), [account?.getAccessToken, account?.refreshAfterUnauthorized]);
 }
 
-export function useBulletinMemberMode(initialMode: boolean) {
-  const account = useContext(AccountControlContext);
-  return account?.bulletinPublicEnabled == null ? initialMode : !account.bulletinPublicEnabled;
-}
-
-export function BulletinAccessGate({children, publicEnabled}: {children: ReactNode; publicEnabled: boolean}) {
-  return useCanReadBulletin(publicEnabled) ? children : null;
+export function BulletinAccessGate({children}: {children: ReactNode}) {
+  return useCanReadBulletin() ? children : null;
 }
 
 export function AccountControl(props: AccountControlProps) {
-  return (
-    <AccountControlProvider {...props}>
-      <AccountControlView />
-    </AccountControlProvider>
-  );
+  return <AccountControlProvider {...props}><AccountControlView /></AccountControlProvider>;
 }
 
 export function AccountControlSlot(props: AccountControlProps) {
@@ -98,179 +106,95 @@ export function AccountControlProvider({
   children,
   client,
   labels,
-  navigateExternal = defaultNavigateExternal,
   oauth
 }: AccountControlProps & {children: ReactNode}) {
   const sessionClient = useMemo(() => client ?? getSharedAccountSessionClient(), [client]);
-  const oauthConfig = useMemo(() => oauth ?? webOAuthConfigForBrowser(), [oauth]);
-  const [auth, setAuth] = useState<AccountControlState>({status: 'loading'});
-  const [bulletinCanRead, setBulletinCanRead] = useState(false);
-  const [bulletinSubject, setBulletinSubject] = useState<string | null>(null);
-  const [bulletinPublicEnabled, setBulletinPublicEnabled] = useState<boolean | null>(null);
+  const resolvedOAuth = useMemo(() => oauth ?? webOAuthConfigForBrowser(), [oauth]);
+  const authRuntime = useMemo(() => createBrowserAccountAuthRuntime({client: sessionClient, oauth: resolvedOAuth}), [resolvedOAuth, sessionClient]);
+  const operationsClient = useMemo(() => createOperationsClient({
+    baseUrl: '',
+    getAccessToken: authRuntime.getAccessToken,
+    refreshAfterUnauthorized: authRuntime.refreshAfterUnauthorized
+  }), [authRuntime]);
+  const [auth, setAuth] = useState<AccountAuthState>(authRuntime.getSnapshot());
+  const [bulletinProjection, setBulletinProjection] = useState<{subject: string; access: BulletinAccess} | null>(null);
   const [logoutError, setLogoutError] = useState('');
-  const requestRevision = useRef(0);
-  const authorizationStarted = useRef(false);
+  const bulletinAccess = useMemo<BulletinAccess>(() => {
+    if (auth.status !== 'authenticated') return noBulletinAccess;
+    if (auth.session.permissionAvailability.status === 'unavailable') return {status: 'unavailable', editions: []};
+    return bulletinProjection?.subject === auth.session.user.id ? bulletinProjection.access : {status: 'loading', editions: []};
+  }, [auth, bulletinProjection]);
 
-  const refreshSession = useCallback(async (force = false) => {
-    const revision = ++requestRevision.current;
-    let sharedSignOutFailed = false;
-    let result = await resolveAccountAuth(force && !client ? {getSession: revalidateSharedAccountSession} : sessionClient);
-    if (result.status === 'authenticated' && hasSharedSignOut()) {
-      try {
-        await sessionClient.logoutAll();
-        if (!client) clearSharedAccountSession();
-        notifyAccountStateChange('sign-out');
-        result = {status: 'anonymous'};
-      } catch (error) {
-        sharedSignOutFailed = true;
-        captureHandledError(error, {operation: 'account.shared_signout'});
-        if (!client) clearSharedAccountSession();
-        result = {status: 'unavailable', error: error instanceof Error ? error : new Error('Unable to clear account session')};
-      }
-    }
-    if (revision !== requestRevision.current) return result;
-
-    const invalidPermissions = result.status === 'authenticated' && !isPermissionList(result.user.permissions);
-    if (result.status === 'unavailable' && !sharedSignOutFailed) {
-      captureHandledError(result.error, {operation: 'account.session'});
-    } else if (invalidPermissions) {
-      captureHandledError(new Error('Invalid account permissions'), {operation: 'account.session'});
-    }
-    if (result.status === 'authenticated') {
-      sessionStorage.removeItem(webPassiveSsoAttemptKey);
-    }
-    setAuth((current) => {
-      if (invalidPermissions) return {status: 'unavailable'};
-      if (result.status === 'authenticated') return {status: 'authenticated', user: result.user};
-      if (result.status === 'anonymous') return {status: 'anonymous'};
-      return !sharedSignOutFailed && current.status === 'authenticated' ? current : {status: 'unavailable'};
-    });
-    return invalidPermissions
-      ? {status: 'unavailable' as const, error: new Error('Invalid account permissions')}
-      : result;
-  }, [client, sessionClient]);
+  useEffect(() => {
+    const unsubscribe = authRuntime.subscribe(() => setAuth(authRuntime.getSnapshot()));
+    void authRuntime.start();
+    return () => { unsubscribe(); authRuntime.dispose(); };
+  }, [authRuntime]);
 
   useEffect(() => {
     const controller = new AbortController();
-    async function refreshBulletinAccess() {
-      if (auth.status === 'loading') return;
-      let canRead = false;
-      let publicEnabled = false;
-      try {
-        if (auth.status === 'authenticated' && hasPermission(auth.user.permissions, 'bulletin:read')) {
-          const {accessToken} = await sessionClient.issueAccessToken();
-          if (controller.signal.aborted) return;
-          const api = createHhcWebClient({baseUrl: '/api', getAccessToken: () => accessToken});
-          const access = await api.getMemberBulletinAccess(controller.signal);
-          canRead = access.canRead; publicEnabled = access.publicEnabled;
-        }
-      } catch (error) {
-        if (!(error instanceof DOMException && error.name === 'AbortError')) {
-          captureHandledError(error, {operation: 'bulletin.access', tags: {memberMode: auth.status === 'authenticated', ...errorTags(error)}});
-        }
-      }
-      if (!controller.signal.aborted) {setBulletinCanRead(canRead); setBulletinSubject(auth.status === 'authenticated' ? auth.user.id : null); setBulletinPublicEnabled(publicEnabled);}
+    if (auth.status !== 'authenticated') {
+      return () => controller.abort();
     }
-    void refreshBulletinAccess();
-    return () => controller.abort();
-  }, [auth, sessionClient]);
+    if (auth.session.permissionAvailability.status === 'unavailable') {
+      return () => controller.abort();
+    }
 
-  useEffect(() => {
-    if (auth.status !== 'anonymous' || bulletinPublicEnabled !== false) return;
-    const match = window.location.pathname.match(/^\/([^/]+)\/literature-ministry$/);
-    if (match && isLocale(match[1])) window.location.replace(`/${match[1]}`);
-  }, [auth.status, bulletinPublicEnabled]);
-
-  const beginAuthorization = useCallback((prompt?: 'none') => {
-    if (authorizationStarted.current) return;
-    authorizationStarted.current = true;
-    void createOAuthTransactionOnce(currentReturnTo(window.location), {
-      storage: sessionStorage,
-      storageKey: webOAuthTransactionKey
-    })
-      .then((transaction) => {
-        navigateExternal(buildAuthorizeUrl(oauthConfig, transaction, {prompt}).toString());
+    void operationsClient.getMyAccess(controller.signal)
+      .then((snapshot) => {
+        if (controller.signal.aborted) return;
+        const entitlements = new Set(snapshot.entitlements.map(({entitlementCode}) => entitlementCode));
+        setBulletinProjection({
+          subject: auth.session.user.id,
+          access: {
+            status: 'available',
+            editions: bulletinEditions.filter((edition) => entitlements.has(entitlementByEdition[edition]))
+          }
+        });
       })
-      .catch((error) => {
-        authorizationStarted.current = false;
-        captureHandledError(error, {operation: 'oauth.start'});
-        setAuth({status: 'unavailable'});
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        captureHandledError(error, {operation: 'operations.access'});
+        setBulletinProjection({subject: auth.session.user.id, access: {status: 'unavailable', editions: []}});
       });
-  }, [navigateExternal, oauthConfig]);
+    return () => controller.abort();
+  }, [auth, operationsClient]);
 
-  useEffect(() => {
-    let active = true;
-    void refreshSession()
-      .then((result) => {
-        if (!active) return;
-        if (result.status !== 'anonymous' || !shouldAttemptPassiveSso()) return;
-        sessionStorage.setItem(webPassiveSsoAttemptKey, '1');
-        beginAuthorization('none');
-      });
-    return () => { active = false; };
-  }, [beginAuthorization, refreshSession]);
-
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const scheduleRefresh = () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => void refreshSession(true), 100);
-    };
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') scheduleRefresh();
-    };
-    const onPageShow = (event: PageTransitionEvent) => {
-      if (event.persisted) scheduleRefresh();
-    };
-    const onAccountState = () => {setBulletinCanRead(false); scheduleRefresh();};
-    const channel = typeof BroadcastChannel === 'undefined'
-      ? null
-      : new BroadcastChannel(accountStateEventName);
-
-    window.addEventListener('focus', scheduleRefresh);
-    window.addEventListener('pageshow', onPageShow);
-    window.addEventListener(accountStateEventName, onAccountState);
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    channel?.addEventListener('message', onAccountState);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('focus', scheduleRefresh);
-      window.removeEventListener('pageshow', onPageShow);
-      window.removeEventListener(accountStateEventName, onAccountState);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-      channel?.close();
-    };
-  }, [refreshSession]);
+  const beginAuthorization = useCallback(async () => {
+    try {
+      await authRuntime.beginSignIn(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+    } catch (error) {
+      captureHandledError(error, {operation: 'oauth.start'});
+    }
+  }, [authRuntime]);
 
   const signOut = useCallback(async () => {
     setLogoutError('');
     try {
       await sessionClient.logoutAll();
-      if (!client) clearSharedAccountSession();
-      setAuth({status: 'anonymous'});
-      setBulletinCanRead(false);
+      authRuntime.clear();
       notifyAccountStateChange('sign-out');
       return true;
     } catch (error) {
       captureHandledError(error, {operation: 'account.signout'});
-      const result = await refreshSession();
-      if (result.status === 'anonymous') {
-        notifyAccountStateChange('sign-out');
-        return true;
-      }
       setLogoutError(labels.signOutError);
       return false;
     }
-  }, [client, labels.signOutError, refreshSession, sessionClient]);
+  }, [authRuntime, labels.signOutError, sessionClient]);
 
   return (
-    <AccountControlContext.Provider value={{accountSiteUrl, auth, bulletinCanRead: bulletinCanRead && auth.status === 'authenticated' && bulletinSubject === auth.user.id, bulletinPublicEnabled, beginAuthorization, labels, signOut}}>
+    <AccountControlContext.Provider value={{
+      accountSiteUrl,
+      auth,
+      bulletinAccess,
+      beginAuthorization,
+      getAccessToken: authRuntime.getAccessToken,
+      refreshAfterUnauthorized: authRuntime.refreshAfterUnauthorized,
+      labels,
+      signOut
+    }}>
       {children}
-      {logoutError ? (
-        <div className="fixed right-6 top-20 z-50 max-w-[min(360px,calc(100vw-32px))]">
-          <Toast tone="danger">{logoutError}</Toast>
-        </div>
-      ) : null}
+      {logoutError ? <div className="fixed right-6 top-20 z-50 max-w-[min(360px,calc(100vw-32px))]"><Toast tone="danger">{logoutError}</Toast></div> : null}
     </AccountControlContext.Provider>
   );
 }
@@ -280,51 +204,36 @@ export function AccountControlView() {
   if (!context) throw new Error('AccountControlView must be used inside AccountControlProvider.');
 
   const {accountSiteUrl, auth, beginAuthorization, labels, signOut} = context;
-
-  if (auth.status === 'loading' || auth.status === 'unavailable') {
+  if (auth.status === 'checking' || auth.status === 'unavailable') {
     return <span className="inline-block size-10 shrink-0" aria-hidden="true" />;
   }
-
   if (auth.status === 'anonymous') {
     return (
       <a
         className="grid size-10 shrink-0 place-items-center rounded-full text-ink hover:bg-primary-soft hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         href={`${accountSiteUrl}/login`}
         aria-label={labels.signIn}
-        onClick={(event) => {
-          event.preventDefault();
-          beginAuthorization();
-        }}
+        onClick={(event) => { event.preventDefault(); void beginAuthorization(); }}
       >
         <UserRound size={21} aria-hidden="true" />
       </a>
     );
   }
 
-  const user = auth.user;
+  const {session} = auth;
+  const {user} = session;
   const displayName = user.display_name || user.email.split('@')[0] || user.email;
-
+  const canOpenAdmin = session.permissionAvailability.status === 'available' && canAccessAdmin(session.permissions);
   return (
     <AccountMenu
-      labels={{
-        menu: labels.menu,
-        greeting: `Hi ${displayName}`,
-        manageAccount: labels.manageAccount,
-        signOut: labels.signOut
-      }}
+      labels={{menu: labels.menu, greeting: `Hi ${displayName}`, manageAccount: labels.manageAccount, signOut: labels.signOut}}
       links={[
         {id: 'projection', label: labels.projectionSystem, href: siteConfig.apps.projection},
-        ...(canAccessAdmin(user.permissions ?? [])
-          ? [{id: 'admin', label: labels.adminManagement, href: siteConfig.apps.admin}]
-          : [])
+        ...(canOpenAdmin ? [{id: 'admin', label: labels.adminManagement, href: siteConfig.apps.admin}] : [])
       ]}
       manageAccountHref={`${accountSiteUrl}/profile`}
       onSignOut={() => void signOut()}
-      user={{
-        name: displayName,
-        email: user.email,
-        avatarUrl: user.avatar_url
-      }}
+      user={{name: displayName, email: user.email, avatarUrl: user.avatar_url}}
     />
   );
 }
@@ -337,27 +246,7 @@ export function notifyAccountStateChange(type: 'profile-changed' | 'sign-out') {
   channel.close();
 }
 
-function shouldAttemptPassiveSso() {
-  return hasSsoHint() && sessionStorage.getItem(webPassiveSsoAttemptKey) !== '1';
-}
-
-function hasSsoHint() {
-  return document.cookie
-    .split(';')
-    .some((cookie) => cookie.trim() === 'hhc_sso_hint=1');
-}
-
-function hasSharedSignOut() {
-  return document.cookie
-    .split(';')
-    .some((cookie) => cookie.trim() === 'hhc_sso_hint=0');
-}
-
-function defaultNavigateExternal(url: string) {
-  window.location.assign(url);
-}
-
-export function webOAuthConfigForBrowser(): OAuthClientConfig {
+export function webOAuthConfigForBrowser(): BrowserOAuthConfig {
   const origin = typeof window === 'undefined' ? 'https://www.alive.org.tw' : window.location.origin;
   return {
     authorizeBaseUrl: accountApiBaseUrlForBrowser(),

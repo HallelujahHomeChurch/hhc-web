@@ -1,26 +1,28 @@
 'use client';
 
-import {useEffect, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {DownloadButton} from '@/components/ui/DownloadButton';
-import {fetchLatestWeekly} from '@/features/weekly/public-api';
+import {createWeeklyBulletinApi} from '@/features/weekly/api';
 import {formatIssueNumber, resolveWeeklyCopy} from '@/features/weekly/format';
 import {weeklyEditionLabels, type WeeklyIssue} from '@/features/weekly/types';
 import type {Locale} from '@/i18n/locales';
-import {useCanReadBulletin, useBulletinMemberMode} from '@/components/layout/AccountControl';
+import {useBulletinAccess, useBulletinAuthorization} from '@/components/layout/AccountControl';
 import {captureHandledError} from '@/lib/observability';
 
 type WeeklyCardProps = {
   locale: Locale;
-  memberMode?: boolean;
   ctaLabel: string;
   messages: {loading: string; downloading: string; downloadReady: string; downloadError: string; error: string; retry: string};
 };
 
-export function WeeklyCard({locale, memberMode: initialMemberMode = false, ctaLabel, messages}: WeeklyCardProps) {
-  const memberMode = useBulletinMemberMode(initialMemberMode);
-  const canRead = useCanReadBulletin(!memberMode);
+export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
+  const bulletinAccess = useBulletinAccess();
+  const authorization = useBulletinAuthorization();
+  const api = useMemo(() => createWeeklyBulletinApi(authorization), [authorization]);
+  const editions = bulletinAccess.editions;
+  const canRead = bulletinAccess.status === 'available' && editions.length > 0;
   const [retryKey, setRetryKey] = useState(0);
-  const requestKey = `${memberMode}:${retryKey}`;
+  const requestKey = `${editions.join(',')}:${retryKey}`;
   const [result, setResult] = useState<{
     key: string;
     state: 'ready' | 'error';
@@ -34,19 +36,19 @@ export function WeeklyCard({locale, memberMode: initialMemberMode = false, ctaLa
   useEffect(() => {
     if (!canRead) return;
     const controller = new AbortController();
-    fetchLatestWeekly({signal: controller.signal, memberMode})
+    api.fetchLatest(editions, controller.signal)
       .then((value) => {
         if (controller.signal.aborted) return;
         setResult({key: requestKey, state: 'ready', weekly: value});
       })
       .catch((error: unknown) => {
         if (!(error instanceof DOMException && error.name === 'AbortError')) {
-          captureHandledError(error, {operation: 'weekly.latest', tags: {locale, memberMode}});
+          captureHandledError(error, {operation: 'weekly.latest', tags: {locale}});
           setResult({key: requestKey, state: 'error', weekly: null});
         }
       });
     return () => controller.abort();
-  }, [canRead, locale, memberMode, requestKey]);
+  }, [api, canRead, editions, locale, requestKey]);
 
   if (!canRead) return null;
 
@@ -62,11 +64,11 @@ export function WeeklyCard({locale, memberMode: initialMemberMode = false, ctaLa
             {weekly.versions.map((version) => (
               <DownloadButton
                 key={version.locale}
-                href={version.href}
+                bulletin={version}
+                download={api.download}
                 label={weeklyEditionLabels[version.locale]}
                 ariaLabel={`${ctaLabel}: ${weeklyEditionLabels[version.locale]}`}
                 className="px-3 text-sm"
-                authenticated={memberMode}
                 preparingLabel={messages.downloading}
                 readyLabel={messages.downloadReady}
                 errorLabel={messages.downloadError}

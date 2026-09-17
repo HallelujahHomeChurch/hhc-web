@@ -3,9 +3,9 @@
 import {useEffect, useId, useRef, useState} from 'react';
 import {Bell, BellOff, LoaderCircle, X} from 'lucide-react';
 import {IconButton} from '@hallelujahhomechurch/ui';
-import {resolveAccountAuth} from '@hallelujahhomechurch/account-client';
 import type {Locale} from '@/i18n/locales';
-import {getSharedAccountSessionClient, getSharedPushConfig} from '@/lib/browser-bootstrap';
+import {getSharedPushConfig} from '@/lib/browser-bootstrap';
+import {useAccountAuth} from './AccountControl';
 import {isIOSDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 import {captureHandledError} from '@/lib/observability';
 
@@ -114,9 +114,8 @@ function retryDelay(response: Response) {
   return Math.max(minimumRetryCooldown, Number.isFinite(date) ? date - Date.now() : 0);
 }
 
-async function bindInstallationToAccount() {
+async function bindInstallationToAccount(account: ReturnType<typeof useAccountAuth>) {
   try {
-    const account = await resolveAccountAuth(getSharedAccountSessionClient());
     if (account.status === 'anonymous') {
       sessionStorage.removeItem(accountBindingSyncKey);
       return true;
@@ -124,7 +123,7 @@ async function bindInstallationToAccount() {
     if (account.status !== 'authenticated') return false;
 
     const installation = installationId();
-    return syncOnce(accountBindingSyncKey, `${installation}:${account.user.id}`, async () => {
+    return syncOnce(accountBindingSyncKey, `${installation}:${account.session.user.id}`, async () => {
       const csrf = await fetch('/api/account/v1/csrf-token', {
         credentials: 'include',
         headers: {Accept: 'application/json'},
@@ -200,6 +199,7 @@ async function registerSubscription(subscription: PushSubscription, locale: Loca
 }
 
 export function WebPushControl({labels, locale, autoPrompt = false}: WebPushControlProps) {
+  const account = useAccountAuth();
   const [state, setState] = useState<State>('checking');
   const [showPrompt, setShowPrompt] = useState(false);
   const [bindingPending, setBindingPending] = useState(false);
@@ -225,7 +225,7 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
         if (subscription) {
           void Promise.all([
             registerSubscription(subscription, locale),
-            bindInstallationToAccount()
+            bindInstallationToAccount(account)
           ]).then(([registered, bound]) => {
             if (active) setBindingPending(!registered || !bound);
           });
@@ -242,7 +242,7 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
     return () => {
       active = false;
     };
-  }, [locale]);
+  }, [account, locale]);
 
   useEffect(() => {
     if (!autoPrompt || state !== 'off' || Notification.permission !== 'default') return;
@@ -264,13 +264,13 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
         }
         const [registered, bound] = await Promise.all([
           registerSubscription(subscription, locale),
-          bindInstallationToAccount()
+          bindInstallationToAccount(account)
         ]);
         setBindingPending(!registered || !bound);
       });
     }, 30000);
     return () => window.clearTimeout(timer);
-  }, [bindingPending, locale, state]);
+  }, [account, bindingPending, locale, state]);
 
   if (state === 'unsupported') return null;
 
@@ -315,7 +315,7 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
         await subscription.unsubscribe();
         throw new Error('subscription registration failed');
       }
-      const bound = await bindInstallationToAccount();
+      const bound = await bindInstallationToAccount(account);
       setBindingPending(!bound);
       setState('on');
       setShowPrompt(false);

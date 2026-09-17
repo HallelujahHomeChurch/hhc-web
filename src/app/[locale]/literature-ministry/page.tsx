@@ -8,7 +8,6 @@ import {SiteHeaderServer} from '@/components/layout/SiteHeaderServer';
 import {BulletinAccessGate} from '@/components/layout/AccountControl';
 import {WeeklyArchive} from '@/components/literature-ministry/WeeklyArchive';
 import {getSiteLayout} from '@/features/site-layout/api';
-import {getBulletinAccess} from '@/features/weekly/access';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
@@ -28,7 +27,6 @@ async function getLocale(params: Promise<{locale: string}>): Promise<Locale> {
 
 export async function generateMetadata({params}: LiteratureMinistryPageProps): Promise<Metadata> {
   const locale = await getLocale(params);
-  const access = await getBulletinAccess();
   setRequestLocale(locale);
   const messages = getMessages(locale);
   const layout = await getSiteLayout(locale);
@@ -48,7 +46,7 @@ export async function generateMetadata({params}: LiteratureMinistryPageProps): P
       siteName: layout.siteName,
       images: [siteConfig.defaultOgImage]
     },
-    robots: access.enabled ? undefined : {index: false, follow: false},
+    robots: {index: false, follow: false},
     twitter: {
       card: 'summary_large_image',
       title: `${messages.literatureMinistry.heroTitle} | ${layout.seoTitleSuffix}`,
@@ -60,7 +58,6 @@ export async function generateMetadata({params}: LiteratureMinistryPageProps): P
 
 export default async function LiteratureMinistryPage({params}: LiteratureMinistryPageProps) {
   const locale = await getLocale(params);
-  const access = await getBulletinAccess();
   setRequestLocale(locale);
   const messages = getMessages(locale);
   const layout = await getSiteLayout(locale);
@@ -68,12 +65,12 @@ export default async function LiteratureMinistryPage({params}: LiteratureMinistr
   return (
     <>
       <SiteHeaderServer locale={locale} pathname={`/${locale}/literature-ministry`} />
-      <BulletinAccessGate publicEnabled={access.enabled}>
+      <BulletinAccessGate>
       <main>
         <AboutHero imageUrl={layout.bannerImageUrl} locale={locale} title={messages.literatureMinistry.heroTitle} subtitle={messages.literatureMinistry.heroSubtitle} />
         <div className="bg-[image:var(--hhc-page-gradient)] py-10 pb-14">
           <Suspense fallback={null}>
-            <WeeklyArchive locale={locale} memberMode={!access.enabled} messages={messages.literatureMinistry} />
+            <WeeklyArchive locale={locale} messages={messages.literatureMinistry} />
           </Suspense>
         </div>
       </main>

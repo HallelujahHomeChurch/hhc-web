@@ -1,226 +1,38 @@
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-
-const issueAccessToken = vi.hoisted(() => vi.fn().mockResolvedValue({accessToken: 'member-token', expiresIn: 900}));
-const captureHandledError = vi.hoisted(() => vi.fn());
-vi.mock('@/lib/browser-bootstrap', () => ({getSharedAccountSessionClient: () => ({issueAccessToken})}));
-vi.mock('@/lib/observability', () => ({captureHandledError}));
 import {DownloadButton} from './DownloadButton';
-import * as AccountControl from '@/components/layout/AccountControl';
-import * as PwaCapabilities from '@/lib/pwa-capabilities';
 
-afterEach(() => {vi.restoreAllMocks(); issueAccessToken.mockClear(); captureHandledError.mockClear(); vi.useRealTimers(); localStorage.clear();});
+const captureHandledError = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/observability', () => ({captureHandledError}));
+
+const bulletin = {
+  issueId: '00000000-0000-4000-8000-000000000001', series: 'general', locale: 'zh-Hant' as const,
+  issueNumber: 1737, date: '2026-09-13', title: '週報', subtitle: '', downloadName: '1737.pdf'
+};
+
+afterEach(() => { vi.restoreAllMocks(); captureHandledError.mockClear(); });
 
 describe('DownloadButton', () => {
-  it('keeps its label and dimensions while preventing duplicate downloads', () => {
-    render(<DownloadButton href="/assets/weekly.pdf" label="下載週報" />);
-
-    const link = screen.getByRole('link', {name: '下載週報'});
-    expect(link).toHaveAttribute('download', '');
-
-    link.addEventListener('click', (event) => event.preventDefault());
-    fireEvent.click(link);
-    expect(link).toHaveAttribute('aria-busy', 'true');
-    expect(link).toHaveAttribute('aria-disabled', 'true');
-    expect(link).toHaveAttribute('href', '/assets/weekly.pdf');
-    expect(link.querySelector('[data-download-spinner]')).toBeInTheDocument();
-    expect(fireEvent.click(link)).toBe(false);
-  });
-
-  it('downloads member files with a session access token', async () => {
-    const id = '00000000-0000-4000-8000-000000000001';
-    const fetcher = vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(Response.json({data: {id, status: 'ready', createdAt: '2026-09-13T00:00:00Z', expiresAt: '2027-09-13T00:00:00Z'}}))
-      .mockResolvedValueOnce(new Response('pdf', {headers: {'content-disposition': "attachment; filename*=UTF-8''1737-%E8%A9%A9%E7%AF%87.pdf"}}));
+  it('downloads only the protected response and never exposes a direct file URL', async () => {
+    const download = vi.fn().mockResolvedValue(new Response('pdf', {headers: {'content-disposition': "attachment; filename*=UTF-8''1737-%E9%80%B1%E5%A0%B1.pdf"}}));
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:weekly');
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-    render(<DownloadButton href="/api/member/bulletin-downloads/2026-09-13" label="會員週報" authenticated />);
+    render(<DownloadButton bulletin={bulletin} download={download} label="下載週報" />);
 
-    fireEvent.click(screen.getByRole('link', {name: '會員週報'}));
-
-    await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
-    expect(fetcher).toHaveBeenNthCalledWith(1, '/api/member/bulletin-download-jobs', expect.objectContaining({
-      method: 'POST', headers: expect.objectContaining({Authorization: 'Bearer member-token'}), cache: 'no-store'
-    }));
-    expect(fetcher).toHaveBeenNthCalledWith(2, `/api/member/bulletin-download-jobs/${id}/file`, expect.objectContaining({headers: {Authorization: 'Bearer member-token'}}));
-    expect(click).toHaveBeenCalled();
-    expect(click.mock.instances[0]).toHaveProperty('download', '1737-詩篇.pdf');
-    expect(issueAccessToken).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', {name: '下載週報'}));
+    await waitFor(() => expect(download).toHaveBeenCalledOnce());
+    expect(download).toHaveBeenCalledWith(bulletin, expect.any(AbortSignal));
+    expect(click).toHaveBeenCalledOnce();
+    expect(click.mock.instances[0]).toHaveProperty('href', 'blob:weekly');
+    expect(click.mock.instances[0]).toHaveProperty('download', '1737-週報.pdf');
   });
 
-  it('waits for a fresh user tap before opening a prepared file in a standalone app', async () => {
-    vi.spyOn(PwaCapabilities, 'isStandaloneWebApp').mockReturnValue(true);
-    const id = '00000000-0000-4000-8000-000000000009';
-    vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(Response.json({data: {id, status: 'ready'}}))
-      .mockResolvedValueOnce(new Response('pdf', {headers: {'content-disposition': "attachment; filename*=UTF-8''1737-%E8%A9%A9%E7%AF%87.pdf"}}));
-    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:weekly');
-    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
-    const syntheticClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-    render(<DownloadButton href="/api/member/bulletin-downloads/2026-09-13" label="會員週報" authenticated readyLabel="週報已準備完成，請再次點選按鈕開啟。" />);
+  it('keeps a failed protected download recoverable', async () => {
+    render(<DownloadButton bulletin={bulletin} download={vi.fn().mockRejectedValue(new Error('unavailable'))} label="下載週報" errorLabel="暫時無法下載" />);
 
-    fireEvent.click(screen.getByRole('link', {name: '會員週報'}));
-
-    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('週報已準備完成，請再次點選按鈕開啟。'));
-    const link = screen.getByRole('link', {name: '會員週報'});
-    expect(link).toHaveAttribute('href', 'blob:weekly');
-    expect(link).toHaveAttribute('download', '1737-詩篇.pdf');
-    expect(link).toHaveAttribute('target', '_blank');
-    expect(syntheticClick).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', {name: '下載週報'}));
+    expect(await screen.findByRole('alert')).toHaveTextContent('暫時無法下載');
+    expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'weekly.download'});
   });
-
-  it('polls an accepted preparation before downloading', async () => {
-    vi.useFakeTimers();
-    const id = '00000000-0000-4000-8000-000000000002';
-    const pending = () => new Response(JSON.stringify({data: {id, status: 'queued', createdAt: '2026-09-13T00:00:00Z', expiresAt: '2027-09-13T00:00:00Z'}}), {status: 202, headers: {'Content-Type': 'application/json', 'Retry-After': '1'}});
-    const fetcher = vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(pending())
-      .mockResolvedValueOnce(Response.json({data: {id, status: 'ready', createdAt: '2026-09-13T00:00:00Z', expiresAt: '2027-09-13T00:00:00Z'}}))
-      .mockResolvedValueOnce(new Response('pdf'));
-    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:weekly');
-    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-    render(<DownloadButton href="/api/member/bulletin-downloads/2026-09-13?locale=zh-Hant" label="會員週報" authenticated />);
-
-    fireEvent.click(screen.getByRole('link', {name: '會員週報'}));
-    await vi.advanceTimersByTimeAsync(1000);
-    await vi.advanceTimersByTimeAsync(0);
-
-    expect(fetcher).toHaveBeenCalledTimes(3);
-    expect(fetcher).toHaveBeenNthCalledWith(2, `/api/member/bulletin-download-jobs/${id}`, expect.anything());
-    expect(fetcher).toHaveBeenNthCalledWith(3, `/api/member/bulletin-download-jobs/${id}/file`, expect.anything());
-    expect(issueAccessToken).toHaveBeenCalledTimes(1);
-  });
-
-  it('shows one preparation toast while an authenticated download is pending', async () => {
-    const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(() => new Promise(() => undefined));
-    render(<DownloadButton href="/api/member/bulletin-downloads/2026-09-13" label="會員週報" authenticated preparingLabel="正在準備週報，完成後會自動下載。" />);
-
-    const link = screen.getByRole('link', {name: '會員週報'});
-    fireEvent.click(link);
-
-    const toast = await screen.findByRole('status');
-    expect(toast).toHaveTextContent('正在準備週報，完成後會自動下載。');
-    expect(toast.parentElement).toHaveClass('hhc-toast-region');
-    expect(link).toHaveAttribute('aria-busy', 'true');
-    fireEvent.click(link);
-    expect(fetcher).toHaveBeenCalledTimes(1);
-  });
-
-  it('shows the approximate server progress while preparing', async () => {
-    vi.useFakeTimers();
-    const id = '00000000-0000-4000-8000-000000000003';
-    vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(new Response(JSON.stringify({data: {id, status: 'running', progress: 5}}), {headers: {'Retry-After': '1'}}))
-      .mockResolvedValueOnce(Response.json({data: {id, status: 'running', progress: 35}}))
-      .mockImplementationOnce((_input, init) => new Promise((_resolve, reject) => init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))));
-    render(<DownloadButton href="/api/member/bulletin-downloads/2026-09-13?locale=zh-Hant" label="會員週報" authenticated preparingLabel="正在準備週報，約 {progress}%。" />);
-    fireEvent.click(screen.getByRole('link', {name: '會員週報'}));
-    await vi.advanceTimersByTimeAsync(1000);
-    await vi.advanceTimersByTimeAsync(0);
-    expect(screen.getByRole('status')).toHaveTextContent('正在準備週報，約 35%。');
-  });
-
-  it('resumes a stored preparation after the page reloads without creating another job', async () => {
-    const id = '00000000-0000-4000-8000-000000000004';
-    localStorage.setItem('hhc:bulletin-download:2026-09-13:zh-Hant', id);
-    const fetcher = vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(Response.json({data: {id, status: 'ready', progress: 100}}))
-      .mockResolvedValueOnce(new Response('pdf'));
-    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:weekly');
-    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-    render(<DownloadButton href="/api/member/bulletin-downloads/2026-09-13?locale=zh-Hant" label="會員週報" authenticated />);
-    await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
-    expect(fetcher.mock.calls[0]![0]).toBe(`/api/member/bulletin-download-jobs/${id}`);
-    expect(fetcher.mock.calls.some(call => call[0] === '/api/member/bulletin-download-jobs')).toBe(false);
-    expect(issueAccessToken).toHaveBeenCalledTimes(1);
-  });
-});
-
-it('shows a danger toast when an authenticated download fails', async () => {
-  vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('', {status: 503}));
-  render(<DownloadButton href="/api/member/bulletin-downloads/2026-09-13" label="會員週報" authenticated errorLabel="週報暫時無法下載，請稍後再試。" />);
-
-  fireEvent.click(screen.getByRole('link', {name: '會員週報'}));
-
-  expect(await screen.findByRole('alert')).toHaveClass('hhc-toast', 'hhc-toast--danger');
-  expect(screen.getByRole('alert')).toHaveTextContent('週報暫時無法下載，請稍後再試。');
-  expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'weekly.download'});
-});
-
-function pendingMemberDownload() {
-  return vi.spyOn(globalThis, 'fetch').mockImplementation((_input, init) => new Promise((_resolve, reject) => {
-    init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
-  }));
-}
-
-async function startPendingMemberDownload() {
-  const link = screen.getByRole('link', {name: '會員週報'});
-  fireEvent.click(link);
-  expect(await screen.findByRole('status')).toHaveTextContent('正在準備週報，完成後會自動下載。');
-}
-
-it('removes the preparation toast without an error when account signs out', async () => {
-  const fetcher = pendingMemberDownload();
-  render(<DownloadButton href="/api/member/bulletin-downloads/2026-09-13" label="會員週報" authenticated preparingLabel="正在準備週報，完成後會自動下載。" />);
-
-  await startPendingMemberDownload();
-  window.dispatchEvent(new CustomEvent('hhc:account-state', {detail: {type: 'sign-out'}}));
-
-  expect(fetcher.mock.calls[0]![1]!.signal!.aborted).toBe(true);
-  await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-});
-
-it('removes the preparation toast without an error when the account changes', async () => {
-  const fetcher = pendingMemberDownload();
-  const identity = vi.spyOn(AccountControl, 'useAccountIdentity').mockReturnValue('member-A');
-  const {rerender} = render(<DownloadButton href="/api/member/bulletin-downloads/2026-09-13" label="會員週報" authenticated preparingLabel="正在準備週報，完成後會自動下載。" />);
-
-  await startPendingMemberDownload();
-  identity.mockReturnValue('member-B');
-  rerender(<DownloadButton href="/api/member/bulletin-downloads/2026-09-13" label="會員週報" authenticated preparingLabel="正在準備週報，完成後會自動下載。" />);
-
-  expect(fetcher.mock.calls[0]![1]!.signal!.aborted).toBe(true);
-  await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-});
-
-it('removes the preparation toast without an error when the download href changes', async () => {
-  const fetcher = pendingMemberDownload();
-  const {rerender} = render(<DownloadButton href="/api/member/bulletin-downloads/2026-09-13" label="會員週報" authenticated preparingLabel="正在準備週報，完成後會自動下載。" />);
-
-  await startPendingMemberDownload();
-  rerender(<DownloadButton href="/api/member/bulletin-downloads/2026-09-20" label="會員週報" authenticated preparingLabel="正在準備週報，完成後會自動下載。" />);
-
-  expect(fetcher.mock.calls[0]![1]!.signal!.aborted).toBe(true);
-  await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-});
-
-it('aborts an in-flight download when its component unmounts', async () => {
-  const fetcher = pendingMemberDownload();
-  const {unmount} = render(<DownloadButton href="/api/member/bulletin-downloads/2026-09-13" label="會員週報" authenticated preparingLabel="正在準備週報，完成後會自動下載。" />);
-
-  await startPendingMemberDownload();
-  unmount();
-
-  expect(fetcher.mock.calls[0]![1]!.signal!.aborted).toBe(true);
-});
-
-it('releases a public download button when the account identity changes', () => {
-  const identity = vi.spyOn(AccountControl, 'useAccountIdentity').mockReturnValue(null);
-  const {rerender} = render(<DownloadButton href="/assets/weekly.pdf" label="Download" />);
-  const link = screen.getByRole('link', {name: 'Download'});
-  link.addEventListener('click', event => event.preventDefault());
-  fireEvent.click(link);
-  expect(link).toHaveAttribute('aria-busy', 'true');
-  identity.mockReturnValue('member-B');
-  rerender(<DownloadButton href="/assets/weekly.pdf" label="Download" />);
-  expect(link).toHaveAttribute('aria-busy', 'false');
-  expect(link).toHaveAttribute('aria-disabled', 'false');
-  fireEvent.click(link);
-  expect(link).toHaveAttribute('aria-busy', 'true');
 });

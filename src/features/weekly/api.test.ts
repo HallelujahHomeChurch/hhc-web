@@ -1,45 +1,49 @@
-import type {BulletinEdition} from '@hallelujahhomechurch/preferences';
-import {describe, expect, expectTypeOf, it} from 'vitest';
-import {getLatestWeekly, getWeeklyIssuePage, getWeeklyIssues} from './api';
-import type {WeeklyBulletin} from './types';
+import {describe, expect, it, vi} from 'vitest';
+import {createWeeklyBulletinApi} from './api';
 
-describe('weekly api', () => {
-  it('returns the latest issue without selecting from a product locale', () => {
-    expect(getLatestWeekly()).toMatchObject({
-      id: '2025-05-11',
-      versions: [
-        {locale: 'zh-Hant'},
-        {locale: 'zh-Hans'},
-        {locale: 'en'}
-      ]
-    });
+const bulletin = {
+  issueId: '00000000-0000-4000-8000-000000000001', issueDate: '2026-09-13', issueNumber: 1737,
+  series: 'general', locale: 'zh-Hant', title: '週報', subtitle: '', downloadName: '1737.pdf', publishedAt: '2026-09-13T00:00:00Z', version: 1
+};
+
+describe('member weekly API', () => {
+  it('uses protected routes and retries once after a 401', async () => {
+    const fetcher = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json({}, {status: 401}))
+      .mockResolvedValueOnce(Response.json({data: bulletin, meta: {}, error: null}));
+    const refresh = vi.fn().mockResolvedValue('new-token');
+    const api = createWeeklyBulletinApi({getAccessToken: vi.fn().mockResolvedValue('old-token'), refreshAfterUnauthorized: refresh}, fetcher);
+
+    await expect(api.fetchLatest(['zh-Hant'])).resolves.toMatchObject({id: bulletin.issueId});
+    expect(refresh).toHaveBeenCalledWith('old-token');
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    const request = fetcher.mock.calls[1]?.[0] as Request;
+    expect(request.url).toContain('/api/member/bulletins/latest?locale=zh-Hant&series=general');
+    expect(request.headers.get('authorization')).toBe('Bearer new-token');
   });
 
-  it('returns all issues with three downloadable locale versions', () => {
-    const [issue] = getWeeklyIssues();
+  it('does not refresh a 403 and never falls back to a public route', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(Response.json({}, {status: 403}));
+    const refresh = vi.fn().mockResolvedValue('new-token');
+    const api = createWeeklyBulletinApi({getAccessToken: vi.fn().mockResolvedValue('token'), refreshAfterUnauthorized: refresh}, fetcher);
 
-    expectTypeOf<WeeklyBulletin['locale']>().toEqualTypeOf<BulletinEdition>();
-    expectTypeOf<'ja'>().not.toExtend<WeeklyBulletin['locale']>();
-    expectTypeOf<'ko'>().not.toExtend<WeeklyBulletin['locale']>();
-    expect(issue.versions.map((version) => version.locale)).toEqual(['zh-Hant', 'zh-Hans', 'en']);
-    expect(issue.versions.every((version) => version.href.endsWith('.pdf'))).toBe(true);
+    await expect(api.fetchLatest(['zh-Hant'])).rejects.toMatchObject({status: 403});
+    expect(refresh).not.toHaveBeenCalled();
+    expect((fetcher.mock.calls[0]?.[0] as Request).url).toContain('/api/member/bulletins/latest');
   });
 
-  it('returns paginated history issues without the latest issue', () => {
-    const page = getWeeklyIssuePage({page: 1, pageSize: 1});
+  it('omits a revoked edition without exposing its metadata', async () => {
+    const fetcher = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json({data: bulletin, meta: {}, error: null}))
+      .mockResolvedValueOnce(Response.json({}, {status: 404}));
+    const api = createWeeklyBulletinApi({getAccessToken: vi.fn().mockResolvedValue('token'), refreshAfterUnauthorized: vi.fn()}, fetcher);
 
-    expect(page).toMatchObject({
-      page: 1,
-      pageSize: 1,
-      totalItems: 1,
-      totalPages: 1
-    });
-    expect(page.items).toHaveLength(1);
-    expect(page.items[0].id).toBe('2025-05-04');
+    await expect(api.fetchLatest(['zh-Hant', 'en'])).resolves.toMatchObject({versions: [expect.objectContaining({locale: 'zh-Hant'})]});
   });
 
-  it('normalizes out-of-range pagination requests', () => {
-    expect(getWeeklyIssuePage({page: -10, pageSize: 1}).page).toBe(1);
-    expect(getWeeklyIssuePage({page: 99, pageSize: 1}).page).toBe(1);
+  it('treats a protected archive 404 as an empty result', async () => {
+    const api = createWeeklyBulletinApi({getAccessToken: vi.fn().mockResolvedValue('token'), refreshAfterUnauthorized: vi.fn()}, vi.fn().mockResolvedValue(Response.json({}, {status: 404})));
+
+    await expect(api.fetchArchive(['zh-Hant'])).resolves.toMatchObject({items: [], totalItems: 0});
   });
 });

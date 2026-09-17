@@ -1,109 +1,30 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
 
-afterEach(() => {
-  vi.restoreAllMocks();
-  vi.resetModules();
-});
+afterEach(() => { vi.restoreAllMocks(); vi.resetModules(); });
 
-describe('browser bootstrap sharing', () => {
-  it('uses the Account host rather than the public website API origin', async () => {
+describe('browser bootstrap', () => {
+  it('uses the Account authority for the shared session client', async () => {
     vi.stubEnv('NEXT_PUBLIC_ACCOUNT_SITE_URL', 'https://account.alive.org.tw');
-    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
-      void input;
-      return Response.json({authenticated: false});
-    });
+    const fetcher = vi.fn().mockResolvedValue(Response.json({authenticated: false}));
     vi.stubGlobal('fetch', fetcher);
     const {getSharedAccountSessionClient} = await import('./browser-bootstrap');
 
     await getSharedAccountSessionClient().getSession();
 
-    expect(fetcher.mock.calls[0][0]).toBe('https://account.alive.org.tw/api/account/v1/session');
-    vi.unstubAllEnvs();
+    expect(fetcher).toHaveBeenCalledWith(
+      'https://account.alive.org.tw/api/account/v1/session',
+      expect.anything()
+    );
   });
 
-  it('shares account session and push config requests across remounts', async () => {
-    const fetcher = vi.fn(async (input: RequestInfo | URL) => String(input).endsWith('/session')
-      ? Response.json({authenticated: false})
-      : Response.json({data: {vapidPublicKey: 'AQID'}}));
+  it('shares only the public push configuration request', async () => {
+    const fetcher = vi.fn().mockResolvedValue(Response.json({data: {vapidPublicKey: 'AQID'}}));
     vi.stubGlobal('fetch', fetcher);
-    const {getSharedAccountSessionClient, getSharedPushConfig} = await import('./browser-bootstrap');
+    const {getSharedPushConfig} = await import('./browser-bootstrap');
 
-    await Promise.all([
-      getSharedAccountSessionClient().getSession(),
-      getSharedAccountSessionClient().getSession(),
-      getSharedPushConfig(),
-      getSharedPushConfig()
+    await expect(Promise.all([getSharedPushConfig(), getSharedPushConfig()])).resolves.toEqual([
+      {vapidPublicKey: 'AQID'}, {vapidPublicKey: 'AQID'}
     ]);
-
-    expect(fetcher.mock.calls.filter(([url]) => String(url).endsWith('/session'))).toHaveLength(1);
-    expect(fetcher.mock.calls.filter(([url]) => String(url).endsWith('/push/config'))).toHaveLength(1);
-  });
-
-  it('revalidates session explicitly and retries rejected push config', async () => {
-    const fetcher = vi.fn()
-      .mockResolvedValueOnce(Response.json({authenticated: false}))
-      .mockResolvedValueOnce(new Response(null, {status: 503}))
-      .mockResolvedValueOnce(Response.json({data: {vapidPublicKey: 'AQID'}}))
-      .mockResolvedValueOnce(Response.json({authenticated: false}));
-    vi.stubGlobal('fetch', fetcher);
-    const {getSharedAccountSessionClient, getSharedPushConfig, revalidateSharedAccountSession} = await import('./browser-bootstrap');
-
-    await getSharedAccountSessionClient().getSession();
-    await expect(getSharedPushConfig()).rejects.toThrow();
-    await expect(getSharedPushConfig()).resolves.toEqual({vapidPublicKey: 'AQID'});
-    await revalidateSharedAccountSession();
-
-    expect(fetcher).toHaveBeenCalledTimes(4);
-  });
-
-  it('shares access tokens until they near expiry', async () => {
-    let now = 1_000_000;
-    vi.spyOn(Date, 'now').mockImplementation(() => now);
-    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.endsWith('/csrf-token')) return Response.json({csrf_token: 'csrf'});
-      if (url.endsWith('/session/access-token')) return Response.json({access_token: `token-${now}`, expires_in: 900});
-      return new Response(null, {status: 404});
-    });
-    vi.stubGlobal('fetch', fetcher);
-    const {getSharedAccountSessionClient} = await import('./browser-bootstrap');
-
-    await Promise.all([
-      getSharedAccountSessionClient().issueAccessToken(),
-      getSharedAccountSessionClient().issueAccessToken()
-    ]);
-    await getSharedAccountSessionClient().issueAccessToken();
-    now += 871_000;
-    await getSharedAccountSessionClient().issueAccessToken();
-
-    expect(fetcher.mock.calls.filter(([url]) => String(url).endsWith('/session/access-token'))).toHaveLength(2);
-  });
-
-  it('respects access-token Retry-After without repeating the request', async () => {
-    let now = 1_000_000;
-    vi.spyOn(Date, 'now').mockImplementation(() => now);
-    let tokenRequests = 0;
-    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.endsWith('/csrf-token')) return Response.json({csrf_token: 'csrf'});
-      if (url.endsWith('/session/access-token')) {
-        tokenRequests += 1;
-        if (tokenRequests === 1) {
-          return Response.json({error_code: 'RATE_LIMITED'}, {status: 429, headers: {'Retry-After': '60'}});
-        }
-        return Response.json({access_token: 'token', expires_in: 900});
-      }
-      return new Response(null, {status: 404});
-    });
-    vi.stubGlobal('fetch', fetcher);
-    const {getSharedAccountSessionClient} = await import('./browser-bootstrap');
-
-    await expect(getSharedAccountSessionClient().issueAccessToken()).rejects.toMatchObject({status: 429, code: 'RATE_LIMITED'});
-    await expect(getSharedAccountSessionClient().issueAccessToken()).rejects.toMatchObject({status: 429, code: 'RATE_LIMITED'});
-    expect(tokenRequests).toBe(1);
-
-    now += 60_000;
-    await expect(getSharedAccountSessionClient().issueAccessToken()).resolves.toMatchObject({accessToken: 'token'});
-    expect(tokenRequests).toBe(2);
+    expect(fetcher).toHaveBeenCalledOnce();
   });
 });

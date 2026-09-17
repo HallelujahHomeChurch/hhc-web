@@ -13,6 +13,7 @@ import {SiteHeader} from './SiteHeader';
 const anonymousSessionClient: AccountSessionClient = {
   getSession: async () => ({authenticated: false}),
   issueAccessToken: async () => ({accessToken: '', expiresIn: 0}),
+  refreshAccessToken: async () => ({accessToken: '', expiresIn: 0}),
   logout: async () => undefined,
   logoutAll: async () => undefined
 };
@@ -64,11 +65,10 @@ describe('SiteHeader', () => {
     const desktopNavigation = screen.getByRole('navigation', {name: '主要導覽'});
     const aboutLink = within(desktopNavigation).getByRole('link', {name: '關於我們'});
     const newsLinks = screen.getAllByRole('link', {name: '最新消息'});
-    const literatureMinistryLink = within(desktopNavigation).getByRole('link', {name: '文字事工'});
 
     expect(aboutLink).toHaveAttribute('href', '/zh-Hant/about');
     expect(newsLinks[0]).toHaveAttribute('href', '/zh-Hant/news');
-    expect(literatureMinistryLink).toHaveAttribute('href', '/zh-Hant/literature-ministry');
+    expect(within(desktopNavigation).queryByRole('link', {name: '文字事工'})).not.toBeInTheDocument();
     expect(aboutLink).toHaveAttribute('aria-current', 'page');
     expect(aboutLink).toHaveAttribute('data-active', 'true');
     const accountEntry = await screen.findByRole('link', {name: '登入'});
@@ -85,7 +85,7 @@ describe('SiteHeader', () => {
     expect(aboutLink.className).toContain('data-[active=true]:after:scale-x-100');
   });
 
-  it('renders Home first in the four-item mobile navigation and keeps account access in the header', async () => {
+  it('renders Home first and hides member-only weekly navigation for an anonymous visitor', async () => {
     const getSession = vi.fn().mockResolvedValue({authenticated: false});
 
     render(
@@ -100,8 +100,7 @@ describe('SiteHeader', () => {
     expect(within(mobileNavigation).getAllByRole('link').map((link) => link.textContent)).toEqual([
       '首頁',
       '關於我們',
-      '最新消息',
-      '文字事工'
+      '最新消息'
     ]);
     expect(screen.queryByRole('button', {name: '開啟選單'})).not.toBeInTheDocument();
     expect(getSession).toHaveBeenCalledOnce();
@@ -323,7 +322,7 @@ describe('SiteHeader', () => {
 
     await screen.findByRole('link', {name: '登入'});
     expect(screen.getByRole('navigation', {name: '選單'})).toHaveStyle({
-      gridTemplateColumns: 'repeat(3, minmax(0, 1fr))'
+      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
     });
   });
 
@@ -351,7 +350,9 @@ describe('SiteHeader', () => {
       ...anonymousSessionClient,
       getSession: async () => ({
         authenticated: true,
-        user: {id: 'u1', email: 'member@example.com', display_name: '會員', avatar_url: null, permissions: []}
+        user: {id: 'u1', email: 'member@example.com', display_name: '會員', avatar_url: null},
+        permissions: [],
+        permission_availability: {status: 'available'}
       })
     };
 

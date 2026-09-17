@@ -13,17 +13,20 @@ importers:
   .:
     dependencies:
       '@hallelujahhomechurch/account-client':
-        specifier: 0.7.0
-        version: 0.7.0
+        specifier: 1.0.3
+        version: 1.0.3
       '@hallelujahhomechurch/hhc-web-client':
-        specifier: 0.8.0
-        version: 0.8.0
+        specifier: 1.0.3
+        version: 1.0.3
+      '@hallelujahhomechurch/operations-client':
+        specifier: 1.0.3
+        version: 1.0.3
       '@hallelujahhomechurch/preferences':
-        specifier: 0.6.14
-        version: 0.6.14
+        specifier: 1.0.3
+        version: 1.0.3
       '@hallelujahhomechurch/ui':
-        specifier: 0.6.18
-        version: 0.6.18(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: 1.0.3
+        version: 1.0.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@sentry/nextjs':
         specifier: 10.69.0
         version: 10.69.0(@opentelemetry/core@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.11.0(@opentelemetry/api@1.9.1))(next@16.3.3(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@types/node@24.13.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(webpack@5.111.0)
@@ -324,17 +327,20 @@ packages:
   '@formatjs/intl-localematcher@0.8.13':
     resolution: {integrity: sha512-kHEAFOkeJSPNi7c5PaKaRjxcBrJwzzt81ifUu+8uve1EDW/VJl83KsxmqgqNZLzcFEhSliZGvx3+pk/RH0IOmg==}
 
-  '@hallelujahhomechurch/account-client@0.7.0':
-    resolution: {integrity: sha512-U4Ye7xWpF8DhzKi9vuCFm83B2+HcfePuHdVB6W37iyiTtZhdVypk7NdfTNufYyDqR247Ei4Oc9EDQZrxQbLuZQ==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/account-client/0.7.0/fc1769183a9309e2ef205a3a56eeedf72f508c18}
+  '@hallelujahhomechurch/account-client@1.0.3':
+    resolution: {integrity: sha512-l10t7B2WyYApkLG0kMlD4kLzlBZoK2SR9XPpvsTRVKxe/IHJ2FBWAUEdx0V05TMgxewO5kGodeckzdxEUnYzJg==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/account-client/1.0.3/0be4355187beb74583529e764192aa1a45b937fb}
 
-  '@hallelujahhomechurch/hhc-web-client@0.8.0':
-    resolution: {integrity: sha512-4os+d4+RfPsaMIl453TFo2Qf2/YZKQBZbszM/EVsfj4M14jZQtUyYymynVR0/DcJwyw5VbVjECzDIIbRhD7RAQ==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/hhc-web-client/0.8.0/38a775b61780a2839af58a9e5d1c53d39964f0e5}
+  '@hallelujahhomechurch/hhc-web-client@1.0.3':
+    resolution: {integrity: sha512-aJnVEH6am7jD5GS33ddnxIQYgFMXEYTc233iP60YXiDXkDi2Tnl08Ph9qKIPdEMJE0XCRXlPEKq/JT0yKdWaiw==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/hhc-web-client/1.0.3/eac0117ec393c9b55a135fc7a007da47c9d6f634}
 
-  '@hallelujahhomechurch/preferences@0.6.14':
-    resolution: {integrity: sha512-e0E3fMRGcNHsx4IRMM9GhqoUzj/QSMViQub142VPppWD93lcKTqredKn95YHgRqDd2zeVHjuOTSL3kOhx3+zDw==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/preferences/0.6.14/1b9c7ab32a90b2dae4283fd30a71d07603e9897e}
+  '@hallelujahhomechurch/operations-client@1.0.3':
+    resolution: {integrity: sha512-bRt4as/4wxcYG9Mqc4DbNWqN6TtiW/OJ8eBnXHXD0xyUBO1Xq7AbgK1b4+R2EhciHWnwBnGlsM6MSFKw3xo6FA==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/operations-client/1.0.3/599fa6c1e341394f6da85ee52174b2d12cf18c86}
 
-  '@hallelujahhomechurch/ui@0.6.18':
-    resolution: {integrity: sha512-9pwR4HglgVbcWYVgWmlWxstcMFQCZsZ3dCn5kOwvd6TnPardbqolnk61JWsKmJoC/p4QW+IQ73ryCa6eYwJDRA==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/ui/0.6.18/b020b10dc7aa84d613e62af44b7b3f9ffe1864f1}
+  '@hallelujahhomechurch/preferences@1.0.3':
+    resolution: {integrity: sha512-x1cxDSr5XrWr3ZF3Q/x+o+tL9XKiFYg2qbilnFDSUU0/s3n/hGBrxZktK8xRvb2CfBWUWnsHHHuItEUcm+1FuA==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/preferences/1.0.3/62bd6f662102fd3a23248bf2b98d7a27e7c49943}
+
+  '@hallelujahhomechurch/ui@1.0.3':
+    resolution: {integrity: sha512-eShqbMjAHm6G1yFq/Btj28jxA8CHPIVI7bKenhhkqDKxULrojXLIxivQs2V92nZMjrRTccLUwwIUaVn05wgwrA==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/ui/1.0.3/042f8f9cab8b08157421f10cb17ade711251802c}
     peerDependencies:
       react: ^19.0.0
       react-dom: ^19.0.0
@@ -2228,6 +2234,7 @@ packages:
   eslint@9.39.5:
     resolution: {integrity: sha512-DgZS62aPLXKlnxILS/AYCoRvHaZeXceIzlXPkkGGzJWSow1aEk0lbTlxUSlyjC8jcaKxAdOnTDz+o1JFSBsyjw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
     peerDependencies:
       jiti: '*'
@@ -4108,15 +4115,20 @@ snapshots:
     dependencies:
       '@formatjs/fast-memoize': 3.1.7
 
-  '@hallelujahhomechurch/account-client@0.7.0': {}
+  '@hallelujahhomechurch/account-client@1.0.3': {}
 
-  '@hallelujahhomechurch/hhc-web-client@0.8.0':
+  '@hallelujahhomechurch/hhc-web-client@1.0.3':
     dependencies:
       openapi-fetch: 0.15.2
 
-  '@hallelujahhomechurch/preferences@0.6.14': {}
+  '@hallelujahhomechurch/operations-client@1.0.3':
+    dependencies:
+      '@hallelujahhomechurch/account-client': 1.0.3
+      openapi-fetch: 0.15.2
 
-  '@hallelujahhomechurch/ui@0.6.18(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@hallelujahhomechurch/preferences@1.0.3': {}
+
+  '@hallelujahhomechurch/ui@1.0.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@internationalized/date': 3.12.3
       input-otp: 1.4.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
