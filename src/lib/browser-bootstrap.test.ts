@@ -6,6 +6,21 @@ afterEach(() => {
 });
 
 describe('browser bootstrap sharing', () => {
+  it('uses the Account host rather than the public website API origin', async () => {
+    vi.stubEnv('NEXT_PUBLIC_ACCOUNT_SITE_URL', 'https://account.alive.org.tw');
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      void input;
+      return Response.json({authenticated: false});
+    });
+    vi.stubGlobal('fetch', fetcher);
+    const {getSharedAccountSessionClient} = await import('./browser-bootstrap');
+
+    await getSharedAccountSessionClient().getSession();
+
+    expect(fetcher.mock.calls[0][0]).toBe('https://account.alive.org.tw/api/account/v1/session');
+    vi.unstubAllEnvs();
+  });
+
   it('shares account session and push config requests across remounts', async () => {
     const fetcher = vi.fn(async (input: RequestInfo | URL) => String(input).endsWith('/session')
       ? Response.json({authenticated: false})

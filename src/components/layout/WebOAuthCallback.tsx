@@ -89,7 +89,7 @@ export function WebOAuthCallback({
     if (!completion.current || completion.current.attempt !== attempt) {
       completion.current = {
         attempt,
-        promise: completeSignIn({attempt, code, fetcher, transaction, url})
+        promise: completeSignIn({attempt, code, fetcher, oauth: oauth ?? webOAuthConfigForBrowser(), transaction})
       };
     }
     completion.current.promise
@@ -134,17 +134,18 @@ async function completeSignIn({
   attempt,
   code,
   fetcher,
-  transaction,
-  url
+  oauth,
+  transaction
 }: {
   attempt: number;
   code: string;
   fetcher: typeof fetch;
+  oauth: OAuthClientConfig;
   transaction: NonNullable<ReturnType<typeof readOAuthTransaction>>;
-  url: URL;
 }) {
+  const accountApiBaseUrl = oauth.authorizeBaseUrl.replace(/\/$/, '');
   if (attempt > 0) {
-    const session = await fetcher('/api/account/v1/session', {
+    const session = await fetcher(`${accountApiBaseUrl}/session`, {
       method: 'GET',
       credentials: 'include',
       headers: {accept: 'application/json'},
@@ -161,7 +162,7 @@ async function completeSignIn({
     }
   }
 
-  const response = await fetcher('/api/account/v1/oauth/token', {
+  const response = await fetcher(`${accountApiBaseUrl}/oauth/token`, {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -171,8 +172,8 @@ async function completeSignIn({
     body: new URLSearchParams({
       grant_type: 'authorization_code',
       code,
-      redirect_uri: `${url.origin}/oauth/callback`,
-      client_id: 'www-web',
+      redirect_uri: oauth.redirectUri,
+      client_id: oauth.clientId,
       code_verifier: transaction.codeVerifier
     })
   });

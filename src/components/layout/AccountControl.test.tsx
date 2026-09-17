@@ -2,7 +2,7 @@ import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {AccountSessionError, type AccountSessionClient} from '@hallelujahhomechurch/account-client';
-import {AccountControl, AccountControlProvider, BulletinAccessGate, useBulletinMemberMode, accountStateEventName} from './AccountControl';
+import {AccountControl, AccountControlProvider, BulletinAccessGate, useBulletinMemberMode, accountStateEventName, webOAuthConfigForBrowser} from './AccountControl';
 
 const captureHandledError = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/observability', () => ({
@@ -59,6 +59,18 @@ describe('AccountControl', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+  });
+
+  it('uses the Account authority and the registered website scopes', () => {
+    vi.stubEnv('NEXT_PUBLIC_ACCOUNT_SITE_URL', 'https://account.alive.org.tw');
+
+    expect(webOAuthConfigForBrowser()).toMatchObject({
+      authorizeBaseUrl: oauth.authorizeBaseUrl,
+      clientId: oauth.clientId,
+      scope: oauth.scope
+    });
+
+    vi.unstubAllEnvs();
   });
 
   it('renders sign in without a passive redirect when no SSO hint exists', async () => {
