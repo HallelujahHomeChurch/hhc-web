@@ -269,6 +269,13 @@ POST /api/admin/operations/org-role-assignments/{assignmentId}/revoke
   the target authorization configuration, update each direct caller to the
   target URL, and observe a successful execution before deleting the source
   route.
+- [ ] Then move the LINE schedule reader from
+  `GET /priv/meeting-occurrences` to
+  `GET /priv/operations/meeting-occurrences`. Preserve its exact
+  `{ "data": [...] }` response, three-second deadline, and 60-second cache;
+  accept only the `hhc-line-function-bot` Dapr caller on this route. Do not
+  add it to `PRIVATE_ALLOWED_CALLER_APP_IDS`. Release and observe the caller
+  before deleting the source occurrence route.
 - [ ] Remove runtime ownership and route definitions from `hhc-web-api`.
 - [ ] Drop source tables only in the coordinated cutover after backup and import verification.
 - [ ] Run `go test -race ./... -count=1 -p=1`, `go vet ./...`, OpenAPI lint, migration-policy tests, and image build.
