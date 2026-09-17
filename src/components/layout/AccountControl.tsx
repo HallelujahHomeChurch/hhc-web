@@ -162,8 +162,6 @@ export function AccountControlProvider({
           const api = createHhcWebClient({baseUrl: '/api', getAccessToken: () => accessToken});
           const access = await api.getMemberBulletinAccess(controller.signal);
           canRead = access.canRead; publicEnabled = access.publicEnabled;
-        } else {
-          publicEnabled = (await createHhcWebClient({baseUrl: '/api', getAccessToken: () => null}).getBulletinAccess(controller.signal)).enabled;
         }
       } catch (error) {
         if (!(error instanceof DOMException && error.name === 'AbortError')) {
