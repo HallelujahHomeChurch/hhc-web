@@ -44,7 +44,7 @@ describe('WeeklyCard', () => {
   });
 
   it('aborts the protected request on unmount', async () => {
-    const fetcher = vi.fn(() => new Promise<Response>(() => undefined));
+    const fetcher = vi.fn<typeof fetch>(() => new Promise<Response>(() => undefined));
     vi.stubGlobal('fetch', fetcher);
     const {unmount} = render(<WeeklyCard locale="en" ctaLabel="Download" messages={messages} />);
 

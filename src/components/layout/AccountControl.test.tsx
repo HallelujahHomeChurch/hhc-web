@@ -2,7 +2,7 @@ import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
-import {AccountControl, AccountControlProvider, AccountControlView, BulletinAccessGate} from './AccountControl';
+import {AccountControl, AccountControlProvider, AccountControlView, BulletinAccessGate, webOAuthConfigForBrowser} from './AccountControl';
 
 const captureHandledError = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/observability', () => ({captureHandledError}));
