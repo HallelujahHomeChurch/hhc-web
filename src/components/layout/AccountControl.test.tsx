@@ -20,6 +20,7 @@ describe('AccountControl', () => {
 
     expect(webOAuthConfigForBrowser()).toMatchObject({
       authorizeBaseUrl: 'https://account.alive.org.tw/api/account/v1',
+      tokenBaseUrl: '/api/account/v1',
       clientId: 'www-web',
       scope: 'openid profile email'
     });

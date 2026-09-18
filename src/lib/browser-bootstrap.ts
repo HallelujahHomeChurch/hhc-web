@@ -1,7 +1,7 @@
 'use client';
 
 import {createAccountSessionClient, type AccountSessionClient} from '@hallelujahhomechurch/account-client';
-import {accountApiBaseUrlForBrowser} from './account-origin';
+import {accountSessionBaseUrlForBrowser} from './account-origin';
 
 export type PushConfig = {vapidPublicKey: string};
 
@@ -14,7 +14,7 @@ export function resetBrowserBootstrap() {
 }
 
 export function getSharedAccountSessionClient() {
-  return accountSessionClient ??= createAccountSessionClient({baseUrl: accountApiBaseUrlForBrowser()});
+  return accountSessionClient ??= createAccountSessionClient({baseUrl: accountSessionBaseUrlForBrowser()});
 }
 
 export function getSharedPushConfig() {

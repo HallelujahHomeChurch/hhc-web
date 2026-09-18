@@ -5,7 +5,7 @@ import {useEffect, useMemo, useState} from 'react';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {webOAuthConfigForBrowser} from './AccountControl';
 import {captureHandledError} from '@/lib/observability';
-import {accountApiBaseUrlForBrowser} from '@/lib/account-origin';
+import {accountSessionBaseUrlForBrowser} from '@/lib/account-origin';
 
 type CallbackLabels = {completing: string; error: string};
 type WebOAuthCallbackProps = {
@@ -16,7 +16,7 @@ type WebOAuthCallbackProps = {
 };
 
 export function WebOAuthCallback({currentUrl, labels: labelsProp, navigate = defaultNavigate, runtime: providedRuntime}: WebOAuthCallbackProps) {
-  const sessionClient = useMemo(() => createAccountSessionClient({baseUrl: accountApiBaseUrlForBrowser()}), []);
+  const sessionClient = useMemo(() => createAccountSessionClient({baseUrl: accountSessionBaseUrlForBrowser()}), []);
   const runtime = useMemo(() => providedRuntime ?? createBrowserAccountAuthRuntime({
     client: sessionClient,
     oauth: webOAuthConfigForBrowser()

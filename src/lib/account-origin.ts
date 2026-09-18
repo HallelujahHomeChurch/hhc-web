@@ -7,7 +7,11 @@ export function accountSiteUrlForBrowser() {
   return 'http://localhost:5173';
 }
 
-export function accountApiBaseUrlForBrowser() {
+export function accountAuthorizeBaseUrlForBrowser() {
   const configured = process.env.NEXT_PUBLIC_ACCOUNT_AUTHORIZE_BASE_URL?.replace(/\/$/, '');
   return configured ?? `${accountSiteUrlForBrowser()}/api/account/v1`;
+}
+
+export function accountSessionBaseUrlForBrowser() {
+  return '/api/account/v1';
 }
