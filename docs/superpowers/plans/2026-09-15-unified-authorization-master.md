@@ -91,15 +91,18 @@ RBAC, entitlement, or product-capability change.
       browser session transport. A cross-origin token exchange recreates the
       client-bound-cookie regression. CORS is considered only for a distinct,
       documented browser API that cannot use the same-origin gateway path.
-- [x] Release the corrected shared package `@hallelujahhomechurch/*@1.0.5`
-      from tag `v1.0.5` (merge `45bfd32`), then release the Gateway, Website,
-      and Admin consumers. Their immutable release evidence is maintained in
-      the execution ledger.
+- [x] Release the browser transport recovery packages: the initial
+      `@hallelujahhomechurch/*@1.0.5` correction from tag `v1.0.5` (merge
+      `45bfd32`), followed by the passive-SSO correction in `v1.0.6` (merge
+      `55e7f33`). These are recovery baselines, not evidence that the final
+      breaking RBAC catalog or empty compatibility map has shipped.
 - [ ] With one valid central Account SSO session, observe the real
       Website -> Account -> Admin -> Website matrix without a credential or
-      provider prompt, confirm the authenticated Operations request, and then
-      run the protected-bulletin entitlement/download matrix. A curl or an
-      anonymous route smoke does not close this gate.
+      provider prompt or login-form-shaped callback state. Confirm the
+      authenticated Operations request, and then run the protected-bulletin
+      entitlement/download matrix. The first visit must cover a cold
+      product-local session; a warm repeat, curl, or anonymous route smoke does
+      not close this gate.
 
 ## Reviewed Baseline Snapshot
 
@@ -188,12 +191,14 @@ type AccountIdentitySession = {
 
 The session response transports `permissions`; the access token transports
 granted permissions in `scope`; Gateway injects verified `X-HHC-Scopes`.
-`hasPermission()` implements only exact match plus `*`. The compatibility map
-is exactly `{}`. AuthN does not import domain capability names. The current
-integrated `frontend-platform` package set is version `1.0.5`, published from
-immutable tag `v1.0.5` at merge `45bfd32c7672950282bb60ccc72cab32760a1bfd`.
-Consumers must use that exact package line; any other version is a
-contract-ledger stop gate.
+`hasPermission()` implements only exact match plus `*`. The final compatibility
+map is exactly `{}`. AuthN does not import domain capability names. Version
+`1.0.6` is the current browser transport recovery baseline; it still carries
+pre-cutover Admin capability compatibility and therefore is not the final
+authorization package. Freeze and publish the final package version only after
+the Account, Website, Operations, and Admin permission contracts contain no
+`cms:*` acceptance or compatibility aliases. Treat any claim that `1.0.6`
+completed the RBAC cutover as a contract-ledger stop gate.
 
 Operations administrative routes require authenticated identity at Gateway,
 which forwards verified scopes without requiring a global Operations scope.
