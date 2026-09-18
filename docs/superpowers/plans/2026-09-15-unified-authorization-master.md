@@ -43,6 +43,11 @@
 
 ## Plan Set And Ownership
 
+The current execution state and evidence are maintained in the
+[Unified Authorization Execution Ledger](2026-09-18-unified-authorization-execution-ledger.md).
+The task checklists in this plan remain the acceptance contract; a ledger row is
+never final acceptance by itself.
+
 | Phase | Plan | Repository owner(s) | Start gate |
 | --- | --- | --- | --- |
 | 1A | Auth convergence Task 1 contract freeze | documentation owners only | Canonical AuthN/AuthZ seam below is approved |
@@ -54,11 +59,37 @@
 | 3B | [Audit Tasks 2-4](2026-09-15-unified-authorization-audit-log.md) | `audit-log`, `azure-infra`, `api-gateway`, then one domain-owner repository at a time | Audit foundation and final catalog merged; execute OIDC/ACR bootstrap -> immutable image release -> workload plan -> external secrets -> workload apply and dark deploy -> Gateway query route; owning producer contract frozen |
 | 4 | [Protected bulletin and Asset boundary](2026-09-15-unified-authorization-protected-bulletins.md) | `hhc-web-api`, then `asset-api`, then `engagement-api`, then LINE bot | Operations entitlement-check contract frozen; operations extraction merged before editing `hhc-web-api` |
 | 5 | [DSR owner integration and external closure](2026-09-12-account-legal-operations-launch.md) Tasks 7-8 | `account-api`, registered owners, documentation owner | Owner endpoints dark; deletion result model proven; external evidence available |
-| 6 | [Shared AuthN runtime, access contract, and frontend experience](2026-09-15-unified-authorization-frontends.md) plus Auth convergence Tasks 2-8 | one `frontend-platform` integration owner, then one owner per consumer repository | Account session/scope and all producer OpenAPI contracts are final |
+| 6 | [Shared AuthN runtime, access contract, and frontend experience](2026-09-15-unified-authorization-frontends.md) plus Auth convergence Tasks 2-8 | one `frontend-platform` integration owner, then one owner per consumer repository | Account session/scope and all producer OpenAPI contracts are final; Recovery Gate R passes |
 | 7 | [Edge, integration, and coordinated cutover](2026-09-15-unified-authorization-cutover.md) plus [Audit Task 5](2026-09-15-unified-authorization-audit-log.md) | `api-gateway`, `azure-infra`, integration owner | All application PRs green and release artifacts ready |
 | 8 | [Meeting/media Phase 1 formal acceptance](2026-09-15-meeting-media-phase-1-acceptance.md) | existing released owners and Presenter device | No conflicting release/config churn; controlled test authority and device available |
 
 This order intentionally limits parallelism. `account-api` and the new `operations-api` can be developed in parallel after their contracts are frozen. `hhc-web-api` cannot be owned by the extraction and bulletin workstreams simultaneously. `frontend-platform` has one integration owner and publishes one breaking package set containing the auth runtime, generic permission transport, domain AuthZ subpath, generated clients, and access resolver. The two frontend plans do not publish competing package releases.
+
+### Recovery Gate R — Website Account-Host Transport
+
+This gate recovers the observed Website authentication regression before any
+Phase 6 consumer merge or coordinated cutover. It is a narrow `api-gateway` +
+`hhc-web` transport correction, not an RBAC, entitlement, or product-capability
+change.
+
+- [ ] Keep Website browser Account requests on the hosted Account authority;
+      do not move Website, CMS, Bulletin, Operations, Asset, or Engagement APIs
+      to the Account host.
+- [ ] Permit credentialed CORS on the existing exact Account browser-session
+      routes only for `https://www.alive.org.tw` and
+      `https://www-test.alive.org.tw`, alongside the already reviewed origins.
+      Do not use a wildcard, origin reflection, or `Authorization` request
+      header.
+- [ ] Bind those two Website origins to Account client id `www-web` for
+      `/session/access-token` and `/refresh`; they must not use the
+      `account-console` default or the Presenter `client-web` binding.
+- [ ] Prove exact allowed Website preflights for session, CSRF, OAuth token,
+      access-token, and refresh routes; prove an untrusted origin receives no
+      CORS allow-origin response.
+- [ ] After the Gateway release, verify a real Website browser can complete
+      hosted login, read session, and obtain an access token. Record the
+      evidence in the execution ledger; a curl preflight alone does not close
+      this gate.
 
 ## Reviewed Baseline Snapshot
 
