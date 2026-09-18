@@ -35,10 +35,30 @@ The target decision periods are 15 days for access/copy requests and 30 days for
 5. For erasure, require the Account confirmation step, then verify each owner reports success, not-applicable, or a documented manual action. Deletion is not complete while an owner is failed or running.
 6. If an owner fails, retain the request, retry idempotently, and escalate before the due time. Do not mark the request complete to clear a queue.
 
+### Website Manual Owner
+
+`website_manual` is evidence of a completed human review, not an operator
+override. Before resolving it, the reviewer must use the verified Account
+subject to inspect every Website record directly attributed to that subject,
+including content and revision authorship, page settings, bulletin records,
+notification batches, and retained audit/security records. Record only counts,
+retention or refusal reason codes, and the approved response channel in the
+restricted case record; never copy record contents into ordinary tickets or
+logs.
+
+For an access export, do not resolve the owner until every responsive Website
+record has either been included in the requester response or covered by a
+policy-owner-approved exception. Use
+`DSR_WEBSITE_MANUAL_CHECK_COMPLETED` only after that delivery check. For a
+correction, update the owning Website source first and use
+`DSR_WEBSITE_CORRECTION_APPLIED` only after verifying the persisted result.
+If the subject cannot be resolved, the Website inventory is incomplete, or no
+approved delivery path exists, leave the execution manual and escalate; the
+Admin button alone is not completion evidence.
+
 ## Refusal, Extension, And Closeout
 
 - The policy owner must approve a refusal, partial response, or extension and provide a specific written reason. Engineering does not invent a legal exception.
 - Record the original due time even when extended. Notify the requester before it expires.
 - Close only after the requester response is sent and all owners are reconciled. Preserve audit metadata, not exported personal data.
 - Escalate suspected unauthorized disclosure to the personal-data incident checklist in `platform-incident-command.md` immediately.
-
