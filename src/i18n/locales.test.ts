@@ -37,11 +37,11 @@ describe('locales', () => {
 
   it('uses the released exact HHC frontend package versions', () => {
     expect(Object.fromEntries(Object.entries(packageJson.dependencies).filter(([name]) => name.startsWith('@hallelujahhomechurch/')))).toEqual({
-      '@hallelujahhomechurch/account-client': '1.0.6',
-      '@hallelujahhomechurch/hhc-web-client': '1.0.6',
-      '@hallelujahhomechurch/operations-client': '1.0.6',
-      '@hallelujahhomechurch/preferences': '1.0.6',
-      '@hallelujahhomechurch/ui': '1.0.6'
+      '@hallelujahhomechurch/account-client': '1.0.8',
+      '@hallelujahhomechurch/hhc-web-client': '1.0.8',
+      '@hallelujahhomechurch/operations-client': '1.0.8',
+      '@hallelujahhomechurch/preferences': '1.0.8',
+      '@hallelujahhomechurch/ui': '1.0.8'
     });
   });
 
