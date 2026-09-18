@@ -75,11 +75,17 @@ change.
 - [ ] Keep Website browser Account requests on the hosted Account authority;
       do not move Website, CMS, Bulletin, Operations, Asset, or Engagement APIs
       to the Account host.
+- [ ] Allow only `https://account.alive.org.tw` and
+      `https://account-test.alive.org.tw` in the Website `connect-src` policy,
+      matching the production and test Account authorities. Do not use a host
+      wildcard.
 - [ ] Permit credentialed CORS on the existing exact Account browser-session
       routes only for `https://www.alive.org.tw` and
       `https://www-test.alive.org.tw`, alongside the already reviewed origins.
-      Do not use a wildcard, origin reflection, or `Authorization` request
-      header.
+      Permit only the client request headers `Accept`, `Content-Type`,
+      `X-CSRF-Token`, and the Sentry tracing headers `sentry-trace` and
+      `baggage`. Do not use a wildcard, origin reflection, or `Authorization`
+      request header.
 - [ ] Bind those two Website origins to Account client id `www-web` for
       `/session/access-token` and `/refresh`; they must not use the
       `account-console` default or the Presenter `client-web` binding.
