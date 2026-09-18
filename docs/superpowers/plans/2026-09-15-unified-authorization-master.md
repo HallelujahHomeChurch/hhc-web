@@ -94,12 +94,12 @@ the canonical top-level permission transport and this gate is circular.
 - [ ] Prove exact allowed Website preflights for session, CSRF, OAuth token,
       access-token, and refresh routes; prove an untrusted origin receives no
       CORS allow-origin response.
-- [ ] Release the final shared AuthN runtime in the Website consumer before the
+- [x] Release the final shared AuthN runtime in the Website consumer before the
       browser proof. It must normalize the identity-only `user`, top-level
       opaque `permissions`, and `permission_availability` wire response; do not
       test the canonical contract through the retired nested `user.permissions`
       client. This is the sole Phase 6 consumer release included in Gate R.
-- [ ] After the Gateway release, verify a real Website browser can complete
+- [x] After the Gateway release, verify a real Website browser can complete
       hosted login, read session, and obtain an access token. Record the
       evidence in the execution ledger; a curl preflight alone does not close
       this gate.
