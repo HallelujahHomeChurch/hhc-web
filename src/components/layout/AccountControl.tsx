@@ -14,7 +14,7 @@ import {bulletinEditions, type BulletinEdition} from '@hallelujahhomechurch/pref
 import {AccountMenu, Toast} from '@hallelujahhomechurch/ui';
 import {captureHandledError} from '@/lib/observability';
 import {getSharedAccountSessionClient} from '@/lib/browser-bootstrap';
-import {accountApiBaseUrlForBrowser, accountSiteUrlForBrowser} from '@/lib/account-origin';
+import {accountAuthorizeBaseUrlForBrowser, accountSessionBaseUrlForBrowser, accountSiteUrlForBrowser} from '@/lib/account-origin';
 import {siteConfig} from '@/lib/site';
 
 export const accountStateEventName = 'hhc:account-state';
@@ -249,7 +249,8 @@ export function notifyAccountStateChange(type: 'profile-changed' | 'sign-out') {
 export function webOAuthConfigForBrowser(): BrowserOAuthConfig {
   const origin = typeof window === 'undefined' ? 'https://www.alive.org.tw' : window.location.origin;
   return {
-    authorizeBaseUrl: accountApiBaseUrlForBrowser(),
+    authorizeBaseUrl: accountAuthorizeBaseUrlForBrowser(),
+    tokenBaseUrl: accountSessionBaseUrlForBrowser(),
     clientId: 'www-web',
     redirectUri: `${origin}/oauth/callback`,
     scope: 'openid profile email'

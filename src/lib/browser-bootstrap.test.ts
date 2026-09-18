@@ -3,7 +3,7 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 afterEach(() => { vi.restoreAllMocks(); vi.resetModules(); });
 
 describe('browser bootstrap', () => {
-  it('uses the Account authority for the shared session client', async () => {
+  it('uses the product origin for the shared session client', async () => {
     vi.stubEnv('NEXT_PUBLIC_ACCOUNT_SITE_URL', 'https://account.alive.org.tw');
     const fetcher = vi.fn().mockResolvedValue(Response.json({authenticated: false}));
     vi.stubGlobal('fetch', fetcher);
@@ -12,7 +12,7 @@ describe('browser bootstrap', () => {
     await getSharedAccountSessionClient().getSession();
 
     expect(fetcher).toHaveBeenCalledWith(
-      'https://account.alive.org.tw/api/account/v1/session',
+      '/api/account/v1/session',
       expect.anything()
     );
   });
