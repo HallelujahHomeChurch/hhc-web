@@ -65,44 +65,41 @@ never final acceptance by itself.
 
 This order intentionally limits parallelism. `account-api` and the new `operations-api` can be developed in parallel after their contracts are frozen. `hhc-web-api` cannot be owned by the extraction and bulletin workstreams simultaneously. `frontend-platform` has one integration owner and publishes one breaking package set containing the auth runtime, generic permission transport, domain AuthZ subpath, generated clients, and access resolver. The two frontend plans do not publish competing package releases.
 
-### Recovery Gate R — Website Account-Host Transport
+### Recovery Gate R — Hosted SSO And Website Product Session
 
 This gate recovers the observed Website authentication regression before the
 general Phase 6 consumer releases or coordinated cutover. It is a narrow
-`api-gateway` + `hhc-web` transport correction, not an RBAC, entitlement, or
-product-capability change. The Website must first adopt the already published
-final AuthN runtime; otherwise a legacy nested session client cannot validate
-the canonical top-level permission transport and this gate is circular.
+`frontend-platform` + `api-gateway` + `hhc-web` transport correction, not an
+RBAC, entitlement, or product-capability change.
 
-- [ ] Keep Website browser Account requests on the hosted Account authority;
-      do not move Website, CMS, Bulletin, Operations, Asset, or Engagement APIs
-      to the Account host.
-- [ ] Allow only `https://account.alive.org.tw` and
-      `https://account-test.alive.org.tw` in the Website `connect-src` policy,
-      matching the production and test Account authorities. Do not use a host
-      wildcard.
-- [ ] Permit credentialed CORS on the existing exact Account browser-session
-      routes only for `https://www.alive.org.tw` and
-      `https://www-test.alive.org.tw`, alongside the already reviewed origins.
-      Permit only the client request headers `Accept`, `Content-Type`,
-      `X-CSRF-Token`, and the Sentry tracing headers `sentry-trace` and
-      `baggage`. Do not use a wildcard, origin reflection, or `Authorization`
-      request header.
-- [ ] Bind those two Website origins to Account client id `www-web` for
-      `/session/access-token` and `/refresh`; they must not use the
-      `account-console` default or the Presenter `client-web` binding.
-- [ ] Prove exact allowed Website preflights for session, CSRF, OAuth token,
-      access-token, and refresh routes; prove an untrusted origin receives no
-      CORS allow-origin response.
-- [x] Release the final shared AuthN runtime in the Website consumer before the
-      browser proof. It must normalize the identity-only `user`, top-level
-      opaque `permissions`, and `permission_availability` wire response; do not
-      test the canonical contract through the retired nested `user.permissions`
-      client. This is the sole Phase 6 consumer release included in Gate R.
-- [x] After the Gateway release, verify a real Website browser can complete
-      hosted login, read session, and obtain an access token. Record the
-      evidence in the execution ledger; a curl preflight alone does not close
-      this gate.
+- [x] Use `account.alive.org.tw` only as the browser's hosted authorization
+      authority for `GET /api/account/v1/oauth/authorize`. This is a top-level
+      navigation, not a credentialed browser API request.
+- [x] Exchange the authorization code and call CSRF, session, access-token, and
+      refresh routes through the Website's same-origin `/api/account/v1/*`
+      gateway paths. The response host therefore owns the Website's
+      `__Host-refresh_token` cookie.
+- [x] Keep the Account authorization-server session and every product refresh
+      session separate. Gateway overwrites `X-HHC-Client-ID` with `www-web` for
+      the exact Website routes; no product sends a caller-selected client id or
+      shares a refresh cookie with Account, Admin, or Presenter.
+- [x] Expose only the exact Website session, token, refresh, and Operations
+      access routes at Gateway. The anonymous Operations smoke returns `401`,
+      not the former `404`; unsupported methods and untrusted paths remain
+      denied.
+- [x] Do not use Account-host CORS or a Website `connect-src` exception for
+      browser session transport. A cross-origin token exchange recreates the
+      client-bound-cookie regression. CORS is considered only for a distinct,
+      documented browser API that cannot use the same-origin gateway path.
+- [x] Release the corrected shared package `@hallelujahhomechurch/*@1.0.5`
+      from tag `v1.0.5` (merge `45bfd32`), then release the Gateway, Website,
+      and Admin consumers. Their immutable release evidence is maintained in
+      the execution ledger.
+- [ ] With one valid central Account SSO session, observe the real
+      Website -> Account -> Admin -> Website matrix without a credential or
+      provider prompt, confirm the authenticated Operations request, and then
+      run the protected-bulletin entitlement/download matrix. A curl or an
+      anonymous route smoke does not close this gate.
 
 ## Reviewed Baseline Snapshot
 
@@ -192,10 +189,10 @@ type AccountIdentitySession = {
 The session response transports `permissions`; the access token transports
 granted permissions in `scope`; Gateway injects verified `X-HHC-Scopes`.
 `hasPermission()` implements only exact match plus `*`. The compatibility map
-is exactly `{}`. AuthN does not import domain capability names. The integrated
-breaking `frontend-platform` package set is version `1.0.4`, published from
-immutable tag `v1.0.4` at `7c6de6c409518ab5966f71cb0ce96f43bb58cc5e`.
-Consumers must use that exact final package line; any other version is a
+is exactly `{}`. AuthN does not import domain capability names. The current
+integrated `frontend-platform` package set is version `1.0.5`, published from
+immutable tag `v1.0.5` at merge `45bfd32c7672950282bb60ccc72cab32760a1bfd`.
+Consumers must use that exact package line; any other version is a
 contract-ledger stop gate.
 
 Operations administrative routes require authenticated identity at Gateway,
