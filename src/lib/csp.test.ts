@@ -24,7 +24,7 @@ describe('getContentSecurityPolicy', () => {
     const policy = getContentSecurityPolicy({development: false});
 
     expect(directive(policy, 'img-src')).toBe("img-src 'self' data: blob: https://i.ytimg.com https://lh3.googleusercontent.com https://profile.line-scdn.net https://ui-avatars.com");
-    expect(directive(policy, 'connect-src')).toBe("connect-src 'self'");
+    expect(directive(policy, 'connect-src')).toBe("connect-src 'self' https://account.alive.org.tw https://account-test.alive.org.tw");
     expect(directive(policy, 'font-src')).toBe("font-src 'self'");
     expect(directive(policy, 'worker-src')).toBe("worker-src 'self' blob:");
     expect(directive(policy, 'style-src-elem')).toBe("style-src-elem 'self' 'unsafe-inline'");
@@ -46,7 +46,7 @@ describe('getContentSecurityPolicy', () => {
       sentryDsn: 'https://public-key@o123.ingest.us.sentry.io/456'
     });
 
-    expect(directive(policy, 'connect-src')).toBe("connect-src 'self' https://o123.ingest.us.sentry.io");
+    expect(directive(policy, 'connect-src')).toBe("connect-src 'self' https://account.alive.org.tw https://account-test.alive.org.tw https://o123.ingest.us.sentry.io");
     expect(policy).not.toContain('public-key');
     expect(policy).not.toContain('/456');
   });

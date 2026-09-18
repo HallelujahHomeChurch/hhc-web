@@ -3,6 +3,8 @@ type ContentSecurityPolicyOptions = {
   sentryDsn?: string;
 };
 
+const accountOrigins = 'https://account.alive.org.tw https://account-test.alive.org.tw';
+
 function getOrigin(value?: string) {
   if (!value) return undefined;
   try {
@@ -22,7 +24,7 @@ export function getContentSecurityPolicy({development, sentryDsn}: ContentSecuri
     "style-src-attr 'unsafe-inline'",
     "img-src 'self' data: blob: https://i.ytimg.com https://lh3.googleusercontent.com https://profile.line-scdn.net https://ui-avatars.com",
     "font-src 'self'",
-    `connect-src 'self'${sentryOrigin ? ` ${sentryOrigin}` : ''}`,
+    `connect-src 'self' ${accountOrigins}${sentryOrigin ? ` ${sentryOrigin}` : ''}`,
     "worker-src 'self' blob:",
     "manifest-src 'self'",
     "frame-src 'none'",
