@@ -26,7 +26,7 @@ master plan's acceptance checklists.
 
 | Item | State | Evidence | Remaining gate |
 | --- | --- | --- | --- |
-| R: Website hosted Account transport | `planned` | `hhc-web` PR [#105](https://github.com/HallelujahHomeChurch/hhc-web/pull/105), merge `877a212`, changed the shared session client from same-origin `/api/account/v1` to `account.alive.org.tw`; live Website CORS preflight from `www` has no allow-origin header. | Apply the exact Gateway Website CORS/client-binding matrix in Recovery Gate R, then CI, release, live preflight, and real Website login/session/access-token evidence. |
+| R: Website hosted Account transport | `local verified / PR pending` | `hhc-web` PR [#105](https://github.com/HallelujahHomeChurch/hhc-web/pull/105), merge `877a212`, changed the shared session client from same-origin `/api/account/v1` to `account.alive.org.tw`; live Website CORS preflight from `www` has no allow-origin header. Gateway PR [#102](https://github.com/HallelujahHomeChurch/api-gateway/pull/102), commit `c7404d2`, passed exact-map, container preflight, session-routing, and auth-routing checks locally. | PR CI, merge, release, live preflight, and real Website login/session/access-token evidence. |
 
 The OAuth scope correction in PR #105 remains required: `www-web` requests
 only `openid profile email`. Recovery Gate R must not reintroduce
