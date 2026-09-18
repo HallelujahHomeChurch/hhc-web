@@ -39,9 +39,9 @@ only `openid profile email`. Recovery Gate R must not reintroduce
 | 1A–2C: contracts, Account, Operations foundation | `released / not accepted` | Final shared package `@hallelujahhomechurch/*@1.0.4`, tag `v1.0.4` at `7c6de6c`; Account `account-api--0000096`; Operations `operations-api--0000009`. | Complete the master Gate B evidence, especially counted import and cross-domain authorization matrix. |
 | 3A: Operations extraction | `in progress` | Direct sync-window and LINE occurrence route handoffs are released. | Formal counted export/import, backup, stable-ID digest, approved source removal. The real LINE schedule query is deferred evidence only; it does not block Website/API work. |
 | 3B: Audit producers | `dark release / observing` | `audit-log--ex7vpzj` plus producer revisions are healthy. | Read-only 24-hour observation beginning from `hhc-line-function-bot--0000215` healthy at 2026-09-18T03:24:01Z; earliest sign-off is 2026-09-19T03:24:01Z. |
-| 4: protected bulletins and Asset boundary | `backend released / consumer pending` | `hhc-web-api--0000102`, `asset-api--0000061`, and `engagement-api--0000031` are released. `hhc-web` PR [#104](https://github.com/HallelujahHomeChurch/hhc-web/pull/104) is green but behind `main`. | Recovery Gate R, rebase and merge the Website consumer, then entitlement and protected-download browser matrix. |
+| 4: protected bulletins and Asset boundary | `backend released / consumer ready` | `hhc-web-api--0000102`, `asset-api--0000061`, and `engagement-api--0000031` are released. `hhc-web` PR [#104](https://github.com/HallelujahHomeChurch/hhc-web/pull/104) is green and based on current `main` (`998cd04`). | Recovery Gate R, authorized merge and release of the Website consumer, then entitlement and protected-download browser matrix. |
 | 5: DSR and permanent deletion closure | `in progress` | Owner integrations and diagnostics are released incrementally. | Final owner matrix, retained-data behavior, partial failure/retry, and real DSR/permanent-deletion evidence. |
-| 6: shared AuthN runtime and consumers | `blocked by Recovery Gate R` | Package is public. `account-fe` PR [#59](https://github.com/HallelujahHomeChurch/account-fe/pull/59) is green; `hhc-web` PR [#104](https://github.com/HallelujahHomeChurch/hhc-web/pull/104) was rebased at `28f887a` and is green. The Admin #103 failure was a test race after bulletin-detail navigation; it was corrected, rebased through the Admin OAuth scope hotfix at `16e5d2c`, and passed 519 local tests, lint, and build. Its CI is green. | Close Recovery Gate R, merge only dependency-ready consumers, then run browser/Electron conformance. |
+| 6: shared AuthN runtime and consumers | `blocked by Recovery Gate R` | Package is public. `account-fe` PR [#59](https://github.com/HallelujahHomeChurch/account-fe/pull/59), `hhc-web` PR [#104](https://github.com/HallelujahHomeChurch/hhc-web/pull/104) at `28f887a`, and `admin-fe` PR #103 at `16e5d2c` are green. The former Admin test race after bulletin-detail navigation is corrected; its 519 local tests, lint, build, and CI pass. | Complete the authenticated Website recovery check, then obtain merge/release authority for dependency-ready consumers and run browser/Electron conformance. |
 | 7: Gateway and coordinated cutover | `not started` | Exact Gateway route work has landed incrementally. | All consumer PRs green and released, full staging matrix, retained-data reconciliation, and explicit coordinated-cutover authorization. |
 | 8: meeting/media formal acceptance | `not started` | No acceptance evidence. | Controlled device and runtime evidence after Phase 7, without release/config churn. |
 
@@ -53,11 +53,10 @@ only `openid profile email`. Recovery Gate R must not reintroduce
 
 ## Immediate Order
 
-1. Close Recovery Gate R in `api-gateway`; do not alter Account permissions,
-   OAuth scopes, or bulletin access.
-2. Verify the released Gateway with a real Website login, session, and
-   access-token flow.
-3. Rebase and re-evaluate the three consumer PRs; investigate the non-package
-   Admin CI failure before any merge.
-4. Resume the master plan from the next dependency-ready phase, updating this
-   ledger after each evidence boundary.
+1. Verify the released Gateway with a real Website login, session, and
+   access-token flow. Do not alter Account permissions, OAuth scopes, or
+   bulletin access.
+2. Obtain authorization to merge and release the three dependency-ready
+   consumer PRs, then run browser/Electron conformance.
+3. Resume the master plan from the next dependency-ready producer gate,
+   updating this ledger after each evidence boundary.
