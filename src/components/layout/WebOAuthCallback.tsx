@@ -1,9 +1,9 @@
 'use client';
 
-import {createAccountSessionClient, createBrowserAccountAuthRuntime, readOAuthTransaction, type BrowserAccountAuthRuntime} from '@hallelujahhomechurch/account-client';
+import {createAccountSessionClient, createBrowserAccountAuthRuntime, readOAuthTransaction, validateOAuthState, type BrowserAccountAuthRuntime} from '@hallelujahhomechurch/account-client';
 import {useEffect, useMemo, useState} from 'react';
 import {isLocale, type Locale} from '@/i18n/locales';
-import {webOAuthConfigForBrowser} from './AccountControl';
+import {webOAuthConfigForBrowser, webPassiveSsoAttemptKey} from './AccountControl';
 import {captureHandledError} from '@/lib/observability';
 import {accountSessionBaseUrlForBrowser} from '@/lib/account-origin';
 
@@ -30,6 +30,14 @@ export function WebOAuthCallback({currentUrl, labels: labelsProp, navigate = def
   useEffect(() => {
     let active = true;
     const url = currentUrl ?? new URL(window.location.href);
+    const transaction = readOAuthTransaction({storage: sessionStorage, storageKey: 'hhc:oauth:www-web'});
+    if (url.searchParams.get('error') === 'login_required'
+      && validateOAuthState(transaction, url.searchParams.get('state') ?? '')
+      && sessionStorage.getItem(webPassiveSsoAttemptKey) === '1') {
+      sessionStorage.removeItem('hhc:oauth:www-web');
+      navigate(returnTo);
+      return () => { active = false; };
+    }
     void runtime.completeSignIn(url.toString())
       .then((result) => {
         if (active && result.status === 'authenticated') navigate(returnTo);

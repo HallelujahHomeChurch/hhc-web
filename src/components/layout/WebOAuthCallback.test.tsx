@@ -1,6 +1,7 @@
 import {render, screen, waitFor} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {WebOAuthCallback} from './WebOAuthCallback';
+import {webPassiveSsoAttemptKey} from './AccountControl';
 
 beforeEach(() => {
   sessionStorage.clear();
@@ -25,5 +26,17 @@ describe('WebOAuthCallback', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('無法完成登入。');
     expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('returns silently after prompt=none reports no central session', async () => {
+    sessionStorage.setItem(webPassiveSsoAttemptKey, '1');
+    const completeSignIn = vi.fn();
+    const navigate = vi.fn();
+
+    render(<WebOAuthCallback currentUrl={new URL('https://www.alive.org.tw/oauth/callback?error=login_required&state=state-123')} runtime={{completeSignIn}} navigate={navigate} />);
+
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/zh-Hant/about'));
+    expect(completeSignIn).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem('hhc:oauth:www-web')).toBeNull();
   });
 });
