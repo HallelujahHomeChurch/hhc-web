@@ -2,7 +2,7 @@ import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
-import {AccountControl, AccountControlProvider, AccountControlView, BulletinAccessGate, webOAuthConfigForBrowser} from './AccountControl';
+import {AccountControl, AccountControlProvider, AccountControlView, BulletinAccessGate, webOAuthConfigForBrowser, webPassiveSsoAttemptKey} from './AccountControl';
 
 const captureHandledError = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/observability', () => ({captureHandledError}));
@@ -24,6 +24,28 @@ describe('AccountControl', () => {
       clientId: 'www-web',
       scope: 'openid profile email'
     });
+  });
+
+  it('attempts silent SSO once when the shared hint exists', async () => {
+    const assign = vi.fn();
+    vi.stubGlobal('location', {href: 'https://www.alive.org.tw/zh-Hant', assign});
+    document.cookie = 'hhc_sso_hint=1; Path=/';
+
+    render(<AccountControl client={anonymousClient()} labels={labels} />);
+
+    await waitFor(() => expect(assign).toHaveBeenCalledOnce());
+    expect(new URL(assign.mock.calls[0][0]).searchParams.get('prompt')).toBe('none');
+    expect(sessionStorage.getItem(webPassiveSsoAttemptKey)).toBe('1');
+  });
+
+  it('clears the silent SSO suppression after the local session is restored', async () => {
+    sessionStorage.setItem(webPassiveSsoAttemptKey, '1');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({memberships: [], orgRoles: [], qualifications: [], entitlements: [], version: 'a'.repeat(64)})));
+
+    render(<AccountControl client={sessionClient([])} labels={labels} />);
+
+    await screen.findByRole('button', {name: 'Account menu'});
+    expect(sessionStorage.getItem(webPassiveSsoAttemptKey)).toBeNull();
   });
 
   it('keeps permissions: [] authenticated but does not expose Admin', async () => {

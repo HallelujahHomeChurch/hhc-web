@@ -18,6 +18,7 @@ import {accountAuthorizeBaseUrlForBrowser, accountSessionBaseUrlForBrowser, acco
 import {siteConfig} from '@/lib/site';
 
 export const accountStateEventName = 'hhc:account-state';
+export const webPassiveSsoAttemptKey = 'hhc_web_passive_sso_attempted';
 
 type AccountControlLabels = {
   menu: string;
@@ -160,13 +161,23 @@ export function AccountControlProvider({
     return () => controller.abort();
   }, [auth, operationsClient]);
 
-  const beginAuthorization = useCallback(async () => {
+  const beginAuthorization = useCallback(async (prompt?: 'none') => {
     try {
-      await authRuntime.beginSignIn(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+      await authRuntime.beginSignIn(`${window.location.pathname}${window.location.search}${window.location.hash}`, {prompt});
     } catch (error) {
       captureHandledError(error, {operation: 'oauth.start'});
     }
   }, [authRuntime]);
+
+  useEffect(() => {
+    if (auth.status === 'authenticated') {
+      sessionStorage.removeItem(webPassiveSsoAttemptKey);
+      return;
+    }
+    if (auth.status !== 'anonymous' || !shouldAttemptPassiveSso()) return;
+    sessionStorage.setItem(webPassiveSsoAttemptKey, '1');
+    void beginAuthorization('none');
+  }, [auth.status, beginAuthorization]);
 
   const signOut = useCallback(async () => {
     setLogoutError('');
@@ -244,6 +255,11 @@ export function notifyAccountStateChange(type: 'profile-changed' | 'sign-out') {
   const channel = new BroadcastChannel(accountStateEventName);
   channel.postMessage({type});
   channel.close();
+}
+
+function shouldAttemptPassiveSso() {
+  return document.cookie.split(';').some((cookie) => cookie.trim() === 'hhc_sso_hint=1')
+    && sessionStorage.getItem(webPassiveSsoAttemptKey) !== '1';
 }
 
 export function webOAuthConfigForBrowser(): BrowserOAuthConfig {
