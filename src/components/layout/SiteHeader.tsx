@@ -16,7 +16,6 @@ export type SiteHeaderProps = {
   layout: SiteLayout;
   locale: Locale;
   pathname: string;
-  bulletinPublicEnabled?: boolean;
   sessionClient?: AccountSessionClient;
   showNavigation?: boolean;
 };
@@ -31,10 +30,10 @@ const icons = {
   'literature-ministry': BookOpenText
 };
 
-export function SiteHeader({layout, locale, pathname, bulletinPublicEnabled = true, sessionClient, showNavigation = true}: SiteHeaderProps) {
+export function SiteHeader({layout, locale, pathname, sessionClient, showNavigation = true}: SiteHeaderProps) {
   const t = useTranslations('site');
   const homeHref = `/${locale}`;
-  const canReadBulletin = useCanReadBulletin(bulletinPublicEnabled);
+  const canReadBulletin = useCanReadBulletin();
   const navItems = layout.header.filter(({key, visible}) => visible && (key !== 'literature-ministry' || canReadBulletin)).map((item) => ({...item, icon: icons[item.key]}));
   const mobileNavItems = [{key: 'home', label: t('nav.home'), href: homeHref, icon: House}, ...navItems];
   const accountLabels = {

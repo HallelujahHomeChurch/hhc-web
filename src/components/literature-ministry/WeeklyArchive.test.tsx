@@ -1,109 +1,58 @@
 import {render, screen} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {productLocales} from '@/i18n/locales';
 import {WeeklyArchive} from './WeeklyArchive';
 
 const captureHandledError = vi.hoisted(() => vi.fn());
+const authorization = vi.hoisted(() => ({getAccessToken: vi.fn().mockResolvedValue('token'), refreshAfterUnauthorized: vi.fn()}));
+const bulletinAccess = vi.hoisted(() => ({status: 'available', editions: ['zh-Hant']}));
+vi.mock('@/components/layout/AccountControl', () => ({
+  useAccountIdentity: () => null,
+  useBulletinAccess: () => bulletinAccess,
+  useBulletinAuthorization: () => authorization
+}));
 vi.mock('@/lib/observability', () => ({captureHandledError}));
 vi.mock('next/navigation', () => ({useSearchParams: () => new URLSearchParams()}));
-afterEach(() => {vi.unstubAllGlobals(); captureHandledError.mockClear();});
-
-describe('WeeklyArchive', () => {
-  const issueLabels = {
-    'zh-Hant': '第 1732 期',
-    'zh-Hans': '第 1732 期',
-    en: 'Issue 1732',
-    ja: '第1732号',
-    ko: '제1732호'
-  } as const;
-
-  it.each(productLocales)('renders the same three edition downloads on the %s product route', async (locale) => {
-    vi.stubGlobal('fetch', vi.fn().mockImplementation((input: string) => {
-      const url = new URL(input, 'https://www.alive.org.tw');
-      const versions = ['zh-Hant', 'zh-Hans', 'en'].map((locale) => ({
-        issueNumber: 1732, issueDate: '2026-07-13', locale, title: `${locale} title`, downloadUrl: `/${locale}.pdf`, publishedAt: '2026-07-13T04:00:00Z', version: 3
-      }));
-      return Promise.resolve(new Response(JSON.stringify({
-        data: url.pathname.endsWith('/latest') ? versions[2] : [{issueNumber: 1732, issueDate: '2026-07-13', versions}],
-        meta: {page: 1, pageSize: 12, total: 1}, error: null
-      }), {status: 200}));
-    }));
-
-    render(<WeeklyArchive locale={locale} messages={messages} />);
-
-    expect((await screen.findAllByRole('link', {name: '繁中'})).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(issueLabels[locale])[0]).toHaveClass('text-[var(--hhc-brand-strong)]');
-    expect(screen.queryByText('2026-07-13')).not.toBeInTheDocument();
-    expect(screen.getAllByRole('link', {name: '繁中'})[0]).toHaveAttribute('href', '/zh-Hant.pdf');
-    expect(screen.getAllByRole('link', {name: '繁中'})[0]).toHaveAttribute('download', '');
-    expect(screen.getAllByRole('link', {name: '简中'})[0]).toHaveAttribute('href', '/zh-Hans.pdf');
-    expect(screen.getAllByRole('link', {name: 'English'})[0]).toHaveAttribute('href', '/en.pdf');
-    expect(screen.getAllByRole('link', {name: '繁中'})[0].parentElement).toHaveClass('max-[860px]:grid-flow-col');
-    const copyLocale = locale === 'zh-Hans' || locale === 'en' ? locale : 'zh-Hant';
-    expect(screen.getAllByRole('heading', {name: `${copyLocale} title`}).length).toBeGreaterThan(0);
-  });
-
-  it('does not render a download for an unavailable locale version', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      data: [{
-        issueDate: '2026-07-13',
-        versions: [{
-          issueDate: '2026-07-13', locale: 'zh-Hant', title: 'Traditional title',
-          downloadUrl: '/zh-Hant.pdf', publishedAt: '2026-07-13T04:00:00Z', version: 3
-        }]
-      }],
-      meta: {page: 1, pageSize: 12, total: 1}, error: null
-    }), {status: 200})));
-
-    render(<WeeklyArchive locale="en" messages={messages} />);
-
-    expect((await screen.findAllByRole('link', {name: '繁中'})).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('heading', {name: 'Traditional title'}).length).toBeGreaterThan(0);
-    expect(screen.queryByRole('link', {name: '简中'})).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', {name: 'English'})).not.toBeInTheDocument();
-  });
-
-  it('reports a user-visible archive failure', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({error: {code: 'unavailable'}}), {status: 503})));
-
-    render(<WeeklyArchive locale="zh-Hant" messages={messages} />);
-
-    expect(await screen.findByText('Unavailable')).toBeInTheDocument();
-    expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {
-      operation: 'weekly.archive',
-      tags: {locale: 'zh-Hant', memberMode: false, page: 1}
-    });
-  });
-
-  it('filters unexpected response editions without selecting a product-locale title', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      data: [{
-        issueDate: '2026-07-13',
-        versions: ['ja', 'ko', 'en', 'zh-Hans', 'zh-Hant'].map((locale) => ({
-          issueDate: '2026-07-13', locale, title: `${locale} title`,
-          downloadUrl: `/${locale}.pdf`, publishedAt: '2026-07-13T04:00:00Z', version: 3
-        }))
-      }],
-      meta: {page: 1, pageSize: 12, total: 1}, error: null
-    }), {status: 200})));
-
-    render(<WeeklyArchive locale="ja" messages={messages} />);
-
-    expect((await screen.findAllByRole('link', {name: '繁中'})).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('link', {name: '繁中'}).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('link', {name: '简中'}).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('link', {name: 'English'}).length).toBeGreaterThan(0);
-    expect(screen.queryByRole('link', {name: '日本語'})).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', {name: '한국어'})).not.toBeInTheDocument();
-    expect(screen.getAllByRole('heading', {name: 'zh-Hant title'}).length).toBeGreaterThan(0);
-  });
-});
 
 const messages = {
   eyebrow: 'Weekly Paper', archiveTitle: 'Downloads', archiveIntro: 'Available languages', latestLabel: 'Latest',
   allIssuesTitle: 'History', paginationNote: 'Newest first', paginationLabel: 'Pages', previousPage: 'Previous',
   nextPage: 'Next', pageLabel: 'Page', loading: 'Loading', loadError: 'Unavailable', retry: 'Retry', empty: 'No bulletins',
-  downloading: 'Preparing download',
-  downloadReady: 'Ready to open',
-  downloadError: 'Download unavailable'
+  downloading: 'Preparing download', downloadReady: 'Ready', downloadError: 'Download unavailable'
+};
+
+afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); });
+
+describe('WeeklyArchive', () => {
+  it('loads only entitled editions through protected member endpoints', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(Response.json({data: [bulletin], meta: {page: 1, pageSize: 12, total: 1}, error: null}));
+    vi.stubGlobal('fetch', fetcher);
+
+    render(<WeeklyArchive locale="en" messages={messages} />);
+
+    expect((await screen.findAllByRole('button', {name: '繁中'})).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', {name: 'English'})).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', {name: '繁中'})).not.toBeInTheDocument();
+    expect((fetcher.mock.calls[0]?.[0] as Request).url).toContain('/api/member/bulletins?locale=zh-Hant&series=general&page=1&pageSize=12');
+  });
+
+  it('keeps an unavailable protected archive empty without rendering download controls', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({}, {status: 404})));
+    render(<WeeklyArchive locale="en" messages={messages} />);
+
+    expect(await screen.findByText('No bulletins')).toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: '繁中'})).not.toBeInTheDocument();
+  });
+
+  it('reports a protected archive failure', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({}, {status: 403})));
+    render(<WeeklyArchive locale="zh-Hant" messages={messages} />);
+
+    expect(await screen.findByText('Unavailable')).toBeInTheDocument();
+    expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'weekly.archive', tags: {locale: 'zh-Hant', page: 1}});
+  });
+});
+
+const bulletin = {
+  issueId: '00000000-0000-4000-8000-000000000001', issueDate: '2026-09-13', issueNumber: 1737,
+  series: 'general', locale: 'zh-Hant', title: '週報', subtitle: '', downloadName: '1737.pdf', publishedAt: '2026-09-13T00:00:00Z', version: 1
 };

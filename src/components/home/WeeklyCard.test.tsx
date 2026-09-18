@@ -1,91 +1,61 @@
-import {render, screen} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {productLocales} from '@/i18n/locales';
 import {WeeklyCard} from './WeeklyCard';
 
 const captureHandledError = vi.hoisted(() => vi.fn());
+const access = vi.hoisted(() => ({status: 'available' as const, editions: ['zh-Hant'] as const}));
+const authorization = vi.hoisted(() => ({getAccessToken: vi.fn().mockResolvedValue('token'), refreshAfterUnauthorized: vi.fn()}));
+vi.mock('@/components/layout/AccountControl', () => ({
+  useAccountIdentity: () => null,
+  useBulletinAccess: () => access,
+  useBulletinAuthorization: () => authorization
+}));
 vi.mock('@/lib/observability', () => ({captureHandledError}));
 
-afterEach(() => {vi.unstubAllGlobals(); captureHandledError.mockClear();});
+const messages = {loading: 'Loading', downloading: 'Preparing download', downloadReady: 'Ready', downloadError: 'Download unavailable', error: 'Unavailable', retry: 'Retry'};
+
+afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); });
 
 describe('WeeklyCard', () => {
-  const issueLabels = {
-    'zh-Hant': '第 1732 期',
-    'zh-Hans': '第 1732 期',
-    en: 'Issue 1732',
-    ja: '第1732号',
-    ko: '제1732호'
-  } as const;
-
-  it.each(productLocales)('renders the same three edition downloads on the %s product route', async (locale) => {
-    const fetcher = vi.fn().mockResolvedValue(apiResponse([latestIssue()]));
+  it('uses the protected member endpoint and renders only entitled editions', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(Response.json({data: bulletin, meta: {}, error: null}));
     vi.stubGlobal('fetch', fetcher);
 
-    render(<WeeklyCard locale={locale} ctaLabel="Download weekly" messages={{loading: 'Loading', downloading: 'Preparing download', downloadReady: 'Ready to open', downloadError: 'Download unavailable', error: 'Unavailable', retry: 'Retry'}} />);
+    render(<WeeklyCard locale="en" ctaLabel="Download weekly" messages={messages} />);
 
-    expect(await screen.findByRole('link', {name: 'Download weekly: 繁中'})).toHaveAttribute('href', '/zh-Hant.pdf');
-    expect(screen.getByRole('link', {name: 'Download weekly: 简中'})).toHaveAttribute('href', '/zh-Hans.pdf');
-    expect(screen.getByRole('link', {name: 'Download weekly: English'})).toHaveAttribute('href', '/en.pdf');
-    expect(screen.getAllByRole('link')).toHaveLength(3);
-    expect(screen.getByText(issueLabels[locale])).toHaveClass('text-[var(--hhc-brand-strong)]');
-    const copyLocale = locale === 'zh-Hans' || locale === 'en' ? locale : 'zh-Hant';
-    expect(screen.getByRole('heading', {name: `${copyLocale} title`})).toHaveAttribute('lang', copyLocale);
-    expect(screen.getByText(`${copyLocale} subtitle`)).toHaveAttribute('lang', copyLocale);
-    expect(screen.queryByText('2026-07-13')).not.toBeInTheDocument();
-    expect(fetcher).toHaveBeenCalledWith('/api/bulletins?page=1&pageSize=1', expect.any(Object));
-    expect(String(fetcher.mock.calls[0]?.[0])).not.toContain('locale=');
+    expect(await screen.findByRole('button', {name: 'Download weekly: 繁中'})).toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: /English/})).not.toBeInTheDocument();
+    const request = fetcher.mock.calls[0]?.[0] as Request;
+    expect(request.url).toContain('/api/member/bulletins/latest?locale=zh-Hant&series=general');
+    expect(request.headers.get('authorization')).toBe('Bearer token');
   });
 
-  it('allows retry after a load failure', async () => {
-    const fetcher = vi.fn()
-      .mockResolvedValueOnce(apiResponse(null, {code: 'unavailable', message: 'Unavailable'}, 503))
-      .mockResolvedValueOnce(apiResponse([latestIssue()]));
-    vi.stubGlobal('fetch', fetcher);
-    render(<WeeklyCard locale="en" ctaLabel="Download" messages={{loading: 'Loading', downloading: 'Preparing download', downloadReady: 'Ready to open', downloadError: 'Download unavailable', error: 'Unavailable', retry: 'Retry'}} />);
+  it('allows retry after a protected request failure', async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(Response.json({}, {status: 503}))
+      .mockResolvedValueOnce(Response.json({data: bulletin, meta: {}, error: null})));
+    render(<WeeklyCard locale="en" ctaLabel="Download" messages={messages} />);
 
     expect(await screen.findByText('Unavailable')).toBeInTheDocument();
-    expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {
-      operation: 'weekly.latest',
-      tags: {locale: 'en', memberMode: false}
-    });
+    expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'weekly.latest', tags: {locale: 'en'}});
     await userEvent.click(screen.getByRole('button', {name: 'Retry'}));
-    expect(await screen.findByRole('link', {name: 'Download: English'})).toHaveAttribute('href', '/en.pdf');
-    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(await screen.findByRole('button', {name: 'Download: 繁中'})).toBeInTheDocument();
   });
 
-  it('aborts the active request when the card unmounts', () => {
-    const fetcher = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => new Promise<Response>(() => {
-      expect(init?.signal).toBeInstanceOf(AbortSignal);
-    }));
+  it('aborts the protected request on unmount', async () => {
+    const fetcher = vi.fn<typeof fetch>(() => new Promise<Response>(() => undefined));
     vi.stubGlobal('fetch', fetcher);
+    const {unmount} = render(<WeeklyCard locale="en" ctaLabel="Download" messages={messages} />);
 
-    const {unmount} = render(<WeeklyCard locale="en" ctaLabel="Download" messages={{loading: 'Loading', downloading: 'Preparing download', downloadReady: 'Ready to open', downloadError: 'Download unavailable', error: 'Unavailable', retry: 'Retry'}} />);
-    const signal = fetcher.mock.calls[0]?.[1]?.signal;
-
+    await waitFor(() => expect(fetcher).toHaveBeenCalledOnce());
+    const request = fetcher.mock.calls[0]?.[0] as Request;
     unmount();
-
-    expect(signal?.aborted).toBe(true);
+    expect(request.signal.aborted).toBe(true);
   });
 });
 
-function apiResponse(data: unknown, error: unknown = null, status = 200) {
-  return new Response(JSON.stringify({data, meta: {}, error}), {status});
-}
-
-function latestIssue() {
-  return {
-    issueNumber: 1732,
-    issueDate: '2026-07-13',
-    versions: ['zh-Hant', 'zh-Hans', 'en'].map((locale) => ({
-      issueNumber: 1732,
-      issueDate: '2026-07-13',
-      locale,
-      title: `${locale} title`,
-      subtitle: `${locale} subtitle`,
-      downloadUrl: `/${locale}.pdf`,
-      publishedAt: '2026-07-13T04:00:00Z',
-      version: 3
-    }))
-  };
-}
+const bulletin = {
+  issueId: '00000000-0000-4000-8000-000000000001', issueDate: '2026-09-13', issueNumber: 1737,
+  series: 'general', locale: 'zh-Hant', title: '週報', subtitle: '', downloadName: '1737.pdf', publishedAt: '2026-09-13T00:00:00Z', version: 1
+};

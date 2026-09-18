@@ -23,10 +23,11 @@
     "test:run": "node --test scripts/check-static-budgets.node-test.mjs && vitest run"
   },
   "dependencies": {
-    "@hallelujahhomechurch/account-client": "0.7.0",
-    "@hallelujahhomechurch/hhc-web-client": "0.8.0",
-    "@hallelujahhomechurch/preferences": "0.6.14",
-    "@hallelujahhomechurch/ui": "0.6.18",
+    "@hallelujahhomechurch/account-client": "1.0.4",
+    "@hallelujahhomechurch/hhc-web-client": "1.0.4",
+    "@hallelujahhomechurch/operations-client": "1.0.4",
+    "@hallelujahhomechurch/preferences": "1.0.4",
+    "@hallelujahhomechurch/ui": "1.0.4",
     "@sentry/nextjs": "10.69.0",
     "lucide-react": "^1.24.0",
     "next": "16.3.3",

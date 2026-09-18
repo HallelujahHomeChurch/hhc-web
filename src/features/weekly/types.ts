@@ -7,12 +7,14 @@ export const weeklyEditionLabels: Record<BulletinEdition, string> = {
 };
 
 export type WeeklyBulletin = {
+  issueId: string;
+  series: string;
   locale: BulletinEdition;
   issueNumber?: number;
   date: string;
   title: string;
   subtitle?: string;
-  href: string;
+  downloadName: string;
 };
 
 export type WeeklyIssue = {

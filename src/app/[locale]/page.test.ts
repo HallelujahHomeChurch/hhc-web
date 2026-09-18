@@ -5,14 +5,12 @@ import {getAlternates, getLocalizedPath} from '@/lib/seo';
 import {getHomePageTitle} from '@/lib/home-metadata';
 
 const mocks = vi.hoisted(() => ({
-  getBulletinAccess: vi.fn().mockResolvedValue({enabled: true}),
   getHomePage: vi.fn(),
   getHomeContent: vi.fn(),
   getLocations: vi.fn(),
   getSiteLayout: vi.fn()
 }));
 
-vi.mock('@/features/weekly/access', () => ({getBulletinAccess: mocks.getBulletinAccess}));
 vi.mock('@/features/pages/api', () => ({getHomePage: mocks.getHomePage}));
 vi.mock('@/features/home/api', () => ({getHomeContent: mocks.getHomeContent}));
 vi.mock('@/features/locations/api', () => ({getLocations: mocks.getLocations}));
@@ -29,8 +27,7 @@ import HomePage, {generateMetadata} from './page';
 beforeEach(() => vi.clearAllMocks());
 
 describe('home page metadata', () => {
-  it('removes the weekly component and keeps all three news items in a full-width card when off', async () => {
-    mocks.getBulletinAccess.mockResolvedValueOnce({enabled: false});
+  it('keeps member-only weekly content out of server-rendered homepage markup', async () => {
     mocks.getHomePage.mockResolvedValue(cmsHomeV2Page());
     mocks.getHomeContent.mockResolvedValue({news: [1, 2, 3].map(id => ({id, title: `News ${id}`, href: `/en/news/${id}`, date: ''})), videos: []});
     mocks.getSiteLayout.mockResolvedValue({links: cmsHomeV2Page().content.links});
@@ -68,7 +65,7 @@ describe('home page metadata', () => {
     expect(markup).toContain('href="https://youtube.com/@cms-music"');
     expect(markup).toContain('CMS Home hero');
     expect(markup).toContain('CMS News heading');
-    expect(markup).toContain('CMS Weekly heading');
+    expect(markup).not.toContain('CMS Weekly heading');
     expect(markup).toContain('CMS Videos heading');
     expect(markup).toContain('CMS About heading');
     expect(markup).toContain('CMS Locations heading');
@@ -91,7 +88,7 @@ describe('home page metadata', () => {
     expect(markup).toContain('Taipei Home Church');
     expect(markup).toContain('Taipei address');
     expect(markup).toContain('Latest News');
-    expect(markup).toContain('Weekly Paper');
+    expect(markup).not.toContain('Weekly Paper');
     expect(markup).toContain('Kingdom Joy');
     expect(markup).toContain('About Us');
     expect(markup).toContain('Locations');

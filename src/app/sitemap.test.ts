@@ -2,10 +2,8 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {PageNotFoundError, PageProjectionError} from '@/features/pages/api';
 import sitemap, {buildNewsSitemap} from './sitemap';
 
-const access = vi.hoisted(() => vi.fn().mockResolvedValue(true));
 const captureHandledError = vi.hoisted(() => vi.fn());
 const getNewsPage = vi.hoisted(() => vi.fn(async () => ({items: []})));
-vi.mock('@/features/weekly/access', () => ({isBulletinEnabled: access}));
 vi.mock('@/features/news/api', () => ({getNewsPage}));
 vi.mock('@/lib/observability', () => ({captureHandledError}));
 const pageMocks = vi.hoisted(() => ({
@@ -24,20 +22,18 @@ describe('static sitemap', () => {
   beforeEach(() => {
     captureHandledError.mockClear();
     getNewsPage.mockReset().mockResolvedValue({items: []});
-    access.mockResolvedValue(true);
     pageMocks.home.mockReset().mockResolvedValue(fixedPage(['zh-Hant', 'en']));
     pageMocks.about.mockReset().mockResolvedValue(fixedPage(['ja']));
     pageMocks.legal.mockReset().mockImplementation(async (key: string) => key === 'privacy-policy' ? fixedPage(['zh-Hant', 'ja']) : fixedPage(['en'], false));
   });
 
-  it('omits literature ministry in every locale when access is off', async () => {
-    access.mockResolvedValue(false);
+  it('never publishes member-only literature ministry routes', async () => {
     expect((await sitemap()).some(entry => entry.url.includes('literature-ministry'))).toBe(false);
   });
 
   it('publishes fixed routes only for API published/indexable locales', async () => {
     const entries = await sitemap();
-    expect(entries).toHaveLength(20);
+    expect(entries).toHaveLength(15);
     expect(entries.map((entry) => entry.url)).toContain('https://www.alive.org.tw/zh-Hant');
     expect(entries.map((entry) => entry.url)).toContain('https://www.alive.org.tw/en');
     expect(entries.map((entry) => entry.url)).not.toContain('https://www.alive.org.tw/ja');
@@ -59,7 +55,7 @@ describe('static sitemap', () => {
 
     const entries = await sitemap();
 
-    expect(entries).toHaveLength(18);
+    expect(entries).toHaveLength(13);
     expect(entries.some((entry) => entry.url === 'https://www.alive.org.tw/zh-Hant')).toBe(false);
     expect(entries.some((entry) => entry.url.endsWith('/about'))).toBe(true);
   });
@@ -69,7 +65,7 @@ describe('static sitemap', () => {
 
     const entries = await sitemap();
 
-    expect(entries).toHaveLength(18);
+    expect(entries).toHaveLength(13);
     expect(entries.some((entry) => entry.url === 'https://www.alive.org.tw/zh-Hant')).toBe(false);
     expect(entries.some((entry) => entry.url.endsWith('/about'))).toBe(true);
     expect(entries.some((entry) => entry.url.endsWith('/privacy-policy'))).toBe(true);
