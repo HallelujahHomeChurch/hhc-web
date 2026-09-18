@@ -39,9 +39,9 @@ only `openid profile email`. Recovery Gate R must not reintroduce
 | 1A–2C: contracts, Account, Operations foundation | `released / not accepted` | Final shared package `@hallelujahhomechurch/*@1.0.4`, tag `v1.0.4` at `7c6de6c`; Account `account-api--0000096`; Operations `operations-api--0000009`. | Complete the master Gate B evidence, especially counted import and cross-domain authorization matrix. |
 | 3A: Operations extraction | `in progress` | Direct sync-window and LINE occurrence route handoffs are released. Operations PR [#21](https://github.com/HallelujahHomeChurch/operations-api/pull/21), merge `5176680`, records the required counted-cutover evidence. | Formal counted export/import, backup, stable-ID digest, approved source removal. The real LINE schedule query is deferred evidence only; it does not block Website/API work. |
 | 3B: Audit producers | `dark release / observing` | `audit-log--ex7vpzj` plus producer revisions are healthy. | Read-only 24-hour observation beginning from `hhc-line-function-bot--0000215` healthy at 2026-09-18T03:24:01Z; earliest sign-off is 2026-09-19T03:24:01Z. |
-| 4: protected bulletins and Asset boundary | `backend and Website consumer released` | `hhc-web-api--0000102`, `asset-api--0000061`, `engagement-api--0000031`, and Website revision `hhc-web--0000109` are released. | Entitlement and protected-download browser matrix. |
+| 4: protected bulletins and Asset boundary | `backend and Website consumer released` | `hhc-web-api--0000102`, `asset-api--0000061`, `engagement-api--0000031`, and Website revision `hhc-web--0000110` are released. An authenticated Website session without an effective bulletin entitlement rendered no weekly surface or download controls, without auth error or public fallback. | Entitlement and protected-download browser matrix. |
 | 5: DSR and permanent deletion closure | `in progress` | Owner integrations and diagnostics are released incrementally. | Final owner matrix, retained-data behavior, partial failure/retry, and real DSR/permanent-deletion evidence. |
-| 6: shared AuthN runtime and consumers | `Website live verified / remaining consumers ready` | Package is public. Website revision `hhc-web--0000109` is the required Gate R AuthN-runtime release and its authenticated session UI is live verified. `account-fe` PR [#59](https://github.com/HallelujahHomeChurch/account-fe/pull/59) and `admin-fe` PR #103 at `16e5d2c` are green. The former Admin test race after bulletin-detail navigation is corrected; its 519 local tests, lint, build, and CI pass. | Merge/release Account and Admin, then run browser/Electron conformance. |
+| 6: shared AuthN runtime and consumers | `Website, Account, and Admin released / Presenter pending` | Package is public. Website revision `hhc-web--0000110` contains the required AuthN runtime; the authenticated Website session UI is live verified. Account PR [#59](https://github.com/HallelujahHomeChurch/account-fe/pull/59), merge `b0746f7`, release [35313657998](https://github.com/HallelujahHomeChurch/account-fe/actions/runs/35313657998), and static-origin verification succeeded; a live Account profile entry had content without `invalid_request` or OAuth error. Admin PR [#103](https://github.com/HallelujahHomeChurch/admin-fe/pull/103), merge `05fb8b4`, release [35313927293](https://github.com/HallelujahHomeChurch/admin-fe/actions/runs/35313927293), and static-origin verification succeeded; a live Admin entry had content without `invalid_request` or OAuth error. Presenter still consumes retired nested `user.permissions` and is not released. No user or token data was retained. | Implement/release Presenter Web/Desktop contract convergence, then full browser/Desktop conformance, consumer drift scan, and authorization matrix. |
 | 7: Gateway and coordinated cutover | `not started` | Exact Gateway route work has landed incrementally. | All consumer PRs green and released, full staging matrix, retained-data reconciliation, and explicit coordinated-cutover authorization. |
 | 8: meeting/media formal acceptance | `not started` | No acceptance evidence. | Controlled device and runtime evidence after Phase 7, without release/config churn. |
 
@@ -53,10 +53,11 @@ only `openid profile email`. Recovery Gate R must not reintroduce
 
 ## Immediate Order
 
-1. Merge and release the remaining dependency-ready consumer PRs, then run
-   browser/Electron conformance. Do not alter Account permissions, OAuth
-   scopes, or bulletin access.
-2. Resume the protected-bulletin entitlement and download matrix after the
-   consumers are released.
-3. Resume the master plan from the next dependency-ready producer gate,
+1. Run the protected-bulletin entitlement and download matrix with controlled
+   principals; do not alter Account permissions, OAuth scopes, or bulletin
+   access.
+2. Align Presenter Web/Desktop with the canonical Account session and shared
+   destination projection, then release and verify it.
+3. Run browser/Desktop conformance and the consumer drift scan.
+4. Resume the Operations counted import and the DSR owner evidence gates,
    updating this ledger after each evidence boundary.
