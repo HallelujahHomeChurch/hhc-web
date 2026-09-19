@@ -90,6 +90,33 @@ decisions below refine workstream 1. They are not separate projects.
 - Responsibility and member-entitlement grants are not hidden inside bulk
   member creation.
 
+### Batch Creation Semantics
+
+Member creation permits per-row partial success because Member rows are
+independent:
+
+- successful rows complete and become read-only;
+- failed rows remain editable and retry sends only those rows;
+- each row is idempotent;
+- duplicate Accounts inside one batch are blocked before submission;
+- an existing active church membership is an idempotent `already_member`
+  result, while any missing valid initial organization relationship may still
+  be added;
+- an existing pending request is reused rather than duplicated;
+- another active church requires transfer;
+- an unresolved Account cannot be submitted.
+
+Organization-unit creation is atomic for the whole submitted batch because
+rows may form a parent/child graph. A later row may select an earlier new
+family as its parent. The service validates names, kinds, parents, cycles, and
+conflicts, then creates every row in one transaction or none. The UI identifies
+the failing rows before retry.
+
+Two units of the same kind and name under one parent conflict. An existing unit
+is never silently substituted for a requested new unit; an administrator must
+select the existing unit explicitly when it is intended as a parent. Hidden
+codes remain server-generated.
+
 ## Domain Boundaries
 
 The following remain separate even when shown on one screen:
@@ -457,9 +484,7 @@ failure.
 Only these product questions remain before converting this record into an
 implementation plan:
 
-1. batch creation semantics: all-or-nothing versus per-row partial success,
-   duplicate handling, and retry presentation;
-2. shared Header SearchBar interaction: route-scoped search placeholder,
+1. shared Header SearchBar interaction: route-scoped search placeholder,
    result navigation, URL/query persistence, and interaction with page filters.
 
 Everything else above is confirmed. Technical permission names, API shapes,
