@@ -307,6 +307,69 @@ Within membership management, a Global Administrator has the same effective
 global membership capability as a Global Membership Manager, while retaining
 its distinct higher-privilege role and audit identity.
 
+### Scoped Admin Experience
+
+Organization managers use the existing Admin Console; HHC does not create a
+separate family or small-group administration product.
+
+- a manager with one effective assignment may enter the assigned unit directly
+  from Organization Units;
+- a manager with multiple assignments first sees only `我管理的組織`;
+- a family manager may manage family membership, descendant-small-group
+  membership, and descendant-small-group responsibility;
+- a family manager may submit a pending church-membership request for an
+  existing HHC Account but cannot approve church membership;
+- structure mutation, Account administration, entitlements, global RBAC, and
+  unrelated organization data remain unavailable;
+- Meeting, Resource, and Reservation actions still require their separately
+  reviewed operational responsibility;
+- Header SearchBar and every API list remain constrained to effective scope.
+
+An organization responsibility may therefore permit entry to the relevant
+scoped Admin surface even when the Account has no church-wide staff role. The
+owning API remains the enforcement point.
+
+## Church Transfer
+
+Church transfer is Admin-only. There is no Member self-service transfer UI or
+Account-side transfer state.
+
+Because the Member does not confirm the transfer, one church cannot
+unilaterally remove the Member from another church. Normal completion requires
+both administrative sides:
+
+```text
+source church confirms release
+AND target church confirms acceptance
+```
+
+- either source or target Church Membership Manager may initiate;
+- when source initiates, target approval remains;
+- when target initiates, source approval remains;
+- a Global Administrator or Global Membership Manager may complete a reviewed
+  correction directly after recording a reason;
+- when either church has no Membership Manager, a global membership authority
+  may act for that side;
+- one Member may have only one in-progress transfer.
+
+Transfer states are limited to:
+
+```text
+pending_source_approval
+pending_target_approval
+completed
+rejected
+cancelled
+```
+
+Until completion, the Member remains fully attached to the source church.
+Rejection or cancellation changes no membership facts. Completion atomically
+ends source-church membership, organization memberships, and responsibilities;
+creates target-church membership and reviewed initial organization placement;
+preserves person-level entitlements; refreshes the access projection; and
+records both church scopes in audit. A completed transfer is not reverted by
+changing its status; a reverse move is a new transfer.
+
 ## Binding Lifecycle
 
 Administrator-facing relationship actions are only:
@@ -394,11 +457,9 @@ failure.
 Only these product questions remain before converting this record into an
 implementation plan:
 
-1. transfer workflow: initiator, target-church approval, whether source-church
-   acknowledgement is required, and the exact user-visible states;
-2. batch creation semantics: all-or-nothing versus per-row partial success,
+1. batch creation semantics: all-or-nothing versus per-row partial success,
    duplicate handling, and retry presentation;
-3. shared Header SearchBar interaction: route-scoped search placeholder,
+2. shared Header SearchBar interaction: route-scoped search placeholder,
    result navigation, URL/query persistence, and interaction with page filters.
 
 Everything else above is confirmed. Technical permission names, API shapes,
