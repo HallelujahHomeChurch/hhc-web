@@ -74,7 +74,12 @@
 **Files:** each owner's existing mutation transaction/repository, one minimal `audit_outbox` migration only when no reusable generic outbox exists, dispatcher, typed catalog fixture, configuration, governance manifest, and focused tests.
 
 - [ ] Reimplement or selectively port producer changes from fresh `origin/main`; never merge the stale Account, HHC Web, Gateway, or frontend Audit branches wholesale.
-- [ ] Account owns authentication, IAM, RBAC, and DSR Admin-decision events. Operations owns OrgUnit, Meeting, Resource, reservation, maintenance, membership, qualification, and entitlement events. HHC Web owns pages/news/bulletins. Engagement owns direct campaign/schedule administration. Asset/LINE own only their direct Asset Library and Media Sync mutations.
+- [ ] Account owns authentication, IAM, RBAC, and DSR Admin-decision events.
+      Operations owns Member, ChurchMembership, OrgMembership,
+      OrgRoleAssignment, transfer, OrgUnit, Meeting, Resource, reservation,
+      maintenance, and entitlement events. HHC Web owns pages/news/bulletins.
+      Engagement owns direct campaign/schedule administration. Asset/LINE own
+      only their direct Asset Library and Media Sync mutations.
 - [ ] For each committed mutation, write business state and exactly one deterministic outbox event in the same PostgreSQL transaction. Reads that policy requires auditing must durably enqueue before returning success; fixed exclusions must have zero-event tests.
 - [ ] Dispatch with bounded retry for network/429/5xx, terminal handling for validated 4xx, idempotent replay, oldest-pending/dead-letter metrics, and no payloads in operational logs.
 - [ ] Keep Gateway permission-denial emission best effort with its existing structured security log as outage fallback; Gateway has no durable store.

@@ -2,7 +2,10 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Admit `operations-api`, move the existing operations kernel intact, and add organization membership, scoped roles, qualification, entitlements, resource reservations, and the shared access projection.
+**Goal:** Admit `operations-api`, move the existing operations kernel intact,
+and add Member/church membership, organization bindings, scoped roles,
+entitlements, resource reservations, and the shared access projection. The
+replacement membership model follows the 2026-09-19 focused plan.
 
 **Architecture:** Reuse the minimal Go/PostgreSQL/`net/http` shape already proven in `hhc-web-api`; do not build a generic authorization service or DSL. `operations-api` owns operations facts and authorizes each Operations administrative action from either a matching church-wide Account scope or a matching active operational OrgRoleAssignment for the target OrgUnit. It also exposes one subject access projection and answers exact entitlement checks for allowlisted services.
 
@@ -20,8 +23,9 @@
 - Self-service request/cancel uses Operations membership policy, not staff permission.
 - Meetings, Resources, and Reservations administrative routes accept either
   their exact global Account permission or the matching scoped operational
-  OrgRoleAssignment. Membership, qualification, entitlement, and role-assignment
-  administration remains global `memberships:read/manage` only.
+  OrgRoleAssignment. Membership, entitlement, and responsibility
+  administration accepts the exact global Account authority or the scoped
+  Operations authority frozen by the 2026-09-19 focused plan.
 - Never place OrgUnit ids or organization roles in JWT scopes, and never infer
   operational actions from `pastor`, `family_leader`, or `small_group_leader`.
 
@@ -82,52 +86,21 @@
 - [ ] Run focused operations and repository tests, then the full service suite.
 - [ ] Commit: `feat: own church operations kernel`
 
-### Task 3: Add Membership, Qualification, Roles, And Entitlements
+### Task 3: Add Membership, Qualification, Roles, And Entitlements (Released Baseline)
 
-**Files:**
-- Create: `operations-api/internal/migrations/sql/002_membership_and_entitlements.sql`
-- Create: `operations-api/internal/membership/model.go`
-- Create: `operations-api/internal/membership/service.go`
-- Create: `operations-api/internal/membership/service_test.go`
-- Create: `operations-api/internal/postgres/membership_repository.go`
-- Create: `operations-api/internal/postgres/membership_repository_integration_test.go`
-- Create: `operations-api/internal/httpapi/membership_handlers.go`
-- Create: `operations-api/internal/httpapi/membership_handlers_test.go`
+> **Superseded for the replacement membership model:** this checklist records
+> the already released first implementation and must not be replayed. The
+> direct breaking replacement of `MembershipQualification`, primary
+> OrgMembership, congregation, administrator-entered validity, and global-only
+> roster management is defined by
+> [the 2026-09-19 focused plan](2026-09-19-admin-membership-and-organization-management.md).
+> Existing Meeting/Resource/Reservation authorization remains independent.
 
-- [ ] Add only `OrgMembership`, `OrgRoleAssignment`, `MembershipQualification`, and `EntitlementAssignment` from the spec. Accept the exact initial pastoral and operational role catalog; reject unknown role values.
-- [ ] Enforce one active primary membership with a partial unique index.
-- [ ] Enforce time bounds and status transitions; do not infer qualification from membership, staff role, or email verification.
-- [ ] Do not infer scoped administrative actions from OrgMembership. Require
-  an explicit operational OrgRoleAssignment; do not require a fabricated
-  membership for a reviewed cross-unit operational assignment.
-- [ ] Seed exactly these entitlement definitions:
-
-```text
-bulletin.general.zh-Hant.access
-bulletin.general.zh-Hans.access
-bulletin.general.en.access
-```
-
-- [ ] Add membership, qualification, entitlement, and OrgRoleAssignment Admin
-  routes. Require global `memberships:read` for reads and global
-  `memberships:manage` for mutations; scoped operational roles cannot grant or
-  revoke roles.
-- [ ] Publish exact OrgRoleAssignment routes:
-
-```text
-GET  /api/admin/operations/org-role-assignments
-POST /api/admin/operations/org-role-assignments
-POST /api/admin/operations/org-role-assignments/{assignmentId}/revoke
-```
-
-  Bound list filters to subject, OrgUnit, role, status, and effective time;
-  require `Idempotency-Key` on create and `If-Match` on revoke.
-- [ ] Reject invalid role/OrgUnit-kind pairs and operational assignments on the
-  organization root. Test cross-OrgUnit denial, effective periods, the
-  compiled descendant rules for every role, and that pastoral roles grant no
-  Meeting, Resource, or Reservation action.
-- [ ] Write immutable audit rows for every membership, qualification, entitlement, OrgUnit, org-role, resource, meeting, occurrence, override, and binding mutation; preserve actor, request ID, before/after state, and stable resource ID.
-- [ ] Commit: `feat: add membership qualification and entitlements`
+Historical delivery evidence is recorded in the execution ledger. Preserve
+the released three bulletin entitlement definitions, immutable audit facts,
+idempotency, optimistic concurrency, and independent
+Meeting/Resource/Reservation roles while replacing the membership aggregates
+through the focused plan.
 
 ### Task 4: Add Exact Entitlement Checks And Access Projection
 
@@ -168,15 +141,16 @@ POST /api/admin/operations/org-role-assignments/{assignmentId}/revoke
 - [ ] Implement `GET /api/operations/me/access` for the trusted authenticated subject.
 - [ ] Do not accept email, role names, raw tokens, arbitrary queries, or resource policy expressions.
 - [ ] Return stable internal denial reasons but keep public presentation non-disclosing.
-- [ ] Return only presentation-safe organization, role, qualification,
-  entitlement, and version data from `/api/operations/me/access`; include
+- [ ] Return only presentation-safe Member, church membership, organization,
+  role, entitlement, management-scope, and version data from
+  `/api/operations/me/access`; include
   enough active operational-role summary to show scoped destinations but do
   not copy Account staff permissions into Operations or make frontend scope
   calculations authoritative.
 - [ ] Test the global-permission and scoped-role positive branches, wildcard,
   sibling/cross-scope denial, pastoral-role denial, immediate role revocation,
   independent Account-permission and Operations-role dependency failures,
-  expired/suspended qualification, entitlement expiry/revocation, unknown
+  inactive church membership, entitlement expiry/revocation, unknown
   codes, and Admin-without-membership denial.
 - [ ] Commit: `feat: expose operations access projection`
 
@@ -216,13 +190,19 @@ POST /api/admin/operations/org-role-assignments/{assignmentId}/revoke
 - Modify: `operations-api/openapi.yaml`
 
 **Interfaces:**
-- Consumes: trusted Account subject; imported `OrgUnit`, `OrgMembership`, `MembershipQualification`, `Meeting`, occurrence, and `Resource`; Task 4 `AuthorizeOperation`.
+- Consumes: trusted Account subject; `Member`, active `ChurchMembership`,
+  eligible `OrgMembership`, imported `OrgUnit`, `Meeting`, occurrence, and
+  `Resource`; Task 4 `AuthorizeOperation`.
 - Produces: owner-scoped availability/request/cancel APIs and Admin Resource, maintenance, list/detail, approve/reject/cancel APIs from the canonical Operations OpenAPI.
 
 - [ ] Write failing model/repository tests for one Resource per request, half-open intervals, maximum 366-day request/maintenance range, immutable terminal rejected/cancelled states, optimistic version, and idempotency uniqueness.
 - [ ] Write failing concurrency tests proving requested rows do not occupy time; approved reservations, fixed Meeting occurrences, and active maintenance do; approval and conflicting Meeting/maintenance changes serialize on the Resource row; force overwrite is impossible.
 - [ ] Add the minimum tables and indexes for `ResourceReservation` and `ResourceMaintenanceBlock`; extend Resource only with reviewed `kind`, owner OrgUnit, and `reservation_enabled` fields. Preserve every imported Resource stable ID and default reservation to disabled.
-- [ ] Implement compiled self-service policy: authentication plus active qualification plus eligible active OrgMembership for the Resource owner scope. Return only merged busy intervals to ordinary callers and never reveal requester, purpose, Meeting name, maintenance reason, approver, or blocker type.
+- [ ] Implement compiled self-service policy: authentication plus active
+      ChurchMembership plus eligible active OrgMembership for the Resource
+      owner scope. Return only merged busy intervals to ordinary callers and
+      never reveal requester, purpose, Meeting name, maintenance reason,
+      approver, or blocker type.
 - [ ] Call `AuthorizeOperation` for every Admin list/detail/mutation using the
   owned Resource or Meeting OrgUnit. List endpoints return only rows authorized
   by the global scope or effective scoped role. Reservation read/approve,

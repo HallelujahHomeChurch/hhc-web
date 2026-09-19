@@ -11,7 +11,9 @@ It refines the membership and organization portions of
 Where the older document describes congregation nodes, primary pastoral
 membership, administrator-entered validity periods, or a separate organization
 responsibility page, this decision record is the newer product decision. The
-canonical design and repository plans must be reconciled before implementation.
+canonical plans are reconciled by
+`../plans/2026-09-19-admin-membership-and-organization-management.md`; that
+plan requires explicit approval before implementation.
 
 The social-login visual-style question is explicitly out of scope.
 

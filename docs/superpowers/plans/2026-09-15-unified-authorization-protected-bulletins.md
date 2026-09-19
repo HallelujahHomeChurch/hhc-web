@@ -135,8 +135,10 @@ type EntitlementChecker interface {
 
 - [ ] Keep `download_weekly_paper` as a product capability name, but remove its Account permission code and public-route assumption.
 - [ ] Resolve the bound Account subject and call the protected member endpoint with trusted service context.
-- [ ] Do not treat LINE group membership, bot profile enablement, or Admin status as member qualification.
-- [ ] Add denial tests for unbound, inactive qualification, missing locale entitlement, revoked entitlement, and dependency failure.
+- [ ] Do not treat LINE group membership, bot profile enablement, or Admin
+      status as active church membership.
+- [ ] Add denial tests for unbound Account, inactive ChurchMembership, missing
+      locale entitlement, revoked entitlement, and dependency failure.
 - [ ] Run `pnpm format:check`, `pnpm typecheck`, `pnpm lint`, targeted Vitest, `pnpm build`, and `pnpm architecture:check`.
 - [ ] Commit: `feat: authorize weekly paper through member entitlement`
 
@@ -155,8 +157,11 @@ type EntitlementChecker interface {
 
 - [ ] Keep the immutable campaign delivery snapshot and channel consent/suppression behavior.
 - [ ] Enumerate account-bound candidate subject IDs from Engagement-owned Email/Web Push consent and subscription state, batch each subject's published-locale entitlement codes through Operations, then use Account only to resolve delivery identity/contact data; do not use `bulletin:read`, `verified_member`, or Admin status.
-- [ ] Persist only subjects that have active qualification and at least one matching entitlement for a published bulletin locale.
-- [ ] Recheck eligibility before delivery so revoked qualification or entitlement fails closed; dependency failure retries without sending.
+- [ ] Persist only subjects that have active ChurchMembership and at least one
+      matching entitlement for a published bulletin locale.
+- [ ] Recheck eligibility before delivery so inactive ChurchMembership or
+      revoked entitlement fails closed; dependency failure retries without
+      sending.
 - [ ] Remove `membersOnly`, public bulletin policy, and Account bulletin-permission calls.
 - [ ] Run `go test -race ./... -count=1 -p=1`, `go vet ./...`, OpenAPI lint, migration/governance checks, and image build required by Engagement CI.
 - [ ] Commit: `feat: target bulletin notifications by entitlement`

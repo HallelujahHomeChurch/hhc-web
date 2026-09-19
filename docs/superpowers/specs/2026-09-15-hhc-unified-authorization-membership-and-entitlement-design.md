@@ -2,6 +2,18 @@
 
 ## Status And Scope
 
+> **2026-09-19 membership/organization refinement:** The approved product
+> decisions in
+> [the Admin membership and organization decision record](2026-09-19-admin-membership-and-organization-management-decision-record.md)
+> supersede this document wherever it describes an `organization` root,
+> `congregation`, primary OrgMembership, a separate MembershipQualification,
+> administrator-entered membership/responsibility validity, `left` as an
+> editable live state, global-only roster management, or a standalone
+> Organization Responsibility page. The implementation sequence is frozen in
+> [the focused plan](../plans/2026-09-19-admin-membership-and-organization-management.md).
+> Those sections below remain historical context until the breaking model is
+> implemented; they are not executable instructions.
+
 This is the canonical target design for HHC staff authorization, church
 organization scope, membership qualification, member entitlements, protected
 weekly bulletins, resource reservations, audit/DSR integration, shared UI
