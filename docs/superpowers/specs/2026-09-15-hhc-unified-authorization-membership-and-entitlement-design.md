@@ -2,17 +2,19 @@
 
 ## Status And Scope
 
-> **2026-09-19 membership/organization refinement:** The approved product
+> **2026-09-19 canonical membership/organization model:** The approved product
 > decisions in
 > [the Admin membership and organization decision record](2026-09-19-admin-membership-and-organization-management-decision-record.md)
-> supersede this document wherever it describes an `organization` root,
-> `congregation`, primary OrgMembership, a separate MembershipQualification,
-> administrator-entered membership/responsibility validity, `left` as an
-> editable live state, global-only roster management, or a standalone
+> replace the older membership and organization model. The canonical aggregates
+> are Member, ChurchMembership, OrgMembership, OrgRoleAssignment,
+> EntitlementAssignment, and MembershipTransfer; OrgUnit kinds are `church`,
+> `family`, `small_group`, and `fellowship`. There is no `organization` root,
+> `congregation`, primary membership, MembershipQualification, administrator-
+> entered relationship validity, editable `left` state, or standalone
 > Organization Responsibility page. The implementation sequence is frozen in
 > [the focused plan](../plans/2026-09-19-admin-membership-and-organization-management.md).
-> Those sections below remain historical context until the breaking model is
-> implemented; they are not executable instructions.
+> Any older examples below using removed terms are non-normative historical
+> context and must not be implemented or emitted by contracts.
 
 This is the canonical target design for HHC staff authorization, church
 organization scope, membership qualification, member entitlements, protected
@@ -50,12 +52,12 @@ asset bytes are retained; only their access model changes.
 
 1. Staff administration uses RBAC: users receive roles and roles contain
    atomic staff permissions with church-wide effect.
-2. Church organization access uses scoped role assignments. An Operations
-   administrative action is allowed by either its church-wide Account staff
-   permission or a matching active operational OrgRoleAssignment for the
-   target OrgUnit; the owning API evaluates the union.
-3. Membership qualification, member entitlements, and staff permissions are
-   separate concepts and separate data.
+2. Church organization access uses scoped role assignments. Operations owns
+   church, family, small-group, and fellowship responsibility; scoped
+   assignment codes never enter JWT permissions.
+3. Church membership, organization affiliation, member entitlements, and
+   staff permissions are separate concepts and separate data. Active church
+   membership replaces MembershipQualification for member-benefit eligibility.
 4. Workflow records such as registration, attendance, and paper distribution
    are not permissions.
 5. Services enforce authorization for their own resources. HHC does not add a
@@ -111,10 +113,12 @@ This design does not introduce:
 | Staff permission | Atomic administrative capability carried in the Account permission contract | `account-api` |
 | Staff role | Human-friendly bundle of staff permissions | `account-api` |
 | OrgUnit | Typed node in the HHC church organization tree | `operations-api` |
-| OrgMembership | A user's active or historical pastoral/organizational placement | `operations-api` |
-| OrgRoleAssignment | A time-bounded leadership or operational relationship within one OrgUnit scope | `operations-api` |
-| MembershipQualification | Church-wide approved membership status | `operations-api` |
-| Member entitlement | A member-facing benefit assigned to a user, organization userset, or qualification bundle | `operations-api` |
+| Member | Stable Operations identity bound one-to-one to an existing Account in the current product | `operations-api` |
+| ChurchMembership | One Member's pending, active, ended, or rejected relationship with one church; at most one is active | `operations-api` |
+| OrgMembership | A Member's current affiliation with a family, small group, or fellowship inside the active church | `operations-api` |
+| OrgRoleAssignment | A scoped responsibility assigned to a Member and revoked explicitly; no administrator-entered effective period | `operations-api` |
+| MembershipTransfer | Dual-approval move between churches | `operations-api` |
+| Member entitlement | A direct person-level benefit assignment that is effective only while ChurchMembership is active | `operations-api` |
 | Audience | A domain-owned rule describing which qualified subjects may access content | content owner |
 | Workflow record | Registration, attendance, distribution, approval, or other business state | workflow owner |
 | Access projection | Non-authoritative summary used to render application destinations and controls | `frontend-platform` contract |
@@ -122,8 +126,8 @@ This design does not introduce:
 
 Authentication answers who the user is. Staff RBAC answers which
 administrative functions the user may perform. Organization relationships
-answer where the user belongs or leads. Qualification and entitlements answer
-which member benefits the user may consume.
+answer where the Member belongs or leads. Active ChurchMembership and
+entitlements answer which member benefits the user may consume.
 
 Account staff roles and Operations organization roles are separate assignment
 surfaces. A staff role grants church-wide administration. An organization role
@@ -144,9 +148,9 @@ The relevant facts may include:
   denied; Account status remains enforced by Account login/refresh/session
   revocation rather than per-request Account introspection;
 - staff permissions for administrative actions;
-- active membership qualification;
-- active OrgMembership and ancestor relationships;
-- active OrgRoleAssignment and its effective period;
+- active ChurchMembership;
+- current OrgMembership and ancestor relationships;
+- active OrgRoleAssignment;
 - active member entitlement;
 - resource owner, OrgUnit, series, locale, publication, and lifecycle state;
 - registration or occurrence state;
@@ -174,8 +178,8 @@ future design explicitly scopes that domain.
 
 | Domain | Source Of Truth | Responsibilities | Must Not Own |
 | --- | --- | --- | --- |
-| Identity and staff RBAC | `account-api` | users, login, MFA, sessions, staff roles, staff permissions, access-token issuance | OrgMembership, member qualification, member entitlement, CMS resources |
-| Church operations | `operations-api` | OrgUnit, OrgMembership, OrgRoleAssignment, MembershipQualification, EntitlementAssignment, Meeting, occurrence, Resource, reservation, maintenance, registration, attendance, paper distribution eligibility | identity credentials, CMS content bytes, provider delivery |
+| Identity and staff RBAC | `account-api` | users, login, MFA, sessions, staff roles, staff permissions, access-token issuance, minimal allowlisted Account resolution | Member, ChurchMembership, OrgMembership, member entitlement, CMS resources |
+| Church operations | `operations-api` | Member, ChurchMembership, OrgUnit, OrgMembership, OrgRoleAssignment, MembershipTransfer, EntitlementAssignment, Meeting, occurrence, Resource, reservation, maintenance, registration, attendance, paper distribution eligibility | identity credentials, CMS content bytes, provider delivery |
 | Website content | `hhc-web-api` | pages, news, bulletin series/issues/versions, publication state, protected content policy | account roles, organization membership source data, file mechanics |
 | File mechanics | `asset-api` | upload sessions, bytes, scan state, derivatives, grants, protected downloads, deletion lifecycle | CMS meaning, member qualification, event eligibility |
 | Engagement | `engagement-api` | consent, suppression, audience snapshots, campaigns, schedules | membership source data, provider delivery |
@@ -485,31 +489,32 @@ the two concepts as system roles (church-wide) and organization
 responsibilities (scoped), and shows effective scope plus expiry before
 confirmation.
 
-## Church Organization Model
+## Church Organization And Membership Model
 
-The existing untyped `ChurchUnit` is directly renamed to `OrgUnit`.
+`OrgUnit` is the organization scope. `Member` is the stable person-domain
+identity bound to an existing Account; relationships and workflows reference
+`member_id`, never Account ids directly.
 
 ### OrgUnit Kinds
 
 ```text
-organization
-congregation
+church
 family
 small_group
+fellowship
 ```
 
 Canonical parent rules:
 
 | Child | Allowed parent |
 | --- | --- |
-| `organization` | none; one HHC root |
-| `congregation` | `organization` |
-| `family` | `congregation` |
-| `small_group` | `family` or `congregation` |
+| `church` | none |
+| `family` | `church` |
+| `small_group` | `family` or `church` |
+| `fellowship` | `church` |
 
-The HHC root contains the mother congregation, Zhongli congregation, and China
-congregations as siblings. A directly pastored small group can belong directly
-to a congregation without a family node.
+Each church is a root. A directly pastored small group can belong directly to
+a church without a family node. Fellowship is initially a leaf.
 
 Parent changes must reject cycles and invalid kind combinations. Paused or
 archived units remain addressable for historical records but do not accept new
@@ -526,37 +531,33 @@ Public location content and physical venues remain separate:
 ```text
 OrgMembership
 - id
-- user_id
+- member_id
 - org_unit_id
-- status: pending | active | suspended | left | rejected
-- is_primary
-- valid_from
-- valid_to
-- approved_by
-- approved_at
+- created_by
 - created_at
-- updated_at
+- removed_by
+- removed_at
 ```
 
-A user may have multiple memberships but at most one active primary pastoral
-membership. Membership at a small group implies contextual ancestry through
-its family and congregation; it does not create duplicate membership rows at
-every ancestor.
+A Member has one active ChurchMembership and may have many current family,
+small-group, and fellowship affiliations inside that church. A family child
+small group requires a current parent-family affiliation; direct church small
+groups and fellowships require only active ChurchMembership. Removed bindings
+disappear from current lists while audit/history retains the change.
 
-Membership qualification is church-wide. Moving between OrgUnits does not by
-itself remove general member benefits.
+ChurchMembership is the member-wide eligibility fact. Moving between OrgUnits
+does not by itself remove general member benefits; ending ChurchMembership
+makes every member-only entitlement ineffective.
 
 ### OrgRoleAssignment
 
 ```text
 OrgRoleAssignment
 - id
-- user_id
+- member_id
 - org_unit_id
-- role: pastor | family_leader | small_group_leader | meeting_manager | resource_manager | reservation_approver
+- role: pastor | church_membership_manager | family_leader | small_group_leader | fellowship_leader | meeting_manager | resource_manager | reservation_approver
 - status: active | revoked
-- valid_from
-- valid_to
 - assigned_by
 - assigned_at
 - revoked_by
@@ -567,16 +568,17 @@ Initial scope behavior is compiled policy, not administrator configuration:
 
 | Org role | Allowed assignment kind |
 | --- | --- |
-| `pastor` | `organization` or `congregation` |
+| `pastor` | `church`, `family`, `small_group`, or `fellowship` |
+| `church_membership_manager` | `church` |
 | `family_leader` | `family` |
 | `small_group_leader` | `small_group` |
-| `meeting_manager` | `congregation`, `family`, or `small_group` |
-| `resource_manager` | `congregation`, `family`, or `small_group` |
-| `reservation_approver` | `congregation`, `family`, or `small_group` |
+| `fellowship_leader` | `fellowship` |
+| `meeting_manager` | `church`, `family`, `small_group`, or `fellowship` |
+| `resource_manager` | `church`, `family`, `small_group`, or `fellowship` |
+| `reservation_approver` | `church`, `family`, `small_group`, or `fellowship` |
 
-The organization root accepts a pastoral relationship but not an operational
-role. Church-wide Operations administration uses the matching Account staff
-role. Invalid role/kind pairs are rejected.
+Global membership administration uses the Account `membership_manager` role
+bundle. Invalid role/kind pairs are rejected.
 
 Effective scopes are:
 
@@ -584,7 +586,9 @@ Effective scopes are:
 | --- | --- |
 | `small_group_leader` | assigned small group only |
 | `family_leader` | assigned family and descendant small groups |
-| `pastor` | assigned organization or congregation and all descendants |
+| `fellowship_leader` | assigned fellowship only |
+| `church_membership_manager` | assigned church and every descendant roster/structure scope |
+| `pastor` | descriptive responsibility only; no management action by itself |
 | `meeting_manager` | assigned OrgUnit and descendants |
 | `resource_manager` | assigned OrgUnit and descendants |
 | `reservation_approver` | assigned OrgUnit and descendants |
@@ -598,13 +602,11 @@ policy:
 | `resource_manager` | read and write Resources and maintenance owned by the effective scope |
 | `reservation_approver` | read and approve, reject, or Admin-cancel reservations for Resources owned by the effective scope |
 
-Pastoral roles describe church responsibility and do not automatically grant
-Meeting, Resource, Reservation, CMS, membership-management, or other system
-actions. Later roster or pastoral views may deliberately consume those
-relationships, but each action must first be added to the compiled owner
-policy and negative access matrix. V1 organization-role grant and revoke
-remains behind church-wide `memberships:manage`; scoped leaders cannot
-delegate roles.
+Pastoral responsibility grants no management action by itself. Global
+Administrator may assign every level; Global Membership Manager may assign
+church and lower responsibility; Church Membership Manager may assign lower
+responsibility in its church; Family Leader may assign descendant small-group
+responsibility. Small-group and fellowship leaders cannot delegate.
 
 OrgMembership alone grants no administrative action. A scoped operational role
 is an explicit, audited assignment and is not inferred from membership. This
@@ -612,47 +614,44 @@ keeps ordinary member self-service policy separate from delegated management
 and permits a reviewed cross-unit staff assignment without fabricating a
 pastoral membership.
 
-Do not store a single `leader_user_id` on OrgUnit. Multiple leaders, temporary
-delegation, expiry, revocation, and history must be supported by assignments.
+Do not store a single `leader_user_id` on OrgUnit. Multiple leaders, explicit
+revocation, and history are supported by assignments.
 
 Church `family` is a pastoral organization node. It must never be reused for a
 real-world household, marriage, guardian, child, or emergency-contact
 relationship. A future Household/Guardian domain is separate.
 
-## Membership Qualification And Entitlements
+## Church Membership And Entitlements
 
-### MembershipQualification
+### ChurchMembership
 
 ```text
-MembershipQualification
+ChurchMembership
 - id
-- user_id
-- status: pending | active | suspended | revoked | expired
-- valid_from
-- valid_to
-- approved_by
-- approved_at
-- reason_code
+- member_id
+- church_org_unit_id
+- status: pending | active | ended | rejected
+- requested_by
+- decided_by
+- decided_at
 - created_at
 - updated_at
 ```
 
-Qualification is not an Account role, staff permission, email-verification
-flag, or Admin Console access result. Admin users do not automatically qualify
-as members.
+ChurchMembership is not an Account role, staff permission, email-verification
+flag, or Admin Console access result. Admin users do not automatically become
+members. One Member may have at most one active ChurchMembership; cross-church
+movement uses a dual-approval MembershipTransfer.
 
 ### EntitlementAssignment
 
 ```text
 EntitlementAssignment
 - id
-- subject_type: user | org_members | qualification_bundle
-- subject_id
+- member_id
 - entitlement_code
-- status: active | suspended | revoked | expired
-- valid_from
-- valid_to
-- source: qualification_bundle | manual_assignment | organization_assignment | event_registration
+- status: active | revoked
+- source: manual_assignment | event_registration
 - assigned_by
 - assigned_at
 - revoked_by
@@ -663,10 +662,8 @@ An entitlement is effective only when:
 
 - the Account principal is authenticated through a valid gateway-verified
   token that is not emergency denied;
-- the MembershipQualification is active when the entitlement is a member
-  benefit;
-- the assignment is active and within its effective period;
-- its subject relationship still matches;
+- the Member has an active ChurchMembership;
+- the assignment is active;
 - the resource and workflow state permit the action.
 
 Initial entitlement definitions are compiled, reviewed catalog entries. Admin
@@ -885,9 +882,9 @@ Frontends consume a normalized summary such as:
 ```ts
 type AccessSnapshot = {
   staffPermissions: string[]
+  churchMembership?: ChurchMembershipSummary
   memberships: OrgMembershipSummary[]
   orgRoles: OrgRoleSummary[]
-  qualifications: QualificationSummary[]
   entitlements: EntitlementSummary[]
   version: string
 }
@@ -900,25 +897,23 @@ type OrgRoleSummary = {
   assignmentId: string
   role:
     | 'pastor'
+    | 'church_membership_manager'
     | 'family_leader'
     | 'small_group_leader'
+    | 'fellowship_leader'
     | 'meeting_manager'
     | 'resource_manager'
     | 'reservation_approver'
   orgUnit: {
     id: string
-    kind: 'organization' | 'congregation' | 'family' | 'small_group'
+    kind: 'church' | 'family' | 'small_group' | 'fellowship'
     name: string
   }
-  validFrom: string
-  validTo?: string
 }
 ```
 
-Only assignments with `status=active` inside their effective period appear.
-Revoked or out-of-period assignments remain in management/history APIs but do
-not appear in this projection. Expiry is derived from `valid_to`, not written as
-a second status transition.
+Only assignments with `status=active` appear. Revoked assignments remain in
+management/history APIs but do not appear in this projection.
 
 `account-api` remains the source of staff permissions. `operations-api`
 provides organization and member facts. `frontend-platform` owns the DTOs,

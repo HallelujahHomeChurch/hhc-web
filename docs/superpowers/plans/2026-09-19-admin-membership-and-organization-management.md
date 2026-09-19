@@ -1,7 +1,8 @@
 # Admin Membership, Organization, And First-Entry Auth Recovery Plan
 
-> **Status:** Product direction approved; full-plan review completed on
-> 2026-09-19. Implementation has not started under this plan.
+> **Status:** Product direction approved; implementation started on
+> 2026-09-19. Phase 0 code, CI, and production releases are complete; its cold
+> real-browser acceptance remains open for the final integrated verification.
 
 **Goal:** Repair the first-entry Website -> Account/Admin authentication
 regression first, then replace the current test-stage membership and
@@ -16,8 +17,11 @@ layout without weakening authorization or protected bulletin access.
 
 ## Non-Negotiable Constraints
 
-- Phase 0 is the only first implementation phase. No membership, organization,
-  or layout work starts until its cold first-entry matrix passes in production.
+- Phase 0 is the only first implementation phase. Its code, CI, release, and
+  health checks complete before membership, organization, or layout work. At
+  the user's direction, the cold first-entry matrix is deferred to final
+  integrated acceptance; it remains open and cannot be inferred from automated
+  tests or a warm browser session.
 - AuthN stays independent of product permissions and capabilities. Empty
   `permissions: []` remains authenticated. One `401` may coordinate one refresh
   and one retry; `403` never refreshes, signs out, or restarts login.
@@ -83,16 +87,17 @@ with timeouts.
 
 **Repository:** `frontend-platform`
 
-- [ ] Review the already merged/published `1.0.9` change against the invariant:
+- [x] Review the already merged/published `1.0.9` change against the invariant:
       after OAuth code exchange, an older in-flight anonymous revalidation must
       settle before one fresh session revalidation begins.
-- [ ] Verify single-flight token refresh, stale-token fencing, `429 Retry-After`
+- [x] Verify single-flight token refresh, stale-token fencing, `429 Retry-After`
       cooldown, hosted login, empty-permission authentication, and `403`
       behavior remain unchanged.
-- [ ] Run the auth runtime tests, package build, packed-artifact inspection, and
+- [x] Run the auth runtime tests, package build, packed-artifact inspection, and
       consumer conformance fixture against the published immutable package.
-- [ ] If `1.0.9` differs from the reviewed root fix, publish a new patch through
+- [x] If `1.0.9` differs from the reviewed root fix, publish a new patch through
       the normal PR/release flow; never replace `1.0.9` in place.
+      It matched, so no replacement package was published.
 
 **Stop gate:** A package version and digest are recorded. Passing package tests
 is not product acceptance.
@@ -101,22 +106,22 @@ is not product acceptance.
 
 **Repositories, in order:** `account-fe`, `admin-fe`, `hhc-web`
 
-- [ ] Start from each current `origin/main`; compare the paused worktree diff
+- [x] Start from each current `origin/main`; compare the paused worktree diff
       before carrying forward only still-needed changes.
-- [ ] Pin the same reviewed auth package version in each manifest and lockfile.
-- [ ] Account: keep the required-auth shell in a bootstrap state until the
+- [x] Pin the same reviewed auth package version in each manifest and lockfile.
+- [x] Account: keep the required-auth shell in a bootstrap state until the
       first runtime observation resolves; do not render the credential page
       from an interim anonymous event when a hosted callback/session recovery
       is still in progress.
-- [ ] Admin: consume the fresh post-exchange result and preserve the existing
+- [x] Admin: consume the fresh post-exchange result and preserve the existing
       behavior: unauthenticated users go to hosted login; authenticated users
       without Admin capability return immediately to Website; no standalone
       “HHC 管理中心需要登入” interstitial is restored.
-- [ ] Website: preserve optional-auth rendering and avatar/menu recovery; do
+- [x] Website: preserve optional-auth rendering and avatar/menu recovery; do
       not make page rendering depend on permission transport success.
-- [ ] Add one focused regression test per affected consumer. Do not duplicate
+- [x] Add one focused regression test per affected consumer. Do not duplicate
       the shared runtime state machine in application code.
-- [ ] Run each repository's full test, lint, typecheck/build, PR, CI, merge,
+- [x] Run each repository's full test, lint, typecheck/build, PR, CI, merge,
       release, revision, and health checks separately.
 
 ### 0.3 Cold Live Acceptance Matrix
@@ -137,8 +142,11 @@ is not product acceptance.
       bulletin checks. Protected responses remain `private, no-store`; denied
       content remains non-disclosing.
 
-**Gate R:** Only this exact real-browser matrix closes Phase 0. If it fails,
-stop all later phases and fix the shared root cause before continuing.
+**Gate R:** Only this exact real-browser matrix closes the authentication
+workstream. The production code/release portion of Phase 0 may unblock later
+implementation, but final completion remains blocked until this matrix passes.
+If it fails during final acceptance, stop release closure and fix the shared
+root cause before declaring the program complete.
 
 ## Phase 1 — Freeze The Replacement Domain Contract
 
@@ -488,8 +496,9 @@ reviewed structure; retrying an already completed create/bind is idempotent.
 Release order is strict:
 
 1. Phase 0 shared package verification/release if needed;
-2. `account-fe`, `admin-fe`, and `hhc-web` Phase 0 consumer releases, followed
-   by the cold first-entry Gate R;
+2. `account-fe`, `admin-fe`, and `hhc-web` Phase 0 consumer releases and health
+   checks; keep the cold first-entry Gate R open for the final integrated live
+   acceptance requested by the user;
 3. frozen documentation/OpenAPI contracts;
 4. prepare all remaining producer/consumer PRs, CI, migration preview, restore
    rehearsal, generated packages, and release runbooks without merging a
@@ -502,8 +511,8 @@ Release order is strict:
 8. `frontend-platform` generated client/access package;
 9. `admin-fe` layout and workflows;
 10. create the reviewed initial structure through released Admin APIs;
-11. complete authorization, DSR, Audit, protected-bulletin, and live browser
-    matrices.
+11. complete Gate R plus authorization, DSR, Audit, protected-bulletin, and
+    live browser matrices.
 
 Because the user explicitly chose a direct test-stage break change, the
 Operations schema/API replacement and the new Admin membership consumer cannot
