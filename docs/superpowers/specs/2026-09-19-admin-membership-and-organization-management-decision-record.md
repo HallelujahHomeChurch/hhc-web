@@ -444,11 +444,32 @@ resource rules. Frontend checks control UX only.
 
 - The Admin Header SearchBar is the only free-text search control on list
   pages.
-- Each route provides its searchable domain and authorized scope to that shared
-  component.
+- It is route- or active-tab-scoped list search, not a global Admin search or
+  cross-product command palette.
+- Each route provides only its searchable domain, authorized scope, label, and
+  placeholder to the shared component. Query parsing, URL synchronization,
+  debounce, clearing, pagination reset, and mobile behavior remain shared
+  logic rather than page implementations.
+- Search query uses the single URL key `q` on every searchable list. Existing
+  one-off keys such as the User page's `search` are removed in this breaking
+  change.
+- A query change preserves filters and sorting, resets `page` to one, and uses
+  URL replacement. Clearing removes only `q` and resets the page.
+- URL state supports refresh, browser history, and sharing the current list
+  view. Search text does not carry across routes.
+- On an organization workspace, search targets the active Members, child-unit,
+  or responsible-people tab. Changing tabs clears `q` because those result
+  domains differ.
 - Page-local filters remain separate from free-text search.
 - Creation-form Account and Member selectors are shared selector controls, not
   competing list-page search bars.
+- Create, edit, callback, error, confirmation, result, and non-searchable detail
+  pages do not render the Header SearchBar.
+- Search results stay in the current table. The Header does not add a second
+  autocomplete results panel.
+- The shared `ExpandableSearchField` keeps the existing debounce, clear action,
+  and mobile header-overlay behavior. In-flight list requests are cancelled or
+  fenced when a newer query supersedes them.
 - The backend applies the same scope and privacy constraints even when the UI
   hides an unavailable candidate.
 
@@ -479,15 +500,15 @@ issue fixed until the exact logout, Website login, first Account entry, and
 first Admin entry sequence passes without credential UI flash or callback
 failure.
 
-## Remaining Product Decisions
+## Product Decision Closure
 
-Only these product questions remain before converting this record into an
-implementation plan:
+The product questions raised in this review are closed. Technical permission
+names, API shapes, schema migrations, capability expansion, audit events, and
+cross-repository release order belong in the implementation plan; they do not
+require administrators to understand API permissions.
 
-1. shared Header SearchBar interaction: route-scoped search placeholder,
-   result navigation, URL/query persistence, and interaction with page filters.
-
-Everything else above is confirmed. Technical permission names, API shapes,
-schema migrations, capability expansion, audit events, and cross-repository
-release order belong in the implementation plan after these product decisions
-close; they do not require administrators to understand API permissions.
+Before implementation, the canonical unified-authorization design and plans
+must be reconciled with this record and reviewed against the original
+twelve-point brief. The paused first-entry authentication regression remains a
+separate tracked workstream and must resume from its existing worktrees rather
+than being reimplemented opportunistically during layout work.
