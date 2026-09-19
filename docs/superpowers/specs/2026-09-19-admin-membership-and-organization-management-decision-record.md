@@ -167,6 +167,59 @@ model.
 - Church-wide counts deduplicate by Member. Unit-level counts include the
   Member in every unit they actively belong to.
 
+### Organization Unit Lifecycle
+
+Renaming is allowed. The internal id and hidden code remain stable, existing
+URLs and relationships continue to resolve, and the change is audited. Units
+of the same kind under the same parent cannot share a name.
+
+Changing an existing unit's kind is not allowed. An unused mistake may be
+deleted and recreated; a used unit requires a new unit plus reviewed
+relationship movement.
+
+Within one church, a small group may move between families or between a family
+and direct church ownership. The operation previews members, responsible
+people, operational references, and missing new-parent eligibility. Moving a
+small group into a family atomically adds missing new-family memberships. It
+does not remove old-family memberships because a Member may belong to multiple
+families.
+
+Normal editing cannot move a family, small group, or fellowship across
+churches. That would change the single-church membership invariant and requires
+a separately reviewed structural migration.
+
+A used unit is archived rather than deleted. An archived unit:
+
+- is absent from normal active lists;
+- accepts no new membership, responsibility, meeting, or Resource;
+- remains resolvable by historical meetings, attendance, reports, and audit;
+- appears through an archived filter;
+- may be restored only while its parent is active and its constraints remain
+  valid.
+
+Archiving previews and requires explicit handling of children, active members,
+responsible people, and unfinished operational records. It never silently
+cascades.
+
+Hard deletion is available only when a unit has no child, membership,
+responsibility, Meeting, Resource, attendance, workflow, or historical
+reference and has never been formally used. The known `phase 1 驗收` test data
+is removed by the breaking seed/data cleanup; it does not justify unrestricted
+production deletion.
+
+Structure-management authority is:
+
+| Actor | Structure authority |
+| --- | --- |
+| Global Administrator | churches and every descendant unit |
+| Global Membership Manager | families, small groups, and fellowships in every church; not church creation or archival |
+| Church Membership Manager | families, small groups, and fellowships in the assigned church |
+| Family, small-group, or fellowship manager | no structure mutation by default |
+
+Roster management and structure management are distinct capabilities. A
+family manager does not automatically receive create, move, archive, or delete
+authority over descendant small groups.
+
 ## Membership Admission And Candidate Search
 
 ### Admission Outcomes
@@ -343,16 +396,12 @@ implementation plan:
 
 1. transfer workflow: initiator, target-church approval, whether source-church
    acknowledgement is required, and the exact user-visible states;
-2. organization-unit lifecycle: rename, reparent, archive/delete constraints,
-   and behavior when members, children, responsibilities, meetings, or history
-   exist;
-3. batch creation semantics: all-or-nothing versus per-row partial success,
+2. batch creation semantics: all-or-nothing versus per-row partial success,
    duplicate handling, and retry presentation;
-4. shared Header SearchBar interaction: route-scoped search placeholder,
+3. shared Header SearchBar interaction: route-scoped search placeholder,
    result navigation, URL/query persistence, and interaction with page filters.
 
 Everything else above is confirmed. Technical permission names, API shapes,
 schema migrations, capability expansion, audit events, and cross-repository
 release order belong in the implementation plan after these product decisions
 close; they do not require administrators to understand API permissions.
-
