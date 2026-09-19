@@ -13,11 +13,11 @@
 **Integrated AuthN plan:**
 `frontend-platform/docs/superpowers/plans/2026-09-15-auth-platform-convergence.md`
 
-**Approved-product refinement awaiting implementation approval:**
+**Approved product refinement and implementation record:**
 [2026-09-19-admin-membership-and-organization-management.md](2026-09-19-admin-membership-and-organization-management.md).
-Its Phase 0 cold first-entry recovery is the next implementation gate. No later
-membership, organization, or Admin-layout task may start before that gate
-passes.
+Its Phase 0–6 implementation and production setup are released. The explicitly
+deferred cold first-entry and scoped-account browser matrices remain final
+acceptance gates; automated tests and warm sessions do not close them.
 
 ## Global Constraints
 
@@ -86,9 +86,9 @@ This gate is reopened by the 2026-09-19 real-user reproduction: after a fresh
 Website login, the first Account-profile entry briefly rendered login UI and
 the first Admin entry could render “OAuth 回呼失敗”; a second warm visit was
 successful. Earlier `v1.0.8` acceptance is therefore superseded. The shared
-root fix is published as `frontend-platform` `v1.0.9`, but the three consumer
-releases and exact cold acceptance remain incomplete. Follow Phase 0 of the
-2026-09-19 focused plan before any later membership or layout implementation.
+root fix is published as `frontend-platform` `v1.0.9`, and the three consumer
+releases are complete. Only the exact cold acceptance remains intentionally
+deferred to final integrated verification under the 2026-09-19 focused plan.
 
 - [x] Use `account.alive.org.tw` only as the browser's hosted authorization
       authority for `GET /api/account/v1/oauth/authorize`. This is a top-level
@@ -114,7 +114,7 @@ releases and exact cold acceptance remain incomplete. Follow Phase 0 of the
       `45bfd32`), followed by the passive-SSO correction in `v1.0.6` (merge
       `55e7f33`). These are recovery baselines, not evidence that the final
       breaking RBAC catalog or empty compatibility map has shipped.
-- [ ] Verify the published `frontend-platform` `v1.0.9` post-exchange
+- [x] Verify the published `frontend-platform` `v1.0.9` post-exchange
       revalidation fix and release matching Account, Admin, and Website
       consumers through their independent PR/CI/release flows.
 - [ ] Starting from a complete sign-out, sign in at Website and observe the
