@@ -27,12 +27,17 @@ layout without weakening authorization or protected bulletin access.
   public route, legacy `cms:*` compatibility, or OAuth bulletin scope returns.
 - Existing HHC Account is required before Member creation. Account-optional
   members are a preserved seam, not current scope.
+- The released `account-api` User/Account model and all registered Account data
+  are immutable inputs to this plan. Do not delete, transform, re-key, or
+  backfill them. Account work is limited to the smallest read-only private
+  identity lookup contract.
 - Member self-application and the social-login visual style are out of scope.
   Membership requests originate only from authorized Admin organization flows.
-- This is a direct break change for test-stage membership and organization
-  data. Do not add dual-read, backfill, compatibility aliases, or legacy status
-  mapping. Inventory non-test Operations references before cleanup so Meetings,
-  Resources, attendance, audit, and retained legal records are not erased.
+- This is a direct break change only for test-stage Operations membership and
+  organization data. Do not add dual-read, data backfill, compatibility aliases,
+  or legacy status mapping. Inventory non-test Operations references before
+  cleanup so Meetings, Resources, attendance, audit, retained legal records,
+  and every Account record are not erased.
 - Reuse the existing Admin shell, Header SearchBar, shared selectors, page
   actions, and back button. Do not introduce a second design system, search
   framework, or generic workflow engine.
@@ -61,8 +66,11 @@ not permission to scaffold parallel implementations.
   routes that the inventory proves are missing. The Account resolver remains a
   private service-to-service route.
 
-Do not reserve a migration number in advance. Fetch first and use the next
-available number in `operations-api`.
+Current schema inspection confirms one `operations-api` schema migration is
+required: the deployed model stores Account `user_id` directly and has no
+stable Member, ChurchMembership, transfer, or church-root constraints. Do not
+reserve its number in advance; fetch first and use the next available number.
+No `account-api` data/schema migration is authorized by this plan.
 
 ## Phase 0 — Repair Cold First-Entry Authentication
 
@@ -185,6 +193,11 @@ invent its own interpretation afterward.
       owner before writing the migration. Classify test membership/organization
       rows separately from retained Meetings, Resources, reservations,
       attendance, audit, and legal records.
+- [ ] Add exactly one focused Operations schema migration for stable `Member`,
+      one active ChurchMembership, church roots, removal of
+      MembershipQualification, and transfer state. It directly replaces
+      test-stage membership structures and performs no Account/User migration
+      or legacy assignment conversion/backfill.
 - [ ] Add the replacement tables and database constraints: unique Account
       binding, one active ChurchMembership per Member, allowed parent kinds,
       same-parent/kind/name uniqueness, and optimistic versions.
@@ -198,6 +211,9 @@ invent its own interpretation afterward.
       or expose them in Admin create/list contracts.
 - [ ] Directly remove the known `phase 1 驗收` test data. Do not silently delete
       any retained operational reference found by the inventory gate.
+- [ ] Fail the migration preview if any removal or constraint change would
+      delete, orphan, re-key, or rewrite registered Accounts or retained
+      Meeting, Resource, reservation, attendance, audit, DSR, or legal data.
 
 ### 2.2 Organization And Member Services
 
@@ -342,6 +358,14 @@ no product domain is imported into AuthN.
       Schedule, Roles And Permissions, Organization Units, Meetings, Resources,
       LINE Media Sync, Membership—and the reusable list-page pattern to icon
       plus `建立`.
+- [ ] Normalize editor primary actions on desktop through the existing shared
+      action/button pattern: icon plus generic `儲存`, `發布`, and other actual
+      verbs. Do not repeat the current domain in labels (`儲存週報`,
+      `儲存最新消息`, and similar forms are forbidden). Inventory every current
+      icon-only editor action so this is global rather than page-by-page drift.
+- [ ] On constrained mobile layouts, icon-only is allowed only through the same
+      shared action definition with an accessible name, tooltip, consistent
+      order, disabled/loading state, and destructive-action distinction.
 - [ ] Remove redundant list-page title/description blocks; retain semantic
       document headings for accessibility without visual duplication.
 - [ ] Replace page-local selector implementations with the existing shared
@@ -389,6 +413,10 @@ no product domain is imported into AuthN.
 - [ ] Test desktop/mobile Header SearchBar, keyboard/focus/accessibility,
       pagination/filter preservation, tab query clearing, empty/error states,
       batch partial success, atomic OrgUnit failure, and optimistic conflict.
+- [ ] Add a shared-action inventory/regression test proving every Admin editor
+      displays icon + generic action text at desktop width, retains an
+      accessible name at constrained width, and never generates a domain-
+      repeated label.
 - [ ] Verify previously completed PR #110 behavior is retained and not
       reimplemented.
 
@@ -465,6 +493,7 @@ backlog, failed cold login, or bulletin-public regression.
 | 12. Review adjacent improvements | Batch idempotency, archive/delete, transfer, privacy, DSR, Audit, accessibility, and bounded maintenance gates |
 | First Account/Admin entry regression | Phase 0, before every row above |
 | One shared, route-scoped Admin Header SearchBar | Phases 2.3 and 5.1 |
+| Restore desktop editor actions from icon-only to icon + generic verb | Phase 5.1 shared action inventory and regression tests |
 
 Before requesting implementation approval, the documentation owner must pass
 all of these reviews:
@@ -485,6 +514,8 @@ all of these reviews:
       responsibility management;
 - [ ] DSR, Audit, history, optimistic concurrency, and archived-reference
       behavior cover every new aggregate and mutation;
+- [ ] Account/User schema and registered Account row checksums/counts remain
+      unchanged; no Account migration is present;
 - [ ] release order exposes no consumer before its producer and keeps current
       Website, Account, hosted login, and unrelated Admin service usable; the
       approved direct break uses only the documented bounded membership/org

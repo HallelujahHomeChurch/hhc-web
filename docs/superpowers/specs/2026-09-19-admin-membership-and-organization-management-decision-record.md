@@ -42,6 +42,11 @@ decisions below refine workstream 1. They are not separate projects.
   Account has an unmerged bootstrap guard in an isolated worktree; Account,
   Admin, and Website consumer delivery is incomplete and not deployed as a
   completed fix.
+- Schema inspection confirms the final membership model needs one focused
+  `operations-api` migration because the released Operations tables store
+  Account `user_id` directly and lack Member, ChurchMembership, transfer, and
+  church-root constraints. This is not an Account/User migration. Registered
+  Account data and the released identity schema remain untouched.
 
 ## Admin Layout Contract
 
@@ -51,6 +56,11 @@ decisions below refine workstream 1. They are not separate projects.
   Organization Units, Meetings, Resources, LINE Media Sync, Membership, and
   future Admin list pages use the existing Message-page creation-action
   pattern: icon plus `建立`.
+- Admin editor actions use the same desktop pattern: icon plus the generic
+  action label, such as `儲存` and `發布`. Do not produce domain-repeated labels
+  such as `儲存週報` or `儲存最新消息`. A constrained mobile layout may use an
+  icon-only presentation only when the same shared action still provides an
+  accessible name and tooltip.
 - List pages do not render a redundant main title or description below the
   Admin shell.
 - Every page search uses the existing Admin Header SearchBar component. Pages
@@ -134,6 +144,9 @@ The following remain separate even when shown on one screen:
 ### Account And Member
 
 - An HHC Account must exist before a Member can be created.
+- The released Account/User identity schema and every registered Account row
+  are outside this breaking replacement. They must not be removed, rewritten,
+  re-keyed, or backfilled by Operations membership work.
 - The service still keeps a stable Member domain identifier. Organization
   membership, responsibility, attendance, and physical workflows reference
   `member_id`, not `account_user_id` directly.

@@ -29,6 +29,9 @@ passes.
   or entitlement assignments. Do preserve bulletin and non-test Operations
   domain records, stable IDs, revisions, scans, retained legal facts, and audit
   history after the required inventory gate.
+- Never migrate, delete, re-key, or backfill the released Account/User identity
+  model or registered Account rows as part of the membership replacement. The
+  one required breaking schema migration is Operations-owned only.
 - Human CMS roles never receive `assets:*` implicitly. `hhc-web-api` performs embedded asset actions using its allowlisted service identity after checking the matching CMS write permission.
 - Access projection controls discovery and destination only. `account-api`, `operations-api`, `hhc-web-api`, and `asset-api` enforce their own authoritative decisions.
 - Account staff permissions remain church-wide and opaque. Operations may add
