@@ -12,7 +12,7 @@ const labels = {
   manageAccount: 'Manage account', signIn: 'Sign in', signOut: 'Sign out', signOutError: 'Unable to sign out. Try again.'
 };
 
-afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); captureHandledError.mockClear(); });
+afterEach(() => { sessionStorage.clear(); vi.restoreAllMocks(); vi.unstubAllGlobals(); captureHandledError.mockClear(); });
 
 describe('AccountControl', () => {
   it('uses the Account authority for hosted OAuth', () => {
@@ -45,7 +45,7 @@ describe('AccountControl', () => {
     render(<AccountControl client={sessionClient([])} labels={labels} />);
 
     await screen.findByRole('button', {name: 'Account menu'});
-    expect(sessionStorage.getItem(webPassiveSsoAttemptKey)).toBeNull();
+    await waitFor(() => expect(sessionStorage.getItem(webPassiveSsoAttemptKey)).toBeNull());
   });
 
   it('keeps permissions: [] authenticated but does not expose Admin', async () => {
