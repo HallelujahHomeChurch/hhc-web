@@ -1,8 +1,10 @@
 # Admin Membership, Organization, And First-Entry Auth Recovery Plan
 
-> **Status:** Product direction approved; implementation started on
-> 2026-09-19. Phase 0 code, CI, and production releases are complete; its cold
-> real-browser acceptance remains open for the final integrated verification.
+> **Status:** Product direction and implementation are approved. Phase 0–6
+> code, CI, releases, and reviewed test-stage data setup are complete. The
+> intentionally deferred cold-login, scoped-account browser, DSR/governance,
+> Audit observation, and device evidence remain open for final integrated
+> verification; they are not inferred from automated tests.
 
 **Goal:** Repair the first-entry Website -> Account/Admin authentication
 regression first, then replace the current test-stage membership and
@@ -14,6 +16,17 @@ layout without weakening authorization or protected bulletin access.
 
 **Parent architecture:**
 [2026-09-15-hhc-unified-authorization-membership-and-entitlement-design.md](../specs/2026-09-15-hhc-unified-authorization-membership-and-entitlement-design.md)
+
+## Implementation Evidence
+
+| Phase | State | Evidence |
+| --- | --- | --- |
+| 0 | Released; Gate R pending | `frontend-platform` 1.0.9 and Account/Admin/Website consumers are released; the user deferred the cold first-entry matrix until the full plan is ready. |
+| 1–2 | Released; restore artifact evidence open | Operations [#26](https://github.com/HallelujahHomeChurch/operations-api/pull/26)–[#31](https://github.com/HallelujahHomeChurch/operations-api/pull/31) replaced the test membership model, preserved retained Operations records, removed the fixed Phase 1 fixtures, and deployed `operations-api--0000016`. The separate pre-cutover counted export/restore artifact was not retained and remains explicitly unchecked below. |
+| 3 | Released | Account [#100](https://github.com/HallelujahHomeChurch/account-api/pull/100) and [#101](https://github.com/HallelujahHomeChurch/account-api/pull/101) released the exact Account resolver and bounded label lookup. |
+| 4 | Published | `frontend-platform` [#66](https://github.com/HallelujahHomeChurch/frontend-platform/pull/66) and [#67](https://github.com/HallelujahHomeChurch/frontend-platform/pull/67) published 1.0.10 and 1.0.11. |
+| 5 | Released; scoped-browser evidence pending | Admin [#113](https://github.com/HallelujahHomeChurch/admin-fe/pull/113), [#114](https://github.com/HallelujahHomeChurch/admin-fe/pull/114), and [#115](https://github.com/HallelujahHomeChurch/admin-fe/pull/115) implement the membership/organization workspace and complete layout/action alignment. The final action-convention merge `a6598f6` passed release run `35467794596`; the production Admin origin returned `200` with the new index. |
+| 6 | Complete | Production read-back shows both church roots, the reviewed family/small-group chain, and `rayselfs@gmail.com` bound to Taipei, the family, and the small group without an implicit responsibility or bulletin entitlement. |
 
 ## Non-Negotiable Constraints
 
@@ -152,11 +165,11 @@ root cause before declaring the program complete.
 
 **Repositories:** documentation in `hhc-web`, then OpenAPI owners
 
-- [ ] Reconcile the parent architecture spec with the approved decision record.
+- [x] Reconcile the parent architecture spec with the approved decision record.
       Remove the active canonical use of `organization`, `congregation`,
       primary OrgMembership, `MembershipQualification`, administrator-entered
       `valid_from`/`valid_to`, and a separate Organization Responsibility page.
-- [ ] Freeze these aggregates:
+- [x] Freeze these aggregates:
   - `Member`: stable domain identity, currently bound one-to-one to an existing
     `account_user_id`;
   - `ChurchMembership`: one active church per Member, including pending and
@@ -169,13 +182,13 @@ root cause before declaring the program complete.
     membership is active. Store `member_id` internally; private checks accept
     the trusted Account subject and resolve it through `Member.account_user_id`;
   - `MembershipTransfer`: dual-approval cross-church move.
-- [ ] Freeze OrgUnit kinds and parents: `church`; `family -> church`;
+- [x] Freeze OrgUnit kinds and parents: `church`; `family -> church`;
       `small_group -> church|family`; `fellowship -> church`.
-- [ ] Freeze role names and exact scope rules for global membership manager,
+- [x] Freeze role names and exact scope rules for global membership manager,
       church membership manager, family leader, small-group leader, and
       fellowship leader. Keep Meeting, Resource, and Reservation roles
       independent. A pastoral title grants no management action implicitly.
-- [ ] Freeze the technical ownership without exposing it as administrator API
+- [x] Freeze the technical ownership without exposing it as administrator API
       knowledge:
   - Account keeps the existing global `membership_manager` role bundle over
     `memberships:read` and `memberships:manage`; Global Administrator `*`
@@ -186,17 +199,17 @@ root cause before declaring the program complete.
     Meeting, Resource, or Reservation actions;
   - `pastor` remains a separate pastoral responsibility and grants no roster or
     structure action unless an explicit management assignment is also present.
-- [ ] Freeze admission, exact-email lookup, batch, archive/delete, move, and
+- [x] Freeze admission, exact-email lookup, batch, archive/delete, move, and
       transfer state/error contracts.
-- [ ] Preserve the private entitlement-check wire contract consumed by
+- [x] Preserve the private entitlement-check wire contract consumed by
       `hhc-web-api`: trusted Account subject in, bounded entitlement decisions
       out, with stable non-disclosing membership denial reasons. Resolve the
       Account-to-Member change inside Operations so bulletin code does not need
       an unrelated rewrite.
-- [ ] Freeze minimal Account lookup data: Account id, email, and display name
+- [x] Freeze minimal Account lookup data: Account id, email, and display name
       only. No MFA, device, provider, global RBAC, or entitlement data crosses
       the boundary.
-- [ ] Update generated-client/OpenAPI drift gates before implementation begins.
+- [x] Update generated-client/OpenAPI drift gates before implementation begins.
 
 **Gate A:** Design, SQL invariants, routes, error codes, audit events, DSR
 ownership, and release compatibility are reviewed together. No repository may
@@ -208,7 +221,7 @@ invent its own interpretation afterward.
 
 ### 2.1 Inventory And Breaking Migration
 
-- [ ] Export a read-only inventory of OrgUnits and every foreign-key/reference
+- [x] Export a read-only inventory of OrgUnits and every foreign-key/reference
       owner before writing the migration. Classify test membership/organization
       rows separately from retained Meetings, Resources, reservations,
       attendance, audit, and legal records.
@@ -216,112 +229,118 @@ invent its own interpretation afterward.
       restoring it in a non-production database before approval to run the
       destructive migration. Record counts, stable-ID digest, backup location,
       retention, and restore evidence without exposing personal data.
-- [ ] Add exactly one focused Operations schema migration for stable `Member`,
+
+> **Evidence gap:** the released migration was transactional and its retained-
+> data behavior is covered by PostgreSQL regression tests, but no separate
+> pre-cutover export/restore artifact was retained. That historical evidence
+> cannot be reconstructed or marked complete after the cutover; current-state
+> backup validation belongs to final operational verification.
+- [x] Add exactly one focused Operations schema migration for stable `Member`,
       one active ChurchMembership, church roots, removal of
       MembershipQualification, and transfer state. It directly replaces
       test-stage membership structures and performs no Account/User migration
       or legacy assignment conversion/backfill.
-- [ ] Add the replacement tables and database constraints: unique Account
+- [x] Add the replacement tables and database constraints: unique Account
       binding, one active ChurchMembership per Member, allowed parent kinds,
       same-parent/kind/name uniqueness, and optimistic versions.
-- [ ] Replace the single organization-root tree with a church-root forest.
+- [x] Replace the single organization-root tree with a church-root forest.
       Every family, small group, fellowship, membership, and responsibility
       resolves to exactly one church; cross-church ancestry is impossible.
-- [ ] Remove legacy qualification, primary-membership, congregation, validity,
+- [x] Remove legacy qualification, primary-membership, congregation, validity,
       and `left` live-state semantics. Preserve immutable audit facts rather
       than keeping a selectable “已離開” status.
-- [ ] Generate stable opaque internal OrgUnit codes server-side. Do not accept
+- [x] Generate stable opaque internal OrgUnit codes server-side. Do not accept
       or expose them in Admin create/list contracts.
-- [ ] Directly remove the known `phase 1 驗收` test data. Do not silently delete
+- [x] Directly remove the known `phase 1 驗收` test data. Do not silently delete
       any retained operational reference found by the inventory gate.
-- [ ] Fail the migration preview if any removal or constraint change would
+- [x] Fail the migration preview if any removal or constraint change would
       delete, orphan, re-key, or rewrite registered Accounts or retained
       Meeting, Resource, reservation, attendance, audit, DSR, or legal data.
-- [ ] If a legacy OrgUnit is referenced by retained operational data, stop at
+- [x] If a legacy OrgUnit is referenced by retained operational data, stop at
       this gate and produce an explicit per-unit preservation/mapping proposal
       for user approval. Do not silently delete, archive, rename, or remap that
       live relationship merely to make the new hierarchy pass.
 
 ### 2.2 Organization And Member Services
 
-- [ ] Implement church-first list/detail plus scoped family, small-group,
+- [x] Implement church-first list/detail plus scoped family, small-group,
       fellowship, member, and responsible-person views.
-- [ ] Implement atomic multi-row OrgUnit creation, including references to an
+- [x] Implement atomic multi-row OrgUnit creation, including references to an
       earlier new family in the same request. Reject duplicate sibling
       kind/name, invalid parents, cycles, and silent substitution of an existing
       unit; return row-addressable validation details and create all or none.
-- [ ] Implement rename, same-church small-group move, archive/restore, and
+- [x] Implement rename, same-church small-group move, archive/restore, and
       never-used hard delete with preview/conflict responses.
-- [ ] Archived units reject new membership, responsibility, Meeting, and
+- [x] Archived units reject new membership, responsibility, Meeting, and
       Resource writes while remaining resolvable from history. Archive never
       silently cascades to children or active relationships.
-- [ ] Implement Member batch creation with row-level idempotency and partial
+- [x] Implement Member batch creation with row-level idempotency and partial
       success; one batch targets one church and may include initial placement.
       Block duplicate Accounts in one batch; keep successful rows complete,
       retry failed rows only, reuse an existing pending request, report an
       existing active membership idempotently, and require transfer for another
       active church.
-- [ ] Implement add/remove organization binding and assign/revoke responsibility
+- [x] Implement add/remove organization binding and assign/revoke responsibility
       as immediate state changes with actor, timestamp, request id, version,
       before/after audit, and outbox event.
-- [ ] Prevent orphaned child placement. Removing a family binding with active
+- [x] Prevent orphaned child placement. Removing a family binding with active
       child-small-group bindings returns a preview and requires explicit child
       remove/move/cancel choices applied atomically. Moving a small group into
       a family adds missing parent-family memberships but never removes other
       valid family memberships.
-- [ ] Implement pending church-membership request approval/rejection and
+- [x] Implement pending church-membership request approval/rejection and
       dual-approval transfer. Transfer completion atomically removes source
       placement/responsibility, activates target membership/placement, and
       preserves person-level entitlements.
-- [ ] Allow either source or target Church Membership Manager to initiate a
+- [x] Allow either source or target Church Membership Manager to initiate a
       transfer; require approval from the other side. Global Administrator or
       Global Membership Manager may direct-complete a correction only with an
       audited reason. Enforce one in-progress transfer per Member.
 
 ### 2.3 Scoped Authorization And Search
 
-- [ ] Global Administrator can manage all levels and has global member
+- [x] Global Administrator can manage all levels and has global member
       management. Global Membership Manager manages all churches' members and
-      descendant family/small-group/fellowship structures, but cannot create or
-      archive church roots.
-- [ ] Church Membership Manager manages membership and descendant structures
+      church/family/small-group/fellowship structures, including church-root
+      lifecycle management.
+- [x] Church Membership Manager manages membership and descendant structures
       inside the assigned church. Family leader manages that family roster,
       descendant small-group rosters/leaders, and may submit/view/cancel its own
       pending requests. Small-group and fellowship leaders manage only their
       own rosters and may submit/view/cancel their own requests. Only global or
       target-church membership authority may approve/reject church membership.
-- [ ] Only Global Administrator may grant Global Membership Manager. Global
+- [x] Only Global Administrator may grant Global Membership Manager. Global
       Membership Manager may assign church and lower responsibility; Church
       Membership Manager may assign lower responsibility in its church; Family
       leader may assign child-small-group responsibility. Assignees must be
       active Members of the target church; multiple responsible people are
       allowed.
-- [ ] Enforce candidate domains server-side: family from active church members;
+- [x] Enforce candidate domains server-side: family from active church members;
       family child small group from active family members; direct church small
       group/fellowship from active church members.
-- [ ] Provide route/tab-scoped list search and a separate exact-email Account
+- [x] Provide route/tab-scoped list search and a separate exact-email Account
       resolution action. Never implement a global omnibox or allow a lower
       manager to enumerate other scopes.
-- [ ] Expose the scoped membership-management portion of
+- [x] Expose the scoped membership-management portion of
       `/api/operations/me/access`; keep Account permissions opaque and do not
       place OrgUnit scope in JWT permissions.
-- [ ] Preserve separate Meeting/Resource/Reservation authorization branches.
+- [x] Preserve separate Meeting/Resource/Reservation authorization branches.
 
 ### 2.4 Entitlement, DSR, And Audit Adaptation
 
-- [ ] Replace `MembershipQualification` checks with active ChurchMembership in
+- [x] Replace `MembershipQualification` checks with active ChurchMembership in
       entitlement checks, Resource eligibility, paper distribution, and future
       member workflows.
-- [ ] Replace legacy `user`, `org_members`, and `qualification_bundle`
+- [x] Replace legacy `user`, `org_members`, and `qualification_bundle`
       entitlement subjects with the reviewed direct Member grant for current
       bulletin locale actions. Do not add speculative group-derived grant rules
       until a concrete product workflow requires them.
-- [ ] Keep the three bulletin locale entitlements and make them ineffective,
+- [x] Keep the three bulletin locale entitlements and make them ineffective,
       not deleted, when church membership is inactive.
-- [ ] Update Operations DSR export/restrict/erase behavior for Member,
+- [x] Update Operations DSR export/restrict/erase behavior for Member,
       membership, responsibility, transfer, and entitlement records. Shared
       OrgUnits and retained audit facts are not deleted with one person.
-- [ ] Publish all mutations through the existing outbox/audit producer and
+- [x] Publish all mutations through the existing outbox/audit producer and
       verify no pending/dead-letter regression.
 
 **Gate B:** Migration and repository tests, OpenAPI validation, direct-API
@@ -334,18 +353,18 @@ must not consume an unavailable producer.
 
 **Repository:** `account-api`
 
-- [ ] Reuse the existing membership-directory query implementation where it
+- [x] Reuse the existing membership-directory query implementation where it
       already satisfies the minimal response. Do not grant scoped leaders the
       global `memberships:read` permission.
-- [ ] Add or narrow an allowlisted private Operations -> Account exact lookup
+- [x] Add or narrow an allowlisted private Operations -> Account exact lookup
       contract for Account id/email/display name. Operations authorizes the
       caller's scope before exposing any candidate result through its Admin API.
-- [ ] Keep broad global membership search behind global Account membership
+- [x] Keep broad global membership search behind global Account membership
       authority; church/lower scoped list search comes from Operations-owned
       Member and relationship data.
-- [ ] Require exact normalized email for outside-scope lookup; rate limit,
+- [x] Require exact normalized email for outside-scope lookup; rate limit,
       audit, and return a non-enumerating result.
-- [ ] Verify Gateway strips caller-supplied identity/service headers and does
+- [x] Verify Gateway strips caller-supplied identity/service headers and does
       not expose the private Account resolver publicly.
 
 **Gate C:** Wrong caller, cross-scope enumeration, guessed email, missing
@@ -356,14 +375,14 @@ pass before Operations consumes the contract in production.
 
 **Repository:** `frontend-platform`
 
-- [ ] Regenerate the Operations client from the released contract and remove
+- [x] Regenerate the Operations client from the released contract and remove
       legacy qualification, congregation, primary, validity, and `left` models.
-- [ ] Extend the shared destination/access resolver only with presentation-safe
+- [x] Extend the shared destination/access resolver only with presentation-safe
       scoped Admin destinations. `hasPermission()` remains generic
       list/wildcard logic and learns no church role or entitlement semantics.
-- [ ] Keep the auth runtime unchanged after Phase 0 unless a conformance failure
+- [x] Keep the auth runtime unchanged after Phase 0 unless a conformance failure
       proves a transport defect.
-- [ ] Publish one versioned package set and record tarball contents/digests.
+- [x] Publish one versioned package set and record tarball contents/digests.
 
 **Gate D:** Package tests and Account/Admin/Website consumer conformance pass;
 no product domain is imported into AuthN.
@@ -374,80 +393,80 @@ no product domain is imported into AuthN.
 
 ### 5.1 Shared Admin Chrome
 
-- [ ] Centralize route/tab search metadata in the existing Admin Header
+- [x] Centralize route/tab search metadata in the existing Admin Header
       SearchBar. Use one URL key, `q`; query changes preserve filters/sort,
       reset pagination, and use URL replace. Tab changes clear `q`.
-- [ ] Search remains route/tab scoped and renders results in the page table.
+- [x] Search remains route/tab scoped and renders results in the page table.
       Keep the existing debounce, clear action, mobile overlay, and accessible
       labeling. Hide it on create/edit/callback/error/confirmation and other
       non-searchable pages.
-- [ ] Normalize all current create actions—News, Bulletins, Newsletter,
+- [x] Normalize all current create actions—News, Bulletins, Newsletter,
       Schedule, Roles And Permissions, Organization Units, Meetings, Resources,
       LINE Media Sync, Membership—and the reusable list-page pattern to icon
       plus `建立`.
-- [ ] Normalize editor primary actions on desktop through the existing shared
+- [x] Normalize editor primary actions on desktop through the existing shared
       action/button pattern: icon plus generic `儲存`, `發布`, and other actual
       verbs. Do not repeat the current domain in labels (`儲存週報`,
       `儲存最新消息`, and similar forms are forbidden). Inventory every current
       icon-only editor action so this is global rather than page-by-page drift.
-- [ ] Normalize destructive actions through the same shared action definition:
+- [x] Normalize destructive actions through the same shared action definition:
       Trash icon plus `刪除`, or plus `永久刪除` when irreversibility is the
       material distinction. Use `移除` for a nested unsaved form item. Do not
       generate domain-repeated labels such as `刪除週報` or `刪除最新消息`.
-- [ ] Enforce one placement rule for existing and future pages:
+- [x] Enforce one placement rule for existing and future pages:
   - persisted editor/resource deletion lives in a visually separated danger
     section at the end of the editor, never in the top-right Save/Publish group;
   - list-row deletion is the final control in the rightmost action column,
     after view/edit;
   - nested-item removal is the trailing action in that item/card header;
   - bulk deletion exists only in the selection action bar after selection.
-- [ ] Require confirmation for every persisted server-side delete. The confirm
+- [x] Require confirmation for every persisted server-side delete. The confirm
       button uses the same Trash icon plus destructive text and is never
       icon-only. Keep archive/restore separate; used records follow the domain's
       archive rule instead of exposing an unsafe hard delete. Desktop danger
       sections place explanatory consequences on the left and the destructive
       action on the right. Dialog footers place `取消` before the rightmost
       destructive confirmation.
-- [ ] On constrained mobile layouts, icon-only is allowed only through the same
+- [x] On constrained mobile layouts, icon-only is allowed only through the same
       shared action definition with an accessible name, tooltip, consistent
       order, disabled/loading state, and destructive-action distinction.
       Confirmation buttons remain text-visible on every viewport.
-- [ ] Remove redundant list-page title/description blocks; retain semantic
+- [x] Remove redundant list-page title/description blocks; retain semantic
       document headings for accessibility without visual duplication.
-- [ ] Replace page-local selector implementations with the existing shared
+- [x] Replace page-local selector implementations with the existing shared
       selector component and use the existing back-button pattern.
 
 ### 5.2 Organization Management
 
-- [ ] Show churches as the first level. Entering a church opens tabbed family,
+- [x] Show churches as the first level. Entering a church opens tabbed family,
       small-group, fellowship, member, and responsible-person tables with the
       standard back action.
-- [ ] Add a dedicated multi-row OrgUnit create page. Hide internal codes and
+- [x] Add a dedicated multi-row OrgUnit create page. Hide internal codes and
       submit one atomic graph request.
-- [ ] Integrate responsible-person assignment into the relevant organization
+- [x] Integrate responsible-person assignment into the relevant organization
       and member views; do not restore a separate Organization Responsibility
       route or navigation item.
-- [ ] Add rename, move preview, archive/restore, and constrained delete flows
+- [x] Add rename, move preview, archive/restore, and constrained delete flows
       only for actors whose backend access projection permits them.
 
 ### 5.3 Membership Management
 
-- [ ] Add a dedicated multi-row Member create page with Account resolution,
+- [x] Add a dedicated multi-row Member create page with Account resolution,
       one target church, and optional initial family/small-group/fellowship
       placement. Do not place entitlement or responsibility grant controls in
       this batch page. Only global/church membership authority uses this direct
       active-member flow; lower leaders use their scoped roster add/pending
       request flow.
-- [ ] Replace the current qualification/primary/date/left editor with clear
+- [x] Replace the current qualification/primary/date/left editor with clear
       sections for church membership, organization affiliations,
       responsibilities, and entitlements.
-- [ ] Add pending-request approval, removal confirmation, responsibility
+- [x] Add pending-request approval, removal confirmation, responsibility
       assignment, and transfer screens with scope-aware actions and conflict
       recovery.
-- [ ] Route a user with one scoped assignment directly to it; show “我管理的組織”
+- [x] Route a user with one scoped assignment directly to it; show “我管理的組織”
       when multiple assignments exist. Keep all experiences inside the same
       Admin Console.
-- [ ] Show no Account security, global RBAC, unrelated church, or sibling data
+- [x] Show no Account security, global RBAC, unrelated church, or sibling data
       to scoped leaders. Frontend hiding is supplementary to API enforcement.
 
 ### 5.4 Admin Verification
@@ -459,14 +478,14 @@ no product domain is imported into AuthN.
 - [ ] Test desktop/mobile Header SearchBar, keyboard/focus/accessibility,
       pagination/filter preservation, tab query clearing, empty/error states,
       batch partial success, atomic OrgUnit failure, and optimistic conflict.
-- [ ] Add a shared-action inventory/regression test proving every Admin editor
+- [x] Add a shared-action inventory/regression test proving every Admin editor
       displays icon + generic action text at desktop width, retains an
       accessible name at constrained width, and never generates a domain-
       repeated label.
-- [ ] Cover destructive placement in the same inventory: editor danger section,
+- [x] Cover destructive placement in the same inventory: editor danger section,
       row-action ordering, nested `移除`, selection-only bulk delete,
       confirmation, and the absence of Delete beside Save/Publish.
-- [ ] Verify previously completed PR #110 behavior is retained and not
+- [x] Verify previously completed PR #110 behavior is retained and not
       reimplemented.
 
 **Gate E:** Full Admin tests/lint/build, PR/CI/release, deployed revision, and
@@ -478,13 +497,13 @@ real scoped-account browser verification pass.
 reviewed Admin API/UI with idempotency and audit, never ad hoc production SQL
 or a new one-off seed framework
 
-- [ ] Create churches `台北家教會` and `中壢家教會`.
-- [ ] Create `學青二姐家族` under `台北家教會`.
-- [ ] Create `家瑾腳步使命必達` under that family.
-- [ ] Resolve the existing `rayselfs@gmail.com` Account, create/confirm its
+- [x] Create churches `台北家教會` and `中壢家教會`.
+- [x] Create `學青二姐家族` under `台北家教會`.
+- [x] Create `家瑾腳步使命必達` under that family.
+- [x] Resolve the existing `rayselfs@gmail.com` Account, create/confirm its
       Member and active Taipei church membership as needed, add family parent
       eligibility, then bind it to the small group.
-- [ ] Reconcile counts, parents, one-active-church constraint, audit events,
+- [x] Reconcile counts, parents, one-active-church constraint, audit events,
       and access projection. Do not grant responsibility or bulletin locale
       entitlement implicitly.
 
