@@ -1,7 +1,7 @@
 # Admin Membership, Organization, And First-Entry Auth Recovery Plan
 
-> **Status:** Review-only. Do not implement any application, API, data, release,
-> or production change until the user approves this plan.
+> **Status:** Product direction approved; full-plan review completed on
+> 2026-09-19. Implementation has not started under this plan.
 
 **Goal:** Repair the first-entry Website -> Account/Admin authentication
 regression first, then replace the current test-stage membership and
@@ -167,6 +167,17 @@ stop all later phases and fix the shared root cause before continuing.
       church membership manager, family leader, small-group leader, and
       fellowship leader. Keep Meeting, Resource, and Reservation roles
       independent. A pastoral title grants no management action implicitly.
+- [ ] Freeze the technical ownership without exposing it as administrator API
+      knowledge:
+  - Account keeps the existing global `membership_manager` role bundle over
+    `memberships:read` and `memberships:manage`; Global Administrator `*`
+    satisfies the same membership actions while retaining its distinct role;
+  - Operations owns scoped `church_membership_manager`, `family_leader`,
+    `small_group_leader`, and `fellowship_leader` assignments;
+  - scoped assignment codes never enter JWT permissions and never grant
+    Meeting, Resource, or Reservation actions;
+  - `pastor` remains a separate pastoral responsibility and grants no roster or
+    structure action unless an explicit management assignment is also present.
 - [ ] Freeze admission, exact-email lookup, batch, archive/delete, move, and
       transfer state/error contracts.
 - [ ] Preserve the private entitlement-check wire contract consumed by
@@ -193,6 +204,10 @@ invent its own interpretation afterward.
       owner before writing the migration. Classify test membership/organization
       rows separately from retained Meetings, Resources, reservations,
       attendance, audit, and legal records.
+- [ ] Produce a counted export of every affected Operations table and rehearse
+      restoring it in a non-production database before approval to run the
+      destructive migration. Record counts, stable-ID digest, backup location,
+      retention, and restore evidence without exposing personal data.
 - [ ] Add exactly one focused Operations schema migration for stable `Member`,
       one active ChurchMembership, church roots, removal of
       MembershipQualification, and transfer state. It directly replaces
@@ -214,6 +229,10 @@ invent its own interpretation afterward.
 - [ ] Fail the migration preview if any removal or constraint change would
       delete, orphan, re-key, or rewrite registered Accounts or retained
       Meeting, Resource, reservation, attendance, audit, DSR, or legal data.
+- [ ] If a legacy OrgUnit is referenced by retained operational data, stop at
+      this gate and produce an explicit per-unit preservation/mapping proposal
+      for user approval. Do not silently delete, archive, rename, or remap that
+      live relationship merely to make the new hierarchy pass.
 
 ### 2.2 Organization And Member Services
 
@@ -298,10 +317,10 @@ invent its own interpretation afterward.
       verify no pending/dead-letter regression.
 
 **Gate B:** Migration and repository tests, OpenAPI validation, direct-API
-positive/negative scope matrix, DSR tests, audit/outbox tests, and a counted
-test-data reset pass. Keep the Operations PR unmerged until the Account private
-resolver in Gate C is released; Operations must not consume an unavailable
-producer.
+positive/negative scope matrix, DSR tests, audit/outbox tests, counted export,
+restore rehearsal, and a counted test-data reset pass. Keep the Operations PR
+unmerged until the Account private resolver in Gate C is released; Operations
+must not consume an unavailable producer.
 
 ## Phase 3 — Add The Minimal Account Resolution Boundary
 
@@ -447,8 +466,9 @@ real scoped-account browser verification pass.
 
 ## Phase 6 — Seed The Reviewed Test-Stage Structure
 
-**Repository:** `operations-api`; execute only through a reviewed migration or
-idempotent repository-owned seed, never ad hoc production SQL
+**Owners:** released `operations-api` contract and `admin-fe`; use the normal
+reviewed Admin API/UI with idempotency and audit, never ad hoc production SQL
+or a new one-off seed framework
 
 - [ ] Create churches `台北家教會` and `中壢家教會`.
 - [ ] Create `學青二姐家族` under `台北家教會`.
@@ -461,7 +481,7 @@ idempotent repository-owned seed, never ad hoc production SQL
       entitlement implicitly.
 
 **Gate F:** Read-back through the released API and Admin UI matches the exact
-reviewed structure; repeated seed execution is harmless.
+reviewed structure; retrying an already completed create/bind is idempotent.
 
 ## Phase 7 — Cross-Repository Release And Regression Closure
 
@@ -471,15 +491,18 @@ Release order is strict:
 2. `account-fe`, `admin-fe`, and `hhc-web` Phase 0 consumer releases, followed
    by the cold first-entry Gate R;
 3. frozen documentation/OpenAPI contracts;
-4. `account-api` private lookup boundary;
-5. `operations-api` replacement model, Account resolver consumption, and
+4. prepare all remaining producer/consumer PRs, CI, migration preview, restore
+   rehearsal, generated packages, and release runbooks without merging a
+   consumer ahead of its producer;
+5. `account-api` private lookup boundary;
+6. `operations-api` replacement model, Account resolver consumption, and
    access projection;
-6. `api-gateway` only if new Admin Operations routes are missing from the
+7. `api-gateway` only if new Admin Operations routes are missing from the
    existing allowlist;
-7. `frontend-platform` generated client/access package;
-8. `admin-fe` layout and workflows;
-9. reviewed seed/data cleanup;
-10. complete authorization, DSR, Audit, protected-bulletin, and live browser
+8. `frontend-platform` generated client/access package;
+9. `admin-fe` layout and workflows;
+10. create the reviewed initial structure through released Admin APIs;
+11. complete authorization, DSR, Audit, protected-bulletin, and live browser
     matrices.
 
 Because the user explicitly chose a direct test-stage break change, the
@@ -488,7 +511,11 @@ be made zero-downtime without temporarily preserving the old contract. Do not
 add that compatibility layer. Use a reviewed, bounded maintenance window for
 only the Admin membership/organization surfaces, release Operations and Admin
 back-to-back, and keep Website, Account, hosted login, bulletin access, and
-unrelated Admin pages available. Roll back both sides if the new pair fails.
+unrelated Admin pages available. Start that window only after every downstream
+PR, package, CI gate, runbook, migration preview, and restore rehearsal is
+ready. Before database commit, rollback is transactional; after commit, prefer
+a reviewed forward fix, or restore the counted Operations export when forward
+recovery is unsafe. Never describe an application rollback as data recovery.
 
 At every repository boundary record branch, PR, CI, merge SHA, artifact/package
 version, deployed revision, health, and live proof independently. Stop on an
@@ -521,32 +548,32 @@ backlog, failed cold login, or bulletin-public regression.
 Before requesting implementation approval, the documentation owner must pass
 all of these reviews:
 
-- [ ] every one of the original twelve Admin requests maps to an explicit task
+- [x] every one of the original twelve Admin requests maps to an explicit task
       or explicit non-goal;
-- [ ] every confirmed decision in the 2026-09-19 decision record maps to a data
+- [x] every confirmed decision in the 2026-09-19 decision record maps to a data
       invariant, API enforcement point, UI behavior, and test where applicable;
-- [ ] no active plan recreates Organization Responsibility, congregation,
+- [x] no active plan recreates Organization Responsibility, congregation,
       MembershipQualification, primary membership, administrator-entered
       validity, or `left` as a live editing state;
-- [ ] completed PR #110/#111 work is not duplicated;
-- [ ] AuthN/AuthZ dependency remains one-way and Phase 0 does not broaden OAuth
+- [x] completed PR #110/#111 work is not duplicated;
+- [x] AuthN/AuthZ dependency remains one-way and Phase 0 does not broaden OAuth
       scopes, CORS, cookies, or retry semantics;
-- [ ] lower-scope managers cannot enumerate Accounts or members outside their
+- [x] lower-scope managers cannot enumerate Accounts or members outside their
       approved candidate domain;
-- [ ] Meeting/Resource/Reservation roles remain independent from roster and
+- [x] Meeting/Resource/Reservation roles remain independent from roster and
       responsibility management;
-- [ ] DSR, Audit, history, optimistic concurrency, and archived-reference
+- [x] DSR, Audit, history, optimistic concurrency, and archived-reference
       behavior cover every new aggregate and mutation;
-- [ ] Account/User schema and registered Account row checksums/counts remain
+- [x] Account/User schema and registered Account row checksums/counts remain
       unchanged; no Account migration is present;
-- [ ] release order exposes no consumer before its producer and keeps current
+- [x] release order exposes no consumer before its producer and keeps current
       Website, Account, hosted login, and unrelated Admin service usable; the
       approved direct break uses only the documented bounded membership/org
       maintenance window;
-- [ ] weekly bulletins remain protected before, during, and after every phase;
-- [ ] active plans and the execution ledger identify Gate R as reopened until
+- [x] weekly bulletins remain protected before, during, and after every phase;
+- [x] active plans and the execution ledger identify Gate R as reopened until
       the exact cold first-entry matrix passes;
-- [ ] repository links, file references, Markdown, and `git diff --check` pass.
+- [x] repository links, file references, Markdown, and `git diff --check` pass.
 
 Implementation is complete only after every phase gate and the parent unified
 authorization plan's remaining external/device gates pass. This plan alone
