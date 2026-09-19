@@ -61,6 +61,20 @@ decisions below refine workstream 1. They are not separate projects.
   such as `儲存週報` or `儲存最新消息`. A constrained mobile layout may use an
   icon-only presentation only when the same shared action still provides an
   accessible name and tooltip.
+- Destructive actions use icon plus their semantic label on desktop. Use
+  `刪除` for a persisted record, `永久刪除` when irreversibility must be explicit,
+  and `移除` for a nested form item that has not itself become a retained
+  resource. Do not generate labels such as `刪除週報` or `刪除最新消息` when the
+  page already supplies that context.
+- A persisted editor-level delete is never mixed into the top-right
+  Save/Publish action group. Place it in a separated danger section at the end
+  of the editor. A list-row delete belongs in the rightmost action column after
+  view/edit. A nested-item remove belongs at that item's trailing edge. A bulk
+  delete appears only in the selection action bar. Every persisted destructive
+  action uses an explicit confirmation dialog; its confirm button retains the
+  destructive label and is never icon-only. On desktop, the danger-section
+  explanation is left-aligned and its destructive button is right-aligned; the
+  confirmation footer orders `取消` before the rightmost destructive action.
 - List pages do not render a redundant main title or description below the
   Admin shell.
 - Every page search uses the existing Admin Header SearchBar component. Pages

@@ -363,9 +363,28 @@ no product domain is imported into AuthN.
       verbs. Do not repeat the current domain in labels (`儲存週報`,
       `儲存最新消息`, and similar forms are forbidden). Inventory every current
       icon-only editor action so this is global rather than page-by-page drift.
+- [ ] Normalize destructive actions through the same shared action definition:
+      Trash icon plus `刪除`, or plus `永久刪除` when irreversibility is the
+      material distinction. Use `移除` for a nested unsaved form item. Do not
+      generate domain-repeated labels such as `刪除週報` or `刪除最新消息`.
+- [ ] Enforce one placement rule for existing and future pages:
+  - persisted editor/resource deletion lives in a visually separated danger
+    section at the end of the editor, never in the top-right Save/Publish group;
+  - list-row deletion is the final control in the rightmost action column,
+    after view/edit;
+  - nested-item removal is the trailing action in that item/card header;
+  - bulk deletion exists only in the selection action bar after selection.
+- [ ] Require confirmation for every persisted server-side delete. The confirm
+      button uses the same Trash icon plus destructive text and is never
+      icon-only. Keep archive/restore separate; used records follow the domain's
+      archive rule instead of exposing an unsafe hard delete. Desktop danger
+      sections place explanatory consequences on the left and the destructive
+      action on the right. Dialog footers place `取消` before the rightmost
+      destructive confirmation.
 - [ ] On constrained mobile layouts, icon-only is allowed only through the same
       shared action definition with an accessible name, tooltip, consistent
       order, disabled/loading state, and destructive-action distinction.
+      Confirmation buttons remain text-visible on every viewport.
 - [ ] Remove redundant list-page title/description blocks; retain semantic
       document headings for accessibility without visual duplication.
 - [ ] Replace page-local selector implementations with the existing shared
@@ -417,6 +436,9 @@ no product domain is imported into AuthN.
       displays icon + generic action text at desktop width, retains an
       accessible name at constrained width, and never generates a domain-
       repeated label.
+- [ ] Cover destructive placement in the same inventory: editor danger section,
+      row-action ordering, nested `移除`, selection-only bulk delete,
+      confirmation, and the absence of Delete beside Save/Publish.
 - [ ] Verify previously completed PR #110 behavior is retained and not
       reimplemented.
 
@@ -494,6 +516,7 @@ backlog, failed cold login, or bulletin-public regression.
 | First Account/Admin entry regression | Phase 0, before every row above |
 | One shared, route-scoped Admin Header SearchBar | Phases 2.3 and 5.1 |
 | Restore desktop editor actions from icon-only to icon + generic verb | Phase 5.1 shared action inventory and regression tests |
+| Standardize Delete as icon + semantic text and one placement hierarchy | Phase 5.1 destructive-action contract and regression tests |
 
 Before requesting implementation approval, the documentation owner must pass
 all of these reviews:
