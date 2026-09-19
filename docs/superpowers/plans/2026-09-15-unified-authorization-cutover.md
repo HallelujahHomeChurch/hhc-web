@@ -98,7 +98,7 @@
 
 - [ ] Use named synthetic principals created specifically for each authorization-matrix row; do not reuse real member data.
 - [ ] Cover anonymous, authenticated non-member, active/suspended
-  qualification, each locale entitlement, Admin-without-membership, every
+  active ChurchMembership, each locale entitlement, Admin-without-membership, every
   global Operations role, every scoped operational role, pastoral-only roles,
   descendant and sibling targets, expired/revoked assignments, wildcard, and
   unallowlisted service.
@@ -183,7 +183,9 @@ activation.
 - [ ] Import and verify the operations kernel before switching route ownership.
 - [ ] Revoke bulletin public grants and purge public cache/CDN entries before enabling protected member access.
 - [ ] Switch Gateway routes and remove old public routes.
-- [ ] Invalidate existing test sessions and sign in with newly assigned test roles/qualification/entitlements.
+- [ ] Invalidate existing test sessions and sign in with newly assigned test
+      roles, ChurchMembership, organization bindings, responsibilities, and
+      entitlements.
 - [ ] Run the full runtime authorization matrix.
 - [ ] Run permanent-deletion and DSR partial-owner/retry smoke before enabling any feature that introduces another subject-linked owner.
 - [ ] Stop immediately on any count mismatch, public byte exposure, cross-scope allow, or non-fail-closed dependency behavior; use the documented roll-forward path.

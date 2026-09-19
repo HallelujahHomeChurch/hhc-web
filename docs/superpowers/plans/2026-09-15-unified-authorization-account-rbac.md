@@ -14,7 +14,8 @@
 
 - Work from fresh `account-api/origin/main` in an isolated worktree.
 - Do not map or backfill `website_editor`, `website_reader`, `verified_member`, or direct removed grants.
-- Preserve `*` as staff-only wildcard; it must not imply qualification or entitlement.
+- Preserve `*` as staff-only wildcard; it must not imply church membership or
+  entitlement.
 - Keep direct `assets:*` roles only for generic Asset Library administration.
 - Keep `campaigns:*`, Presenter, DSR, OAuth, user, and RBAC permissions independent.
 - The six `operations:*` permissions and their Account default roles are
@@ -133,7 +134,8 @@ func TestEffectivePermissionCodesDoesNotDeriveMemberBenefits(t *testing.T) {
 
 - [ ] Delete `bulletinReadPermission`, `bulletinTracePermission`, `weeklyPaperLinePermission`, `adminConsolePermissions`, `hasAdminConsoleAccess`, and `isEffectiveVerifiedMember`.
 - [ ] Keep `EffectivePermissionCodes` as sorted union of direct and role permissions only.
-- [ ] Remove any profile field whose meaning was derived member qualification; do not replace it with another Account-owned member Boolean.
+- [ ] Remove any profile field whose meaning was derived member status; do not
+      replace it with another Account-owned member Boolean.
 - [ ] Remove Account's bulletin-access and bulletin-trace private endpoints, `verified_member`/`bulletin:read` audience selectors, and `ResolveBulletinAudience`; retain only generic explicit role-ID/user-ID notification target resolution.
 - [ ] Make internal Presenter permission verification accept only `presenter:line:manage`, with no `media-sync:manage` fallback.
 - [ ] Add tests proving Admin, email verification, and wildcard never create member entitlements.
@@ -163,7 +165,8 @@ func TestEffectivePermissionCodesDoesNotDeriveMemberBenefits(t *testing.T) {
       task into this Account contract PR.
 - [ ] Remove member-verification and removed-permission response examples.
 - [ ] Document that organization, scoped pastoral/operational roles,
-      qualification, and entitlement are owned by `operations-api`. State that
+      church membership, organization bindings, responsibility, and entitlement
+      are owned by `operations-api`. State that
       the existing Operations scopes are global and no additional Account
       permission code is introduced for scoped access.
 - [ ] Run `npx --yes @redocly/cli@2.47.0 lint docs/openapi.yaml`.

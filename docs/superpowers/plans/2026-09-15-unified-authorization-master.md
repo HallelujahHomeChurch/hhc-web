@@ -13,20 +13,34 @@
 **Integrated AuthN plan:**
 `frontend-platform/docs/superpowers/plans/2026-09-15-auth-platform-convergence.md`
 
+**Approved-product refinement awaiting implementation approval:**
+[2026-09-19-admin-membership-and-organization-management.md](2026-09-19-admin-membership-and-organization-management.md).
+Its Phase 0 cold first-entry recovery is the next implementation gate. No later
+membership, organization, or Admin-layout task may start before that gate
+passes.
+
 ## Global Constraints
 
 - Start every implementation repository in its own isolated worktree from freshly fetched `origin/main`.
 - One task owner per repository at a time. A later plan may start only after the earlier owner merges and releases the producer contract it consumes.
 - English is canonical for code, role labels, and permission descriptions. Translate user-facing UI copy through existing locale files.
 - No compatibility aliases, dual-read, shadow-read, legacy role mapping, or old permission acceptance.
-- Do not migrate test user role, qualification, or entitlement assignments. Do preserve bulletin and operations domain records, stable IDs, revisions, scans, and audit history.
+- Do not migrate test user role, legacy qualification, membership, organization,
+  or entitlement assignments. Do preserve bulletin and non-test Operations
+  domain records, stable IDs, revisions, scans, retained legal facts, and audit
+  history after the required inventory gate.
+- Never migrate, delete, re-key, or backfill the released Account/User identity
+  model or registered Account rows as part of the membership replacement. The
+  one required breaking schema migration is Operations-owned only.
 - Human CMS roles never receive `assets:*` implicitly. `hhc-web-api` performs embedded asset actions using its allowlisted service identity after checking the matching CMS write permission.
 - Access projection controls discovery and destination only. `account-api`, `operations-api`, `hhc-web-api`, and `asset-api` enforce their own authoritative decisions.
-- Account staff permissions are church-wide. Only Meetings, Resources, and
-  Reservations initially add an alternative scoped OrgRole branch, evaluated
-  by `operations-api`; no OrgUnit id or organization role enters JWT scopes.
-- Pastoral organization roles grant no Operations action implicitly. Scoped
-  operational-role grant/revoke remains global `memberships:manage` in V1.
+- Account staff permissions remain church-wide and opaque. Operations may add
+  an alternative scoped branch for Meetings, Resources, Reservations, and the
+  reviewed membership-management actions; no OrgUnit id or organization role
+  enters JWT scopes.
+- Organization responsibility grants only its explicitly cataloged scoped
+  actions. Meeting, Resource, and Reservation actions remain independent, and
+  pastoral titles grant no action implicitly.
 - Authentication depends only on identity/session transport. Authorization may
   read the authenticated session; AuthN must not import product permissions,
   capability groups, member entitlements, organization policy, or LINE ACLs.
@@ -50,6 +64,7 @@ never final acceptance by itself.
 
 | Phase | Plan | Repository owner(s) | Start gate |
 | --- | --- | --- | --- |
+| 0R | [Cold first-entry Auth recovery](2026-09-19-admin-membership-and-organization-management.md#phase-0--repair-cold-first-entry-authentication) | `frontend-platform` verification, then `account-fe`, `admin-fe`, `hhc-web` separately | Plan approved; resume and reconcile the paused worktrees against current `origin/main` |
 | 1A | Auth convergence Task 1 contract freeze | documentation owners only | Canonical AuthN/AuthZ seam below is approved |
 | 1B | [Operations Task 1 foundation](2026-09-15-unified-authorization-operations-api.md) and [Audit Task 1 foundation](2026-09-15-unified-authorization-audit-log.md) | new `operations-api`, `audit-log` | Explicit new-repository authorization; catalog and route freeze complete |
 | 2A | [Account deletion diagnosis](2026-09-12-account-legal-operations-launch.md) Task 6 | `account-api` | Backward-safe diagnostics approved; no production deletion is inferred or automated |
@@ -59,7 +74,7 @@ never final acceptance by itself.
 | 3B | [Audit Tasks 2-4](2026-09-15-unified-authorization-audit-log.md) | `audit-log`, `azure-infra`, `api-gateway`, then one domain-owner repository at a time | Audit foundation and final catalog merged; execute OIDC/ACR bootstrap -> immutable image release -> workload plan -> external secrets -> workload apply and dark deploy -> Gateway query route; owning producer contract frozen |
 | 4 | [Protected bulletin and Asset boundary](2026-09-15-unified-authorization-protected-bulletins.md) | `hhc-web-api`, then `asset-api`, then `engagement-api`, then LINE bot | Operations entitlement-check contract frozen; operations extraction merged before editing `hhc-web-api` |
 | 5 | [DSR owner integration and external closure](2026-09-12-account-legal-operations-launch.md) Tasks 7-8 | `account-api`, registered owners, documentation owner | Owner endpoints dark; deletion result model proven; external evidence available |
-| 6 | [Shared AuthN runtime, access contract, and frontend experience](2026-09-15-unified-authorization-frontends.md) plus Auth convergence Tasks 2-8 | one `frontend-platform` integration owner, then one owner per consumer repository | Account session/scope and all producer OpenAPI contracts are final; the Website final AuthN-runtime consumer is released as the narrow Recovery Gate R prerequisite, then R passes before the remaining consumer releases |
+| 6 | [Shared AuthN runtime, access contract, and frontend experience](2026-09-15-unified-authorization-frontends.md) plus Auth convergence Tasks 2-8 | one `frontend-platform` integration owner, then one owner per consumer repository | Focused-plan Phase 0 has released Account, Admin, and Website consumers and passed Recovery Gate R; all later producer OpenAPI contracts are final before their generated-client consumers merge |
 | 7 | [Edge, integration, and coordinated cutover](2026-09-15-unified-authorization-cutover.md) plus [Audit Task 5](2026-09-15-unified-authorization-audit-log.md) | `api-gateway`, `azure-infra`, integration owner | All application PRs green and release artifacts ready |
 | 8 | [Meeting/media Phase 1 formal acceptance](2026-09-15-meeting-media-phase-1-acceptance.md) | existing released owners and Presenter device | No conflicting release/config churn; controlled test authority and device available |
 
@@ -67,10 +82,13 @@ This order intentionally limits parallelism. `account-api` and the new `operatio
 
 ### Recovery Gate R — Hosted SSO And Website Product Session
 
-This gate recovers the observed Website authentication regression before the
-general Phase 6 consumer releases or coordinated cutover. It is a narrow
-`frontend-platform` + `api-gateway` + `hhc-web` transport correction, not an
-RBAC, entitlement, or product-capability change.
+This gate is reopened by the 2026-09-19 real-user reproduction: after a fresh
+Website login, the first Account-profile entry briefly rendered login UI and
+the first Admin entry could render “OAuth 回呼失敗”; a second warm visit was
+successful. Earlier `v1.0.8` acceptance is therefore superseded. The shared
+root fix is published as `frontend-platform` `v1.0.9`, but the three consumer
+releases and exact cold acceptance remain incomplete. Follow Phase 0 of the
+2026-09-19 focused plan before any later membership or layout implementation.
 
 - [x] Use `account.alive.org.tw` only as the browser's hosted authorization
       authority for `GET /api/account/v1/oauth/authorize`. This is a top-level
@@ -91,12 +109,15 @@ RBAC, entitlement, or product-capability change.
       browser session transport. A cross-origin token exchange recreates the
       client-bound-cookie regression. CORS is considered only for a distinct,
       documented browser API that cannot use the same-origin gateway path.
-- [x] Release the browser transport recovery packages: the initial
+- [x] Release the earlier browser transport recovery packages: the initial
       `@hallelujahhomechurch/*@1.0.5` correction from tag `v1.0.5` (merge
       `45bfd32`), followed by the passive-SSO correction in `v1.0.6` (merge
       `55e7f33`). These are recovery baselines, not evidence that the final
       breaking RBAC catalog or empty compatibility map has shipped.
-- [ ] With one valid central Account SSO session, observe the real
+- [ ] Verify the published `frontend-platform` `v1.0.9` post-exchange
+      revalidation fix and release matching Account, Admin, and Website
+      consumers through their independent PR/CI/release flows.
+- [ ] Starting from a complete sign-out, sign in at Website and observe the
       Website -> Account -> Admin -> Website matrix without a credential or
       provider prompt or login-form-shaped callback state. Confirm the
       authenticated Operations request, and then run the protected-bulletin
@@ -169,10 +190,11 @@ GET  /api/member/bulletins/{issueID}/versions/{locale}/download hhc-web-api
 ```ts
 export type AccessSnapshot = {
   staffPermissions: string[]
+  churchMembership?: ChurchMembershipSummary
   memberships: OrgMembershipSummary[]
   orgRoles: OrgRoleSummary[]
-  qualifications: QualificationSummary[]
   entitlements: EntitlementSummary[]
+  membershipManagementScopes: MembershipManagementScopeSummary[]
   version: string
 }
 ```
@@ -248,10 +270,12 @@ all green artifacts ─> api-gateway/infrastructure ─> staging matrix ─> one
 ### Gate B — Producer Readiness
 
 - [ ] Account tests prove role expansion, removed-code denial, and session invalidation behavior.
-- [ ] Operations tests prove hierarchy, cycles, primary membership, effective
-      periods, qualification, entitlement, access projection, global-or-scoped
-      authorization, descendant scope, sibling denial, pastoral-role denial,
-      and immediate scoped-role revocation.
+- [ ] Operations tests prove hierarchy, cycles, one active church membership,
+      active ChurchMembership entitlement eligibility, Member identity,
+      organization bindings, responsibility assignment/revocation, pending
+      requests, transfer, access projection, global-or-scoped authorization,
+      descendant scope, sibling denial, pastoral-role denial, and immediate
+      scoped-role revocation.
 - [ ] Resource tests prove qualified-member request policy, privacy, conflict
       serialization, owner cancellation, independent global/scoped Admin
       actions, and disabled-by-default rollout.
@@ -327,7 +351,7 @@ all green artifacts ─> api-gateway/infrastructure ─> staging matrix ─> one
 
 | Spec acceptance | Implemented and verified by |
 | --- | --- |
-| Distinct staff, organization, qualification, entitlement, audience, and workflow meanings | Account Tasks 2-3; Operations Tasks 2-5; Bulletin Task 7 |
+| Distinct staff, Member, church membership, organization binding, responsibility, entitlement, audience, and workflow meanings | Account Tasks 2-3; 2026-09-19 focused plan Phases 1-4; Bulletin Task 7 |
 | No broad CMS scopes or compatibility fallbacks | Account Tasks 1-4; Bulletin Task 1; Frontend Tasks 1-2; Cutover Tasks 1-2 |
 | AuthN/AuthZ one-way dependency and stable recovery | Account Task 4; Auth Convergence Tasks 1-3; Frontend Task 1; Cutover Tasks 4, 9 |
 | Independent Page Settings, News, Bulletin, Operations, and Membership administration | Account Tasks 1-2; Bulletin Task 1; Frontend Tasks 2-5 |

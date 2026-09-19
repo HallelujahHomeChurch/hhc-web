@@ -237,57 +237,23 @@ const operationsLevels = {
 - [ ] Scan all locale files, snapshots, titles, breadcrumbs, and role descriptions.
 - [ ] Commit: `refactor: rename website settings to page settings`
 
-### Task 5: Move Admin Operations And Add Membership Management
+### Task 5: Move Admin Operations And Add Membership Management (Historical Baseline)
 
-**Files:**
-- Modify: `admin-fe/src/lib/cms-api.ts`
-- Modify: `admin-fe/src/lib/cms-api.test.ts`
-- Modify: `admin-fe/src/lib/mock-cms-api.ts`
-- Modify: `admin-fe/src/pages/operations/MeetingListPage.tsx`
-- Modify: `admin-fe/src/pages/operations/MeetingListPage.test.tsx`
-- Modify: `admin-fe/src/pages/operations/MeetingEditorPage.tsx`
-- Modify: `admin-fe/src/pages/operations/MeetingEditorPage.test.tsx`
-- Create: `admin-fe/src/lib/operations-api.ts`
-- Create: `admin-fe/src/lib/operations-api.test.ts`
-- Create: `admin-fe/src/pages/operations/OrgUnitPage.tsx`
-- Create: `admin-fe/src/pages/operations/OrgUnitPage.test.tsx`
-- Create: `admin-fe/src/pages/operations/OrgResponsibilityPage.tsx`
-- Create: `admin-fe/src/pages/operations/OrgResponsibilityPage.test.tsx`
-- Create: `admin-fe/src/pages/operations/ResourceListPage.tsx`
-- Create: `admin-fe/src/pages/operations/ResourceListPage.test.tsx`
-- Create: `admin-fe/src/pages/operations/ReservationListPage.tsx`
-- Create: `admin-fe/src/pages/operations/ReservationListPage.test.tsx`
-- Create: `admin-fe/src/pages/memberships/MembershipListPage.tsx`
-- Create: `admin-fe/src/pages/memberships/MembershipListPage.test.tsx`
-- Create: `admin-fe/src/pages/memberships/MembershipDetailPage.tsx`
-- Create: `admin-fe/src/pages/memberships/MembershipDetailPage.test.tsx`
-- Modify: `admin-fe/src/App.tsx`
-- Modify: `admin-fe/src/components/AppLayout.tsx`
-- Modify: `admin-fe/src/preferences/locale-context.tsx`
+> **Superseded for remaining membership/organization work:** Admin PR #110
+> already delivered the initial consolidated surface and removed the standalone
+> Organization Responsibility page. Do not execute the file/checklist details
+> below again. The replacement data model, scoped-management behavior, shared
+> Header SearchBar, and layout work are defined only by
+> [the 2026-09-19 focused plan](2026-09-19-admin-membership-and-organization-management.md),
+> after its Phase 0 cold first-entry Auth gate passes. In particular, do not
+> recreate `OrgResponsibilityPage`, administrator-entered effective dates,
+> qualification editing, primary membership, congregation, or `left` state.
 
-- [ ] Remove operations types and methods from the Website CMS wrapper and consume `@hallelujahhomechurch/operations-client` through one Admin wrapper.
-- [ ] Use the shared presentation resolver for Meetings, Resources, and
-  Reservations, allowing a corresponding global permission or scoped
-  operational role. Keep placement, qualification, entitlement, and every
-  OrgRoleAssignment grant/revoke behind global `memberships:read` or
-  `memberships:manage` as appropriate; scoped roles satisfy neither.
-- [ ] Add a separate Organization Responsibilities surface that assigns a
-  person, OrgUnit scope, fixed role, effective dates, and optional expiry. Show
-  the selected OrgUnit and fixed descendant rule before confirmation; do not
-  expose action checkboxes, calculate an authoritative descendant set, or mix
-  scoped assignments into the System Role capability table.
-- [ ] Offer exactly `meeting_manager`, `resource_manager`, and
-  `reservation_approver` as current scoped operational roles. Show pastoral
-  roles separately and never claim that pastor, family leader, or small-group
-  leader automatically grants Operations actions.
-- [ ] Add the minimal Resource settings, maintenance, reservation list/detail, approve/reject/cancel screens using only the final generated Operations client. A reservation approver cannot edit Resource settings or Meetings.
-- [ ] Provide explicit assignment/revocation forms for the three initial bulletin entitlements; never expose entitlement codes as staff permissions.
-- [ ] Require effective dates, actor confirmation, optimistic concurrency, and a visible audit result for sensitive membership changes.
-- [ ] Test each global and scoped Meeting, Resource, Reservation, and
-  Membership role against every sibling route and direct API. Include own
-  scope, descendant scope, sibling scope, expired/revoked assignment,
-  pastoral-only role, wildcard, and independent permission-unavailable states.
-- [ ] Commit: `feat: manage organization membership and entitlements`
+Historical delivery evidence is recorded in the execution ledger. Preserve the
+released generated Operations client, Meeting/Resource/Reservation separation,
+bulletin entitlement controls, optimistic concurrency, and audit presentation;
+change only the membership and organization behavior named by the focused
+plan.
 
 ### Task 6: Update Website Member Bulletin Experience
 
@@ -348,7 +314,9 @@ const operationsLevels = {
       behavior while retaining native OAuth and `safeStorage` in main process.
 - [ ] Show Admin, bulletin, Presenter cloud, and LINE destinations only when projected; common profile/security links remain authenticated-account links.
 - [ ] Show the Resource application destination only when the Operations access response says the caller is currently eligible. Use the generated client for availability, single-Resource request, own list/detail, and cancel; do not infer eligibility from staff permissions or duplicate the server policy.
-- [ ] Handle qualification/org-policy revocation, conflict, stale version, and permission-unavailable presentation without turning the authenticated Account anonymous.
+- [ ] Handle church-membership/org-policy revocation, conflict, stale version,
+      and permission-unavailable presentation without turning the authenticated
+      Account anonymous.
 - [ ] Do not derive member access from Admin permissions or email verification.
 - [ ] Account verification: `corepack pnpm test:run && corepack pnpm lint && corepack pnpm build`.
 - [ ] Presenter verification: `npm run test && npm run lint && npm run typecheck && npm run build && npm run build:web`.
