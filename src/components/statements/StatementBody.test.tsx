@@ -1,5 +1,6 @@
 import {render, screen} from '@testing-library/react';
 import {describe, expect, it} from 'vitest';
+import type {StatementDocument} from '@/features/news/types';
 import {StatementBody} from './StatementBody';
 
 describe('StatementBody', () => {
@@ -23,5 +24,12 @@ describe('StatementBody', () => {
   it('keeps legacy plain text as a fallback', () => {
     render(<StatementBody locale="zh-Hant" body={'第一行\n第二行'} />);
     expect(screen.getByText(/第一行/)).toHaveClass('whitespace-pre-wrap');
+  });
+
+  it('renders a published statement with an empty paragraph', () => {
+    const bodyJson = JSON.parse('{"schemaVersion":1,"blocks":[{"id":"copy","type":"paragraph","content":[{"type":"text","text":"內文"}]},{"id":"blank","type":"paragraph"}]}') as StatementDocument;
+    render(<StatementBody locale="zh-Hant" body="內文" bodyJson={bodyJson} />);
+    expect(screen.getByText('內文')).toBeInTheDocument();
+    expect(document.querySelectorAll('p')).toHaveLength(2);
   });
 });

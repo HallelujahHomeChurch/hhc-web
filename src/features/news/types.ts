@@ -10,7 +10,7 @@ type StatementTextBlock = {
   type: 'paragraph' | 'heading' | 'quote';
   level?: 2 | 3;
   alignment?: 'start' | 'center' | 'end';
-  content: StatementInline[];
+  content?: StatementInline[];
   source?: StatementInline[];
 };
 
