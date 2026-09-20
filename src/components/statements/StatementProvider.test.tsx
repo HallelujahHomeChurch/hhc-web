@@ -6,7 +6,7 @@ const route = vi.hoisted(() => ({path: '/zh-Hant/about'}));
 const captureHandledError = vi.hoisted(() => vi.fn());
 vi.mock('next/navigation', () => ({usePathname: () => route.path}));
 vi.mock('@/lib/observability', () => ({captureHandledError}));
-const labels = {close: '關閉', hideToday: '今天不再顯示', readFull: '閱讀全文', notice: '教會聲明', date: '聲明日期', notifications: '網站通知', notificationDescription: '訂閱', email: 'Email'};
+const labels = {close: '關閉', openImage: '放大圖片', closeImage: '關閉圖片', hideToday: '今天不再顯示', readFull: '閱讀全文', notice: '教會聲明', date: '聲明日期', notifications: '網站通知', notificationDescription: '訂閱', email: 'Email'};
 let sequence = 0;
 function payload(id: string) {return {serverNow: '2026-09-07T10:01:16Z', nextChangeAt: '2026-09-21T10:01:16Z', statement: {id, title: '正式聲明', body: '第一段原文\n\n第二段原文', resolvedLocale: 'zh-Hant', availableLocales: ['zh-Hant'], href: `/zh-Hant/statements/${id}`, popupStartsAt: '2026-09-07T10:01:16Z', popupEndsAt: '2026-09-21T10:01:16Z'}};}
 function mount() {return render(<StatementProvider locale="zh-Hant" labels={labels}><StatementStrip /></StatementProvider>);}
@@ -14,7 +14,7 @@ beforeEach(() => {
  captureHandledError.mockClear();
  localStorage.clear(); route.path = '/zh-Hant/about';
  HTMLDialogElement.prototype.showModal = function() {this.setAttribute('open', '');};
- HTMLDialogElement.prototype.close = function() {this.removeAttribute('open');};
+ HTMLDialogElement.prototype.close = function() {this.removeAttribute('open'); this.dispatchEvent(new Event('close'));};
 });
 afterEach(() => {cleanup(); vi.unstubAllGlobals();});
 describe('statement entry', () => {
@@ -75,6 +75,39 @@ describe('statement entry', () => {
   const storage = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {throw new Error('blocked');});
   fireEvent.click(screen.getByRole('checkbox')); fireEvent.click(screen.getAllByRole('button', {name: '關閉'})[0]);
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument(); storage.mockRestore();
+ });
+
+ it('keeps the entry dialog open when an enlarged image is dismissed with Escape', async () => {
+  const id = `statement-${++sequence}`;
+  const response = payload(id);
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({data: {...response, statement: {...response.statement, bodyJson: {schemaVersion: 1, blocks: [
+    {id: 'photo', type: 'image', url: '/assets/statement/photo', alt: {mode: 'text', text: ''}}
+  ]}}}, meta: {}}))));
+  mount();
+  const outer = await screen.findByRole('dialog', {name: '正式聲明'});
+  fireEvent.click(within(outer).getByRole('button', {name: '放大圖片'}));
+  const inner = screen.getByRole('dialog', {name: '放大圖片'});
+  fireEvent(inner, new Event('cancel', {cancelable: true}));
+  expect(screen.queryByRole('dialog', {name: '放大圖片'})).not.toBeInTheDocument();
+  expect(outer).toHaveAttribute('open');
+  expect(document.body.style.overflow).toBe('hidden');
+  fireEvent.click(within(outer).getAllByRole('button', {name: '關閉'})[0]);
+  expect(document.body.style.overflow).toBe('');
+  expect(screen.getByRole('link', {name: /閱讀全文/})).toHaveAttribute('href', `/zh-Hant/statements/${id}`);
+ });
+
+ it('restores page scrolling when the entry dialog unmounts around an open image', async () => {
+  const id = `statement-${++sequence}`;
+  const response = payload(id);
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({data: {...response, statement: {...response.statement, bodyJson: {schemaVersion: 1, blocks: [
+    {id: 'photo', type: 'image', url: '/assets/statement/photo', alt: {mode: 'text', text: ''}}
+  ]}}}, meta: {}}))));
+  const view = mount();
+  const outer = await screen.findByRole('dialog', {name: '正式聲明'});
+  fireEvent.click(within(outer).getByRole('button', {name: '放大圖片'}));
+  expect(document.body.style.overflow).toBe('hidden');
+  view.unmount();
+  expect(document.body.style.overflow).toBe('');
  });
 
 });

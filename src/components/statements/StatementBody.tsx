@@ -1,5 +1,6 @@
 import type {ReactNode} from 'react';
 import type {StatementDocument, StatementInline} from '@/features/news/types';
+import {StatementImage} from './StatementImage';
 
 const align = {start: 'text-start', center: 'text-center', end: 'text-end'} as const;
 const imageWidth = {small: 'max-w-sm', medium: 'max-w-xl', full: 'max-w-full'} as const;
@@ -12,11 +13,11 @@ function inline(nodes?: StatementInline[]): ReactNode {
     let value: ReactNode = node.text;
     if (node.marks?.includes('emphasis')) value = <em>{value}</em>;
     if (node.marks?.includes('strong')) value = <strong>{value}</strong>;
-    return <span key={index}>{value}</span>;
+    return <span key={index} style={{color: /^#[0-9A-F]{6}$/.test(node.color ?? '') ? node.color : undefined, backgroundColor: /^#[0-9A-F]{6}$/.test(node.highlight ?? '') ? node.highlight : undefined}}>{value}</span>;
   });
 }
 
-export function StatementBody({body, bodyJson, locale}: {body: string; bodyJson?: StatementDocument; locale: string}) {
+export function StatementBody({body, bodyJson, locale, imageLabels}: {body: string; bodyJson?: StatementDocument; locale: string; imageLabels: {open: string; close: string}}) {
   if (!bodyJson) return <div lang={locale} className="whitespace-pre-wrap break-words text-[17px] leading-[1.95] text-ink">{body}</div>;
 
   return <div lang={locale} className="break-words text-[17px] leading-[1.95] text-ink">
@@ -34,8 +35,7 @@ export function StatementBody({body, bodyJson, locale}: {body: string; bodyJson?
       if (block.type === 'image') {
         const alt = block.alt.mode === 'text' ? block.alt.text : '';
         return <figure key={block.id} className={`my-7 ${imageWidth[block.size ?? 'full']} ${imageAlign[block.alignment ?? 'center']}`}>
-          {/* eslint-disable-next-line @next/next/no-img-element -- CMS URLs are already transformed and size metadata is not part of the v1 contract. */}
-          <img src={block.url} alt={alt} className="h-auto w-full rounded-lg" />
+          <StatementImage src={block.url} alt={alt} openLabel={imageLabels.open} closeLabel={imageLabels.close} />
           {block.caption?.length ? <figcaption className="mt-2 text-center text-sm leading-relaxed text-muted">{inline(block.caption)}</figcaption> : null}
         </figure>;
       }

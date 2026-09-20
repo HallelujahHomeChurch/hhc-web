@@ -56,6 +56,8 @@
     },
     "statement": {
       "close": "关闭",
+      "openImage": "放大图片",
+      "closeImage": "关闭图片",
       "hideToday": "今天不再显示",
       "readFull": "阅读全文",
       "notice": "教会声明",

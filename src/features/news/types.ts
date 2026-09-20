@@ -1,9 +1,10 @@
 import type {ContentLocaleMetadata} from '@/features/content/locale';
 
+type StatementText = {type: 'text'; text: string; marks?: ('strong' | 'emphasis')[]; color?: string; highlight?: string};
 export type StatementInline =
-  | {type: 'text'; text: string; marks?: ('strong' | 'emphasis')[]}
+  | StatementText
   | {type: 'lineBreak'}
-  | {type: 'link'; href: string; title?: string; content: {type: 'text'; text: string; marks?: ('strong' | 'emphasis')[]}[]};
+  | {type: 'link'; href: string; title?: string; content: StatementText[]};
 
 type StatementTextBlock = {
   id: string;

@@ -14,3 +14,15 @@
 by `scripts/subset-display-font.sh` from the fixed Japanese banner strings in
 `src/i18n/locales/ja.json`. The original TTF is retained for deterministic
 regeneration and is not imported by the application.
+
+`KleeOne-HHC-OpenGraph.ttf` is a separate 17,920-byte subset for the fixed
+Traditional Chinese text in `src/app/opengraph-image.tsx`. It is generated from
+the same pinned source with:
+
+```sh
+python3 -m fontTools.subset src/assets/fonts/klee-one/KleeOne-Regular.ttf \
+  --output-file=src/assets/fonts/klee-one/KleeOne-HHC-OpenGraph.ttf \
+  --text='哈利路亞家教會在愛中建造家庭，真理成長' \
+  --layout-features='*' --name-IDs='*' --name-legacy --name-languages='*' \
+  --notdef-glyph --notdef-outline --recommended-glyphs
+```
