@@ -5,8 +5,8 @@ const align = {start: 'text-start', center: 'text-center', end: 'text-end'} as c
 const imageWidth = {small: 'max-w-sm', medium: 'max-w-xl', full: 'max-w-full'} as const;
 const imageAlign = {start: 'mr-auto', center: 'mx-auto', end: 'ml-auto'} as const;
 
-function inline(nodes: StatementInline[]): ReactNode {
-  return nodes.map((node, index) => {
+function inline(nodes?: StatementInline[]): ReactNode {
+  return nodes?.map((node, index) => {
     if (node.type === 'lineBreak') return <br key={index} />;
     if (node.type === 'link') return <a key={index} href={node.href} title={node.title} className="text-primary underline underline-offset-2" rel="noopener noreferrer">{inline(node.content)}</a>;
     let value: ReactNode = node.text;
