@@ -56,6 +56,8 @@
     },
     "statement": {
       "close": "關閉",
+      "openImage": "放大圖片",
+      "closeImage": "關閉圖片",
       "hideToday": "今天不再顯示",
       "readFull": "閱讀全文",
       "notice": "教會聲明",

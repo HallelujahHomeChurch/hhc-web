@@ -46,6 +46,6 @@ export default async function StatementPage({params}: Props) {
   const labels = messages.site.statement;
   return LegalPageShell({locale, pathname: `/${locale}/statements/${slug}`, children: <article className="mx-auto max-w-[760px] px-5 py-10 max-[620px]:py-6">
     <header className="mb-8 border-b border-line pb-6"><p className="mb-3 text-sm font-semibold tracking-widest text-primary">{labels.notice}</p><h1 lang={news.resolvedLocale} className="text-[clamp(28px,4vw,42px)] font-semibold leading-snug text-ink">{news.title}</h1><p className="mt-4 text-sm text-muted">{labels.date} · <time dateTime={news.displayDate} lang={news.resolvedLocale}>{news.date}</time></p></header>
-    <StatementBody body={news.body} bodyJson={news.bodyJson} locale={news.resolvedLocale} />
+    <StatementBody body={news.body} bodyJson={news.bodyJson} locale={news.resolvedLocale} imageLabels={{open: labels.openImage, close: labels.closeImage}} />
   </article>});
 }
