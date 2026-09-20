@@ -129,6 +129,12 @@ Supported marks:
 
 Do not add underline, color, font size, arbitrary spans, or custom classes in v1. These create design-system drift and accessibility risk.
 
+### Statement subset and finite presentation controls
+
+Church Statements use the same schema-version-1 AST, not a parallel editor document. They allow only `paragraph`, H2/H3 `heading`, `quote`, `list`, and `image` blocks; `text`, `link`, and `lineBreak` inline nodes; and `strong`/`emphasis` marks. Paragraphs and headings may set `alignment: start | center | end`. Images may set `size: small | medium | full` and `alignment: start | center | end`. Omitted text alignment defaults to `start`; omitted image size/alignment defaults to `full`/`center`.
+
+Statement images are CMS-owned assets referenced by `assetId` in drafts. Each locale is limited to ten image blocks. Public projections replace draft references with same-origin, grant-backed URLs. Arbitrary CSS, raw HTML, editor-native JSON, colors, numeric font sizes, font families, and user-controlled line height remain outside v1.
+
 Link node example:
 
 ```json
