@@ -13,7 +13,7 @@ function inline(nodes?: StatementInline[]): ReactNode {
     let value: ReactNode = node.text;
     if (node.marks?.includes('emphasis')) value = <em>{value}</em>;
     if (node.marks?.includes('strong')) value = <strong>{value}</strong>;
-    return <span key={index}>{value}</span>;
+    return <span key={index} style={{color: /^#[0-9A-F]{6}$/.test(node.color ?? '') ? node.color : undefined, backgroundColor: /^#[0-9A-F]{6}$/.test(node.highlight ?? '') ? node.highlight : undefined}}>{value}</span>;
   });
 }
 

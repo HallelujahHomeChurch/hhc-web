@@ -27,6 +27,23 @@ describe('StatementBody', () => {
     expect(screen.getByText(/第一行/)).toHaveClass('whitespace-pre-wrap');
   });
 
+  it('renders independent color and highlight only on text runs, including links', () => {
+    render(<StatementBody locale="zh-Hant" body="" imageLabels={{open: '放大圖片', close: '關閉圖片'}} bodyJson={{schemaVersion: 1, blocks: [
+      {id: 'copy', type: 'paragraph', content: [
+        {type: 'text', text: 'Red', color: '#FF0000'},
+        {type: 'text', text: 'Blue', color: '#0000FF', highlight: '#FFFF00', marks: ['strong']},
+        {type: 'link', href: '/zh-Hant/about', content: [{type: 'text', text: 'Linked', color: '#112233', highlight: '#EEDDCC'}]},
+        {type: 'text', text: 'Old'},
+        {type: 'text', text: 'Unsafe', color: 'url(javascript:bad)'}
+      ]}
+    ]}} />);
+    expect(screen.getByText('Red')).toHaveStyle({color: '#FF0000'});
+    expect(screen.getByText('Blue').parentElement).toHaveStyle({color: '#0000FF', backgroundColor: '#FFFF00'});
+    expect(screen.getByText('Linked')).toHaveStyle({color: '#112233', backgroundColor: '#EEDDCC'});
+    expect(screen.getByText('Old')).not.toHaveAttribute('style');
+    expect(screen.getByText('Unsafe')).not.toHaveAttribute('style');
+  });
+
   it('renders a published statement with an empty paragraph', () => {
     const bodyJson = JSON.parse('{"schemaVersion":1,"blocks":[{"id":"copy","type":"paragraph","content":[{"type":"text","text":"內文"}]},{"id":"blank","type":"paragraph"}]}') as StatementDocument;
     render(<StatementBody locale="zh-Hant" body="內文" bodyJson={bodyJson} imageLabels={{open: '放大圖片', close: '關閉圖片'}} />);
