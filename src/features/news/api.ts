@@ -31,6 +31,7 @@ export function mapNewsItem(value: Awaited<ReturnType<HhcWebClient['listPublicCo
 
 export async function getNewsBySlug(locale: Locale, slug: string, client: HhcWebClient = publicContentClient()): Promise<NewsDetail> {
   const value = await client.getNewsBySlug(locale, slug);
+  const bodyJson = value.bodyJson;
   const metadata = getContentLocaleMetadata(locale, value);
   return {
     ...metadata,
@@ -39,6 +40,7 @@ export async function getNewsBySlug(locale: Locale, slug: string, client: HhcWeb
     title: value.title,
     summary: value.summary ?? '',
     body: value.body ?? '',
+    bodyJson: bodyJson?.schemaVersion === 1 ? bodyJson : undefined,
     date: formatContentDate(value.displayDate ?? '', metadata.resolvedLocale),
     displayDate: value.displayDate ?? '',
     authorName: value.authorName ?? '',

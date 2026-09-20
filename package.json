@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@hallelujahhomechurch/account-client": "1.0.9",
-    "@hallelujahhomechurch/hhc-web-client": "1.0.9",
+    "@hallelujahhomechurch/hhc-web-client": "1.0.12",
     "@hallelujahhomechurch/operations-client": "1.0.9",
     "@hallelujahhomechurch/preferences": "1.0.9",
     "@hallelujahhomechurch/ui": "1.0.9",

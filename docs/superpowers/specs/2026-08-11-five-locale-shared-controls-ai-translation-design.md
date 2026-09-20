@@ -441,6 +441,7 @@ Existing target text is never overwritten by the batch action. Re-generating a p
 Initial LLM assistance covers:
 
 - News: title, body, and image alternative text.
+- Statement rich content: title plus ordered paragraph/heading/quote/list text runs, link labels, image alternative text, and captions. The server reconstructs the target from the saved source AST; block ids/types/order, marks, link destinations, image asset ids, size, and alignment never enter model output and cannot be changed by it.
 - History: the event text currently persisted as title/body.
 - Video: title.
 - Bulletin metadata: title and subtitle.
@@ -484,6 +485,8 @@ Content-Type: application/json
 ```
 
 Success returns a typed translation preview and the source version. It does not update the resource.
+
+For a rich Statement, the response also returns reconstructed `bodyJson` and a normalized fingerprint of the source title plus translatable text. Accepting and saving the preview makes that locale independently editable. Later source edits mark a generated target stale but never merge into or overwrite it; replacement remains an explicit editor action. Layout-only changes do not alter the content-only fingerprint. Simplified Chinese performs the same recursive text transformation locally with OpenCC and preserves structure and assets without an Azure request.
 
 ```json
 {
