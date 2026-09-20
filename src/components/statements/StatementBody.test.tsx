@@ -42,7 +42,7 @@ describe('StatementBody', () => {
       {id: 'photo', type: 'image', url: '/assets/statement/photo', alt: {mode: 'text', text: '活動照片'}, caption: [{type: 'text', text: '原有說明'}]}
     ]}} />);
 
-    const trigger = screen.getByRole('button', {name: '放大圖片'});
+    const trigger = screen.getByRole('button', {name: '放大圖片: 活動照片'});
     expect(trigger).toContainElement(screen.getByRole('img', {name: '活動照片'}));
     await user.click(trigger);
     const dialog = screen.getByRole('dialog', {name: '放大圖片'});

@@ -14,9 +14,11 @@ export function StatementImage({src, alt, openLabel, closeLabel}: {src: string; 
 
   function open() {
     if (!dialog.current || dialog.current.open) return;
-    previousOverflow.current = document.body.style.overflow;
+    if (document.body.style.overflow !== 'hidden') {
+      previousOverflow.current = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+    }
     dialog.current.showModal();
-    document.body.style.overflow = 'hidden';
     closeButton.current?.focus();
   }
 
@@ -29,7 +31,7 @@ export function StatementImage({src, alt, openLabel, closeLabel}: {src: string; 
   }
 
   return <>
-    <button ref={trigger} type="button" aria-label={openLabel} onClick={open} className="block w-full cursor-zoom-in rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+    <button ref={trigger} type="button" aria-label={alt ? `${openLabel}: ${alt}` : openLabel} onClick={open} className="block w-full cursor-zoom-in rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
       {/* eslint-disable-next-line @next/next/no-img-element -- CMS URLs are already transformed and size metadata is not part of the v1 contract. */}
       <img src={src} alt={alt} className="h-auto w-full rounded-lg" />
     </button>

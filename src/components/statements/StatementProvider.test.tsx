@@ -96,4 +96,18 @@ describe('statement entry', () => {
   expect(screen.getByRole('link', {name: /閱讀全文/})).toHaveAttribute('href', `/zh-Hant/statements/${id}`);
  });
 
+ it('restores page scrolling when the entry dialog unmounts around an open image', async () => {
+  const id = `statement-${++sequence}`;
+  const response = payload(id);
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({data: {...response, statement: {...response.statement, bodyJson: {schemaVersion: 1, blocks: [
+    {id: 'photo', type: 'image', url: '/assets/statement/photo', alt: {mode: 'text', text: ''}}
+  ]}}}, meta: {}}))));
+  const view = mount();
+  const outer = await screen.findByRole('dialog', {name: '正式聲明'});
+  fireEvent.click(within(outer).getByRole('button', {name: '放大圖片'}));
+  expect(document.body.style.overflow).toBe('hidden');
+  view.unmount();
+  expect(document.body.style.overflow).toBe('');
+ });
+
 });
