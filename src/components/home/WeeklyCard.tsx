@@ -65,7 +65,7 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
               <DownloadButton
                 key={version.locale}
                 bulletin={version}
-                download={api.download}
+                workflow={api}
                 label={weeklyEditionLabels[version.locale]}
                 ariaLabel={`${ctaLabel}: ${weeklyEditionLabels[version.locale]}`}
                 className="px-3 text-sm"

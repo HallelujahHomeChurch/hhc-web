@@ -3,7 +3,7 @@ import {createWeeklyBulletinApi} from './api';
 
 const bulletin = {
   issueId: '00000000-0000-4000-8000-000000000001', issueDate: '2026-09-13', issueNumber: 1737,
-  series: 'general', locale: 'zh-Hant', title: '週報', subtitle: '', downloadName: '1737.pdf', publishedAt: '2026-09-13T00:00:00Z', version: 1
+  series: 'general', locale: 'zh-Hant' as const, date: '2026-09-13', title: '週報', subtitle: '', downloadName: '1737.pdf', publishedAt: '2026-09-13T00:00:00Z', version: 1
 };
 
 describe('member weekly API', () => {
@@ -45,5 +45,29 @@ describe('member weekly API', () => {
     const api = createWeeklyBulletinApi({getAccessToken: vi.fn().mockResolvedValue('token'), refreshAfterUnauthorized: vi.fn()}, vi.fn().mockResolvedValue(Response.json({}, {status: 404})));
 
     await expect(api.fetchArchive(['zh-Hant'])).resolves.toMatchObject({items: [], totalItems: 0});
+  });
+
+  it('creates, reads, and downloads a prepared bulletin through only the protected job routes', async () => {
+    const job = {id: '00000000-0000-4000-8000-000000000002', operationProgress: {status: 'queued', stage: 'queued', percent: 5, updatedAt: '2026-09-21T00:00:00Z', retryAfterMs: 2_500}, createdAt: '2026-09-21T00:00:00Z', expiresAt: '2026-09-21T01:00:00Z'};
+    const fetcher = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json({data: job, meta: {}, error: null}, {status: 202}))
+      .mockResolvedValueOnce(Response.json({data: job, meta: {}, error: null}, {status: 202}))
+      .mockResolvedValueOnce(new Response('pdf', {headers: {'content-type': 'application/pdf'}}));
+    const api = createWeeklyBulletinApi({getAccessToken: vi.fn().mockResolvedValue('token'), refreshAfterUnauthorized: vi.fn()}, fetcher);
+    const signal = new AbortController().signal;
+
+    await expect(api.createDownloadJob(bulletin, '00000000-0000-4000-8000-000000000003', signal)).resolves.toMatchObject({id: job.id});
+    await expect(api.getDownloadJob(bulletin, job.id, signal)).resolves.toMatchObject({id: job.id});
+    await expect(api.downloadPreparedBulletin(bulletin, job.id, signal)).resolves.toBeInstanceOf(Response);
+
+    const [create, status, file] = fetcher.mock.calls.map(([input]) => input as Request);
+    expect(create.url).toContain('/api/member/bulletin-download-jobs?series=general&locale=zh-Hant');
+    expect(create.method).toBe('POST');
+    expect(create.headers.get('idempotency-key')).toBe('00000000-0000-4000-8000-000000000003');
+    await expect(create.json()).resolves.toEqual({issueId: bulletin.issueId});
+    expect(status.url).toContain(`/api/member/bulletin-download-jobs/${job.id}?series=general&locale=zh-Hant`);
+    expect(status.method).toBe('GET');
+    expect(file.url).toContain(`/api/member/bulletin-download-jobs/${job.id}/file?locale=zh-Hant&series=general`);
+    expect(file.headers.get('authorization')).toBe('Bearer token');
   });
 });
