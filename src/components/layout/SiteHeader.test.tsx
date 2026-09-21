@@ -10,6 +10,12 @@ import zhHant from '@/i18n/locales/zh-Hant.json';
 import {AccountControlProvider} from './AccountControl';
 import {SiteHeader} from './SiteHeader';
 
+const statementStripState = vi.hoisted(() => ({active: false}));
+
+vi.mock('@/components/statements/StatementStrip', () => ({
+  StatementStrip: () => statementStripState.active ? <aside aria-label="Statement notice">Statement</aside> : null
+}));
+
 const anonymousSessionClient: AccountSessionClient = {
   getSession: async () => ({authenticated: false}),
   issueAccessToken: async () => ({accessToken: '', expiresIn: 0}),
@@ -48,11 +54,37 @@ const layout: SiteLayout = {
 };
 
 afterEach(() => {
+  statementStripState.active = false;
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
 describe('SiteHeader', () => {
+  it('keeps the banner and active statement in one top chrome wrapper', () => {
+    statementStripState.active = true;
+    const {container} = render(
+      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" sessionClient={anonymousSessionClient} />
+      </NextIntlClientProvider>
+    );
+
+    const topChrome = container.querySelector('.site-top-chrome');
+    expect(topChrome).toContainElement(screen.getByRole('banner'));
+    expect(topChrome).toContainElement(screen.getByRole('complementary', {name: 'Statement notice'}));
+  });
+
+  it('keeps the top chrome wrapper without reserving an empty statement strip', () => {
+    const {container} = render(
+      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" sessionClient={anonymousSessionClient} />
+      </NextIntlClientProvider>
+    );
+
+    const topChrome = container.querySelector('.site-top-chrome');
+    expect(topChrome).toContainElement(screen.getByRole('banner'));
+    expect(topChrome?.querySelector('aside')).toBeNull();
+  });
+
   it('renders brand, navigation, and account entry point', async () => {
     render(
       <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
@@ -236,14 +268,18 @@ describe('SiteHeader', () => {
     );
 
     const header = screen.getByRole('banner');
+    const topChrome = header.parentElement;
     const mobileNavigation = screen.getByRole('navigation', {name: '選單'});
+
+    expect(topChrome).toHaveClass('site-top-chrome');
 
     scrollY = 40;
     act(() => {
       fireEvent.scroll(window);
       animationFrame?.(0);
     });
-    expect(header).toHaveAttribute('data-mobile-hidden', 'true');
+    expect(topChrome).toHaveAttribute('data-mobile-hidden', 'true');
+    expect(header).not.toHaveAttribute('data-mobile-hidden');
     expect(mobileNavigation).toHaveAttribute('data-mobile-hidden', 'true');
 
     scrollY = 12;
@@ -251,7 +287,7 @@ describe('SiteHeader', () => {
       fireEvent.scroll(window);
       animationFrame?.(0);
     });
-    expect(header).toHaveAttribute('data-mobile-hidden', 'false');
+    expect(topChrome).toHaveAttribute('data-mobile-hidden', 'false');
     expect(mobileNavigation).toHaveAttribute('data-mobile-hidden', 'false');
   });
 

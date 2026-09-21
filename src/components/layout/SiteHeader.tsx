@@ -113,44 +113,46 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
 
   return (
     <>
-      <header className="site-header sticky top-0 z-10 border-b border-line/70 backdrop-blur-xl" data-mobile-hidden={!mobileChromeVisible} data-iphone-standalone={iphoneStandalone || undefined}>
-      <div className="relative flex min-h-[76px] w-full items-center gap-6 px-6 max-[767px]:min-h-[68px] max-[767px]:px-4">
-        <Link href={`/${locale}`} className="inline-flex min-h-11 min-w-max items-center gap-2.5 max-[767px]:min-w-0 max-[767px]:flex-1">
-          <span className="grid size-10 shrink-0 place-items-center max-[767px]:size-9" aria-hidden="true">
-            <Image src="/assets/brand/logo.png" alt="" width={40} height={40} className="h-full w-full object-contain" />
-          </span>
-          <span className="grid min-w-0 gap-0.5 leading-none">
-            <strong className="truncate text-[19px] font-medium tracking-[0.02em] text-[var(--hhc-brand-ui)] max-[767px]:text-[17px]">{layout.siteName}</strong>
-            {locale !== 'en' ? (
-              <small className="text-[9px] font-extrabold uppercase tracking-[0.02em] text-[var(--hhc-brand-muted)] max-[767px]:text-[8px]">
-                {layout.englishName}
-              </small>
-            ) : null}
-          </span>
-        </Link>
-        {showNavigation ? <nav
-          id="site-navigation"
-          className="absolute left-1/2 top-0 flex h-full -translate-x-1/2 items-stretch max-[767px]:hidden"
-          aria-label={t('nav.primary')}
-        >
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={isActive(item.href) ? 'page' : undefined}
-                data-active={isActive(item.href) ? 'true' : undefined}
-                className="relative inline-flex items-center px-4 font-semibold tracking-[0.02em] after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:origin-left after:scale-x-0 after:bg-primary hover:text-primary hover:after:scale-x-100 data-[active=true]:text-primary data-[active=true]:after:scale-x-100"
-              >
-                {item.label}
-              </Link>
-            ))}
-        </nav> : null}
-        <div className="ml-auto shrink-0">
-          <AccountControlSlot client={sessionClient} labels={accountLabels} />
-        </div>
+      <div className="site-top-chrome sticky top-0 z-10" data-mobile-hidden={!mobileChromeVisible}>
+        <header className="site-header border-b border-line/70 backdrop-blur-xl" data-iphone-standalone={iphoneStandalone || undefined}>
+          <div className="relative flex min-h-[76px] w-full items-center gap-6 px-6 max-[767px]:min-h-[68px] max-[767px]:px-4">
+            <Link href={`/${locale}`} className="inline-flex min-h-11 min-w-max items-center gap-2.5 max-[767px]:min-w-0 max-[767px]:flex-1">
+              <span className="grid size-10 shrink-0 place-items-center max-[767px]:size-9" aria-hidden="true">
+                <Image src="/assets/brand/logo.png" alt="" width={40} height={40} className="h-full w-full object-contain" />
+              </span>
+              <span className="grid min-w-0 gap-0.5 leading-none">
+                <strong className="truncate text-[19px] font-medium tracking-[0.02em] text-[var(--hhc-brand-ui)] max-[767px]:text-[17px]">{layout.siteName}</strong>
+                {locale !== 'en' ? (
+                  <small className="text-[9px] font-extrabold uppercase tracking-[0.02em] text-[var(--hhc-brand-muted)] max-[767px]:text-[8px]">
+                    {layout.englishName}
+                  </small>
+                ) : null}
+              </span>
+            </Link>
+            {showNavigation ? <nav
+              id="site-navigation"
+              className="absolute left-1/2 top-0 flex h-full -translate-x-1/2 items-stretch max-[767px]:hidden"
+              aria-label={t('nav.primary')}
+            >
+                {navItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={isActive(item.href) ? 'page' : undefined}
+                    data-active={isActive(item.href) ? 'true' : undefined}
+                    className="relative inline-flex items-center px-4 font-semibold tracking-[0.02em] after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:origin-left after:scale-x-0 after:bg-primary hover:text-primary hover:after:scale-x-100 data-[active=true]:text-primary data-[active=true]:after:scale-x-100"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+            </nav> : null}
+            <div className="ml-auto shrink-0">
+              <AccountControlSlot client={sessionClient} labels={accountLabels} />
+            </div>
+          </div>
+        </header>
+        <StatementStrip />
       </div>
-      </header>
-      <StatementStrip />
       {showNavigation ? <nav className="site-mobile-tab-bar" style={{gridTemplateColumns: `repeat(${mobileNavItems.length}, minmax(0, 1fr))`}} aria-label={t('nav.menu')} data-mobile-hidden={!mobileChromeVisible} data-iphone-standalone={iphoneStandalone || undefined}>
         <span aria-hidden="true" className="site-mobile-tab-indicator" data-mobile-nav-indicator data-visible={mobileIndicatorIndex >= 0} style={{transform: `translate3d(${Math.max(0, mobileIndicatorIndex) * 100}%, 0, 0)`}} />
         {mobileNavItems.map((item, index) => {
