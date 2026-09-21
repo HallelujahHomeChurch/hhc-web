@@ -16,8 +16,8 @@ importers:
         specifier: 1.0.9
         version: 1.0.9
       '@hallelujahhomechurch/hhc-web-client':
-        specifier: 1.0.14
-        version: 1.0.14
+        specifier: 1.0.16
+        version: 1.0.16
       '@hallelujahhomechurch/operations-client':
         specifier: 1.0.9
         version: 1.0.9
@@ -330,8 +330,8 @@ packages:
   '@hallelujahhomechurch/account-client@1.0.9':
     resolution: {integrity: sha512-jxm+y9Su5CDnJZU1C8wuywdZhXCcAfQRU2v0xW1aYcMqKL2xp9qR1FQCvdGLVpppDNmaHP0RTNao3UnD9Z+UAA==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/account-client/1.0.9/10771cd1cdeae12dd84965e1bc9b0e796a07bea1}
 
-  '@hallelujahhomechurch/hhc-web-client@1.0.14':
-    resolution: {integrity: sha512-IZ2w8sEjMRDfLQQya3dCa9U68vUKJM0R/O6UIweNKG+c+K5I302ORGrpTxg/uXEwwOjDK+LU3D4fe530hVxOrg==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/hhc-web-client/1.0.14/803a9ef6085dfef46020dbd4b948ddd0458de41d}
+  '@hallelujahhomechurch/hhc-web-client@1.0.16':
+    resolution: {integrity: sha512-VKKzAGfRYosBYxxa2eUdrBX0lCTGPFuuwqxjVSjobNa9hkS6dkvXAGkM8zvX72cLEKS3je7PZleeVyl1eKFr6g==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/hhc-web-client/1.0.16/177c68538cab58369bd07b74e5d386a5b51878e6}
 
   '@hallelujahhomechurch/operations-client@1.0.9':
     resolution: {integrity: sha512-23Pw7/42nLwizDdroPhqgkFsBfGQpNCe3+qgBFI9jwEkoj3+MWn9EcmSv3U5+FffKJMfrgfer89G8N//SHlxDg==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/operations-client/1.0.9/1d3af2c4df393ce6f6cd285e4fd9716099cf4962}
@@ -4117,7 +4117,7 @@ snapshots:
 
   '@hallelujahhomechurch/account-client@1.0.9': {}
 
-  '@hallelujahhomechurch/hhc-web-client@1.0.14':
+  '@hallelujahhomechurch/hhc-web-client@1.0.16':
     dependencies:
       openapi-fetch: 0.15.2
 

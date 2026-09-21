@@ -226,7 +226,7 @@
     "nextPage": "下一页",
     "pageLabel": "第",
     "loading": "正在加载周报",
-    "downloading": "正在准备周报，完成后会自动下载。",
+    "downloading": "正在准备周报 {progress}，完成后会自动下载。",
     "downloadReady": "周报已准备完成，请再次点击按钮打开。",
     "downloadError": "周报暂时无法下载，请稍后再试。",
     "loadError": "周报暂时无法加载",

@@ -1,4 +1,4 @@
-import {createHhcWebClient, HhcWebApiError, type ProtectedBulletin} from '@hallelujahhomechurch/hhc-web-client';
+import {createHhcWebClient, HhcWebApiError, type BulletinDownloadJob, type ProtectedBulletin} from '@hallelujahhomechurch/hhc-web-client';
 import {bulletinEditions, type BulletinEdition} from '@hallelujahhomechurch/preferences';
 import type {WeeklyBulletin, WeeklyIssue, WeeklyIssuePage} from './types';
 
@@ -8,6 +8,8 @@ type BulletinAuthorization = {
 };
 
 type Fetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+
+export type WeeklyBulletinApi = ReturnType<typeof createWeeklyBulletinApi>;
 
 export class WeeklyApiError extends Error {
   constructor(readonly code: string, message: string) {
@@ -58,6 +60,24 @@ export function createWeeklyBulletinApi(authorization: BulletinAuthorization, fe
         signal
       });
       if (!response.ok) throw new WeeklyApiError(`http_${response.status}`, 'Bulletin download is unavailable.');
+      return response;
+    },
+
+    createDownloadJob(bulletin: WeeklyBulletin, idempotencyKey: string, signal?: AbortSignal): Promise<BulletinDownloadJob> {
+      return client.createBulletinDownloadJob(bulletin.issueId, bulletin.locale, bulletin.series, idempotencyKey, signal);
+    },
+
+    getDownloadJob(bulletin: WeeklyBulletin, id: string, signal?: AbortSignal): Promise<BulletinDownloadJob> {
+      return client.getBulletinDownloadJob(id, bulletin.locale, bulletin.series, signal);
+    },
+
+    async downloadPreparedBulletin(bulletin: WeeklyBulletin, id: string, signal?: AbortSignal): Promise<Response> {
+      const response = await protectedFetch(new URL(`/api/member/bulletin-download-jobs/${encodeURIComponent(id)}/file?locale=${encodeURIComponent(bulletin.locale)}&series=${encodeURIComponent(bulletin.series)}`, globalThis.location.origin), {
+        cache: 'no-store',
+        headers: {accept: 'application/pdf'},
+        signal
+      });
+      if (!response.ok) throw new WeeklyApiError(`http_${response.status}`, 'Prepared bulletin download is unavailable.');
       return response;
     }
   };
