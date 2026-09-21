@@ -271,7 +271,7 @@
     font-weight: 650;
   }
 
-  .site-header,
+  .site-top-chrome,
   .site-mobile-tab-bar {
     transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
   }
@@ -293,11 +293,11 @@
       padding-bottom: calc(84px + env(safe-area-inset-bottom));
     }
 
-    .site-header[data-mobile-hidden="true"] {
+    .site-top-chrome[data-mobile-hidden="true"] {
       transform: translateY(-100%);
     }
 
-    .site-header:focus-within {
+    .site-top-chrome:focus-within {
       transform: translateY(0);
     }
 
@@ -417,7 +417,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .site-header,
+    .site-top-chrome,
     .site-mobile-tab-bar,
     .site-mobile-tab-indicator {
       transition: none;
