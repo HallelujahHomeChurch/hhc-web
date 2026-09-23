@@ -46,7 +46,7 @@ function DownloadButtonWorkflow({
   ariaLabel,
   className = '',
   variant = 'primary',
-  preparingLabel = '正在準備週報 {progress}，完成後會自動下載。',
+  preparingLabel = '正在準備下載週報 {progress} %。',
   readyLabel = '週報已準備完成，請再次點選按鈕開啟。',
   errorLabel = '週報暫時無法下載，請稍後再試。'
 }: DownloadButtonProps & {storageKey: string}) {
@@ -183,7 +183,7 @@ function DownloadButtonWorkflow({
 
   const classes = `relative inline-flex min-h-11 items-center justify-center rounded-full border px-5 font-semibold transition ${variants[variant]} ${className}`;
   const content = <><span className={preparing ? 'opacity-0' : undefined}>{label}</span>{preparing ? <span data-download-spinner className="absolute size-4 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none" aria-hidden="true" /> : null}</>;
-  const progressLabel = preparingLabel.replace('{progress}', `${Math.round(progress)}%`);
+  const progressLabel = preparingLabel.replace('{progress}', String(Math.round(progress)));
 
   return <>
     {readyDownload ? (

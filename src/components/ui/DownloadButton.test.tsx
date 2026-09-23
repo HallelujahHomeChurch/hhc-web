@@ -72,15 +72,28 @@ describe('DownloadButton', () => {
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:weekly');
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-    render(<DownloadButton bulletin={bulletin} workflow={workflow} label="下載週報" preparingLabel="準備中 {progress}" />);
+    render(<DownloadButton bulletin={bulletin} workflow={workflow} label="下載週報" preparingLabel="正在準備下載週報 {progress} %。" />);
 
     fireEvent.click(screen.getByRole('button', {name: '下載週報'}));
     await act(async () => { await Promise.resolve(); });
-    expect(screen.getByRole('progressbar', {name: '準備中 40%'})).toHaveAttribute('aria-valuenow', '40');
+    expect(screen.getByRole('progressbar', {name: '正在準備下載週報 40 %。'})).toHaveAttribute('aria-valuenow', '40');
     await act(async () => { await vi.advanceTimersByTimeAsync(999); });
     expect(workflow.getDownloadJob).not.toHaveBeenCalled();
     await act(async () => { await vi.advanceTimersByTimeAsync(1); });
     expect(workflow.getDownloadJob).toHaveBeenCalledWith(bulletin, 'job-1', expect.any(AbortSignal));
     expect(workflow.downloadPreparedBulletin).toHaveBeenCalledWith(bulletin, 'job-1', expect.any(AbortSignal));
+  });
+
+  it.each([0, 5, 100])('formats %i percent with the localized percent sign', async (percent) => {
+    const workflow = {
+      createDownloadJob: vi.fn().mockResolvedValue({id: 'job-1', operationProgress: {status: 'running', stage: 'watermarking', percent, updatedAt: '2026-09-21T00:00:00Z', retryAfterMs: 10_000}}),
+      getDownloadJob: vi.fn(),
+      downloadPreparedBulletin: vi.fn()
+    };
+    render(<DownloadButton bulletin={bulletin} workflow={workflow} label="下載週報" preparingLabel="正在準備下載週報 {progress} %。" />);
+
+    fireEvent.click(screen.getByRole('button', {name: '下載週報'}));
+
+    expect(await screen.findByRole('progressbar', {name: `正在準備下載週報 ${percent} %。`})).toHaveAttribute('aria-valuenow', String(percent));
   });
 });
