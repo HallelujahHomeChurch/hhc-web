@@ -62,6 +62,20 @@ describe('DownloadButton', () => {
     expect(localStorage.getItem(`weekly-download-job:anonymous:${bulletin.issueId}:${bulletin.locale}`)).toBeNull();
   });
 
+  it('keeps the same progress copy when resuming a running job', async () => {
+    localStorage.setItem(`weekly-download-job:anonymous:${bulletin.issueId}:${bulletin.locale}`, JSON.stringify({idempotencyKey: 'attempt-1', jobId: 'job-1'}));
+    const workflow = {
+      createDownloadJob: vi.fn(),
+      getDownloadJob: vi.fn().mockResolvedValue({id: 'job-1', operationProgress: {status: 'running', stage: 'watermarking', percent: 65, updatedAt: '2026-09-21T00:00:00Z', retryAfterMs: 10_000}}),
+      downloadPreparedBulletin: vi.fn()
+    };
+
+    render(<DownloadButton bulletin={bulletin} workflow={workflow} label="下載週報" preparingLabel="正在準備下載週報 {progress} %。" />);
+
+    expect(await screen.findByRole('progressbar', {name: '正在準備下載週報 65 %。'})).toHaveAttribute('aria-valuenow', '65');
+    expect(workflow.createDownloadJob).not.toHaveBeenCalled();
+  });
+
   it('polls with the server delay and reports determinate progress', async () => {
     vi.useFakeTimers();
     const workflow = {
@@ -84,7 +98,7 @@ describe('DownloadButton', () => {
     expect(workflow.downloadPreparedBulletin).toHaveBeenCalledWith(bulletin, 'job-1', expect.any(AbortSignal));
   });
 
-  it.each([0, 5, 100])('formats %i percent with the localized percent sign', async (percent) => {
+  it.each([0, 5, 65, 100])('formats %i percent with the localized percent sign', async (percent) => {
     const workflow = {
       createDownloadJob: vi.fn().mockResolvedValue({id: 'job-1', operationProgress: {status: 'running', stage: 'watermarking', percent, updatedAt: '2026-09-21T00:00:00Z', retryAfterMs: 10_000}}),
       getDownloadJob: vi.fn(),

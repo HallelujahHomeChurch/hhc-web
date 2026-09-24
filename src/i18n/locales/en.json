@@ -217,7 +217,7 @@
     "nextPage": "Next",
     "pageLabel": "Page",
     "loading": "Loading weekly papers",
-    "downloading": "Your weekly paper is {progress} ready and will download automatically when complete.",
+    "downloading": "Preparing weekly paper download {progress}%.",
     "downloadReady": "Your weekly paper is ready. Tap the button again to open it.",
     "downloadError": "The weekly paper is temporarily unavailable. Please try again later.",
     "loadError": "Weekly papers are temporarily unavailable",
