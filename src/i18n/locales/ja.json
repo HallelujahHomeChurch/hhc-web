@@ -226,7 +226,7 @@
     "nextPage": "次へ",
     "pageLabel": "ページ",
     "loading": "週報を読み込んでいます",
-    "downloading": "週報を準備しています（{progress}）。完了すると自動的にダウンロードされます。",
+    "downloading": "週報のダウンロードを準備しています {progress} %。",
     "downloadReady": "週報の準備ができました。もう一度ボタンをタップして開いてください。",
     "downloadError": "週報を現在ダウンロードできません。しばらくしてからもう一度お試しください。",
     "loadError": "週報を一時的に読み込めません",

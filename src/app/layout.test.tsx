@@ -92,4 +92,10 @@ describe('RootLayout', () => {
     expect(styles).not.toContain('calc(100vh - 184px)');
     expect(styles).not.toContain('calc(100vh - 152px)');
   });
+
+  it('keeps the sticky header and statement chrome opaque while scrolling', () => {
+    const styles = readFileSync('src/app/globals.css', 'utf8');
+
+    expect(styles).toMatch(/\.site-top-chrome\s*\{[^}]*background:\s*var\(--color-paper\)/);
+  });
 });

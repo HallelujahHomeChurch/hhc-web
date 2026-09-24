@@ -226,7 +226,7 @@
     "nextPage": "下一頁",
     "pageLabel": "第",
     "loading": "正在載入週報",
-    "downloading": "正在準備週報 {progress}，完成後會自動下載。",
+    "downloading": "正在準備下載週報 {progress} %。",
     "downloadReady": "週報已準備完成，請再次點選按鈕開啟。",
     "downloadError": "週報暫時無法下載，請稍後再試。",
     "loadError": "週報暫時無法載入",

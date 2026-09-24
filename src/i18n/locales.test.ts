@@ -98,6 +98,17 @@ describe('locales', () => {
     expect(en.literatureMinistry).not.toHaveProperty('versionLabels');
   });
 
+  it('keeps download progress percentages consistent on Home and Literature', () => {
+    for (const messages of [zhHant, zhHans, en, ja, ko]) {
+      for (const template of [messages.home.weeklyDownloading, messages.literatureMinistry.downloading]) {
+        expect(template.replace('{progress}', '65')).toContain('65');
+        expect(template.replace('{progress}', '65')).toContain('%');
+      }
+    }
+    expect(zhHant.home.weeklyDownloading).toBe('正在準備下載週報 {progress} %。');
+    expect(zhHant.literatureMinistry.downloading).toBe('正在準備下載週報 {progress} %。');
+  });
+
   it('keeps latest-news banner subtitles free of redundant punctuation', () => {
     expect(zhHant.news.heroSubtitle).toBe('教會近況、活動資訊與重要公告');
     expect(zhHans.news.heroSubtitle).toBe('教会近况、活动资讯与重要公告');
