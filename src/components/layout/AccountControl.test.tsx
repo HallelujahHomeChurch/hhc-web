@@ -2,7 +2,7 @@ import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
-import {AccountControl, AccountControlProvider, AccountControlView, BulletinAccessGate, webOAuthConfigForBrowser, webPassiveSsoAttemptKey} from './AccountControl';
+import {AccountControl, AccountControlProvider, AccountControlView, BulletinAccessGate, useBulletinAccess, webOAuthConfigForBrowser, webPassiveSsoAttemptKey} from './AccountControl';
 
 const captureHandledError = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/observability', () => ({captureHandledError}));
@@ -76,6 +76,23 @@ describe('AccountControl', () => {
     await waitFor(() => expect(screen.getByRole('link', {name: 'Sign in'})).toBeInTheDocument());
     expect(screen.queryByText('Anonymous content')).not.toBeInTheDocument();
     expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('projects General and Children bulletin entitlements independently', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({
+      memberships: [], orgRoles: [], qualifications: [],
+      entitlements: [
+        {assignmentId: 'e1', entitlementCode: 'bulletin.general.en.access', validFrom: '2026-09-17T00:00:00Z'},
+        {assignmentId: 'e2', entitlementCode: 'bulletin.children.zh-Hant.access', validFrom: '2026-09-17T00:00:00Z'},
+        {assignmentId: 'e3', entitlementCode: 'bulletin.children.zh-Hans.access', validFrom: '2026-09-17T00:00:00Z'}
+      ],
+      version: 'a'.repeat(64)
+    })));
+
+    function AccessProjection() { return <output>{JSON.stringify(useBulletinAccess().editions)}</output>; }
+    render(<AccountControlProvider client={sessionClient([])} labels={labels}><AccessProjection /></AccountControlProvider>);
+
+    expect(await screen.findByText('[{"series":"general","locale":"en"},{"series":"children","locale":"zh-Hant"}]')).toBeInTheDocument();
   });
 
   it('keeps an authenticated identity when permission transport is unavailable while failing bulletin discovery closed', async () => {

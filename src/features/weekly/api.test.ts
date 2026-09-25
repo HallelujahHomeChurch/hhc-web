@@ -3,7 +3,7 @@ import {createWeeklyBulletinApi} from './api';
 
 const bulletin = {
   issueId: '00000000-0000-4000-8000-000000000001', issueDate: '2026-09-13', issueNumber: 1737,
-  series: 'general', locale: 'zh-Hant' as const, date: '2026-09-13', title: '週報', subtitle: '', downloadName: '1737.pdf', publishedAt: '2026-09-13T00:00:00Z', version: 1
+  series: 'general' as const, locale: 'zh-Hant' as const, date: '2026-09-13', title: '週報', subtitle: '', downloadName: '1737.pdf', publishedAt: '2026-09-13T00:00:00Z', version: 1
 };
 
 describe('member weekly API', () => {
@@ -14,7 +14,7 @@ describe('member weekly API', () => {
     const refresh = vi.fn().mockResolvedValue('new-token');
     const api = createWeeklyBulletinApi({getAccessToken: vi.fn().mockResolvedValue('old-token'), refreshAfterUnauthorized: refresh}, fetcher);
 
-    await expect(api.fetchLatest(['zh-Hant'])).resolves.toMatchObject({id: bulletin.issueId});
+    await expect(api.fetchLatest('general', ['zh-Hant'])).resolves.toMatchObject({id: bulletin.issueId});
     expect(refresh).toHaveBeenCalledWith('old-token');
     expect(fetcher).toHaveBeenCalledTimes(2);
     const request = fetcher.mock.calls[1]?.[0] as Request;
@@ -27,7 +27,7 @@ describe('member weekly API', () => {
     const refresh = vi.fn().mockResolvedValue('new-token');
     const api = createWeeklyBulletinApi({getAccessToken: vi.fn().mockResolvedValue('token'), refreshAfterUnauthorized: refresh}, fetcher);
 
-    await expect(api.fetchLatest(['zh-Hant'])).rejects.toMatchObject({status: 403});
+    await expect(api.fetchLatest('general', ['zh-Hant'])).rejects.toMatchObject({status: 403});
     expect(refresh).not.toHaveBeenCalled();
     expect((fetcher.mock.calls[0]?.[0] as Request).url).toContain('/api/member/bulletins/latest');
   });
@@ -38,13 +38,13 @@ describe('member weekly API', () => {
       .mockResolvedValueOnce(Response.json({}, {status: 404}));
     const api = createWeeklyBulletinApi({getAccessToken: vi.fn().mockResolvedValue('token'), refreshAfterUnauthorized: vi.fn()}, fetcher);
 
-    await expect(api.fetchLatest(['zh-Hant', 'en'])).resolves.toMatchObject({versions: [expect.objectContaining({locale: 'zh-Hant'})]});
+    await expect(api.fetchLatest('general', ['zh-Hant', 'en'])).resolves.toMatchObject({versions: [expect.objectContaining({locale: 'zh-Hant'})]});
   });
 
   it('treats a protected archive 404 as an empty result', async () => {
     const api = createWeeklyBulletinApi({getAccessToken: vi.fn().mockResolvedValue('token'), refreshAfterUnauthorized: vi.fn()}, vi.fn().mockResolvedValue(Response.json({}, {status: 404})));
 
-    await expect(api.fetchArchive(['zh-Hant'])).resolves.toMatchObject({items: [], totalItems: 0});
+    await expect(api.fetchArchive('general', ['zh-Hant'])).resolves.toMatchObject({items: [], totalItems: 0});
   });
 
   it('creates, reads, and downloads a prepared bulletin through only the protected job routes', async () => {

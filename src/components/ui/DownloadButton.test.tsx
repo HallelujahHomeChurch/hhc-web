@@ -6,7 +6,7 @@ const captureHandledError = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/observability', () => ({captureHandledError}));
 
 const bulletin = {
-  issueId: '00000000-0000-4000-8000-000000000001', series: 'general', locale: 'zh-Hant' as const,
+  issueId: '00000000-0000-4000-8000-000000000001', series: 'general' as const, locale: 'zh-Hant' as const,
   issueNumber: 1737, date: '2026-09-13', title: '週報', subtitle: '', downloadName: '1737.pdf'
 };
 

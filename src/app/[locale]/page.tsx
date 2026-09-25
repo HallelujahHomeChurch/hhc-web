@@ -77,6 +77,8 @@ export default async function HomePage({params}: HomePageProps) {
               locale={locale}
               ctaLabel={content.downloadWeekly}
               messages={{
+                general: messages.home.generalBulletin,
+                children: messages.home.childrenBulletin,
                 loading: messages.home.weeklyLoading,
                 downloading: messages.home.weeklyDownloading,
                 downloadReady: messages.home.weeklyDownloadReady,

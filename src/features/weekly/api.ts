@@ -1,5 +1,5 @@
 import {createHhcWebClient, HhcWebApiError, type BulletinDownloadJob, type ProtectedBulletin} from '@hallelujahhomechurch/hhc-web-client';
-import {bulletinEditions, type BulletinEdition} from '@hallelujahhomechurch/preferences';
+import {bulletinLocales, type BulletinLocale, type BulletinSeries} from '@hallelujahhomechurch/preferences';
 import type {WeeklyBulletin, WeeklyIssue, WeeklyIssuePage} from './types';
 
 type BulletinAuthorization = {
@@ -27,19 +27,20 @@ export function createWeeklyBulletinApi(authorization: BulletinAuthorization, fe
   });
 
   return {
-    async fetchLatest(editions: readonly BulletinEdition[], signal?: AbortSignal): Promise<WeeklyIssue | null> {
-      const versions = await Promise.all(editions.map((edition) => absentAsUndefined(() => client.getLatestProtectedBulletin(edition, 'general', signal))));
+    async fetchLatest(series: BulletinSeries, locales: readonly BulletinLocale[], signal?: AbortSignal): Promise<WeeklyIssue | null> {
+      const versions = await Promise.all(locales.map((locale) => absentAsUndefined(() => client.getLatestProtectedBulletin(locale, series, signal))));
       return groupBulletins(versions.filter(isPresent))[0] ?? null;
     },
 
     async fetchArchive(
-      editions: readonly BulletinEdition[],
+      series: BulletinSeries,
+      locales: readonly BulletinLocale[],
       {page = 1, pageSize = 12}: {page?: number; pageSize?: number} = {},
       signal?: AbortSignal
     ): Promise<WeeklyIssuePage> {
       const normalizedPage = Math.max(1, Math.floor(page));
       const normalizedPageSize = Math.max(1, Math.floor(pageSize));
-      const pages = await Promise.all(editions.map((edition) => absentAsUndefined(() => client.listProtectedBulletins({locale: edition, series: 'general', page: normalizedPage, pageSize: normalizedPageSize, signal}))));
+      const pages = await Promise.all(locales.map((locale) => absentAsUndefined(() => client.listProtectedBulletins({locale, series, page: normalizedPage, pageSize: normalizedPageSize, signal}))));
       const availablePages = pages.filter(isPresent);
       const items = groupBulletins(availablePages.flatMap((result) => result.data));
       const totalItems = Math.max(0, ...availablePages.map((result) => result.meta.total));
@@ -134,7 +135,7 @@ function groupBulletins(bulletins: ProtectedBulletin[]): WeeklyIssue[] {
     issues.set(issue.id, issue);
   }
   return [...issues.values()]
-    .map((issue) => ({...issue, versions: issue.versions.toSorted((left, right) => bulletinEditions.indexOf(left.locale) - bulletinEditions.indexOf(right.locale))}))
+    .map((issue) => ({...issue, versions: issue.versions.toSorted((left, right) => bulletinLocales.indexOf(left.locale) - bulletinLocales.indexOf(right.locale))}))
     .toSorted((left, right) => right.date.localeCompare(left.date));
 }
 
