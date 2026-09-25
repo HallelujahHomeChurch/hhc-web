@@ -59,11 +59,7 @@ const unavailableBulletinAuthorization = {
   getAccessToken: async () => null,
   refreshAfterUnauthorized: async () => null
 };
-const entitlementByEdition: Readonly<Record<BulletinEdition, string>> = {
-  'zh-Hant': 'bulletin.general.zh-Hant.access',
-  'zh-Hans': 'bulletin.general.zh-Hans.access',
-  en: 'bulletin.general.en.access'
-};
+const entitlementByEdition = new Map(bulletinEditions.map(({series, locale}) => [`${series}/${locale}`, `bulletin.${series}.${locale}.access`]));
 
 export function useAccountIdentity() {
   const account = useContext(AccountControlContext);
@@ -149,7 +145,7 @@ export function AccountControlProvider({
           subject: auth.session.user.id,
           access: {
             status: 'available',
-            editions: bulletinEditions.filter((edition) => entitlements.has(entitlementByEdition[edition]))
+            editions: bulletinEditions.filter(({series, locale}) => entitlements.has(entitlementByEdition.get(`${series}/${locale}`)!))
           }
         });
       })

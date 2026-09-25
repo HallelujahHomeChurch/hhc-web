@@ -1,6 +1,6 @@
-import type {BulletinEdition} from '@hallelujahhomechurch/preferences';
+import type {BulletinLocale, BulletinSeries} from '@hallelujahhomechurch/preferences';
 
-export const weeklyEditionLabels: Record<BulletinEdition, string> = {
+export const weeklyEditionLabels: Record<BulletinLocale, string> = {
   'zh-Hant': '繁中',
   'zh-Hans': '简中',
   en: 'English'
@@ -8,8 +8,8 @@ export const weeklyEditionLabels: Record<BulletinEdition, string> = {
 
 export type WeeklyBulletin = {
   issueId: string;
-  series: string;
-  locale: BulletinEdition;
+  series: BulletinSeries;
+  locale: BulletinLocale;
   issueNumber?: number;
   date: string;
   title: string;

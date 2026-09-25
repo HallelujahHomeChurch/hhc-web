@@ -10,12 +10,15 @@ import {weeklyEditionLabels, type WeeklyIssue, type WeeklyIssuePage} from '@/fea
 import type {Locale} from '@/i18n/locales';
 import {useBulletinAccess, useBulletinAuthorization} from '@/components/layout/AccountControl';
 import {captureHandledError} from '@/lib/observability';
+import type {BulletinSeries} from '@hallelujahhomechurch/preferences';
 
 type WeeklyArchiveMessages = {
   eyebrow: string;
   archiveTitle: string;
   archiveIntro: string;
   latestLabel: string;
+  general: string;
+  children: string;
   allIssuesTitle: string;
   paginationNote: string;
   paginationLabel: string;
@@ -38,8 +41,10 @@ function getPageValue(value: string | null) {
   return Number.isFinite(page) ? Math.max(1, Math.floor(page)) : 1;
 }
 
-function getPageHref(locale: Locale, page: number) {
-  return page <= 1 ? `/${locale}/literature-ministry` : `/${locale}/literature-ministry?page=${page}`;
+function getPageHref(locale: Locale, series: BulletinSeries, page: number) {
+  const params = new URLSearchParams({series});
+  if (page > 1) params.set('page', String(page));
+  return `/${locale}/literature-ministry?${params}`;
 }
 
 export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
@@ -49,37 +54,65 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
   const editions = bulletinAccess.editions;
   const canRead = bulletinAccess.status === 'available' && editions.length > 0;
   const searchParams = useSearchParams();
+  const availableSeries = useMemo(() => (['general', 'children'] as const).filter((value) => editions.some((edition) => edition.series === value)), [editions]);
+  const requestedSeries = searchParams.get('series');
+  const series = availableSeries.includes(requestedSeries as BulletinSeries) ? requestedSeries as BulletinSeries : availableSeries[0];
+  const locales = useMemo(() => editions.filter((edition) => edition.series === series).map((edition) => edition.locale), [editions, series]);
   const page = getPageValue(searchParams.get('page'));
   const [retryKey, setRetryKey] = useState(0);
-  const requestKey = `${editions.join(',')}:${page}:${retryKey}`;
-  const [result, setResult] = useState<{
+  const latestKey = `${series}:${locales.join(',')}:${retryKey}`;
+  const archiveKey = `${latestKey}:${page}`;
+  const [latestResult, setLatestResult] = useState<{
+    key: string;
+    state: 'ready' | 'error';
+    issue: WeeklyIssue | null;
+  } | null>(null);
+  const [archiveResult, setArchiveResult] = useState<{
     key: string;
     state: 'ready' | 'error';
     archive: WeeklyIssuePage | null;
   } | null>(null);
-  const state = result?.key === requestKey ? result.state : 'loading';
-  const archive = result?.key === requestKey ? result.archive : null;
+  const latestState = latestResult?.key === latestKey ? latestResult.state : 'loading';
+  const latestIssue = latestResult?.key === latestKey ? latestResult.issue : null;
+  const archiveState = archiveResult?.key === archiveKey ? archiveResult.state : 'loading';
+  const archive = archiveResult?.key === archiveKey ? archiveResult.archive : null;
 
   useEffect(() => {
-    if (!canRead) return;
+    if (!canRead || !series) return;
     const controller = new AbortController();
-    api.fetchArchive(editions, {page, pageSize: 12}, controller.signal)
+    api.fetchLatest(series, locales, controller.signal)
       .then((value) => {
         if (controller.signal.aborted) return;
-        setResult({key: requestKey, state: 'ready', archive: value});
+        setLatestResult({key: latestKey, state: 'ready', issue: value});
       })
       .catch((error: unknown) => {
         if (!(error instanceof DOMException && error.name === 'AbortError')) {
-          captureHandledError(error, {operation: 'weekly.archive', tags: {locale, page}});
-          setResult({key: requestKey, state: 'error', archive: null});
+          captureHandledError(error, {operation: 'weekly.latest', tags: {locale, series}});
+          setLatestResult({key: latestKey, state: 'error', issue: null});
         }
       });
     return () => controller.abort();
-  }, [api, canRead, editions, locale, page, requestKey]);
+  }, [api, canRead, latestKey, locale, locales, series]);
 
-  if (!canRead) return null;
+  useEffect(() => {
+    if (!canRead || !series) return;
+    const controller = new AbortController();
+    api.fetchArchive(series, locales, {page, pageSize: 12}, controller.signal)
+      .then((value) => {
+        if (controller.signal.aborted) return;
+        setArchiveResult({key: archiveKey, state: 'ready', archive: value});
+      })
+      .catch((error: unknown) => {
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
+          captureHandledError(error, {operation: 'weekly.archive', tags: {locale, page, series}});
+          setArchiveResult({key: archiveKey, state: 'error', archive: null});
+        }
+      });
+    return () => controller.abort();
+  }, [api, archiveKey, canRead, locale, locales, page, series]);
 
-  const latestIssue = archive?.items[0];
+  if (!canRead || !series) return null;
+
   const latestIssueLabel = formatIssueNumber(locale, latestIssue?.issueNumber);
   const latestCopy = latestIssue ? resolveWeeklyCopy(latestIssue, locale) : null;
 
@@ -90,17 +123,18 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
           <span className="text-base font-black uppercase tracking-[0.12em] text-rose">{messages.eyebrow}</span>
           <h2 id="weekly-archive-title" className="mt-3 max-w-[720px] text-[clamp(34px,5vw,58px)] font-semibold leading-tight text-ink">{messages.archiveTitle}</h2>
           <p className="mt-4 max-w-[620px] text-lg leading-[1.85] text-muted">{messages.archiveIntro}</p>
+          {availableSeries.length > 1 ? <nav aria-label={messages.eyebrow} className="mt-6 inline-flex rounded-full border border-panel-border bg-panel p-1">{availableSeries.map((value) => <a key={value} aria-current={series === value ? 'page' : undefined} className={`rounded-full px-4 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${series === value ? 'bg-primary text-primary-foreground' : 'text-muted hover:text-ink'}`} href={getPageHref(locale, value, 1)}>{value === 'general' ? messages.general : messages.children}</a>)}</nav> : null}
         </div>
         <aside className="min-h-[220px] rounded-[14px] border border-panel-border bg-[image:var(--hhc-panel-gradient)] p-5 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)]" aria-labelledby="latest-weekly-title">
           <span id="latest-weekly-title" className="text-sm font-black uppercase tracking-[0.12em] text-teal">{messages.latestLabel}</span>
-          {state === 'ready' && latestIssue?.versions.length ? (
+          {latestState === 'ready' && latestIssue?.versions.length ? (
             <>
               {latestIssueLabel ? <p className="mt-3 text-[21px] font-semibold text-[var(--hhc-brand-strong)]">{latestIssueLabel}</p> : null}
               {latestCopy ? <h3 lang={latestCopy.locale} className="mt-2 text-lg font-semibold leading-snug text-ink">{latestCopy.title}</h3> : null}
               {latestCopy?.subtitle ? <p lang={latestCopy.locale} className="mt-1 text-sm leading-relaxed text-muted">{latestCopy.subtitle}</p> : null}
               <VersionLinks issue={latestIssue} workflow={api} preparingLabel={messages.downloading} readyLabel={messages.downloadReady} errorLabel={messages.downloadError} className="mt-5" />
             </>
-          ) : state === 'error' ? (
+          ) : latestState === 'error' ? (
             <div className="mt-4 grid justify-items-start gap-4">
               <h3 className="text-[18px] font-semibold text-ink">{messages.loadError}</h3>
               <button className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--hhc-control-border)] bg-paper px-5 font-semibold text-[var(--hhc-control)] transition hover:border-primary hover:bg-primary hover:text-primary-foreground" type="button" onClick={() => setRetryKey((value) => value + 1)}>{messages.retry}</button>
@@ -117,7 +151,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
           <p className="text-sm font-semibold text-muted">{messages.paginationNote}</p>
         </div>
         <div className="grid min-h-24 gap-3">
-          {state === 'ready' && archive?.items.length ? archive.items.map((issue) => {
+          {archiveState === 'ready' && archive?.items.length ? archive.items.map((issue) => {
             const issueLabel = formatIssueNumber(locale, issue.issueNumber);
             const copy = resolveWeeklyCopy(issue, locale);
             return issue.versions.length ? (
@@ -130,15 +164,15 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
                 <VersionLinks issue={issue} workflow={api} preparingLabel={messages.downloading} readyLabel={messages.downloadReady} errorLabel={messages.downloadError} />
               </article>
             ) : null;
-          }) : state === 'ready' ? <p className="text-muted">{messages.empty}</p> : null}
+          }) : archiveState === 'ready' ? <p className="text-muted">{messages.empty}</p> : archiveState === 'error' ? <p className="text-muted">{messages.loadError}</p> : null}
         </div>
         {archive && archive.totalPages > 1 ? (
           <nav className="mt-6 flex flex-wrap items-center justify-end gap-2" aria-label={messages.paginationLabel}>
-            <Button href={getPageHref(locale, archive.page - 1)} variant="outline" className={archive.page <= 1 ? 'pointer-events-none opacity-45' : ''}>{messages.previousPage}</Button>
+            <Button href={getPageHref(locale, series, archive.page - 1)} variant="outline" className={archive.page <= 1 ? 'pointer-events-none opacity-45' : ''}>{messages.previousPage}</Button>
             {Array.from({length: archive.totalPages}, (_, index) => index + 1).map((pageNumber) => (
-              <Button key={pageNumber} href={getPageHref(locale, pageNumber)} variant={pageNumber === archive.page ? 'primary' : 'outline'} ariaLabel={`${messages.pageLabel} ${pageNumber}`}>{pageNumber}</Button>
+              <Button key={pageNumber} href={getPageHref(locale, series, pageNumber)} variant={pageNumber === archive.page ? 'primary' : 'outline'} ariaLabel={`${messages.pageLabel} ${pageNumber}`}>{pageNumber}</Button>
             ))}
-            <Button href={getPageHref(locale, archive.page + 1)} variant="outline" className={archive.page >= archive.totalPages ? 'pointer-events-none opacity-45' : ''}>{messages.nextPage}</Button>
+            <Button href={getPageHref(locale, series, archive.page + 1)} variant="outline" className={archive.page >= archive.totalPages ? 'pointer-events-none opacity-45' : ''}>{messages.nextPage}</Button>
           </nav>
         ) : null}
       </div>
@@ -149,7 +183,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
 function VersionLinks({issue, workflow, preparingLabel, readyLabel, errorLabel, className = ''}: {issue: WeeklyIssue; workflow: WeeklyBulletinApi; preparingLabel: string; readyLabel: string; errorLabel: string; className?: string}) {
   return (
     <div className={`flex justify-end gap-2.5 max-[860px]:grid max-[860px]:grid-flow-col max-[860px]:auto-cols-fr ${className}`}>
-      {issue.versions.map((version) => <DownloadButton key={version.locale} bulletin={version} workflow={workflow} label={weeklyEditionLabels[version.locale]} variant="outline" preparingLabel={preparingLabel} readyLabel={readyLabel} errorLabel={errorLabel} />)}
+      {issue.versions.map((version) => <DownloadButton key={`${version.series}/${version.locale}`} bulletin={version} workflow={workflow} label={weeklyEditionLabels[version.locale]} variant="outline" preparingLabel={preparingLabel} readyLabel={readyLabel} errorLabel={errorLabel} />)}
     </div>
   );
 }
