@@ -18,6 +18,21 @@ beforeEach(() => {
 });
 afterEach(() => {cleanup(); vi.unstubAllGlobals();});
 describe('statement entry', () => {
+ it.each([
+  '/zh-Hant/maintenance',
+  '/en/privacy-policy',
+  '/ja/terms-of-use/'
+ ])('does not load or render statements on %s', async (path) => {
+  route.path = path;
+  const fetcher = vi.fn(async () => new Response(JSON.stringify({data: payload(`statement-${++sequence}`), meta: {}})));
+  vi.stubGlobal('fetch', fetcher);
+  mount();
+  await act(async () => {});
+  expect(fetcher).not.toHaveBeenCalled();
+  expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+ });
+
  it('opens on a non-home entry and ordinary close lasts through SPA navigation', async () => {
   const id = `statement-${++sequence}`;
   vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({data: payload(id), meta: {}}))));

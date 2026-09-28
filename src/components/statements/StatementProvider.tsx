@@ -15,11 +15,13 @@ const isTyping = () => document.activeElement instanceof HTMLElement && (['INPUT
 
 export function StatementProvider({children, locale, labels}: {children: ReactNode; locale: Locale; labels: StatementLabels}) {
   const pathname = usePathname();
+  const statementsSuppressed = /^\/[^/]+\/(?:maintenance|privacy-policy|terms-of-use)\/?$/.test(pathname ?? '');
   const [active, setActive] = useState<ActiveStatement | null>(null);
   const [open, setOpen] = useState(false);
   const [reevaluate, setReevaluate] = useState(0);
   const offset = useRef(0);
   useEffect(() => {
+    if (statementsSuppressed) return;
     const controller = new AbortController();
     const client = createHhcWebClient({baseUrl: `${window.location.origin}/api`, getAccessToken: () => null});
     let pending = false;
@@ -59,8 +61,8 @@ export function StatementProvider({children, locale, labels}: {children: ReactNo
       window.removeEventListener('storage', recheck);
       document.removeEventListener('focusout', recheck);
     };
-  }, [locale]);
-  const statement = active?.statement ?? null;
+  }, [locale, statementsSuppressed]);
+  const statement = statementsSuppressed ? null : active?.statement ?? null;
   /* eslint-disable react-hooks/set-state-in-effect -- Synchronize document prompt state with external storage and route entry. */
   useEffect(() => {
     if (!statement || !statementIsActive(statement, Date.now() + offset.current)) {setOpen(false); return;}
