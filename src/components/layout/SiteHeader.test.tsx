@@ -56,6 +56,7 @@ const layout: SiteLayout = {
 afterEach(() => {
   statementStripState.active = false;
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
   vi.restoreAllMocks();
 });
 
@@ -118,6 +119,7 @@ describe('SiteHeader', () => {
   });
 
   it('renders Home first and hides member-only weekly navigation for an anonymous visitor', async () => {
+    vi.stubEnv('NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED', 'true');
     const getSession = vi.fn().mockResolvedValue({authenticated: false});
 
     render(
@@ -137,6 +139,28 @@ describe('SiteHeader', () => {
     ]);
     expect(screen.queryByRole('button', {name: '開啟選單'})).not.toBeInTheDocument();
     expect(getSession).toHaveBeenCalledOnce();
+  });
+
+  it('hides the member video link in desktop and mobile navigation by default', () => {
+    render(
+      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" sessionClient={anonymousSessionClient} />
+      </NextIntlClientProvider>
+    );
+
+    expect(within(screen.getByRole('navigation', {name: '主要導覽'})).queryByRole('link', {name: '影音專區'})).not.toBeInTheDocument();
+    expect(within(screen.getByRole('navigation', {name: '選單'})).queryByRole('link', {name: '影音專區'})).not.toBeInTheDocument();
+  });
+
+  it('does not enable the member video link for a false build setting', () => {
+    vi.stubEnv('NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED', 'false');
+    render(
+      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" sessionClient={anonymousSessionClient} />
+      </NextIntlClientProvider>
+    );
+
+    expect(screen.queryByRole('link', {name: '影音專區'})).not.toBeInTheDocument();
   });
 
   it('keeps the account item visible when a route replaces the header', async () => {
@@ -359,7 +383,7 @@ describe('SiteHeader', () => {
 
     await screen.findByRole('link', {name: '登入'});
     expect(screen.getByRole('navigation', {name: '選單'})).toHaveStyle({
-      gridTemplateColumns: 'repeat(3, minmax(0, 1fr))'
+      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
     });
   });
 
@@ -377,9 +401,9 @@ describe('SiteHeader', () => {
 
     await screen.findByRole('link', {name: '登入'});
     const mobileNavigation = screen.getByRole('navigation', {name: '選單'});
-    expect(within(mobileNavigation).getAllByRole('link')).toHaveLength(2);
+    expect(within(mobileNavigation).getAllByRole('link')).toHaveLength(1);
     expect(within(mobileNavigation).getByRole('link', {name: '首頁'})).toHaveAttribute('aria-current', 'page');
-    expect(mobileNavigation).toHaveStyle({gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'});
+    expect(mobileNavigation).toHaveStyle({gridTemplateColumns: 'repeat(1, minmax(0, 1fr))'});
   });
 
   it('keeps account access and branding while navigation is disabled', async () => {

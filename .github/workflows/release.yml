@@ -84,6 +84,7 @@ jobs:
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       RELEASE_CONFIRMATION: ${{ github.event_name == 'push' && 'deploy-hhc-web-production' || inputs.confirmation }}
       PROVISION_PERMISSIONS: "false"
+      MEMBER_VIDEO_NAV_ENABLED: ${{ vars.MEMBER_VIDEO_NAV_ENABLED || 'false' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Validate release configuration
@@ -93,6 +94,7 @@ jobs:
           for name in AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID; do
             test -n "${!name:-}" || { echo "Missing repository variable: ${name}" >&2; exit 1; }
           done
+          [[ "$MEMBER_VIDEO_NAV_ENABLED" == false || "$MEMBER_VIDEO_NAV_ENABLED" == true ]]
       - name: Set image tag
         run: echo "IMAGE_TAG=main-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
       - name: Sign in to Azure with OIDC
@@ -152,6 +154,7 @@ jobs:
           docker build --secret id=npmrc,src="$RUNNER_TEMP/npmrc" "${sentry_args[@]}" \
             --build-arg NEXT_PUBLIC_SENTRY_DSN="${{ vars.SENTRY_DSN }}" \
             --build-arg NEXT_PUBLIC_SENTRY_RELEASE="$GITHUB_SHA" \
+            --build-arg NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED="$MEMBER_VIDEO_NAV_ENABLED" \
             --build-arg SENTRY_ORG="${{ vars.SENTRY_ORG }}" \
             --build-arg SENTRY_PROJECT="${{ vars.SENTRY_PROJECT }}" \
             -t "$image_ref" .

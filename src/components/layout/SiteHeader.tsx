@@ -37,7 +37,7 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
   const canReadBulletin = useCanReadBulletin();
   const navItems = [
     ...layout.header.filter(({key, visible}) => visible && (key !== 'literature-ministry' || canReadBulletin)).map((item) => ({...item, icon: icons[item.key]})),
-    {key: 'member-videos', label: t('nav.memberVideos'), href: `/${locale}/member-videos`, visible: true, icon: PlaySquare}
+    ...(process.env.NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED === 'true' ? [{key: 'member-videos', label: t('nav.memberVideos'), href: `/${locale}/member-videos`, visible: true, icon: PlaySquare}] : [])
   ];
   const mobileNavItems = [{key: 'home', label: t('nav.home'), href: homeHref, icon: House}, ...navItems];
   const accountLabels = {
