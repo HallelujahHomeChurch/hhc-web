@@ -26,6 +26,15 @@
     "translationNotice": "Some content on this website may be machine- or AI-translated.",
     "translationNoticeDismiss": "Dismiss translation notice",
     "translationNoticeRegion": "Translation notice",
+    "lineBrowser": {
+      "region": "Browser opening notice",
+      "title": "Browse in your default browser",
+      "description": "You're viewing this page in LINE. Open it in your default browser for a more reliable experience.",
+      "open": "Open in default browser",
+      "later": "Stay here",
+      "close": "Close browser notice and stay on this page",
+      "manual": "If it doesn't open, use LINE's menu to open this page in a browser."
+    },
     "privacyPolicy": "Privacy",
     "termsOfUse": "Terms",
     "legalNavigation": "Legal information",

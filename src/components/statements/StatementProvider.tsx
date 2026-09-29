@@ -3,7 +3,7 @@ import {createContext, useContext, useEffect, useRef, useState, type ReactNode} 
 import {usePathname} from 'next/navigation';
 import {createHhcWebClient, type ActiveStatement, type PublicContentItem} from '@hallelujahhomechurch/hhc-web-client';
 import type {Locale} from '@/i18n/locales';
-import {hiddenDayKey, setSharedHiddenDay, sharedHiddenDay, statementIsActive, taipeiDay} from '@/features/statements/visibility';
+import {hiddenDayKey, isStatementSuppressedPath, setSharedHiddenDay, sharedHiddenDay, statementIsActive, taipeiDay} from '@/features/statements/visibility';
 import {StatementDialog, type StatementLabels} from './StatementDialog';
 import {captureHandledError} from '@/lib/observability';
 
@@ -15,7 +15,7 @@ const isTyping = () => document.activeElement instanceof HTMLElement && (['INPUT
 
 export function StatementProvider({children, locale, labels}: {children: ReactNode; locale: Locale; labels: StatementLabels}) {
   const pathname = usePathname();
-  const statementsSuppressed = /^\/[^/]+\/(?:maintenance|privacy-policy|terms-of-use)\/?$/.test(pathname ?? '');
+  const statementsSuppressed = isStatementSuppressedPath(pathname ?? '');
   const [active, setActive] = useState<ActiveStatement | null>(null);
   const [open, setOpen] = useState(false);
   const [reevaluate, setReevaluate] = useState(0);
