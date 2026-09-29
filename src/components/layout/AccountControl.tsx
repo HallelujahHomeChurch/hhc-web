@@ -23,6 +23,8 @@ export const webPassiveSsoAttemptKey = 'hhc_web_passive_sso_attempted';
 type AccountControlLabels = {
   menu: string;
   projectionSystem: string;
+  projectionWindowLabel: string;
+  projectionPopupBlocked: string;
   adminManagement: string;
   manageAccount: string;
   signIn: string;
@@ -235,7 +237,7 @@ export function AccountControlView() {
     <AccountMenu
       labels={{menu: labels.menu, greeting: `Hi ${displayName}`, manageAccount: labels.manageAccount, signOut: labels.signOut}}
       links={[
-        {id: 'projection', label: labels.projectionSystem, href: siteConfig.apps.projection},
+        {id: 'projection', label: labels.projectionSystem, href: siteConfig.apps.projection, newWindow: {label: labels.projectionWindowLabel, blockedMessage: labels.projectionPopupBlocked}},
         ...(canOpenAdmin ? [{id: 'admin', label: labels.adminManagement, href: siteConfig.apps.admin}] : [])
       ]}
       manageAccountHref={`${accountSiteUrl}/profile`}
