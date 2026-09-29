@@ -41,7 +41,7 @@ describe('locales', () => {
       '@hallelujahhomechurch/hhc-web-client': '1.0.24',
       '@hallelujahhomechurch/operations-client': '1.0.24',
       '@hallelujahhomechurch/preferences': '1.0.24',
-      '@hallelujahhomechurch/ui': '1.0.24'
+      '@hallelujahhomechurch/ui': '1.0.27'
     });
   });
 
