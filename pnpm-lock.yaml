@@ -25,8 +25,8 @@ importers:
         specifier: 1.0.24
         version: 1.0.24
       '@hallelujahhomechurch/ui':
-        specifier: 1.0.24
-        version: 1.0.24(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: 1.0.27
+        version: 1.0.27(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@sentry/nextjs':
         specifier: 10.69.0
         version: 10.69.0(@opentelemetry/core@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.11.0(@opentelemetry/api@1.9.1))(next@16.3.3(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@types/node@24.13.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(webpack@5.111.0)
@@ -339,8 +339,8 @@ packages:
   '@hallelujahhomechurch/preferences@1.0.24':
     resolution: {integrity: sha512-6+QQgwvTRfodsw4BJItnnd1FhZD3LNrvuZH+RwUtfsOFNiP+0GZ/8lC14/WWIXM5lgHoVHZeztF+sFM1WfLFnw==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/preferences/1.0.24/4190d6798dc9f435d4a747828116dedf4ff15888}
 
-  '@hallelujahhomechurch/ui@1.0.24':
-    resolution: {integrity: sha512-B/CFmV1sKLu4+MHfgHwVimRc9wkTkNEys2JEzb6Zet5mavFlcieI4we3aChG0xl5T6qo6wz00xw5jApPNgvxFg==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/ui/1.0.24/db5a9764484f1b2f817f7d2d5704b8aca5ad8b85}
+  '@hallelujahhomechurch/ui@1.0.27':
+    resolution: {integrity: sha512-mlVsOIYpjOmuoleEx8l+YZfK0Wh2Vx9bSEU5ztbsGGeOJLB/IbYJ68npYbMxwbDAMqo8TmDCKlxaI1Dt4/uftg==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/ui/1.0.27/f5d55a66dbe9402ff4d65b838d6bf09bec9fcb1d}
     peerDependencies:
       react: ^19.0.0
       react-dom: ^19.0.0
@@ -4128,7 +4128,7 @@ snapshots:
 
   '@hallelujahhomechurch/preferences@1.0.24': {}
 
-  '@hallelujahhomechurch/ui@1.0.24(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@hallelujahhomechurch/ui@1.0.27(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@internationalized/date': 3.12.3
       input-otp: 1.4.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
