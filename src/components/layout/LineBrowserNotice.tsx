@@ -8,6 +8,7 @@ import {isStatementDetailPath, isStatementSuppressedPath} from '@/features/state
 import {useStatement} from '@/components/statements/StatementProvider';
 
 const dismissalKey = 'hhc:line-browser-notice:dismissed';
+let dismissedWithoutStorage = false;
 
 export const isLineBrowser = (userAgent: string) => /\bLINE\/\d/i.test(userAgent);
 
@@ -22,7 +23,7 @@ export function useLineBrowserNotice(pathname: string) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (!isLineBrowser(navigator.userAgent) || isStatementSuppressedPath(pathname) || dismissed.current) {
+    if (!isLineBrowser(navigator.userAgent) || isStatementSuppressedPath(pathname) || dismissed.current || dismissedWithoutStorage) {
       setVisible(false);
       return;
     }
@@ -33,7 +34,7 @@ export function useLineBrowserNotice(pathname: string) {
   function close() {
     dismissed.current = true;
     setVisible(false);
-    try { sessionStorage.setItem(dismissalKey, '1'); } catch { /* This mounted page still remembers dismissal. */ }
+    try { sessionStorage.setItem(dismissalKey, '1'); } catch { dismissedWithoutStorage = true; }
   }
 
   return {visible, close};

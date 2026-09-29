@@ -455,4 +455,21 @@ describe('SiteHeader', () => {
     expect(screen.getByRole('link', {name: /哈利路亞家教會/})).toHaveAttribute('href', '/zh-Hant');
     expect(await screen.findByRole('button', {name: '帳號選單'})).toBeInTheDocument();
   });
+
+  it('keeps LINE dismissal after a page remount when session storage is unavailable', async () => {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 LINE/15.0.0');
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('storage denied'); });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('storage denied'); });
+    const first = render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+      <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/news" sessionClient={anonymousSessionClient} />
+    </NextIntlClientProvider>);
+    const notice = await screen.findByRole('complementary', {name: '瀏覽器開啟提示'});
+    fireEvent.click(within(notice).getByRole('button', {name: '關閉瀏覽器提示並留在此頁'}));
+    first.unmount();
+
+    render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+      <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/about" sessionClient={anonymousSessionClient} />
+    </NextIntlClientProvider>);
+    expect(screen.queryByRole('complementary', {name: '瀏覽器開啟提示'})).not.toBeInTheDocument();
+  });
 });
