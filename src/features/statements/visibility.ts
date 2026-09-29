@@ -13,3 +13,6 @@ export function setSharedHiddenDay(id: string, day: string): void {
   const domain = location.hostname === 'alive.org.tw' || location.hostname.endsWith('.alive.org.tw') ? '; Domain=alive.org.tw' : '';
   document.cookie = `${sharedCookie}=${encodeURIComponent(id)}.${day}; Path=/; Max-Age=86400; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}${domain}`;
 }
+
+export const isStatementSuppressedPath = (pathname: string) => /^\/[^/]+\/(?:maintenance|privacy-policy|terms-of-use)\/?$/.test(pathname);
+export const isStatementDetailPath = (pathname: string) => /^\/[^/]+\/statements\/[^/]+\/?$/.test(pathname);

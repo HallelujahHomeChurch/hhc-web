@@ -26,6 +26,15 @@
     "translationNotice": "本网站的部分内容可能是机器或 AI 翻译。",
     "translationNoticeDismiss": "关闭翻译提示",
     "translationNoticeRegion": "翻译提示",
+    "lineBrowser": {
+      "region": "浏览器打开提示",
+      "title": "改用默认浏览器浏览",
+      "description": "当前通过 LINE 打开；建议使用默认浏览器，以获得更稳定的使用体验。",
+      "open": "使用默认浏览器打开",
+      "later": "留在这里",
+      "close": "关闭浏览器提示并留在此页",
+      "manual": "如果没有自动打开，请从 LINE 菜单选择「在浏览器中打开」。"
+    },
     "privacyPolicy": "隐私权",
     "termsOfUse": "条款",
     "legalNavigation": "法律信息",
