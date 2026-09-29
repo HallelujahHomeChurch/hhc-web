@@ -10,6 +10,7 @@ import type {SiteLayout} from '@/features/site-layout/types';
 import type {Locale} from '@/i18n/locales';
 import {isIPhoneDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 import {StatementStrip} from '@/components/statements/StatementStrip';
+import {LineBrowserNotice, useLineBrowserNotice} from './LineBrowserNotice';
 import {AccountControlSlot, useCanReadBulletin} from './AccountControl';
 
 export type SiteHeaderProps = {
@@ -32,6 +33,7 @@ const icons = {
 };
 
 export function SiteHeader({layout, locale, pathname, sessionClient, showNavigation = true}: SiteHeaderProps) {
+  const lineNotice = useLineBrowserNotice(pathname);
   const t = useTranslations('site');
   const homeHref = `/${locale}`;
   const canReadBulletin = useCanReadBulletin();
@@ -155,7 +157,7 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
             </div>
           </div>
         </header>
-        <StatementStrip />
+        {lineNotice.visible ? <LineBrowserNotice pathname={pathname} onClose={lineNotice.close} /> : <StatementStrip />}
       </div>
       {showNavigation ? <nav className="site-mobile-tab-bar" style={{gridTemplateColumns: `repeat(${mobileNavItems.length}, minmax(0, 1fr))`}} aria-label={t('nav.menu')} data-mobile-hidden={!mobileChromeVisible} data-iphone-standalone={iphoneStandalone || undefined}>
         <span aria-hidden="true" className="site-mobile-tab-indicator" data-mobile-nav-indicator data-visible={mobileIndicatorIndex >= 0} style={{transform: `translate3d(${Math.max(0, mobileIndicatorIndex) * 100}%, 0, 0)`}} />

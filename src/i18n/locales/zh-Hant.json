@@ -27,6 +27,15 @@
     "translationNotice": "本網站的部分內容可能是機器或 AI 翻譯。",
     "translationNoticeDismiss": "關閉翻譯提示",
     "translationNoticeRegion": "翻譯提示",
+    "lineBrowser": {
+      "region": "瀏覽器開啟提示",
+      "title": "改用預設瀏覽器瀏覽",
+      "description": "目前透過 LINE 開啟；建議改用預設瀏覽器，以獲得較穩定的使用體驗。",
+      "open": "開啟預設瀏覽器",
+      "later": "留在這裡",
+      "close": "關閉瀏覽器提示並留在此頁",
+      "manual": "若未自動開啟，請從 LINE 選單選擇「在瀏覽器中開啟」。"
+    },
     "privacyPolicy": "隱私權",
     "termsOfUse": "條款",
     "legalNavigation": "法律資訊",

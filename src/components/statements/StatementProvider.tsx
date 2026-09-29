@@ -3,7 +3,7 @@ import {createContext, useContext, useEffect, useRef, useState, type ReactNode} 
 import {usePathname} from 'next/navigation';
 import {createHhcWebClient, type ActiveStatement, type PublicContentItem} from '@hallelujahhomechurch/hhc-web-client';
 import type {Locale} from '@/i18n/locales';
-import {hiddenDayKey, statementIsActive, taipeiDay} from '@/features/statements/visibility';
+import {hiddenDayKey, isStatementSuppressedPath, setSharedHiddenDay, sharedHiddenDay, statementIsActive, taipeiDay} from '@/features/statements/visibility';
 import {StatementDialog, type StatementLabels} from './StatementDialog';
 import {captureHandledError} from '@/lib/observability';
 
@@ -15,11 +15,13 @@ const isTyping = () => document.activeElement instanceof HTMLElement && (['INPUT
 
 export function StatementProvider({children, locale, labels}: {children: ReactNode; locale: Locale; labels: StatementLabels}) {
   const pathname = usePathname();
+  const statementsSuppressed = isStatementSuppressedPath(pathname ?? '');
   const [active, setActive] = useState<ActiveStatement | null>(null);
   const [open, setOpen] = useState(false);
   const [reevaluate, setReevaluate] = useState(0);
   const offset = useRef(0);
   useEffect(() => {
+    if (statementsSuppressed) return;
     const controller = new AbortController();
     const client = createHhcWebClient({baseUrl: `${window.location.origin}/api`, getAccessToken: () => null});
     let pending = false;
@@ -59,23 +61,33 @@ export function StatementProvider({children, locale, labels}: {children: ReactNo
       window.removeEventListener('storage', recheck);
       document.removeEventListener('focusout', recheck);
     };
-  }, [locale]);
-  const statement = active?.statement ?? null;
+  }, [locale, statementsSuppressed]);
+  const statement = statementsSuppressed ? null : active?.statement ?? null;
   /* eslint-disable react-hooks/set-state-in-effect -- Synchronize document prompt state with external storage and route entry. */
   useEffect(() => {
     if (!statement || !statementIsActive(statement, Date.now() + offset.current)) {setOpen(false); return;}
     // Fallback content keeps its published locale in href; the shared URL may use another locale.
     const articlePath = (value?: string | null) => value?.replace(/^\/[^/]+/, '').replace(/\/$/, '');
     if (articlePath(pathname) === articlePath(statement.href)) {prompted.add(statement.id); setOpen(false); return;}
+    const day = taipeiDay(Date.now() + offset.current);
     let hidden = false;
-    try {hidden = localStorage.getItem(hiddenDayKey(statement.id)) === taipeiDay(Date.now() + offset.current);} catch { /* Storage restrictions must not prevent reading. */ }
+    try {hidden = sharedHiddenDay(statement.id, day);} catch { /* Cookie restrictions must not prevent reading. */ }
+    try {
+      if (localStorage.getItem(hiddenDayKey(statement.id)) === day) {
+        hidden = true;
+        setSharedHiddenDay(statement.id, day);
+      }
+    } catch { /* Storage restrictions must not prevent reading. */ }
     if (hidden) {setOpen(false); return;}
     if (!prompted.has(statement.id) && !isTyping()) {prompted.add(statement.id); setOpen(true);}
   }, [statement, pathname, reevaluate]);
   /* eslint-enable react-hooks/set-state-in-effect */
   function close(hideToday: boolean) {
     if (statement && hideToday) {
-      try {localStorage.setItem(hiddenDayKey(statement.id), taipeiDay(Date.now() + offset.current)); prompted.delete(statement.id);} catch { /* Ordinary document dismissal remains available. */ }
+      const day = taipeiDay(Date.now() + offset.current);
+      try {localStorage.setItem(hiddenDayKey(statement.id), day);} catch { /* Ordinary document dismissal remains available. */ }
+      try {setSharedHiddenDay(statement.id, day);} catch { /* Ordinary document dismissal remains available. */ }
+      prompted.delete(statement.id);
     }
     setOpen(false);
   }

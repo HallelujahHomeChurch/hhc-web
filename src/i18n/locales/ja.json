@@ -27,6 +27,15 @@
     "translationNotice": "このウェブサイトの一部のコンテンツには、機械翻訳またはAI翻訳が使用されている場合があります。",
     "translationNoticeDismiss": "翻訳に関するお知らせを閉じる",
     "translationNoticeRegion": "翻訳に関するお知らせ",
+    "lineBrowser": {
+      "region": "ブラウザで開くための案内",
+      "title": "既定のブラウザで閲覧する",
+      "description": "LINE 内で表示しています。より安定して利用するには、既定のブラウザで開いてください。",
+      "open": "既定のブラウザで開く",
+      "later": "このまま利用する",
+      "close": "案内を閉じてこのページを利用する",
+      "manual": "開かない場合は、LINE のメニューからブラウザで開いてください。"
+    },
     "privacyPolicy": "プライバシー",
     "termsOfUse": "利用規約",
     "legalNavigation": "法的情報",
