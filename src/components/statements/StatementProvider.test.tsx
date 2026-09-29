@@ -13,6 +13,7 @@ function mount() {return render(<StatementProvider locale="zh-Hant" labels={labe
 beforeEach(() => {
  captureHandledError.mockClear();
  localStorage.clear(); route.path = '/zh-Hant/about';
+ document.cookie = 'hhc_statement_hidden_day=; Max-Age=0; Path=/';
  HTMLDialogElement.prototype.showModal = function() {this.setAttribute('open', '');};
  HTMLDialogElement.prototype.close = function() {this.removeAttribute('open'); this.dispatchEvent(new Event('close'));};
 });
@@ -66,7 +67,27 @@ describe('statement entry', () => {
   const checkbox = screen.getByRole('checkbox');expect(checkbox).not.toBeChecked();
   fireEvent.click(checkbox);fireEvent.click(screen.getAllByRole('button', {name: '關閉'})[0]);
   expect(localStorage.getItem(`hhc:statement:${id}:hidden-day`)).toBe('2026-09-07');
+  expect(document.cookie).toContain(`hhc_statement_hidden_day=${id}.2026-09-07`);
   cleanup();mount();await screen.findByRole('link');expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+ });
+ it('honors a dismissal set on the Account host', async () => {
+  const id = `statement-${++sequence}`;
+  document.cookie = `hhc_statement_hidden_day=${id}.2026-09-07; Path=/`;
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({data: payload(id)}))));
+  mount();
+  await screen.findByRole('link');
+  await act(async () => {});
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+ });
+ it('migrates an existing same-day WWW dismissal into the shared cookie', async () => {
+  const id = `statement-${++sequence}`;
+  localStorage.setItem(`hhc:statement:${id}:hidden-day`, '2026-09-07');
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({data: payload(id)}))));
+  mount();
+  await screen.findByRole('link');
+  await act(async () => {});
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(document.cookie).toContain(`hhc_statement_hidden_day=${id}.2026-09-07`);
  });
  it('renders no spacer on initial failure', async () => {
   const fetcher = vi.fn().mockRejectedValue(new Error('offline'));vi.stubGlobal('fetch', fetcher);

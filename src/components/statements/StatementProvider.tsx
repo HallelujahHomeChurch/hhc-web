@@ -3,7 +3,7 @@ import {createContext, useContext, useEffect, useRef, useState, type ReactNode} 
 import {usePathname} from 'next/navigation';
 import {createHhcWebClient, type ActiveStatement, type PublicContentItem} from '@hallelujahhomechurch/hhc-web-client';
 import type {Locale} from '@/i18n/locales';
-import {hiddenDayKey, statementIsActive, taipeiDay} from '@/features/statements/visibility';
+import {hiddenDayKey, setSharedHiddenDay, sharedHiddenDay, statementIsActive, taipeiDay} from '@/features/statements/visibility';
 import {StatementDialog, type StatementLabels} from './StatementDialog';
 import {captureHandledError} from '@/lib/observability';
 
@@ -69,15 +69,25 @@ export function StatementProvider({children, locale, labels}: {children: ReactNo
     // Fallback content keeps its published locale in href; the shared URL may use another locale.
     const articlePath = (value?: string | null) => value?.replace(/^\/[^/]+/, '').replace(/\/$/, '');
     if (articlePath(pathname) === articlePath(statement.href)) {prompted.add(statement.id); setOpen(false); return;}
+    const day = taipeiDay(Date.now() + offset.current);
     let hidden = false;
-    try {hidden = localStorage.getItem(hiddenDayKey(statement.id)) === taipeiDay(Date.now() + offset.current);} catch { /* Storage restrictions must not prevent reading. */ }
+    try {hidden = sharedHiddenDay(statement.id, day);} catch { /* Cookie restrictions must not prevent reading. */ }
+    try {
+      if (localStorage.getItem(hiddenDayKey(statement.id)) === day) {
+        hidden = true;
+        setSharedHiddenDay(statement.id, day);
+      }
+    } catch { /* Storage restrictions must not prevent reading. */ }
     if (hidden) {setOpen(false); return;}
     if (!prompted.has(statement.id) && !isTyping()) {prompted.add(statement.id); setOpen(true);}
   }, [statement, pathname, reevaluate]);
   /* eslint-enable react-hooks/set-state-in-effect */
   function close(hideToday: boolean) {
     if (statement && hideToday) {
-      try {localStorage.setItem(hiddenDayKey(statement.id), taipeiDay(Date.now() + offset.current)); prompted.delete(statement.id);} catch { /* Ordinary document dismissal remains available. */ }
+      const day = taipeiDay(Date.now() + offset.current);
+      try {localStorage.setItem(hiddenDayKey(statement.id), day);} catch { /* Ordinary document dismissal remains available. */ }
+      try {setSharedHiddenDay(statement.id, day);} catch { /* Ordinary document dismissal remains available. */ }
+      prompted.delete(statement.id);
     }
     setOpen(false);
   }
