@@ -9,6 +9,7 @@
       "about": "About",
       "news": "Latest News",
       "literatureMinistry": "Literature Ministry",
+      "memberVideos": "Member Videos",
       "menu": "Menu",
       "openMenu": "Open menu",
       "closeMenu": "Close menu"
@@ -236,6 +237,9 @@
     "loadError": "Weekly papers are temporarily unavailable",
     "retry": "Retry",
     "empty": "No weekly papers have been published yet."
+  },
+  "memberVideos": {
+    "heroTitle": "Member Videos", "heroSubtitle": "Gathering recordings from the last 30 days", "selectedTitle": "Selected recording", "listTitle": "Recordings from the last 30 days", "count": "{count} gatherings", "play": "Play recording", "select": "Select recording", "selected": "Selected", "playing": "Playing", "featured": "Featured", "durationUnknown": "Duration unavailable", "expires": "Available until", "loading": "Loading recordings", "preparing": "Preparing playback", "empty": "No recordings are available from the last 30 days", "loadError": "Recordings are temporarily unavailable", "playError": "Unable to play right now. Please retry.", "expired": "This recording is no longer available", "retry": "Reload", "previous": "Previous", "next": "Next"
   },
   "privacyPolicy": {
     "heroTitle": "Privacy Policy",

@@ -4,6 +4,7 @@ type ContentSecurityPolicyOptions = {
 };
 
 const accountOrigins = 'https://account.alive.org.tw https://account-test.alive.org.tw';
+const mediaOrigins = 'https://media.alive.org.tw https://media-test.alive.org.tw';
 
 function getOrigin(value?: string) {
   if (!value) return undefined;
@@ -24,11 +25,11 @@ export function getContentSecurityPolicy({development, sentryDsn}: ContentSecuri
     "style-src-attr 'unsafe-inline'",
     "img-src 'self' data: blob: https://i.ytimg.com https://lh3.googleusercontent.com https://profile.line-scdn.net https://ui-avatars.com",
     "font-src 'self'",
-    `connect-src 'self' ${accountOrigins}${sentryOrigin ? ` ${sentryOrigin}` : ''}`,
+    `connect-src 'self' ${accountOrigins} ${mediaOrigins}${sentryOrigin ? ` ${sentryOrigin}` : ''}`,
     "worker-src 'self' blob:",
     "manifest-src 'self'",
     "frame-src 'none'",
-    "media-src 'none'",
+    `media-src ${mediaOrigins}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

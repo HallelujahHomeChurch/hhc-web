@@ -35,6 +35,8 @@ type BulletinAccess =
   | {status: 'available'; editions: readonly BulletinEdition[]}
   | {status: 'unavailable'; editions: readonly BulletinEdition[]};
 
+type VideoAccess = 'loading' | 'available' | 'denied' | 'unavailable';
+
 type AccountControlProps = {
   accountSiteUrl?: string;
   client?: AccountSessionClient;
@@ -46,6 +48,7 @@ type AccountControlContextValue = {
   accountSiteUrl: string;
   auth: AccountAuthState;
   bulletinAccess: BulletinAccess;
+  videoAccess: VideoAccess;
   beginAuthorization: () => Promise<void>;
   getAccessToken: () => Promise<string | null>;
   refreshAfterUnauthorized: (rejectedToken: string) => Promise<string | null>;
@@ -72,6 +75,10 @@ export function useAccountAuth(): AccountAuthState {
 
 export function useBulletinAccess() {
   return useContext(AccountControlContext)?.bulletinAccess ?? noBulletinAccess;
+}
+
+export function useVideoAccess(): VideoAccess {
+  return useContext(AccountControlContext)?.videoAccess ?? 'loading';
 }
 
 export function useCanReadBulletin() {
@@ -115,12 +122,16 @@ export function AccountControlProvider({
   }), [authRuntime]);
   const [auth, setAuth] = useState<AccountAuthState>(authRuntime.getSnapshot());
   const [bulletinProjection, setBulletinProjection] = useState<{subject: string; access: BulletinAccess} | null>(null);
+  const [videoProjection, setVideoProjection] = useState<{subject: string; access: VideoAccess} | null>(null);
   const [logoutError, setLogoutError] = useState('');
   const bulletinAccess = useMemo<BulletinAccess>(() => {
     if (auth.status !== 'authenticated') return noBulletinAccess;
     if (auth.session.permissionAvailability.status === 'unavailable') return {status: 'unavailable', editions: []};
     return bulletinProjection?.subject === auth.session.user.id ? bulletinProjection.access : {status: 'loading', editions: []};
   }, [auth, bulletinProjection]);
+  const videoAccess: VideoAccess = auth.status !== 'authenticated' ? 'loading'
+    : auth.session.permissionAvailability.status === 'unavailable' ? 'unavailable'
+      : videoProjection?.subject === auth.session.user.id ? videoProjection.access : 'loading';
 
   useEffect(() => {
     const unsubscribe = authRuntime.subscribe(() => setAuth(authRuntime.getSnapshot()));
@@ -148,11 +159,13 @@ export function AccountControlProvider({
             editions: bulletinEditions.filter(({series, locale}) => entitlements.has(entitlementByEdition.get(`${series}/${locale}`)!))
           }
         });
+        setVideoProjection({subject: auth.session.user.id, access: entitlements.has('video.meeting-recordings.access') ? 'available' : 'denied'});
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
         captureHandledError(error, {operation: 'operations.access'});
         setBulletinProjection({subject: auth.session.user.id, access: {status: 'unavailable', editions: []}});
+        setVideoProjection({subject: auth.session.user.id, access: 'unavailable'});
       });
     return () => controller.abort();
   }, [auth, operationsClient]);
@@ -194,6 +207,7 @@ export function AccountControlProvider({
       accountSiteUrl,
       auth,
       bulletinAccess,
+      videoAccess,
       beginAuthorization,
       getAccessToken: authRuntime.getAccessToken,
       refreshAfterUnauthorized: authRuntime.refreshAfterUnauthorized,

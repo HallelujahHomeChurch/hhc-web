@@ -38,6 +38,10 @@ grep -q 'v1.0/invoke/hhc-web/method/${path}' "$workflow"
 grep -q 'PREVIOUS_READY_REVISION' "$workflow"
 grep -q 'PREVIOUS_IMAGE_REF=' "$workflow"
 grep -q -- '--image "$PREVIOUS_IMAGE_REF"' "$workflow"
+grep -Fq "MEMBER_VIDEO_NAV_ENABLED: \${{ vars.MEMBER_VIDEO_NAV_ENABLED || 'false' }}" "$workflow"
+grep -Fq -- '--build-arg NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED="$MEMBER_VIDEO_NAV_ENABLED"' "$workflow"
+grep -Fq 'ARG NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED=false' Dockerfile
+grep -Fq 'ENV NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED=$NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED' Dockerfile
 
 grep -q "name: 'hhc-web'" "$infra"
 grep -q "appId: 'hhc-web'" "$infra"
