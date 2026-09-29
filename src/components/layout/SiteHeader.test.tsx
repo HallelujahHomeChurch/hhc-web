@@ -132,7 +132,8 @@ describe('SiteHeader', () => {
     expect(within(mobileNavigation).getAllByRole('link').map((link) => link.textContent)).toEqual([
       '首頁',
       '關於我們',
-      '最新消息'
+      '最新消息',
+      '影音專區'
     ]);
     expect(screen.queryByRole('button', {name: '開啟選單'})).not.toBeInTheDocument();
     expect(getSession).toHaveBeenCalledOnce();
@@ -358,7 +359,7 @@ describe('SiteHeader', () => {
 
     await screen.findByRole('link', {name: '登入'});
     expect(screen.getByRole('navigation', {name: '選單'})).toHaveStyle({
-      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
+      gridTemplateColumns: 'repeat(3, minmax(0, 1fr))'
     });
   });
 
@@ -376,9 +377,9 @@ describe('SiteHeader', () => {
 
     await screen.findByRole('link', {name: '登入'});
     const mobileNavigation = screen.getByRole('navigation', {name: '選單'});
-    expect(within(mobileNavigation).getAllByRole('link')).toHaveLength(1);
+    expect(within(mobileNavigation).getAllByRole('link')).toHaveLength(2);
     expect(within(mobileNavigation).getByRole('link', {name: '首頁'})).toHaveAttribute('aria-current', 'page');
-    expect(mobileNavigation).toHaveStyle({gridTemplateColumns: 'repeat(1, minmax(0, 1fr))'});
+    expect(mobileNavigation).toHaveStyle({gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'});
   });
 
   it('keeps account access and branding while navigation is disabled', async () => {

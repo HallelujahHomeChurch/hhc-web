@@ -9,6 +9,7 @@
       "about": "私たちについて",
       "news": "お知らせ",
       "literatureMinistry": "文書ミニストリー",
+      "memberVideos": "会員向け動画",
       "menu": "メニュー",
       "openMenu": "メニューを開く",
       "closeMenu": "メニューを閉じる"
@@ -236,6 +237,9 @@
     "loadError": "週報を一時的に読み込めません",
     "retry": "再試行",
     "empty": "公開済みの週報はまだありません。"
+  },
+  "memberVideos": {
+    "heroTitle": "会員向け動画", "heroSubtitle": "過去30日間の集会録画", "selectedTitle": "選択した録画", "listTitle": "過去30日間の録画", "count": "{count} 件", "play": "録画を再生", "select": "選択する", "selected": "選択中", "playing": "再生中", "featured": "注目", "durationUnknown": "再生時間は不明です", "expires": "視聴期限", "loading": "録画を読み込み中", "preparing": "再生を準備中", "empty": "視聴できる録画はありません", "loadError": "録画を読み込めません", "playError": "再生できません。再試行してください。", "expired": "この録画は視聴できません", "retry": "再読み込み", "previous": "前へ", "next": "次へ"
   },
   "privacyPolicy": {
     "heroTitle": "プライバシーポリシー",
