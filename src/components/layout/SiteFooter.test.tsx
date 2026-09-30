@@ -18,7 +18,7 @@ const layout: SiteLayout = {
   header: [],
   legal: [
     {key: 'privacy-policy', label: '隱私權', href: '/zh-Hant/privacy-policy', visible: true},
-    {key: 'terms-of-use', label: '條款', href: '/zh-Hant/terms-of-use', visible: true}
+    {key: 'terms-of-use', label: '使用條款', href: '/zh-Hant/terms-of-use', visible: true}
   ],
   links: {
     churchYoutube: 'https://youtube.com/@projected-church',
@@ -74,7 +74,8 @@ describe('SiteFooter', () => {
     expect(controls?.parentElement).toHaveClass('max-[620px]:flex-col', 'max-[620px]:items-start');
     expect(screen.getByText(/©.*哈利路亞家教會/)).toBeInTheDocument();
     expect(screen.getByRole('link', {name: '隱私權'})).toHaveAttribute('href', '/zh-Hant/privacy-policy');
-    expect(screen.getByRole('link', {name: '條款'})).toHaveAttribute('href', '/zh-Hant/terms-of-use');
+    expect(screen.getByRole('link', {name: '使用條款'})).toHaveAttribute('href', '/zh-Hant/terms-of-use');
+    expect(screen.getByText('/')).toHaveAttribute('aria-hidden', 'true');
   });
 
   it.each([
@@ -115,6 +116,7 @@ describe('SiteFooter', () => {
     expect(screen.getByText(/CMS 著作權者.*CMS 權利聲明/)).toBeInTheDocument();
     expect(screen.getByRole('link', {name: 'CMS 隱私'})).toHaveAttribute('href', '/zh-Hant/privacy-policy');
     expect(screen.queryByRole('link', {name: 'CMS 隱藏條款'})).not.toBeInTheDocument();
+    expect(screen.queryByText('/')).not.toBeInTheDocument();
     expect(screen.getByRole('button', {name: /語言/})).toBeInTheDocument();
     expect(screen.getByRole('group', {name: '社群'})).toBeInTheDocument();
   });
