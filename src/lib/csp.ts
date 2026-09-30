@@ -23,7 +23,7 @@ export function getContentSecurityPolicy({development, sentryDsn}: ContentSecuri
     "script-src-attr 'none'",
     "style-src-elem 'self' 'unsafe-inline'",
     "style-src-attr 'unsafe-inline'",
-    "img-src 'self' data: blob: https://i.ytimg.com https://lh3.googleusercontent.com https://profile.line-scdn.net https://ui-avatars.com",
+    "img-src 'self' data: blob: https://i.ytimg.com https://lh3.googleusercontent.com https://profile.line-scdn.net https://ui-avatars.com https://alivestoragebb99ee6e.blob.core.windows.net",
     "font-src 'self'",
     `connect-src 'self' ${accountOrigins} ${mediaOrigins}${sentryOrigin ? ` ${sentryOrigin}` : ''}`,
     "worker-src 'self' blob:",

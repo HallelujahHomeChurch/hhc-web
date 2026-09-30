@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
   },
   headers: async () => [{source: '/:locale/statements/:slug', headers: [{key: 'X-Robots-Tag', value: 'noindex, follow'}]}, {
     source: '/(.*)',
-    headers: [{key: 'Content-Security-Policy-Report-Only', value: reportOnlyCsp}]
+    headers: [{key: 'Content-Security-Policy', value: reportOnlyCsp}]
   }],
   rewrites: async () => [
     ...accountProxyRewrites(process.env.ACCOUNT_API_PROXY_TARGET),
