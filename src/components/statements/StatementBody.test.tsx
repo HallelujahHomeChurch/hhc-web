@@ -16,10 +16,17 @@ describe('StatementBody', () => {
     expect(screen.getByRole('heading', {name: '重要聲明'})).toHaveClass('text-center');
     expect(screen.getByText('<script>安全文字</script>').closest('strong')).toBeInTheDocument();
     expect(document.querySelector('script')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', {name: '詳情'})).toHaveAttribute('href', 'https://example.com');
+    expect(screen.getByRole('link', {name: '詳情'})).toHaveAttribute('href', 'https://example.com/');
     expect(screen.getByRole('list')).toHaveTextContent('第一點');
     expect(screen.getByRole('img', {name: '活動照片'})).toHaveAttribute('src', '/assets/statement/photo');
     expect(screen.getByText('圖片說明')).toBeInTheDocument();
+  });
+
+  it('drops a javascript: link href instead of rendering it', () => {
+    render(<StatementBody locale="zh-Hant" body="" imageLabels={{open: '放大圖片', close: '關閉圖片'}} bodyJson={{schemaVersion: 1, blocks: [
+      {id: 'copy', type: 'paragraph', content: [{type: 'link', href: 'javascript:alert(1)', content: [{type: 'text', text: '危險連結'}]}]}
+    ]}} />);
+    expect(screen.getByText('危險連結').closest('a')).not.toHaveAttribute('href');
   });
 
   it('keeps legacy plain text as a fallback', () => {
