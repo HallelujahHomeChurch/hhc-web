@@ -39,6 +39,13 @@
 
 ### Task 1: Prove the PDF geometry parser with controlled originals and sanitized CI fixtures
 
+**Parser gate passed (2026-10-01):** API commit `e1dc919`, PR #137, CI run
+`36747874128` passed all required checks. Controlled 1739/1740 originals and
+sanitized fixtures passed Poppler 25.03.0 geometry validation. This is not a
+renderer/UI acceptance or production release. Extraction-job identity persistence
+is still implemented/verified with Tasks 2/6; this baseline records the parser
+version in its goldens. PR approval/merge remains pending.
+
 **Repository:** `hhc-web-api`
 
 **Files:**
