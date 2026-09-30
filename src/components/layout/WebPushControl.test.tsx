@@ -116,6 +116,58 @@ describe('WebPushControl', () => {
     expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'push.setup', tags: {locale: 'en'}});
   });
 
+  it.each([
+    new DOMException('Error retrieving push subscription.', 'AbortError'),
+    'AbortError: Failed to register a ServiceWorker: script fetch failed'
+  ])('keeps browser setup aborts observable as warnings and allows retry: %s', async (error) => {
+    const user = userEvent.setup();
+    vi.mocked(navigator.serviceWorker.register).mockRejectedValueOnce(error);
+    render(<WebPushControl locale="en" labels={labels} />);
+
+    await user.click(await screen.findByRole('button', {name: labels.error}));
+
+    expect(await screen.findByRole('button', {name: labels.enable})).toBeInTheDocument();
+    expect(captureHandledError).toHaveBeenCalledWith(error, {
+      operation: 'push.setup', level: 'warning', tags: {locale: 'en'}
+    });
+    expect(requestPermission).not.toHaveBeenCalled();
+    expect(subscribe).not.toHaveBeenCalled();
+  });
+
+  it('rechecks a subscription after a setup retrieval abort without changing the subscription', async () => {
+    const user = userEvent.setup();
+    const error = new DOMException('Error retrieving push subscription.', 'AbortError');
+    getSubscription.mockRejectedValueOnce(error);
+    render(<WebPushControl locale="en" labels={labels} />);
+
+    await user.click(await screen.findByRole('button', {name: labels.error}));
+
+    expect(await screen.findByRole('button', {name: labels.enable})).toBeInTheDocument();
+    expect(requestPermission).not.toHaveBeenCalled();
+    expect(subscribe).not.toHaveBeenCalled();
+    expect(captureHandledError).toHaveBeenCalledWith(error, {
+      operation: 'push.setup', level: 'warning', tags: {locale: 'en'}
+    });
+  });
+
+  it('handles subscription retrieval failure during binding retry', async () => {
+    account.current = authenticatedAccount();
+    getSubscription.mockResolvedValueOnce(pushSubscription());
+    vi.useFakeTimers();
+    render(<WebPushControl locale="en" labels={labels} />);
+    await vi.waitFor(() => expect(screen.getByRole('button', {name: labels.disable}))
+      .toHaveAttribute('data-account-binding', 'retrying'));
+    const error = new DOMException('Error retrieving push subscription.', 'AbortError');
+    getSubscription.mockRejectedValueOnce(error);
+
+    await act(async () => vi.advanceTimersByTimeAsync(30000));
+
+    expect(screen.getByRole('button', {name: labels.error})).toBeInTheDocument();
+    expect(captureHandledError).toHaveBeenCalledWith(error, {
+      operation: 'push.retry', level: 'warning', tags: {locale: 'en'}
+    });
+  });
+
   it('binds an existing subscription to the authenticated account without exposing a user id', async () => {
     account.current = authenticatedAccount();
     const existingSubscription = {

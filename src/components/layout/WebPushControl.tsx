@@ -198,11 +198,18 @@ async function registerSubscription(subscription: PushSubscription, locale: Loca
   }
 }
 
+function capturePushError(error: unknown, operation: string, locale: Locale) {
+  const aborted = (error !== null && typeof error === 'object' && 'name' in error && error.name === 'AbortError')
+    || (typeof error === 'string' && error.startsWith('AbortError:'));
+  captureHandledError(error, {operation, ...(aborted ? {level: 'warning' as const} : {}), tags: {locale}});
+}
+
 export function WebPushControl({labels, locale, autoPrompt = false}: WebPushControlProps) {
   const account = useAccountAuth();
   const [state, setState] = useState<State>('checking');
   const [showPrompt, setShowPrompt] = useState(false);
   const [bindingPending, setBindingPending] = useState(false);
+  const [setupAttempt, setSetupAttempt] = useState(0);
   const registration = useRef<ServiceWorkerRegistration | null>(null);
   const vapidPublicKey = useRef('');
   const promptTitleId = useId();
@@ -233,7 +240,7 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
         if (active) setState(Notification.permission === 'denied' ? 'denied' : subscription ? 'on' : 'off');
       } catch (error) {
         if (active) {
-          captureHandledError(error, {operation: 'push.setup', tags: {locale}});
+          capturePushError(error, 'push.setup', locale);
           setState('error');
         }
       }
@@ -242,7 +249,7 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
     return () => {
       active = false;
     };
-  }, [account, locale]);
+  }, [account, locale, setupAttempt]);
 
   useEffect(() => {
     if (!autoPrompt || state !== 'off' || Notification.permission !== 'default') return;
@@ -267,6 +274,9 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
           bindInstallationToAccount(account)
         ]);
         setBindingPending(!registered || !bound);
+      }).catch((error) => {
+        capturePushError(error, 'push.retry', locale);
+        setState('error');
       });
     }, 30000);
     return () => window.clearTimeout(timer);
@@ -278,6 +288,11 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
   const label = pending ? labels.pending : state === 'on' ? labels.disable : state === 'denied' ? labels.denied : state === 'error' ? labels.error : labels.enable;
 
   async function updateSubscription() {
+    if (state === 'error') {
+      setState('checking');
+      setSetupAttempt((attempt) => attempt + 1);
+      return;
+    }
     const serviceWorker = registration.current;
     if (!serviceWorker || !vapidPublicKey.current || pending) return;
     if (state === 'denied') {
@@ -320,7 +335,7 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
       setState('on');
       setShowPrompt(false);
     } catch (error) {
-      captureHandledError(error, {operation: 'push.update', tags: {locale}});
+      capturePushError(error, 'push.update', locale);
       setState('error');
     }
   }
