@@ -33,7 +33,19 @@ RUN --mount=type=secret,id=sentry_auth_token,required=false \
     find .next -type f -name '*.map' -delete; \
   fi
 
+# ponytail: temporary OpenSSL overlay; remove when the upstream runtime passes the image scan.
+FROM debian:trixie-slim@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a AS runtime-patch
+WORKDIR /tmp
+RUN apt-get update && apt-get download libssl3t64=3.5.7-1~deb13u3 \
+  && dpkg-deb --extract libssl3t64_*.deb /patched \
+  && mkdir -p /patched/var/lib/dpkg/status.d \
+  && dpkg-deb --field libssl3t64_*.deb > /patched/var/lib/dpkg/status.d/libssl3t64 \
+  && dpkg-deb --control libssl3t64_*.deb /control \
+  && cp /control/md5sums /patched/var/lib/dpkg/status.d/libssl3t64.md5sums
+
 FROM gcr.io/distroless/nodejs22-debian13@sha256:4e4fb0ce55fd73901600796ef079a9490369d2515d7da31633a91608c82ca13b AS runtime
+
+COPY --from=runtime-patch /patched/ /
 
 WORKDIR /app
 ENV NODE_ENV=production \
