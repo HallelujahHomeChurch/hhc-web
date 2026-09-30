@@ -34,3 +34,9 @@ already-approved `public/assets/brand/logo.png`.
 
 Public repository visibility does not grant rights beyond the repository
 license or the applicable third-party license.
+# Weekly reader fixed QR supplement (2026-10-01)
+
+The content-hashed `public/assets/weekly/v1/qr-*.svg` files are regenerated
+machine-readable QR encodings of the church's three public destinations,
+documented in the template manifest and SOURCE.md. No original bulletin image,
+photo, QR-centered icon or member content is redistributed in these vectors.

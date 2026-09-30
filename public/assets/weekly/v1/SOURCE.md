@@ -10,7 +10,9 @@ All three fonts originate from `google/fonts` commit
 `9710da1eacb3be272583c3224dcb70f9da6eadbb`, licensed under SIL OFL 1.1.
 Exact source URLs and SHA-256 values are in `manifest.json`. The complete
 copyright/license notices are bundled as content-hashed TXT files.
-No font bytes, images, text or metadata were copied from a bulletin PDF.
+No embedded PDF fonts, original image pixels, sermon text or member metadata
+were copied into this public bundle. Fixed public QR destinations are documented
+separately below.
 
 | Role | Source | Derived family | Weight | Unicode cmap entries |
 | --- | --- | --- | --- | --- |
@@ -62,3 +64,13 @@ Other fixed labels, rules, page numbers and masthead composition belong to the
 shared code-owned renderer; they are not extracted dynamic components.
 
 The static bundle is public. It contains no weekly bulletin/member content.
+
+## Fixed public QR graphics
+
+The three payloads were read locally from the 1739 cover using native barcode
+recognition, then rebuilt as plain vector QR graphics with four-module quiet
+zones and high error correction. No original PDF image pixels or centered
+photo/icon overlays were copied. Exact public payloads are each asset's
+`sourceUrl` in the manifest: the church website and its two public YouTube pages.
+`scripts/generate-weekly-template-qr.py` uses the existing ReportLab QR encoder.
+The verifier accepts only that generator's non-executable closed SVG grammar.

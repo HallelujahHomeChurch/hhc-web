@@ -39,6 +39,22 @@ test('verifies actual bytes, filename, license and append-only history', async (
     await assert.rejects(verifyBundle(root), /path/);
     manifest.assets[0].url = fontURL;
     await save();
+    const svgAsset = async text => {
+      const svg = Buffer.from(text);
+      const sha256 = createHash('sha256').update(svg).digest('hex');
+      const url = `/assets/weekly/v1/qr-test-${sha256}.svg`;
+      await writeFile(join(root, `public${url}`), svg);
+      return {url, sha256, mime: 'image/svg+xml', sizeBytes: svg.length, kind: 'decoration', sourceUrl: 'https://www.alive.org.tw/'};
+    };
+    manifest.assets.push(await svgAsset('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 29"><rect width="100%" height="100%" fill="#fff"/><path fill="#000" d="M4,4h1v1h-1z"/></svg>\n'));
+    await save();
+    await verifyBundle(root);
+    manifest.assets.push(await svgAsset('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'));
+    await save();
+    await assert.rejects(verifyBundle(root), /decoration|SVG/i);
+    manifest.assets.pop();
+    // This rejected SVG remains an unlisted file, proving the bundle scanner fails closed.
+    await save();
     await writeFile(join(root, 'public/assets/weekly/v1/untracked.pdf'), 'private');
     await assert.rejects(verifyBundle(root), /unlisted/i);
   } finally {

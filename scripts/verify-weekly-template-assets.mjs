@@ -7,7 +7,7 @@ import {isDeepStrictEqual} from 'node:util';
 
 const directory = 'public/assets/weekly/v1';
 const hash = /^[0-9a-f]{64}$/;
-const path = /^\/assets\/weekly\/v1\/[A-Za-z0-9_-]*[0-9a-f]{64}\.(woff2|png|txt)$/;
+const path = /^\/assets\/weekly\/v1\/[A-Za-z0-9_-]*[0-9a-f]{64}\.(woff2|png|svg|txt)$/;
 const roles = ['body', 'scripture', 'emphasis', 'reference', 'foreignText'];
 
 export async function verifyBundle(root, previous) {
@@ -29,7 +29,11 @@ export async function verifyBundle(root, previous) {
         }
         break;
       case 'decoration':
-        if (asset.mime !== 'image/png' || !asset.url.endsWith('.png') || !bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) throw new Error('Invalid decoration format');
+        if (asset.url.endsWith('.svg')) {
+          // Only the generator's closed QR grammar: no scripts, links, entities or embedded CSS.
+          const match = /^<svg xmlns="http:\/\/www.w3.org\/2000\/svg" viewBox="0 0 (\d+) (\d+)"><rect width="100%" height="100%" fill="#fff"\/><path fill="#000" d="[Mhvz0-9, .-]+"\/><\/svg>\n$/.exec(bytes.toString('utf8'));
+          if (asset.mime !== 'image/svg+xml' || bytes.length > 128 * 1024 || !match || match[1] !== match[2] || Number(match[1]) < 21 || Number(match[1]) > 256 || !asset.sourceUrl?.startsWith('https://')) throw new Error('Invalid SVG decoration format');
+        } else if (asset.mime !== 'image/png' || !asset.url.endsWith('.png') || !bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) throw new Error('Invalid decoration format');
         break;
       case 'license':
         if (asset.mime !== 'text/plain' || !asset.url.endsWith('.txt') || !bytes.toString('utf8').includes('SIL OPEN FONT LICENSE Version 1.1') || !bytes.toString('utf8').includes('Copyright')) throw new Error('Invalid font license');
