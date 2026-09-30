@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Revised:** 2026-09-30. Member access follows download authorization; original public-reader assumptions are removed.
+**Revised:** 2026-10-01. Member access follows download authorization. User-supplied 1739/1740 replace unavailable 1731/1733 originals as the initial acceptance corpus; legacy mixed-paper acceptance remains separate.
 
 **Goal:** Turn one uploaded general Traditional Chinese weekly-bulletin PDF into an editable, reviewable, independently publishable structured document while preserving the PDF's page composition.
 
@@ -14,7 +14,7 @@
 
 ## Global Constraints
 
-- V1 extraction template is general `zh-Hant` (1731/1733). Storage/contracts use `(issueID, series, contentLocale)` everywhere; other editions retain PDF-only behavior until their own template acceptance.
+- V1 extraction template is general `zh-Hant` (1739/1740). Storage/contracts use `(issueID, series, contentLocale)` everywhere; other editions retain PDF-only behavior until their own template acceptance.
 - Member access reuses the exact download checker; no new reader roles/permissions/grants. Staff `cms:bulletins:*` does not confer member access.
 - UI localization remains independent. Shared chrome uses existing UI tokens; Admin and Website use one paper renderer.
 - Existing issue number, date, title, and subtitle are canonical. Extraction reports mismatches and never overwrites them.
@@ -43,10 +43,10 @@
 
 **Files:**
 - Create: `scripts/verify-bulletin-pdf-geometry.sh`
-- Create: `internal/onlinebulletins/testdata/1731-sanitized.pdf`
-- Create: `internal/onlinebulletins/testdata/1733-sanitized.pdf`
-- Create: `internal/onlinebulletins/testdata/1731-geometry.golden.json`
-- Create: `internal/onlinebulletins/testdata/1733-geometry.golden.json`
+- Create: `internal/onlinebulletins/testdata/1739-sanitized.pdf`
+- Create: `internal/onlinebulletins/testdata/1740-sanitized.pdf`
+- Create: `internal/onlinebulletins/testdata/1739-geometry.golden.json`
+- Create: `internal/onlinebulletins/testdata/1740-geometry.golden.json`
 - Create: `Dockerfile.extractor` with a `geometry-probe` target
 - Modify: `.github/workflows/ci.yml`
 
@@ -55,7 +55,7 @@
 - This task is a hard gate: Tasks 2–11 do not begin until both original PDFs pass a controlled local probe and both sanitized full-layout fixtures pass the same assertions in CI. Original PDFs/output remain outside Git and are used again only for controlled release acceptance.
 
 - [ ] Do not add the previously rejected `github.com/ledongthuc/pdf` dependency. Verify Poppler geometry directly; earlier zero-width observations are historical evidence, not a required fabricated failure.
-- [ ] Write the probe assertions for 1731 page boxes (pages 1–19 Letter `612x792`, page 20 A4 `595.32x841.92`), 1733 page count `18`, non-zero text boxes, decoded synthetic `COVER_WELCOME`/`COVER_WORSHIP`/`COVER_WORK`/`COVER_WORD`, stable two-column reading order, and known component start-page sentinels.
+- [ ] Write the probe assertions for 1739 page count `12`, 1740 page count `16`, all page boxes A4 `595.32x841.92`, non-zero text boxes, decoded synthetic `COVER_WELCOME`/`COVER_WORSHIP`/`COVER_WORK`/`COVER_WORD`, stable two-column hymn reading order, and known component start-page sentinels. Poppler XML page sizes are truncated, so use `pdfinfo` for precise source boxes and accumulate document-scoped font definitions across pages.
 - [ ] Run the probe against the two original PDFs in `/Users/rayselfs/Downloads`, confirm Chinese CID text has non-zero geometry and the expected reading order, and record only source SHA-256, Poppler version, page-box/count booleans, and pass/fail—not extracted text or XML.
 - [ ] Produce two committed, full-page sanitized fixture PDFs from the approved geometry: replace all real text with synthetic tokens rendered in a redistributable substitute CJK font while retaining page boxes, size classes, coordinates, columns, synthetic image slots, and excluded rectangles. Re-render every image/QR as synthetic pixels; never copy original embedded fonts/images or service roster, attendance, offering, sermon, or member text.
 - [ ] Add a fixture scan that rejects unknown embedded font names, original image checksums/metadata, URLs/QR payloads, and any non-allowlisted text token before Git/CI accepts the PDFs.
@@ -90,7 +90,7 @@ git commit -m "test: prove weekly bulletin PDF geometry extraction"
 - Draft lifecycle is `extracting | reviewRequired | ready | published | extractionFailed`.
 - Allocate NNN from the next unused forward-only migration on current main (026/027 are applied). Revision mappings are stored in this Online schema migration with the approved statuses `unchanged | moved | split | merged | removed | requires_review`; ambiguous proposals remain `requires_review` until Admin confirms them.
 
-- [ ] Write failing validation tests for valid 1731/1733-shaped documents, all five body-section kinds, blocking `unknown`, duplicate sentence IDs, invalid page/component references, unsupported series/locale, same-locale general/children isolation, unsupported template, empty required components, and forbidden back-page component types.
+- [ ] Write failing validation tests for valid 1739/1740-shaped documents, all five body-section kinds, blocking `unknown`, duplicate sentence IDs, invalid page/component references, unsupported series/locale, same-locale general/children isolation, unsupported template, empty required components, and forbidden back-page component types.
 - [ ] Run `go test ./internal/onlinebulletins ./internal/migrations` and confirm failure because the package and migration do not exist.
 - [ ] Create normalized top-level tables for document/revision/job state and store each revision's typed document as validated `jsonb`; add unique keys on `(issue_id, series, content_locale, revision)` and one active draft pointer per edition.
 - [ ] Add extraction job leasing columns (`status`, `attempts`, `available_at`, `lease_until`, `last_error_code`) and an index that supports `FOR UPDATE SKIP LOCKED` claims.
@@ -148,7 +148,7 @@ git commit -m "feat: publish weekly bulletin template assets"
 - Generate the domain-only content/manifest types from Task 2 OpenAPI components before building this artifact; Task 9 later adds endpoint clients. UI consumes these generated types rather than inventing a second content schema.
 - Renderer version is independent of package release. Use a static supported-renderer registry, initially only immutable V1; retain referenced implementations/paper CSS and their reproducible artifact digests. Admin/worker/Website select an exact entry or return update-required. Document JSON never supplies executable import URLs.
 
-- [ ] Prove sanitized 1731/1733 layout, substitute-font proportions, one typo edit and explicit continuation with this renderer. Unfittable text blocks publication; never silently shrink/truncate.
+- [ ] Prove sanitized 1739/1740 layout, substitute-font proportions, one typo edit and explicit continuation with this renderer. Unfittable text blocks publication; never silently shrink/truncate.
 - [ ] Test Admin/Website geometry parity at identical versions, scoped CSS isolation, deterministic post-font-load measurement, missing fonts, timeout, stale content hash and overflow.
 - [ ] Publish a new UI package/renderer version in a fixture test, then reopen old revisions in Admin/Website/offline mode. Require identical old geometry and digest selection; unknown/mismatched renderer must fail visibly rather than use latest. CI rejects mutation/removal of referenced V1 assets.
 - [ ] Export one renderer/CSS from existing UI package; no independent preview layout or second sentence wrapper.
@@ -225,8 +225,8 @@ git commit -m "feat: download clean bulletin sources for extraction"
 - Create: `internal/onlinebulletins/pdf_parser_test.go`
 - Create: `internal/onlinebulletins/template_v1.go`
 - Create: `internal/onlinebulletins/template_v1_test.go`
-- Reuse: `internal/onlinebulletins/testdata/1731-sanitized.pdf`
-- Reuse: `internal/onlinebulletins/testdata/1733-sanitized.pdf`
+- Reuse: `internal/onlinebulletins/testdata/1739-sanitized.pdf`
+- Reuse: `internal/onlinebulletins/testdata/1740-sanitized.pdf`
 - Modify: `Dockerfile.extractor`
 
 **Interfaces:**
@@ -400,8 +400,8 @@ git commit -m "feat: edit structured weekly bulletins"
 
 - [ ] Release in dependency order: Task 3 asset-only `hhc-web`, Task 3 Admin asset-proxy `api-gateway`, Task 3a shared renderer artifact, Task 4 `asset-api` workload authorization/app-role gate, `hhc-web-api` schema/API plus disabled extractor Job, gateway Admin contract sync, `frontend-platform`, then `admin-fe`; use one branch, PR, passing CI, merge, and immutable release per repository, then enable extraction after template URL/checksum and asset-auth smoke pass.
 - [ ] Verify migrations complete before the new API revision receives traffic; extraction stays disabled until the scheduled job image, limits, secrets, and ready-state smoke all pass.
-- [ ] Upload the original 1731 PDF, verify exact source page count/component start pages, resolve review items, edit one sentence, and independently publish the online version.
-- [ ] Re-upload the 1731 PDF with one controlled typo correction and verify Base/Local/Incoming comparison preserves the local edit until an explicit choice.
-- [ ] Repeat extraction for 1733 and verify excluded back-page data is absent from database rows, application logs, and captured AI requests.
+- [ ] Upload the original 1739 PDF, verify exact source page count/component start pages, resolve review items, edit one sentence, and independently publish the online version.
+- [ ] Re-upload the 1739 PDF with one controlled typo correction and verify Base/Local/Incoming comparison preserves the local edit until an explicit choice.
+- [ ] Repeat extraction for 1740 and verify excluded back-page data is absent from database rows, application logs, and captured AI requests.
 - [ ] Verify the existing PDF download and publication workflow is unchanged even when online extraction is failed or unpublished.
 - [ ] Verify shared-renderer parity, canonical correction/reconfirmation, source-checksum overlay handling and account-scoped recovery at narrow widths. Record deployed revisions and smoke evidence before starting the member-reader plan (historical `public-reader.md` filename).

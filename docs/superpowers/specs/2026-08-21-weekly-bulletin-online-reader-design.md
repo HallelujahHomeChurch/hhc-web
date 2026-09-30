@@ -64,8 +64,15 @@ future bulletins rather than hard-code the two initial samples.
 
 The initial acceptance corpus is:
 
-- issue 1731, `詩篇一百零三篇、基甸的三百勇士`;
-- issue 1733, `基督的薦信、詩篇卅三篇`.
+- issue 1739, `詩篇廿三篇、洗革拉戰役` (12 A4 pages);
+- issue 1740, `永恆的命定和呼召` (16 A4 pages).
+
+On 2026-10-01 the user supplied these originals to replace unavailable
+1731/1733 files. All source page boxes are `595.32x841.92` points. Historical
+Letter/mixed-paper support is not accepted by this replacement corpus; it needs
+its own original-based regression before making compatibility claims. Source
+page count and size remain document data, not production constants. The body is
+single-column in these samples; the penultimate hymn page has two columns.
 
 The two bulletins demonstrate variable counts in cover worship songs, Word
 questions, weekly verses, body sections, hymn songs, announcements, and prayer
@@ -215,7 +222,7 @@ Use an opaque document ID internally; every uniqueness constraint, foreign key,
 job key, sentence mapping, API selector, browser key, and private-state owner
 must preserve that edition identity. Current supported PDF editions are general
 in `zh-Hant`, `zh-Hans`, `en`, and children in `zh-Hant`, `en`. V1 extraction
-supports the general `zh-Hant` template proved by 1731/1733; other editions keep
+supports the general `zh-Hant` template proved by 1739/1740; other editions keep
 their existing PDF behavior until their own template/content acceptance passes.
 
 Each immutable `OnlineRevision` contains:
@@ -556,7 +563,7 @@ Reader URLs explicitly carry UI and content locale:
 /{uiLocale}/literature-ministry/{issueNumber}/read/{series}/{contentLocale}
 ```
 
-For example, `/ja/literature-ministry/1733/read/general/zh-Hant` renders Japanese
+For example, `/ja/literature-ministry/1740/read/general/zh-Hant` renders Japanese
 controls around Traditional Chinese content.
 
 Home resolves one complete bulletin edition:
@@ -624,7 +631,7 @@ paper/text geometry identical with and without it. Do not add invisible image
 watermarking, anti-debugging, MutationObserver enforcement, or screenshot blocking.
 UI chrome may follow dark mode; paper retains its validated light palette.
 
-Before V1 approval, show 1731/1733 cover, dense body, scripture/emphasis, hymns,
+Before V1 approval, show 1739/1740 cover, dense body, scripture/emphasis, hymns,
 and back sections with all three highlight colors and active selection. Compare
 with/without watermark on desktop, iPad portrait/landscape, and 320/375px phones,
 Fit Page/Fit Width, 75/100/200/250% reader zoom, and 200% browser zoom. Require no
@@ -962,7 +969,7 @@ failure, repeated private sync failure, or incomplete account erasure.
 
 ### Layout
 
-For the initial unedited 1731 and 1733 extractions:
+For the initial unedited 1739 and 1740 extractions:
 
 - page count is identical to source;
 - every body component, hymn area, and retained back section starts on the same

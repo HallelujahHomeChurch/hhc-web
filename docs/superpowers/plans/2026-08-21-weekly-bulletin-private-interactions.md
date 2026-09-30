@@ -177,7 +177,7 @@
 - [ ] Verify signed-out content/copy unavailable, same-account login return, exact download/reader authorization parity and no new permissions to configure.
 - [ ] Verify bulk colors/Clear/notes, shared renderer parity, actual watermark readability approval, keyboard/gesture/mobile sheet/bottom-nav behavior.
 - [ ] With two accounts and two series verify no content, trace receipt, private state, cache or recovery leakage.
-- [ ] Save 1731 explicitly, restart offline within seven days, search/copy/highlight/note/progress, reconnect and converge without duplicate writes. Test exact expiry, rollback clock, denied entitlement, Online unpublish, 503, logout and account switch.
+- [ ] Save 1739 explicitly, restart offline within seven days, search/copy/highlight/note/progress, reconnect and converge without duplicate writes. Test exact expiry, rollback clock, denied entitlement, Online unpublish, 503, logout and account switch.
 - [ ] Publish controlled edit/split/merge/remove revisions while pending offline writes exist. Verify conflict resolution, same-ID rebasing, atomic pointer switch and failure rollback subject to access validity.
 - [ ] Verify DSR private export/restrict/erase covers new datasets; missing/failed coverage prevents finalization and retry remains idempotent. Use controlled test data, not destructive production acceptance.
 - [ ] Require current/previous Chrome/Edge/Safari and actual iOS/iPad/Android PWA evidence, plus user approval of watermark reading screens, before enabling the member Online entry.
