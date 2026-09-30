@@ -84,7 +84,7 @@ export function createWeeklyBulletinApi(authorization: BulletinAuthorization, fe
   };
 }
 
-function createProtectedFetch(authorization: BulletinAuthorization, fetcher: Fetcher): Fetcher {
+export function createProtectedFetch(authorization: BulletinAuthorization, fetcher: Fetcher): Fetcher {
   return async (input, init) => {
     const token = await authorization.getAccessToken();
     if (!token) throw new WeeklyApiError('not_authenticated', 'An authenticated member session is required.');

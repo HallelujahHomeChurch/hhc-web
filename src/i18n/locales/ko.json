@@ -9,6 +9,7 @@
       "about": "교회 소개",
       "news": "새소식",
       "literatureMinistry": "문서 사역",
+      "memberVideos": "회원 영상",
       "menu": "메뉴",
       "openMenu": "메뉴 열기",
       "closeMenu": "메뉴 닫기"
@@ -247,6 +248,9 @@
     "loadError": "주보를 잠시 불러올 수 없습니다",
     "retry": "다시 시도",
     "empty": "아직 게시된 주보가 없습니다."
+  },
+  "memberVideos": {
+    "heroTitle": "회원 영상", "heroSubtitle": "최근 30일간의 모임 녹화", "selectedTitle": "선택한 녹화", "listTitle": "최근 30일간의 녹화", "count": "총 {count}개", "play": "녹화 재생", "select": "선택하여 보기", "selected": "선택됨", "playing": "재생 중", "featured": "추천", "durationUnknown": "재생 시간 정보 없음", "expires": "시청 기한", "loading": "녹화 불러오는 중", "preparing": "재생 준비 중", "empty": "시청 가능한 녹화가 없습니다", "loadError": "녹화를 불러올 수 없습니다", "playError": "재생할 수 없습니다. 다시 시도해 주세요.", "expired": "이 녹화는 더 이상 볼 수 없습니다", "retry": "다시 불러오기", "previous": "이전", "next": "다음"
   },
   "privacyPolicy": {
     "heroTitle": "개인정보 처리방침",

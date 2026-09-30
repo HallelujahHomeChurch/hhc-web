@@ -65,6 +65,7 @@ afterEach(() => {
   statementStripState.notice = false;
   sessionStorage.clear();
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
   vi.restoreAllMocks();
 });
 
@@ -164,6 +165,7 @@ describe('SiteHeader', () => {
   });
 
   it('renders Home first and hides member-only weekly navigation for an anonymous visitor', async () => {
+    vi.stubEnv('NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED', 'true');
     const getSession = vi.fn().mockResolvedValue({authenticated: false});
 
     render(
@@ -178,10 +180,33 @@ describe('SiteHeader', () => {
     expect(within(mobileNavigation).getAllByRole('link').map((link) => link.textContent)).toEqual([
       '首頁',
       '關於我們',
-      '最新消息'
+      '最新消息',
+      '影音專區'
     ]);
     expect(screen.queryByRole('button', {name: '開啟選單'})).not.toBeInTheDocument();
     expect(getSession).toHaveBeenCalledOnce();
+  });
+
+  it('hides the member video link in desktop and mobile navigation by default', () => {
+    render(
+      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" sessionClient={anonymousSessionClient} />
+      </NextIntlClientProvider>
+    );
+
+    expect(within(screen.getByRole('navigation', {name: '主要導覽'})).queryByRole('link', {name: '影音專區'})).not.toBeInTheDocument();
+    expect(within(screen.getByRole('navigation', {name: '選單'})).queryByRole('link', {name: '影音專區'})).not.toBeInTheDocument();
+  });
+
+  it('does not enable the member video link for a false build setting', () => {
+    vi.stubEnv('NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED', 'false');
+    render(
+      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" sessionClient={anonymousSessionClient} />
+      </NextIntlClientProvider>
+    );
+
+    expect(screen.queryByRole('link', {name: '影音專區'})).not.toBeInTheDocument();
   });
 
   it('keeps the account item visible when a route replaces the header', async () => {
