@@ -8,7 +8,7 @@ const captureHandledError = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/observability', () => ({captureHandledError}));
 
 const labels = {
-  menu: 'Account menu', projectionSystem: 'Projection system', adminManagement: 'Admin console',
+  menu: 'Account menu', projectionSystem: 'Projection system', projectionWindowLabel: 'Open in a new window', projectionPopupBlocked: 'Popup blocked.', adminManagement: 'Admin console',
   manageAccount: 'Manage account', signIn: 'Sign in', signOut: 'Sign out', signOutError: 'Unable to sign out. Try again.'
 };
 
@@ -54,7 +54,7 @@ describe('AccountControl', () => {
 
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', {name: 'Account menu'}));
-    expect(screen.getByRole('menuitem', {name: 'Projection system'})).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', {name: 'Projection system（Open in a new window）'})).toBeInTheDocument();
     expect(screen.queryByRole('menuitem', {name: 'Admin console'})).not.toBeInTheDocument();
   });
 

@@ -45,6 +45,8 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
   const accountLabels = {
     menu: t('account.menu'),
     projectionSystem: t('account.projectionSystem'),
+    projectionWindowLabel: t('account.projectionWindowLabel'),
+    projectionPopupBlocked: t('account.projectionPopupBlocked'),
     adminManagement: t('account.adminManagement'),
     manageAccount: t('account.manageAccount'),
     signIn: t('account.signIn'),

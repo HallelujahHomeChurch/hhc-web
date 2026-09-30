@@ -17,6 +17,8 @@
     "account": {
       "menu": "アカウントメニュー",
       "projectionSystem": "プロジェクションシステム",
+      "projectionWindowLabel": "新しいウィンドウで開く",
+      "projectionPopupBlocked": "ブラウザがウィンドウをブロックしました。下のリンクから開いてください。",
       "adminManagement": "管理画面",
       "manageAccount": "アカウントを管理",
       "signIn": "ログイン",

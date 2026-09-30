@@ -17,6 +17,8 @@
     "account": {
       "menu": "帐号菜单",
       "projectionSystem": "投影系统",
+      "projectionWindowLabel": "另开窗口",
+      "projectionPopupBlocked": "浏览器阻止打开窗口，请使用下方链接。",
       "adminManagement": "后台管理",
       "manageAccount": "管理帐号",
       "signIn": "登录",
