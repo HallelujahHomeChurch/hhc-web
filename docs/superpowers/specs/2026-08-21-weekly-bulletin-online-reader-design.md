@@ -1,6 +1,7 @@
 # Weekly Bulletin Online Reader Design
 
 **Date:** 2026-08-21
+**Revised:** 2026-09-30 — member download authorization, seven-day offline reading, and readable trace watermark.
 
 ## Goal
 
@@ -11,7 +12,7 @@ the original bulletin layout from content rather than embedding the PDF. The
 mobile presentation uses the same visual language in a responsive continuous
 layout.
 
-The first release includes public server-rendered reading, per-bulletin search,
+The first release includes member-authorized reading, per-bulletin search,
 PWA installation and explicit offline saves, and signed-in private highlights,
 notes, and reading progress. It must establish a repeatable ingestion path for
 future bulletins rather than hard-code the two initial samples.
@@ -38,13 +39,21 @@ future bulletins rather than hard-code the two initial samples.
   ambiguity; administrators provide final approval.
 - The first structured content locale is `zh-Hant`. Reader controls use the
   website's five UI locales independently of bulletin content locale.
-- Public reading and copying do not require login. Highlights, notes, and
-  account-synced reading progress require login.
+- Reading, copying, highlights, notes, and progress follow the existing PDF
+  download authorization for the exact `(series, contentLocale)` edition.
+  Reuse the existing entitlement checker; no reader permission, role, grant
+  table, independent approval, or independent membership setting is added.
 - V1 highlight colors are fluorescent yellow, red, and blue. Notes are private
   plain text.
-- The first release includes server-rendered full-body indexing, in-bulletin
-  search, PWA installation, and explicit offline reading with private mutation
-  sync.
+- The first release includes in-bulletin search, PWA installation, and explicit
+  account-scoped offline reading with private mutation sync. Member content is
+  not search-engine indexed, anonymously rendered, or stored in shared caches.
+- Explicit offline saves expire 7 days (604800 seconds) after the last successful
+  server validation of download entitlement and Online publication. Opening a
+  local copy, refreshing a token, or a failed validation never renews the clock.
+- Online and offline reading display a faint, opaque trace code issued for the
+  member and exact edition/revision. Readability requires human visual approval;
+  low opacity alone is not acceptance. This is not DRM or proof of who shared it.
 - Original fonts are not redistributed. The reader uses legally self-hostable
   approximate fonts mapped by semantic font role.
 - There is no visual canvas editor, new bulletin microservice, cross-bulletin
@@ -67,9 +76,10 @@ items. Those counts are arrays, not template assumptions.
 The existing platform already has the required service boundaries:
 
 - `hhc-web-api` owns bulletin metadata, CMS revisions, publication workflows,
-  public projections, an outbox worker pattern, and Azure OpenAI integration.
+  protected bulletin projections, an outbox worker pattern, and Azure OpenAI integration.
 - `asset-api` owns upload sessions, private PDF objects, malware scanning,
-  public grants, and stable downloads.
+  restricted grants and downloads. Member PDFs use the existing personalized
+  watermark download-job flow, never a new public URL.
 - `admin-fe` owns the existing bulletin upload and publication UI.
 - `hhc-web` is a standalone Next.js runtime with dynamic sitemap and
   server-rendered content routes. It already has a manifest, app icons, service
@@ -85,7 +95,7 @@ AI, identity, asset, or offline-sync service.
 ### Chosen: existing service boundaries with staged delivery
 
 Keep all bulletin business state in `hhc-web-api`, use `asset-api` for bytes,
-and add the Admin and public experiences to their existing applications. Reuse
+and add the Admin and member experiences to their existing applications. Reuse
 the current Azure OpenAI account, Responses API contract pattern, publication
 outbox, gateway identity, and native service worker.
 
@@ -110,7 +120,7 @@ server-side background job.
 
 Owns Online Documents, immutable revisions, extraction jobs and snapshots,
 template references, sentence identities and mappings, independent online
-publication, public projections, highlights, notes, reading progress, offline
+publication, member projections, highlights, notes, reading progress, offline
 mutation idempotency, and account-erasure handling.
 
 ### `asset-api`
@@ -125,10 +135,17 @@ PDF/online comparison, preview, three-way merge, and online publish controls.
 
 ### `hhc-web`
 
-Owns public routing, server-rendered semantic HTML, locale resolution, the
-desktop/iPad and mobile renderers, in-bulletin search, interaction UI, PWA
+Owns a no-content reader shell, authenticated semantic HTML, locale resolution,
+the shared renderer integration, in-bulletin search, interaction UI, PWA
 shell, permanent code-owned versioned template/font bytes, explicit offline
 content management, and private offline mutation sync.
+
+### `frontend-platform`
+
+Owns generated Website contracts and one pure `BulletinDocumentRenderer` in
+the existing UI package, with its scoped paper CSS and font-role mapping.
+Admin preview and the member reader consume the same version, document,
+manifest, and template bytes; neither implements its own paper layout engine.
 
 ### `account-api` and `api-gateway`
 
@@ -141,7 +158,7 @@ trusted `X-HHC-*` identity for protected routes.
 ## End-to-End Flow
 
 ```text
-Admin creates/updates existing issue and locale edition
+Admin creates/updates existing issue and series/locale edition
   -> asset-api upload and malware scan
   -> hhc-web-api extraction job
        -> local text/geometry/font parser
@@ -152,9 +169,11 @@ Admin creates/updates existing issue and locale edition
   -> editable Online Draft
   -> Admin exception review and confirmation
   -> immutable Online Published Revision
-  -> public projection
-  -> hhc-web SSR reader and PWA cache
-  -> optional account-owned highlights, notes, and progress
+  -> existing download entitlement check for the exact series/locale
+  -> member projection and account-bound trace receipt
+  -> hhc-web shared HTML renderer
+  -> explicit seven-day account-scoped offline save
+  -> account-owned highlights, notes, and progress
 ```
 
 No extraction failure changes an existing draft, PDF publication, or current
@@ -168,20 +187,36 @@ the final SQL names with existing bulletin conventions.
 ### Existing canonical records
 
 `bulletin_issue` remains authoritative for issue number and date. The existing
-locale edition/version remains authoritative for content locale, title,
+series/locale edition/version remains authoritative for content locale, title,
 subtitle, PDF asset, and PDF publication state. Online content references these
 fields rather than copying them into editable JSON.
 
-Because published and historical Online revisions depend on those records, V1
-rejects canonical metadata mutation and locale-version/issue deletion while
-any Online Document or revision exists, even after PDF unpublish. Source PDF
-replacement/re-upload remains available through the comparison flow.
+Canonical fields remain editable through the existing metadata form with
+`If-Match`. A correction updates the one canonical source, invalidates affected
+layout/confirmation evidence, and creates an Online draft requiring layout
+validation and explicit republish. Existing published content keeps its immutable
+publication-time metadata snapshot until republished; the UI marks it as pending
+metadata synchronization rather than silently mixing new metadata with old pages.
+Snapshots are audit/rendering evidence, never a second editable source. Issue
+number/date changes invalidate all affected editions; title/subtitle changes
+invalidate only that edition. Correcting an issue number changes its reader URL;
+Admin warns that old external URLs may stop resolving. Stored documents, notes,
+and offline bookmarks use immutable issue/document IDs and update displayed URLs
+after authorization; no alias service is added in V1. Edition/issue deletion remains blocked while Online history exists;
+source PDF replacement/re-upload remains available through comparison.
 
 ### Online document and revisions
 
-One `OnlineDocument` exists per issue and content locale. It keeps independent
+One `OnlineDocument` exists per `(issueID, series, contentLocale)`. It keeps independent
 online lifecycle state and pointers to its current draft and published
 revision.
+
+Use an opaque document ID internally; every uniqueness constraint, foreign key,
+job key, sentence mapping, API selector, browser key, and private-state owner
+must preserve that edition identity. Current supported PDF editions are general
+in `zh-Hant`, `zh-Hans`, `en`, and children in `zh-Hant`, `en`. V1 extraction
+supports the general `zh-Hant` template proved by 1731/1733; other editions keep
+their existing PDF behavior until their own template/content acceptance passes.
 
 Each immutable `OnlineRevision` contains:
 
@@ -189,8 +224,11 @@ Each immutable `OnlineRevision` contains:
 - a deterministic layout manifest with page instances, normalized boxes/slots,
   explicit continuations, template version, and permanent versioned
   template/font asset URLs plus SHA-256 checksums;
-- source PDF asset checksum;
+- source PDF asset checksum and publication-time canonical metadata snapshot;
 - template, extractor, and content-schema versions;
+- `contentHash`, `rendererVersion`, `rendererArtifactSha256`, and
+  `layoutValidationHash` binding the validated content, renderer/paper CSS,
+  font/template hashes and final measured manifest;
 - revision authorship and timestamps;
 - validation and human-confirmation evidence.
 
@@ -198,9 +236,21 @@ The mutable source asset ID is not part of `OnlineRevision`; it belongs to the
 extraction job/current PDF edition pointer. Re-upload may retire old PDF bytes
 without dangling an immutable Online reference; revision provenance keeps the
 checksum, and Admin Original PDF/Overlay refers only to the current upload.
+Overlay is disabled when that checksum differs from the selected revision's
+source; a labelled current-PDF side-by-side view may still be used.
 
 The published pointer changes atomically. Editing or restoring always creates
 a new draft/revision; published rows are never modified in place.
+
+Renderer identity is independent of the enclosing UI package release. The shared
+package initially has one static supported-renderer entry, V1, with a reproducible
+renderer/paper-CSS artifact digest. Preserve that implementation and CSS while
+any revision references it; a behavior-changing renderer receives a new version,
+never overwrites V1. Admin, worker and Website select the matching compiled-in
+entry/digest. Unsupported or mismatched versions show an explicit update-required
+state rather than approximate rendering. Never import executable URLs supplied
+by document JSON. Offline saves include the required code-owned versioned assets;
+SW/app updates must retain compatibility with saved referenced renderer versions.
 
 ### Template version
 
@@ -229,6 +279,8 @@ An `ExtractionJob` is idempotent for:
 source asset checksum + template version + extractor version
 ```
 
+The complete unique key also includes issue ID, series, and content locale;
+identical PDF bytes uploaded to different editions never share mutable jobs.
 Its snapshot contains allowed-region text, geometry, parser evidence,
 component assignments, and actionable validation findings. It does not contain
 excluded back-page content. Job states are `queued`, `parsing`, `review_ready`,
@@ -386,11 +438,18 @@ The workspace has three top-level modes:
 - `Compare New Version`: Base/Local/Incoming review and merge choices after a
   later PDF upload.
 
-Content Editing uses three fixed regions:
+On a workspace content width of at least 1200 CSS px, Content Editing uses three regions:
 
 - left: page/component tree, status, and warning counts;
 - center: forms and block editor for the selected component;
 - right: live desktop, iPad, mobile, and original-PDF comparison previews.
+
+Below 1200 px, the component tree is a drawer and Content/Preview are tabs;
+below 768 px all modes use one column. Measure the available editor container,
+not device names or full viewport width. Comparison panes stack or use tabs
+with persistent Base/Local/Incoming labels. Save status/actions remain reachable
+without horizontal scrolling. Use existing shared UI controls and warm brand
+tokens for chrome; paper typography, color, and decorations remain PDF-derived.
 
 The component tree groups Cover, Body, Worship, and Back content, shows source
 page numbers, and marks verified and review-required nodes without relying on
@@ -413,7 +472,13 @@ template; there is no drag positioning or freeform canvas.
 Draft saving is explicit. Browser-local recovery preserves unsent work, the
 page warns before losing dirty state, and `If-Match`/revision versioning
 prevents silent concurrent overwrite. A concurrency conflict preserves the
-local draft and requires reload/compare.
+local draft and requires reload/compare. Recovery keys include account ID,
+issue ID, series, locale, and base revision. A stale base offers Compare/Discard,
+never auto-restore; logout/account switch clears the previous account's recovery.
+Online preview uses the shared renderer and marks unsaved geometry provisional.
+Saving schedules authoritative layout validation using that same pinned renderer
+in the isolated worker. Publish requires validation for the exact saved content
+hash, renderer version, manifest, and font checksums, not a browser-supplied pass.
 
 Publishing requires:
 
@@ -452,41 +517,54 @@ creates a new draft revision.
 
 Existing permissions remain authoritative:
 
-- `cms:read`: view extraction, components, PDF comparison, and preview;
-- `cms:write`: upload/extract/edit/merge/save draft;
-- `cms:publish`: publish, unpublish, and restore Online revisions.
+- `cms:bulletins:read`: view extraction, components, PDF comparison, and preview;
+- `cms:bulletins:write`: upload/extract/edit/merge/save draft;
+- `cms:bulletins:publish`: publish, unpublish, and restore Online revisions.
+
+These staff capabilities do not grant member reading access. Member Online
+reads, offline validation, and private interactions call the exact existing
+download entitlement check (`bulletin.{series}.{locale}.access`) before content
+lookup. No new authorization product or token is introduced. An offline receipt
+records a successful check; it is not a credential accepted by any server API.
 
 Online publishing does not send a duplicate weekly notification by default.
 Unpublishing a PDF warns that Online is still live and offers a simultaneous
 Online unpublish checkbox. The default leaves Online available and hides its
 PDF download action until the PDF is republished.
 
-Public bulletin discovery therefore exposes Online editions through a separate
+Member bulletin discovery therefore exposes authorized Online editions through a separate
 combined projection that unions PDF/Online editions before authoritative
 issue/date sorting and pagination, independently from and without changing the
-existing PDF list/latest/by-number contracts. An Online projection carries
-`pdfPublished` and a nullable PDF download URL; PDF unpublish never removes or
+existing member PDF list/latest contracts. An Online projection carries
+`pdfPublished` and edition identifiers for the existing download-job action,
+never a public or SAS download URL; PDF unpublish never removes or
 404s an independently published Online projection.
 
-Home and Archive consume this combined projection. If it fails, they fall back
-to the unchanged legacy PDF endpoint and hide Online actions; a healthy
+Home and Archive consume this combined projection. On a transient projection
+failure only, they may use the existing authorized PDF endpoint and hide Online
+actions; never fall back through an authorization denial. A healthy
 combined response does not depend on a second PDF request.
 
 Admin cannot view, search, or export reader notes or highlights. It may show
 anonymous affected-record counts for revision migration.
 
-## Locale Resolution and Public URLs
+## Locale Resolution and Member URLs
 
 Reader URLs explicitly carry UI and content locale:
 
 ```text
-/{uiLocale}/literature-ministry/{issueNumber}/read/{contentLocale}
+/{uiLocale}/literature-ministry/{issueNumber}/read/{series}/{contentLocale}
 ```
 
-For example, `/ja/literature-ministry/1733/read/zh-Hant` renders Japanese
+For example, `/ja/literature-ministry/1733/read/general/zh-Hant` renders Japanese
 controls around Traditional Chinese content.
 
 Home resolves one complete bulletin edition:
+
+Apply this resolution within the selected series and only over editions already
+authorized by the existing download access projection. Do not infer absence
+from a protected 404 or use fallback to bypass an entitlement. No authorized
+candidate means no reader/download action, not an unauthorized Chinese fallback.
 
 - `zh-Hant` prefers `zh-Hant`;
 - `zh-Hans` prefers `zh-Hans`, falling back as a whole to `zh-Hant` only when
@@ -504,27 +582,67 @@ unpublished, Home/Archive keep the Online action and omit Download; discovery
 does not depend on the PDF projection row.
 
 The literature-ministry archive remains the only surface that presents all
-three bulletin editions. V1 publishes structured `zh-Hant` only; `read/zh-Hans`
-and `read/en` do not exist until those independent Online Documents are
+authorized editions grouped by series. V1 publishes structured general `zh-Hant`
+only; other series/locale readers do not exist until their Online Documents are
 supported and published.
 
-Each content locale has one canonical reader URL. UI-localized duplicates
-point to that content-locale canonical. The dynamic sitemap contains exactly
-that canonical URL per published content edition, never other UI wrappers;
-unpublished readers return 404 and are not indexed.
+Every reader wrapper uses `noindex, nofollow`; no reader URL or body enters the
+sitemap, public search, public metadata, JSON-LD, Open Graph text, or previews.
+Unauthenticated shells contain only generic localized UI. API deny/unknown uses
+the same nondisclosing 404; entitlement dependency failure is fail-closed 503.
 
-## Public Reader
+## Member Reader
 
 ### Rendering and indexing
 
-`hhc-web` server-renders the Published Revision as complete semantic HTML and
-hydrates interaction afterward. Body text remains present with JavaScript
-disabled. Public cache revalidation follows the existing approximately
-60-second content pattern. A closed public mapper includes only renderable
-content, public anchors, and layout manifest; drafts, private records, source
-asset IDs/checksum, original snapshots, parser/review/authorship/extraction
-evidence never appear in public JSON or HTML. Its strong ETag hashes the entire
-serialized public representation, including mutable PDF-action availability.
+The server renders only a generic no-content shell. The browser reuses
+`useBulletinAuthorization()` and the existing Account auth runtime to fetch
+the published document; no new token endpoint, token refresh loop, or SSR
+cookie-to-member bridge is introduced. After authorization, the shared renderer
+produces semantic selectable HTML. Without JavaScript, show a localized
+explanation rather than exposing member content. All member API successes and
+errors use `Cache-Control: private, no-store`; content is never CDN cached.
+A closed member mapper contains renderable components, stable anchors, manifest,
+publication metadata, and authorized action identifiers only. Source asset
+identifiers/checksum, original snapshots, parser/review/authorship evidence, and
+other accounts' data never leave through the reader DTO.
+
+### Trace watermark and readability
+
+The server issues a random opaque code with a receipt bound to account, issue,
+series, locale, revision, channel `online_reader`, and issuance time. Reuse the
+existing watermark receipt/privileged lookup/audit conventions, but keep reader
+receipts distinct from PDF fingerprint/model/page-hash evidence. Reader opening
+must not trigger PDF generation. No name, email, account ID, or bearer credential
+is displayed. Lookup requires the existing investigation capability and records
+an audit event; staff still cannot inspect private notes/highlights.
+
+Use a faint repeated text overlay scoped to the paper/content region, including
+mobile flow. It is outside text semantics, `aria-hidden`, non-selectable, and
+`pointer-events: none`; it does not appear in copy output or note text. Keep
+paper/text geometry identical with and without it. Do not add invisible image
+watermarking, anti-debugging, MutationObserver enforcement, or screenshot blocking.
+UI chrome may follow dark mode; paper retains its validated light palette.
+
+Before V1 approval, show 1731/1733 cover, dense body, scripture/emphasis, hymns,
+and back sections with all three highlight colors and active selection. Compare
+with/without watermark on desktop, iPad portrait/landscape, and 320/375px phones,
+Fit Page/Fit Width, 75/100/200/250% reader zoom, and 200% browser zoom. Require no
+clipping/reflow, unchanged pointer/keyboard/copy behavior, readable glyphs, and
+at least 4.5:1 body text contrast against the worst overlaid background. The user
+must explicitly approve actual device views; unreadable results block rollout.
+Opacity/spacing are calibrated in that preview, not declared acceptable by a
+hard-coded alpha. Repeated codes aid ordinary screenshots, not tamper resistance;
+a receipt proves issuance only, never who shared content.
+
+Receipts use existing 365-day watermark retention and privacy/erasure policy.
+Store no reading telemetry beyond the minimal issuance record. Keep a receipt
+per account/document revision/browser session, and reuse it for reload/retries;
+an explicit offline save retains its code. Revalidation of the same revision
+renews expiry without generating needless receipts. Content and receipt are returned by one idempotent access POST only after the
+receipt is durably recorded; there is no separate member full-content GET.
+Failed receipt issuance returns no content. Expired-receipt lookup reports no
+match, never a guessed account.
 
 ### Desktop and iPad
 
@@ -534,6 +652,10 @@ serialized public representation, including mutable PDF-action availability.
 - Support thumbnails, direct page entry, previous/next, keyboard arrows,
   unzoomed swipe, pinch zoom, and pan while zoomed.
 - Panning wins over page navigation while zoomed.
+- More than one pointer is pinch; a drag exceeding 8 CSS px never toggles a
+  sentence. Existing native text selection/long-press wins over sentence click.
+  Page arrows do not intercept input/textarea/contenteditable or modifier keys.
+  Enter/Space toggles a focused sentence; Escape clears transient selection.
 - The initial unedited revision must preserve source page count and component
   start pages.
 
@@ -582,6 +704,12 @@ the far left. Yellow is first. Swatches have no visible action label, but do
 have localized tooltips, accessible names, focus, and selected states. The UI
 does not use the phrase `畫重點`.
 
+On phones the toolbar sits above existing bottom navigation plus safe-area
+insets. Keep all color controls together; allow two rows at narrow widths,
+with at least 44x44 CSS px targets. Reserve space so selected text stays visible.
+Hide/inert the toolbar while the note sheet is open; handle the software keyboard
+and return focus to the invoking control when the sheet closes.
+
 ### Bulk highlight behavior
 
 Choosing a color applies it atomically to every selected sentence. Existing
@@ -597,7 +725,8 @@ Clear keep selection so a user can recolor immediately.
 
 ### Copy
 
-Copy is public. It orders selected sentences by document order, inserts blank
+Copy is available only during authorized online reading or a valid offline save.
+It orders selected sentences by document order, inserts blank
 lines between components, and appends:
 
 ```text
@@ -610,7 +739,9 @@ It does not append a URL. Copy keeps selection.
 
 Note requires login and creates one private plain-text note anchored to all
 selected sentences. Multiple notes may reference the same sentence. Desktop
-and iPad use a right panel; mobile uses a bottom sheet. Inline indicators open
+uses a right panel only when the remaining page width stays at least 640 CSS px;
+otherwise (including narrow iPad/split view) use a dismissible sheet. Mobile
+uses a bottom sheet. Inline indicators open
 the associated notes. A current-bulletin `My Notes` list jumps to source
 sentences and supports create, edit, and delete. Successful note creation
 clears selection; cancelling preserves it.
@@ -619,16 +750,19 @@ V1 has no rich text, tags, sharing, public notes, or global notes center.
 
 ### Login return
 
-When a signed-out user invokes Highlight, Clear, or Note, the app preserves
-issue, page/section, selected sentence IDs, and intended action across login.
-On return it restores the selection and asks the user to confirm; it does not
-silently write private data after authentication. Copy never triggers login.
+Signed-out entry requires login before any content is fetched. Preserve only
+the validated same-origin reader URL. When an existing reader needs renewed
+authentication, preserve position/selection/action in account-scoped transient
+state; after the same account returns and download authorization is rechecked,
+restore it and ask for confirmation before any write. Account switch clears it.
+An unexpired explicit offline save may remain usable during session expiry;
+explicit logout always removes the local copy and transient state.
 
 ## Reading Progress and Revision Migration
 
 Desktop/iPad progress stores page plus sentence anchor. Mobile progress stores
-section plus sentence anchor. Anonymous progress is browser-local; signed-in
-progress syncs to the account. Reopening offers `Continue` or `Start over`
+section plus sentence anchor. Progress is always account-scoped and syncs
+after authorization. Reopening offers `Continue` or `Start over`
 rather than forcing a jump.
 
 Migration behavior is:
@@ -647,20 +781,20 @@ Migration behavior is:
 
 The reader exposes `Save offline` and `Remove download`. Saving stores one
 exact Published Revision, layout manifest, structured content, template
-assets, images, and fonts. It does not download the PDF or the bulletin archive
+assets, images, fonts, and the reader trace receipt. It does not download the PDF or the bulletin archive
 by default.
 
 Use native platform storage already available to the application:
 
-- Cache Storage for the PWA shell and URL-addressed fonts/images;
-- IndexedDB for structured public documents, private local state, and pending
+- Cache Storage only for the no-content PWA shell and code-owned public template/fonts;
+- IndexedDB for account-scoped structured documents, receipt/expiry, private local state, and pending
   mutations;
 - the existing native service worker, extended with the minimum fetch/cache
   behavior. Do not add Workbox unless native APIs measurably fail the design.
 
 Exact reader-route navigations are network-first. Offline failure returns one
 stable cached reader shell, which loads only the requested issue/locale's
-explicitly saved active revision from IndexedDB; it never substitutes cached
+explicitly saved active revision for that account/series/locale from IndexedDB; it never substitutes cached
 SSR HTML from another or older revision.
 
 ### Offline capabilities
@@ -669,6 +803,35 @@ Saved documents support reading, navigation, zoom, in-bulletin search, copy,
 highlight create/recolor/clear, note create/edit/delete, and progress updates.
 An unsaved unavailable document shows an explicit offline state, never a blank
 page or an unrelated stale revision.
+
+Offline access is a client-enforced seven-day window, not a separate entitlement.
+The same member validation returns server `validatedAt`, `offlineValidUntil =
+validatedAt + 604800 seconds`, account/document/revision binding, and receipt.
+Only a successful exact download-entitlement + Online-publication check renews
+it. On each open/foreground/reconnect, try validation before content/sync; network
+failure or 503 may retain an existing unexpired save, but cannot extend it.
+401 pauses network sync and requests login, while the same account's valid save
+may be read offline. A 404 immediately locks that edition and pauses sync. Purge
+only on the owner contract's typed `not_found` envelope plus
+`X-HHC-Bulletin-Access: unavailable` response marker from the matched access route;
+the same marker/body covers denied, unknown and unpublished editions and reveals
+no distinction. A generic, malformed or unmarked 404 is deployment drift: retain
+locked data, retry/report the fault, and never try another locale. Add this marker
+to the existing checker/owner response, not a second authorization decision. A successful
+session with another account clears the previous account's copies.
+
+At expiry lock content/copy/search/annotation operations and prompt reconnect;
+check on every foreground/action and schedule a deadline while the reader stays
+open, so an idle visible tab cannot continue past expiry without validation.
+retain the locked replica and pending mutations until revalidation or explicit
+removal, so expiry alone does not silently lose notes. Observed clock rollback
+behind the last server/check high-water mark locks until revalidation. A local
+clock/storage owner can still bypass checks; offline revocation cannot be instant.
+Revocation/unpublication learned online takes precedence over the seven-day
+window and atomically clears that edition's content, quote/private replica,
+receipt, and pending writes. Warn about unsynced work before explicit logout or
+removal, but never keep revoked content readable. Server-owned notes are not
+deleted by a local cache purge. No personal data is placed in Cache Storage.
 
 Every private offline mutation receives a client-generated idempotency ID and
 immutable local creation time and updates the local UI immediately. A
@@ -693,16 +856,23 @@ an update:
    current revision while idempotently migrating cloud private rows;
 4. fully download and validate the new revision and required assets;
 5. atomically switch local pointers;
-6. retain the old working revision on any failure.
+6. retain the old working revision on update failure only while its access
+   window remains valid; expiry locks and learned denial purges as below.
 
-There is no background content replacement or automatic archive deletion.
+If the user declines an available revision update, keep the pinned local view
+while access is valid and label synchronization paused until update/mapping is
+accepted. Never apply current-revision state/anchors directly to an older paper.
+
+There is no background content replacement or storage-pressure archive deletion;
+explicit logout and learned revocation still perform the mandatory privacy purge.
 
 ### Account and storage lifecycle
 
-An expired login leaves cached public content readable and pauses private sync
-until reauthentication. Logout clears that account's local private cache and
-pending private mutations; public offline documents may remain. An Offline
-Content page shows issue, locale, revision, size, update state, and removal.
+An expired login leaves only an unexpired account-bound offline save readable
+and pauses sync. Explicit logout/account switch clears that account's content,
+receipts, local private state, recovery, and pending mutations in all tabs.
+An Offline Content page shows issue, series, locale, revision, size, expiry,
+update state, locked/available status, and removal.
 Low storage produces a user choice instead of deleting private data.
 
 Browsers without installation or required storage APIs retain full online
@@ -747,14 +917,23 @@ pauses on authentication failure, and never retries through a note conflict.
 
 ### Private data lifecycle
 
-`hhc-web-api` owns highlights, notes, and progress. Admin cannot access their
-content. Account deactivation/grace keeps data. Final hard deletion triggers an
-idempotent erasure of all three record classes. Audit retains only the erasure
-event and result, not private content.
-The authorized erasure endpoint returns `204` for first, zero-row, and repeated
-completed deletion. Account hard delete accepts only that explicit success;
-`404` is deployment/route drift and fails closed rather than being treated as
-idempotent completion.
+`hhc-web-api` owns highlights, notes, progress, migration state, processed
+mutations and reader receipts. Ordinary CMS/trace Admin cannot access private
+annotations. Account deactivation/grace retains server data under existing
+policy but removes member access. Extend the existing Website DSR owner
+execution with explicit coverage for these datasets, preserving existing
+watermark coverage and subject export/restrict/erase semantics. Exports remain
+subject-scoped private DSR artifacts, not CMS browsing/export endpoints.
+Final Account deletion requires the current DSR completed execution/coverage
+contract; old watermark-only evidence cannot stand for new reader datasets.
+Missing routes, incomplete coverage or failed erasure block finalization.
+Retries/zero rows are idempotent and late mutations cannot recreate erased rows.
+Do not introduce a parallel direct hard-delete callback or pretend any 404
+proves erasure. Audit contains result/counts, not annotation content.
+
+Mutation limits are 100 actions per batch, 500 sentence anchors per action/note,
+10000 Unicode code points per note, and 1 MiB per request. Limits are enforced
+server-side and mirrored in generated client/UI validation.
 
 ### Observability
 
@@ -765,7 +944,7 @@ usage, publication result, synchronization rates, and erasure result.
 They must not contain bulletin full text, LLM full responses, excluded-region
 text, selections, copied text, notes, credentials, or private mutation bodies.
 
-Alert on sustained extraction failure, queue backlog, public-projection
+Alert on sustained extraction failure, queue backlog, member-projection
 failure, repeated private sync failure, or incomplete account erasure.
 
 ## Validation and Acceptance
@@ -798,7 +977,8 @@ For the initial unedited 1731 and 1733 extractions:
 ### Contracts and authorization
 
 Tests cover independent PDF/Online lifecycle, publish preconditions, immutable
-revisions, locale whole-edition fallback, unpublished 404/sitemap exclusion,
+revisions, same-series authorized whole-edition fallback, uniform deny/unknown
+404, no member sitemap/body leakage, identical download/reader entitlement results,
 forged identity rejection, cross-account isolation, inaccessible Admin private
 content, atomic bulk highlight, and idempotent account erasure.
 
@@ -806,7 +986,7 @@ content, atomic bulk highlight, and idempotent account erasure.
 
 End-to-end tests cover select/unselect, non-contiguous and mixed-color bulk
 operations, Clear, exact Copy output, note CRUD, login return, navigation,
-zoom/pan/swipe, progress, search, semantic HTML without JavaScript, keyboard
+zoom/pan/swipe arbitration, progress, search, authenticated semantic HTML, keyboard
 operation, focus, accessible naming, heading order, contrast, and reduced
 motion.
 
@@ -815,32 +995,38 @@ motion.
 Tests cover offline open/navigation/search/copy, every private offline
 operation, idempotent replay, highlight ordering, note conflict and
 delete-vs-edit, session expiry, logout clearing, failed revision download,
-atomic revision switch, storage pressure, and unsupported-API fallback.
+atomic revision switch, seven-day boundary, no renewal on failed auth, clock
+rollback lock, learned revocation purge, cross-tab logout races, storage pressure,
+and unsupported-API fallback. Seven days limits reading; the existing 90-day
+mutation replay/91-day dedupe windows only apply after successful reauthorization
+and never extend reading access.
 
 ### Performance
 
 Page navigation, sentence selection, and optimistic private actions use local
 state and do not wait for network response. The reader transfers structured
 content and reusable assets rather than PDF page images. Production targets a
-p75 LCP of 2.5 seconds for public reader entry and maintains responsive local
+p75 time from authorized navigation to readable content of 2.5 seconds (measure
+separately from generic shell LCP) and maintains responsive local
 page/selection interactions.
 
 ## Delivery Sequence
 
-The first public launch contains the complete V1, but implementation and
+The first member launch contains the complete V1, but implementation and
 deployment are split into backward-compatible stages:
 
 1. **CMS foundation:** `hhc-web-api` storage/contracts/extraction/publication
    and `admin-fe` editor/review/merge, with no public entry.
-2. **Public reader:** published projection, `hhc-web` reader, whole-edition
-   locale resolution, SEO, in-bulletin search, and public offline content.
+2. **Member reader:** protected published projection, shared renderer integration,
+   existing download authorization, trace watermark, whole-edition locale
+   resolution, in-bulletin search, and seven-day account-scoped offline content.
 3. **Private interaction:** gateway/account integration, highlights, notes,
    progress, revision migration, and private offline sync.
 
 Each repository receives its own branch, PR, required CI, merge, immutable
 release, and live smoke check. Contracts are additive and released producer
 first. The Home/archive Online entry is enabled only after both reference
-bulletins pass end-to-end Admin, public, offline, authentication, and device
+bulletins pass end-to-end Admin, member, offline, authentication, watermark, and device
 acceptance. A failed stage leaves the current PDF bulletin experience healthy.
 
 ## Explicit Non-Goals
@@ -857,3 +1043,5 @@ acceptance. A failed stage leaves the current PDF bulletin experience healthy.
 - Rich-text, tagged, shared, public, or global notes
 - Automatic whole-archive offline caching or default PDF caching
 - Duplicate weekly notification on Online publication
+- Anonymous/full-body SEO, new reader permissions, and public bulletin caches
+- Invisible browser fingerprinting, screenshot prevention, or DRM guarantees
