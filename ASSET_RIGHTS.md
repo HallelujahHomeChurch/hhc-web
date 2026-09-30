@@ -27,6 +27,10 @@ Bundled fonts retain their upstream terms and source records:
 - `src/assets/fonts/klee-one/OFL.txt`
 - `src/assets/fonts/klee-one/SOURCE.md`
 - `src/assets/fonts/ma-shan-zheng/OFL.txt`
+- `public/assets/weekly/v1/SOURCE.md` and its content-hashed complete OFL notices
+
+The content-hashed Weekly Template V1 logo is a byte-identical copy of the
+already-approved `public/assets/brand/logo.png`.
 
 Public repository visibility does not grant rights beyond the repository
 license or the applicable third-party license.
