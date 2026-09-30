@@ -3,7 +3,7 @@
 import {useEffect, useRef, useState, useSyncExternalStore, type MouseEvent} from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import {BookOpenText, House, Newspaper, UsersRound} from 'lucide-react';
+import {BookOpenText, House, Newspaper, PlaySquare, UsersRound} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
 import type {SiteLayout} from '@/features/site-layout/types';
@@ -28,7 +28,8 @@ const getServerStandaloneSnapshot = () => false;
 const icons = {
   about: UsersRound,
   news: Newspaper,
-  'literature-ministry': BookOpenText
+  'literature-ministry': BookOpenText,
+  'member-videos': PlaySquare
 };
 
 export function SiteHeader({layout, locale, pathname, sessionClient, showNavigation = true}: SiteHeaderProps) {
@@ -36,7 +37,10 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
   const t = useTranslations('site');
   const homeHref = `/${locale}`;
   const canReadBulletin = useCanReadBulletin();
-  const navItems = layout.header.filter(({key, visible}) => visible && (key !== 'literature-ministry' || canReadBulletin)).map((item) => ({...item, icon: icons[item.key]}));
+  const navItems = [
+    ...layout.header.filter(({key, visible}) => visible && (key !== 'literature-ministry' || canReadBulletin)).map((item) => ({...item, icon: icons[item.key]})),
+    ...(process.env.NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED === 'true' ? [{key: 'member-videos', label: t('nav.memberVideos'), href: `/${locale}/member-videos`, visible: true, icon: PlaySquare}] : [])
+  ];
   const mobileNavItems = [{key: 'home', label: t('nav.home'), href: homeHref, icon: House}, ...navItems];
   const accountLabels = {
     menu: t('account.menu'),
