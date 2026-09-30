@@ -451,3 +451,7 @@
     }
   }
 }
+
+.analytics-preferences {margin: 24px auto; padding: 16px; width: min(100% - 32px, 880px); border-top: 1px solid var(--color-line, #ddd); font-size: 14px;}
+.analytics-preferences summary {cursor: pointer;}
+.analytics-preferences button {min-height: 44px; padding: 8px 16px; border: 1px solid currentColor; border-radius: 6px; cursor: pointer;}

@@ -1,3 +1,4 @@
+import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
 import {describe, expect, it, vi} from 'vitest';
 import {createWeeklyBulletinApi} from './api';
 
@@ -70,4 +71,11 @@ describe('member weekly API', () => {
     expect(file.url).toContain(`/api/member/bulletin-download-jobs/${job.id}/file?locale=zh-Hant&series=general`);
     expect(file.headers.get('authorization')).toBe('Bearer token');
   });
+});
+
+it('signals a typed legal review requirement before protected content can be used',async()=> {
+ const event=vi.fn();window.addEventListener('hhc:legal-required',event);
+ const api=createWeeklyBulletinApi({getAccessToken:async()=> 'token',refreshAfterUnauthorized:async()=>null},async()=>Response.json({error:{code:'policy_acceptance_required'}},{status:428}));
+ try {await expect(api.fetchLatest('general',['en'])).rejects.toBeInstanceOf(HhcWebApiError);expect(event).toHaveBeenCalledOnce()}
+ finally {window.removeEventListener('hhc:legal-required',event)}
 });

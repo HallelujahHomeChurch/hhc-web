@@ -91,11 +91,11 @@ describe('fixed editorial page adapters', () => {
 });
 
 function clientWith(page: PublicEditorialPage) {
-  return {getPublicPage: async () => page} as unknown as HhcWebClient;
+  return {getCommonLegalSnapshot: () => Promise.reject(new HhcWebApiError(404, 'not_found', 'No frozen publication')), getPublicPage: async () => page} as unknown as HhcWebClient;
 }
 
 function rejectingClient(error: Error) {
-  return {getPublicPage: async () => Promise.reject(error)} as unknown as HhcWebClient;
+  return {getCommonLegalSnapshot: () => Promise.reject(new HhcWebApiError(404, 'not_found', 'No frozen publication')), getPublicPage: async () => Promise.reject(error)} as unknown as HhcWebClient;
 }
 
 function pageFixture(pageKey: PublicEditorialPage['pageKey'], locale: Locale, content: PageContent): PublicEditorialPage {
