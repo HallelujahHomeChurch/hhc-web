@@ -29,6 +29,17 @@
 - Each implementation repository uses its own isolated worktree from fresh `origin/main`, focused PR, required CI and immutable release; consume producer contracts only after their release.
 - Receipt generation, accounting-system integration and tax submission remain Open Gates. Payment confirmation is not a formal donation receipt. Define an accepted financial handoff before public production giving, even if the initial handoff is reviewed export.
 
+## Member-private-details integration — coordinated delivery, not merged ownership
+
+Canonical workspace documents (outside this child repository): `docs/superpowers/specs/2026-09-26-account-nickname-and-private-member-details-design.md` §9.1 and `docs/superpowers/plans/2026-09-27-account-nickname-and-private-member-details.md` §17 / Task C / Gate GC. Keep the purpose-contract and acceptance checklist there rather than inventing a second generic personal-data API here.
+
+- Delivery 1A/1B does not collect donor legal name, address or identity document and does not depend on the nickname migration or private-member-data release. Giving requires login, not active church membership or a populated private profile. Admin Sandbox uses synthetic receipt fixtures only and never reads real member details.
+- Account owns the private profile; Operations owns its eligibility; donation-api owns financial facts. Link by trusted Account ID only. No cross-database reads, shared Account KEK, raw profile in JWT/general DTOs, or Admin test-permission bypass.
+- Formal receipts may later consume only explicitly confirmed, purpose-limited fields/version through the accepted Account contract. Nickname/provider claims are not legal receipt names. Existing member fields include family/given name and identity document, but not address; identity-document necessity, postal address, non-member receipt entry and accounting/receipt ownership remain decisions, not automatic collection.
+- If the accepted receipt workflow needs a copy, keep a minimum encrypted snapshot separate from queryable financial facts, with confirmation/source version and independent donation storage key/identity. Do not reuse bank HashID or Account KEK; later profile edits must not silently change confirmed/issued receipt data. Define correction, finance access, retention, DSR and backup recovery before enablement.
+- Member-details already requires browser↔Account bidirectional application-message encryption; this remains mandatory and is not backend-unreadable E2EE. Any new sensitive receipt transport must satisfy the same declared content-privacy goal through a reviewed contract, including service/intermediary boundaries. Ordinary amount/outcome APIs do not automatically inherit a new encryption protocol.
+- GC gates only the member-data receipt consumer, not payment-only delivery. Receipt/accounting/tax features remain disabled until their own owner and acceptance gates pass; no production personal-data collection or external tax transmission is authorized by this documentation update.
+
 ## Capability evidence — mail reviewed 2026-09-30
 
 Outlook search covered `from:patrickstar720@alive.org.tw`, `豐收款`, `Sandbox`, and `豐收款 正式`. The targeted bank keyword searches returned no further pages. This is mailbox evidence, not bank runtime verification; attachments were not decrypted during this review and credentials were not copied into this document.
@@ -170,6 +181,7 @@ Paths below are proposed new files; execution must inventory current checkout co
 - [ ] Verify real data flow, browser network requests, API DTOs, database fields and telemetry redaction. Keep technical bank diagnostics in restricted Admin, not donor UI.
 - [ ] Finance accepts giving categories/amount limits, refund operator/process, reconciliation ownership, payment confirmation wording and initial accounting handoff. Decide retention/DSR handling of financial records.
 - [ ] Accounting API, formal receipts and tax filing stay separate integrations. No automatic official receipt/tax transmission until their owner, data requirements and interface are agreed.
+- [ ] Before enabling member-data-assisted receipts, complete the canonical member plan Task C / GC: field/purpose/version confirmation, exact caller/subject binding, private transport, independent encrypted snapshot, non-member path and finance/DSR governance. Payment-only production does not require GC; it still requires the accepted initial financial handoff above.
 - [ ] Accept the ongoing-mode finite ceiling UX and reauthorization behavior before enabling that mode. No production toggle until all relevant gates pass.
 
 ## Task 5 — Website production entry and cutover
