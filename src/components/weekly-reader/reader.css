@@ -15,6 +15,10 @@
 .reader-sections nav { display: flex; flex-wrap: wrap; gap: .5rem; padding: .5rem 0; }
 .reader-viewport { overflow: auto; height: 72dvh; min-height: 20rem; padding: 1rem; background: var(--hhc-surface-raised); border-radius: .75rem; overscroll-behavior: contain; touch-action: auto; }
 .reader-scaled-page { position: relative; margin-inline: auto; box-shadow: 0 3px 18px #0002; }
+.reader-watermarked { position: relative; }
+.reader-search form { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .5rem; }
+.reader-search input { min-width: 0; max-width: 100%; }
+.reader-search p { max-width: 48rem; max-height: 8rem; overflow: auto; padding: .5rem; }
 .reader-thumbnails { display: flex; gap: 1rem; overflow: auto; padding: 1rem; max-height: 14rem; }
 .reader-thumbnail { flex: 0 0 auto; display: grid; justify-items: center; gap: .25rem; }
 .reader-thumbnail-image { overflow: hidden; pointer-events: none; user-select: none; }

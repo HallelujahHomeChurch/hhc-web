@@ -1,5 +1,5 @@
 import {render, screen, waitFor} from '@testing-library/react';
-import {afterEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {WeeklyArchive} from './WeeklyArchive';
 
 const captureHandledError = vi.hoisted(() => vi.fn());
@@ -23,11 +23,13 @@ const messages = {
 };
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   vi.clearAllMocks();
   search.value = '';
   bulletinAccess.editions = [{series: 'general', locale: 'zh-Hant'}];
 });
+beforeEach(() => vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'));
 
 describe('WeeklyArchive', () => {
   it('loads only entitled editions through protected member endpoints', async () => {

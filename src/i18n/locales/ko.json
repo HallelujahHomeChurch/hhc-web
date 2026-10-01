@@ -1,5 +1,10 @@
 {
   "weeklyReader": {
+    "search": "이 주보 검색",
+    "searchResults": "검색 결과",
+    "previousResult": "이전 결과",
+    "nextResult": "다음 결과",
+    "goToResult": "결과로 이동",
     "title": "주보 읽기",
     "back": "주보로 돌아가기",
     "loading": "주보를 불러오는 중…",

@@ -14,16 +14,34 @@ vi.mock('@/components/layout/AccountControl', () => ({
 const authorization = {getAccessToken: async () => 'token', refreshAfterUnauthorized: async () => null};
 vi.mock('@/features/weekly-reader/api', async original => ({...await original<typeof import('@/features/weekly-reader/api')>(), createReaderApi: () => ({open: state.open})}));
 const props = {locale: 'en' as const, issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const, messages: getMessages('en').weeklyReader};
-beforeEach(() => {state.accountId = 'account-a'; state.status = 'authenticated'; state.open.mockReset().mockResolvedValue(readerFixture()); sessionStorage.clear(); vi.stubGlobal('matchMedia', vi.fn(() => ({matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn()})));});
-afterEach(() => {Reflect.deleteProperty(document, 'fonts');});
+beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state.accountId = 'account-a'; state.status = 'authenticated'; state.open.mockReset().mockResolvedValue(readerFixture()); sessionStorage.clear(); vi.stubGlobal('matchMedia', vi.fn(() => ({matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn()})));});
+afterEach(() => {Reflect.deleteProperty(document, 'fonts'); vi.unstubAllEnvs();});
 
 describe('protected weekly reader', () => {
+  it('keeps launch disabled unless explicitly enabled after acceptance', () => {
+    vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', undefined);
+    render(<WeeklyReader {...props}/>);
+    expect(state.open).not.toHaveBeenCalled();
+    expect(screen.getByText('This bulletin is unavailable.')).toBeInTheDocument();
+  });
+  it('searches loaded text and jumps without requesting another receipt', async () => {
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    fireEvent.click(screen.getByText('Search this bulletin', {selector: 'summary'}));
+    fireEvent.change(screen.getByRole('searchbox', {name: 'Search this bulletin'}), {target: {value: '內容2'}});
+    fireEvent.click(screen.getByRole('button', {name: 'Go to result'}));
+    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p2');
+    expect(state.open).toHaveBeenCalledOnce();
+    expect(container.querySelectorAll('[data-reader-watermark]')).toHaveLength(1);
+    expect(container.querySelector('[data-reader-watermark]')).toHaveAttribute('aria-hidden', 'true');
+    expect(container.textContent).not.toContain(readerFixture().access.traceCode);
+  });
   it('announces font loading instead of presenting a blank paper as ready', async () => {
     let ready!: () => void;
     Object.defineProperty(document, 'fonts', {configurable: true, value: {ready: new Promise<void>(resolve => {ready = resolve;})}});
     render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
-    expect(screen.getByRole('status')).toHaveTextContent('Loading bulletin');
+    expect(screen.getByText('Loading bulletin…')).toHaveAttribute('role', 'status');
     await act(async () => ready());
     expect(screen.queryByText('Loading bulletin…')).not.toBeInTheDocument();
   });

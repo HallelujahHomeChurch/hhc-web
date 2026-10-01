@@ -1,5 +1,10 @@
 {
   "weeklyReader": {
+    "search": "搜索本期周报",
+    "searchResults": "搜索结果",
+    "previousResult": "上一条",
+    "nextResult": "下一条",
+    "goToResult": "前往结果",
     "title": "周报阅读",
     "back": "返回周报",
     "loading": "正在加载周报…",

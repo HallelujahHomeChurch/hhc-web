@@ -1,11 +1,19 @@
-import {describe, expect, it} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {resolveEdition} from './resolve-edition';
 import type {WeeklyBulletin} from './types';
+beforeEach(() => vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'));
+afterEach(() => vi.unstubAllEnvs());
 
 const version = (locale: WeeklyBulletin['locale'], extra: Partial<WeeklyBulletin> = {}): WeeklyBulletin => ({issueId:'issue-1',series:'general',locale,issueNumber:1740,date:'2026-10-04',title:locale,downloadName:'weekly.pdf',pdfPublished:true,onlineRevision:2,...extra});
 const authorizedEditions = ['zh-Hant','zh-Hans','en'].map(locale=>({series:'general' as const,locale:locale as WeeklyBulletin['locale']}));
 
 describe('whole edition resolution',()=>{
+  it('keeps PDF download available with the Online launch gate disabled',()=>{
+    vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED',undefined);
+    const result=resolveEdition({uiLocale:'en',series:'general',authorizedEditions,publishedEditions:[version('en')]});
+    expect(result?.canDownload).toBe(true);
+    expect(result?.readUrl).toBeUndefined();
+  });
   it.each([['zh-Hant','zh-Hant'],['zh-Hans','zh-Hans'],['en','en'],['ja','zh-Hant'],['ko','zh-Hant']] as const)('resolves %s to %s', (uiLocale, contentLocale)=>{
     const result=resolveEdition({uiLocale,series:'general',authorizedEditions,publishedEditions:authorizedEditions.map(e=>version(e.locale))});
     expect(result?.contentLocale).toBe(contentLocale);

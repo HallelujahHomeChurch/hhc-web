@@ -1,5 +1,10 @@
 {
   "weeklyReader": {
+    "search": "搜尋本期週報",
+    "searchResults": "搜尋結果",
+    "previousResult": "上一筆",
+    "nextResult": "下一筆",
+    "goToResult": "前往結果",
     "title": "週報閱讀",
     "back": "返回週報",
     "loading": "正在載入週報…",

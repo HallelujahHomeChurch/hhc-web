@@ -1,16 +1,18 @@
 'use client';
 
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {BulletinDocumentRenderer} from '@hallelujahhomechurch/ui';
+import {BulletinDocumentRenderer, ReaderWatermark} from '@hallelujahhomechurch/ui';
 import type {OnlineBulletinAccess} from '@hallelujahhomechurch/hhc-web-client';
 import type {BulletinLocale, BulletinSeries} from '@hallelujahhomechurch/preferences';
 import {useAccountAuth, useAccountIdentity, useAccountSignIn, useBulletinAccess, useBulletinAuthorization} from '@/components/layout/AccountControl';
 import {createReaderApi, verifyReaderAccess, type ReaderSelector} from '@/features/weekly-reader/api';
 import {keyboardPageDelta, pageScale, swipeDirection, type ReaderZoom} from '@/features/weekly-reader/navigation';
+import {isWeeklyReaderEnabled} from '@/features/weekly-reader/enabled';
 import type {Locale} from '@/i18n/locales';
 import {ReaderToolbar, type ReaderMessages} from './ReaderToolbar';
 import {PageNavigator} from './PageNavigator';
 import {SectionNavigator} from './SectionNavigator';
+import {ReaderSearch} from './ReaderSearch';
 import '@hallelujahhomechurch/ui/bulletin-paper.css';
 import './reader.css';
 
@@ -22,11 +24,12 @@ export function WeeklyReader(props: Props) {
   const signIn = useAccountSignIn();
   const access = useBulletinAccess();
   const m = props.messages;
-  const permitted = accountId && access.status === 'available' && access.editions.some(edition => edition.series === props.series && edition.locale === props.contentLocale);
+  const enabled = isWeeklyReaderEnabled();
+  const permitted = enabled && accountId && access.status === 'available' && access.editions.some(edition => edition.series === props.series && edition.locale === props.contentLocale);
   return <main className="weekly-reader">
     <a className="reader-back" href={`/${props.locale}/literature-ministry`}>{m.back}</a>
     {permitted ? <AuthorizedReader key={`${accountId}:${props.issueNumber}:${props.series}:${props.contentLocale}`} {...props} accountId={accountId}/> :
-      <section className="reader-status" role="status"><h1>{m.title}</h1><p>{auth.status === 'anonymous' ? m.signInRequired : auth.status === 'checking' || access.status === 'loading' ? m.loading : m.unavailable}</p>{auth.status === 'anonymous' ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}</section>}
+      <section className="reader-status" role="status"><h1>{m.title}</h1><p>{!enabled ? m.unavailable : auth.status === 'anonymous' ? m.signInRequired : auth.status === 'checking' || access.status === 'loading' ? m.loading : m.unavailable}</p>{enabled && auth.status === 'anonymous' ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}</section>}
   </main>;
 }
 
@@ -106,7 +109,7 @@ function ReaderDocument({value, selector, messages: m}: {value: OnlineBulletinAc
     }
   }, [active.id, mobile, storageKey, fontsReady]);
   function onAnchor(anchor: Anchor) {
-    const layout = document.layoutManifest.pages.find(layout => layout.slots.some(slot => anchor.kind === 'component' ? slot.componentId === anchor.id : slot.fragments.some(fragment => fragment.sentenceId === anchor.id)));
+    const layout = document.layoutManifest.pages.find(layout => layout.slots.some(slot => anchor.kind === 'component' ? slot.componentId === anchor.id : slot.fragments.some(fragment => fragment.sentenceId === anchor.id)) || anchor.kind === 'sentence' && layout.fixedSlots?.some(slot => `canonical-${slot.element}` === anchor.id));
     const index = document.pages.findIndex(page => page.id === layout?.pageId);
     if (index < 0) return;
     onPage(index);
@@ -122,7 +125,7 @@ function ReaderDocument({value, selector, messages: m}: {value: OnlineBulletinAc
     if (!mobile && delta) {event.preventDefault(); onPage(page + delta);}
   }}>
     <header className="reader-heading"><h1 lang={value.document.contentLocale}>{value.document.canonicalMetadata.title}</h1>{value.document.canonicalMetadata.subtitle ? <p lang={value.document.contentLocale}>{value.document.canonicalMetadata.subtitle}</p> : null}{value.document.metadataSyncPending ? <p role="status">{m.metadataPending}</p> : null}</header>
-    <div className="reader-toolbar">{!mobile ? <ReaderToolbar messages={m} zoom={zoom} setZoom={setZoom}/> : null}<SectionNavigator document={document} onSection={id => onAnchor({kind: 'component', id})} messages={m}/></div>
+    <div className="reader-toolbar">{!mobile ? <ReaderToolbar messages={m} zoom={zoom} setZoom={setZoom}/> : null}<SectionNavigator document={document} onSection={id => onAnchor({kind: 'component', id})} messages={m}/><ReaderSearch document={value.document} onJump={id => onAnchor({kind: 'sentence', id})} messages={m}/></div>
     {!mobile ? <PageNavigator document={document} metadata={value.document.canonicalMetadata} page={page} onPage={onPage} messages={m}/> : null}
     <div ref={viewportRef} className="reader-viewport" data-mobile={mobile || undefined} tabIndex={0} onPointerDown={event => {
       if (event.pointerType !== 'touch') return;
@@ -139,8 +142,8 @@ function ReaderDocument({value, selector, messages: m}: {value: OnlineBulletinAc
     }}>
       {!fontsReady ? <p role="status">{m.loading}</p> : null}
       <div aria-hidden={!fontsReady || undefined} style={{visibility: fontsReady ? 'visible' : 'hidden'}}>
-      {mobile ? <BulletinDocumentRenderer document={document} mode="mobile" canonicalMetadata={value.document.canonicalMetadata}/> :
-        <div className="reader-scaled-page" style={{width: size.width * scale, height: size.height * scale}}><div style={{transform: `scale(${scale})`, transformOrigin: 'top left', width: size.width, height: size.height}}><BulletinDocumentRenderer document={document} mode="paper" activePage={active.id} canonicalMetadata={value.document.canonicalMetadata}/></div></div>}
+      {mobile ? <div className="reader-watermarked"><BulletinDocumentRenderer document={document} mode="mobile" canonicalMetadata={value.document.canonicalMetadata}/><ReaderWatermark traceCode={value.access.traceCode}/></div> :
+        <div className="reader-scaled-page" style={{width: size.width * scale, height: size.height * scale}}><div className="reader-watermarked" style={{transform: `scale(${scale})`, transformOrigin: 'top left', width: size.width, height: size.height}}><BulletinDocumentRenderer document={document} mode="paper" activePage={active.id} canonicalMetadata={value.document.canonicalMetadata}/><ReaderWatermark traceCode={value.access.traceCode}/></div></div>}
       </div>
     </div>
   </section>;

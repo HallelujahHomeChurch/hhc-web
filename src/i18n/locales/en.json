@@ -1,5 +1,10 @@
 {
   "weeklyReader": {
+    "search": "Search this bulletin",
+    "searchResults": "Search results",
+    "previousResult": "Previous result",
+    "nextResult": "Next result",
+    "goToResult": "Go to result",
     "title": "Bulletin reader",
     "back": "Back to bulletins",
     "loading": "Loading bulletin…",

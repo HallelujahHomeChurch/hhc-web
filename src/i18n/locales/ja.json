@@ -1,5 +1,10 @@
 {
   "weeklyReader": {
+    "search": "この週報を検索",
+    "searchResults": "検索結果",
+    "previousResult": "前の結果",
+    "nextResult": "次の結果",
+    "goToResult": "結果に移動",
     "title": "週報リーダー",
     "back": "週報に戻る",
     "loading": "週報を読み込み中…",

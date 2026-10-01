@@ -19,6 +19,7 @@ Environment:
 ```dotenv
 HHC_WEB_API_BASE_URL=http://127.0.0.1:8081/api
 ACCOUNT_API_PROXY_TARGET=http://127.0.0.1:8080
+NEXT_PUBLIC_WEEKLY_READER_ENABLED=false
 NEXT_PUBLIC_ACCOUNT_SITE_URL=http://account.hhc.test:5173
 NEXT_PUBLIC_ACCOUNT_AUTHORIZE_BASE_URL=http://account.hhc.test:5173/api/account/v1
 ```
@@ -26,6 +27,11 @@ NEXT_PUBLIC_ACCOUNT_AUTHORIZE_BASE_URL=http://account.hhc.test:5173/api/account/
 `HHC_WEB_API_BASE_URL` is server-only. `ACCOUNT_API_PROXY_TARGET` is only for
 local same-origin Account API proxying; production routing belongs to
 `api-gateway`.
+
+Online bulletin reading is disabled by default. Set the build-time
+`NEXT_PUBLIC_WEEKLY_READER_ENABLED=true` only after private-interaction/offline
+acceptance and human approval of watermark readability. This gate does not grant
+member access and does not disable the existing PDF download workflow.
 
 ## Verification
 

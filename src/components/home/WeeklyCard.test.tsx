@@ -1,6 +1,6 @@
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {afterEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {WeeklyCard} from './WeeklyCard';
 
 const captureHandledError = vi.hoisted(() => vi.fn());
@@ -16,10 +16,12 @@ vi.mock('@/lib/observability', () => ({captureHandledError}));
 const messages = {general: 'General', children: "Children's", loading: 'Loading', downloading: 'Preparing download', downloadReady: 'Ready', downloadError: 'Download unavailable', error: 'Unavailable', retry: 'Retry', readOnline:'Read online', empty:'No bulletins'};
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   vi.clearAllMocks();
   access.editions = [{series: 'general', locale: 'zh-Hant'}];
 });
+beforeEach(() => vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'));
 
 describe('WeeklyCard', () => {
   it('uses the protected member endpoint and renders only entitled editions', async () => {

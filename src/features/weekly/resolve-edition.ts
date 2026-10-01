@@ -1,9 +1,10 @@
 import type {BulletinEdition, BulletinLocale, BulletinSeries} from '@hallelujahhomechurch/preferences';
 import type {Locale} from '@/i18n/locales';
 import type {WeeklyBulletin} from './types';
+import {isWeeklyReaderEnabled} from '@/features/weekly-reader/enabled';
 
 export function readerUrl(uiLocale: Locale, version: WeeklyBulletin): string | undefined {
-  if (!version.onlineRevision || !version.issueNumber) return undefined;
+  if (!isWeeklyReaderEnabled() || !version.onlineRevision || !version.issueNumber) return undefined;
   return `/${uiLocale}/literature-ministry/${version.issueNumber}/read/${version.series}/${version.locale}`;
 }
 
