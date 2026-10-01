@@ -1,5 +1,6 @@
 'use client';
 
+import {Fragment} from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {useTranslations} from 'next-intl';
@@ -70,9 +71,12 @@ export function SiteFooter({layout, locale, pathname}: SiteFooterProps) {
         </div>
         <div className="flex items-center justify-between gap-4 border-t border-line pt-4 text-xs font-medium text-muted max-[620px]:flex-col max-[620px]:items-start">
           <p>© {year} {layout.copyrightHolder}. {layout.allRightsReserved}</p>
-          <nav className="flex gap-4" aria-label={t('legalNavigation')}>
-            {layout.legal.filter(({visible}) => visible).map((item) => (
-              <Link key={item.key} href={item.href} className="hover:text-primary">{item.label}</Link>
+          <nav className="flex items-center gap-[7px]" aria-label={t('legalNavigation')}>
+            {layout.legal.filter(({visible}) => visible).map((item, index) => (
+              <Fragment key={item.key}>
+                {index > 0 ? <span aria-hidden="true">/</span> : null}
+                <Link href={item.href} className="hover:text-primary">{item.label}</Link>
+              </Fragment>
             ))}
           </nav>
         </div>
