@@ -26,6 +26,7 @@
 - Online publication is independent from PDF publication but requires the matching `zh-Hant` PDF edition to be published.
 - Draft saving is explicit. Idle recovery is browser-local only and never creates a server revision.
 - No new business microservice, canvas editor, generic workflow engine, or second authentication model.
+- Online Admin actions use the existing `audit-log` producer catalog and transactional CMS audit outbox, with dedicated `cms.bulletin.online.*` actions and an `online_bulletin` document UUID. No content is included in audit metadata. Task 8 includes this additive catalog/fixture sync; release the catalog before the CMS producer, without changing caller credentials or permissions.
 
 ## Review Focus
 
