@@ -71,6 +71,10 @@ export function useAccountIdentity() {
   return account?.auth.status === 'authenticated' ? account.auth.session.user.id : null;
 }
 
+export function useAccountSignIn() {
+  return useContext(AccountControlContext)?.beginAuthorization;
+}
+
 export function useAccountAuth(): AccountAuthState {
   return useContext(AccountControlContext)?.auth ?? {status: 'checking'};
 }

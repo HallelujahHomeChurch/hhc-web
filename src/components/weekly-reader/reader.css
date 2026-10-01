@@ -1,0 +1,22 @@
+.weekly-reader { background: var(--hhc-canvas); color: var(--hhc-text); min-height: 100dvh; padding: 1rem; padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+.weekly-reader button, .weekly-reader select, .weekly-reader input, .weekly-reader summary, .reader-back { min-height: 44px; border: 1px solid var(--hhc-control-border); border-radius: .6rem; padding: .5rem .8rem; background: var(--hhc-surface); }
+.weekly-reader button, .weekly-reader select, .weekly-reader summary { cursor: pointer; }
+.weekly-reader button:disabled { opacity: .45; cursor: default; }
+.weekly-reader :focus-visible { outline: 2px solid var(--hhc-control, #70523c); outline-offset: 3px; }
+.weekly-reader [aria-pressed="true"], .weekly-reader [aria-current="page"] { border-color: var(--hhc-control, #70523c); background: var(--hhc-primary-soft, #efe2ce); }
+.reader-back { display: inline-flex; align-items: center; margin-bottom: .75rem; }
+.reader-status { max-width: 36rem; margin: 4rem auto; padding: 2rem; text-align: center; }
+.reader-status h1, .reader-heading h1 { font-size: 1.4rem; font-weight: 700; }
+.reader-status p { margin: 1rem 0; }
+.reader-heading { max-width: 75rem; margin: 0 auto .75rem; }
+.reader-toolbar, .reader-page-controls, .reader-zoom-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.reader-toolbar, .reader-page-controls { max-width: 75rem; margin: .5rem auto; }
+.reader-page-controls input { width: 5rem; }
+.reader-sections nav { display: flex; flex-wrap: wrap; gap: .5rem; padding: .5rem 0; }
+.reader-viewport { overflow: auto; height: 72dvh; min-height: 20rem; padding: 1rem; background: var(--hhc-surface-raised); border-radius: .75rem; overscroll-behavior: contain; touch-action: auto; }
+.reader-scaled-page { position: relative; margin-inline: auto; box-shadow: 0 3px 18px #0002; }
+.reader-thumbnails { display: flex; gap: 1rem; overflow: auto; padding: 1rem; max-height: 14rem; }
+.reader-thumbnail { flex: 0 0 auto; display: grid; justify-items: center; gap: .25rem; }
+.reader-thumbnail-image { overflow: hidden; pointer-events: none; user-select: none; }
+.reader-viewport[data-mobile] { height: auto; min-height: 0; overflow: visible; padding: 0; background: transparent; }
+@media (max-width: 639px) { .weekly-reader { padding: .75rem; padding-bottom: max(1rem, env(safe-area-inset-bottom)); } .reader-heading { margin-top: .5rem; } }
