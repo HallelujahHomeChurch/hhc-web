@@ -6,7 +6,7 @@ changed typography/layout needs a new template/renderer version.
 
 ## Font sources
 
-All three fonts originate from `google/fonts` commit
+All four fonts originate from `google/fonts` commit
 `9710da1eacb3be272583c3224dcb70f9da6eadbb`, licensed under SIL OFL 1.1.
 Exact source URLs and SHA-256 values are in `manifest.json`. The complete
 copyright/license notices are bundled as content-hashed TXT files.
@@ -19,6 +19,7 @@ separately below.
 | Body/reference/foreign text | Noto Serif TC variable | HHC Weekly Serif | 400 | 20,748 |
 | Scripture | LXGW WenKai TC Regular | HHC Weekly Kai | 400 | 22,401 |
 | Emphasis | LXGW WenKai TC Bold | HHC Weekly Kai | 700 | 22,401 |
+| Verified font-tagged symbols | Noto Sans Symbols 2 Regular | HHC Weekly Symbols | 400 | 2,955 |
 
 These are legal approximations of the printed fonts, not reproductions of
 New Ming, BiauKai or the proprietary emphasis face. Font scale, spacing and
@@ -26,7 +27,8 @@ readability must pass the original-PDF/shared-renderer acceptance gate.
 Full upstream cmaps are retained; no sample-specific text subsetting is used.
 Missing future glyphs must be detected by layout validation, not silently
 replaced with platform-dependent glyphs. The three compressed fonts total
-14,309,056 bytes and load only in the reader/editor, not the global site shell.
+14,309,056 bytes; the symbol font adds 396,064 bytes. Fonts load only in the
+reader/editor, not the global site shell.
 
 ## Derivation
 
@@ -50,6 +52,15 @@ Generation used local FontTools 4.60.2 and its installed Brotli codec:
 6. Copy complete upstream OFL files with only trailing spaces normalized.
    Noto's upstream license SHA-256 is unchanged; WenKai's original license
    SHA-256 is `4fff27d35db0e22cd81d58da6f20e09f415cf354a3338e3cf1fc0eb9222c7174`.
+
+The additional symbol font uses `scripts/generate-weekly-symbol-font.py`, which
+checks pinned upstream TTF/OFL bytes, preserves the full cmap, renames the family
+before WOFF2 compression, and validates both five- and six-pointed star glyphs.
+Its original OFL SHA-256 is
+`b118dd41337806a5d4797052c77caf3bd096aed783e5eb21b4d11154351e1ac0`.
+Verified Wingdings `F0AB` maps to `U+2605` and `F0AC` to `U+1F7CB` only when
+the source font is Wingdings; arbitrary private-use characters are not mapped.
+Mapping source: <https://www.unicode.org/wg2/docs/n4363.pdf>, pages 5 and 39.
 
 Run `node scripts/verify-weekly-template-assets.mjs --base-ref origin/main`
 before commit. CI verifies actual bytes, provenance, complete role mapping,

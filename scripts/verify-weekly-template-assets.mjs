@@ -8,7 +8,7 @@ import {isDeepStrictEqual} from 'node:util';
 const directory = 'public/assets/weekly/v1';
 const hash = /^[0-9a-f]{64}$/;
 const path = /^\/assets\/weekly\/v1\/[A-Za-z0-9_-]*[0-9a-f]{64}\.(woff2|png|svg|txt)$/;
-const roles = ['body', 'scripture', 'emphasis', 'reference', 'foreignText'];
+const roles = ['body', 'scripture', 'emphasis', 'reference', 'foreignText', 'symbol'];
 
 export async function verifyBundle(root, previous) {
   const manifest = JSON.parse(await readFile(join(root, directory, 'manifest.json'), 'utf8'));

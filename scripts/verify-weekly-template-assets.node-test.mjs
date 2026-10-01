@@ -17,7 +17,7 @@ test('verifies actual bytes, filename, license and append-only history', async (
     const fontURL = `/assets/weekly/v1/test-${sha256}.woff2`;
     const licenseURL = `/assets/weekly/v1/license-${licenseHash}.txt`;
     const manifest = {version: 'v1', assets: [
-      {url: fontURL, sha256, mime: 'font/woff2', sizeBytes: bytes.length, kind: 'font', family: 'Test', weight: 400, roles: ['body', 'scripture', 'emphasis', 'reference', 'foreignText'], licenseUrl: licenseURL, sourceUrl: 'https://github.com/google/fonts', sourceSha256: sha256},
+      {url: fontURL, sha256, mime: 'font/woff2', sizeBytes: bytes.length, kind: 'font', family: 'Test', weight: 400, roles: ['body', 'scripture', 'emphasis', 'reference', 'foreignText', 'symbol'], licenseUrl: licenseURL, sourceUrl: 'https://github.com/google/fonts', sourceSha256: sha256},
       {url: licenseURL, sha256: licenseHash, mime: 'text/plain', sizeBytes: license.length, kind: 'license'}
     ]};
     const save = () => writeFile(join(root, 'public/assets/weekly/v1/manifest.json'), JSON.stringify(manifest));
