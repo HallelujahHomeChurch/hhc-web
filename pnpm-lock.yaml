@@ -335,7 +335,7 @@ packages:
     resolution: {integrity: sha512-Uh3GzK4ARgvlkO0XKrF2MWKNlvaxD8T2sYhIAt05Vbu5xMJE5Q08Wav3ivJ+ue+ECIsI/M5PBAUtau+jjscynA==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/account-client/1.0.26/9be1dc412ec7b74b860f6c491db7ac56effe6689}
 
   '@hallelujahhomechurch/hhc-web-client@file:../frontend-platform/artifacts/hallelujahhomechurch-hhc-web-client-1.0.29.tgz':
-    resolution: {integrity: sha512-/UHIXK3WxhTOsA0xPV/Uzfh5z8K6wxS9WAQRZ/SkdGsp+26IHYbFLUB3HmcUildLQsImfqGGHMbzpedP79mizg==, tarball: file:../frontend-platform/artifacts/hallelujahhomechurch-hhc-web-client-1.0.29.tgz}
+    resolution: {integrity: sha512-z+nZUtk7YBgVZyTvwnj3q2CO60SQyhTkuiwJbCHxE67faCECv5Qm+T5R+1aF+qgAXUveDSvXlfrdEaNSgqJc7g==, tarball: file:../frontend-platform/artifacts/hallelujahhomechurch-hhc-web-client-1.0.29.tgz}
     version: 1.0.29
 
   '@hallelujahhomechurch/operations-client@1.0.26':
@@ -345,7 +345,7 @@ packages:
     resolution: {integrity: sha512-p88X4qRQyG9S0l/GSu08wKnFvJY1bsQGD/kjIZS6miEoUW5rBvdN2UncaTud1X0iJ7sf+L0Ony6Tt81xbzE8Qg==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/preferences/1.0.26/204f91150622a2369e94fff9c61861aa504ba2c9}
 
   '@hallelujahhomechurch/ui@file:../frontend-platform/artifacts/hallelujahhomechurch-ui-1.0.29.tgz':
-    resolution: {integrity: sha512-k2kC1QSm1Km3N9uCMAZd+MkznbwOEjzPeBqUpo1xJf8Ud0MyUyQIGbFEhpPmVurSG/Cd6ok/onpjtqxiapQvuA==, tarball: file:../frontend-platform/artifacts/hallelujahhomechurch-ui-1.0.29.tgz}
+    resolution: {integrity: sha512-tojSRk4QMEUuxyKzq6YQlSpINyLGZlNM3xYQ36FOCiZDcLGML9Pd3JXdUJuKGDXKn/XH+USlcemyMqxPpXa02w==, tarball: file:../frontend-platform/artifacts/hallelujahhomechurch-ui-1.0.29.tgz}
     version: 1.0.29
     peerDependencies:
       react: ^19.0.0

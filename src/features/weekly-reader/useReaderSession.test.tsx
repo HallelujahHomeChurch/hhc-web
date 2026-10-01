@@ -79,3 +79,12 @@ it('rechecks on reconnect and ignores late completions after leaving the reader'
   unmount(); await act(async () => finish(readerFixture()));
   expect(api.open.mock.calls[0][2].aborted).toBe(true);
 });
+it('applies the same owner-denial boundary to private interaction failures without hiding content for transient failures', async () => {
+  const {result} = renderHook(() => useReaderSession(api, selector));
+  await waitFor(() => expect(result.current.value).not.toBeNull());
+  act(() => result.current.privateFailure(new TypeError('network')));
+  expect(result.current.value).not.toBeNull();
+  await act(async () => result.current.privateFailure(new HhcWebApiError(404, 'not_found', 'Unavailable', undefined, undefined, true)));
+  expect(result.current.value).toBeNull();
+  expect(store.removeOfflineSave).toHaveBeenCalledWith(selector);
+});

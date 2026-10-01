@@ -1,8 +1,9 @@
-import {createHhcWebClient, type OnlineBulletinAccess} from '@hallelujahhomechurch/hhc-web-client';
+import {createHhcWebClient, type OnlineBulletinAccess, type BulletinReaderMutation} from '@hallelujahhomechurch/hhc-web-client';
 import {requireBulletinRenderer, type BulletinRenderableDocument} from '@hallelujahhomechurch/ui';
 import type {BulletinLocale, BulletinSeries} from '@hallelujahhomechurch/preferences';
 import {createProtectedFetch} from '@/features/weekly/api';
 import assets from '../../../public/assets/weekly/v1/manifest.json';
+import {verifyPrivateState} from './private-state';
 
 export type ReaderSelector = {accountId: string; issueNumber: number; series: BulletinSeries; contentLocale: BulletinLocale};
 type Authorization = Parameters<typeof createProtectedFetch>[0];
@@ -39,6 +40,21 @@ export function verifyReaderAccess(value: OnlineBulletinAccess, expected: Reader
 export function createReaderApi(authorization: Authorization, fetcher = globalThis.fetch.bind(globalThis)) {
   const client = createHhcWebClient({baseUrl: '/api', getAccessToken: () => null, fetcher: createProtectedFetch(authorization, fetcher)});
   return {
+    async privateState(selector: ReaderSelector, value: OnlineBulletinAccess, signal?: AbortSignal) {
+      verifyReaderAccess(value, selector);
+      const response = await client.getReaderState({issueId: value.document.issueId, series: selector.series, locale: selector.contentLocale, fromRevision: value.document.revision, signal});
+      signal?.throwIfAborted();
+      verifyPrivateState(response.state, selector.accountId, value.document.documentId, value.document.revision);
+      return response;
+    },
+    async mutate(selector: ReaderSelector, value: OnlineBulletinAccess, mutations: BulletinReaderMutation[], signal?: AbortSignal) {
+      verifyReaderAccess(value, selector);
+      const response = await client.applyReaderMutations({issueId: value.document.issueId, series: selector.series, locale: selector.contentLocale, mutations, signal});
+      signal?.throwIfAborted();
+      verifyPrivateState(response.state, selector.accountId, value.document.documentId, value.document.revision);
+      if (response.results.length !== mutations.length || response.results.some((result, index) => result.mutationId !== mutations[index].mutationId)) throw new Error('invalid_reader_binding');
+      return response;
+    },
     async renew(selector: ReaderSelector, saved: OnlineBulletinAccess, clientRequestId: string, signal?: AbortSignal) {
       verifyReaderAccess(saved, selector);
       const value = await client.openOnlineBulletin({issueId: saved.document.issueId, series: selector.series, locale: selector.contentLocale,

@@ -1,6 +1,7 @@
-import type {OnlineBulletinAccess} from '@hallelujahhomechurch/hhc-web-client';
+import type {OnlineBulletinAccess, BulletinReaderMutation, BulletinReaderMutationResponse, BulletinReaderState} from '@hallelujahhomechurch/hhc-web-client';
 import {verifyReaderAccess, type ReaderSelector} from './api';
 import {evaluateOfflineAccess} from './offline-access';
+import {applyLocalMutation, verifyPrivateState} from './private-state';
 
 type Identity = {accountId: string | null; epoch: number};
 export type OfflineSave = {
@@ -13,7 +14,9 @@ export type OfflineSave = {
   locked: boolean;
 };
 type OfflineCheck = Pick<OfflineSave, 'lastObservedAt' | 'epoch' | 'locked'> & {access: OnlineBulletinAccess['access']};
-const stores = ['identity', 'documents', 'pointers', 'checks'];
+export type PendingReaderMutation = {mutation: BulletinReaderMutation; sent: boolean; result?: BulletinReaderMutationResponse['results'][number]};
+export type PrivateReplica = {state: BulletinReaderState; confirmed: BulletinReaderState; queue: PendingReaderMutation[]};
+const stores = ['identity', 'documents', 'pointers', 'checks', 'private'];
 const offlineCheck = (save: OfflineSave): OfflineCheck => ({access: save.value.access, lastObservedAt: save.lastObservedAt, epoch: save.epoch, locked: save.locked});
 const editionKey = (selector: ReaderSelector) => [selector.accountId, selector.issueNumber, selector.series, selector.contentLocale];
 const documentKey = (save: OfflineSave) => [save.value.access.accountId, save.value.access.documentId, save.value.access.series, save.value.access.contentLocale, save.value.access.revision];
@@ -45,8 +48,8 @@ function result<T>(request: IDBRequest<T>): Promise<T> {
 
 async function transaction<T>(mode: IDBTransactionMode, run: (tx: IDBTransaction) => Promise<T>): Promise<T> {
   if (typeof indexedDB === 'undefined') throw new Error('offline_unsupported');
-  const opening = indexedDB.open('hhc-weekly-reader', 1);
-  opening.onupgradeneeded = () => {for (const name of stores) opening.result.createObjectStore(name);};
+  const opening = indexedDB.open('hhc-weekly-reader', 2);
+  opening.onupgradeneeded = () => {for (const name of stores) if (!opening.result.objectStoreNames.contains(name)) opening.result.createObjectStore(name);};
   const db = await result(opening);
   db.onversionchange = () => db.close();
   const tx = db.transaction(stores, mode);
@@ -73,7 +76,7 @@ async function identity(tx: IDBTransaction): Promise<Identity> {
 }
 
 async function purgeAccount(tx: IDBTransaction, accountId: string) {
-  for (const name of ['documents', 'pointers', 'checks']) {
+  for (const name of ['documents', 'pointers', 'checks', 'private']) {
     const store = tx.objectStore(name);
     const keys = await result(store.getAllKeys());
     for (const key of keys) if (Array.isArray(key) && key[0] === accountId) store.delete(key);
@@ -248,9 +251,124 @@ export async function removeOfflineSave(selector: ReaderSelector) {
     if (!key) return;
     const keys = await result(tx.objectStore('documents').getAllKeys());
     for (const candidate of keys) if (Array.isArray(candidate) && candidate.slice(0, 4).every((part, i) => part === key[i])) {
-      tx.objectStore('documents').delete(candidate); tx.objectStore('checks').delete(candidate);
+      tx.objectStore('documents').delete(candidate); tx.objectStore('checks').delete(candidate); tx.objectStore('private').delete(candidate);
     }
     pointer.delete(editionKey(selector));
   });
   notifyEdition(selector);
+}
+
+async function privateContext(tx: IDBTransaction, selector: ReaderSelector, epoch: number | undefined, now: number) {
+  const owner = await identity(tx);
+  if (owner.accountId !== selector.accountId || epoch !== undefined && owner.epoch !== epoch) throw new Error('offline_account_changed');
+  const checked = await checkAccess(tx, selector, now);
+  if (checked?.status !== 'available') throw new Error('offline_access_expired');
+  const save: OfflineSave = await result(tx.objectStore('documents').get(checked.key));
+  if (!save || save.value.access.documentId !== checked.check.access.documentId || save.value.access.revision !== checked.check.access.revision) throw new Error('invalid_reader_binding');
+  const replica: PrivateReplica | undefined = await result(tx.objectStore('private').get(checked.key));
+  if (replica) verifyPrivateState(replica.state, selector.accountId, save.value.access.documentId, save.value.access.revision);
+  return {key: checked.key, save, replica};
+}
+
+async function privateTransaction<T>(run: (tx: IDBTransaction) => Promise<T>): Promise<T> {
+  const outcome = await transaction('readwrite', async tx => {
+    try {return {value: await run(tx)};}
+    catch (error) {
+      // checkAccess writes the rollback lock. Commit that denial, not the action.
+      if (error instanceof Error && error.message === 'offline_access_expired') return {denied: true};
+      throw error;
+    }
+  });
+  if ('denied' in outcome) throw new Error('offline_access_expired');
+  return outcome.value;
+}
+
+export async function readPrivateReplica(selector: ReaderSelector, now = Date.now()): Promise<PrivateReplica | null> {
+  return privateTransaction(async tx => (await privateContext(tx, selector, undefined, now)).replica ?? null);
+}
+
+export async function seedPrivateReplica(selector: ReaderSelector, state: BulletinReaderState, epoch: number, now = Date.now()) {
+  return privateTransaction(async tx => {
+    const {key, save, replica} = await privateContext(tx, selector, epoch, now);
+    verifyPrivateState(state, selector.accountId, save.value.access.documentId, save.value.access.revision);
+    if (state.currentRevision !== save.value.access.revision) throw new Error('revision_changed');
+    // Pending operations must be replayed against the server before replacing their base.
+    if (replica?.queue.length) return replica;
+    const next: PrivateReplica = {state, confirmed: state, queue: []};
+    tx.objectStore('private').put(next, key);
+    return next;
+  });
+}
+
+export async function enqueuePrivateMutation(selector: ReaderSelector, mutation: BulletinReaderMutation, epoch: number, now = Date.now()) {
+  return privateTransaction(async tx => {
+    const {key, save, replica} = await privateContext(tx, selector, epoch, now);
+    if (!replica) throw new Error('private_state_unavailable');
+    const existing = replica.queue.find(entry => entry.mutation.mutationId === mutation.mutationId);
+    if (existing) {
+      if (JSON.stringify(existing.mutation) !== JSON.stringify(mutation)) throw new Error('mutation_id_conflict');
+      return replica;
+    }
+    if (replica.queue.some(entry => entry.result)) throw new Error('action_required');
+    const state = applyLocalMutation(replica.state, mutation, save.value.document);
+    const queue = mutation.kind === 'setProgress' ? replica.queue.filter(entry => entry.sent || entry.mutation.kind !== 'setProgress') : replica.queue;
+    const next = {...replica, state, queue: [...queue, {mutation, sent: false}]};
+    tx.objectStore('private').put(next, key);
+    return next;
+  });
+}
+
+export async function claimPrivateMutation(selector: ReaderSelector, epoch: number, now = Date.now()) {
+  return privateTransaction(async tx => {
+    const {key, replica} = await privateContext(tx, selector, epoch, now);
+    const first = replica?.queue[0];
+    if (!replica || !first || first.result) return null;
+    if (!Number.isFinite(Date.parse(first.mutation.createdAt)) || now - Date.parse(first.mutation.createdAt) > 90 * 86400000) {
+      first.result = {mutationId: first.mutation.mutationId, status: 'recovery_required', revision: replica.state.currentRevision};
+      tx.objectStore('private').put(replica, key);
+      return null;
+    }
+    first.sent = true;
+    tx.objectStore('private').put(replica, key);
+    return first;
+  });
+}
+
+export async function acknowledgePrivateMutation(selector: ReaderSelector, response: BulletinReaderMutationResponse, epoch: number, now = Date.now()) {
+  return privateTransaction(async tx => {
+    const {key, save, replica} = await privateContext(tx, selector, epoch, now);
+    if (!replica || response.results.length !== 1 || response.results[0].mutationId !== replica.queue[0]?.mutation.mutationId) throw new Error('invalid_reader_binding');
+    verifyPrivateState(response.state, selector.accountId, save.value.access.documentId, save.value.access.revision);
+    const acknowledged = response.results[0];
+    if (response.state.currentRevision !== save.value.access.revision || acknowledged.status !== 'applied') {
+      replica.queue[0].result = acknowledged;
+      tx.objectStore('private').put(replica, key);
+      return replica;
+    }
+    const queue = replica.queue.slice(1);
+    let state = response.state;
+    for (const entry of queue) {
+      try {state = applyLocalMutation(state, entry.mutation, save.value.document);}
+      catch {
+        // Keep the complete previous local view and queued payloads for explicit recovery.
+        state = replica.state;
+        entry.result = {mutationId: entry.mutation.mutationId, revision: state.currentRevision, status: 'note_conflict'};
+        break;
+      }
+    }
+    const next = {state, confirmed: response.state, queue};
+    tx.objectStore('private').put(next, key);
+    return next;
+  });
+}
+
+export async function hasPendingReaderWrites(accountId: string) {
+  return transaction('readonly', async tx => {
+    if ((await identity(tx)).accountId !== accountId) return false;
+    const store = tx.objectStore('private');
+    for (const key of await result(store.getAllKeys())) {
+      if (Array.isArray(key) && key[0] === accountId && ((await result(store.get(key))) as PrivateReplica).queue.length) return true;
+    }
+    return false;
+  });
 }

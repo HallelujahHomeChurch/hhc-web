@@ -4,7 +4,7 @@ import {readerFixture} from '@/features/weekly-reader/test-fixture';
 import {getMessages} from '@/i18n/messages';
 import {WeeklyReader} from './WeeklyReader';
 
-const state = vi.hoisted(() => ({accountId: 'account-a' as string | null, status: 'authenticated', open: vi.fn(), signIn: vi.fn()}));
+const state = vi.hoisted(() => ({accountId: 'account-a' as string | null, status: 'authenticated', open: vi.fn(), signIn: vi.fn(), privateState: vi.fn(), mutate: vi.fn()}));
 vi.mock('@/components/layout/AccountControl', () => ({
   useAccountIdentity: () => state.accountId, useAccountAuth: () => ({status: state.status}),
   useAccountSignIn: () => state.signIn,
@@ -12,12 +12,46 @@ vi.mock('@/components/layout/AccountControl', () => ({
   useBulletinAuthorization: () => authorization
 }));
 const authorization = {getAccessToken: async () => 'token', refreshAfterUnauthorized: async () => null};
-vi.mock('@/features/weekly-reader/api', async original => ({...await original<typeof import('@/features/weekly-reader/api')>(), createReaderApi: () => ({open: state.open})}));
+vi.mock('@/features/weekly-reader/api', async original => ({...await original<typeof import('@/features/weekly-reader/api')>(), createReaderApi: () => ({open: state.open, privateState: state.privateState, mutate: state.mutate})}));
 const props = {locale: 'en' as const, issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const, messages: getMessages('en').weeklyReader};
-beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state.accountId = 'account-a'; state.status = 'authenticated'; state.open.mockReset().mockResolvedValue(readerFixture()); sessionStorage.clear(); vi.stubGlobal('matchMedia', vi.fn(() => ({matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn()})));});
+beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state.accountId = 'account-a'; state.status = 'authenticated'; state.open.mockReset().mockResolvedValue(readerFixture()); state.privateState.mockReset().mockResolvedValue({state: {accountId: 'account-a', documentId: readerFixture().document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: null, conflicts: []}}); state.mutate.mockReset(); sessionStorage.clear(); vi.stubGlobal('matchMedia', vi.fn(() => ({matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn()})));});
 afterEach(() => {Reflect.deleteProperty(document, 'fonts'); vi.unstubAllEnvs();});
 
 describe('protected weekly reader', () => {
+  it('retains selected sentences across foreground authorization checks without permitting actions during validation', async () => {
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    fireEvent.click(container.querySelector('[data-sentence-id="s0"]')!);
+    let finish!: (value: ReturnType<typeof readerFixture>) => void;
+    state.open.mockImplementationOnce(() => new Promise(resolve => {finish = resolve;}));
+    fireEvent.focus(window);
+    await waitFor(() => expect(state.open).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
+    await act(async () => finish(readerFixture()));
+    await screen.findByRole('button', {name: 'Copy'});
+    expect(container.querySelector('[data-sentence-id="s0"]')).toHaveAttribute('aria-pressed', 'true');
+  });
+  it('toggles sentence selection, preserves it on note cancellation and clears it on desktop page navigation', async () => {
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    await waitFor(() => expect(state.privateState).toHaveBeenCalled());
+    const sentence = container.querySelector('[data-sentence-id="s0"]')!;
+    fireEvent.click(sentence);
+    expect(sentence).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', {name: 'Note'}));
+    expect(screen.queryByRole('button', {name: 'Yellow highlight'})).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+    await screen.findByRole('button', {name: 'Yellow highlight'});
+    expect(sentence).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(sentence);
+    expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
+    fireEvent.click(sentence);
+    fireEvent.keyDown(screen.getByRole('region', {name: 'Bulletin reader'}), {key: 'Escape'});
+    expect(sentence).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(sentence);
+    fireEvent.click(screen.getByRole('button', {name: 'Next page'}));
+    expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
+  });
   it('keeps launch disabled unless explicitly enabled after acceptance', () => {
     vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', undefined);
     render(<WeeklyReader {...props}/>);

@@ -8,7 +8,7 @@ import {prepareOfflineReaderShell} from '@/lib/reader-shell';
 import type {ReaderMessages} from './ReaderToolbar';
 
 export function OfflineControl({api, value, selector, locale, messages: m, onSaved}: {
-  api: ReturnType<typeof createReaderApi>; value: OnlineBulletinAccess; selector: ReaderSelector; locale: Locale; messages: ReaderMessages; onSaved: (value: OnlineBulletinAccess) => void;
+  api: Pick<ReturnType<typeof createReaderApi>, 'renew'>; value: OnlineBulletinAccess; selector: ReaderSelector; locale: Locale; messages: ReaderMessages; onSaved: (value: OnlineBulletinAccess) => void;
 }) {
   const [ready, setReady] = useState(false);
   const [saved, setSaved] = useState<OfflineSave | null>(null);

@@ -2,13 +2,25 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {readerFixture} from './test-fixture';
 import {createReaderApi, verifyReaderAccess} from './api';
 
-const client = vi.hoisted(() => ({listOnlineBulletinDiscovery: vi.fn(), openOnlineBulletin: vi.fn()}));
+const client = vi.hoisted(() => ({listOnlineBulletinDiscovery: vi.fn(), openOnlineBulletin: vi.fn(), getReaderState: vi.fn(), applyReaderMutations: vi.fn()}));
 vi.mock('@hallelujahhomechurch/hhc-web-client', async original => ({...await original<typeof import('@hallelujahhomechurch/hhc-web-client')>(), createHhcWebClient: () => client}));
 const selector = {accountId: 'account-a', issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const};
 const auth = {getAccessToken: async () => 'token', refreshAfterUnauthorized: async () => null};
 beforeEach(() => {vi.clearAllMocks(); client.listOnlineBulletinDiscovery.mockResolvedValue({items: [{issueId: readerFixture().document.issueId, issueNumber: 1739, series: 'general', contentLocale: 'zh-Hant', onlineRevision: 1}]}); client.openOnlineBulletin.mockResolvedValue(readerFixture());});
 
 describe('member reader access', () => {
+  it('rejects private responses from a different account and verifies before returning a mutation acknowledgement', async () => {
+    const value = readerFixture();
+    const state = {accountId: 'other', documentId: value.document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: null, conflicts: []};
+    client.getReaderState.mockResolvedValue({state});
+    const api = createReaderApi(auth);
+    await expect(api.privateState(selector, value)).rejects.toThrow('invalid_reader_binding');
+    state.accountId = selector.accountId;
+    await expect(api.privateState(selector, value)).resolves.toMatchObject({state});
+    const mutations = [{mutationId: 'id', createdAt: '2026-10-02T00:00:00Z', documentRevision: 1, kind: 'clearHighlight' as const, payload: {sentenceIds: ['s0']}}];
+    client.applyReaderMutations.mockResolvedValue({state, results: [{mutationId: 'wrong', status: 'applied', revision: 1}]});
+    await expect(api.mutate(selector, value, mutations)).rejects.toThrow('invalid_reader_binding');
+  });
   it('revalidates a pinned revision by immutable issue ID without rediscovering mutable printed metadata', async () => {
     const saved = readerFixture();
     saved.document.canonicalMetadata.issueNumber = 1738;

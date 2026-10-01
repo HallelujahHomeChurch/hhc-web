@@ -1,0 +1,43 @@
+import {act, renderHook, waitFor} from '@testing-library/react';
+import {beforeEach, expect, it, vi} from 'vitest';
+import {HhcWebApiError, type BulletinReaderMutation, type BulletinReaderState} from '@hallelujahhomechurch/hhc-web-client';
+import {readerFixture} from './test-fixture';
+import {usePrivateReader} from './usePrivateReader';
+
+vi.mock('./offline-store', async original => ({...await original<typeof import('./offline-store')>(), supportsOfflineReader: () => false}));
+const value = readerFixture();
+const selector = {accountId: 'account-a', issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const};
+const state: BulletinReaderState = {accountId: 'account-a', documentId: value.document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: null, conflicts: []};
+const mutation: BulletinReaderMutation = {mutationId: 'id', documentRevision: 1, createdAt: '2026-10-02T00:00:00Z', kind: 'setHighlight', payload: {sentenceIds: ['s0'], color: 'yellow'}};
+const api = {privateState: vi.fn(), mutate: vi.fn(), renew: vi.fn()};
+const onFailure = vi.fn();
+beforeEach(() => {vi.resetAllMocks(); api.privateState.mockResolvedValue({state});});
+it('shows highlights optimistically, rolls back failed writes, and reuses the original mutation for retry', async () => {
+  let reject!: (error: unknown) => void;
+  api.mutate.mockImplementationOnce(() => new Promise((_resolve, fail) => {reject = fail;}));
+  const {result} = renderHook(() => usePrivateReader({api, selector, value, offline: false, allowAction: () => true, onFailure}));
+  await waitFor(() => expect(result.current.state).toEqual(state));
+  let request!: Promise<unknown>;
+  act(() => {request = result.current.mutate(mutation);});
+  await waitFor(() => expect(result.current.state?.highlights[0].color).toBe('yellow'));
+  await act(async () => {reject(new TypeError('network')); await request.catch(() => {});});
+  expect(result.current.state?.highlights).toEqual([]);
+  api.mutate.mockResolvedValue({state, results: [{mutationId: 'id', status: 'applied', revision: 1}]});
+  await act(async () => {await result.current.mutate({...mutation, mutationId: 'new-attempt'});});
+  expect(api.mutate.mock.calls[1][2][0].mutationId).toBe('id');
+});
+it('does not display stale-account state after unmount and delegates owner denial to the common reader boundary', async () => {
+  api.privateState.mockRejectedValue(new HhcWebApiError(404, 'not_found', 'Unavailable', undefined, undefined, true));
+  const {result, unmount} = renderHook(() => usePrivateReader({api, selector, value, offline: false, allowAction: () => true, onFailure}));
+  await waitFor(() => expect(result.current.status).toBe('action'));
+  expect(result.current.state).toBeNull(); expect(onFailure).toHaveBeenCalledOnce();
+  unmount(); expect(api.privateState.mock.calls[0][2].aborted).toBe(true);
+});
+it('does not bind a newer private state to the pinned renderer or send writes after authorization expires', async () => {
+  api.privateState.mockResolvedValue({state: {...state, currentRevision: 2, appliedRevision: 2}});
+  const {result} = renderHook(() => usePrivateReader({api, selector, value, offline: false, allowAction: () => false, onFailure}));
+  await waitFor(() => expect(result.current.status).toBe('paused'));
+  expect(result.current.state).toBeNull();
+  await expect(result.current.mutate(mutation)).rejects.toThrow();
+  expect(api.mutate).not.toHaveBeenCalled();
+});
