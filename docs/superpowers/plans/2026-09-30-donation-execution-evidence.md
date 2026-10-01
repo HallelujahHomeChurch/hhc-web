@@ -1,7 +1,59 @@
 # Donation Sandbox implementation evidence
 
 Date: 2026-09-30. Approved plan: `2026-09-30-donation-admin-sandbox-first.md`.
-This is the first local offline slice, not delivery 1A acceptance.
+Initial foundation date above; subsequent evidence is recorded by date below.
+Neither the local foundation nor a read-only bank query is delivery 1A acceptance.
+
+## Continuation — V2.5 and bank prerequisite closeout (2026-10-02)
+
+- The approved private GitHub repository was created 2026-09-30 and attached as
+  origin. Historical inaccessible-remote notes below no longer block local work;
+  repository release/CI setup remains unfinished.
+- Reviewed the bank's 2026-10-01 reply and new encrypted Sandbox attachment.
+  Written entitlement confirms credit-card hosted checkout in both environments;
+  exact payment-page origin is `https://funbiz.sinopac.com`. Sandbox requires no
+  IP submission. Formal production credentials were promised but not found in
+  the reviewed mailbox. No inference about recurring acceptance is made.
+- Attachment fields were verified in memory: merchant, four hashes and X-Key
+  present, X-Key validity marked 2027/12. No values or unlock instructions are
+  included in repository evidence. Old X-Key should not be reused.
+- V2.5 replaces V2.3 as the supplied baseline. Core 1A endpoints, signing/AES,
+  creation/query/callback fields and envelope Version 1.0.0 are unchanged. Test
+  fixtures and future refund rules changed; refunds remain disabled.
+- Added `donation-api/cmd/sandbox-check`, reusing the existing Sandbox client:
+  bounded credentials on stdin only, random exact-order query, no create path,
+  validated response and sanitized status/code output. This is operator tooling,
+  not a new HTTP API or a donor authentication bypass.
+- Live local probe on 2026-10-02: fresh Nonce and authenticated OrderQuery for a
+  random nonexistent order returned verified S0001, exit 0. This confirms new
+  credential/protocol interoperability from the operator host. No order, charge,
+  callback processing, database entry or Azure configuration was created.
+- Added a local bank form-return handler: body bounded to 4096 bytes, exact gateway
+  caller, no donor session required, only ShopNo/PayToken body values accepted.
+  Callback work and a random 15-minute return reference are persisted atomically;
+  reference storage is SHA-256 only. Redirect is fixed to Admin and never carries
+  a bank token. A new authenticated lookup returns pending until callback work
+  is verified, then only the order owner can resolve it. Invalid/expired/review
+  references reveal no order; no bank call or financial credit occurs in return
+  or reference lookup. Migration 000004 and canonical OpenAPI are included.
+- RED: return integration failed with 404 before implementation. GREEN: real
+  disposable PostgreSQL tests cover cookieless POST, replay, duplicate/extra form
+  fields, ignored query tokens, oversized bodies, fixed redirects, login,
+  pending state, cross-owner rejection and expiry. Full five-package race suite,
+  vet, build and diff checks pass. OpenAPI validates with one expected warning:
+  bank browser return intentionally emits 303, not a synthetic 2xx response.
+- Fresh independent review of donation `91bb73c..29daf68` found no Critical or
+  Important issue. It identified URL-query parsing influencing body-only return
+  acceptance. A malformed-query regression failed first; parsing only the bounded
+  body fixed it, followed by a green full PostgreSQL/race suite. Reviewer reran
+  non-DB tests/vet; its unset-DSN full-suite attempt failed the database guards
+  without mutation, so DB verification is executor-provided. Bank authenticity,
+  deployed security/runtime/UI/release acceptance remain separate evidence gates.
+- Remaining: runtime secret references, return UI/login handoff and expiry cleanup,
+  runtime/workers/audit,
+  durable reconciliation and storage controls, CI/release, shared client/Admin
+  integration and actual hosted-payment/callback acceptance. Task 0 is partially
+  closed, not all of Tasks 0–3; production and recurring gates stay open.
 
 ## Workspaces
 

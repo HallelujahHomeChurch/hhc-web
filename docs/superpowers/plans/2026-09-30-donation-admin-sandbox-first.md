@@ -40,7 +40,19 @@ Canonical workspace documents (outside this child repository): `docs/superpowers
 - Member-details already requires browser↔Account bidirectional application-message encryption; this remains mandatory and is not backend-unreadable E2EE. Any new sensitive receipt transport must satisfy the same declared content-privacy goal through a reviewed contract, including service/intermediary boundaries. Ordinary amount/outcome APIs do not automatically inherit a new encryption protocol.
 - GC gates only the member-data receipt consumer, not payment-only delivery. Receipt/accounting/tax features remain disabled until their own owner and acceptance gates pass; no production personal-data collection or external tax transmission is authorized by this documentation update.
 
-## Capability evidence — mail reviewed 2026-09-30
+## Current bank evidence — reviewed 2026-10-02
+
+- Bank reply dated 2026-10-01, subject `RE: API 金流系統正式環境`, explicitly confirms credit-card checkout enabled in both environments and `OrderCreate` returning the hosted payment link. The confirmed exact hosted origin is `https://funbiz.sinopac.com`; sharing this origin does not select an environment. Backend API endpoint, merchant configuration and persisted environment still select Sandbox versus production.
+- The newly forwarded encrypted Sandbox attachment was checked in memory: merchant identifier, A1/A2/B1/B2 and X-Key are present; X-Key validity is marked 2027/12. The bank says last year's X-Key is likely expired; use the newly supplied material. No credential values or unlock instructions belong in this document. Operational Key Vault configuration remains pending.
+- The new attachment explicitly says Sandbox does not require an IP submission. Remove Sandbox IP whitelisting as a prerequisite; still verify actual connectivity. Production whitelist changes require bank processing (the attachment says two weeks).
+- Production credit-card entitlement is confirmed, but the bank's promise to send production credentials is not evidence they were received. Only the Sandbox credential attachment was found in the reviewed mailbox.
+- V2.5 (revision 2026-07-23; announcement 2026-08-11; forwarded 2026-10-01) is the current supplied baseline. Comparison with V2.3 found unchanged 1A endpoints, signature/encryption, hosted checkout and callback/query contracts. The envelope `Version` remains `1.0.0`.
+- V2.4/V2.5 refresh test-card instructions: general credit-card `PayType=C` expiry is 12/35; the other credit-card-value/binding fixture changes expiry and CVV. Use the correct bank-hosted test fixture; never put PAN/expiry/CVV in HHC forms, APIs or credential configuration.
+- V2.5 allows multiple credit-card refunds, at most one per day except failed applications; E3610/E3611 encode deferred eligibility and E9918 now means refund-count limit reached. Refunds remain out of 1A scope. Later implementation must track each refund and remaining refundable amount, rather than a single refunded flag.
+
+This closes the written-specification, hosted-entitlement, hosted-origin and credential-delivery questions for Sandbox. Task 0 below also records a successful local read-only bank query. Deployed connectivity, hosted-browser/callback acceptance and production readiness remain open. The 2026-09-30 evidence below is retained as historical context and is superseded where this section differs.
+
+## Historical capability evidence — mail reviewed 2026-09-30
 
 Outlook search covered `from:patrickstar720@alive.org.tw`, `豐收款`, `Sandbox`, and `豐收款 正式`. The targeted bank keyword searches returned no further pages. This is mailbox evidence, not bank runtime verification; attachments were not decrypted during this review and credentials were not copied into this document.
 
@@ -62,7 +74,7 @@ Source messages, for later retrieval by subject/date (do not copy secret-bearing
 - 2026-01-26 bank message, forwarded 2026-02-01: `豐收款商戶管理後台操作說明_社團法人中華民國哈利路亞社區關懷協會`; service opening, portal queries, refund/reconciliation guidance and Excel download. These instructions do not prove individual API feature entitlement.
 - 2026-02-04: `【API開發規格書】`; attachment identified in historical analysis as FunBIZ V2.3. Re-obtain the current bank-approved version before coding the protocol.
 
-Egress whitelist is user-confirmed historical context. Recheck the deployed workload's actual outbound IP and bank acceptance for each environment before its smoke; do not infer current readiness from prior NAT evidence.
+Egress whitelist is user-confirmed historical context. Production requires current workload/IP acceptance; the 2026-10-01 Sandbox attachment above removes the Sandbox IP-submission prerequisite. Local read-only connectivity is now verified; deployed workload connectivity remains open.
 
 ### Specification evidence re-read 2026-09-30
 
@@ -82,7 +94,7 @@ The locally retained mail attachment is `website/tmp/pdfs/funbiz-api-v2.3.pdf`, 
 | `BillQuery` covers previous 1–30 days and only captured card transactions | 60 | Retrieve daily with persisted progress, bounded catch-up and alert on approaching retention limit |
 | Query results may contain card fragments, `CCExpDate`, `CCToken`, BindToken | 53, 57–58, 68 | Ignore excluded fields in decoding; no raw response logging |
 
-Still unconfirmed: merchant hosted-checkout permission, current valid test cards, month-end/leap handling, bank timezone, exact expiry enforcement, retry/failed-installment counting, cancellation cutoff and order visibility after ambiguous create. Obtain bank clarification or sanitized Sandbox evidence for each. The PDF's card test expiry examples are past as of this review; do not treat them as current instructions.
+Remaining after the 2026-10-02 update: month-end/leap handling, bank timezone, exact expiry enforcement, retry/failed-installment counting, cancellation cutoff and order visibility after ambiguous create. Hosted entitlement and current test instructions are now supplied. Use V2.5 test fixtures, not the expired V2.3 examples.
 
 ## Routes, environment isolation and reusable interfaces
 
@@ -133,9 +145,12 @@ Paths below are proposed new files; execution must inventory current checkout co
 ## Task 0 — Provider and repository baseline gate
 
 - [ ] Read current local instructions/contracts across affected repositories; identify existing AuthN client, permission catalog, audit outbox and deployment patterns. Freeze exact migration/files/test commands in the execution checklist before code.
-- [ ] Obtain current bank specification and hosted-checkout merchant entitlement; verify test credentials through secure configuration without printing them.
-- [ ] Verify Sandbox outbound IP acceptance and callback registration requirements. Confirm test-card instructions are current rather than using expired dates from an old PDF.
-- [ ] Build a provider behavior checklist from the supplied V2.3 attachment; collect available bank clarifications. Actual recurring behavior tests run in Task 3B after single-payment tooling exists, avoiding a circular prerequisite.
+- [x] Obtain current bank specification (V2.5) and written hosted-checkout merchant entitlement; confirm exact hosted origin and new credential attachment completeness.
+- [x] Verify new test credentials through a bounded, read-only Sandbox Nonce + exact random-order query. On 2026-10-02 the local operator probe verified the bank response and returned S0001 with exit 0; no order was created. Credentials passed through an in-memory stdin stream; no raw responses were saved.
+- [ ] Configure runtime Sandbox Key Vault references through reviewed deployment changes; the successful local probe does not configure or accept Azure runtime access.
+- [x] Confirm Sandbox has no IP-submission requirement and current V2.5 general-card test instructions are available.
+- [ ] Verify deployed connectivity, callback prerequisites and actual delivery during the authorized single-payment smoke.
+- [ ] Build a provider behavior checklist from V2.5; collect available bank clarifications. Actual recurring behavior tests run in Task 3B after single-payment tooling exists, avoiding a circular prerequisite.
 - [ ] Unresolved recurring schedule cases block delivery 1B only. Task 0 requires enough evidence to build single hosted payment, not acceptance of every recurring frequency. No bank production calls at this gate.
 
 ## Task 1 — Freeze contract, authorization and isolation
