@@ -163,6 +163,13 @@ Paths below are proposed new files; execution must inventory current checkout co
 
 ## Task 2 — Delivery 1A single-payment backend and durable result processing
 
+Runtime packaging decision (2026-10-02): use one image with `serve` (API plus
+background loop), `api`, `worker`, `job`, `migrate` and `check` commands. Default
+to disabled payments and no background work. Splitting API and workers/jobs is
+allowed when needed, not a requirement to provision another service now.
+Migration execution remains a separately authorized operation, never automatic
+startup DDL. Local implementation/evidence does not authorize route enablement.
+
 - [ ] Persist a stable provider OrderNo and request fingerprint before `OrderCreate`; scope idempotency by environment/actor/key, reject changed-payload reuse and serialize concurrent creation for the same intent. Allowlist bank destinations.
 - [ ] On transport timeout mark creation `create_unknown`, not failed. Query `OrderQuery` using the original OrderNo to recover status/URL; no new OrderNo and no blind automatic create retry. A not-found response alone is insufficient unless the bank guarantees visibility timing. Keep unresolved intents blocked for operator reconciliation; record provider duplicate-order semantics before permitting any same-ID retry.
 - [ ] Persist minimal ShopNo/PayToken callback work before acknowledging. Query `OrderPayQuery` through the authenticated protocol, check its inner result plus APType/merchant/order/amount/currency or local TWD context/type. Apply one outcome per environment/provider transaction; queue errors for retry. Never require an undocumented notification signature.

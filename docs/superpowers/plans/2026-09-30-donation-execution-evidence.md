@@ -4,6 +4,53 @@ Date: 2026-09-30. Approved plan: `2026-09-30-donation-admin-sandbox-first.md`.
 Initial foundation date above; subsequent evidence is recorded by date below.
 Neither the local foundation nor a read-only bank query is delivery 1A acceptance.
 
+## Continuation — shared runtime image and background jobs (2026-10-02)
+
+- Donation `32ff4d6` adds one nonroot image with `serve` (combined), `api`,
+  `worker`, `job`, `migrate` and `check` commands. User explicitly accepted
+  splitting a job from the same image if needed. No separate deployment or
+  schedule has been created. Defaults start HTTP only with payments disabled.
+- Explicit migrations embed the existing SQL, serialize using a transaction
+  advisory lock and commit schema plus SHA-256 history together. Tests cover
+  concurrent/idempotent runs, checksum mismatch, unknown versions, history gaps
+  and rollback on an untracked schema. Runtime startup checks, never applies.
+- Background processing reuses the leased single-item callback processor, with
+  a 25-second job deadline, existing retry backoff and cancellation. Continuous
+  polling is five seconds. Cleanup removes at most 1,000 expired Sandbox return
+  references per run; it preserves active/production references and all provider
+  work/financial facts. No background command calls OrderCreate.
+- Local tests observed missing migration/worker/runtime functions before
+  implementation, then passed. All seven package race suites passed serially on
+  task-owned PostgreSQL 17; vet/build, Docker build and diff checks passed.
+  Canonical OpenAPI includes private probes and validates with five documented
+  warnings (local probe origins, no 4xx probe response and 303-only bank return).
+- Local image smoke: nonroot user; disabled `/healthz`=200, `/readyz`=503 and
+  checkout=503. Same image successfully ran `migrate` and `check` against only
+  the disposable database. These are not Azure or live-bank acceptance checks.
+- Initial image scan failed on x/text v0.29.0 (CVE-2026-56852). The official
+  [Go advisory](https://pkg.go.dev/vuln/GO-2026-5970) identifies v0.39.0 as fixed;
+  updated to that version plus required x/sync v0.21.0, then repeated the full
+  suite/image build. Final Trivy scan passed with zero findings in the selected
+  HIGH/CRITICAL, fix-available scope (`--ignore-unfixed`); this is not a claim of
+  zero vulnerabilities at every severity. A repeated seven-package/race suite,
+  vet/build/format/diff checks and rebuilt-image disabled/migration smoke passed.
+- Fresh independent whole-branch review of `bb1f82e..32ff4d6` found no Critical or
+  Important issue for the disabled local foundation. Reviewer independently ran
+  non-DB race tests/vet/format checks. One deferred minor: add active in-flight
+  bank-call cancellation/lease-recovery integration coverage before activation;
+  current tests cover pre-cancelled worker and server shutdown without a service.
+  Deployed identity, bank interoperability, storage/audit/reconciliation/UI,
+  recurring/export and release readiness remain explicitly unaccepted. Required
+  remote CI is not substituted by this review or the executor's local scan.
+- CI configuration is written, not run on GitHub. Fresh remote inspection found
+  no heads: the private repository has no main baseline. Requested explicit
+  permission for an empty bootstrap main commit, with all code still going via
+  feature PR/CI; no push/PR/release occurred in this slice.
+- Remaining before activation: storage encryption/retention and DB controls,
+  central audit/alerts, lost-callback and BillQuery reconciliation, Admin return
+  UX/shared client, gateway policy and runtime secret wiring, actual CI/release
+  and hosted-checkout/callback acceptance. Delivery 1A remains incomplete.
+
 ## Continuation — V2.5 and bank prerequisite closeout (2026-10-02)
 
 - The approved private GitHub repository was created 2026-09-30 and attached as
