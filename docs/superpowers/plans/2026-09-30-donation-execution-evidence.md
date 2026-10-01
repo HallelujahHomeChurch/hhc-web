@@ -4,6 +4,27 @@ Date: 2026-09-30. Approved plan: `2026-09-30-donation-admin-sandbox-first.md`.
 Initial foundation date above; subsequent evidence is recorded by date below.
 Neither the local foundation nor a read-only bank query is delivery 1A acceptance.
 
+## Continuation — workflow permission restored and foundation PR (2026-10-02)
+
+- User completed GitHub reauthorization and confirmed the existing account now
+  has `workflow` scope. Publication used that refreshed GitHub CLI credential
+  with per-command Git helper overrides, not a different identity or a global
+  credential configuration change. The CI workflow was preserved.
+- Published `feat/donation-sandbox-single` and opened
+  [donation-api PR #1](https://github.com/HallelujahHomeChurch/donation-api/pull/1)
+  against the approved empty `main`. Current head `ad2f230` also reconciles the
+  runtime README's historical publication blocker. No merge or deployment.
+- CI run `36941920028` on the older head was automatically cancelled by the
+  workflow concurrency policy when the documentation update arrived. Latest-head
+  [run `36942001839`](https://github.com/HallelujahHomeChurch/donation-api/actions/runs/36942001839)
+  passed on `ad2f230`: Verify (race tests, vet/build/format/OpenAPI), Docker image
+  build and configured Trivy image scan all succeeded. This is fresh remote CI
+  evidence for this head only. Old cancelled results do not establish test
+  failure or success; PR success is not a merge/release/deployment acceptance.
+- This publishes only the default-disabled backend foundation. Admin UI,
+  encryption/retention, audit/reconciliation, runtime configuration, release and
+  bank checkout/callback acceptance remain separate incomplete work.
+
 ## Continuation — approved empty baseline and publication gate (2026-10-02)
 
 - User confirmed the scope is Admin Console using bank Sandbox and authorized
