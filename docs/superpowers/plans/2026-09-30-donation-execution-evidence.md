@@ -4,6 +4,22 @@ Date: 2026-09-30. Approved plan: `2026-09-30-donation-admin-sandbox-first.md`.
 Initial foundation date above; subsequent evidence is recorded by date below.
 Neither the local foundation nor a read-only bank query is delivery 1A acceptance.
 
+## Continuation — approved empty baseline and publication gate (2026-10-02)
+
+- User confirmed the scope is Admin Console using bank Sandbox and authorized
+  continuation after the empty-main proposal. Verified existing bootstrap
+  `bb1f82e84aa62d40557ef889568d4b1557d3b148` has an empty tree; pushed only that
+  commit to `origin/main`, without rewriting history or putting feature code on
+  main. Fresh remote inspection confirms that is the only remote branch.
+- Feature push was rejected by GitHub: the OAuth credential lacks `workflow`
+  scope for `.github/workflows/ci.yml`. Active GitHub CLI authorization likewise
+  lists no workflow scope. No feature branch, PR, CI run, merge or deployment was
+  created. Do not remove the workflow, switch identities or otherwise bypass the
+  permission gate. Request authorized credential reauthorization before retry.
+- Local worktrees and existing implementation remain preserved. This is a
+  publication authorization blocker, not evidence that tests failed or that
+  Sandbox UI/payment acceptance is complete.
+
 ## Continuation — shared runtime image and background jobs (2026-10-02)
 
 - Donation `32ff4d6` adds one nonroot image with `serve` (combined), `api`,
