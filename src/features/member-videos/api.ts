@@ -11,11 +11,11 @@ const mediaHosts = new Set(['media.alive.org.tw', 'media-test.alive.org.tw']);
 
 function mediaCookieURL(mediaURL: string) {
   const media = new URL(mediaURL);
-  if (media.protocol !== 'https:' || !mediaHosts.has(media.hostname) || media.port || !/^\/videos\/[a-zA-Z0-9-]+\/files\/[a-zA-Z0-9-]+\/sessions\/[a-zA-Z0-9-]+\/content$/.test(media.pathname) || media.search || media.hash) {
+  if (media.protocol !== 'https:' || !mediaHosts.has(media.hostname) || media.port || media.username || media.password || !/^\/videos\/[a-zA-Z0-9-]{1,80}\/packages\/[a-f0-9]{32}\/sessions\/[a-zA-Z0-9-]{1,80}\/master\.m3u8$/.test(media.pathname) || media.search || media.hash) {
     throw new Error('Invalid media endpoint');
   }
   const cookie = new URL(media);
-  cookie.pathname = media.pathname.replace(/\/content$/, '/cookie');
+  cookie.pathname = media.pathname.replace(/\/master\.m3u8$/, '/cookie');
   return {media, cookie};
 }
 
@@ -30,6 +30,8 @@ export function createMemberVideoApi(authorization: Authorization, fetcher: Fetc
         method: 'POST',
         credentials: 'include',
         cache: 'no-store',
+        redirect: 'error',
+        referrerPolicy: 'no-referrer',
         headers: {'content-type': 'application/json'},
         body: JSON.stringify({credential: playback.exchangeCredential}),
         signal
@@ -39,7 +41,7 @@ export function createMemberVideoApi(authorization: Authorization, fetcher: Fetc
     },
     async clear(mediaURL: string) {
       const {cookie} = mediaCookieURL(mediaURL);
-      await fetcher(cookie, {method: 'DELETE', credentials: 'include', cache: 'no-store'});
+      await fetcher(cookie, {method: 'DELETE', credentials: 'include', cache: 'no-store', redirect: 'error', referrerPolicy: 'no-referrer'});
     }
   };
 }

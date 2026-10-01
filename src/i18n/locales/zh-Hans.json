@@ -250,6 +250,16 @@
     "empty": "目前尚未发布周报。"
   },
   "memberVideos": {
+    "quality": "画质",
+    "auto": "自动",
+    "pause": "暂停",
+    "mute": "静音",
+    "unmute": "取消静音",
+    "seek": "播放位置",
+    "volume": "音量",
+    "fullscreen": "全屏",
+    "exitFullscreen": "退出全屏",
+    "playbackSpeed": "播放速度",
     "heroTitle": "影音专区", "heroSubtitle": "最近 30 天的聚会录像", "selectedTitle": "本次选择的录像", "listTitle": "最近 30 天的录像", "count": "共 {count} 场", "play": "播放录像", "select": "选择观看", "selected": "已选取", "playing": "播放中", "featured": "置顶", "durationUnknown": "片长暂无资料", "expires": "可观看至", "loading": "正在载入录像", "preparing": "正在准备播放", "empty": "最近 30 天暂无可观看的录像", "loadError": "录像暂时无法载入", "playError": "暂时无法播放，请重试", "expired": "这段录像已无法观看", "retry": "重新载入", "previous": "上一页", "next": "下一页"
   },
   "privacyPolicy": {
