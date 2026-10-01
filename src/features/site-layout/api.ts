@@ -30,7 +30,12 @@ async function resolveSiteLayout(locale: Locale, client: HhcWebClient): Promise<
 
 async function legacyLayout(locale: Locale, client: HhcWebClient): Promise<SiteLayout> {
   try {
-    return await client.getSiteLayout(locale);
+    const layout = await client.getSiteLayout(locale);
+    return {...layout, legal: layout.legal.map((item) =>
+      item.key === 'terms-of-use' && ['條款', '条款', 'Terms'].includes(item.label)
+        ? {...item, label: getMessages(locale).site.termsOfUse}
+        : item
+    )};
   } catch (error) {
     captureHandledError(error, {operation: 'site_layout.legacy', level: 'warning', tags: {locale}});
     return configuredLayout(locale, fallbackLinks, 0, '');
