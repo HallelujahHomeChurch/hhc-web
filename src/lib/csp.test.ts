@@ -17,7 +17,7 @@ describe('getContentSecurityPolicy', () => {
     expect(directive(policy, 'form-action')).toBe("form-action 'self'");
     expect(directive(policy, 'frame-ancestors')).toBe("frame-ancestors 'none'");
     expect(directive(policy, 'frame-src')).toBe("frame-src 'none'");
-    expect(directive(policy, 'media-src')).toBe('media-src https://media.alive.org.tw https://media-test.alive.org.tw');
+    expect(directive(policy, 'media-src')).toBe('media-src blob: https://media.alive.org.tw https://media-test.alive.org.tw');
   });
 
   it('allows only current public application dependencies', () => {

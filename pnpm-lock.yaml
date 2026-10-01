@@ -17,8 +17,8 @@ importers:
         specifier: 1.0.28
         version: 1.0.28
       '@hallelujahhomechurch/hhc-web-client':
-        specifier: 1.0.28
-        version: 1.0.28
+        specifier: 1.0.29
+        version: 1.0.29
       '@hallelujahhomechurch/operations-client':
         specifier: 1.0.26
         version: 1.0.26
@@ -31,6 +31,9 @@ importers:
       '@sentry/nextjs':
         specifier: 10.69.0
         version: 10.69.0(@opentelemetry/core@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.11.0(@opentelemetry/api@1.9.1))(next@16.3.6(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@types/node@24.13.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(webpack@5.111.0)
+      hls.js:
+        specifier: 1.7.3
+        version: 1.7.3
       lucide-react:
         specifier: ^1.24.0
         version: 1.27.0(react@19.2.7)
@@ -334,8 +337,8 @@ packages:
   '@hallelujahhomechurch/account-client@1.0.28':
     resolution: {integrity: sha512-CMrSrXZoq9/wI+DUsNKVAcH9YRIGRjqt7FmikYuuiCw7v+H7TTlSTGvxqbL/waIyRKVhbJeMA8usLN+h19H0Yg==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/account-client/1.0.28/c0b68656ae7e1cfa9ecaa56d2fb7a3ac74b28e0d}
 
-  '@hallelujahhomechurch/hhc-web-client@1.0.28':
-    resolution: {integrity: sha512-bs/ZJQca4yyLVXc1GBrMSTadKOkkAkJ5HPa/0wzze50MdTdX6CLUzxYHBm4bgrWz83xCnDyEj5tO61MN6793bw==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/hhc-web-client/1.0.28/fc09dc092fe900f5084120eab4247d775ca22670}
+  '@hallelujahhomechurch/hhc-web-client@1.0.29':
+    resolution: {integrity: sha512-Sbh94aprMLLV3gkw0CMUXNREfId7uA9XJgXevoIFpxMESKMrSJ9hRCXDMOEkO/EnH7ildhfN7T1v/VAXf/6n1g==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/hhc-web-client/1.0.29/4e64634e944600c2d96612df1f345ed823a5eefe}
 
   '@hallelujahhomechurch/operations-client@1.0.26':
     resolution: {integrity: sha512-wQDPbURQwUWGktdfc0q1xA3mEcIf4+fSAae5FEvxSt76VTTxQreTA7W15H/lfvMe8Ihja+vDpuoPMb3H2ZhCIQ==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/operations-client/1.0.26/a3eb34d6cd16dd3cc74917c720a2adc7ab27053d}
@@ -2453,6 +2456,9 @@ packages:
   hermes-parser@0.25.1:
     resolution: {integrity: sha512-6pEjquH3rqaI6cYAXYPcz9MS4rY6R4ngRgrgfDshRptUZIc3lw0MCIJIGDj9++mfySOuPTHB4nrSW99BCvOPIA==}
 
+  hls.js@1.7.3:
+    resolution: {integrity: sha512-MsPlx6yVW4Qv4C7mEVou4/gk/5cN2dVxOTnrNjPSmyH2f0Ln+/UkG10Ax1PE6OvrmTVPKgQYozTtBaPOuCzq7A==}
+
   html-encoding-sniffer@6.0.0:
     resolution: {integrity: sha512-CV9TW3Y3f8/wT0BRFc1/KAVQ3TUHiXmaAb6VW9vtiMFf7SLoMd1PdAc4W3KFOFETBJUb90KatHqlsZMWV+R9Gg==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
@@ -4123,7 +4129,7 @@ snapshots:
 
   '@hallelujahhomechurch/account-client@1.0.28': {}
 
-  '@hallelujahhomechurch/hhc-web-client@1.0.28':
+  '@hallelujahhomechurch/hhc-web-client@1.0.29':
     dependencies:
       openapi-fetch: 0.15.2
 
@@ -6252,6 +6258,8 @@ snapshots:
   hermes-parser@0.25.1:
     dependencies:
       hermes-estree: 0.25.1
+
+  hls.js@1.7.3: {}
 
   html-encoding-sniffer@6.0.0:
     dependencies:
