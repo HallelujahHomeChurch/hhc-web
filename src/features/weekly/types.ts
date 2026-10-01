@@ -15,6 +15,9 @@ export type WeeklyBulletin = {
   title: string;
   subtitle?: string;
   downloadName: string;
+  pdfPublished?: boolean;
+  onlineRevision?: number;
+  documentId?: string;
 };
 
 export type WeeklyIssue = {

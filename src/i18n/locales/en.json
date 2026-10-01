@@ -94,6 +94,8 @@
     "weeklyDownloadError": "The weekly paper is temporarily unavailable. Please try again later.",
     "weeklyLoading": "Loading weekly paper",
     "weeklyLoadError": "Weekly paper is temporarily unavailable",
+    "weeklyReadOnline": "Read online",
+    "weeklyEmpty": "No bulletins available",
     "retry": "Retry",
     "videosTitle": "Kingdom Joy",
     "videosSubtitle": "Worship through music and let life be lit by love",
@@ -236,6 +238,7 @@
     "downloading": "Preparing weekly paper download {progress}%.",
     "downloadReady": "Your weekly paper is ready. Tap the button again to open it.",
     "downloadError": "The weekly paper is temporarily unavailable. Please try again later.",
+    "readOnline": "Read online",
     "loadError": "Weekly papers are temporarily unavailable",
     "retry": "Retry",
     "empty": "No weekly papers have been published yet."

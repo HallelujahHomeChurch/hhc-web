@@ -25,10 +25,10 @@
   },
   "dependencies": {
     "@hallelujahhomechurch/account-client": "1.0.26",
-    "@hallelujahhomechurch/hhc-web-client": "1.0.26",
+    "@hallelujahhomechurch/hhc-web-client": "file:../frontend-platform/artifacts/hallelujahhomechurch-hhc-web-client-1.0.29.tgz",
     "@hallelujahhomechurch/operations-client": "1.0.26",
     "@hallelujahhomechurch/preferences": "1.0.26",
-    "@hallelujahhomechurch/ui": "1.0.27",
+    "@hallelujahhomechurch/ui": "file:../frontend-platform/artifacts/hallelujahhomechurch-ui-1.0.29.tgz",
     "@sentry/nextjs": "10.69.0",
     "lucide-react": "^1.24.0",
     "next": "16.3.3",

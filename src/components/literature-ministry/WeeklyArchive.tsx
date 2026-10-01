@@ -6,9 +6,10 @@ import {Button} from '@/components/ui/Button';
 import {DownloadButton} from '@/components/ui/DownloadButton';
 import {createWeeklyBulletinApi, type WeeklyBulletinApi} from '@/features/weekly/api';
 import {formatIssueNumber, resolveWeeklyCopy} from '@/features/weekly/format';
+import {readerUrl} from '@/features/weekly/resolve-edition';
 import {weeklyEditionLabels, type WeeklyIssue, type WeeklyIssuePage} from '@/features/weekly/types';
 import type {Locale} from '@/i18n/locales';
-import {useBulletinAccess, useBulletinAuthorization} from '@/components/layout/AccountControl';
+import {useAccountIdentity, useBulletinAccess, useBulletinAuthorization} from '@/components/layout/AccountControl';
 import {captureHandledError} from '@/lib/observability';
 import type {BulletinSeries} from '@hallelujahhomechurch/preferences';
 
@@ -32,6 +33,7 @@ type WeeklyArchiveMessages = {
   loadError: string;
   retry: string;
   empty: string;
+  readOnline: string;
 };
 
 type WeeklyArchiveProps = {locale: Locale; messages: WeeklyArchiveMessages};
@@ -48,6 +50,7 @@ function getPageHref(locale: Locale, series: BulletinSeries, page: number) {
 }
 
 export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
+  const accountId = useAccountIdentity();
   const bulletinAccess = useBulletinAccess();
   const authorization = useBulletinAuthorization();
   const api = useMemo(() => createWeeklyBulletinApi(authorization), [authorization]);
@@ -60,7 +63,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
   const locales = useMemo(() => editions.filter((edition) => edition.series === series).map((edition) => edition.locale), [editions, series]);
   const page = getPageValue(searchParams.get('page'));
   const [retryKey, setRetryKey] = useState(0);
-  const latestKey = `${series}:${locales.join(',')}:${retryKey}`;
+  const latestKey = `${accountId}:${series}:${locales.join(',')}:${retryKey}`;
   const archiveKey = `${latestKey}:${page}`;
   const [latestResult, setLatestResult] = useState<{
     key: string;
@@ -132,7 +135,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
               {latestIssueLabel ? <p className="mt-3 text-[21px] font-semibold text-[var(--hhc-brand-strong)]">{latestIssueLabel}</p> : null}
               {latestCopy ? <h3 lang={latestCopy.locale} className="mt-2 text-lg font-semibold leading-snug text-ink">{latestCopy.title}</h3> : null}
               {latestCopy?.subtitle ? <p lang={latestCopy.locale} className="mt-1 text-sm leading-relaxed text-muted">{latestCopy.subtitle}</p> : null}
-              <VersionLinks issue={latestIssue} workflow={api} preparingLabel={messages.downloading} readyLabel={messages.downloadReady} errorLabel={messages.downloadError} className="mt-5" />
+              <VersionLinks locale={locale} readOnlineLabel={messages.readOnline} issue={latestIssue} workflow={api} preparingLabel={messages.downloading} readyLabel={messages.downloadReady} errorLabel={messages.downloadError} className="mt-5" />
             </>
           ) : latestState === 'error' ? (
             <div className="mt-4 grid justify-items-start gap-4">
@@ -140,7 +143,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
               <button className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--hhc-control-border)] bg-paper px-5 font-semibold text-[var(--hhc-control)] transition hover:border-primary hover:bg-primary hover:text-primary-foreground" type="button" onClick={() => setRetryKey((value) => value + 1)}>{messages.retry}</button>
             </div>
           ) : (
-            <h3 className="mt-4 text-[18px] font-semibold text-muted" aria-live="polite">{messages.loading}</h3>
+              <h3 className="mt-4 text-[18px] font-semibold text-muted" aria-live="polite">{latestState === 'ready' ? messages.empty : messages.loading}</h3>
           )}
         </aside>
       </div>
@@ -161,7 +164,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
                   {copy ? <h4 lang={copy.locale} className="text-lg font-semibold leading-snug text-ink">{copy.title}</h4> : null}
                   {copy?.subtitle ? <p lang={copy.locale} className="mt-1 text-sm leading-relaxed text-muted">{copy.subtitle}</p> : null}
                 </div>
-                <VersionLinks issue={issue} workflow={api} preparingLabel={messages.downloading} readyLabel={messages.downloadReady} errorLabel={messages.downloadError} />
+                <VersionLinks locale={locale} readOnlineLabel={messages.readOnline} issue={issue} workflow={api} preparingLabel={messages.downloading} readyLabel={messages.downloadReady} errorLabel={messages.downloadError} />
               </article>
             ) : null;
           }) : archiveState === 'ready' ? <p className="text-muted">{messages.empty}</p> : archiveState === 'error' ? <p className="text-muted">{messages.loadError}</p> : null}
@@ -180,10 +183,17 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
   );
 }
 
-function VersionLinks({issue, workflow, preparingLabel, readyLabel, errorLabel, className = ''}: {issue: WeeklyIssue; workflow: WeeklyBulletinApi; preparingLabel: string; readyLabel: string; errorLabel: string; className?: string}) {
+function VersionLinks({locale, readOnlineLabel, issue, workflow, preparingLabel, readyLabel, errorLabel, className = ''}: {locale: Locale; readOnlineLabel: string; issue: WeeklyIssue; workflow: WeeklyBulletinApi; preparingLabel: string; readyLabel: string; errorLabel: string; className?: string}) {
   return (
-    <div className={`flex justify-end gap-2.5 max-[860px]:grid max-[860px]:grid-flow-col max-[860px]:auto-cols-fr ${className}`}>
-      {issue.versions.map((version) => <DownloadButton key={`${version.series}/${version.locale}`} bulletin={version} workflow={workflow} label={weeklyEditionLabels[version.locale]} variant="outline" preparingLabel={preparingLabel} readyLabel={readyLabel} errorLabel={errorLabel} />)}
+    <div className={`flex flex-wrap justify-end gap-2.5 ${className}`}>
+      {issue.versions.map((version) => {
+        const href = readerUrl(locale, version);
+        const label = weeklyEditionLabels[version.locale];
+        return <div key={`${version.series}/${version.locale}`} className="flex flex-wrap items-center gap-2">
+          {version.pdfPublished !== false ? <DownloadButton bulletin={version} workflow={workflow} label={label} variant="outline" preparingLabel={preparingLabel} readyLabel={readyLabel} errorLabel={errorLabel} /> : null}
+          {href ? <a href={href} aria-label={`${readOnlineLabel}: ${label}`} className="inline-flex min-h-11 items-center rounded-full border border-primary px-4 font-semibold text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{readOnlineLabel} · {label}</a> : null}
+        </div>;
+      })}
     </div>
   );
 }

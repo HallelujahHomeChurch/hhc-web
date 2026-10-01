@@ -3,36 +3,39 @@
 import {useEffect, useMemo, useState} from 'react';
 import {DownloadButton} from '@/components/ui/DownloadButton';
 import {createWeeklyBulletinApi} from '@/features/weekly/api';
-import {formatIssueNumber, resolveWeeklyCopy} from '@/features/weekly/format';
+import {formatIssueNumber} from '@/features/weekly/format';
+import {resolveEdition} from '@/features/weekly/resolve-edition';
 import {weeklyEditionLabels, type WeeklyIssue} from '@/features/weekly/types';
 import type {Locale} from '@/i18n/locales';
-import {useBulletinAccess, useBulletinAuthorization} from '@/components/layout/AccountControl';
+import {useAccountIdentity, useBulletinAccess, useBulletinAuthorization} from '@/components/layout/AccountControl';
 import {captureHandledError} from '@/lib/observability';
 import type {BulletinSeries} from '@hallelujahhomechurch/preferences';
 
 type WeeklyCardProps = {
   locale: Locale;
   ctaLabel: string;
-  messages: {general: string; children: string; loading: string; downloading: string; downloadReady: string; downloadError: string; error: string; retry: string};
+  messages: {general: string; children: string; loading: string; downloading: string; downloadReady: string; downloadError: string; error: string; retry: string; readOnline: string; empty: string};
 };
 
 export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
   const bulletinAccess = useBulletinAccess();
   const authorization = useBulletinAuthorization();
+  const accountId = useAccountIdentity();
   const api = useMemo(() => createWeeklyBulletinApi(authorization), [authorization]);
   const editions = bulletinAccess.editions;
   const canRead = bulletinAccess.status === 'available' && editions.length > 0;
   const series = useMemo(() => (['general', 'children'] as const).filter((value) => editions.some((edition) => edition.series === value)), [editions]);
   const [selectedSeries, setSelectedSeries] = useState<BulletinSeries>('general');
   const [retryKey, setRetryKey] = useState(0);
-  const requestKey = `${editions.map(({series, locale}) => `${series}/${locale}`).join(',')}:${retryKey}`;
+  const requestKey = `${accountId}:${editions.map(({series, locale}) => `${series}/${locale}`).join(',')}:${retryKey}`;
   const [results, setResults] = useState<Partial<Record<BulletinSeries, {key: string; state: 'ready' | 'error'; weekly: WeeklyIssue | null}>>>({});
   const activeSeries = series.includes(selectedSeries) ? selectedSeries : series[0];
   const result = activeSeries ? results[activeSeries] : undefined;
   const state = result?.key === requestKey ? result.state : 'loading';
   const weekly = result?.key === requestKey ? result.weekly : null;
   const issueLabel = formatIssueNumber(locale, weekly?.issueNumber);
-  const copy = weekly ? resolveWeeklyCopy(weekly, locale) : null;
+  const resolved = weekly && activeSeries ? resolveEdition({uiLocale: locale, series: activeSeries, authorizedEditions: editions, publishedEditions: weekly.versions}) : null;
+  const copy = resolved?.version;
 
   useEffect(() => {
     if (!canRead) return;
@@ -68,26 +71,26 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
         }}>{value === 'general' ? messages.general : messages.children}</button>)}
       </div> : null}
       <div id="weekly-series-panel" role={series.length > 1 ? 'tabpanel' : undefined} aria-labelledby={series.length > 1 ? `weekly-tab-${activeSeries}` : undefined}>
-      {state === 'ready' && weekly ? (
+      {state === 'ready' && weekly && resolved ? (
         <div>
           <BulletinMark />
           {issueLabel ? <p className="mb-1 text-[21px] font-semibold text-[var(--hhc-brand-strong)]">{issueLabel}</p> : null}
           {copy ? <h3 id="weekly-title" lang={copy.locale} className="text-xl font-semibold leading-snug text-ink">{copy.title}</h3> : <h3 id="weekly-title" className="sr-only">{ctaLabel}</h3>}
           {copy?.subtitle ? <p lang={copy.locale} className="mt-1 text-sm leading-relaxed text-muted">{copy.subtitle}</p> : null}
-          <div className="mt-5 grid grid-cols-3 gap-2.5">
-            {weekly.versions.map((version) => (
+          <div className="mt-5 flex flex-wrap justify-center gap-2.5">
+            {resolved.canDownload ? (
               <DownloadButton
-                key={`${version.series}/${version.locale}`}
-                bulletin={version}
+                bulletin={resolved.version}
                 workflow={api}
-                label={weeklyEditionLabels[version.locale]}
-                ariaLabel={`${ctaLabel}: ${weeklyEditionLabels[version.locale]}`}
+                label={ctaLabel}
+                ariaLabel={`${ctaLabel}: ${weeklyEditionLabels[resolved.contentLocale]}`}
                 className="px-3 text-sm"
                 preparingLabel={messages.downloading}
                 readyLabel={messages.downloadReady}
                 errorLabel={messages.downloadError}
               />
-            ))}
+            ) : null}
+            {resolved.readUrl ? <a className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--hhc-control-border)] bg-paper px-5 font-semibold text-[var(--hhc-control)] transition hover:border-primary hover:bg-primary hover:text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" href={resolved.readUrl}>{messages.readOnline}</a> : null}
           </div>
         </div>
       ) : state === 'error' ? (
@@ -98,7 +101,7 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
             {messages.retry}
           </button>
         </div>
-      ) : (
+      ) : state === 'ready' ? <h3 id="weekly-title" className="text-muted">{messages.empty}</h3> : (
         <div aria-live="polite">
           <BulletinMark />
           <h3 id="weekly-title" className="text-[18px] font-semibold text-muted">{messages.loading}</h3>

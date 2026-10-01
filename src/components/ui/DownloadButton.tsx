@@ -34,7 +34,7 @@ export function DownloadButton({
   ...props
 }: DownloadButtonProps) {
   const accountIdentity = useAccountIdentity();
-  const storageKey = `weekly-download-job:${accountIdentity ?? 'anonymous'}:${bulletin.issueId}:${bulletin.locale}`;
+  const storageKey = `weekly-download-job:${accountIdentity ?? 'anonymous'}:${bulletin.issueId}:${bulletin.series}:${bulletin.locale}`;
   return <DownloadButtonWorkflow key={storageKey} bulletin={bulletin} storageKey={storageKey} {...props} />;
 }
 

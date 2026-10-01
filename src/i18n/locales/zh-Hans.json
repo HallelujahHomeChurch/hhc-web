@@ -94,6 +94,8 @@
     "weeklyDownloadError": "周报暂时无法下载，请稍后再试。",
     "weeklyLoading": "正在加载周报",
     "weeklyLoadError": "周报暂时无法加载",
+    "weeklyReadOnline": "在线阅读",
+    "weeklyEmpty": "目前没有可阅读的周报",
     "retry": "重试",
     "videosTitle": "神国大乐",
     "videosSubtitle": "用音乐敬拜神，让生命被爱点亮",
@@ -245,6 +247,7 @@
     "downloading": "正在准备下载周报 {progress} %。",
     "downloadReady": "周报已准备完成，请再次点击按钮打开。",
     "downloadError": "周报暂时无法下载，请稍后再试。",
+    "readOnline": "在线阅读",
     "loadError": "周报暂时无法加载",
     "retry": "重试",
     "empty": "目前尚未发布周报。"
