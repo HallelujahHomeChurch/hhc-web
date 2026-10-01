@@ -1,7 +1,7 @@
 # Weekly Bulletin Online Reader Design
 
 **Date:** 2026-08-21
-**Revised:** 2026-09-30 — member download authorization, seven-day offline reading, and readable trace watermark.
+**Revised:** 2026-10-01 — stable source-inspired desktop/iPad layout; member download authorization, seven-day offline reading, and readable trace watermark.
 
 ## Goal
 
@@ -22,10 +22,15 @@ future bulletins rather than hard-code the two initial samples.
 - The PDF remains independently downloadable and publishable.
 - Online Reading has its own draft, revision, publish, unpublish, and restore
   lifecycle. Its readiness never blocks PDF publication.
-- Desktop and iPad render structured content in the source PDF's page layout;
-  they do not display PDF pages or page screenshots.
-- The initial, unedited extraction must have the same page count and component
-  start pages as its source PDF.
+- Desktop and iPad render structured content with the source PDF's visual
+  hierarchy, section order, columns and approximate proportions. Stable,
+  readable layout takes precedence over exact coordinates. Complex WordArt,
+  shadows, scrolls and ornamental frames may use simpler native equivalents.
+  They do not display PDF pages or page screenshots.
+- Source page count/start pages remain provenance and comparison data. Small
+  differences in line breaks and pagination are acceptable, including initial
+  extraction, when needed for legal substitute fonts and stable layout. The
+  preview must expose the resulting page count and retain every allowed sentence.
 - Mobile uses a same-style responsive continuous layout rather than simulated
   paper pages.
 - The existing issue number, issue date, title, and subtitle are canonical.
@@ -492,13 +497,15 @@ Publishing requires:
 - canonical issue/date agreement;
 - resolution or explicit acceptance of every warning;
 - no hard validation error, unassigned allowed text, or blocked overflow;
-- matching initial desktop/iPad page count and component start pages;
+- reviewed desktop/iPad composition with complete text, stable pagination and
+  source-like hierarchy; exact source page-count equality is not required;
 - an explicit human `Confirm Online Version` action;
 - the corresponding content-locale PDF to be published.
 
-Cover and back-page overflow block publication unless an administrator
-explicitly adds a continuation page. Body edits may reflow and repaginate; the
-preview shows the resulting page-count change rather than hiding it.
+The template may reflow and add continuation pages at the saved-layout stage;
+the preview shows page-count changes for human confirmation. Clipped,
+overlapping or unassigned text still blocks publication. No text is silently
+shrunk or discarded to meet the source page count.
 
 ### Re-upload comparison
 

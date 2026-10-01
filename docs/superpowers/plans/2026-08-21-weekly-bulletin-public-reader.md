@@ -161,7 +161,7 @@
 ### Task 7: Release and accept the complete member reader
 
 - [ ] Run Website test/lint/build/Docker and shared UI parity checks. Keep entry disabled until private-interactions acceptance also passes.
-- [ ] Compare 1739/1740 cover/body/hymn/back at desktop, iPad portrait/landscape/split view and 320/375px phones. Require original initial page count/start pages, no missing/clipped/overlapping text, and Admin/Website parity.
+- [ ] Compare 1739/1740 cover/body/hymn/back at desktop, iPad portrait/landscape/split view and 320/375px phones. Require source-like hierarchy/columns/proportions, stable readable layout, no missing/clipped/overlapping text, and Admin/Website parity. User-approved simpler ornaments and modest line/page-break differences are acceptable; source page count remains provenance, not an equality gate.
 - [ ] Show with/without watermark, all three highlights and active selection, Fit Page/Fit Width, 75/100/200/250% reader zoom and 200% browser zoom. Require worst-overlay body contrast >= 4.5:1 and explicit user approval of actual reading screens. Passing render tests is not visual acceptance.
 - [ ] Verify keyboard, screen-reader order/focus, reduced motion, 44px targets, note sheet/software keyboard, bottom-navigation/safe-area avoidance, and combined gestures.
 - [ ] Measure shell LCP separately from authorized content readiness; target p75 authorized navigation-to-readable-content <= 2.5 seconds. Local navigation/search/selection does not wait for network.
