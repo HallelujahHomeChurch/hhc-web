@@ -1,3 +1,6 @@
+import {LegalRequiredNavigation} from '@/components/legal/LegalRequiredNavigation';
+import {Suspense} from 'react';
+import {AnalyticsBoundary} from '@/components/layout/AnalyticsBoundary';
 import {NextIntlClientProvider} from 'next-intl';
 import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
@@ -34,11 +37,12 @@ export default async function LocaleLayout({children, params}: LocaleLayoutProps
   return (
     <NextIntlClientProvider locale={rawLocale} messages={messages}>
       <AccountControlProvider labels={messages.site.account}>
+        <LegalRequiredNavigation />
         <InitialLoadingBoundary label={messages.site.loading}>
           <StatementProvider locale={rawLocale} labels={messages.site.statement}>
           <div data-locale={rawLocale} lang={rawLocale}>
             <TranslationNotice locale={rawLocale} message={messages.site.translationNotice} dismissLabel={messages.site.translationNoticeDismiss} regionLabel={messages.site.translationNoticeRegion} />
-            {children}
+            <Suspense fallback={null}><AnalyticsBoundary locale={rawLocale}>{children}</AnalyticsBoundary></Suspense>
           </div>
           </StatementProvider>
         </InitialLoadingBoundary>

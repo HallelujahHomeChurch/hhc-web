@@ -90,11 +90,16 @@ export function createProtectedFetch(authorization: BulletinAuthorization, fetch
     if (!token) throw new WeeklyApiError('not_authenticated', 'An authenticated member session is required.');
     const request = withToken(new Request(input, init), token);
     const response = await fetcher(request.clone());
-    if (response.status !== 401) return response;
+    if (response.status !== 401) return legalResponse(response);
 
     const refreshed = await authorization.refreshAfterUnauthorized(token);
-    return refreshed ? fetcher(withToken(request, refreshed)) : response;
+    return legalResponse(refreshed ? await fetcher(withToken(request, refreshed)) : response);
   };
+}
+
+function legalResponse(response: Response): Response {
+  if (response.status === 428 && typeof window !== 'undefined') window.dispatchEvent(new Event('hhc:legal-required'));
+  return response;
 }
 
 function withToken(request: Request, token: string): Request {
