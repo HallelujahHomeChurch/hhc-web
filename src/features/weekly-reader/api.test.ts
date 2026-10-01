@@ -9,6 +9,23 @@ const auth = {getAccessToken: async () => 'token', refreshAfterUnauthorized: asy
 beforeEach(() => {vi.clearAllMocks(); client.listOnlineBulletinDiscovery.mockResolvedValue({items: [{issueId: readerFixture().document.issueId, issueNumber: 1739, series: 'general', contentLocale: 'zh-Hant', onlineRevision: 1}]}); client.openOnlineBulletin.mockResolvedValue(readerFixture());});
 
 describe('member reader access', () => {
+  it('revalidates a pinned revision by immutable issue ID without rediscovering mutable printed metadata', async () => {
+    const saved = readerFixture();
+    saved.document.canonicalMetadata.issueNumber = 1738;
+    await createReaderApi(auth).renew(selector, saved, 'renew-request');
+    expect(client.listOnlineBulletinDiscovery).not.toHaveBeenCalled();
+    expect(client.openOnlineBulletin).toHaveBeenCalledWith({issueId: saved.document.issueId, series: 'general', locale: 'zh-Hant', revision: 1, receiptId: 'receipt-a', clientRequestId: 'renew-request', signal: undefined});
+  });
+  it('rejects a renewal response bound to a different issue or pinned revision', async () => {
+    const saved = readerFixture();
+    const changed = readerFixture(); changed.document.issueId = 'different';
+    client.openOnlineBulletin.mockResolvedValueOnce(changed);
+    await expect(createReaderApi(auth).renew(selector, saved, 'id')).rejects.toThrow('invalid_reader_binding');
+    changed.document.issueId = saved.document.issueId;
+    changed.document.revision = changed.access.revision = changed.access.currentRevision = 2;
+    client.openOnlineBulletin.mockResolvedValueOnce(changed);
+    await expect(createReaderApi(auth).renew(selector, saved, 'id')).rejects.toThrow('invalid_reader_binding');
+  });
   it('resolves the exact issue and reuses the receipt issuance request ID on retry', async () => {
     const api = createReaderApi(auth);
     const signal = new AbortController().signal;
@@ -26,6 +43,13 @@ describe('member reader access', () => {
   });
   it('keeps the shared renderer source-free while preserving the printed summary', () => {
     expect(verifyReaderAccess(readerFixture(), selector).sourcePageCount).toBe(12);
+  });
+  it('accepts a frozen printed issue number after canonical metadata changes', async () => {
+    const value = readerFixture();
+    value.document.canonicalMetadata.issueNumber = 1738;
+    value.document.metadataSyncPending = true;
+    client.openOnlineBulletin.mockResolvedValue(value);
+    await expect(createReaderApi(auth).open(selector, {clientRequestId: 'id'})).resolves.toEqual(value);
   });
   it.each(['account', 'revision', 'renderer', 'proof', 'asset', 'expiry'])('rejects invalid %s binding before rendering', reason => {
     const value = readerFixture();

@@ -97,6 +97,8 @@ describe('protected weekly reader', () => {
     sessionStorage.setItem(`weekly-reader-position:account-a:${readerFixture().document.documentId}:1`, 'p2');
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
+    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p0');
+    fireEvent.click(screen.getByRole('button', {name: 'Continue reading'}));
     expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p2');
     fireEvent.click(screen.getByRole('button', {name: 'Thumbnails'}));
     expect(container.querySelectorAll('[inert][aria-hidden="true"]')).toHaveLength(4);
@@ -115,6 +117,8 @@ describe('protected weekly reader', () => {
     const scroll = vi.spyOn(HTMLElement.prototype, 'scrollIntoView');
     render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
+    expect(scroll).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', {name: 'Continue reading'}));
     await waitFor(() => expect(scroll).toHaveBeenCalled());
     scroll.mockRestore();
   });

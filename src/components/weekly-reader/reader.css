@@ -16,6 +16,9 @@
 .reader-viewport { overflow: auto; height: 72dvh; min-height: 20rem; padding: 1rem; background: var(--hhc-surface-raised); border-radius: .75rem; overscroll-behavior: contain; touch-action: auto; }
 .reader-scaled-page { position: relative; margin-inline: auto; box-shadow: 0 3px 18px #0002; }
 .reader-watermarked { position: relative; }
+.reader-offline-control { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; max-width: 75rem; margin: .5rem auto; font-size: .875rem; }
+.reader-offline-list { display: grid; gap: 1rem; max-width: 48rem; margin: 1rem 0; }
+.reader-offline-list li { padding: 1rem; background: var(--hhc-surface-raised); border-radius: .75rem; }
 .reader-search form { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .5rem; }
 .reader-search input { min-width: 0; max-width: 100%; }
 .reader-search p { max-width: 48rem; max-height: 8rem; overflow: auto; padding: .5rem; }

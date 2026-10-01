@@ -5,6 +5,8 @@ import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
 import {AccountControl, AccountControlProvider, AccountControlView, BulletinAccessGate, useBulletinAccess, webOAuthConfigForBrowser, webPassiveSsoAttemptKey} from './AccountControl';
 
 const captureHandledError = vi.hoisted(() => vi.fn());
+const offline = vi.hoisted(() => ({prepareOfflineAccount: vi.fn().mockResolvedValue(1), forgetOfflineAccount: vi.fn().mockResolvedValue(undefined), watchOfflineAccount: vi.fn(() => () => {})}));
+vi.mock('@/features/weekly-reader/offline-session', () => offline);
 vi.mock('@/lib/observability', () => ({captureHandledError}));
 
 const labels = {
@@ -12,9 +14,20 @@ const labels = {
   manageAccount: 'Manage account', signIn: 'Sign in', signOut: 'Sign out', signOutError: 'Unable to sign out. Try again.'
 };
 
-afterEach(() => { sessionStorage.clear(); vi.restoreAllMocks(); vi.unstubAllGlobals(); captureHandledError.mockClear(); });
+afterEach(() => { sessionStorage.clear(); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); captureHandledError.mockClear(); });
 
 describe('AccountControl', () => {
+  it('removes local reader data before completing explicit logout', async () => {
+    vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true');
+    const logoutAll = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({memberships: [], orgRoles: [], qualifications: [], entitlements: [], version: 'a'.repeat(64)})));
+    render(<AccountControl client={sessionClient([], {status: 'available'}, logoutAll)} labels={labels}/>);
+    await userEvent.click(await screen.findByRole('button', {name: 'Account menu'}));
+    await userEvent.click(screen.getByRole('menuitem', {name: 'Sign out'}));
+    await screen.findByRole('link', {name: 'Sign in'});
+    expect(offline.forgetOfflineAccount).toHaveBeenCalledWith('u1');
+    expect(offline.forgetOfflineAccount.mock.invocationCallOrder.at(-1)).toBeLessThan(logoutAll.mock.invocationCallOrder[0]);
+  });
   it('uses the Account authority for hosted OAuth', () => {
     vi.stubEnv('NEXT_PUBLIC_ACCOUNT_SITE_URL', 'https://account.alive.org.tw');
 

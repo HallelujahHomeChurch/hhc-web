@@ -16,6 +16,7 @@ import {captureHandledError} from '@/lib/observability';
 import {getSharedAccountSessionClient} from '@/lib/browser-bootstrap';
 import {accountAuthorizeBaseUrlForBrowser, accountSessionBaseUrlForBrowser, accountSiteUrlForBrowser} from '@/lib/account-origin';
 import {siteConfig} from '@/lib/site';
+import {isWeeklyReaderEnabled} from '@/features/weekly-reader/enabled';
 
 export const accountStateEventName = 'hhc:account-state';
 export const webPassiveSsoAttemptKey = 'hhc_web_passive_sso_attempted';
@@ -130,6 +131,20 @@ export function AccountControlProvider({
   const [bulletinProjection, setBulletinProjection] = useState<{subject: string; access: BulletinAccess} | null>(null);
   const [videoProjection, setVideoProjection] = useState<{subject: string; access: VideoAccess} | null>(null);
   const [logoutError, setLogoutError] = useState('');
+  const readerAccountId = auth.status === 'authenticated' ? auth.session.user.id : null;
+  useEffect(() => {
+    if (!isWeeklyReaderEnabled()) return;
+    let disposed = false;
+    let stop: (() => void) | undefined;
+    void import('@/features/weekly-reader/offline-session').then(async offline => {
+      if (disposed) return;
+      stop = offline.watchOfflineAccount(accountId => {
+        if (readerAccountId && accountId !== readerAccountId) authRuntime.clear();
+      }, true);
+      if (readerAccountId) await offline.prepareOfflineAccount(readerAccountId);
+    }).catch(() => { /* Online access remains available when local storage is unavailable. */ });
+    return () => {disposed = true; stop?.();};
+  }, [readerAccountId, authRuntime]);
   const bulletinAccess = useMemo<BulletinAccess>(() => {
     if (auth.status !== 'authenticated') return noBulletinAccess;
     if (auth.session.permissionAvailability.status === 'unavailable') return {status: 'unavailable', editions: []};
@@ -197,6 +212,10 @@ export function AccountControlProvider({
   const signOut = useCallback(async () => {
     setLogoutError('');
     try {
+      if (isWeeklyReaderEnabled() && readerAccountId) {
+        const offline = await import('@/features/weekly-reader/offline-session');
+        await offline.forgetOfflineAccount(readerAccountId);
+      }
       await sessionClient.logoutAll();
       authRuntime.clear();
       notifyAccountStateChange('sign-out');
@@ -206,7 +225,7 @@ export function AccountControlProvider({
       setLogoutError(labels.signOutError);
       return false;
     }
-  }, [authRuntime, labels.signOutError, sessionClient]);
+  }, [authRuntime, labels.signOutError, sessionClient, readerAccountId]);
 
   return (
     <AccountControlContext.Provider value={{

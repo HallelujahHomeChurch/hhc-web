@@ -8,11 +8,16 @@ import {useAccountAuth, useAccountIdentity, useAccountSignIn, useBulletinAccess,
 import {createReaderApi, verifyReaderAccess, type ReaderSelector} from '@/features/weekly-reader/api';
 import {keyboardPageDelta, pageScale, swipeDirection, type ReaderZoom} from '@/features/weekly-reader/navigation';
 import {isWeeklyReaderEnabled} from '@/features/weekly-reader/enabled';
+import {getOfflineIdentity, supportsOfflineReader} from '@/features/weekly-reader/offline-store';
+import {watchOfflineAccount} from '@/features/weekly-reader/offline-session';
+import {useReaderSession} from '@/features/weekly-reader/useReaderSession';
 import type {Locale} from '@/i18n/locales';
 import {ReaderToolbar, type ReaderMessages} from './ReaderToolbar';
 import {PageNavigator} from './PageNavigator';
 import {SectionNavigator} from './SectionNavigator';
 import {ReaderSearch} from './ReaderSearch';
+import {OfflineControl} from './OfflineControl';
+import {ResumeReadingPrompt} from './ResumeReadingPrompt';
 import '@hallelujahhomechurch/ui/bulletin-paper.css';
 import './reader.css';
 
@@ -25,34 +30,39 @@ export function WeeklyReader(props: Props) {
   const access = useBulletinAccess();
   const m = props.messages;
   const enabled = isWeeklyReaderEnabled();
+  const [offlineAccount, setOfflineAccount] = useState<string | null>(null);
+  useEffect(() => {
+    if (!enabled || !supportsOfflineReader()) return;
+    let active = true;
+    void getOfflineIdentity().then(owner => {if (active) setOfflineAccount(owner.accountId);}).catch(() => {});
+    const stop = watchOfflineAccount(setOfflineAccount);
+    return () => {active = false; stop();};
+  }, [enabled]);
+  const savedAccount = enabled ? accountId ?? offlineAccount : null;
   const permitted = enabled && accountId && access.status === 'available' && access.editions.some(edition => edition.series === props.series && edition.locale === props.contentLocale);
   return <main className="weekly-reader">
     <a className="reader-back" href={`/${props.locale}/literature-ministry`}>{m.back}</a>
-    {permitted ? <AuthorizedReader key={`${accountId}:${props.issueNumber}:${props.series}:${props.contentLocale}`} {...props} accountId={accountId}/> :
+    {permitted || savedAccount && offlineAccount === savedAccount ? <AuthorizedReader key={`${savedAccount}:${props.issueNumber}:${props.series}:${props.contentLocale}`} {...props} accountId={savedAccount!}/> :
       <section className="reader-status" role="status"><h1>{m.title}</h1><p>{!enabled ? m.unavailable : auth.status === 'anonymous' ? m.signInRequired : auth.status === 'checking' || access.status === 'loading' ? m.loading : m.unavailable}</p>{enabled && auth.status === 'anonymous' ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}</section>}
   </main>;
 }
 
 function AuthorizedReader(props: Props & {accountId: string}) {
+  const signIn = useAccountSignIn();
   const authorization = useBulletinAuthorization();
   const api = useMemo(() => createReaderApi(authorization), [authorization]);
-  const [requestId] = useState(() => crypto.randomUUID());
-  const [retry, setRetry] = useState(0);
-  const [result, setResult] = useState<OnlineBulletinAccess | null>(null);
-  const [error, setError] = useState<'unavailable' | 'updateRequired' | null>(null);
   const m = props.messages;
   const {accountId, issueNumber, series, contentLocale} = props;
-  useEffect(() => {
-    const controller = new AbortController();
-    void api.open({accountId, issueNumber, series, contentLocale}, {clientRequestId: requestId}, controller.signal).then(value => {
-      if (!controller.signal.aborted) {setResult(value); setError(null);}
-    }).catch((failure: unknown) => {
-      if (!controller.signal.aborted) setError(failure instanceof Error && failure.message === 'update_required' ? 'updateRequired' : 'unavailable');
-    });
-    return () => controller.abort();
-  }, [api, accountId, issueNumber, series, contentLocale, requestId, retry]);
-  if (result) return <ReaderDocument value={result} selector={{accountId, issueNumber, series, contentLocale}} messages={m}/>;
-  return <section className="reader-status" role={error ? 'alert' : 'status'}><h1>{m.title}</h1><p>{error ? m[error] : m.loading}</p>{error ? <button type="button" onClick={() => {setError(null); setRetry(value => value + 1);}}>{m.retry}</button> : null}</section>;
+  const selector = {accountId, issueNumber, series, contentLocale};
+  const session = useReaderSession(api, selector);
+  const guard = (event: React.SyntheticEvent) => {if (!session.allowAction()) {event.preventDefault(); event.stopPropagation();}};
+  if (session.value) return <div onClickCapture={guard} onKeyDownCapture={guard} onPointerDownCapture={guard} onCopyCapture={guard}>
+    {session.offline ? <p role="status">{m.offlineNotice}</p> : null}
+    {session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}
+    <OfflineControl api={api} value={session.value} selector={selector} locale={props.locale} messages={m} onSaved={session.acceptSaved}/>
+    <ReaderDocument key={`${session.value.document.documentId}:${session.value.document.revision}`} value={session.value} selector={selector} messages={m}/>
+  </div>;
+  return <section className="reader-status" role={session.error ? 'alert' : 'status'}><h1>{m.title}</h1><p>{session.error ? m[session.error] : m.loading}</p>{session.error ? <button type="button" onClick={session.retry}>{m.retry}</button> : null}</section>;
 }
 
 function ReaderDocument({value, selector, messages: m}: {value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages}) {
@@ -61,15 +71,17 @@ function ReaderDocument({value, selector, messages: m}: {value: OnlineBulletinAc
   const [restoredAnchor] = useState<Anchor | null>(() => {
     try {const anchor = JSON.parse(sessionStorage.getItem(`${storageKey}:anchor`) ?? 'null'); return anchor && ['component', 'sentence'].includes(anchor.kind) && typeof anchor.id === 'string' ? anchor : null;} catch {return null;}
   });
-  const [page, setPage] = useState(() => {
+  const [restoredPage] = useState(() => {
     try {const id = sessionStorage.getItem(storageKey); return Math.max(0, document.pages.findIndex(page => page.id === id));} catch {return 0;}
   });
+  const [resumePending, setResumePending] = useState(!!restoredAnchor || restoredPage > 0);
+  const [page, setPage] = useState(0);
   const [zoom, setZoom] = useState<ReaderZoom>('page');
   const [mobile, setMobile] = useState(false);
   const [fontsReady, setFontsReady] = useState(() => !globalThis.document?.fonts);
   const [viewport, setViewport] = useState({width: 900, height: 700});
   const viewportRef = useRef<HTMLDivElement>(null);
-  const pendingAnchor = useRef<Anchor | null>(restoredAnchor);
+  const pendingAnchor = useRef<Anchor | null>(null);
   const gesture = useRef<{x: number; y: number; multiplePointers: boolean} | null>(null);
   const pointers = useRef(new Set<number>());
   const active = document.pages[page];
@@ -77,6 +89,7 @@ function ReaderDocument({value, selector, messages: m}: {value: OnlineBulletinAc
   const scale = pageScale(zoom, size, viewport);
   const onPage = (next: number) => {
     if (!Number.isFinite(next)) return;
+    setResumePending(false);
     pendingAnchor.current = null;
     try {sessionStorage.removeItem(`${storageKey}:anchor`);} catch { /* Optional restoration. */ }
     setPage(Math.max(0, Math.min(document.pages.length - 1, Math.floor(next))));
@@ -99,6 +112,7 @@ function ReaderDocument({value, selector, messages: m}: {value: OnlineBulletinAc
     return () => {query.removeEventListener('change', changed); observer?.disconnect();};
   }, []);
   useEffect(() => {
+    if (resumePending) return;
     try {sessionStorage.setItem(storageKey, active.id);} catch { /* Reading remains available without storage. */ }
     if (!mobile && viewportRef.current) {viewportRef.current.scrollTop = 0; viewportRef.current.scrollLeft = 0;}
     const anchor = pendingAnchor.current;
@@ -107,7 +121,7 @@ function ReaderDocument({value, selector, messages: m}: {value: OnlineBulletinAc
       Array.from(viewportRef.current?.querySelectorAll<HTMLElement>(`[${attribute}]`) ?? []).find(element => element.getAttribute(attribute) === anchor.id)?.scrollIntoView({block: 'start'});
       pendingAnchor.current = null;
     }
-  }, [active.id, mobile, storageKey, fontsReady]);
+  }, [active.id, mobile, storageKey, fontsReady, resumePending]);
   function onAnchor(anchor: Anchor) {
     const layout = document.layoutManifest.pages.find(layout => layout.slots.some(slot => anchor.kind === 'component' ? slot.componentId === anchor.id : slot.fragments.some(fragment => fragment.sentenceId === anchor.id)) || anchor.kind === 'sentence' && layout.fixedSlots?.some(slot => `canonical-${slot.element}` === anchor.id));
     const index = document.pages.findIndex(page => page.id === layout?.pageId);
@@ -125,6 +139,7 @@ function ReaderDocument({value, selector, messages: m}: {value: OnlineBulletinAc
     if (!mobile && delta) {event.preventDefault(); onPage(page + delta);}
   }}>
     <header className="reader-heading"><h1 lang={value.document.contentLocale}>{value.document.canonicalMetadata.title}</h1>{value.document.canonicalMetadata.subtitle ? <p lang={value.document.contentLocale}>{value.document.canonicalMetadata.subtitle}</p> : null}{value.document.metadataSyncPending ? <p role="status">{m.metadataPending}</p> : null}</header>
+    {resumePending ? <ResumeReadingPrompt messages={m} onContinue={() => {onPage(restoredPage); if (restoredAnchor) onAnchor(restoredAnchor);}} onStartOver={() => onPage(0)}/> : null}
     <div className="reader-toolbar">{!mobile ? <ReaderToolbar messages={m} zoom={zoom} setZoom={setZoom}/> : null}<SectionNavigator document={document} onSection={id => onAnchor({kind: 'component', id})} messages={m}/><ReaderSearch document={value.document} onJump={id => onAnchor({kind: 'sentence', id})} messages={m}/></div>
     {!mobile ? <PageNavigator document={document} metadata={value.document.canonicalMetadata} page={page} onPage={onPage} messages={m}/> : null}
     <div ref={viewportRef} className="reader-viewport" data-mobile={mobile || undefined} tabIndex={0} onPointerDown={event => {

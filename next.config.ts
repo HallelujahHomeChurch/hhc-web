@@ -26,6 +26,7 @@ const nextConfig: NextConfig = {
     ]
   },
   headers: async () => [
+    {source: '/:locale/literature-ministry/offline/reader-shell', headers: [{key: 'X-HHC-Reader-Shell', value: 'public'}, {key: 'X-Robots-Tag', value: 'noindex, nofollow'}]},
     ...weeklyTemplate.assets.map(asset => ({source: asset.url, headers: [{key: 'Cache-Control', value: 'public, max-age=31536000, immutable'}]})),
     {source: '/assets/weekly/v1/manifest.json', headers: [{key: 'Cache-Control', value: 'public, max-age=0, must-revalidate'}]},
     {source: '/:locale/statements/:slug', headers: [{key: 'X-Robots-Tag', value: 'noindex, follow'}]}, {

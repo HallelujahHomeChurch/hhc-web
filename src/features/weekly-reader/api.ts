@@ -11,7 +11,7 @@ const hash = /^[0-9a-f]{64}$/;
 export function verifyReaderAccess(value: OnlineBulletinAccess, expected: ReaderSelector): BulletinRenderableDocument {
   const {document, access} = value;
   const content = document.content;
-  if (access.accountId !== expected.accountId || document.canonicalMetadata.issueNumber !== expected.issueNumber ||
+  if (access.accountId !== expected.accountId ||
       document.series !== expected.series || document.contentLocale !== expected.contentLocale ||
       access.documentId !== document.documentId || access.series !== document.series || access.contentLocale !== document.contentLocale ||
       access.revision !== document.revision || !Number.isSafeInteger(document.revision) || document.revision < 1 || access.currentRevision < access.revision ||
@@ -39,6 +39,15 @@ export function verifyReaderAccess(value: OnlineBulletinAccess, expected: Reader
 export function createReaderApi(authorization: Authorization, fetcher = globalThis.fetch.bind(globalThis)) {
   const client = createHhcWebClient({baseUrl: '/api', getAccessToken: () => null, fetcher: createProtectedFetch(authorization, fetcher)});
   return {
+    async renew(selector: ReaderSelector, saved: OnlineBulletinAccess, clientRequestId: string, signal?: AbortSignal) {
+      verifyReaderAccess(saved, selector);
+      const value = await client.openOnlineBulletin({issueId: saved.document.issueId, series: selector.series, locale: selector.contentLocale,
+        revision: saved.access.revision, receiptId: saved.access.receiptId, clientRequestId, signal});
+      signal?.throwIfAborted();
+      if (value.document.issueId !== saved.document.issueId || value.document.documentId !== saved.document.documentId || value.access.revision !== saved.access.revision) throw new Error('invalid_reader_binding');
+      verifyReaderAccess(value, selector);
+      return value;
+    },
     async open(selector: ReaderSelector, request: {clientRequestId: string; revision?: number; receiptId?: string}, signal?: AbortSignal) {
       const found = await client.listOnlineBulletinDiscovery({series: selector.series, locale: selector.contentLocale, offset: 0, limit: 1, issueNumber: selector.issueNumber, signal});
       signal?.throwIfAborted();
