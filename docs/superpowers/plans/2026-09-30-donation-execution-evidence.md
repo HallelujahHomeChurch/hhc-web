@@ -4,6 +4,39 @@ Date: 2026-09-30. Approved plan: `2026-09-30-donation-admin-sandbox-first.md`.
 Initial foundation date above; subsequent evidence is recorded by date below.
 Neither the local foundation nor a read-only bank query is delivery 1A acceptance.
 
+## Continuation — approved publisher identity setup (2026-10-02)
+
+- User approved the explicitly disclosed registry-wide AcrPush scope. Fresh
+  checks confirmed legacy ACR mode, unchanged immutable repository OIDC subject
+  and main `8aedb53`; no pre-existing donation publisher identity was found.
+- Created `donation-api-publisher` user-assigned identity in `alive`/eastasia,
+  with one federation `github-donation-main`: GitHub Actions issuer, audience
+  `api://AzureADTokenExchange`, exact immutable repo/main subject recorded below.
+  Assigned only `AcrPush` at the `alive` registry resource. Read-back lists that
+  single role, with no subscription/resource-group deployment or secret roles.
+- Configured repository variables `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`,
+  `AZURE_SUBSCRIPTION_ID` and `DONATION_IMAGE_PUBLISH_ENABLED=true`.
+  `AZURE_DEPLOY_CLIENT_ID` and `DONATION_DISABLED_DEPLOY_ENABLED` remain absent.
+  No credentials were created or stored in GitHub; authentication uses OIDC.
+- Main release `36982356973` passed verification, artifact and publish jobs;
+  deployment was skipped. Real OIDC login, push, pull and image-ID equality
+  checks succeeded. Independent registry read-back confirmed the release tag
+  for commit `8aedb5374e4b1ca88ff645f0c638c5100b5cda17` resolves to
+  `alive.azurecr.io/alive/donation-api@sha256:d5efddf9d80d9b89bd54f80460a49acb3baeff037cb28b40355d49ff985b4149`.
+  Final role/variable read-back still shows only AcrPush and the image-only
+  configuration. Publication is not runtime readiness or bank acceptance.
+- No payment/runtime app, database, bank key, secret, deployment permission,
+  repository visibility or shared ACR permission-mode change was made.
+- Azure incremental what-if with the actual published digest succeeded. After
+  excluding Ignore/NoChange, exactly three Create entries remain: private
+  `donation-api` ACA app, `donation-api-identity`, and its registry-scoped AcrPull
+  assignment. No Modify/Delete entries. The app has fixed Sandbox=false,
+  0.5 CPU/1 GiB, one always-on replica, private ingress and Dapr donation-api.
+  The reference expressions for registry loginServer/new principal remain ARM
+  expressions in what-if; this is not applied-resource or readiness evidence.
+  No bootstrap apply was performed. Its ongoing replica cost and the three
+  resource additions need approval before execution through the delivery path.
+
 ## Continuation — private main-only publisher alignment (2026-10-02)
 
 - User chose to keep donation-api private and align with existing private
