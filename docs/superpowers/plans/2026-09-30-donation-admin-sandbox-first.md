@@ -10,7 +10,7 @@
 
 **Spec:** [Future domain extension strategy, Phase 14](../specs/2026-07-08-hhc-web-future-domain-extension-strategy.md#phase-14-donations), refined by the approved product decisions below and session `01a02372-2d23-7191-91fc-9f76dab78e4a`.
 
-**Status:** Implementation authorized 2026-09-30. Local isolated work begins with the 1A contract, permission catalog and provider protocol. No bank transaction, cloud change or production activation is authorized by this status.
+**Status:** Implementation authorized 2026-09-30. As of 2026-10-02, isolated local work includes the 1A backend, encrypted capabilities, reconciliation and a shared Admin UI draft. The backend is in PR #1; this is not delivery acceptance. No bank transaction, cloud change or production activation is authorized by this status.
 
 **Execution:** [Local offline evidence and remaining work](2026-09-30-donation-execution-evidence.md). Task 0 live gates and Task 1/2 runtime/release items remain open; a passing foundation suite is not delivery 1A acceptance.
 
@@ -170,6 +170,14 @@ allowed when needed, not a requirement to provision another service now.
 Migration execution remains a separately authorized operation, never automatic
 startup DDL. Local implementation/evidence does not authorize route enablement.
 
+Local completion slice (2026-10-02, donation `a662b0b`): capability encryption/
+retention, live-lease atomic callback completion, original-order outcome recovery
+and daily BillQuery checkpoints are implemented and locally tested. A job now
+handles one item from each queue in 55 seconds total. Bank-query review warnings
+are sanitized; central audit dispatch, operator requeue authority and deployed
+alert routing remain open. See the execution evidence for exact limits and bank
+assumptions. These local results do not check off Task 2 runtime acceptance.
+
 - [ ] Persist a stable provider OrderNo and request fingerprint before `OrderCreate`; scope idempotency by environment/actor/key, reject changed-payload reuse and serialize concurrent creation for the same intent. Allowlist bank destinations.
 - [ ] On transport timeout mark creation `create_unknown`, not failed. Query `OrderQuery` using the original OrderNo to recover status/URL; no new OrderNo and no blind automatic create retry. A not-found response alone is insufficient unless the bank guarantees visibility timing. Keep unresolved intents blocked for operator reconciliation; record provider duplicate-order semantics before permitting any same-ID retry.
 - [ ] Persist minimal ShopNo/PayToken callback work before acknowledging. Query `OrderPayQuery` through the authenticated protocol, check its inner result plus APType/merchant/order/amount/currency or local TWD context/type. Apply one outcome per environment/provider transaction; queue errors for retry. Never require an undocumented notification signature.
@@ -178,6 +186,15 @@ startup DDL. Local implementation/evidence does not authorize route enablement.
 - [ ] Configure only Sandbox secret references and disabled production; release via CI/CD after reviewed infrastructure preview and separate deployment authorization.
 
 ## Task 3 — Delivery 1A shared frontend and Admin single-payment acceptance
+
+Local draft (2026-10-02): isolated frontend-platform and admin-fe branches now
+contain a generated Sandbox client, shared form and default-disabled Admin page.
+Local tarballs are verification-only, not a deployable dependency declaration;
+the producer release and consumer registry pins are still required. The browser
+may retain actor-keyed retry key/amount/time for 15 minutes, never bank URL or
+PayToken. Expired/unrelated recovery metadata becomes a blocked sentinel rather
+than silently permitting a new payment. Bank return/login and live payment
+acceptance remain separate from mocked component/browser checks.
 
 - [ ] Generate shared client from released OpenAPI and reuse existing authenticated transport; publish through frontend-platform's normal release workflow.
 - [ ] Add donation-ui shared single-payment form using generic UI primitives; do not add donation domain dependencies to the generic ui package. Expose recurring choices only when 1B contract and evidence are ready.

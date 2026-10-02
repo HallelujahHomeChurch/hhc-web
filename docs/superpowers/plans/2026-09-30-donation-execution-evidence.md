@@ -4,6 +4,105 @@ Date: 2026-09-30. Approved plan: `2026-09-30-donation-admin-sandbox-first.md`.
 Initial foundation date above; subsequent evidence is recorded by date below.
 Neither the local foundation nor a read-only bank query is delivery 1A acceptance.
 
+## Continuation — shared frontend and disabled Admin draft (2026-10-02)
+
+- Fresh isolated frontend-platform (`ce4d063`, version 1.0.30) and admin-fe
+  (`3069b17`) worktrees hold the reusable generated donation client/form and
+  dedicated-permission Admin page. Existing authenticated token/refresh behavior,
+  generic UI, locale and navigation conventions are reused. Only fixed same-origin
+  Sandbox routes are called; the bank link requires the exact approved HTTPS
+  origin. The feature is disabled by default.
+- The result page preserves the opaque reference through login, displays pending
+  until verified results, and bounds/cancels polling. Authorization, capture and
+  settlement are separate. No card fields, charge tokens or official receipts.
+- Reload-safe retries keep only actor-keyed key/amount/time for 15 minutes plus
+  an opaque owned order ID. No bank URL/PayToken is persisted. Expired/malformed
+  metadata becomes a data-free blocked sentinel; a mounted timer plus restore/
+  submit validation enforces logical expiry (suspended browsers may defer work).
+  Correlated POST success clears metadata. Unrelated GET/return recovery cannot
+  prove the original idempotency mapping, so it minimizes metadata to a sentinel
+  rather than silently permitting a new payment.
+- Independent frontend review found this cleanup gap; regression tests observed
+  RED, then the fix passed bounded re-review with no remaining blocking finding.
+  Main executor freshly ran the full producer `corepack pnpm test`: 219 passed.
+  Producer lint/build/package contracts/generated parity and packed Vite/Next
+  consumer checks were also run by the implementer. Main executor inspected the
+  desktop and 390px mobile screenshots; layout fits and the Sandbox notice is
+  visible. This is mocked local UI evidence, not a real login/bank round trip.
+- Admin dependency overrides are **uncommitted local tarball verification only**.
+  The source branch is a draft, not independently deployable until released
+  producer packages and their real registry pins/lockfile are integrated.
+  No frontend push, PR, package publication, merge or release occurred.
+- Final producer head is `b2c4cfe`; Admin source head is `5b6e232`.
+  Admin's full refreshed-package rerun passed
+  all 78 files / 794 tests using `--maxWorkers=2 --testTimeout=15000` (118.77s).
+  The original default run had 12 failures: 11 five-second timeouts plus a DSR
+  expected-call assertion. No test assertion/default/skip was changed; contention
+  is an inference, not proven causation. Do not represent the original default
+  run as green. A stale-tarball attempt was stopped; the final run used the
+  frozen original registry pins and refreshed local Donation UI integrity.
+  Admin lint/build passed. Main executor independently reran the page/runtime
+  suites: 12 tests passed. Only Admin package.json/pnpm-lock.yaml local tarball
+  overrides remain uncommitted; producer and backend worktrees are clean.
+
+Current release gates, not additional completed work: central audit dispatch and
+audited operator requeue; reviewed gateway/Key Vault/DB/alert/release wiring;
+backend/Account producer rollout and actual shared-package publication before
+consumer registry pins; authenticated bank-hosted Sandbox acceptance. Keep all
+worktrees while these gates remain. The task-owned disposable PostgreSQL test
+container and local mock browser/server were stopped; no operational data changed.
+
+## Continuation — encrypted capabilities and durable reconciliation (2026-10-02)
+
+- Donation commit `a662b0b` adds donation-only AES-256-GCM storage encryption,
+  independent stable token-HMAC dedupe, keyring rotation, purpose/environment/
+  record binding and fail-closed enabled configuration. Bank Hash/X-Key and
+  Account keys are not reused. No real storage key or cloud configuration was
+  created. Migration refuses legacy plaintext work instead of deleting data.
+- Checkout URLs expire ten minutes after intent creation and are wiped after
+  successful facts; callback tokens are wiped atomically on completion and
+  outstanding/review tokens after seven days. Financial facts/dedupe identities
+  survive cleanup. These Sandbox capability limits are not a production
+  financial-retention policy. Key Vault/DB TLS/grants/backups remain runtime gates.
+- Original-order OrderQuery recovers lost callback authorization/capture without
+  requiring a checkout URL. Authenticated S0001 remains retryable. BillQuery
+  stores independent daily checkpoints for the prior 1–30 days, revisits recent
+  days and cannot skip a failed day through a maximum-date cursor. Queries never
+  create orders; API success is not payment success, and no settlement timestamp
+  is invented. Refund/unknown/mismatched bills require review without partial
+  writes. Bank-query review warnings contain fixed reason/kind only.
+- Callback facts and completion now commit atomically behind a live lease;
+  expired workers cannot mark work done/review. Outcome and checkout updates
+  serialize on the order row, preventing late recovery from resurrecting a
+  completed payment URL. Changed TSNo is conservatively reviewed, not an assumed
+  bank one-to-one guarantee; V2.5 does not define failed/retried attempt identity.
+- Same-image `job` now handles one callback and one reconciliation item under a
+  55-second total budget (25 seconds each plus bounded cleanup), avoiding queue
+  starvation. Existing default-disabled serve/api/worker modes remain unchanged.
+- RED→GREEN observed for encryption storage, live-lease completion, order
+  visibility retry, changed transaction identity, late capability resurrection,
+  aged work and review warnings. Full serial PostgreSQL/race suite, vet/build and
+  diff checks passed; OpenAPI valid with the same five semantic warnings.
+  Independent backend review findings were reproduced and fixed; bounded final
+  re-review found no remaining issue in these fixes. Reviewer did not rerun DB
+  suites or accept live bank/cloud/central audit behavior.
+- Updated existing PR #1; [CI `36944929097`](https://github.com/HallelujahHomeChurch/donation-api/actions/runs/36944929097)
+  passed on `a662b0b`, including race/vet/build/OpenAPI, image build and the
+  configured Trivy scan. This is CI acceptance only, not runtime acceptance.
+  Follow-up `07335cc` adds active bank-call cancellation and replacement-worker
+  lease-recovery coverage, closing the earlier local test deferral. Full local
+  race suite and [latest-head CI `36945358744`](https://github.com/HallelujahHomeChurch/donation-api/actions/runs/36945358744)
+  also passed, including image build/scan. PR #1 remains unmerged.
+  No merge, release, bank transaction, deployed route, cloud write or payment
+  enablement occurred. Central audit dispatch, operator requeue authority,
+  deployed alert routing, runtime configuration and live acceptance remain open.
+
+Implementation rulings: retain old AES IDs through ciphertext/backup lifetime;
+do not rotate dedupe key without reviewed reindex/replay handling. Use Taipei as
+provisional bill timezone; bank availability/late-arrival/empty-list behavior is
+still a runtime acceptance gate. Shared-merchant unrelated bills require an
+agreed review ownership policy. Review does not authorize manual-paid edits.
+
 ## Continuation — workflow permission restored and foundation PR (2026-10-02)
 
 - User completed GitHub reauthorization and confirmed the existing account now
