@@ -16,6 +16,40 @@ beforeEach(() => {
   api.open.mockResolvedValue(readerFixture()); api.renew.mockResolvedValue(readerFixture());
 });
 afterEach(() => {vi.useRealTimers(); vi.restoreAllMocks();});
+it('allows a stable local clock behind the server, but still locks a local rollback', async () => {
+  vi.useFakeTimers();
+  const local = Date.parse(readerFixture().access.validatedAt) - 30000;
+  vi.setSystemTime(local);
+  const {result} = renderHook(() => useReaderSession(api, selector));
+  await act(async () => {});
+  act(() => {expect(result.current.allowAction()).toBe(true);});
+  vi.setSystemTime(local - 1);
+  act(() => {expect(result.current.allowAction()).toBe(false);});
+  expect(result.current.value).toBeNull();
+});
+it('retains a valid explicit save on member throttling without extending its receipt', async () => {
+  const value = readerFixture();
+  store.readOfflineSave.mockResolvedValue({save: {value, epoch: 1, lastObservedAt: Date.now()}, status: 'available'});
+  api.renew.mockRejectedValue(new HhcWebApiError(429, 'rate_limited', 'Retry later'));
+  const {result} = renderHook(() => useReaderSession(api, selector));
+  await waitFor(() => expect(result.current.offline).toBe(true));
+  expect(result.current.value).toEqual(value);
+  expect(store.lockOfflineSave).not.toHaveBeenCalled();
+  expect(store.renewOfflineSave).not.toHaveBeenCalled();
+});
+it('never extends a behind-server local deadline by accepting the same receipt again', async () => {
+  vi.useFakeTimers();
+  const value = readerFixture();
+  const local = Date.parse(value.access.validatedAt) - 30000;
+  vi.setSystemTime(local);
+  const {result} = renderHook(() => useReaderSession(api, selector));
+  await act(async () => {});
+  vi.setSystemTime(local + 10000);
+  act(() => result.current.acceptSaved(value));
+  vi.setSystemTime(local + 604800000);
+  act(() => {expect(result.current.allowAction()).toBe(false);});
+  expect(result.current.value).toBeNull();
+});
 it('locks an idle visible tab exactly at the deadline and rejects actions after a suspended clock jump', async () => {
   vi.useFakeTimers();
   vi.setSystemTime(Date.parse(readerFixture().access.offlineValidUntil) - 10);

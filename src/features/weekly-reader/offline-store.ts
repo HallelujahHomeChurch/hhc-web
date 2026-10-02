@@ -1,6 +1,6 @@
 import type {OnlineBulletinAccess, BulletinReaderMutation, BulletinReaderMutationResponse, BulletinReaderState} from '@hallelujahhomechurch/hhc-web-client';
 import {verifyReaderAccess, type ReaderSelector} from './api';
-import {evaluateOfflineAccess} from './offline-access';
+import {evaluateOfflineAccess, localAccessDeadline} from './offline-access';
 import {applyLocalMutation, verifyPrivateState} from './private-state';
 import type {ReaderRecovery} from './rebase';
 import {clearReaderReturn, hasPendingReaderReturn} from './return-state';
@@ -12,15 +12,16 @@ export type OfflineSave = {
   resources: {url: string; bytes: ArrayBuffer; type: string}[];
   size: number;
   lastObservedAt: number;
+  localValidUntil?: number;
   epoch: number;
   locked: boolean;
 };
-type OfflineCheck = Pick<OfflineSave, 'lastObservedAt' | 'epoch' | 'locked'> & {access: OnlineBulletinAccess['access']};
+type OfflineCheck = Pick<OfflineSave, 'lastObservedAt' | 'localValidUntil' | 'epoch' | 'locked'> & {access: OnlineBulletinAccess['access']};
 type MutationResult = BulletinReaderMutationResponse['results'][number];
 export type PendingReaderMutation = {mutation: BulletinReaderMutation; sent: boolean; result?: MutationResult; replay?: BulletinReaderMutation; replayResult?: MutationResult; recoveryReason?: ReaderRecovery['reason']; resolution?: {mutation: BulletinReaderMutation | null; result?: MutationResult}};
 export type PrivateReplica = {state: BulletinReaderState; confirmed: BulletinReaderState; queue: PendingReaderMutation[]};
 const stores = ['identity', 'documents', 'pointers', 'checks', 'private'];
-const offlineCheck = (save: OfflineSave): OfflineCheck => ({access: save.value.access, lastObservedAt: save.lastObservedAt, epoch: save.epoch, locked: save.locked});
+const offlineCheck = (save: OfflineSave): OfflineCheck => ({access: save.value.access, lastObservedAt: save.lastObservedAt, localValidUntil: save.localValidUntil, epoch: save.epoch, locked: save.locked});
 const editionKey = (selector: ReaderSelector) => [selector.accountId, selector.issueNumber, selector.series, selector.contentLocale];
 const documentKey = (save: OfflineSave) => [save.value.access.accountId, save.value.access.documentId, save.value.access.series, save.value.access.contentLocale, save.value.access.revision];
 const editionEvent = 'hhc:weekly-reader-edition';
@@ -147,7 +148,7 @@ export async function stageOfflineSave(value: OnlineBulletinAccess, selector: Re
     size += length;
   }
   signal?.throwIfAborted();
-  return {selector: {...selector}, value: structuredClone(value), resources, size, epoch: -1, lastObservedAt: now, locked: false};
+  return {selector: {...selector}, value: structuredClone(value), resources, size, epoch: -1, lastObservedAt: now, localValidUntil: localAccessDeadline(value.access, now), locked: false};
 }
 
 export async function commitOfflineSave(staged: OfflineSave, epoch: number, now = Date.now()) {
@@ -160,6 +161,11 @@ export async function commitOfflineSave(staged: OfflineSave, epoch: number, now 
     const key = documentKey(save);
     const previous: OfflineCheck | undefined = await result(tx.objectStore('checks').get(key));
     if (previous && (Date.parse(previous.access.validatedAt) > Date.parse(save.value.access.validatedAt) || previous.locked && Date.parse(previous.access.validatedAt) >= Date.parse(save.value.access.validatedAt))) throw new Error('offline_stale_receipt');
+    if (previous?.access.validatedAt === save.value.access.validatedAt) {
+      save.localValidUntil = Math.min(save.localValidUntil ?? Date.parse(save.value.access.offlineValidUntil), previous.localValidUntil ?? Date.parse(previous.access.offlineValidUntil));
+      save.lastObservedAt = Math.max(save.lastObservedAt, previous.lastObservedAt);
+      if (accessStatus(offlineCheck(save), current, now) !== 'available') throw new Error('offline_access_expired');
+    }
     tx.objectStore('documents').put(save, key);
     tx.objectStore('checks').put(offlineCheck(save), key);
     tx.objectStore('pointers').put(key, editionKey(save.selector));
@@ -169,6 +175,7 @@ export async function commitOfflineSave(staged: OfflineSave, epoch: number, now 
 function accessStatus(check: OfflineCheck, owner: Identity, now: number) {
   return evaluateOfflineAccess({binding: check.access, expected: {...check.access, accountId: owner.accountId ?? ''},
     validatedAt: Date.parse(check.access.validatedAt), offlineValidUntil: Date.parse(check.access.offlineValidUntil),
+    localValidUntil: check.localValidUntil,
     now, lastObservedAt: check.lastObservedAt, logoutEpoch: check.epoch, currentLogoutEpoch: owner.epoch, locked: check.locked});
 }
 
@@ -200,7 +207,7 @@ export async function readOfflineSave(selector: ReaderSelector, now = Date.now()
     const save: OfflineSave | undefined = await result(tx.objectStore('documents').get(key));
     if (!save) return null;
     if (JSON.stringify(editionKey(save.selector)) !== JSON.stringify(editionKey(selector)) || save.value.access.documentId !== check.access.documentId || save.value.access.revision !== check.access.revision) return null;
-    save.lastObservedAt = check.lastObservedAt; save.locked = check.locked; save.epoch = check.epoch;
+    save.lastObservedAt = check.lastObservedAt; save.localValidUntil = check.localValidUntil; save.locked = check.locked; save.epoch = check.epoch;
     return {save, status};
   });
 }
@@ -245,7 +252,8 @@ export async function renewOfflineSave(selector: ReaderSelector, value: OnlineBu
     const validatedAt = Date.parse(value.access.validatedAt);
     const previous = Date.parse(save.value.access.validatedAt);
     if (validatedAt < previous || check.locked && validatedAt <= previous) throw new Error('offline_stale_receipt');
-    const renewed = {...save, value, locked: false, lastObservedAt: validatedAt > previous ? now : Math.max(now, check.lastObservedAt)};
+    const renewed = {...save, value, locked: false, lastObservedAt: validatedAt > previous ? now : Math.max(now, check.lastObservedAt),
+      localValidUntil: validatedAt > previous ? localAccessDeadline(value.access, now) : check.localValidUntil};
     if (accessStatus(offlineCheck(renewed), owner, now) !== 'available') throw new Error('offline_access_expired');
     tx.objectStore('documents').put(renewed, key);
     tx.objectStore('checks').put(offlineCheck(renewed), key);

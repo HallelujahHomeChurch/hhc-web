@@ -147,6 +147,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const [page, setPage] = useState(0);
   const [zoom, setZoom] = useState<ReaderZoom>('page');
   const [mobile, setMobile] = useState(false);
+  const [nativeZoomed, setNativeZoomed] = useState(false);
   const [fontsReady, setFontsReady] = useState(() => !globalThis.document?.fonts);
   const [viewport, setViewport] = useState({width: 900, height: 700});
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -163,6 +164,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   }, [selector.accountId, selector.issueNumber, selector.series, selector.contentLocale, value.document.documentId, value.document.revision, active.id, selected, notes, noteEditorState]);
   const size = {width: active.width * 4 / 3, height: active.height * 4 / 3};
   const scale = pageScale(zoom, size, viewport);
+  const zoomed = nativeZoomed || scale > pageScale('width', size, viewport);
   const onPage = (next: number, record = true) => {
     if (!Number.isFinite(next)) return;
     setResumePending(false);
@@ -185,6 +187,12 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     const observer = new ResizeObserver(entries => setWideNotes((entries[0]?.contentRect.width ?? 0) >= 1068));
     observer.observe(root);
     return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    const visual = window.visualViewport;
+    const changed = () => setNativeZoomed((visual?.scale ?? 1) > 1);
+    changed(); visual?.addEventListener('resize', changed);
+    return () => visual?.removeEventListener('resize', changed);
   }, []);
   useEffect(() => {
     const query = window.matchMedia('(max-width: 639px)');
@@ -273,7 +281,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       else if (result?.status === 'applied') {setNotes(null); setNoteEditorState(undefined); if (privateReader.pendingMutation?.kind === 'createNote') setSelected([]);}
     }).catch(() => setNotice(m.actionFailed))}>{m.confirmRetry}</button></> : null}
     {!mobile ? <PageNavigator document={document} metadata={value.document.canonicalMetadata} page={page} onPage={onPage} messages={m}/> : null}
-    <div ref={viewportRef} className="reader-viewport" data-mobile={mobile || undefined} tabIndex={0} onPointerDown={event => {
+    <div ref={viewportRef} className="reader-viewport" data-mobile={mobile || undefined} style={{touchAction: mobile || zoomed ? 'auto' : 'pan-y pinch-zoom'}} tabIndex={0} onPointerDown={event => {
       if (event.pointerType !== 'touch') return;
       pointers.current.add(event.pointerId);
       if (!gesture.current) gesture.current = {x: event.clientX, y: event.clientY, multiplePointers: false};
@@ -283,11 +291,11 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       const start = gesture.current;
       if (!start || pointers.current.size) return;
       gesture.current = null;
-      const delta = swipeDirection({...start, dx: event.clientX - start.x, dy: event.clientY - start.y, zoomed: scale > pageScale('width', size, viewport), hasSelection: !!window.getSelection()?.toString()});
+      const delta = swipeDirection({...start, dx: event.clientX - start.x, dy: event.clientY - start.y, zoomed: zoomed || (window.visualViewport?.scale ?? 1) > 1, hasSelection: !!window.getSelection()?.toString()});
       if (!mobile && delta) onPage(page + delta);
     }}>
       {!fontsReady ? <p role="status">{m.loading}</p> : null}
-      <div ref={paperRef} className="reader-paper-with-notes" data-has-notes={hasNotes || undefined} aria-hidden={!fontsReady || undefined} style={{visibility: fontsReady ? 'visible' : 'hidden'}}>
+      <div ref={paperRef} className="reader-paper-with-notes" data-has-notes={hasNotes || undefined} aria-hidden={!fontsReady || undefined} style={{visibility: fontsReady ? 'visible' : 'hidden', width: mobile ? undefined : size.width * scale + (hasNotes ? 44 : 0)}}>
       {mobile ? <div className="reader-watermarked"><BulletinDocumentRenderer document={document} mode="mobile" canonicalMetadata={value.document.canonicalMetadata} sentenceState={sentenceState} onSentenceActivate={activateSentence}/><ReaderWatermark traceCode={value.access.traceCode}/></div> :
         <div className="reader-scaled-page" style={{width: size.width * scale, height: size.height * scale}}><div className="reader-watermarked" style={{transform: `scale(${scale})`, transformOrigin: 'top left', width: size.width, height: size.height}}><BulletinDocumentRenderer document={document} mode="paper" activePage={active.id} canonicalMetadata={value.document.canonicalMetadata} sentenceState={sentenceState} onSentenceActivate={activateSentence}/><ReaderWatermark traceCode={value.access.traceCode}/></div></div>}
       <NoteIndicators root={paperRef} notes={privateReader.state?.notes ?? []} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}`} label={m.myNotes} onOpen={ids => {setNoteFilter(ids); setNotes('list');}}/>

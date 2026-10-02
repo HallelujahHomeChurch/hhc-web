@@ -18,6 +18,26 @@ beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state
 afterEach(() => {Reflect.deleteProperty(document, 'fonts'); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs();});
 
 describe('protected weekly reader', () => {
+  it('keeps native pinch-zoom panning from turning the paper page', async () => {
+    const visual = Object.assign(new EventTarget(), {scale: 1});
+    vi.stubGlobal('visualViewport', visual);
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    const viewport = container.querySelector('.reader-viewport')!;
+    const swipe = () => {
+      for (const [type, x] of [['pointerdown', 200], ['pointerup', 100]] as const) {
+        const event = new Event(type, {bubbles: true});
+        Object.assign(event, {pointerType: 'touch', pointerId: 1, clientX: x, clientY: 100});
+        fireEvent(viewport, event);
+      }
+    };
+    act(() => {visual.scale = 2; visual.dispatchEvent(new Event('resize'));});
+    swipe();
+    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p0');
+    act(() => {visual.scale = 1; visual.dispatchEvent(new Event('resize'));});
+    swipe();
+    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p1');
+  });
   it('returns focus to the inline note marker after closing its associated notes', async () => {
     const cloud = (await state.privateState()).state;
     state.privateState.mockResolvedValue({state: {...cloud, notes: [{id: 'note-a', sentenceIds: ['s0'], text: 'Anchored note', quote: 'Quote', version: 1, deleted: false, inactiveAnchors: [], reanchorRequired: false, createdAt: '', updatedAt: ''}]}});

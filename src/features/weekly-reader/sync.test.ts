@@ -50,6 +50,16 @@ it.each([false, true])('locks generic 404 and purges only owner denial (%s)', as
   expect(await listOfflineSaves(selector.accountId)).toHaveLength(marked ? 0 : 1);
   expect((await readOfflineSave(selector, now))?.status ?? 'unavailable').toBe(marked ? 'unavailable' : 'revalidation_required');
 });
+it.each(['renew', 'mutate'] as const)('retains the original offline window and queue when %s is throttled', async phase => {
+  const {epoch} = await saved();
+  const api = {renew: vi.fn().mockResolvedValue(value), privateState: vi.fn().mockResolvedValue({state}), mutate: vi.fn()};
+  api[phase].mockRejectedValue(new HhcWebApiError(429, 'rate_limited', 'Retry later'));
+  await expect(syncPrivateReplica(api, selector, value, epoch, new AbortController().signal, () => now)).rejects.toMatchObject({status: 429});
+  const retained = await readOfflineSave(selector, now);
+  expect(retained?.status).toBe('available');
+  expect(retained?.save.value.access.offlineValidUntil).toBe(value.access.offlineValidUntil);
+  expect((await readPrivateReplica(selector, now))?.queue[0].mutation).toEqual(mutation);
+});
 it('does not resurrect private state after logout wins over a delayed sync response', async () => {
   const {epoch, local} = await saved();
   const api = {renew: vi.fn().mockResolvedValue(value), privateState: vi.fn().mockResolvedValue({state}), mutate: vi.fn(async () => {

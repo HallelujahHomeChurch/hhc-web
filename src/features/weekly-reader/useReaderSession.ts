@@ -4,7 +4,7 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {HhcWebApiError, type OnlineBulletinAccess} from '@hallelujahhomechurch/hhc-web-client';
 import {AccountSessionError} from '@hallelujahhomechurch/account-client';
 import {verifyReaderAccess, type createReaderApi, type ReaderSelector} from './api';
-import {readerFailureAction} from './offline-access';
+import {readerFailureAction, localAccessDeadline} from './offline-access';
 import {checkOfflineSave, getOfflineIdentity, lockOfflineSave, readOfflineSave, removeOfflineSave, renewOfflineSave, supportsOfflineReader, watchOfflineEdition} from './offline-store';
 import {watchOfflineAccount} from './offline-session';
 import {clearReaderReturn, clearReaderEditionReturn} from './return-state';
@@ -17,6 +17,16 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
   const requestId = useRef<string | null>(null);
   const knownDocument = useRef<string | null>(null);
   const highWater = useRef(0);
+  const windowEnd = useRef(0);
+  const receipt = useRef<string | null>(null);
+  const observeValidation = useCallback((value: OnlineBulletinAccess, savedDeadline?: number) => {
+    const now = Date.now();
+    const deadline = Math.min(localAccessDeadline(value.access, now), savedDeadline ?? Infinity);
+    const sameReceipt = receipt.current === value.access.receiptId;
+    windowEnd.current = sameReceipt ? Math.min(windowEnd.current, deadline) : deadline;
+    highWater.current = sameReceipt ? Math.max(now, highWater.current) : now;
+    receipt.current = value.access.receiptId;
+  }, []);
   const blocked = useRef(false);
   const retry = useCallback(() => setAttempt(value => value + 1), []);
   useEffect(() => {
@@ -55,7 +65,7 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
         }
         if (saved) await renewOfflineSave(bound, value, saved.save.epoch);
         controller.signal.throwIfAborted();
-        highWater.current = Math.max(Date.now(), Date.parse(value.access.validatedAt));
+        observeValidation(value, saved?.save.value.access.validatedAt === value.access.validatedAt ? saved.save.localValidUntil : undefined);
         knownDocument.current = value.document.documentId;
         setLoginRequired(false);
         setState({value, offline: false, error: null});
@@ -72,6 +82,8 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
         controller.signal.throwIfAborted();
         if (retained?.status === 'available') {
           highWater.current = retained.save.lastObservedAt;
+          windowEnd.current = retained.save.localValidUntil ?? Date.parse(retained.save.value.access.offlineValidUntil);
+          receipt.current = retained.save.value.access.receiptId;
           setState({value: retained.save.value, offline: true, error: null});
         } else setState({value: null, offline: false, error: failure instanceof Error && failure.message === 'update_required' ? 'updateRequired' : 'unavailable'});
       }
@@ -79,13 +91,13 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
     return () => {
       controller.abort(); stop(); stopEdition(); window.removeEventListener('online', refresh); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh);
     };
-  }, [api, accountId, issueNumber, series, contentLocale, attempt, retry]);
+  }, [api, accountId, issueNumber, series, contentLocale, attempt, retry, observeValidation]);
 
   const allowAction = useCallback(() => {
     const value = state.value;
     const now = Date.now();
     if (!value || blocked.current || state.validating) return false;
-    if (now < highWater.current || now >= Date.parse(value.access.offlineValidUntil)) {
+    if (now < highWater.current || now >= windowEnd.current) {
       setState({value: null, offline: false, error: 'unavailable'});
       if (supportsOfflineReader()) void lockOfflineSave({accountId, issueNumber, series, contentLocale}).catch(() => {});
       return false;
@@ -99,15 +111,15 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
   }, [state.value, state.offline, state.validating, accountId, issueNumber, series, contentLocale]);
   useEffect(() => {
     if (!state.value) return;
-    const timeout = window.setTimeout(allowAction, Math.max(0, Date.parse(state.value.access.offlineValidUntil) - Date.now()));
+    const timeout = window.setTimeout(allowAction, Math.max(0, windowEnd.current - Date.now()));
     return () => window.clearTimeout(timeout);
   }, [state.value, allowAction]);
   const acceptSaved = useCallback((value: OnlineBulletinAccess) => {
     if (blocked.current) return;
     verifyReaderAccess(value, {accountId, issueNumber, series, contentLocale});
-    highWater.current = Math.max(Date.now(), Date.parse(value.access.validatedAt));
+    observeValidation(value);
     setState({value, offline: false, error: null});
-  }, [accountId, issueNumber, series, contentLocale]);
+  }, [accountId, issueNumber, series, contentLocale, observeValidation]);
   const privateFailure = useCallback((failure: unknown) => {
     if (!(failure instanceof HhcWebApiError || failure instanceof AccountSessionError || failure instanceof TypeError || failure instanceof Error && failure.message === 'invalid_reader_binding')) return;
     const action = readerFailureAction(failure);

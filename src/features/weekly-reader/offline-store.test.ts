@@ -98,6 +98,19 @@ it('disables offline writes without required cross-tab locking', async () => {
   expect(supportsOfflineReader()).toBe(false);
   await expect(activateOfflineAccount('account-a')).rejects.toThrow('offline_unsupported');
 });
+
+it('bounds a behind-server clock to seven local days and never extends a repeated receipt', async () => {
+  const value = readerFixture();
+  const local = Date.parse(value.access.validatedAt) - 30000;
+  const epoch = await activateOfflineAccount(route.accountId);
+  const stage = await stageOfflineSave(value, route, fetchAsset, local);
+  await commitOfflineSave(stage, epoch, local);
+  expect((await readOfflineSave(route, local))?.status).toBe('available');
+  await renewOfflineSave(route, value, epoch, local + 10000);
+  await commitOfflineSave(await stageOfflineSave(value, route, fetchAsset, local + 10000), epoch, local + 10000);
+  expect((await readOfflineSave(route, local + 604800000 - 1))?.status).toBe('available');
+  expect((await readOfflineSave(route, local + 604800000))?.status).toBe('expired');
+});
 it('still purges existing private copies if locking support later becomes unavailable', async () => {
   const epoch = await activateOfflineAccount('account-a');
   await commitOfflineSave(await stageOfflineSave(readerFixture(), route, fetchAsset, now), epoch, now);
