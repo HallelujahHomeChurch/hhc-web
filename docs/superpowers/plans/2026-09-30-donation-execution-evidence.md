@@ -4,6 +4,38 @@ Date: 2026-09-30. Approved plan: `2026-09-30-donation-admin-sandbox-first.md`.
 Initial foundation date above; subsequent evidence is recorded by date below.
 Neither the local foundation nor a read-only bank query is delivery 1A acceptance.
 
+## Continuation — disabled release and Gateway preview (2026-10-02)
+
+- Donation PR #1 head `f688bf6` adds main-only immutable artifacts and separately
+  gated image publication/disabled-only runtime update. The existing combined
+  `serve` command is reused; no extra worker is provisioned. CI `36975065811`
+  passed on that head. Serial disposable PostgreSQL race/vet/build, actionlint,
+  Bicep compile, disabled image smoke, guard/rollback fixtures and image scan pass.
+- `donation-api/docs/disabled-release-preview.md` owns the exact first-slice
+  resource preview: private ACA app, user-assigned identity and registry-scoped
+  AcrPull, with no database/Key Vault/secret/job creation and payments fixed off.
+  Protected GitHub environment/OIDC and actual release gates remain unconfigured.
+  A genuine Azure what-if requires an approved released digest; compilation is
+  not what-if evidence. No cloud apply, migration or bank transaction occurred.
+- Gateway branch `feat/donation-sandbox-routing` starts at current `67d6e16`.
+  Seven exact host/method routes use fixed `donation-api`, explicit human test
+  permission, stripped credentials/query strings, 4 KiB bodies and bounded rate
+  limits. Routing defaults off. Site maintenance blocks checkout but preserves
+  bank callback/return processing for existing orders. Synthetic container tests
+  cover disabled/enabled/maintenance modes, spoofed headers and wrong host/scope.
+- Gateway scanning found four fix-available HIGH PCRE2 findings in the existing
+  base package. Its pin is updated from installed 10.47-r0 to repository-available
+  10.49-r0; no scanner policy or required check is bypassed.
+- Earlier frontend conflicts were resolved preserving both service-account and
+  donation features: shared PR #88 `e793ae5` has passing CI and 221 local tests;
+  Admin PR #170 `38d88e0` has 812 local tests/lint/build passing with uncommitted
+  tarball overrides. Its remote CI `36973508379` fails resolving unpublished
+  `donation-client`, so it remains a non-deployable draft, not a green consumer.
+- Still required for real Sandbox: reviewed ordered merges/releases, actual
+  shared-package publication/Admin registry pins, Account permission rollout,
+  separate DB/grants/migration/Key Vault/audit/alert acceptance and authorized
+  hosted-checkout/callback/reconciliation smoke. Delivery 1A remains OPEN.
+
 ## Continuation — central audit and safe owned requery (2026-10-02)
 
 - Central `audit-log` worktree starts from freshly fetched `24adb8a`; donation
