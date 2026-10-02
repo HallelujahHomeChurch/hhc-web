@@ -4,6 +4,37 @@ Date: 2026-09-30. Approved plan: `2026-09-30-donation-admin-sandbox-first.md`.
 Initial foundation date above; subsequent evidence is recorded by date below.
 Neither the local foundation nor a read-only bank query is delivery 1A acceptance.
 
+## Continuation — private main-only publisher alignment (2026-10-02)
+
+- User chose to keep donation-api private and align with existing private
+  release practices without upgrading the GitHub plan. This supersedes the
+  earlier required-environment-reviewer gate: PR review is an operational
+  process, not GitHub-enforced two-person deployment approval.
+- Donation PR #2 (`d99beb4`) removes the environment-subject dependency, uses
+  exact repository/main job and pre-login guards, and keeps artifact provenance,
+  scanning and both default-off flags. Publisher `AZURE_CLIENT_ID` and disabled
+  deployment `AZURE_DEPLOY_CLIENT_ID` are distinct configuration slots; publisher
+  access must not include deployment/DB/Key Vault permissions.
+- Behavioral guard regression was observed failing before implementation, then
+  passing main and refusing feature/tag/wrong-repository/missing-client cases.
+  Full serial disposable PostgreSQL race suite, vet/build, actionlint and
+  release-policy/rollback checks passed. The task-owned database was removed.
+  Independent focused review found no Critical/Important findings. Remote CI
+  `36981484556` passed on `d99beb4`; PR #2 squash-merged as `8aedb53`.
+  Main release `36981732941` completed successfully: verification and artifact
+  passed; publish/deploy were skipped with their gates unconfigured. No ACR
+  publication, runtime deployment or bank acceptance is claimed.
+- Exact expected Azure federation subject is now
+  `repo:HallelujahHomeChurch@244118972/donation-api@1398406700:ref:refs/heads/main`.
+  No cloud federation, identity, role or GitHub publication variable was changed.
+  Live registry mode is `LegacyRegistryPermissions`; `AcrPush` would allow writes
+  across the existing registry, not just donation images. Asked for explicit
+  approval of that scope before creating a dedicated publisher. Do not silently
+  change the shared registry permission mode or reuse the broad deploy identity.
+- Review boundaries: live OIDC login/ACR publication remain unverified until
+  approved identity setup and CI publication; deployed bank behavior and runtime
+  configuration remain outside this workflow-only change. Delivery 1A stays OPEN.
+
 ## Continuation — approved release settings and Gateway merge (2026-10-02)
 
 - User approved the proposed release-settings closeout. Fresh read-back still

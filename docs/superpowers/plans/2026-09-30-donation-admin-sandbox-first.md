@@ -27,6 +27,7 @@
 - Key Vault owns separate Sandbox/production secrets. Persist the minimum whitelisted response fields; drop unnecessary card fragments/tokens and redact telemetry. Do not store entire decrypted provider messages by default.
 - Shared deployment does not mean shared financial effects: Sandbox never enters production history, receipts, accounting exports, production notification queues or financial totals.
 - Each implementation repository uses its own isolated worktree from fresh `origin/main`, focused PR, required CI and immutable release; consume producer contracts only after their release.
+- Donation remains private on the existing GitHub plan. Use repository/main-scoped OIDC and operational PR review/CI checks, not paid required-environment reviewers. Image publication, disabled deployment and payment activation remain separate gates; publisher and deployment identities are separate. On the current legacy ACR permission mode, registry-wide `AcrPush` needs explicit scope approval before identity setup.
 - Receipt generation, accounting-system integration and tax submission remain Open Gates. Payment confirmation is not a formal donation receipt. Define an accepted financial handoff before public production giving, even if the initial handoff is reviewed export.
 
 ## Member-private-details integration — coordinated delivery, not merged ownership
