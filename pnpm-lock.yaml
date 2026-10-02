@@ -342,7 +342,7 @@ packages:
     version: 1.0.32
 
   '@hallelujahhomechurch/hhc-web-client@file:../frontend-platform/artifacts/hallelujahhomechurch-hhc-web-client-1.0.32.tgz':
-    resolution: {integrity: sha512-mp1foKJ7r6naZRXNhXRkXvSfu+hYoxmbq43JLorCgfmp0xU2GL3yP/GaoVZje3WG5zTOw2lzErgPyHKeFi8n3g==, tarball: file:../frontend-platform/artifacts/hallelujahhomechurch-hhc-web-client-1.0.32.tgz}
+    resolution: {integrity: sha512-3K3Znmtqz8T0V+Eatuzk9QC6mO7Rx5OhS3yIX7U/cR8hBkoUO+5upFC6X5EXJiC6vbD924Tm/rjyAPIcrCRXwg==, tarball: file:../frontend-platform/artifacts/hallelujahhomechurch-hhc-web-client-1.0.32.tgz}
     version: 1.0.32
 
   '@hallelujahhomechurch/operations-client@1.0.26':
@@ -353,7 +353,7 @@ packages:
     version: 1.0.32
 
   '@hallelujahhomechurch/ui@file:../frontend-platform/artifacts/hallelujahhomechurch-ui-1.0.32.tgz':
-    resolution: {integrity: sha512-o1l1p2SHn8tJLkDkBx8TTeiSVkrC9r8ibNaNz2RDr3iFy3KSVgCmBGAj5EOAEo+aQ2EjYIK48JmmoGyT/XAcWQ==, tarball: file:../frontend-platform/artifacts/hallelujahhomechurch-ui-1.0.32.tgz}
+    resolution: {integrity: sha512-w0C/qh7L3kPqTlHwdVDU7CbBu9yusKOywQwVakVQseo8ZrZ0YZwpmaCQp58Ha9/1bMphVh5BXNfGSMuh8rZZGw==, tarball: file:../frontend-platform/artifacts/hallelujahhomechurch-ui-1.0.32.tgz}
     version: 1.0.32
     peerDependencies:
       react: ^19.0.0

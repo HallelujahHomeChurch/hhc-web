@@ -234,7 +234,7 @@ Each immutable `OnlineRevision` contains:
 
 - a versioned structured JSON document;
 - a deterministic layout manifest with page instances, normalized boxes/slots,
-  explicit continuations, template version, and permanent versioned
+  explicit source-page sentence fragments, template version, and permanent versioned
   template/font asset URLs plus SHA-256 checksums;
 - source PDF asset checksum and publication-time canonical metadata snapshot;
 - template, extractor, and content-schema versions;
@@ -511,14 +511,19 @@ Publishing requires:
 - resolution or explicit acceptance of every warning;
 - no hard validation error, unassigned allowed text, or blocked overflow;
 - reviewed desktop/iPad composition with complete text, stable pagination and
-  source-like hierarchy; exact source page-count equality is not required;
+  source-like hierarchy; exact source page-count and page-identity equality are required;
 - an explicit human `Confirm Online Version` action;
 - the corresponding content-locale PDF to be published.
 
-The template may reflow and add continuation pages at the saved-layout stage;
-the preview shows page-count changes for human confirmation. Clipped,
-overlapping or unassigned text still blocks publication. No text is silently
-shrunk or discarded to meet the source page count.
+The saved paper layout preserves each original page and its sentence fragments.
+Columns flow independently. Measured spacing and bounded typography fitting may
+adjust presentation, but cannot append continuation pages, discard content or
+shrink without a readability floor. Body fitting is limited to four 5% steps and
+never reduces a font below 12pt; smaller source text stays unchanged. Cover
+single-line fitting retains its separate 9pt minimum (12pt for the main title).
+Unresolved overlap/overflow blocks publication and requires editing/review.
+Mobile remains responsive reflow, not fixed-page fitting; mobile user acceptance
+is still pending independently of desktop feedback.
 
 ### Re-upload comparison
 
