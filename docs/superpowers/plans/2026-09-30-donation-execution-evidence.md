@@ -4,6 +4,65 @@ Date: 2026-09-30. Approved plan: `2026-09-30-donation-admin-sandbox-first.md`.
 Initial foundation date above; subsequent evidence is recorded by date below.
 Neither the local foundation nor a read-only bank query is delivery 1A acceptance.
 
+## Continuation — central audit and safe owned requery (2026-10-02)
+
+- Central `audit-log` worktree starts from freshly fetched `24adb8a`; donation
+  reuses `07335cc`, frontend producer `b2c4cfe`, Admin source `5b6e232`. Only local
+  feature branches are changed. Existing Admin tarball overrides are preserved.
+- Closed financial audit catalog accepts exact donation service actor for facts,
+  Account user actor for retries, and Sandbox-only minimal metadata. The optional
+  central caller token keeps existing producers unaffected; without configuration
+  donation is denied. Enabled donation runtime requires its independent token.
+- An additive migration atomically enqueues new financial facts and backfills
+  existing ones. Immutable payload/event ID/time survive retries. Live leases,
+  fixed Dapr destination, refused redirects and three-second HTTP timeout protect
+  dispatch. Transient failures retry with capped backoff; other failures retain
+  review work. No raw bank response, amount, provider identifier, URL or donor PII
+  enters central audit.
+- Own-order Sandbox requery requires exact test scope, ownership, a monotonic
+  expected version, exhausted provider-unavailable review and an unexpired query
+  window. Reset and user audit commit together. Identity/refund/malformed-response
+  reviews, bill jobs and general finance operations are not unlocked. No bank
+  order is created by requery and no manual paid state exists.
+- Canonical OpenAPI, generated shared client and Admin controls were updated.
+  The Admin action explicitly distinguishes query queued from payment success.
+  Client publication/real version pins remain required; local tarballs are not
+  production dependencies.
+- TDD observed missing-contract/API/client/UI failures, then passing targeted
+  checks. Donation full serial PostgreSQL race/vet/build and OpenAPI pass (five
+  pre-existing semantic warnings); image build passed. Central audit full tests,
+  vet and disposable append-only migration/permission integration pass. Producer
+  full 220 tests, lint/build/package contracts and packed Vite/Next consumers pass.
+  Admin focused 10 tests/lint/build pass; all 78 files / 795 tests pass using
+  `--maxWorkers=2 --testTimeout=15000` (68.14s).
+  The pre-implementation default Admin run also hit an unrelated existing
+  five-second `creates a one-time newsletter schedule` timeout; not relabeled green.
+- Local image scan found no fix-available HIGH/CRITICAL vulnerabilities. Disabled
+  image smoke returned health 200, readiness/checkout 503; embedded image migrate
+  and check passed against a separate task-owned disposable database only.
+- Fresh whole-branch review found two Important issues, no Critical: the wrong
+  S0001 response shape in reconciliation, and checkout recovery/read bypassing
+  closed review. Both were reproduced with failing regressions, then fixed in
+  one pass: shared probe-compatible parser, original ten-minute recovery guard,
+  review-safe owned/idempotent URL projection, and late-response suppression.
+  Existing financial facts stay readable. Expiry and malformed/not-found negative
+  cases are also covered. Final full serial race (`-count=1 -p=1`), vet/build and
+  format/diff checks passed. Latest image rebuilt/scanned with no fix-available
+  HIGH/CRITICAL findings; disabled smoke again returned 200/503/503.
+- Handoff heads: donation `334881a` pushed to existing PR #1;
+  [CI 36952391265](https://github.com/HallelujahHomeChurch/donation-api/actions/runs/36952391265)
+  passed on that exact head (tests/OpenAPI/image/scan). Central audit `f1f0704`,
+  frontend producer `ee7ed06`, Admin `cbab000` are local commits only. Their
+  publication/PR/CI/release remain outstanding. Admin manifest/lockfile retain
+  verification-only tarball overrides, not committed deployment dependencies.
+  No merge or deployment occurred. Task-owned smoke and PostgreSQL containers
+  were stopped; worktrees and execution ledger remain for the release gates.
+- Remaining gates: reviewed PR/CI and ordered service/package releases, gateway
+  route/identity/ingress controls, Key Vault and least-privilege DB grants, runtime
+  queues/alerts and audit-review recovery, bank-hosted Sandbox end-to-end evidence.
+  Production, recurring/finance/receipts/tax reporting remain unavailable. No
+  cloud changes, live migration, package publication or bank transaction occurred.
+
 ## Continuation — shared frontend and disabled Admin draft (2026-10-02)
 
 - Fresh isolated frontend-platform (`ce4d063`, version 1.0.30) and admin-fe

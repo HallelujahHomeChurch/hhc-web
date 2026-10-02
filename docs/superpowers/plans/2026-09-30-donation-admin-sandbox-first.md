@@ -173,9 +173,13 @@ startup DDL. Local implementation/evidence does not authorize route enablement.
 Local completion slice (2026-10-02, donation `a662b0b`): capability encryption/
 retention, live-lease atomic callback completion, original-order outcome recovery
 and daily BillQuery checkpoints are implemented and locally tested. A job now
-handles one item from each queue in 55 seconds total. Bank-query review warnings
-are sanitized; central audit dispatch, operator requeue authority and deployed
-alert routing remain open. See the execution evidence for exact limits and bank
+handles callback/reconciliation plus audit work in 60 seconds total. Bank-query
+review warnings are sanitized. The follow-up audit slice implements atomic
+financial outbox delivery and audited, versioned owner-only Sandbox requery for
+exhausted provider-unavailable work within 30 days. Other review causes, bill
+work and general finance/operator authority remain closed. Shared client and
+Admin controls exist locally; central audit deployment, real package publication,
+secret wiring and alert routing remain open. See the execution evidence for exact limits and bank
 assumptions. These local results do not check off Task 2 runtime acceptance.
 
 - [ ] Persist a stable provider OrderNo and request fingerprint before `OrderCreate`; scope idempotency by environment/actor/key, reject changed-payload reuse and serialize concurrent creation for the same intent. Allowlist bank destinations.
