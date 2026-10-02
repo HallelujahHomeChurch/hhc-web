@@ -4,6 +4,40 @@ Date: 2026-09-30. Approved plan: `2026-09-30-donation-admin-sandbox-first.md`.
 Initial foundation date above; subsequent evidence is recorded by date below.
 Neither the local foundation nor a read-only bank query is delivery 1A acceptance.
 
+## Continuation — approved release settings and Gateway merge (2026-10-02)
+
+- User approved the proposed release-settings closeout. Fresh read-back still
+  showed Gateway `0000186` active, Running, Healthy, 100% traffic and the exact
+  immutable image recorded below. Updated and read back both approved GitHub
+  rollback variables (`0000185` → `0000186` and corresponding digest). Audit
+  production/test prerequisite revisions still match their configured values.
+- Gateway PR #146 had successful CI on `701bcd0`, unchanged base `67d6e16`
+  and the previously completed independent release review. Marked it ready and
+  squash-merged through GitHub as `2f27d64025fb3b2dfef75f3291b6eeb7155bca58`.
+  The existing production release now owns deployment; no ad-hoc deployment,
+  donation routing enablement or bank call is authorized by this merge.
+- Release `36979340311` verification/deployment jobs passed. Live revision
+  `api-gateway--0000187` is active, Running, Healthy and receives 100% traffic.
+  Its image matches the release tag's registry digest:
+  `alive.azurecr.io/alive/api-gateway@sha256:136791d0e8c7b228884af63d7d332c093f95685eaa566da0b605a11d38d53a52`.
+  Fresh public smoke: `/health` and `/ready` returned 200; all seven exact
+  donation routes returned expected 503 using empty synthetic requests.
+  Donation routing flag remains absent/default-off. No bank request occurred.
+  OpenAPI publication also passed; the entire release completed successfully.
+  Existing task worktrees remain for the still-open donation delivery gates.
+- Confirmed organization plan is GitHub Free and donation-api remains private.
+  GitHub's current [deployment protection documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#required-reviewers)
+  states required reviewers are public-repository-only on Free/Pro/Team.
+  The approved protected-environment design therefore cannot be configured as
+  written on the current plan. No donation OIDC federation, role assignment,
+  publication flag, billing or repository visibility change was made.
+- Ruling: stop donation publisher setup at the missing approval boundary;
+  do not replace required reviewers with an unprotected environment. Cost:
+  ACR publication and genuine bootstrap what-if remain blocked. A separately
+  approved manual-dispatch design with a publish-only identity could avoid
+  a plan upgrade, but is not equivalent to enforced two-person approval and
+  requires an explicit design decision before implementation.
+
 ## Continuation — backend merge and publisher setup gate (2026-10-02)
 
 - Donation PR #1 was squash-merged at `b96ff29bacac6a7759c45a37c30a8d942920ce0b`
