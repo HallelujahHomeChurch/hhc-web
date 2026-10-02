@@ -1,5 +1,18 @@
 {
   "weeklyReader": {
+    "reviewSync": "Review synchronization",
+    "applyUpdate": "Apply and synchronize",
+    "keepReading": "Keep reading",
+    "recoveryHelp": "Review changes before updating. Your saved revision and pending changes remain until synchronization and download both succeed.",
+    "recoveryAnchors": "Choose sentences in the current revision (up to 500).",
+    "recoveryLocal": "Local version",
+    "recoveryCloud": "Cloud version",
+    "recoveryRemoved": "The original sentence was removed.",
+    "recoveryLimit": "Too many sentences; choose up to 500.",
+    "recoveryColor": "Choose a color for the merged sentences.",
+    "recoveryNote": "This note changed in the cloud.",
+    "recoveryMapping": "The original position cannot be mapped. Choose a current sentence.",
+    "recoveryExpired": "This change is over 90 days old. Review before submitting it as a new action.",
     "myNotes": "My notes",
     "noteText": "Note",
     "noteSave": "Save",
@@ -108,7 +121,8 @@
       "manageAccount": "Manage account",
       "signIn": "Sign in",
       "signOut": "Sign out",
-      "signOutError": "Unable to sign out. Try again."
+      "signOutError": "Unable to sign out. Try again.",
+      "unsyncedWarning": "Unsynced changes will be removed from this device. Continue?"
     },
     "language": "Language",
     "translationNotice": "Some content on this website may be machine- or AI-translated.",

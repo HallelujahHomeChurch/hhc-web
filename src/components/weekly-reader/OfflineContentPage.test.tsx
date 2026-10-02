@@ -3,7 +3,7 @@ import {beforeEach, expect, it, vi} from 'vitest';
 import {readerFixture} from '@/features/weekly-reader/test-fixture';
 import {getMessages} from '@/i18n/messages';
 import {OfflineContentPage} from './OfflineContentPage';
-const store = vi.hoisted(() => ({supportsOfflineReader: () => true, getOfflineIdentity: vi.fn(), listOfflineSaves: vi.fn(), readOfflineSave: vi.fn(), removeOfflineSave: vi.fn()}));
+const store = vi.hoisted(() => ({supportsOfflineReader: () => true, getOfflineIdentity: vi.fn(), listOfflineSaves: vi.fn(), readOfflineSave: vi.fn(), removeOfflineSave: vi.fn(), hasPendingReaderWrites: vi.fn().mockResolvedValue(false)}));
 vi.mock('@/features/weekly-reader/offline-store', () => store);
 vi.mock('@/features/weekly-reader/offline-session', () => ({watchOfflineAccount: () => () => {}}));
 vi.mock('@/components/layout/AccountControl', () => ({useAccountIdentity: () => null}));

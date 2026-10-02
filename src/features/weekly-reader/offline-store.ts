@@ -2,6 +2,7 @@ import type {OnlineBulletinAccess, BulletinReaderMutation, BulletinReaderMutatio
 import {verifyReaderAccess, type ReaderSelector} from './api';
 import {evaluateOfflineAccess} from './offline-access';
 import {applyLocalMutation, verifyPrivateState} from './private-state';
+import type {ReaderRecovery} from './rebase';
 
 type Identity = {accountId: string | null; epoch: number};
 export type OfflineSave = {
@@ -14,27 +15,33 @@ export type OfflineSave = {
   locked: boolean;
 };
 type OfflineCheck = Pick<OfflineSave, 'lastObservedAt' | 'epoch' | 'locked'> & {access: OnlineBulletinAccess['access']};
-export type PendingReaderMutation = {mutation: BulletinReaderMutation; sent: boolean; result?: BulletinReaderMutationResponse['results'][number]};
+type MutationResult = BulletinReaderMutationResponse['results'][number];
+export type PendingReaderMutation = {mutation: BulletinReaderMutation; sent: boolean; result?: MutationResult; replay?: BulletinReaderMutation; replayResult?: MutationResult; recoveryReason?: ReaderRecovery['reason']; resolution?: {mutation: BulletinReaderMutation | null; result?: MutationResult}};
 export type PrivateReplica = {state: BulletinReaderState; confirmed: BulletinReaderState; queue: PendingReaderMutation[]};
 const stores = ['identity', 'documents', 'pointers', 'checks', 'private'];
 const offlineCheck = (save: OfflineSave): OfflineCheck => ({access: save.value.access, lastObservedAt: save.lastObservedAt, epoch: save.epoch, locked: save.locked});
 const editionKey = (selector: ReaderSelector) => [selector.accountId, selector.issueNumber, selector.series, selector.contentLocale];
 const documentKey = (save: OfflineSave) => [save.value.access.accountId, save.value.access.documentId, save.value.access.series, save.value.access.contentLocale, save.value.access.revision];
 const editionEvent = 'hhc:weekly-reader-edition';
-function notifyEdition(selector: ReaderSelector) {
+function notifyEdition(selector: ReaderSelector, updated = false) {
   if (typeof window === 'undefined') return;
   const key = JSON.stringify(editionKey(selector));
-  window.dispatchEvent(new CustomEvent(editionEvent, {detail: key}));
+  const message = {key, updated};
+  window.dispatchEvent(new CustomEvent(editionEvent, {detail: message}));
   if (typeof BroadcastChannel !== 'undefined') {
-    const channel = new BroadcastChannel(editionEvent); channel.postMessage(key); channel.close();
+    const channel = new BroadcastChannel(editionEvent); channel.postMessage(message); channel.close();
   }
 }
-export function watchOfflineEdition(selector: ReaderSelector, invalidated: () => void) {
+export function watchOfflineEdition(selector: ReaderSelector, invalidated: (updated?: boolean) => void) {
   const key = JSON.stringify(editionKey(selector));
-  const local = (event: Event) => {if ((event as CustomEvent).detail === key) invalidated();};
+  const changed = (message: unknown) => {
+    if (message === key) invalidated(false);
+    else if (message && typeof message === 'object' && 'key' in message && message.key === key) invalidated('updated' in message && message.updated === true);
+  };
+  const local = (event: Event) => changed((event as CustomEvent).detail);
   window.addEventListener(editionEvent, local);
   const channel = typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel(editionEvent);
-  if (channel) channel.onmessage = event => {if (event.data === key) invalidated();};
+  if (channel) channel.onmessage = event => changed(event.data);
   return () => {window.removeEventListener(editionEvent, local); channel?.close();};
 }
 
@@ -309,7 +316,7 @@ export async function enqueuePrivateMutation(selector: ReaderSelector, mutation:
       if (JSON.stringify(existing.mutation) !== JSON.stringify(mutation)) throw new Error('mutation_id_conflict');
       return replica;
     }
-    if (replica.queue.some(entry => entry.result)) throw new Error('action_required');
+    if (replica.queue.some(entry => entry.result || entry.replay || entry.resolution || entry.recoveryReason)) throw new Error('action_required');
     const state = applyLocalMutation(replica.state, mutation, save.value.document);
     const queue = mutation.kind === 'setProgress' ? replica.queue.filter(entry => entry.sent || entry.mutation.kind !== 'setProgress') : replica.queue;
     const next = {...replica, state, queue: [...queue, {mutation, sent: false}]};
@@ -322,7 +329,7 @@ export async function claimPrivateMutation(selector: ReaderSelector, epoch: numb
   return privateTransaction(async tx => {
     const {key, replica} = await privateContext(tx, selector, epoch, now);
     const first = replica?.queue[0];
-    if (!replica || !first || first.result) return null;
+    if (!replica || !first || first.result || first.replay || first.resolution || first.recoveryReason) return null;
     if (!Number.isFinite(Date.parse(first.mutation.createdAt)) || now - Date.parse(first.mutation.createdAt) > 90 * 86400000) {
       first.result = {mutationId: first.mutation.mutationId, status: 'recovery_required', revision: replica.state.currentRevision};
       tx.objectStore('private').put(replica, key);
@@ -342,6 +349,7 @@ export async function acknowledgePrivateMutation(selector: ReaderSelector, respo
     const acknowledged = response.results[0];
     if (response.state.currentRevision !== save.value.access.revision || acknowledged.status !== 'applied') {
       replica.queue[0].result = acknowledged;
+      if (response.state.currentRevision === save.value.access.revision) replica.confirmed = response.state;
       tx.objectStore('private').put(replica, key);
       return replica;
     }
@@ -362,13 +370,104 @@ export async function acknowledgePrivateMutation(selector: ReaderSelector, respo
   });
 }
 
-export async function hasPendingReaderWrites(accountId: string) {
+export async function hasPendingReaderWrites(accountId: string, documentId?: string) {
+  if (typeof indexedDB === 'undefined') return false;
   return transaction('readonly', async tx => {
     if ((await identity(tx)).accountId !== accountId) return false;
     const store = tx.objectStore('private');
     for (const key of await result(store.getAllKeys())) {
-      if (Array.isArray(key) && key[0] === accountId && ((await result(store.get(key))) as PrivateReplica).queue.length) return true;
+      if (Array.isArray(key) && key[0] === accountId && (!documentId || key[1] === documentId) && ((await result(store.get(key))) as PrivateReplica).queue.length) return true;
     }
     return false;
+  });
+}
+
+export async function commitOfflineUpgrade(staged: OfflineSave, state: BulletinReaderState, epoch: number, previousRevision: number, expectedQueue: readonly PendingReaderMutation[], now = Date.now()) {
+  verifyReaderAccess(staged.value, staged.selector);
+  verifyPrivateState(state, staged.selector.accountId, staged.value.document.documentId, staged.value.document.revision);
+  if (state.currentRevision !== staged.value.document.revision || state.conflicts.length) throw new Error('upgrade_incomplete');
+  await privateTransaction(async tx => {
+    const {key: oldKey, save: previous, replica} = await privateContext(tx, staged.selector, epoch, now);
+    if (previous.value.access.documentId !== state.documentId || previous.value.access.revision !== previousRevision || staged.value.access.revision < previousRevision || JSON.stringify(replica?.queue ?? []) !== JSON.stringify(expectedQueue)) throw new Error('offline_replica_changed');
+    if (replica?.queue.some(entry => entry.resolution ? entry.resolution.mutation && entry.resolution.result?.status !== 'applied' : (entry.replayResult ?? entry.result)?.status !== 'applied')) throw new Error('upgrade_incomplete');
+    const save = {...staged, epoch, lastObservedAt: now};
+    if (accessStatus(offlineCheck(save), await identity(tx), now) !== 'available') throw new Error('offline_access_expired');
+    const key = documentKey(save);
+    tx.objectStore('documents').put(save, key);
+    tx.objectStore('checks').put(offlineCheck(save), key);
+    tx.objectStore('private').put({state, confirmed: state, queue: []} satisfies PrivateReplica, key);
+    tx.objectStore('pointers').put(key, editionKey(staged.selector));
+    if (previousRevision !== staged.value.access.revision) {tx.objectStore('documents').delete(oldKey); tx.objectStore('checks').delete(oldKey); tx.objectStore('private').delete(oldKey);}
+  });
+  notifyEdition(staged.selector, true);
+}
+
+export async function stageReaderReplay(selector: ReaderSelector, originalId: string, replay: BulletinReaderMutation, epoch: number, now = Date.now(), expectedQueue?: readonly PendingReaderMutation[]) {
+  return privateTransaction(async tx => {
+    const {key, replica} = await privateContext(tx, selector, epoch, now);
+    if (!replica || expectedQueue && JSON.stringify(replica.queue) !== JSON.stringify(expectedQueue)) throw new Error('offline_replica_changed');
+    const entry = replica.queue.find(entry => entry.mutation.mutationId === originalId);
+    if (!entry || replay.mutationId !== originalId || replay.createdAt !== entry.mutation.createdAt) throw new Error('invalid_reader_binding');
+    if (entry.replay && JSON.stringify(entry.replay) !== JSON.stringify(replay) && entry.replayResult?.status !== 'revision_changed') throw new Error('replay_requires_resolution');
+    entry.replay = replay; entry.replayResult = undefined;
+    tx.objectStore('private').put(replica, key);
+    return replica.queue;
+  });
+}
+
+export async function recordReaderReplayResult(selector: ReaderSelector, resultValue: BulletinReaderMutationResponse['results'][number], epoch: number, expectedQueue: readonly PendingReaderMutation[], now = Date.now()) {
+  return privateTransaction(async tx => {
+    const {key, replica} = await privateContext(tx, selector, epoch, now);
+    if (!replica || JSON.stringify(replica.queue) !== JSON.stringify(expectedQueue)) throw new Error('offline_replica_changed');
+    const entry = replica.queue.find(entry => entry.replay?.mutationId === resultValue.mutationId);
+    if (!entry) throw new Error('invalid_reader_binding');
+    entry.replayResult = resultValue;
+    tx.objectStore('private').put(replica, key);
+    return replica.queue;
+  });
+}
+
+/** Explicit user decision; keep the original payload until the whole recovery commits. */
+export async function chooseReaderRecovery(selector: ReaderSelector, originalId: string | null, mutation: BulletinReaderMutation | null, epoch: number, expectedQueue: readonly PendingReaderMutation[], now = Date.now()) {
+  return privateTransaction(async tx => {
+    const {key, replica} = await privateContext(tx, selector, epoch, now);
+    if (!replica || JSON.stringify(replica.queue) !== JSON.stringify(expectedQueue)) throw new Error('offline_replica_changed');
+    if (mutation && replica.queue.some(entry => entry.mutation.mutationId === mutation.mutationId || entry.resolution?.mutation?.mutationId === mutation.mutationId)) throw new Error('mutation_id_conflict');
+    if (originalId) {
+      const entry = replica.queue.find(entry => entry.mutation.mutationId === originalId);
+      if (!entry || entry.resolution?.mutation && !entry.resolution.result) throw new Error('replay_requires_resolution');
+      entry.resolution = {mutation};
+    } else {
+      if (mutation?.kind !== 'resolveHighlightMigrationConflict') throw new Error('invalid_reader_binding');
+      replica.queue.push({mutation, sent: false});
+    }
+    tx.objectStore('private').put(replica, key);
+    return replica.queue;
+  });
+}
+
+export async function recordReaderRecoveryResult(selector: ReaderSelector, resultValue: MutationResult, epoch: number, expectedQueue: readonly PendingReaderMutation[], now = Date.now()) {
+  return privateTransaction(async tx => {
+    const {key, replica} = await privateContext(tx, selector, epoch, now);
+    if (!replica || JSON.stringify(replica.queue) !== JSON.stringify(expectedQueue)) throw new Error('offline_replica_changed');
+    const entry = replica.queue.find(entry => entry.resolution?.mutation?.mutationId === resultValue.mutationId);
+    if (!entry?.resolution) throw new Error('invalid_reader_binding');
+    entry.resolution.result = resultValue;
+    tx.objectStore('private').put(replica, key);
+    return replica.queue;
+  });
+}
+
+export async function retainReaderRecoveries(selector: ReaderSelector, recovery: readonly ReaderRecovery[], epoch: number, expectedQueue: readonly PendingReaderMutation[], now = Date.now()) {
+  return privateTransaction(async tx => {
+    const {key, replica} = await privateContext(tx, selector, epoch, now);
+    if (!replica || JSON.stringify(replica.queue) !== JSON.stringify(expectedQueue)) throw new Error('offline_replica_changed');
+    for (const item of recovery) {
+      const entry = replica.queue.find(entry => entry.mutation.mutationId === item.mutationId);
+      if (!entry) throw new Error('invalid_reader_binding');
+      entry.recoveryReason = item.reason;
+    }
+    tx.objectStore('private').put(replica, key);
+    return replica.queue;
   });
 }

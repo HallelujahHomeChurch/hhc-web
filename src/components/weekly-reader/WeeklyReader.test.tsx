@@ -18,6 +18,63 @@ beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state
 afterEach(() => {Reflect.deleteProperty(document, 'fonts'); vi.unstubAllEnvs();});
 
 describe('protected weekly reader', () => {
+  it('hides portal note text during foreground authorization and restores the unchanged draft afterward', async () => {
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
+    fireEvent.click(container.querySelector('[data-sentence-id="s0"]')!);
+    fireEvent.click(screen.getByRole('button', {name: 'Note'}));
+    fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'Unsaved private draft'}});
+    let finish!: (value: ReturnType<typeof readerFixture>) => void;
+    state.open.mockImplementationOnce(() => new Promise(resolve => {finish = resolve;}));
+    fireEvent.focus(window);
+    await waitFor(() => expect(state.open).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole('textbox', {name: props.messages.noteText})).not.toBeInTheDocument();
+    await act(async () => finish(readerFixture()));
+    expect(await screen.findByRole('textbox', {name: props.messages.noteText})).toHaveValue('Unsaved private draft');
+  });
+  it('shows both versions after a delete conflict and never silently retries deletion', async () => {
+    const local = {id: 'note-a', sentenceIds: ['s0'], text: 'Local note', quote: 'Quote', version: 1, deleted: false, inactiveAnchors: [], reanchorRequired: false, createdAt: '', updatedAt: ''};
+    const cloud = {...local, text: 'Cloud edit', version: 2};
+    const privateState = {...(await state.privateState()).state, notes: [local]};
+    state.privateState.mockResolvedValue({state: privateState});
+    state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: {...privateState, notes: [cloud]}, results: [{mutationId: mutations[0].mutationId, status: 'note_conflict', revision: 1, note: cloud}]}));
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    render(<WeeklyReader {...props}/>);
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
+    fireEvent.click(screen.getByRole('button', {name: 'My notes'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Delete'}));
+    expect(await screen.findByText('Cloud edit')).toBeInTheDocument();
+    expect(screen.getByText('Local note')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: 'Keep cloud'}));
+    expect(state.mutate).toHaveBeenCalledOnce();
+  });
+  it('records a settled mobile scroll without treating the initial cover as a new reading position', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn()})));
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    await waitFor(() => expect(container.querySelector('[data-sentence-id="s2"]')).toBeInTheDocument());
+    expect(state.mutate).not.toHaveBeenCalled();
+    for (const element of container.querySelectorAll<HTMLElement>('[data-sentence-id]')) {
+      vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({top: element.dataset.sentenceId === 's2' ? 100 : -100, bottom: element.dataset.sentenceId === 's2' ? 130 : -70} as DOMRect);
+    }
+    state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: (await state.privateState()).state, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]}));
+    fireEvent.scroll(window);
+    await waitFor(() => expect(state.mutate).toHaveBeenCalled(), {timeout: 2500});
+    expect(state.mutate.mock.calls[0][2][0]).toMatchObject({kind: 'setProgress', payload: {pageId: 'p2', sentenceId: 's2'}});
+  });
+  it('offers cloud progress without jumping and uses Start over as a normal private mutation', async () => {
+    const cloud = {accountId: 'account-a', documentId: readerFixture().document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: {pageId: 'p2', componentId: 'c2', sentenceId: 's2', recordedAt: '', updatedAt: ''}, conflicts: []};
+    state.privateState.mockResolvedValue({state: cloud});
+    state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: {...cloud, progress: null}, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]}));
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByRole('button', {name: 'Start over'});
+    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p0');
+    fireEvent.click(screen.getByRole('button', {name: 'Start over'}));
+    await waitFor(() => expect(state.mutate).toHaveBeenCalled());
+    expect(state.mutate.mock.calls[0][2][0]).toMatchObject({kind: 'setProgress', payload: {}});
+    expect(screen.queryByRole('button', {name: 'Continue reading'})).not.toBeInTheDocument();
+  });
   it('retains selected sentences across foreground authorization checks without permitting actions during validation', async () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');

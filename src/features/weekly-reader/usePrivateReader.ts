@@ -13,6 +13,7 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
   const [state, setState] = useState<BulletinReaderState | null>(null);
   const [status, setStatus] = useState<ReaderSyncStatus>('syncing');
   const [busy, setBusy] = useState(false);
+  const [canRetry, setCanRetry] = useState(false);
   const controller = useRef<AbortController | null>(null);
   const sending = useRef(false);
   const pending = useRef<BulletinReaderMutation | null>(null);
@@ -69,7 +70,7 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
         const owner = await getOfflineIdentity();
         await seedPrivateReplica(selector, state, owner.epoch);
         const local = await enqueuePrivateMutation(selector, mutation, owner.epoch);
-        queued = true; pending.current = null;
+        queued = true; pending.current = null; setCanRetry(false);
         request.signal.throwIfAborted();
         setState(local.state); setStatus('waiting');
         if (offline) return {status: 'queued'};
@@ -78,15 +79,18 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
         request.signal.throwIfAborted();
         setState(synced.replica?.state ?? local.state); setStatus(synced.status);
         const conflict = synced.replica?.queue.find(entry => entry.mutation.mutationId === mutation.mutationId)?.result;
+        // The draft is durable; blocked note writes are resolved in the recovery
+        // panel, not by enqueuing another edit behind the blocked operation.
+        if (conflict?.status === 'note_conflict') return {status: 'queued'};
         if (conflict) return conflict;
         if (synced.status !== 'synced') throw new Error('action_required');
         return {mutationId: mutation.mutationId, status: 'applied', revision: value.document.revision};
       }
       if (offline) throw new Error('offline_save_required');
-      pending.current = mutation;
+      pending.current = mutation; setCanRetry(true);
       const response = await api.mutate(selector, value, [mutation], request.signal);
       request.signal.throwIfAborted();
-      pending.current = null;
+      pending.current = null; setCanRetry(false);
       if (response.state.currentRevision !== value.document.revision) {setState(rollback); setStatus('paused');}
       else {setState(response.state); setStatus(response.results[0].status === 'applied' ? 'synced' : 'action');}
       return response.results[0];
@@ -102,7 +106,11 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
         setState(rollback); setStatus(action === 'retain' || action === 'login' ? 'waiting' : 'action');
       }
       throw error;
-    } finally {sending.current = false; if (!request.signal.aborted) setBusy(false);}
+    } finally {sending.current = false; setBusy(false);}
   }
-  return {state, status, busy, mutate};
+  async function retry() {
+    if (!pending.current) return;
+    return mutate(pending.current);
+  }
+  return {state, status, busy, mutate, retry, canRetry};
 }

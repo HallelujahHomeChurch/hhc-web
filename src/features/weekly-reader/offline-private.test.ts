@@ -3,7 +3,7 @@ import {IDBFactory, IDBObjectStore} from 'fake-indexeddb';
 import {beforeEach, expect, it, vi} from 'vitest';
 import type {BulletinReaderMutation, BulletinReaderState} from '@hallelujahhomechurch/hhc-web-client';
 import {readerFixture} from './test-fixture';
-import {activateOfflineAccount, clearOfflineAccount, commitOfflineSave, enqueuePrivateMutation, seedPrivateReplica, readPrivateReplica, claimPrivateMutation, acknowledgePrivateMutation, hasPendingReaderWrites, checkOfflineSave, renewOfflineSave} from './offline-store';
+import {activateOfflineAccount, clearOfflineAccount, commitOfflineSave, commitOfflineUpgrade, enqueuePrivateMutation, seedPrivateReplica, readPrivateReplica, claimPrivateMutation, acknowledgePrivateMutation, hasPendingReaderWrites, checkOfflineSave, renewOfflineSave, readOfflineSave, stageReaderReplay, recordReaderReplayResult} from './offline-store';
 
 const now = Date.parse('2026-10-01T01:00:00Z');
 const selector = {accountId: 'account-a', issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const};
@@ -82,4 +82,45 @@ it('retains operations older than 90 days for explicit recovery after successful
   await renewOfflineSave(selector, renewed, epoch, later);
   expect(await claimPrivateMutation(selector, epoch, later)).toBeNull();
   expect((await readPrivateReplica(selector, later))?.queue[0]).toMatchObject({mutation: note, result: {status: 'recovery_required'}});
+});
+it('atomically switches content and private state only if the pending queue did not change during update staging', async () => {
+  const epoch = await saved();
+  const before = (await readPrivateReplica(selector, now))!;
+  const newer = structuredClone(value); newer.document.revision = newer.access.revision = newer.access.currentRevision = 2;
+  const stage = {selector, value: newer, epoch, resources: [], size: 100, locked: false, lastObservedAt: now};
+  const cloud = {...state, appliedRevision: 2, currentRevision: 2};
+  await enqueuePrivateMutation(selector, note, epoch, now);
+  await expect(commitOfflineUpgrade(stage, cloud, epoch, 1, before.queue, now)).rejects.toThrow('offline_replica_changed');
+  expect((await readOfflineSave(selector, now))?.save.value.document.revision).toBe(1);
+  const queued = (await readPrivateReplica(selector, now))!;
+  await expect(commitOfflineUpgrade(stage, cloud, epoch, 1, queued.queue, now)).rejects.toThrow('upgrade_incomplete');
+  await stageReaderReplay(selector, note.mutationId, {...note, documentRevision: 2}, epoch, now);
+  await recordReaderReplayResult(selector, {mutationId: note.mutationId, status: 'applied', revision: 2}, epoch, (await readPrivateReplica(selector, now))!.queue, now);
+  const acknowledged = (await readPrivateReplica(selector, now))!;
+  const put = IDBObjectStore.prototype.put;
+  const fail = vi.spyOn(IDBObjectStore.prototype, 'put').mockImplementation(function (this: IDBObjectStore, ...args: Parameters<typeof put>) {
+    if (this.name === 'private') throw new DOMException('Full', 'QuotaExceededError');
+    return put.apply(this, args);
+  });
+  await expect(commitOfflineUpgrade(stage, {...cloud, notes: queued.state.notes}, epoch, 1, acknowledged.queue, now)).rejects.toMatchObject({name: 'QuotaExceededError'});
+  fail.mockRestore();
+  expect((await readOfflineSave(selector, now))?.save.value.document.revision).toBe(1);
+  expect((await readPrivateReplica(selector, now))?.queue).toEqual(acknowledged.queue);
+  await commitOfflineUpgrade(stage, {...cloud, notes: queued.state.notes}, epoch, 1, acknowledged.queue, now);
+  expect((await readOfflineSave(selector, now))?.save.value.document.revision).toBe(2);
+  expect((await readPrivateReplica(selector, now))?.state.notes[0].text).toBe('不可遺失的筆記');
+  expect(await hasPendingReaderWrites(selector.accountId)).toBe(false);
+});
+it('persists the exact rebased request before sending without changing the old readable replica', async () => {
+  const epoch = await saved();
+  await enqueuePrivateMutation(selector, note, epoch, now);
+  const replay = {...note, documentRevision: 2};
+  await stageReaderReplay(selector, note.mutationId, replay, epoch, now);
+  const replica = await readPrivateReplica(selector, now);
+  expect(replica?.state.currentRevision).toBe(1);
+  expect(replica?.queue[0]).toMatchObject({mutation: note, replay});
+  await expect(stageReaderReplay(selector, note.mutationId, {...replay, documentRevision: 3}, epoch, now)).rejects.toThrow('replay_requires_resolution');
+  await recordReaderReplayResult(selector, {mutationId: note.mutationId, status: 'revision_changed', revision: 3}, epoch, replica!.queue, now);
+  await stageReaderReplay(selector, note.mutationId, {...replay, documentRevision: 3}, epoch, now);
+  expect((await readPrivateReplica(selector, now))?.queue[0].replay?.documentRevision).toBe(3);
 });

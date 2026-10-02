@@ -31,6 +31,7 @@ type AccountControlLabels = {
   signIn: string;
   signOut: string;
   signOutError: string;
+  unsyncedWarning: string;
 };
 
 type BulletinAccess =
@@ -213,6 +214,8 @@ export function AccountControlProvider({
     setLogoutError('');
     try {
       if (isWeeklyReaderEnabled() && readerAccountId) {
+        const {hasPendingReaderWrites} = await import('@/features/weekly-reader/offline-store');
+        if (await hasPendingReaderWrites(readerAccountId) && !window.confirm(labels.unsyncedWarning)) return false;
         const offline = await import('@/features/weekly-reader/offline-session');
         await offline.forgetOfflineAccount(readerAccountId);
       }
@@ -225,7 +228,7 @@ export function AccountControlProvider({
       setLogoutError(labels.signOutError);
       return false;
     }
-  }, [authRuntime, labels.signOutError, sessionClient, readerAccountId]);
+  }, [authRuntime, labels.signOutError, labels.unsyncedWarning, sessionClient, readerAccountId]);
 
   return (
     <AccountControlContext.Provider value={{

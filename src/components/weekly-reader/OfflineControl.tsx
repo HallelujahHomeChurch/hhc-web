@@ -2,13 +2,13 @@
 import {useEffect, useRef, useState} from 'react';
 import type {OnlineBulletinAccess} from '@hallelujahhomechurch/hhc-web-client';
 import type {createReaderApi, ReaderSelector} from '@/features/weekly-reader/api';
-import {commitOfflineSave, getOfflineIdentity, readOfflineSave, removeOfflineSave, stageOfflineSave, supportsOfflineReader, type OfflineSave} from '@/features/weekly-reader/offline-store';
+import {commitOfflineSave, getOfflineIdentity, hasPendingReaderWrites, readOfflineSave, removeOfflineSave, stageOfflineSave, supportsOfflineReader, type OfflineSave} from '@/features/weekly-reader/offline-store';
 import type {Locale} from '@/i18n/locales';
 import {prepareOfflineReaderShell} from '@/lib/reader-shell';
 import type {ReaderMessages} from './ReaderToolbar';
 
-export function OfflineControl({api, value, selector, locale, messages: m, onSaved}: {
-  api: Pick<ReturnType<typeof createReaderApi>, 'renew'>; value: OnlineBulletinAccess; selector: ReaderSelector; locale: Locale; messages: ReaderMessages; onSaved: (value: OnlineBulletinAccess) => void;
+export function OfflineControl({api, value, selector, locale, messages: m, onSaved, onFailure}: {
+  api: Pick<ReturnType<typeof createReaderApi>, 'renew'>; value: OnlineBulletinAccess; selector: ReaderSelector; locale: Locale; messages: ReaderMessages; onSaved: (value: OnlineBulletinAccess) => void; onFailure: (error: unknown) => void;
 }) {
   const [ready, setReady] = useState(false);
   const [saved, setSaved] = useState<OfflineSave | null>(null);
@@ -38,13 +38,17 @@ export function OfflineControl({api, value, selector, locale, messages: m, onSav
       await commitOfflineSave(staged, owner.epoch);
       request.signal.throwIfAborted();
       setSaved({...staged, epoch: owner.epoch}); onSaved(fresh);
-    } catch {if (!request.signal.aborted) setError(true);}
+    } catch (failure) {if (!request.signal.aborted) {setError(true); onFailure(failure);}}
     finally {if (!request.signal.aborted) setBusy(false);}
   }
   async function remove() {
-    if (busy || !window.confirm(m.offlineRemoveConfirm)) return;
+    if (busy) return;
     setBusy(true); setError(false);
-    try {await removeOfflineSave(selector); setSaved(null);}
+    try {
+      const pending = await hasPendingReaderWrites(accountId, value.document.documentId);
+      if (!window.confirm(pending ? m.unsyncedWarning : m.offlineRemoveConfirm)) return;
+      await removeOfflineSave(selector); setSaved(null);
+    }
     catch {setError(true);}
     finally {setBusy(false);}
   }

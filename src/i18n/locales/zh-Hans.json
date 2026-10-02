@@ -1,5 +1,18 @@
 {
   "weeklyReader": {
+    "reviewSync": "检查同步",
+    "applyUpdate": "应用并同步",
+    "keepReading": "继续阅读",
+    "recoveryHelp": "请先确认变更。同步与下载都成功后才会切换版本；在此之前保留当前下载与待同步内容。",
+    "recoveryAnchors": "选择当前版本的句子（最多 500 句）。",
+    "recoveryLocal": "本机版本",
+    "recoveryCloud": "云端版本",
+    "recoveryRemoved": "原句已被移除。",
+    "recoveryLimit": "句子超过上限，请重新选择最多 500 句。",
+    "recoveryColor": "合并后的句子有不同颜色，请选择要保留的颜色。",
+    "recoveryNote": "这则笔记在云端已有变更。",
+    "recoveryMapping": "无法对应原位置，请选择当前版本的句子。",
+    "recoveryExpired": "此变更已超过 90 天，请确认后以新操作提交。",
     "myNotes": "我的笔记",
     "noteText": "笔记内容",
     "noteSave": "保存",
@@ -108,7 +121,8 @@
       "manageAccount": "管理帐号",
       "signIn": "登录",
       "signOut": "退出登录",
-      "signOutError": "无法退出登录，请重试。"
+      "signOutError": "无法退出登录，请重试。",
+      "unsyncedWarning": "此设备尚未同步的更改将被移除，是否继续？"
     },
     "language": "语言",
     "translationNotice": "本网站的部分内容可能是机器或 AI 翻译。",

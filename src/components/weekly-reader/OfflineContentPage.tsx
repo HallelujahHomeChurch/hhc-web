@@ -2,7 +2,7 @@
 import {useEffect, useState} from 'react';
 import {useAccountIdentity} from '@/components/layout/AccountControl';
 import {isWeeklyReaderEnabled} from '@/features/weekly-reader/enabled';
-import {getOfflineIdentity, listOfflineSaves, readOfflineSave, removeOfflineSave, supportsOfflineReader, type OfflineSave} from '@/features/weekly-reader/offline-store';
+import {getOfflineIdentity, hasPendingReaderWrites, listOfflineSaves, readOfflineSave, removeOfflineSave, supportsOfflineReader, type OfflineSave} from '@/features/weekly-reader/offline-store';
 import {watchOfflineAccount} from '@/features/weekly-reader/offline-session';
 import type {Locale} from '@/i18n/locales';
 import {localeLabels} from '@/i18n/locales';
@@ -30,8 +30,11 @@ export function OfflineContentPage({locale, messages: m}: {locale: Locale; messa
     return () => {active = false; stop();};
   }, [accountId, enabled, refresh]);
   async function remove(save: OfflineSave) {
-    if (!window.confirm(m.offlineRemoveConfirm)) return;
-    try {await removeOfflineSave(save.selector); setItems(rows => rows.filter(row => row.save !== save));}
+    try {
+      const pending = await hasPendingReaderWrites(save.selector.accountId, save.value.document.documentId);
+      if (!window.confirm(pending ? m.unsyncedWarning : m.offlineRemoveConfirm)) return;
+      await removeOfflineSave(save.selector); setItems(rows => rows.filter(row => row.save !== save));
+    }
     catch {setError(true);}
   }
   return <main className="weekly-reader">

@@ -1,5 +1,18 @@
 {
   "weeklyReader": {
+    "reviewSync": "檢查同步",
+    "applyUpdate": "套用並同步",
+    "keepReading": "繼續閱讀",
+    "recoveryHelp": "請先確認變更。同步與下載都成功後才會切換版本；在此之前保留目前下載與待同步內容。",
+    "recoveryAnchors": "選擇目前版本的句子（最多 500 句）。",
+    "recoveryLocal": "本機版本",
+    "recoveryCloud": "雲端版本",
+    "recoveryRemoved": "原句已被移除。",
+    "recoveryLimit": "句子超過上限，請重新選取最多 500 句。",
+    "recoveryColor": "合併後的句子有不同顏色，請選擇要保留的顏色。",
+    "recoveryNote": "這則筆記在雲端已有變更。",
+    "recoveryMapping": "無法對應原位置，請選擇目前版本的句子。",
+    "recoveryExpired": "此變更已超過 90 天，請確認後以新操作送出。",
     "myNotes": "我的筆記",
     "noteText": "筆記內容",
     "noteSave": "儲存",
@@ -108,7 +121,8 @@
       "manageAccount": "管理帳號",
       "signIn": "登入",
       "signOut": "登出",
-      "signOutError": "無法登出，請再試一次。"
+      "signOutError": "無法登出，請再試一次。",
+      "unsyncedWarning": "此裝置尚未同步的變更將被移除，是否繼續？"
     },
     "language": "語言",
     "translationNotice": "本網站的部分內容可能是機器或 AI 翻譯。",

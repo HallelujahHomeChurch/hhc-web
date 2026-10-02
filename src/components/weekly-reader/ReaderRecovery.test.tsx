@@ -1,0 +1,41 @@
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {beforeEach, expect, it, vi} from 'vitest';
+import {getMessages} from '@/i18n/messages';
+import {readerFixture} from '@/features/weekly-reader/test-fixture';
+import {ReaderRecovery} from './ReaderRecovery';
+const value = readerFixture();
+const mocks = vi.hoisted(() => ({prepare: vi.fn(), finish: vi.fn(), choose: vi.fn(), read: vi.fn(), identity: vi.fn()}));
+vi.mock('@/features/weekly-reader/upgrade', () => ({prepareReaderUpgrade: mocks.prepare, finishReaderUpgrade: mocks.finish}));
+vi.mock('@/features/weekly-reader/offline-store', () => ({supportsOfflineReader: () => true, getOfflineIdentity: mocks.identity, readOfflineSave: mocks.read, chooseReaderRecovery: mocks.choose}));
+const api = {open: vi.fn(), renew: vi.fn(), current: vi.fn(), privateState: vi.fn(), mutate: vi.fn()};
+const props = {api, value, selector: {accountId: 'account-a', issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const}, messages: getMessages('en').weeklyReader, onUpdated: vi.fn(), onFailure: vi.fn()};
+const cloud = {accountId: 'account-a', documentId: value.document.documentId, appliedRevision: 2, currentRevision: 2, notes: [], highlights: [], progress: null, conflicts: []};
+beforeEach(() => {
+  vi.resetAllMocks();
+  mocks.identity.mockResolvedValue({accountId: 'account-a', epoch: 1}); mocks.read.mockResolvedValue({status: 'available'});
+  mocks.prepare.mockResolvedValue({value, state: cloud, queue: [], mutations: [], recovery: [], previousRevision: 1}); mocks.finish.mockResolvedValue(value);
+});
+it('requires explicit acceptance before switching and retains the reader on cancellation or failure', async () => {
+  render(<ReaderRecovery {...props}/>);
+  fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
+  await screen.findByRole('button', {name: 'Apply and synchronize'});
+  expect(mocks.finish).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', {name: 'Keep reading'}));
+  expect(props.onUpdated).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
+  mocks.finish.mockRejectedValueOnce(new TypeError('offline'));
+  fireEvent.click(await screen.findByRole('button', {name: 'Apply and synchronize'}));
+  await waitFor(() => expect(props.onFailure).toHaveBeenCalled());
+  expect(props.onUpdated).not.toHaveBeenCalled();
+});
+it('shows local and cloud note text and records an explicit cloud choice without discarding on cancel', async () => {
+  const mutation = {mutationId: 'old', documentRevision: 1, createdAt: '', kind: 'editNote', baseVersion: 1, payload: {noteId: 'note', text: 'Local text'}};
+  mocks.prepare.mockResolvedValue({value, state: {...cloud, notes: [{id: 'note', text: 'Cloud text', version: 2, sentenceIds: ['s0'], deleted: false}]}, queue: [{mutation, sent: true, result: {status: 'note_conflict'}}], mutations: [], recovery: [{mutationId: 'old', reason: 'note_conflict'}], previousRevision: 1});
+  render(<ReaderRecovery {...props}/>);
+  fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
+  expect(await screen.findByDisplayValue('Local text')).toBeInTheDocument();
+  expect(screen.getByText('Cloud text')).toBeInTheDocument();
+  expect(screen.queryByRole('button', {name: 'Apply and synchronize'})).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', {name: 'Keep cloud'}));
+  await waitFor(() => expect(mocks.choose).toHaveBeenCalledWith(props.selector, 'old', null, 1, expect.any(Array)));
+});

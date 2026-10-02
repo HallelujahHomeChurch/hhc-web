@@ -25,11 +25,21 @@
 .reader-note-editor blockquote, .reader-notes-list blockquote { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 10rem; overflow: auto; padding: .75rem; border-inline-start: 3px solid var(--hhc-control-border); background: var(--hhc-surface-raised); }
 .reader-note-editor textarea { width: 100%; min-height: 9rem; resize: vertical; border: 1px solid var(--hhc-control-border); border-radius: .5rem; padding: .75rem; font-size: 1rem; color: var(--hhc-text); background: var(--hhc-surface); }
 .reader-note-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.reader-recovery { display: grid; gap: 1rem; }
+.reader-private-sheet[hidden] { display: none; }
+.reader-recovery-anchors { max-height: 14rem; overflow: auto; }
+.reader-recovery-anchors label { display: flex; align-items: start; gap: .5rem; padding: .5rem 0; overflow-wrap: anywhere; }
+.reader-recovery input[type='checkbox'], .reader-recovery input[type='radio'] { flex: none; width: 1.25rem; height: 1.25rem; margin: .25rem; }
+.reader-recovery input[type='search'] { width: 100%; padding: .5rem; border: 1px solid var(--hhc-control-border); border-radius: .5rem; }
+.reader-recovery blockquote { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 10rem; overflow: auto; padding: .75rem; background: var(--hhc-surface-raised); }
 .reader-note-text { white-space: pre-wrap; overflow-wrap: anywhere; margin-block: .75rem; }
 .reader-notes-list article + article { border-top: 1px solid var(--hhc-control-border); padding-top: 1rem; }
 .reader-private-sheet button { min-height: 44px; border: 1px solid var(--hhc-control-border); border-radius: .6rem; padding: .5rem .8rem; background: var(--hhc-surface); }
 .reader-private-sheet button:disabled { opacity: .45; }
 .reader-private-sheet :focus-visible { outline: 2px solid var(--hhc-control); outline-offset: 3px; }
+.hhc-modal:has(.reader-private-sheet) .hhc-dialog__header { padding: 1rem 1rem 0; }
+.hhc-modal:has(.reader-private-sheet) .hhc-dialog__body { padding: 1rem; }
+.hhc-modal:has(.reader-private-sheet) .hhc-dialog__close { min-width: 44px; min-height: 44px; }
 @media (max-width: 639px) {
   .hhc-modal-overlay:has(.reader-private-sheet) { align-items: end; padding: 0; }
   .hhc-modal--drawer-right:has(.reader-private-sheet) { inset: auto 0 0; width: 100%; max-width: 100%; height: auto; max-height: 90dvh; border-radius: 1rem 1rem 0 0; padding-bottom: env(safe-area-inset-bottom); }

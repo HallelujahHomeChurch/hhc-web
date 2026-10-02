@@ -1,5 +1,18 @@
 {
   "weeklyReader": {
+    "reviewSync": "同期を確認",
+    "applyUpdate": "適用して同期",
+    "keepReading": "読み続ける",
+    "recoveryHelp": "変更を確認してください。同期とダウンロードが完了するまで、保存済みの版と未同期の変更は保持されます。",
+    "recoveryAnchors": "現在の版の文を選択してください（最大500文）。",
+    "recoveryLocal": "この端末の版",
+    "recoveryCloud": "クラウドの版",
+    "recoveryRemoved": "元の文は削除されました。",
+    "recoveryLimit": "文が多すぎます。最大500文を選択してください。",
+    "recoveryColor": "結合された文の色を選択してください。",
+    "recoveryNote": "このノートはクラウドで変更されました。",
+    "recoveryMapping": "元の位置に対応できません。現在の文を選択してください。",
+    "recoveryExpired": "この変更は90日以上前のものです。確認して新しい操作として送信してください。",
     "myNotes": "マイノート",
     "noteText": "ノート",
     "noteSave": "保存",
@@ -108,7 +121,8 @@
       "manageAccount": "アカウントを管理",
       "signIn": "ログイン",
       "signOut": "ログアウト",
-      "signOutError": "ログアウトできませんでした。もう一度お試しください。"
+      "signOutError": "ログアウトできませんでした。もう一度お試しください。",
+      "unsyncedWarning": "未同期の変更がこの端末から削除されます。続行しますか？"
     },
     "language": "言語",
     "translationNotice": "このウェブサイトの一部のコンテンツには、機械翻訳またはAI翻訳が使用されている場合があります。",

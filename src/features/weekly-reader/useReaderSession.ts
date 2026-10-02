@@ -30,8 +30,9 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
       blocked.current = true; controller.abort();
       setState({value: null, offline: false, error: 'unavailable'});
     });
-    const stopEdition = watchOfflineEdition(bound, () => {
+    const stopEdition = watchOfflineEdition(bound, updated => {
       controller.abort(); requestId.current = null;
+      if (updated) {setState(previous => ({...previous, validating: true})); retry(); return;}
       setState({value: null, offline: false, error: 'unavailable'});
     });
     window.addEventListener('online', refresh); window.addEventListener('focus', refresh);

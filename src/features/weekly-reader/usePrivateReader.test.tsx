@@ -41,3 +41,23 @@ it('does not bind a newer private state to the pinned renderer or send writes af
   await expect(result.current.mutate(mutation)).rejects.toThrow();
   expect(api.mutate).not.toHaveBeenCalled();
 });
+it('offers an explicit same-ID retry after a lost progress acknowledgement and releases busy state across refresh', async () => {
+  const progress: BulletinReaderMutation = {...mutation, kind: 'setProgress', payload: {pageId: 'p1'}};
+  api.mutate.mockRejectedValueOnce(new TypeError('network'));
+  const {result, rerender} = renderHook(({current}) => usePrivateReader({api, selector, value: current, offline: false, allowAction: () => true, onFailure}), {initialProps: {current: value}});
+  await waitFor(() => expect(result.current.state).toEqual(state));
+  await act(async () => {await result.current.mutate(progress).catch(() => {});});
+  expect(result.current.canRetry).toBe(true);
+  api.mutate.mockResolvedValueOnce({state, results: [{mutationId: progress.mutationId, status: 'applied', revision: 1}]});
+  await act(async () => {await result.current.retry();});
+  expect(api.mutate.mock.calls[1][2][0]).toEqual(progress);
+  expect(result.current.canRetry).toBe(false);
+  let finish!: () => void;
+  api.mutate.mockImplementationOnce(() => new Promise(resolve => {finish = () => resolve({state, results: [{mutationId: mutation.mutationId, status: 'applied', revision: 1}]});}));
+  let request!: Promise<unknown>;
+  act(() => {request = result.current.mutate(mutation);});
+  await waitFor(() => expect(result.current.busy).toBe(true));
+  rerender({current: structuredClone(value)});
+  await act(async () => {finish(); await request.catch(() => {});});
+  expect(result.current.busy).toBe(false);
+});

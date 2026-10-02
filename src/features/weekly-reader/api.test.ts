@@ -9,6 +9,15 @@ const auth = {getAccessToken: async () => 'token', refreshAfterUnauthorized: asy
 beforeEach(() => {vi.clearAllMocks(); client.listOnlineBulletinDiscovery.mockResolvedValue({items: [{issueId: readerFixture().document.issueId, issueNumber: 1739, series: 'general', contentLocale: 'zh-Hant', onlineRevision: 1}]}); client.openOnlineBulletin.mockResolvedValue(readerFixture());});
 
 describe('member reader access', () => {
+  it('opens the latest revision by immutable issue identity only after an explicit update request', async () => {
+    const saved = readerFixture();
+    const newer = readerFixture(); newer.document.revision = newer.access.revision = newer.access.currentRevision = 2;
+    client.openOnlineBulletin.mockResolvedValue(newer);
+    const api = createReaderApi(auth);
+    expect(await api.current(selector, saved, 'update-request')).toEqual(newer);
+    expect(client.listOnlineBulletinDiscovery).not.toHaveBeenCalled();
+    expect(client.openOnlineBulletin).toHaveBeenCalledWith({issueId: saved.document.issueId, series: 'general', locale: 'zh-Hant', clientRequestId: 'update-request', signal: undefined});
+  });
   it('rejects private responses from a different account and verifies before returning a mutation acknowledgement', async () => {
     const value = readerFixture();
     const state = {accountId: 'other', documentId: value.document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: null, conflicts: []};

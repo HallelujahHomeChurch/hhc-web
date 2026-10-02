@@ -6,17 +6,31 @@ import {AccountControl, AccountControlProvider, AccountControlView, BulletinAcce
 
 const captureHandledError = vi.hoisted(() => vi.fn());
 const offline = vi.hoisted(() => ({prepareOfflineAccount: vi.fn().mockResolvedValue(1), forgetOfflineAccount: vi.fn().mockResolvedValue(undefined), watchOfflineAccount: vi.fn(() => () => {})}));
+const pending = vi.hoisted(() => vi.fn().mockResolvedValue(false));
+vi.mock('@/features/weekly-reader/offline-store', () => ({hasPendingReaderWrites: pending}));
 vi.mock('@/features/weekly-reader/offline-session', () => offline);
 vi.mock('@/lib/observability', () => ({captureHandledError}));
 
 const labels = {
   menu: 'Account menu', projectionSystem: 'Projection system', projectionWindowLabel: 'Open in a new window', projectionPopupBlocked: 'Popup blocked.', adminManagement: 'Admin console',
-  manageAccount: 'Manage account', signIn: 'Sign in', signOut: 'Sign out', signOutError: 'Unable to sign out. Try again.'
+  manageAccount: 'Manage account', signIn: 'Sign in', signOut: 'Sign out', signOutError: 'Unable to sign out. Try again.', unsyncedWarning: 'Unsynced changes will be removed. Continue?'
 };
 
 afterEach(() => { sessionStorage.clear(); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); captureHandledError.mockClear(); });
 
 describe('AccountControl', () => {
+  it('keeps unsynced notes and the session when the user cancels logout', async () => {
+    vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); pending.mockResolvedValueOnce(true);
+    const logoutAll = vi.fn(); const before = offline.forgetOfflineAccount.mock.calls.length;
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({memberships: [], orgRoles: [], qualifications: [], entitlements: [], version: 'a'.repeat(64)})));
+    render(<AccountControl client={sessionClient([], {status: 'available'}, logoutAll)} labels={labels}/>);
+    await userEvent.click(await screen.findByRole('button', {name: 'Account menu'}));
+    await userEvent.click(screen.getByRole('menuitem', {name: 'Sign out'}));
+    await waitFor(() => expect(window.confirm).toHaveBeenCalledWith(labels.unsyncedWarning));
+    expect(logoutAll).not.toHaveBeenCalled(); expect(offline.forgetOfflineAccount).toHaveBeenCalledTimes(before);
+    expect(screen.getByRole('button', {name: 'Account menu'})).toBeInTheDocument();
+  });
   it('removes local reader data before completing explicit logout', async () => {
     vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true');
     const logoutAll = vi.fn().mockResolvedValue(undefined);

@@ -40,6 +40,14 @@ export function verifyReaderAccess(value: OnlineBulletinAccess, expected: Reader
 export function createReaderApi(authorization: Authorization, fetcher = globalThis.fetch.bind(globalThis)) {
   const client = createHhcWebClient({baseUrl: '/api', getAccessToken: () => null, fetcher: createProtectedFetch(authorization, fetcher)});
   return {
+    async current(selector: ReaderSelector, previous: OnlineBulletinAccess, clientRequestId: string, signal?: AbortSignal) {
+      verifyReaderAccess(previous, selector);
+      const value = await client.openOnlineBulletin({issueId: previous.document.issueId, series: selector.series, locale: selector.contentLocale, clientRequestId, signal});
+      signal?.throwIfAborted();
+      verifyReaderAccess(value, selector);
+      if (value.document.issueId !== previous.document.issueId || value.document.documentId !== previous.document.documentId || value.access.currentRevision !== value.access.revision || value.access.revision < previous.access.revision) throw new Error('invalid_reader_binding');
+      return value;
+    },
     async privateState(selector: ReaderSelector, value: OnlineBulletinAccess, signal?: AbortSignal) {
       verifyReaderAccess(value, selector);
       const response = await client.getReaderState({issueId: value.document.issueId, series: selector.series, locale: selector.contentLocale, fromRevision: value.document.revision, signal});

@@ -51,7 +51,8 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
     manageAccount: t('account.manageAccount'),
     signIn: t('account.signIn'),
     signOut: t('account.signOut'),
-    signOutError: t('account.signOutError')
+    signOutError: t('account.signOutError'),
+    unsyncedWarning: t('account.unsyncedWarning')
   };
   const isActive = (href: string) => pathname === href || (href !== homeHref && pathname.startsWith(`${href}/`));
   const mobileActiveIndex = mobileNavItems.findIndex(({href}) => isActive(href));

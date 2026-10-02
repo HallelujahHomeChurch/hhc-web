@@ -14,6 +14,7 @@ import {useReaderSession} from '@/features/weekly-reader/useReaderSession';
 import {usePrivateReader} from '@/features/weekly-reader/usePrivateReader';
 import {readerSentences, selectedColor, toggleSentence} from '@/features/weekly-reader/selection';
 import {copySentences} from '@/features/weekly-reader/copy';
+import {useReaderProgress} from '@/features/weekly-reader/progress';
 import type {Locale} from '@/i18n/locales';
 import {ReaderToolbar, type ReaderMessages} from './ReaderToolbar';
 import {PageNavigator} from './PageNavigator';
@@ -25,6 +26,7 @@ import {SelectionToolbar} from './SelectionToolbar';
 import {NoteEditor, type NoteSave} from './NoteEditor';
 import {NotesPanel} from './NotesPanel';
 import {ReaderPrivateState, SyncStatus} from './ReaderPrivateState';
+import {ReaderRecovery} from './ReaderRecovery';
 import '@hallelujahhomechurch/ui/bulletin-paper.css';
 import './reader.css';
 
@@ -68,19 +70,22 @@ function AuthorizedReader(props: Props & {accountId: string}) {
     <div hidden={session.validating} inert={session.validating} onClickCapture={guard} onKeyDownCapture={guard} onPointerDownCapture={guard} onCopyCapture={guard}>
     {session.offline ? <p role="status">{m.offlineNotice}</p> : null}
     {session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}
-    <OfflineControl api={api} value={session.value} selector={selector} locale={props.locale} messages={m} onSaved={session.acceptSaved}/>
-    <ReaderDocument key={`${session.value.document.documentId}:${session.value.document.revision}`} value={session.value} selector={selector} messages={m} api={api} offline={session.offline} allowAction={session.allowAction} onFailure={session.privateFailure}/>
+    <OfflineControl api={api} value={session.value} selector={selector} locale={props.locale} messages={m} onSaved={session.acceptSaved} onFailure={session.privateFailure}/>
+    <ReaderDocument key={`${session.value.document.documentId}:${session.value.document.revision}`} value={session.value} selector={selector} messages={m} api={api} offline={session.offline} allowAction={session.allowAction} onFailure={session.privateFailure} onUpdated={session.acceptSaved} suspended={!!session.validating}/>
   </div></>;
   return <section className="reader-status" role={session.error ? 'alert' : 'status'}><h1>{m.title}</h1><p>{session.error ? m[session.error] : m.loading}</p>{session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}{session.error ? <button type="button" onClick={session.retry}>{m.retry}</button> : null}</section>;
 }
 
-function ReaderDocument({value, selector, messages: m, api, offline, allowAction, onFailure}: {value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages; api: ReturnType<typeof createReaderApi>; offline: boolean; allowAction: () => boolean; onFailure: (error: unknown) => void}) {
+function ReaderDocument({value, selector, messages: m, api, offline, allowAction, onFailure, onUpdated, suspended}: {value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages; api: ReturnType<typeof createReaderApi>; offline: boolean; allowAction: () => boolean; onFailure: (error: unknown) => void; onUpdated: (value: OnlineBulletinAccess) => void; suspended: boolean}) {
   const document = useMemo(() => verifyReaderAccess(value, selector), [value, selector]);
   const privateReader = usePrivateReader({api, selector, value, offline, allowAction, onFailure});
+  const progress = useReaderProgress(value.document, privateReader.mutate);
+  const recordProgress = progress.record;
   const sentences = useMemo(() => readerSentences(value.document), [value.document]);
   const [selected, setSelected] = useState<string[]>([]);
   const [notice, setNotice] = useState('');
   const [notes, setNotes] = useState<'list' | 'new' | BulletinReaderNote | null>(null);
+  const [deletion, setDeletion] = useState<{local: BulletinReaderNote; cloud?: BulletinReaderNote} | null>(null);
   const [wideNotes, setWideNotes] = useState(false);
   const documentRef = useRef<HTMLElement>(null);
   const noteButton = useRef<HTMLButtonElement>(null);
@@ -92,7 +97,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const noteQuote = typeof notes === 'object' && notes ? notes.quote : sentences.filter(sentence => selected.includes(sentence.id)).map(sentence => sentence.text).join('\n');
   function closeNotes() {
     if (privateReader.busy) return;
-    setNotes(null);
+    setNotes(null); setDeletion(null);
     requestAnimationFrame(() => (noteButton.current ?? notesButton.current)?.focus());
   }
   async function saveNote(draft: NoteSave) {
@@ -107,6 +112,14 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     try {const result = await privateReader.mutate(mutation); setNotice(result.status === 'applied' || result.status === 'queued' ? '' : m.syncAction);}
     catch {setNotice(m.actionFailed);}
   }
+  async function deleteNote(note: BulletinReaderNote) {
+    try {
+      const result = await privateReader.mutate({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, kind: 'deleteNote', baseVersion: note.version, payload: {noteId: note.id}});
+      if (result.status === 'note_conflict') setDeletion({local: deletion?.local ?? note, cloud: result.note});
+      else if (result.status === 'applied' || result.status === 'queued') {setDeletion(null); setNotes('list');}
+      else setNotice(m.syncAction);
+    } catch {setNotice(m.actionFailed);}
+  }
   const activateSentence = (id: string) => {
     if (!allowAction() || notes) return;
     if (selected.length >= 500 && !selected.includes(id)) setNotice(m.selectionLimit);
@@ -120,6 +133,9 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     try {const id = sessionStorage.getItem(storageKey); return Math.max(0, document.pages.findIndex(page => page.id === id));} catch {return 0;}
   });
   const [resumePending, setResumePending] = useState(!!restoredAnchor || restoredPage > 0);
+  const [resumeDismissed, setResumeDismissed] = useState(false);
+  const cloudProgress = privateReader.state?.progress;
+  const offerResume = resumePending || !resumeDismissed && !!(cloudProgress?.pageId || cloudProgress?.sentenceId || cloudProgress?.componentId);
   const [page, setPage] = useState(0);
   const [zoom, setZoom] = useState<ReaderZoom>('page');
   const [mobile, setMobile] = useState(false);
@@ -132,13 +148,16 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const active = document.pages[page];
   const size = {width: active.width * 4 / 3, height: active.height * 4 / 3};
   const scale = pageScale(zoom, size, viewport);
-  const onPage = (next: number) => {
+  const onPage = (next: number, record = true) => {
     if (!Number.isFinite(next)) return;
     setResumePending(false);
+    setResumeDismissed(true);
     if (!mobile) setSelected([]);
     pendingAnchor.current = null;
     try {sessionStorage.removeItem(`${storageKey}:anchor`);} catch { /* Optional restoration. */ }
-    setPage(Math.max(0, Math.min(document.pages.length - 1, Math.floor(next))));
+    const target = Math.max(0, Math.min(document.pages.length - 1, Math.floor(next)));
+    setPage(target);
+    if (record) progress.record(document.pages[target].id);
   };
   useEffect(() => {
     let active = true;
@@ -165,7 +184,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     return () => {query.removeEventListener('change', changed); observer?.disconnect();};
   }, []);
   useEffect(() => {
-    if (resumePending) return;
+    if (offerResume) return;
     try {sessionStorage.setItem(storageKey, active.id);} catch { /* Reading remains available without storage. */ }
     if (!mobile && viewportRef.current) {viewportRef.current.scrollTop = 0; viewportRef.current.scrollLeft = 0;}
     const anchor = pendingAnchor.current;
@@ -174,12 +193,34 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       Array.from(viewportRef.current?.querySelectorAll<HTMLElement>(`[${attribute}]`) ?? []).find(element => element.getAttribute(attribute) === anchor.id)?.scrollIntoView({block: 'start'});
       pendingAnchor.current = null;
     }
-  }, [active.id, mobile, storageKey, fontsReady, resumePending]);
+  }, [active.id, mobile, storageKey, fontsReady, offerResume]);
+  useEffect(() => {
+    if (!mobile || !fontsReady || notes) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const settled = () => {
+      if (!allowAction()) return;
+      const sentence = Array.from(viewportRef.current?.querySelectorAll<HTMLElement>('[data-sentence-id]') ?? []).find(element => {
+        const rect = element.getBoundingClientRect();
+        return rect.bottom > 80 && rect.top < window.innerHeight;
+      });
+      const id = sentence?.dataset.sentenceId;
+      if (!id) return;
+      const index = value.document.content.layoutManifest.pages.findIndex(layout => layout.fixedSlots?.some(slot => `canonical-${slot.element}` === id) || layout.slots.some(slot => slot.fragments.some(fragment => fragment.sentenceId === id)));
+      if (index < 0) return;
+      setResumePending(false); setResumeDismissed(true); setPage(index);
+      try {sessionStorage.setItem(`${storageKey}:anchor`, JSON.stringify({kind: 'sentence', id}));} catch { /* Optional restoration. */ }
+      recordProgress(value.document.content.pages[index].id, id);
+    };
+    const scroll = () => {clearTimeout(timer); timer = setTimeout(settled, 250);};
+    window.addEventListener('scroll', scroll, {passive: true});
+    return () => {clearTimeout(timer); window.removeEventListener('scroll', scroll);};
+  }, [mobile, fontsReady, notes, allowAction, value.document, storageKey, recordProgress]);
   function onAnchor(anchor: Anchor) {
     const layout = document.layoutManifest.pages.find(layout => layout.slots.some(slot => anchor.kind === 'component' ? slot.componentId === anchor.id : slot.fragments.some(fragment => fragment.sentenceId === anchor.id)) || anchor.kind === 'sentence' && layout.fixedSlots?.some(slot => `canonical-${slot.element}` === anchor.id));
     const index = document.pages.findIndex(page => page.id === layout?.pageId);
     if (index < 0) return;
     onPage(index);
+    if (anchor.kind === 'sentence') progress.record(document.pages[index].id, anchor.id);
     pendingAnchor.current = anchor;
     try {sessionStorage.setItem(`${storageKey}:anchor`, JSON.stringify(anchor));} catch { /* Optional restoration. */ }
     if (mobile || index === page) {
@@ -193,9 +234,16 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     if (!mobile && delta) {event.preventDefault(); onPage(page + delta);}
   }}>
     <header className="reader-heading"><h1 lang={value.document.contentLocale}>{value.document.canonicalMetadata.title}</h1>{value.document.canonicalMetadata.subtitle ? <p lang={value.document.contentLocale}>{value.document.canonicalMetadata.subtitle}</p> : null}{value.document.metadataSyncPending ? <p role="status">{m.metadataPending}</p> : null}</header>
-    {resumePending ? <ResumeReadingPrompt messages={m} onContinue={() => {onPage(restoredPage); if (restoredAnchor) onAnchor(restoredAnchor);}} onStartOver={() => onPage(0)}/> : null}
+    {offerResume ? <ResumeReadingPrompt messages={m} onContinue={() => {
+      if (restoredAnchor || restoredPage > 0) {onPage(restoredPage); if (restoredAnchor) onAnchor(restoredAnchor);}
+      else if (cloudProgress?.sentenceId) onAnchor({kind: 'sentence', id: cloudProgress.sentenceId});
+      else if (cloudProgress?.componentId) onAnchor({kind: 'component', id: cloudProgress.componentId});
+      else onPage(Math.max(0, document.pages.findIndex(page => page.id === cloudProgress?.pageId)));
+    }} onStartOver={() => {onPage(0, false); void progress.reset().catch(() => setNotice(m.actionFailed));}}/> : null}
     <div className="reader-toolbar">{!mobile ? <ReaderToolbar messages={m} zoom={zoom} setZoom={setZoom}/> : null}<SectionNavigator document={document} onSection={id => onAnchor({kind: 'component', id})} messages={m}/><ReaderSearch document={value.document} onJump={id => onAnchor({kind: 'sentence', id})} messages={m}/><button ref={notesButton} type="button" disabled={!privateReader.state} onClick={() => setNotes('list')}>{m.myNotes}</button></div>
     <SyncStatus status={privateReader.status} messages={m}/>
+    {privateReader.status === 'paused' || privateReader.status === 'action' ? <ReaderRecovery api={api} value={value} selector={selector} messages={m} onUpdated={onUpdated} onFailure={onFailure} suspended={suspended}/> : null}
+    {privateReader.canRetry ? <button type="button" disabled={privateReader.busy} onClick={() => void privateReader.retry().catch(() => setNotice(m.actionFailed))}>{m.retry}</button> : null}
     {!mobile ? <PageNavigator document={document} metadata={value.document.canonicalMetadata} page={page} onPage={onPage} messages={m}/> : null}
     <div ref={viewportRef} className="reader-viewport" data-mobile={mobile || undefined} tabIndex={0} onPointerDown={event => {
       if (event.pointerType !== 'touch') return;
@@ -222,9 +270,12 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       onClear={() => void action({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, kind: 'clearHighlight', payload: {sentenceIds: selected}})}
       onCopy={() => void copySentences(value.document, selected, allowAction).then(() => setNotice(m.copySuccess)).catch(() => setNotice(m.copyFailed))}
       onNote={() => {newNoteId.current = null; setNotes('new');}}/>
-    {notes ? <ReaderPrivateState wide={wideNotes} messages={m} onClose={closeNotes}>
-      {notes === 'list' ? <NotesPanel messages={m} notes={privateReader.state?.notes ?? []} onJump={id => {closeNotes(); onAnchor({kind: 'sentence', id});}} onEdit={note => {newNoteId.current = null; setNotes(note);}} onDelete={note => {
-        if (window.confirm(m.noteDeleteConfirm)) void action({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, kind: 'deleteNote', baseVersion: note.version, payload: {noteId: note.id}});
+    {notes ? <ReaderPrivateState wide={wideNotes} messages={m} onClose={closeNotes} suspended={suspended}>
+      {deletion ? <section className="reader-note-editor"><p role="alert">{m.noteConflict}</p><h3>{m.recoveryLocal}</h3><blockquote>{deletion.local.text}</blockquote><h3>{m.recoveryCloud}</h3><blockquote>{deletion.cloud && !deletion.cloud.deleted ? deletion.cloud.text : m.noteDeleted}</blockquote><div className="reader-note-actions">
+        <button type="button" disabled={privateReader.busy} onClick={() => setDeletion(null)}>{m.noteCloud}</button>
+        {deletion.cloud && !deletion.cloud.deleted ? <><button type="button" disabled={privateReader.busy} onClick={() => {if (window.confirm(m.noteDeleteConfirm)) void deleteNote(deletion.cloud!);}}>{m.noteDelete}</button><button type="button" disabled={privateReader.busy} onClick={() => {setNotes({...deletion.cloud!, text: `${deletion.cloud!.text}\n\n${deletion.local.text}`}); setDeletion(null);}}>{m.noteManual}</button></> : null}
+      </div></section> : notes === 'list' ? <NotesPanel messages={m} notes={privateReader.state?.notes ?? []} onJump={id => {closeNotes(); onAnchor({kind: 'sentence', id});}} onEdit={note => {newNoteId.current = null; setNotes(note);}} onDelete={note => {
+        if (window.confirm(m.noteDeleteConfirm)) void deleteNote(note);
       }}/> : <NoteEditor key={typeof notes === 'object' ? notes.id : 'new'} messages={m} note={typeof notes === 'object' ? notes : undefined} quote={noteQuote} onSave={saveNote} onComplete={() => {if (notes === 'new') setSelected([]); setNotes(null); requestAnimationFrame(() => notesButton.current?.focus());}} onCancel={closeNotes}/>}
     </ReaderPrivateState> : null}
   </section>;
