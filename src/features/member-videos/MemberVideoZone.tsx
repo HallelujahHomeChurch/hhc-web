@@ -56,6 +56,7 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
   const [page, setPage] = useState(1);
   const [playback, setPlayback] = useState<ActivePlayback | null>(null);
   const playbackRef = useRef<ActivePlayback | null>(null);
+  const mediaFailureReported = useRef(false);
   const [preparing, setPreparing] = useState(false);
   const [playError, setPlayError] = useState('');
   const [playing, setPlaying] = useState(false);
@@ -124,6 +125,7 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
 
   const start = async () => {
     if (!selected || preparing) return;
+    mediaFailureReported.current = false;
     attempt.current?.abort();
     const controller = new AbortController();
     attempt.current = controller;
@@ -219,7 +221,14 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
     return () => {controller.abort(); window.clearTimeout(timer); window.clearTimeout(expiryTimer); document.removeEventListener('visibilitychange', visible); window.removeEventListener('online', visible);};
   }, [api, locale, messages.playError, messages.expired, playback, recordings, renew, resolveMissing, router]);
 
-  const mediaError = useCallback(() => {video.current?.pause();setPlayError(messages.playError);},[messages.playError]);
+  const mediaError = useCallback(() => {
+    video.current?.pause();
+    setPlayError(messages.playError);
+    if (!mediaFailureReported.current) {
+      mediaFailureReported.current = true;
+      captureHandledError(new Error('Member video media playback failed'), {operation: 'member-videos.media'});
+    }
+  }, [messages.playError]);
 
   const pageCount = Math.ceil((recordings?.length ?? 0) / pageSize);
   const currentPage = Math.min(page, Math.max(1, pageCount));

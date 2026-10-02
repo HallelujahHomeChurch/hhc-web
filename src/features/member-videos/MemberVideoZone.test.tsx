@@ -8,6 +8,8 @@ const list = vi.hoisted(() => vi.fn());
 const videoApi = vi.hoisted(() => ({list: vi.fn(), grant: vi.fn(), exchange: vi.fn(), clear: vi.fn().mockResolvedValue(undefined)}));
 const router = vi.hoisted(() => ({replace: vi.fn()}));
 const replace = router.replace;
+const captureHandledError = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/observability', () => ({captureHandledError}));
 const packageId = 'a'.repeat(32);
 const playbackUrl = `https://media.alive.org.tw/videos/r1/packages/${packageId}/sessions/scope/master.m3u8`;
 vi.mock('next/navigation', () => ({useRouter: () => router}));
@@ -30,6 +32,7 @@ const messages = {
 beforeEach(() => {
   state.access = 'loading'; state.auth = 'checking';
   list.mockReset(); replace.mockReset();
+  captureHandledError.mockReset();
   list.mockResolvedValue([]);
   videoApi.list.mockReset().mockImplementation(list);
   videoApi.grant.mockReset(); videoApi.exchange.mockReset();
@@ -43,6 +46,20 @@ beforeEach(() => {
 afterEach(() => {cleanup();vi.useRealTimers();vi.restoreAllMocks();});
 
 describe('member video gate', () => {
+  it('reports media failure once per playback attempt without private playback details', async () => {
+    state.auth='authenticated';state.access='available';
+    list.mockResolvedValue([{id:'r1',title:'Sunday',uploadedAt:null,expiresAt:null,featured:false,packageId}]);
+    videoApi.grant.mockResolvedValue({packageId,watermarkCode:'PRIVATE-CODE',expiresAt:new Date(Date.now()+3600000).toISOString()});
+    videoApi.exchange.mockResolvedValue(playbackUrl);
+    render(<MemberVideoZone locale="en" messages={messages} hero={null}/>);
+    fireEvent.click(await screen.findByRole('button',{name:'Play'}));
+    const video=await screen.findByLabelText('Sunday');
+    fireEvent.error(video); fireEvent.error(video);
+    expect(captureHandledError).toHaveBeenCalledExactlyOnceWith(new Error('Member video media playback failed'), {operation:'member-videos.media'});
+    fireEvent.click(screen.getByRole('button',{name:'Retry'}));
+    fireEvent.error(await screen.findByLabelText('Sunday'));
+    expect(captureHandledError).toHaveBeenCalledTimes(2);
+  });
   it('allows another play after changing selection during a pending grant', async () => {
     state.auth='authenticated';state.access='available';
     list.mockResolvedValue(['first','second'].map(id=>({id,title:id,uploadedAt:null,expiresAt:null,featured:false})));
