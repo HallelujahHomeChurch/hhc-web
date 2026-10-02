@@ -42,6 +42,12 @@ describe('AccountControl', () => {
     expect(offline.forgetOfflineAccount).toHaveBeenCalledWith('u1');
     expect(offline.forgetOfflineAccount.mock.invocationCallOrder.at(-1)).toBeLessThan(logoutAll.mock.invocationCallOrder[0]);
   });
+  it.each(['iam:service-principals:read', 'cms:recordings:read'])('exposes Admin for the scoped staff permission %s', async (permission) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({memberships: [], orgRoles: [], qualifications: [], entitlements: [], version: 'a'.repeat(64)})));
+    render(<AccountControl client={sessionClient([permission])} labels={labels} />);
+    await userEvent.click(await screen.findByRole('button', {name: 'Account menu'}));
+    expect(screen.getByRole('menuitem', {name: 'Admin console'})).toBeInTheDocument();
+  });
   it('uses the Account authority for hosted OAuth', () => {
     vi.stubEnv('NEXT_PUBLIC_ACCOUNT_SITE_URL', 'https://account.alive.org.tw');
 

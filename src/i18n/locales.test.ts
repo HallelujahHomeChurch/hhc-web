@@ -37,11 +37,11 @@ describe('locales', () => {
 
   it('pins exact HHC frontend integration artifacts (registry resolution remains a release gate)', () => {
     expect(Object.fromEntries(Object.entries(packageJson.dependencies).filter(([name]) => name.startsWith('@hallelujahhomechurch/')))).toEqual({
-      '@hallelujahhomechurch/account-client': '1.0.26',
-      '@hallelujahhomechurch/hhc-web-client': 'file:../frontend-platform/artifacts/hallelujahhomechurch-hhc-web-client-1.0.29.tgz',
+      '@hallelujahhomechurch/account-client': 'file:../frontend-platform/artifacts/hallelujahhomechurch-account-client-1.0.32.tgz',
+      '@hallelujahhomechurch/hhc-web-client': 'file:../frontend-platform/artifacts/hallelujahhomechurch-hhc-web-client-1.0.32.tgz',
       '@hallelujahhomechurch/operations-client': '1.0.26',
-      '@hallelujahhomechurch/preferences': '1.0.26',
-      '@hallelujahhomechurch/ui': 'file:../frontend-platform/artifacts/hallelujahhomechurch-ui-1.0.29.tgz'
+      '@hallelujahhomechurch/preferences': 'file:../frontend-platform/artifacts/hallelujahhomechurch-preferences-1.0.32.tgz',
+      '@hallelujahhomechurch/ui': 'file:../frontend-platform/artifacts/hallelujahhomechurch-ui-1.0.32.tgz'
     });
   });
 

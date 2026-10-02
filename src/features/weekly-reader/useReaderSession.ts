@@ -7,7 +7,7 @@ import {verifyReaderAccess, type createReaderApi, type ReaderSelector} from './a
 import {readerFailureAction} from './offline-access';
 import {checkOfflineSave, getOfflineIdentity, lockOfflineSave, readOfflineSave, removeOfflineSave, renewOfflineSave, supportsOfflineReader, watchOfflineEdition} from './offline-store';
 import {watchOfflineAccount} from './offline-session';
-import {clearReaderReturn} from './return-state';
+import {clearReaderReturn, clearReaderEditionReturn} from './return-state';
 
 export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, 'open' | 'renew'>, selector: ReaderSelector) {
   const {accountId, issueNumber, series, contentLocale} = selector;
@@ -64,6 +64,7 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
         const action = readerFailureAction(failure);
         const documentId = saved?.save.value.document.documentId ?? knownDocument.current;
         if (action === 'purge' && documentId) clearReaderReturn({accountId, documentId});
+        if (action === 'purge') clearReaderEditionReturn(bound);
         setLoginRequired(action === 'login');
         if (saved && action === 'purge') await removeOfflineSave(bound);
         if (saved && action === 'lock') await lockOfflineSave(bound);

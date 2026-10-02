@@ -1,6 +1,7 @@
 import type {Metadata} from 'next';
 import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
+import {MemberLegalSupplement} from '@/components/legal/MemberLegalSupplement';
 import {LegalDocument} from '@/components/legal/LegalDocument';
 import {LegalPageShell} from '@/components/legal/LegalPageShell';
 import {getLegalPage, PageNotFoundError} from '@/features/pages/api';
@@ -38,7 +39,7 @@ export default async function PrivacyPolicyPage({params}: PrivacyPolicyPageProps
   return LegalPageShell({
     locale,
     pathname: `/${locale}/privacy-policy`,
-    children: <LegalDocument content={page.content} />
+    children: <><LegalDocument content={page.content} /><MemberLegalSupplement locale={locale} documentKey="privacy" /></>
   });
 }
 

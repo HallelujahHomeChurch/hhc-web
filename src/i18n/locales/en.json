@@ -140,7 +140,7 @@
       "manual": "If it doesn't open, use LINE's menu to open this page in a browser."
     },
     "privacyPolicy": "Privacy",
-    "termsOfUse": "Terms",
+    "termsOfUse": "Terms of Use",
     "legalNavigation": "Legal information",
     "pagination": {
       "navigation": "Content pagination",
@@ -345,6 +345,16 @@
     "empty": "No weekly papers have been published yet."
   },
   "memberVideos": {
+    "quality": "Quality",
+    "auto": "Auto",
+    "pause": "Pause",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "seek": "Playback position",
+    "volume": "Volume",
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit fullscreen",
+    "playbackSpeed": "Playback speed",
     "heroTitle": "Member Videos", "heroSubtitle": "Gathering recordings from the last 30 days", "selectedTitle": "Selected recording", "listTitle": "Recordings from the last 30 days", "count": "{count} gatherings", "play": "Play recording", "select": "Select recording", "selected": "Selected", "playing": "Playing", "featured": "Featured", "durationUnknown": "Duration unavailable", "expires": "Available until", "loading": "Loading recordings", "preparing": "Preparing playback", "empty": "No recordings are available from the last 30 days", "loadError": "Recordings are temporarily unavailable", "playError": "Unable to play right now. Please retry.", "expired": "This recording is no longer available", "retry": "Reload", "previous": "Previous", "next": "Next"
   },
   "privacyPolicy": {

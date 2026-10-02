@@ -60,3 +60,18 @@ The runtime serves `GET /health` on port `10000`.
 
 The HTTPS-only Windows Docker Desktop stack is documented in
 [the office Compose runbook](docs/runbooks/office-compose.md).
+
+## Legal documents and optional analytics
+
+The existing privacy and terms URLs prefer immutable common publications; an
+unpublished snapshot (404) uses the existing public CMS projection during rollout.
+Private supplements are fetched only in the browser after authentication and
+fresh server-side membership qualification, with no-store responses. No private
+copy is embedded in the frontend or server-rendered page.
+
+`NEXT_PUBLIC_GA_MEASUREMENT_ID` stays unset until the reviewed disclosure is
+published and automatic enhanced measurement is disabled in the GA stream.
+Only production `www.alive.org.tw` is eligible. The shared analytics choice must
+be explicitly granted; refusal does not affect required services. Public routes
+use fixed categories, and sensitive routes or any query/fragment are excluded.
+A document that started GA reloads before mounting an excluded destination.

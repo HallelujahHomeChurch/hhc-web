@@ -9,13 +9,14 @@ import {useAccountAuth, useBulletinAuthorization, useVideoAccess} from '@/compon
 import type {Locale} from '@/i18n/locales';
 import {captureHandledError} from '@/lib/observability';
 import {createMemberVideoApi} from './api';
+import {HlsPlayer, type PlayerLabels} from './HlsPlayer';
 
 type Messages = {
   selectedTitle: string; listTitle: string; count: string; play: string; select: string; selected: string;
   playing: string; featured: string; durationUnknown: string; expires: string; loading: string;
   preparing: string; empty: string; loadError: string; playError: string; expired: string;
   retry: string; previous: string; next: string;
-};
+} & PlayerLabels;
 type ActivePlayback = {recordingId: string; scopeId: string; grant: MemberRecordingPlayback; url: string};
 const pageSize = 12;
 
@@ -55,6 +56,7 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
   const [page, setPage] = useState(1);
   const [playback, setPlayback] = useState<ActivePlayback | null>(null);
   const playbackRef = useRef<ActivePlayback | null>(null);
+  const mediaFailureReported = useRef(false);
   const [preparing, setPreparing] = useState(false);
   const [playError, setPlayError] = useState('');
   const [playing, setPlaying] = useState(false);
@@ -123,6 +125,7 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
 
   const start = async () => {
     if (!selected || preparing) return;
+    mediaFailureReported.current = false;
     attempt.current?.abort();
     const controller = new AbortController();
     attempt.current = controller;
@@ -134,7 +137,7 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
     setPlayError('');
     try {
       const scopeId = crypto.randomUUID();
-      const grant = await api.grant(selected.id, scopeId, selected.primaryAssetVersionId, controller.signal);
+      const grant = await api.grant(selected.id, scopeId, selected.packageId, controller.signal);
       const url = await api.exchange(grant, controller.signal);
       if (!controller.signal.aborted) setPlayback({recordingId: selected.id, scopeId, grant, url});
     } catch (error) {
@@ -152,7 +155,7 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
   };
 
   const renew = useCallback(async (current: ActivePlayback, signal: AbortSignal) => {
-    const grant = await api.grant(current.recordingId, current.scopeId, current.grant.assetVersionId, signal);
+    const grant = await api.grant(current.recordingId, current.scopeId, current.grant.packageId, signal);
     const url = await api.exchange(grant, signal);
     if (url !== current.url) throw new Error('Media URL changed during renewal');
     if (!signal.aborted) setPlayback((active) => active?.scopeId === current.scopeId ? {...active, grant} : active);
@@ -218,10 +221,14 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
     return () => {controller.abort(); window.clearTimeout(timer); window.clearTimeout(expiryTimer); document.removeEventListener('visibilitychange', visible); window.removeEventListener('online', visible);};
   }, [api, locale, messages.playError, messages.expired, playback, recordings, renew, resolveMissing, router]);
 
-  useEffect(() => {
-    if (!playback?.url) return;
-    void video.current?.play().catch(() => {});
-  }, [playback?.url]);
+  const mediaError = useCallback(() => {
+    video.current?.pause();
+    setPlayError(messages.playError);
+    if (!mediaFailureReported.current) {
+      mediaFailureReported.current = true;
+      captureHandledError(new Error('Member video media playback failed'), {operation: 'member-videos.media'});
+    }
+  }, [messages.playError]);
 
   const pageCount = Math.ceil((recordings?.length ?? 0) / pageSize);
   const currentPage = Math.min(page, Math.max(1, pageCount));
@@ -236,10 +243,7 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
           {!loadError && recordings?.length === 0 ? <p className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{messages.empty}</p> : null}
           {selected ? <div className="grid gap-4">
             <p className="text-sm font-semibold tracking-widest text-primary">{messages.selectedTitle}</p>
-            <div className="relative aspect-video overflow-hidden rounded-[14px] bg-neutral-950">
-              {playback?.recordingId === selected.id ? <video ref={video} src={playback.url} controls playsInline preload="metadata" controlsList="nodownload" disablePictureInPicture crossOrigin="use-credentials" className="h-full w-full object-contain" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} aria-label={selected.title} /> : <div className="grid h-full place-items-center"><button type="button" disabled={preparing} onClick={() => void start()} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground disabled:opacity-60"><Play size={18} aria-hidden="true" />{preparing ? messages.preparing : messages.play}</button></div>}
-              {playback?.recordingId === selected.id ? <span aria-hidden="true" className="pointer-events-none absolute bottom-4 right-4 rounded bg-black/40 px-2 py-1 text-xs text-white/75">{playback.grant.watermarkCode}</span> : null}
-            </div>
+            {playback?.recordingId === selected.id ? <HlsPlayer key={playback.url} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} onPlayingChange={setPlaying} onError={mediaError}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950"><button type="button" disabled={preparing} onClick={() => void start()} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground disabled:opacity-60"><Play size={18} aria-hidden="true" />{preparing ? messages.preparing : messages.play}</button></div>}
             <h2 ref={playerTitle} tabIndex={-1} className="text-2xl font-semibold text-ink outline-none">{selected.title}</h2>
             <p className="text-sm text-muted">{formatDate(selected.uploadedAt, locale)} · {formatDuration(selected.durationSeconds, messages.durationUnknown, locale)}</p>
             <p className="text-sm text-muted">{messages.expires} {formatDate(selected.expiresAt, locale)}</p>

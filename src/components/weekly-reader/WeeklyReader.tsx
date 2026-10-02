@@ -157,9 +157,10 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   useEffect(() => {
     saveReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}, {
       revision: value.document.revision, pageId: active.id, selected,
+      edition: {issueNumber: selector.issueNumber, series: selector.series, contentLocale: selector.contentLocale},
       draft: notes && notes !== 'list' ? noteEditorState?.draft : undefined
     });
-  }, [selector.accountId, value.document.documentId, value.document.revision, active.id, selected, notes, noteEditorState]);
+  }, [selector.accountId, selector.issueNumber, selector.series, selector.contentLocale, value.document.documentId, value.document.revision, active.id, selected, notes, noteEditorState]);
   const size = {width: active.width * 4 / 3, height: active.height * 4 / 3};
   const scale = pageScale(zoom, size, viewport);
   const onPage = (next: number, record = true) => {

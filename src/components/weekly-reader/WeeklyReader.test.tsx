@@ -18,6 +18,16 @@ beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state
 afterEach(() => {Reflect.deleteProperty(document, 'fonts'); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs();});
 
 describe('protected weekly reader', () => {
+  it('returns focus to the inline note marker after closing its associated notes', async () => {
+    const cloud = (await state.privateState()).state;
+    state.privateState.mockResolvedValue({state: {...cloud, notes: [{id: 'note-a', sentenceIds: ['s0'], text: 'Anchored note', quote: 'Quote', version: 1, deleted: false, inactiveAnchors: [], reanchorRequired: false, createdAt: '', updatedAt: ''}]}});
+    render(<WeeklyReader {...props}/>);
+    const marker = await screen.findByRole('button', {name: 'My notes (1)'});
+    marker.focus(); fireEvent.click(marker);
+    expect(await screen.findByText('Anchored note')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: 'Close'}));
+    await waitFor(() => expect(marker).toHaveFocus());
+  });
   it('restores same-account selection and note draft after login without sending a write', async () => {
     const first = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');

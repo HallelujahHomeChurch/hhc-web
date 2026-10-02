@@ -79,6 +79,16 @@ describe('getSiteLayout', () => {
     expect(request).toHaveBeenCalledWith('ja');
   });
 
+  it('updates the legacy terms label while preserving its route and visibility', async () => {
+    const legacy = {...publishedLayout, locale: 'zh-Hant', legal: [
+      {key: 'terms-of-use', label: '條款', href: '/zh-Hant/terms-of-use', visible: false}
+    ]};
+    const client = {getPublicPage: async () => {throw new Error('unavailable');}, getSiteLayout: async () => legacy} as unknown as HhcWebClient;
+    await expect(getSiteLayout('zh-Hant', client)).resolves.toMatchObject({legal: [
+      {key: 'terms-of-use', label: '使用條款', href: '/zh-Hant/terms-of-use', visible: false}
+    ]});
+  });
+
   it.each([
     ['zh-Hant', '哈利路亞家教會', '在愛中建造家庭，在真理中成長'],
     ['zh-Hans', '哈利路亚家教会', '在爱中建造家庭，在真理中成长'],
@@ -130,7 +140,7 @@ describe('getSiteLayout', () => {
       ],
       legal: [
         {key: 'privacy-policy', label: '隱私權', href: '/zh-Hant/privacy-policy', visible: true},
-        {key: 'terms-of-use', label: '條款', href: '/zh-Hant/terms-of-use', visible: true}
+        {key: 'terms-of-use', label: '使用條款', href: '/zh-Hant/terms-of-use', visible: true}
       ],
       links: {
         churchYoutube: 'https://youtube.com/@hhc33?si=SR2rSIVOTFX2dCmw',

@@ -1,7 +1,9 @@
 import type {BulletinReaderMutation} from '@hallelujahhomechurch/hhc-web-client';
+import type {ReaderSelector} from './api';
 
 type Binding = {accountId: string; documentId: string};
 export type ReaderReturn = {
+  edition?: Omit<ReaderSelector, 'accountId'>;
   savedAt: number; revision: number; pageId: string; selected: string[];
   action: BulletinReaderMutation | null;
   draft?: {text: string; noteId?: string; baseVersion?: number};
@@ -57,6 +59,16 @@ export function clearReaderReturns(keepAccount?: string) {
 }
 export function clearReaderReturn(binding: Binding) {
   try {sessionStorage.removeItem(key(binding));} catch { /* Storage may be disabled. */ }
+}
+export function clearReaderEditionReturn(selector: ReaderSelector) {
+  try {
+    for (const name of Object.keys(sessionStorage)) {
+      if (!name.startsWith(`${prefix}${selector.accountId}:`)) continue;
+      const binding = {accountId: selector.accountId, documentId: name.slice(`${prefix}${selector.accountId}:`.length)};
+      const edition = readReaderReturn(binding)?.edition;
+      if (edition?.issueNumber === selector.issueNumber && edition.series === selector.series && edition.contentLocale === selector.contentLocale) clearReaderReturn(binding);
+    }
+  } catch { /* Storage may be disabled. */ }
 }
 export function hasPendingReaderReturn(accountId: string, documentId?: string) {
   try {

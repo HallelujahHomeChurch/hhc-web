@@ -68,3 +68,25 @@ it('keeps the authorized original quote visible when its sentence was removed', 
   expect(await screen.findByText('內容0。')).toBeInTheDocument();
   expect(screen.getByDisplayValue('My draft')).toBeInTheDocument();
 });
+it('resolves a cloud color conflict without replacing a pending private note', async () => {
+  mocks.read.mockResolvedValue(null);
+  api.current.mockResolvedValue({...value, document: {...value.document, revision: 2}});
+  const conflict = {id: 'color-conflict', sources: [{sentenceId: 's0', color: 'red', quote: 'Original quote'}]};
+  let resolved = false;
+  api.privateState.mockImplementation(async () => ({state: {...cloud, conflicts: resolved ? [] : [conflict]}}));
+  const pending = {mutationId: 'pending-note', createdAt: new Date().toISOString(), documentRevision: 1, kind: 'createNote' as const, payload: {noteId: 'note-a', sentenceIds: ['s0'], text: 'Keep this note'}};
+  const onPendingChange = vi.fn();
+  api.mutate.mockImplementation(async (_selector, _value, mutations) => {
+    const mutation = mutations[0];
+    if (mutation.kind === 'resolveHighlightMigrationConflict') resolved = true;
+    return {state: cloud, results: [{mutationId: mutation.mutationId, status: resolved ? 'applied' : 'revision_changed', revision: 2}]};
+  });
+  render(<ReaderRecovery {...props} pendingMutation={pending} onPendingChange={onPendingChange}/>);
+  fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
+  fireEvent.click(await screen.findByRole('button', {name: 'Confirm and retry'}));
+  fireEvent.click(await screen.findByRole('button', {name: props.messages.yellowHighlight}));
+  expect(await screen.findByDisplayValue('Keep this note')).toBeInTheDocument();
+  expect(onPendingChange).not.toHaveBeenCalled();
+  expect(api.mutate.mock.calls[0][2][0]).toEqual(pending);
+  expect(api.mutate.mock.calls[1][2][0].kind).toBe('resolveHighlightMigrationConflict');
+});

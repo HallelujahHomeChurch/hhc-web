@@ -1,5 +1,5 @@
 import {beforeEach, expect, it, vi} from 'vitest';
-import {readReaderReturn, saveReaderReturn, clearReaderReturns} from './return-state';
+import {readReaderReturn, saveReaderReturn, clearReaderReturns, clearReaderEditionReturn} from './return-state';
 import {hasPendingReaderWrites} from './offline-store';
 
 beforeEach(() => {sessionStorage.clear(); vi.useRealTimers();});
@@ -38,4 +38,14 @@ it('warns about an unsaved private draft before logout even without an offline r
   saveReaderReturn(binding, snapshot);
   expect(await hasPendingReaderWrites(binding.accountId)).toBe(true);
   expect(await hasPendingReaderWrites('other-account')).toBe(false);
+});
+it('purges a denied edition on fresh login without deleting another edition or account', () => {
+  const edition = {issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const};
+  saveReaderReturn(binding, {...snapshot, edition});
+  saveReaderReturn({...binding, documentId: 'doc-b'}, {...snapshot, edition: {...edition, issueNumber: 1740}});
+  saveReaderReturn({...binding, accountId: 'account-b'}, {...snapshot, edition});
+  clearReaderEditionReturn({...edition, accountId: binding.accountId});
+  expect(readReaderReturn(binding)).toBeNull();
+  expect(readReaderReturn({...binding, documentId: 'doc-b'})).not.toBeNull();
+  expect(readReaderReturn({...binding, accountId: 'account-b'})).not.toBeNull();
 });
