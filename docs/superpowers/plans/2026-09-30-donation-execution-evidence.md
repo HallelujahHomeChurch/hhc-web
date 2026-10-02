@@ -4,6 +4,66 @@ Date: 2026-09-30. Approved plan: `2026-09-30-donation-admin-sandbox-first.md`.
 Initial foundation date above; subsequent evidence is recorded by date below.
 Neither the local foundation nor a read-only bank query is delivery 1A acceptance.
 
+## Continuation — backend merge and publisher setup gate (2026-10-02)
+
+- Donation PR #1 was squash-merged at `b96ff29bacac6a7759c45a37c30a8d942920ce0b`
+  after exact-head CI, independent release review and a fresh complete serial
+  PostgreSQL race suite, vet/build and disabled guard/rollback checks passed.
+  The task-owned disposable database was removed. Main release `36977777924`
+  completed successfully: verification, disabled image smoke, vulnerability
+  scan and artifact upload passed; publish/deploy were intentionally skipped.
+  Artifact `11214436746` is `donation-release-b96ff29bacac6a7759c45a37c30a8d942920ce0b`
+  (14,761,872 bytes), uploaded archive SHA256
+  `50c308bdff627971ea73ccfb7d4067564d4b89b1d1dfb308e9075fc1ba7f6223`.
+  This archive checksum is NOT an ACR image manifest digest. No registry
+  publication, Azure deployment or bank acceptance is claimed.
+- Gateway PR #146 initially failed the WWW runtime fragment-order assertion:
+  the new `65-donations.conf` was absent from its expected list. Reproduced
+  locally, fixed narrowly in `701bcd0`, then runtime routing and Go tests/vet
+  passed. Fresh CI `36977457644` passed on that exact head. No Gateway
+  merge/deployment yet.
+- Read-only GitHub inspection found no donation repository variables, secrets
+  or environments. The current shared Azure publisher has no donation federation.
+  Main artifact creation needs none of these, but ACR publication is blocked.
+  No identity/trust/role/environment/variable configuration was changed.
+- GitHub reports immutable OIDC subjects for this repository. The expected
+  environment subject is
+  `repo:HallelujahHomeChurch@244118972/donation-api@1398406700:environment:donation-sandbox`;
+  do not copy a legacy plain repository/main subject. Before setup, review the
+  selected publisher identity's grants and confirm environment protection is
+  supported and configured. Existing shared identity access is not authorization
+  to extend that identity's trust to a new repository.
+- Proposed next setup only: protected `donation-sandbox` environment, exact
+  environment-subject federation, publisher ACR permissions, and non-secret
+  `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` configuration.
+  Enable only `DONATION_IMAGE_PUBLISH_ENABLED` after approval; keep
+  `DONATION_DISABLED_DEPLOY_ENABLED` absent/false. Obtain and verify the real
+  registry digest before Azure what-if; resource apply remains a separate gate.
+- The private repository's branch-protection API returned 403 (plan limitation).
+  Required CI was still checked explicitly before merge; no billing/visibility
+  change was attempted. Do not assume protected-environment reviewer support
+  from the workflow YAML or silently replace the human approval requirement.
+- Delivery 1A remains OPEN. Admin still needs actual package publication/pins;
+  runtime DB/keys/audit/permissions, authorized deployment and bank-hosted
+  end-to-end acceptance remain outstanding.
+- Gateway release preflight found a separate configuration drift: live ready
+  revision is `api-gateway--0000186`, but repository variable
+  `AUDIT_GATEWAY_ROLLBACK_REVISION` still names `api-gateway--0000185`.
+  The existing release workflow requires an exact latest/ready match and would
+  stop before deploying. Keep PR #146 unmerged until the current healthy
+  100%-traffic revision and its immutable image are verified and the matching
+  rollback variable pair is reviewed/refreshed. No release guard was weakened.
+- Read-only revision verification confirms `0000186` is active, Running,
+  Healthy and receives 100% traffic. Public `/health` and `/ready` both returned
+  200. Proposed GitHub variable diff (not applied):
+  `AUDIT_GATEWAY_ROLLBACK_REVISION`: `api-gateway--0000185` → `api-gateway--0000186`;
+  `AUDIT_GATEWAY_ROLLBACK_IMAGE_DIGEST`:
+  `alive.azurecr.io/alive/api-gateway@sha256:c7e39400390bd59968c5209c312949989c64d428b06e69c91e607543c559dd29`
+  → `alive.azurecr.io/alive/api-gateway@sha256:779aada5b6a2eba695eb4b05374458545589a827d83dd4aa7fe819937364647b`.
+  Refresh live evidence again immediately before any approved variable update;
+  another feature release may advance the rollback baseline. The live donation
+  routing flag is absent, so the new routes must remain default-disabled.
+
 ## Continuation — disabled release and Gateway preview (2026-10-02)
 
 - Donation PR #1 head `f688bf6` adds main-only immutable artifacts and separately

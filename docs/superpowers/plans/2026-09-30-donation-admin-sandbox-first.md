@@ -10,7 +10,7 @@
 
 **Spec:** [Future domain extension strategy, Phase 14](../specs/2026-07-08-hhc-web-future-domain-extension-strategy.md#phase-14-donations), refined by the approved product decisions below and session `01a02372-2d23-7191-91fc-9f76dab78e4a`.
 
-**Status:** Implementation authorized 2026-09-30. As of 2026-10-02, isolated local work includes the 1A backend, encrypted capabilities, reconciliation and a shared Admin UI draft. The backend is in PR #1; this is not delivery acceptance. No bank transaction, cloud change or production activation is authorized by this status.
+**Status:** Implementation authorized 2026-09-30. As of 2026-10-02, the 1A backend, encrypted capabilities and reconciliation were merged through donation-api PR #1 (`b96ff29`); its disabled artifact release is tracked in the execution evidence. Shared Admin UI remains a draft. Merge is not deployment or delivery acceptance. No bank transaction, cloud change or production activation is authorized by this status.
 
 **Execution:** [Local offline evidence and remaining work](2026-09-30-donation-execution-evidence.md). Task 0 live gates and Task 1/2 runtime/release items remain open; a passing foundation suite is not delivery 1A acceptance.
 
