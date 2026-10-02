@@ -50,6 +50,25 @@ it('never extends a behind-server local deadline by accepting the same receipt a
   act(() => {expect(result.current.allowAction()).toBe(false);});
   expect(result.current.value).toBeNull();
 });
+it('requests a fresh validation after an acknowledged receipt expires instead of replaying it forever', async () => {
+  vi.useFakeTimers();
+  const first = readerFixture();
+  vi.setSystemTime(Date.parse(first.access.offlineValidUntil) - 10);
+  const receipts = new Map<string, ReturnType<typeof readerFixture>>();
+  api.open.mockImplementation(async (_selector, options) => {
+    if (receipts.has(options.clientRequestId)) return receipts.get(options.clientRequestId);
+    const next = receipts.size ? {...first, access: {...first.access, receiptId: 'fresh-receipt', validatedAt: new Date().toISOString(), offlineValidUntil: new Date(Date.now() + 604800000).toISOString()}} : first;
+    receipts.set(options.clientRequestId, next);
+    return next;
+  });
+  const {result} = renderHook(() => useReaderSession(api, selector));
+  await act(async () => {});
+  await act(async () => vi.advanceTimersByTimeAsync(10));
+  expect(result.current.value).toBeNull();
+  await act(async () => result.current.retry());
+  act(() => {expect(result.current.allowAction()).toBe(true);});
+  expect(result.current.value?.access.receiptId).toBe('fresh-receipt');
+});
 it('locks an idle visible tab exactly at the deadline and rejects actions after a suspended clock jump', async () => {
   vi.useFakeTimers();
   vi.setSystemTime(Date.parse(readerFixture().access.offlineValidUntil) - 10);

@@ -67,6 +67,7 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
         controller.signal.throwIfAborted();
         observeValidation(value, saved?.save.value.access.validatedAt === value.access.validatedAt ? saved.save.localValidUntil : undefined);
         knownDocument.current = value.document.documentId;
+        requestId.current = null;
         setLoginRequired(false);
         setState({value, offline: false, error: null});
       } catch (failure) {
