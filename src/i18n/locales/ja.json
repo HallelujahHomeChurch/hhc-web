@@ -1,5 +1,7 @@
 {
   "weeklyReader": {
+    "confirmRetry": "確認して再試行",
+    "confirmRetryHelp": "操作の完了を確認できませんでした。ログイン後、元の操作を再試行してください。重複して作成されません。",
     "reviewSync": "同期を確認",
     "applyUpdate": "適用して同期",
     "keepReading": "読み続ける",

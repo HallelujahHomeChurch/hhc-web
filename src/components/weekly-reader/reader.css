@@ -16,6 +16,9 @@
 .reader-viewport { overflow: auto; height: 72dvh; min-height: 20rem; padding: 1rem; background: var(--hhc-surface-raised); border-radius: .75rem; overscroll-behavior: contain; touch-action: auto; }
 .reader-scaled-page { position: relative; margin-inline: auto; box-shadow: 0 3px 18px #0002; }
 .reader-watermarked { position: relative; }
+.reader-paper-with-notes { position: relative; }
+.reader-paper-with-notes[data-has-notes] { padding-inline-end: 44px; }
+.reader-note-indicator { position: absolute; inset-inline-end: 0; width: 44px; min-height: 44px; color: var(--hhc-text); background: var(--hhc-surface-raised); border-radius: .5rem; }
 .reader-sync-status { max-width: 75rem; margin: .5rem auto; font-size: .8rem; color: var(--hhc-text-muted); }
 .reader-document[data-notes-panel] { display: grid; grid-template-columns: minmax(640px, 1fr) 360px; column-gap: 24px; align-items: start; }
 .reader-document[data-notes-panel] > :not(.reader-private-panel) { grid-column: 1; min-width: 0; }

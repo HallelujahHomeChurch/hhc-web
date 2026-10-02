@@ -1,5 +1,6 @@
 import {beforeEach, expect, it, vi} from 'vitest';
 import {forgetOfflineAccount, prepareOfflineAccount, watchOfflineAccount} from './offline-session';
+import {readReaderReturn, saveReaderReturn} from './return-state';
 const store = vi.hoisted(() => ({supportsOfflineReader: vi.fn(() => true), getOfflineIdentity: vi.fn(), activateOfflineAccount: vi.fn(), clearOfflineAccount: vi.fn()}));
 vi.mock('./offline-store', () => store);
 beforeEach(() => {vi.clearAllMocks(); store.getOfflineIdentity.mockResolvedValue({accountId: 'old', epoch: 1}); store.activateOfflineAccount.mockResolvedValue(2); store.clearOfflineAccount.mockResolvedValue(undefined); sessionStorage.clear();});
@@ -19,4 +20,12 @@ it('notifies mounted readers only after the local purge succeeds', async () => {
   changed.mockClear(); store.clearOfflineAccount.mockRejectedValueOnce(new Error('storage'));
   await expect(forgetOfflineAccount('old')).rejects.toThrow('storage');
   expect(changed).not.toHaveBeenCalled(); stop();
+});
+
+it('clears transient private drafts on account switch even without offline support', async () => {
+  store.supportsOfflineReader.mockReturnValueOnce(false);
+  const binding = {accountId: 'old', documentId: 'doc'};
+  saveReaderReturn(binding, {revision: 1, draft: {text: 'private'}});
+  await prepareOfflineAccount('new');
+  expect(readReaderReturn(binding)).toBeNull();
 });

@@ -3,6 +3,7 @@ import {beforeEach, expect, it, vi} from 'vitest';
 import {HhcWebApiError, type BulletinReaderMutation, type BulletinReaderState} from '@hallelujahhomechurch/hhc-web-client';
 import {readerFixture} from './test-fixture';
 import {usePrivateReader} from './usePrivateReader';
+import {readReaderReturn, saveReaderReturn} from './return-state';
 
 vi.mock('./offline-store', async original => ({...await original<typeof import('./offline-store')>(), supportsOfflineReader: () => false}));
 const value = readerFixture();
@@ -11,7 +12,7 @@ const state: BulletinReaderState = {accountId: 'account-a', documentId: value.do
 const mutation: BulletinReaderMutation = {mutationId: 'id', documentRevision: 1, createdAt: '2026-10-02T00:00:00Z', kind: 'setHighlight', payload: {sentenceIds: ['s0'], color: 'yellow'}};
 const api = {privateState: vi.fn(), mutate: vi.fn(), renew: vi.fn()};
 const onFailure = vi.fn();
-beforeEach(() => {vi.resetAllMocks(); api.privateState.mockResolvedValue({state});});
+beforeEach(() => {vi.resetAllMocks(); sessionStorage.clear(); api.privateState.mockResolvedValue({state});});
 it('shows highlights optimistically, rolls back failed writes, and reuses the original mutation for retry', async () => {
   let reject!: (error: unknown) => void;
   api.mutate.mockImplementationOnce(() => new Promise((_resolve, fail) => {reject = fail;}));
@@ -60,4 +61,33 @@ it('offers an explicit same-ID retry after a lost progress acknowledgement and r
   rerender({current: structuredClone(value)});
   await act(async () => {finish(); await request.catch(() => {});});
   expect(result.current.busy).toBe(false);
+});
+
+it('requires explicit retry after same-account login and keeps an unknown acknowledgement across remount', async () => {
+  const binding = {accountId: selector.accountId, documentId: value.document.documentId};
+  saveReaderReturn(binding, {revision: 1, action: mutation});
+  const {result, unmount} = renderHook(() => usePrivateReader({api, selector, value, offline: false, allowAction: () => true, onFailure}));
+  await waitFor(() => expect(result.current.state).toEqual(state));
+  expect(result.current.canRetry).toBe(true);
+  expect(api.mutate).not.toHaveBeenCalled();
+  api.mutate.mockRejectedValueOnce(new TypeError('lost ack'));
+  await act(async () => {await result.current.retry().catch(() => {});});
+  expect(readReaderReturn(binding)?.action).toEqual(mutation);
+  unmount();
+  api.mutate.mockResolvedValueOnce({state, results: [{mutationId: mutation.mutationId, status: 'applied', revision: 1}]});
+  const again = renderHook(() => usePrivateReader({api, selector, value, offline: false, allowAction: () => true, onFailure}));
+  await waitFor(() => expect(again.result.current.state).toEqual(state));
+  expect(api.mutate).toHaveBeenCalledTimes(1);
+  await act(async () => {await again.result.current.retry();});
+  expect(api.mutate.mock.calls[1][2][0]).toEqual(mutation);
+  expect(readReaderReturn(binding)?.action).toBeNull();
+});
+
+it('retains the original action when its acknowledged revision changed', async () => {
+  api.mutate.mockResolvedValue({state: {...state, currentRevision: 2, appliedRevision: 2}, results: [{mutationId: mutation.mutationId, status: 'revision_changed', revision: 2}]});
+  const {result} = renderHook(() => usePrivateReader({api, selector, value, offline: false, allowAction: () => true, onFailure}));
+  await waitFor(() => expect(result.current.state).toEqual(state));
+  await act(async () => {await result.current.mutate(mutation);});
+  expect(result.current.pendingMutation).toEqual(mutation);
+  expect(readReaderReturn({accountId: selector.accountId, documentId: value.document.documentId})?.action).toEqual(mutation);
 });

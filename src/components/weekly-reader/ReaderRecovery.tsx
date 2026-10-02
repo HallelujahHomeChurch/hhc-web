@@ -8,13 +8,18 @@ import {manualReaderRecovery} from '@/features/weekly-reader/rebase';
 import {readerSentences} from '@/features/weekly-reader/selection';
 import type {ReaderMessages} from './ReaderToolbar';
 
-export function ReaderRecovery({api, value, selector, messages: m, onUpdated, onFailure, suspended = false}: {
+export function ReaderRecovery({api, value, selector, messages: m, onUpdated, onFailure, suspended = false, pendingMutation = null, onPendingChange}: {
   api: ReturnType<typeof createReaderApi>; value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages;
   onUpdated: (value: OnlineBulletinAccess) => void; onFailure: (error: unknown) => void; suspended?: boolean;
+  pendingMutation?: BulletinReaderMutation | null; onPendingChange?: (mutation: BulletinReaderMutation | null) => void;
 }) {
   const [open, setOpen] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState(false);
   const [prepared, setPrepared] = useState<ReaderUpgrade | null>(null);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const epoch = useRef<number | null>(null), controller = useRef<AbortController | null>(null);
+  const pending = useRef(pendingMutation);
+  const acknowledged = useRef<{mutationId: string; status: string} | null>(null);
+  useEffect(() => {pending.current = pendingMutation;}, [pendingMutation]);
   useEffect(() => () => controller.current?.abort(), []);
   async function run(work: (signal: AbortSignal) => Promise<void>) {
     if (controller.current && !controller.current.signal.aborted) return;
@@ -26,26 +31,50 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
   }
   async function prepare(signal: AbortSignal) {
     const saved = supportsOfflineReader() ? await readOfflineSave(selector) : null;
-    if (saved) {
+    if (saved && !pending.current) {
       const owner = await getOfflineIdentity();
       if (owner.accountId !== selector.accountId) throw new Error('offline_account_changed');
       epoch.current = owner.epoch;
       const next = await prepareReaderUpgrade(api, selector, value, owner.epoch, signal);
-      signal.throwIfAborted(); setPrepared(next);
+      signal.throwIfAborted(); setPrepared(next); setAwaitingConfirmation(false);
     } else {
       epoch.current = null;
       const current = await api.current(selector, value, crypto.randomUUID(), signal);
       const cloud = await api.privateState(selector, current, signal);
       signal.throwIfAborted();
-      setPrepared({value: current, state: cloud.state, queue: [], mutations: [], recovery: [], previousRevision: value.document.revision});
+      const mutation = pending.current;
+      const expired = mutation && new Date().getTime() - Date.parse(mutation.createdAt) > 90 * 86400000;
+      const reviewed = mutation && acknowledged.current?.mutationId === mutation.mutationId;
+      setAwaitingConfirmation(Boolean(mutation && !reviewed && !expired));
+      setPrepared({value: current, state: cloud.state, queue: mutation ? [{mutation, sent: true}] : [], mutations: [],
+        recovery: mutation && (reviewed || expired) ? [{mutationId: mutation.mutationId, reason: expired ? 'expired_mutation' : acknowledged.current?.status === 'note_conflict' ? 'note_conflict' : 'mapping_unavailable'}] : [], previousRevision: value.document.revision});
     }
+  }
+  function remember(mutation: BulletinReaderMutation | null) {
+    pending.current = mutation; acknowledged.current = null; onPendingChange?.(mutation);
+  }
+  async function retryPending(signal: AbortSignal) {
+    if (!prepared || !pending.current) return;
+    const response = await api.mutate(selector, prepared.value, [pending.current], signal);
+    signal.throwIfAborted();
+    if (response.results[0].status === 'applied') remember(null);
+    else acknowledged.current = response.results[0];
+    await prepare(signal);
   }
   async function choose(originalId: string | null, mutation: BulletinReaderMutation | null, signal: AbortSignal) {
     if (!prepared) return;
     if (epoch.current !== null) await chooseReaderRecovery(selector, originalId, mutation, epoch.current, prepared.queue);
-    else if (mutation) {
-      const response = await api.mutate(selector, prepared.value, [mutation], signal);
-      if (response.results[0].status !== 'applied') throw new Error('action_required');
+    else {
+      // Resolving a server-identified color conflict must not replace the user's
+      // pending note/highlight. A consumed conflict ID cannot recolor it again.
+      if (originalId === null && pending.current && mutation?.kind === 'resolveHighlightMigrationConflict') {
+        const response = await api.mutate(selector, prepared.value, [mutation], signal);
+        signal.throwIfAborted();
+        if (response.results[0].status !== 'applied') throw new Error('action_required');
+        await prepare(signal); return;
+      }
+      remember(mutation);
+      if (mutation) {await retryPending(signal); return;}
     }
     await prepare(signal);
   }
@@ -58,8 +87,8 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
       <p>{m.recoveryHelp}</p>
       {busy ? <p role="status">{m.syncSyncing}</p> : null}
       {error ? <p role="alert">{m.actionFailed}</p> : null}
-      {conflict && prepared ? <section><p>{m.recoveryColor}</p>{conflict.sources.map(source => <blockquote key={source.sentenceId}><span className="reader-color"><span data-color={source.color}/></span>{source.quote}</blockquote>)}<div className="reader-note-actions">{(['yellow', 'red', 'blue'] as const).map(color => <button key={color} className="reader-color" aria-label={m[`${color}Highlight`]} disabled={busy} onClick={() => void run(signal => choose(null, {mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: prepared.value.document.revision, kind: 'resolveHighlightMigrationConflict', payload: {conflictId: conflict.id, chosenColor: color, currentRevision: prepared.value.document.revision}}, signal))}><span data-color={color}/></button>)}</div></section> :
-        recovery && entry && prepared ? <RecoveryChoice key={`${recovery.mutationId}:${entry.resolution?.mutation?.mutationId ?? ''}:${prepared.state.notes.map(note => note.version).join(',')}`} prepared={prepared} original={entry.resolution?.mutation ?? entry.mutation} reason={recovery.reason} messages={m} busy={busy} onChoose={mutation => void run(signal => choose(entry.mutation.mutationId, mutation, signal))}/> :
+      {awaitingConfirmation ? <section><p>{m.confirmRetryHelp}</p><button type="button" disabled={busy} onClick={() => void run(retryPending)}>{m.confirmRetry}</button></section> : conflict && prepared ? <section><p>{m.recoveryColor}</p>{conflict.sources.map(source => <blockquote key={source.sentenceId}><span className="reader-color"><span data-color={source.color}/></span>{source.quote}</blockquote>)}<div className="reader-note-actions">{(['yellow', 'red', 'blue'] as const).map(color => <button key={color} className="reader-color" aria-label={m[`${color}Highlight`]} disabled={busy} onClick={() => void run(signal => choose(null, {mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: prepared.value.document.revision, kind: 'resolveHighlightMigrationConflict', payload: {conflictId: conflict.id, chosenColor: color, currentRevision: prepared.value.document.revision}}, signal))}><span data-color={color}/></button>)}</div></section> :
+        recovery && entry && prepared ? <RecoveryChoice key={`${recovery.mutationId}:${entry.resolution?.mutation?.mutationId ?? ''}:${prepared.state.notes.map(note => note.version).join(',')}`} prepared={prepared} previous={value} original={entry.resolution?.mutation ?? entry.mutation} reason={recovery.reason} messages={m} busy={busy} onChoose={mutation => void run(signal => choose(entry.mutation.mutationId, mutation, signal))}/> :
         prepared ? <button type="button" disabled={busy} onClick={() => void run(async signal => {
           const current = epoch.current === null ? prepared.value : await finishReaderUpgrade(api, selector, prepared, epoch.current, signal);
           signal.throwIfAborted(); onUpdated(current); setOpen(false);
@@ -70,11 +99,13 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
   </>;
 }
 
-function RecoveryChoice({prepared, original, reason, messages: m, busy, onChoose}: {
-  prepared: ReaderUpgrade; original: BulletinReaderMutation; reason: ReaderUpgrade['recovery'][number]['reason']; messages: ReaderMessages; busy: boolean; onChoose: (mutation: BulletinReaderMutation | null) => void;
+function RecoveryChoice({prepared, previous, original, reason, messages: m, busy, onChoose}: {
+  prepared: ReaderUpgrade; previous: OnlineBulletinAccess; original: BulletinReaderMutation; reason: ReaderUpgrade['recovery'][number]['reason']; messages: ReaderMessages; busy: boolean; onChoose: (mutation: BulletinReaderMutation | null) => void;
 }) {
   const sentences = readerSentences(prepared.value.document);
   const cloud = original.kind === 'createNote' || original.kind === 'editNote' || original.kind === 'deleteNote' ? prepared.state.notes.find(note => note.id === original.payload.noteId && !note.deleted) : undefined;
+  const sourceIds = original.kind === 'setHighlight' || original.kind === 'clearHighlight' || original.kind === 'createNote' ? original.payload.sentenceIds : [];
+  const sourceQuote = previous.document.revision === original.documentRevision ? readerSentences(previous.document).filter(sentence => sourceIds.includes(sentence.id)).map(sentence => sentence.text).join('\n') : '';
   const [text, setText] = useState(original.kind === 'createNote' || original.kind === 'editNote' ? original.payload.text : '');
   const [ids, setIds] = useState<string[]>(original.kind === 'setHighlight' || original.kind === 'clearHighlight' || original.kind === 'createNote' ? original.payload.sentenceIds.filter(id => sentences.some(sentence => sentence.id === id)) : cloud?.sentenceIds ?? []);
   const [color, setColor] = useState<BulletinReaderHighlightColor>(original.kind === 'setHighlight' ? original.payload.color : 'yellow');
@@ -85,6 +116,7 @@ function RecoveryChoice({prepared, original, reason, messages: m, busy, onChoose
   const description = {removed_anchor: m.recoveryRemoved, anchor_limit: m.recoveryLimit, color_conflict: m.recoveryColor, note_conflict: m.recoveryNote, mapping_unavailable: m.recoveryMapping, expired_mutation: m.recoveryExpired}[reason];
   return <section className="reader-note-editor">
     <p role="status">{description}</p>
+    {sourceQuote || cloud?.quote ? <blockquote>{sourceQuote || cloud?.quote}</blockquote> : null}
     {note || original.kind === 'deleteNote' ? <><h3>{m.recoveryCloud}</h3><blockquote>{cloud?.text ?? m.noteDeleted}</blockquote><h3>{m.recoveryLocal}</h3></> : null}
     {note ? <><label>{m.noteText}<textarea value={text} disabled={busy} onChange={event => setText(event.target.value)}/></label><p>{m.noteCount.replace('{count}', String([...text].length))}</p>{cloud ? <button type="button" disabled={busy} onClick={() => setText(`${cloud.text}\n\n${text}`)}>{m.noteManual}</button> : null}</> : null}
     {original.kind === 'deleteNote' ? <p>{m.noteDeleteConfirm}</p> : null}

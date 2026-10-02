@@ -7,6 +7,7 @@ import {verifyReaderAccess, type createReaderApi, type ReaderSelector} from './a
 import {readerFailureAction} from './offline-access';
 import {checkOfflineSave, getOfflineIdentity, lockOfflineSave, readOfflineSave, removeOfflineSave, renewOfflineSave, supportsOfflineReader, watchOfflineEdition} from './offline-store';
 import {watchOfflineAccount} from './offline-session';
+import {clearReaderReturn} from './return-state';
 
 export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, 'open' | 'renew'>, selector: ReaderSelector) {
   const {accountId, issueNumber, series, contentLocale} = selector;
@@ -14,6 +15,7 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
   const [attempt, setAttempt] = useState(0);
   const [loginRequired, setLoginRequired] = useState(false);
   const requestId = useRef<string | null>(null);
+  const knownDocument = useRef<string | null>(null);
   const highWater = useRef(0);
   const blocked = useRef(false);
   const retry = useCallback(() => setAttempt(value => value + 1), []);
@@ -54,11 +56,14 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
         if (saved) await renewOfflineSave(bound, value, saved.save.epoch);
         controller.signal.throwIfAborted();
         highWater.current = Math.max(Date.now(), Date.parse(value.access.validatedAt));
+        knownDocument.current = value.document.documentId;
         setLoginRequired(false);
         setState({value, offline: false, error: null});
       } catch (failure) {
         controller.signal.throwIfAborted();
         const action = readerFailureAction(failure);
+        const documentId = saved?.save.value.document.documentId ?? knownDocument.current;
+        if (action === 'purge' && documentId) clearReaderReturn({accountId, documentId});
         setLoginRequired(action === 'login');
         if (saved && action === 'purge') await removeOfflineSave(bound);
         if (saved && action === 'lock') await lockOfflineSave(bound);
@@ -105,10 +110,11 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
   const privateFailure = useCallback((failure: unknown) => {
     if (!(failure instanceof HhcWebApiError || failure instanceof AccountSessionError || failure instanceof TypeError || failure instanceof Error && failure.message === 'invalid_reader_binding')) return;
     const action = readerFailureAction(failure);
+    if (action === 'purge' && state.value) clearReaderReturn({accountId, documentId: state.value.document.documentId});
     if (action === 'retain') return;
     if (action === 'login') {setLoginRequired(true); if (state.offline) return;}
     setState({value: null, offline: false, error: 'unavailable'});
     if (supportsOfflineReader() && (action === 'purge' || action === 'lock')) void (action === 'purge' ? removeOfflineSave : lockOfflineSave)({accountId, issueNumber, series, contentLocale}).catch(() => {});
-  }, [accountId, issueNumber, series, contentLocale, state.offline]);
+  }, [accountId, issueNumber, series, contentLocale, state.offline, state.value]);
   return {...state, retry, allowAction, acceptSaved, loginRequired, privateFailure};
 }

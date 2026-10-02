@@ -1,5 +1,7 @@
 {
   "weeklyReader": {
+    "confirmRetry": "确认并重试",
+    "confirmRetryHelp": "这笔操作尚未确认完成。登录后请确认重试原操作，不会重复建立。",
     "reviewSync": "检查同步",
     "applyUpdate": "应用并同步",
     "keepReading": "继续阅读",

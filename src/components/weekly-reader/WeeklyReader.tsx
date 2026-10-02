@@ -15,6 +15,8 @@ import {usePrivateReader} from '@/features/weekly-reader/usePrivateReader';
 import {readerSentences, selectedColor, toggleSentence} from '@/features/weekly-reader/selection';
 import {copySentences} from '@/features/weekly-reader/copy';
 import {useReaderProgress} from '@/features/weekly-reader/progress';
+import {NoteIndicators} from './NoteIndicators';
+import {readReaderReturn, saveReaderReturn} from '@/features/weekly-reader/return-state';
 import type {Locale} from '@/i18n/locales';
 import {ReaderToolbar, type ReaderMessages} from './ReaderToolbar';
 import {PageNavigator} from './PageNavigator';
@@ -23,7 +25,7 @@ import {ReaderSearch} from './ReaderSearch';
 import {OfflineControl} from './OfflineControl';
 import {ResumeReadingPrompt} from './ResumeReadingPrompt';
 import {SelectionToolbar} from './SelectionToolbar';
-import {NoteEditor, type NoteSave} from './NoteEditor';
+import {NoteEditor, type NoteSave, type NoteEditorState} from './NoteEditor';
 import {NotesPanel} from './NotesPanel';
 import {ReaderPrivateState, SyncStatus} from './ReaderPrivateState';
 import {ReaderRecovery} from './ReaderRecovery';
@@ -77,27 +79,33 @@ function AuthorizedReader(props: Props & {accountId: string}) {
 }
 
 function ReaderDocument({value, selector, messages: m, api, offline, allowAction, onFailure, onUpdated, suspended}: {value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages; api: ReturnType<typeof createReaderApi>; offline: boolean; allowAction: () => boolean; onFailure: (error: unknown) => void; onUpdated: (value: OnlineBulletinAccess) => void; suspended: boolean}) {
+  const [returned] = useState(() => readReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}));
   const document = useMemo(() => verifyReaderAccess(value, selector), [value, selector]);
   const privateReader = usePrivateReader({api, selector, value, offline, allowAction, onFailure});
+  const hasNotes = privateReader.state?.notes.some(note => !note.deleted) ?? false;
   const progress = useReaderProgress(value.document, privateReader.mutate);
   const recordProgress = progress.record;
+  const flushProgress = progress.flush;
   const sentences = useMemo(() => readerSentences(value.document), [value.document]);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(() => returned?.revision === value.document.revision ? returned.selected.filter(id => sentences.some(sentence => sentence.id === id)) : []);
   const [notice, setNotice] = useState('');
-  const [notes, setNotes] = useState<'list' | 'new' | BulletinReaderNote | null>(null);
+  const [notes, setNotes] = useState<'list' | 'new' | BulletinReaderNote | null>(returned?.draft ? 'new' : null);
+  const [noteFilter, setNoteFilter] = useState<string[] | null>(null);
+  const paperRef = useRef<HTMLDivElement>(null);
+  const [noteEditorState, setNoteEditorState] = useState<NoteEditorState | undefined>(returned?.draft ? {draft: returned.draft, conflict: null} : undefined);
   const [deletion, setDeletion] = useState<{local: BulletinReaderNote; cloud?: BulletinReaderNote} | null>(null);
   const [wideNotes, setWideNotes] = useState(false);
   const documentRef = useRef<HTMLElement>(null);
   const noteButton = useRef<HTMLButtonElement>(null);
   const notesButton = useRef<HTMLButtonElement>(null);
-  const newNoteId = useRef<string | null>(null);
+  const newNoteId = useRef<string | null>(returned?.action?.kind === 'createNote' ? returned.action.payload.noteId : null);
   const highlights = Object.fromEntries(privateReader.state?.highlights.filter(highlight => highlight.active).map(highlight => [highlight.sentenceId, highlight.color]) ?? []);
   const sentenceState = Object.fromEntries(sentences.map(sentence => [sentence.id, {selected: selected.includes(sentence.id), highlight: highlights[sentence.id]}]));
   const noteAnchors = typeof notes === 'object' && notes ? notes.sentenceIds : selected;
   const noteQuote = typeof notes === 'object' && notes ? notes.quote : sentences.filter(sentence => selected.includes(sentence.id)).map(sentence => sentence.text).join('\n');
   function closeNotes() {
     if (privateReader.busy) return;
-    setNotes(null); setDeletion(null);
+    setNotes(null); setDeletion(null); setNoteEditorState(undefined);
     requestAnimationFrame(() => (noteButton.current ?? notesButton.current)?.focus());
   }
   async function saveNote(draft: NoteSave) {
@@ -146,6 +154,12 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const gesture = useRef<{x: number; y: number; multiplePointers: boolean} | null>(null);
   const pointers = useRef(new Set<number>());
   const active = document.pages[page];
+  useEffect(() => {
+    saveReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}, {
+      revision: value.document.revision, pageId: active.id, selected,
+      draft: notes && notes !== 'list' ? noteEditorState?.draft : undefined
+    });
+  }, [selector.accountId, value.document.documentId, value.document.revision, active.id, selected, notes, noteEditorState]);
   const size = {width: active.width * 4 / 3, height: active.height * 4 / 3};
   const scale = pageScale(zoom, size, viewport);
   const onPage = (next: number, record = true) => {
@@ -167,7 +181,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   useEffect(() => {
     const root = documentRef.current;
     if (!root || typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(entries => setWideNotes((entries[0]?.contentRect.width ?? 0) >= 1024));
+    const observer = new ResizeObserver(entries => setWideNotes((entries[0]?.contentRect.width ?? 0) >= 1068));
     observer.observe(root);
     return () => observer.disconnect();
   }, []);
@@ -178,11 +192,11 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     const root = viewportRef.current;
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(entries => {
       const rect = entries[0]?.contentRect;
-      if (rect?.width && rect.height) setViewport({width: Math.max(1, rect.width - 32), height: Math.max(1, rect.height - 32)});
+      if (rect?.width && rect.height) setViewport({width: Math.max(1, rect.width - 32 - (hasNotes ? 44 : 0)), height: Math.max(1, rect.height - 32)});
     });
     if (root) observer?.observe(root);
     return () => {query.removeEventListener('change', changed); observer?.disconnect();};
-  }, []);
+  }, [hasNotes]);
   useEffect(() => {
     if (offerResume) return;
     try {sessionStorage.setItem(storageKey, active.id);} catch { /* Reading remains available without storage. */ }
@@ -198,6 +212,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     if (!mobile || !fontsReady || notes) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const settled = () => {
+      timer = undefined;
       if (!allowAction()) return;
       const sentence = Array.from(viewportRef.current?.querySelectorAll<HTMLElement>('[data-sentence-id]') ?? []).find(element => {
         const rect = element.getBoundingClientRect();
@@ -212,9 +227,14 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       recordProgress(value.document.content.pages[index].id, id);
     };
     const scroll = () => {clearTimeout(timer); timer = setTimeout(settled, 250);};
+    const hide = () => {
+      if (globalThis.document.visibilityState !== 'hidden' || timer === undefined) return;
+      clearTimeout(timer); settled(); void flushProgress();
+    };
     window.addEventListener('scroll', scroll, {passive: true});
-    return () => {clearTimeout(timer); window.removeEventListener('scroll', scroll);};
-  }, [mobile, fontsReady, notes, allowAction, value.document, storageKey, recordProgress]);
+    globalThis.document.addEventListener('visibilitychange', hide);
+    return () => {clearTimeout(timer); window.removeEventListener('scroll', scroll); globalThis.document.removeEventListener('visibilitychange', hide);};
+  }, [mobile, fontsReady, notes, allowAction, value.document, storageKey, recordProgress, flushProgress]);
   function onAnchor(anchor: Anchor) {
     const layout = document.layoutManifest.pages.find(layout => layout.slots.some(slot => anchor.kind === 'component' ? slot.componentId === anchor.id : slot.fragments.some(fragment => fragment.sentenceId === anchor.id)) || anchor.kind === 'sentence' && layout.fixedSlots?.some(slot => `canonical-${slot.element}` === anchor.id));
     const index = document.pages.findIndex(page => page.id === layout?.pageId);
@@ -240,10 +260,17 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       else if (cloudProgress?.componentId) onAnchor({kind: 'component', id: cloudProgress.componentId});
       else onPage(Math.max(0, document.pages.findIndex(page => page.id === cloudProgress?.pageId)));
     }} onStartOver={() => {onPage(0, false); void progress.reset().catch(() => setNotice(m.actionFailed));}}/> : null}
-    <div className="reader-toolbar">{!mobile ? <ReaderToolbar messages={m} zoom={zoom} setZoom={setZoom}/> : null}<SectionNavigator document={document} onSection={id => onAnchor({kind: 'component', id})} messages={m}/><ReaderSearch document={value.document} onJump={id => onAnchor({kind: 'sentence', id})} messages={m}/><button ref={notesButton} type="button" disabled={!privateReader.state} onClick={() => setNotes('list')}>{m.myNotes}</button></div>
+    <div className="reader-toolbar">{!mobile ? <ReaderToolbar messages={m} zoom={zoom} setZoom={setZoom}/> : null}<SectionNavigator document={document} onSection={id => onAnchor({kind: 'component', id})} messages={m}/><ReaderSearch document={value.document} onJump={id => onAnchor({kind: 'sentence', id})} messages={m}/><button ref={notesButton} type="button" disabled={!privateReader.state} onClick={() => {setNoteFilter(null); setNotes('list');}}>{m.myNotes}</button></div>
     <SyncStatus status={privateReader.status} messages={m}/>
-    {privateReader.status === 'paused' || privateReader.status === 'action' ? <ReaderRecovery api={api} value={value} selector={selector} messages={m} onUpdated={onUpdated} onFailure={onFailure} suspended={suspended}/> : null}
-    {privateReader.canRetry ? <button type="button" disabled={privateReader.busy} onClick={() => void privateReader.retry().catch(() => setNotice(m.actionFailed))}>{m.retry}</button> : null}
+    {privateReader.status === 'paused' || privateReader.status === 'action' || privateReader.pendingMutation ? <ReaderRecovery api={api} value={value} selector={selector} messages={m} onUpdated={onUpdated} onFailure={onFailure} suspended={suspended} pendingMutation={privateReader.pendingMutation} onPendingChange={mutation => {
+      const previous = privateReader.pendingMutation;
+      privateReader.replacePending(mutation);
+      if (!mutation && previous && ['createNote', 'editNote', 'deleteNote'].includes(previous.kind)) {setNotes(null); setNoteEditorState(undefined); if (previous.kind === 'createNote') setSelected([]);}
+    }}/> : null}
+    {privateReader.canRetry && privateReader.status !== 'paused' ? <><p>{m.confirmRetryHelp}</p><button type="button" disabled={privateReader.busy} onClick={() => void privateReader.retry().then(result => {
+      if (result?.status === 'note_conflict' && noteEditorState) setNoteEditorState({...noteEditorState, conflict: {status: 'note_conflict', note: result.note}});
+      else if (result?.status === 'applied') {setNotes(null); setNoteEditorState(undefined); if (privateReader.pendingMutation?.kind === 'createNote') setSelected([]);}
+    }).catch(() => setNotice(m.actionFailed))}>{m.confirmRetry}</button></> : null}
     {!mobile ? <PageNavigator document={document} metadata={value.document.canonicalMetadata} page={page} onPage={onPage} messages={m}/> : null}
     <div ref={viewportRef} className="reader-viewport" data-mobile={mobile || undefined} tabIndex={0} onPointerDown={event => {
       if (event.pointerType !== 'touch') return;
@@ -259,9 +286,10 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       if (!mobile && delta) onPage(page + delta);
     }}>
       {!fontsReady ? <p role="status">{m.loading}</p> : null}
-      <div aria-hidden={!fontsReady || undefined} style={{visibility: fontsReady ? 'visible' : 'hidden'}}>
+      <div ref={paperRef} className="reader-paper-with-notes" data-has-notes={hasNotes || undefined} aria-hidden={!fontsReady || undefined} style={{visibility: fontsReady ? 'visible' : 'hidden'}}>
       {mobile ? <div className="reader-watermarked"><BulletinDocumentRenderer document={document} mode="mobile" canonicalMetadata={value.document.canonicalMetadata} sentenceState={sentenceState} onSentenceActivate={activateSentence}/><ReaderWatermark traceCode={value.access.traceCode}/></div> :
         <div className="reader-scaled-page" style={{width: size.width * scale, height: size.height * scale}}><div className="reader-watermarked" style={{transform: `scale(${scale})`, transformOrigin: 'top left', width: size.width, height: size.height}}><BulletinDocumentRenderer document={document} mode="paper" activePage={active.id} canonicalMetadata={value.document.canonicalMetadata} sentenceState={sentenceState} onSentenceActivate={activateSentence}/><ReaderWatermark traceCode={value.access.traceCode}/></div></div>}
+      <NoteIndicators root={paperRef} notes={privateReader.state?.notes ?? []} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}`} label={m.myNotes} onOpen={ids => {setNoteFilter(ids); setNotes('list');}}/>
       </div>
     </div>
     {notice ? <p role="status">{notice}</p> : null}
@@ -269,14 +297,14 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       onColor={color => void action({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, kind: 'setHighlight', payload: {sentenceIds: selected, color}})}
       onClear={() => void action({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, kind: 'clearHighlight', payload: {sentenceIds: selected}})}
       onCopy={() => void copySentences(value.document, selected, allowAction).then(() => setNotice(m.copySuccess)).catch(() => setNotice(m.copyFailed))}
-      onNote={() => {newNoteId.current = null; setNotes('new');}}/>
+      onNote={() => {newNoteId.current = null; setNoteEditorState(undefined); setNotes('new');}}/>
     {notes ? <ReaderPrivateState wide={wideNotes} messages={m} onClose={closeNotes} suspended={suspended}>
       {deletion ? <section className="reader-note-editor"><p role="alert">{m.noteConflict}</p><h3>{m.recoveryLocal}</h3><blockquote>{deletion.local.text}</blockquote><h3>{m.recoveryCloud}</h3><blockquote>{deletion.cloud && !deletion.cloud.deleted ? deletion.cloud.text : m.noteDeleted}</blockquote><div className="reader-note-actions">
         <button type="button" disabled={privateReader.busy} onClick={() => setDeletion(null)}>{m.noteCloud}</button>
         {deletion.cloud && !deletion.cloud.deleted ? <><button type="button" disabled={privateReader.busy} onClick={() => {if (window.confirm(m.noteDeleteConfirm)) void deleteNote(deletion.cloud!);}}>{m.noteDelete}</button><button type="button" disabled={privateReader.busy} onClick={() => {setNotes({...deletion.cloud!, text: `${deletion.cloud!.text}\n\n${deletion.local.text}`}); setDeletion(null);}}>{m.noteManual}</button></> : null}
-      </div></section> : notes === 'list' ? <NotesPanel messages={m} notes={privateReader.state?.notes ?? []} onJump={id => {closeNotes(); onAnchor({kind: 'sentence', id});}} onEdit={note => {newNoteId.current = null; setNotes(note);}} onDelete={note => {
+      </div></section> : notes === 'list' ? <NotesPanel messages={m} notes={(privateReader.state?.notes ?? []).filter(note => !noteFilter || noteFilter.includes(note.id))} onJump={id => {closeNotes(); onAnchor({kind: 'sentence', id});}} onEdit={note => {newNoteId.current = null; setNoteEditorState(undefined); setNotes(note);}} onDelete={note => {
         if (window.confirm(m.noteDeleteConfirm)) void deleteNote(note);
-      }}/> : <NoteEditor key={typeof notes === 'object' ? notes.id : 'new'} messages={m} note={typeof notes === 'object' ? notes : undefined} quote={noteQuote} onSave={saveNote} onComplete={() => {if (notes === 'new') setSelected([]); setNotes(null); requestAnimationFrame(() => notesButton.current?.focus());}} onCancel={closeNotes}/>}
+      }}/> : <NoteEditor key={typeof notes === 'object' ? notes.id : 'new'} messages={m} note={typeof notes === 'object' ? notes : undefined} quote={noteQuote} editorState={noteEditorState} onEditorStateChange={setNoteEditorState} onSave={saveNote} onComplete={() => {if (notes === 'new') setSelected([]); setNotes(null); setNoteEditorState(undefined); requestAnimationFrame(() => notesButton.current?.focus());}} onCancel={closeNotes}/>}
     </ReaderPrivateState> : null}
   </section>;
 }

@@ -1,5 +1,7 @@
 {
   "weeklyReader": {
+    "confirmRetry": "Confirm and retry",
+    "confirmRetryHelp": "Your action has not been confirmed. Retry the original action after signing in; it will not create a duplicate.",
     "reviewSync": "Review synchronization",
     "applyUpdate": "Apply and synchronize",
     "keepReading": "Keep reading",

@@ -6,17 +6,20 @@ import {optimisticReaderState} from './private-state';
 import {readerFailureAction} from './offline-access';
 import {enqueuePrivateMutation, getOfflineIdentity, readOfflineSave, readPrivateReplica, seedPrivateReplica, supportsOfflineReader} from './offline-store';
 import {syncPrivateReplica, type ReaderSyncStatus} from './sync';
+import {readReaderReturn, saveReaderReturn} from './return-state';
 
 type Outcome = BulletinReaderMutationResponse['results'][number] | {status: 'queued'};
 type Props = {api: Pick<ReturnType<typeof createReaderApi>, 'privateState' | 'mutate' | 'renew'>; selector: ReaderSelector; value: OnlineBulletinAccess; offline: boolean; allowAction: () => boolean; onFailure: (error: unknown) => void};
 export function usePrivateReader({api, selector, value, offline, allowAction, onFailure}: Props) {
+	const binding = {accountId: selector.accountId, documentId: value.document.documentId};
+	const [restored] = useState(() => readReaderReturn(binding)?.action ?? null);
   const [state, setState] = useState<BulletinReaderState | null>(null);
   const [status, setStatus] = useState<ReaderSyncStatus>('syncing');
   const [busy, setBusy] = useState(false);
-  const [canRetry, setCanRetry] = useState(false);
+  const [canRetry, setCanRetry] = useState(!!restored);
   const controller = useRef<AbortController | null>(null);
   const sending = useRef(false);
-  const pending = useRef<BulletinReaderMutation | null>(null);
+  const pending = useRef<BulletinReaderMutation | null>(restored);
   const {accountId, issueNumber, series, contentLocale} = selector;
   useEffect(() => {
     const request = new AbortController(); controller.current = request;
@@ -62,7 +65,7 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
     sending.current = true; setBusy(true);
     let queued = false;
     try {
-      setState(optimisticReaderState(state, mutation, value.document));
+      if (mutation.documentRevision === value.document.revision) setState(optimisticReaderState(state, mutation, value.document));
       const saved = supportsOfflineReader() ? await readOfflineSave(selector).catch(() => null) : null;
       request.signal.throwIfAborted();
       if (!allowAction()) throw new Error('private_action_unavailable');
@@ -70,7 +73,7 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
         const owner = await getOfflineIdentity();
         await seedPrivateReplica(selector, state, owner.epoch);
         const local = await enqueuePrivateMutation(selector, mutation, owner.epoch);
-        queued = true; pending.current = null; setCanRetry(false);
+        queued = true; replacePending(null);
         request.signal.throwIfAborted();
         setState(local.state); setStatus('waiting');
         if (offline) return {status: 'queued'};
@@ -88,9 +91,10 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
       }
       if (offline) throw new Error('offline_save_required');
       pending.current = mutation; setCanRetry(true);
+      saveReaderReturn(binding, {revision: value.document.revision, action: mutation});
       const response = await api.mutate(selector, value, [mutation], request.signal);
       request.signal.throwIfAborted();
-      pending.current = null; setCanRetry(false);
+      if (response.results[0].status !== 'revision_changed') replacePending(null);
       if (response.state.currentRevision !== value.document.revision) {setState(rollback); setStatus('paused');}
       else {setState(response.state); setStatus(response.results[0].status === 'applied' ? 'synced' : 'action');}
       return response.results[0];
@@ -112,5 +116,9 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
     if (!pending.current) return;
     return mutate(pending.current);
   }
-  return {state, status, busy, mutate, retry, canRetry};
+  function replacePending(mutation: BulletinReaderMutation | null) {
+    pending.current = mutation; setCanRetry(!!mutation);
+    saveReaderReturn(binding, {revision: value.document.revision, action: mutation});
+  }
+  return {state, status, busy, mutate, retry, canRetry, pendingMutation: pending.current, replacePending};
 }

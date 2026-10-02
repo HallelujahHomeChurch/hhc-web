@@ -15,9 +15,47 @@ const authorization = {getAccessToken: async () => 'token', refreshAfterUnauthor
 vi.mock('@/features/weekly-reader/api', async original => ({...await original<typeof import('@/features/weekly-reader/api')>(), createReaderApi: () => ({open: state.open, privateState: state.privateState, mutate: state.mutate})}));
 const props = {locale: 'en' as const, issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const, messages: getMessages('en').weeklyReader};
 beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state.accountId = 'account-a'; state.status = 'authenticated'; state.open.mockReset().mockResolvedValue(readerFixture()); state.privateState.mockReset().mockResolvedValue({state: {accountId: 'account-a', documentId: readerFixture().document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: null, conflicts: []}}); state.mutate.mockReset(); sessionStorage.clear(); vi.stubGlobal('matchMedia', vi.fn(() => ({matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn()})));});
-afterEach(() => {Reflect.deleteProperty(document, 'fonts'); vi.unstubAllEnvs();});
+afterEach(() => {Reflect.deleteProperty(document, 'fonts'); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs();});
 
 describe('protected weekly reader', () => {
+  it('restores same-account selection and note draft after login without sending a write', async () => {
+    const first = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
+    fireEvent.click(first.container.querySelector('[data-sentence-id="s0"]')!);
+    fireEvent.click(screen.getByRole('button', {name: 'Note'}));
+    fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'Return after login'}});
+    first.unmount();
+    const second = render(<WeeklyReader {...props}/>);
+    expect(await screen.findByRole('textbox', {name: props.messages.noteText})).toHaveValue('Return after login');
+    expect(state.mutate).not.toHaveBeenCalled();
+    second.unmount();
+    state.accountId = 'account-b';
+    state.open.mockResolvedValue({...readerFixture(), access: {...readerFixture().access, accountId: 'account-b'}});
+    render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    expect(screen.queryByRole('textbox', {name: props.messages.noteText})).not.toBeInTheDocument();
+  });
+  it('preserves an unsaved note when resizing between the side panel and sheet', async () => {
+    let resize!: (width: number) => void;
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(private callback: (entries: {contentRect: {width: number; height: number}}[]) => void) {}
+      observe(element: HTMLElement) {if (element.className === 'reader-document') resize = width => this.callback([{contentRect: {width, height: 800}}]);}
+      disconnect() {}
+    });
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
+    act(() => resize(1300));
+    fireEvent.click(container.querySelector('[data-sentence-id="s0"]')!);
+    fireEvent.click(screen.getByRole('button', {name: 'Note'}));
+    fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'Do not lose this draft'}});
+    act(() => resize(800));
+    expect(await screen.findByRole('textbox', {name: props.messages.noteText})).toHaveValue('Do not lose this draft');
+    act(() => resize(1300));
+    expect(await screen.findByRole('textbox', {name: props.messages.noteText})).toHaveValue('Do not lose this draft');
+    vi.unstubAllGlobals();
+  });
   it('hides portal note text during foreground authorization and restores the unchanged draft afterward', async () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
@@ -49,7 +87,7 @@ describe('protected weekly reader', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Keep cloud'}));
     expect(state.mutate).toHaveBeenCalledOnce();
   });
-  it('records a settled mobile scroll without treating the initial cover as a new reading position', async () => {
+  it.each([false, true])('records mobile progress without an initial-cover write, immediate hide: %s', async hide => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn()})));
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
@@ -60,6 +98,11 @@ describe('protected weekly reader', () => {
     }
     state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: (await state.privateState()).state, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]}));
     fireEvent.scroll(window);
+    if (hide) {
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+      fireEvent(document, new Event('visibilitychange'));
+      await waitFor(() => expect(state.mutate).toHaveBeenCalled(), {timeout: 150});
+    }
     await waitFor(() => expect(state.mutate).toHaveBeenCalled(), {timeout: 2500});
     expect(state.mutate.mock.calls[0][2][0]).toMatchObject({kind: 'setProgress', payload: {pageId: 'p2', sentenceId: 's2'}});
   });

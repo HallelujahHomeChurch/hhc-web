@@ -28,6 +28,26 @@ it('requires explicit acceptance before switching and retains the reader on canc
   await waitFor(() => expect(props.onFailure).toHaveBeenCalled());
   expect(props.onUpdated).not.toHaveBeenCalled();
 });
+
+it('does not lose an unsaved action on revision update and confirms its original ID before manual recovery', async () => {
+  mocks.read.mockResolvedValue(null);
+  const current = {...value, document: {...value.document, revision: 2}};
+  api.current.mockResolvedValue(current); api.privateState.mockResolvedValue({state: cloud});
+  const pending = {mutationId: 'original', createdAt: new Date().toISOString(), documentRevision: 1, kind: 'createNote' as const, payload: {noteId: 'note-original', sentenceIds: ['s0'], text: 'Keep my private draft'}};
+  const onPendingChange = vi.fn();
+  api.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: cloud, results: [{mutationId: mutations[0].mutationId, status: mutations[0].mutationId === 'original' ? 'revision_changed' : 'applied', revision: 2}]}));
+  render(<ReaderRecovery {...props} pendingMutation={pending} onPendingChange={onPendingChange}/>);
+  fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
+  fireEvent.click(await screen.findByRole('button', {name: 'Confirm and retry'}));
+  expect(api.mutate.mock.calls[0][2][0]).toEqual(pending);
+  expect(await screen.findByRole('textbox', {name: 'Note'})).toHaveValue('Keep my private draft');
+  expect(screen.queryByRole('button', {name: 'Apply and synchronize'})).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', {name: 'Keep local'}));
+  await screen.findByRole('button', {name: 'Apply and synchronize'});
+  expect(api.mutate.mock.calls[1][2][0].mutationId).not.toBe('original');
+  expect(api.mutate.mock.calls[1][2][0].payload.text).toBe(pending.payload.text);
+  expect(onPendingChange).toHaveBeenLastCalledWith(null);
+});
 it('shows local and cloud note text and records an explicit cloud choice without discarding on cancel', async () => {
   const mutation = {mutationId: 'old', documentRevision: 1, createdAt: '', kind: 'editNote', baseVersion: 1, payload: {noteId: 'note', text: 'Local text'}};
   mocks.prepare.mockResolvedValue({value, state: {...cloud, notes: [{id: 'note', text: 'Cloud text', version: 2, sentenceIds: ['s0'], deleted: false}]}, queue: [{mutation, sent: true, result: {status: 'note_conflict'}}], mutations: [], recovery: [{mutationId: 'old', reason: 'note_conflict'}], previousRevision: 1});
@@ -38,4 +58,13 @@ it('shows local and cloud note text and records an explicit cloud choice without
   expect(screen.queryByRole('button', {name: 'Apply and synchronize'})).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', {name: 'Keep cloud'}));
   await waitFor(() => expect(mocks.choose).toHaveBeenCalledWith(props.selector, 'old', null, 1, expect.any(Array)));
+});
+it('keeps the authorized original quote visible when its sentence was removed', async () => {
+  const mutation = {mutationId: 'removed', documentRevision: 1, createdAt: '', kind: 'createNote', payload: {noteId: 'note', sentenceIds: ['s0'], text: 'My draft'}};
+  const current = {...value, document: {...value.document, content: {...value.document.content, components: []}, revision: 2}};
+  mocks.prepare.mockResolvedValue({value: current, state: cloud, queue: [{mutation, sent: true}], mutations: [], recovery: [{mutationId: 'removed', reason: 'removed_anchor'}], previousRevision: 1});
+  render(<ReaderRecovery {...props}/>);
+  fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
+  expect(await screen.findByText('內容0。')).toBeInTheDocument();
+  expect(screen.getByDisplayValue('My draft')).toBeInTheDocument();
 });

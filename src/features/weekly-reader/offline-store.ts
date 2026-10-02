@@ -3,6 +3,7 @@ import {verifyReaderAccess, type ReaderSelector} from './api';
 import {evaluateOfflineAccess} from './offline-access';
 import {applyLocalMutation, verifyPrivateState} from './private-state';
 import type {ReaderRecovery} from './rebase';
+import {clearReaderReturn, hasPendingReaderReturn} from './return-state';
 
 type Identity = {accountId: string | null; epoch: number};
 export type OfflineSave = {
@@ -252,7 +253,7 @@ export async function renewOfflineSave(selector: ReaderSelector, value: OnlineBu
 }
 
 export async function removeOfflineSave(selector: ReaderSelector) {
-  await transaction('readwrite', async tx => {
+  const documentId = await transaction('readwrite', async tx => {
     const pointer = tx.objectStore('pointers');
     const key = await result(pointer.get(editionKey(selector)));
     if (!key) return;
@@ -261,7 +262,9 @@ export async function removeOfflineSave(selector: ReaderSelector) {
       tx.objectStore('documents').delete(candidate); tx.objectStore('checks').delete(candidate); tx.objectStore('private').delete(candidate);
     }
     pointer.delete(editionKey(selector));
+    return String(key[1]);
   });
+  if (documentId) clearReaderReturn({accountId: selector.accountId, documentId});
   notifyEdition(selector);
 }
 
@@ -371,6 +374,7 @@ export async function acknowledgePrivateMutation(selector: ReaderSelector, respo
 }
 
 export async function hasPendingReaderWrites(accountId: string, documentId?: string) {
+  if (hasPendingReaderReturn(accountId, documentId)) return true;
   if (typeof indexedDB === 'undefined') return false;
   return transaction('readonly', async tx => {
     if ((await identity(tx)).accountId !== accountId) return false;
