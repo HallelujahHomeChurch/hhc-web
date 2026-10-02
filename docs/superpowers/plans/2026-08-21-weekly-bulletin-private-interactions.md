@@ -181,3 +181,68 @@
 - [ ] Publish controlled edit/split/merge/remove revisions while pending offline writes exist. Verify conflict resolution, same-ID rebasing, atomic pointer switch and failure rollback subject to access validity.
 - [ ] Verify DSR private export/restrict/erase covers new datasets; missing/failed coverage prevents finalization and retry remains idempotent. Use controlled test data, not destructive production acceptance.
 - [ ] Require current/previous Chrome/Edge/Safari and actual iOS/iPad/Android PWA evidence, plus user approval of watermark reading screens, before enabling the member Online entry.
+
+## Local implementation checkpoint — 2026-10-02
+
+**Status:** local implementation and final review fix pass complete; **not merge-ready or launch-approved**. Foundation Tasks 1–10, member Tasks 1–6 and private Tasks 1–7 have local completion evidence. Foundation Task 11, member Task 7 and private Task 8 retain their external acceptance/release gates. Unchecked acceptance items above must not be read as production evidence.
+
+The user explicitly requested all implementation before merge. No feature-to-main merge, push, release, production data/infrastructure change, or feature-flag enablement was performed during this continuation. Keep all eight unmerged worktrees.
+
+### Repository handoff
+
+All branches are `review/weekly-reader-20260930`, under `.worktrees/weekly-reader-review-20260930/`. Each contains its fetched `origin/main` at the recorded base. These are verified snapshots, not a promise that the remote will never advance.
+
+| Repository | Implementation head | Integrated main | Local evidence |
+| --- | --- | --- | --- |
+| hhc-web | `5ccf3e7` | `bbe97a5` | 560 Vitest tests / 102 files, 8 Node tests, 11 template assets, lint, typecheck, production build |
+| hhc-web-api | `6d8940b` | `5f1cd09` | Full race suite with owned PostgreSQL, vet, OpenAPI validation; actual 1739/1740 extraction and Linux composition |
+| frontend-platform | `ad29249` | `16d97d1` | Five-package tests/builds; latest client regression 57 tests; packed-consumer integration |
+| admin-fe | `7b4e5ce` | `f7752f1` | 823 tests / 85 files with two workers, lint, build |
+| asset-api | `432c5d5` | `ded08b5` | Full race suite with owned asset_test PostgreSQL, vet, release/what-if checks |
+| api-gateway | `100ad57` | `67d6e16` | Race suite, vet, static policy checks, owned-image WWW runtime and template proxy checks |
+| account-api | `dda510f` | `8a696aa` | Full race suite with owned PostgreSQL/Redis, vet, OpenAPI validation |
+| audit-log | `5eb03a1` | `24adb8a` | Race suite, vet, regenerated event catalog; PostgreSQL integration was not configured |
+
+Web verification: `pnpm test:run`, `pnpm lint`, `pnpm exec tsc --noEmit`, `pnpm build`. One existing upstream legal-navigation ESLint warning remains (zero errors). Admin's unconstrained run timed out in unrelated App cases; the complete two-worker rerun passed without skipping tests or increasing timeouts. OpenAPI validation is valid with existing-style warnings (Website 15; Account 43), not warning-free. Remote required CI has not been rerun on these local heads.
+
+Local logs: `/tmp/weekly-web-final-handoff.log`, `/tmp/weekly-admin-main-final.log`, `/tmp/weekly-admin-main-build.log`, `/tmp/weekly-api-final-race.log`, `/tmp/weekly-api-final-openapi.log`, `/tmp/weekly-account-task7-final.log`, `/tmp/weekly-asset-main-test.log`, `/tmp/weekly-gateway-main-runtime.log`, `/tmp/weekly-audit-main-test.log`. These are local evidence, not release artifacts.
+
+### Final review and fixes
+
+One independent fresh-context reviewer reviewed all eight feature ranges. No Critical finding was confirmed; two Important findings were accepted and fixed in one TDD fix pass:
+
+1. Stable device time behind server time wrongly locked freshly authorized reading. A local observation baseline now detects actual rollback; the local deadline is bounded by both seven local days and the server expiry. Reusing a receipt cannot extend it. Online action, offline commit/renewal and exact expiry regressions passed RED → GREEN.
+2. Member `429` throttling wrongly locked a valid offline save. It now retains the original window and pending operations, without renewing expiry or automatic retry loops. Renewal and mutation-sync regressions passed RED → GREEN.
+
+The executor regraded the reviewer's touch uncertainty after reproducing it in Chromium native-touch emulation: swiping on the paper generated `pointercancel`, whereas the reader margin generated `pointerup`. Reader pan/pinch arbitration now reaches nested paper clipping containers. Horizontal swipe produced page 2 → 3 with `pointerup`; vertical scrolling and native zoom remain browser-owned. A separate regression proved native pinch-zoom panning must not change pages, RED → GREEN. This does not certify physical iPad/Safari behavior.
+
+The same expiry fix pass also reproduced manual Retry replaying an already acknowledged expired receipt indefinitely. Retire the validation request ID only after successful acceptance; unknown responses still retain their original ID. An idempotent-server regression passed RED → GREEN.
+
+The note gutter was also bounded to the rendered paper rather than the full reader viewport after visual inspection showed a distant marker. Marker targets remain 44px and do not alter the immutable renderer artifact. Final full Web suite: 560/560. **Deferred minors: none from the final review.**
+
+### Controlled visual evidence and known tradeoffs
+
+- Actual originals: 1739 (12 source pages) and 1740 (16 source pages); latest extraction/composition outputs are the private `*-v13-linux.json` files, not raster PDF pages.
+- HTML output: 15 / 22 pages, zero measured overflow. The 360 / 477 extracted component sentences are unchanged through composition. Six retained component kinds: cover, body section, hymn lyrics, back summary, announcements, victories/prayers. Roster, attendance and offering tables are excluded.
+- Legal fonts and preserved readable typography can create continuation pages, including sparsely filled pages. **Source page-count parity is not achieved.** User approval of this pagination/whitespace tradeoff and final cover/body fidelity remains required; do not describe the result as pixel-perfect or visually accepted.
+- Desktop: fit-width wheel scrolling reached 500px; next-page navigation changed page 3 → 4 and reset inner scroll to zero. No horizontal document overflow at 1365px.
+- Tablet emulation: 820px paper layout and native-touch page turn verified in Chromium. Physical touch, native text selection and Safari arbitration still require acceptance.
+- Mobile: 375px and 320px reflow without horizontal document overflow. At 320px, selection toolbar stays within the viewport, the yellow/red/blue targets each measure 44px, and actions retain the specified order. Real software-keyboard, 200% browser zoom and installed-device acceptance remain held.
+- Local preview `http://127.0.0.1:5182/?issue=1739` (or `1740`) uses explicitly mocked member identity/receipt and a read-only private-write endpoint. Expected retry/waiting messages after progress writes are fixture limitations, not successful persisted-member acceptance.
+- Screenshots inspected locally: `/tmp/weekly-v13-desktop-body.png`, `/tmp/weekly-v13-ipad-body.png`, `/tmp/weekly-v13-mobile375.png`, `/tmp/weekly-v13-mobile320-selected.png`. Watermark opacity still needs the user's reading approval with all three highlight colors.
+
+### Final rulings on acceptance boundaries
+
+1. Physical gesture uncertainty was partly promoted to an implementation finding and fixed with native Chromium reproduction plus regression. Actual iPad/iOS/Android remain held; cost if wrong is platform-specific gesture failure, so the launch flag stays off.
+2. Faint watermark readability cannot be established by opacity/geometry assertions. Require human approval; cost if wrong is impaired reading. No acceptance substituted.
+3. Complete original-layout fidelity and physical accessibility remain user/device gates. Measured no-overflow and sentence preservation do not prove visual fidelity; continuation whitespace is disclosed above.
+4. Installed PWA termination/restart and platform storage lifecycle remain held. Earlier controlled Next/SW offline reload, root fallback, cross-tab removal and zero private API-cache evidence are local-only; cost if wrong is unreliable installed offline behavior.
+5. Production identity, managed identity/configuration, permanent asset bytes, package registry resolution, remote CI, release/deployed revision and live smoke remain unauthorized and unverified. Cost if wrong is a broken or insecure rollout; local success never bypasses these gates.
+6. OCR, additional content languages, historical Letter/mixed-paper formats and arbitrary blank-page composition remain explicit non-goals. Unsupported documents fail for manual handling, not fabricated output.
+7. Keep the working branches and their execution ledgers because merge/release/device acceptance is unfinished. Do not delete or repurpose unmerged worktrees.
+
+### Next authorized delivery gate
+
+Before any merge, obtain visual/device acceptance and separate authorization for remote delivery. Publish the approved shared package version first and resolve registry dependencies/lockfiles in consumers; current four-package `file:` tarballs are **local integration inputs only**. The unreleased candidate is now 1.0.32 because upstream already released the older candidates; verify availability again before publishing. Operations client remains unchanged at registry 1.0.26.
+
+Sequence permanent template assets and Asset extraction identity/configuration before enabling extraction; deploy Website owner schema/state/DSR before Account's mandatory reader-v1 coverage; then resolve shared contracts, gateway and frontend consumers. Use each repository's PR/required CI/merge/release/health/smoke workflow. Reader private writes and Online entry remain disabled until full DSR coverage and the held acceptance matrix pass. Existing PDF publishing/download must remain independent throughout.
