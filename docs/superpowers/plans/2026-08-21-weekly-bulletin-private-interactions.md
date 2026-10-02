@@ -222,14 +222,25 @@ The note gutter was also bounded to the rendered paper rather than the full read
 
 ### Controlled visual evidence and known tradeoffs
 
-- Actual originals: 1739 (12 source pages) and 1740 (16 source pages); latest extraction/composition outputs are the private `*-v13-linux.json` files, not raster PDF pages.
-- HTML output: 15 / 22 pages, zero measured overflow. The 360 / 477 extracted component sentences are unchanged through composition. Six retained component kinds: cover, body section, hymn lyrics, back summary, announcements, victories/prayers. Roster, attendance and offering tables are excluded.
+- Actual originals: 1739 (12 source pages) and 1740 (16 source pages); latest extraction/composition outputs are the private `*-v14-linux.json` files, not raster PDF pages.
+- HTML output after the cover correction: 14 / 21 pages, with exactly one cover per issue and zero measured overflow. All extracted sentence IDs, complete concatenated span text and source references were compared against the source extraction and preserved. Six retained component kinds: cover, body section, hymn lyrics, back summary, announcements, victories/prayers. Roster, attendance and offering tables are excluded.
+- Cover now ends at the full-width weekly verse. Title/subtitle, Welcome and Worship each share a row; Work uses one line per point and native justification. Contact/address, QR codes/captions and scan invitation are omitted only from Online composition. Oversized covers fail for editing instead of silently adding a continuation; body continuation remains supported.
 - Legal fonts and preserved readable typography can create continuation pages, including sparsely filled pages. **Source page-count parity is not achieved.** User approval of this pagination/whitespace tradeoff and final cover/body fidelity remains required; do not describe the result as pixel-perfect or visually accepted.
 - Desktop: fit-width wheel scrolling reached 500px; next-page navigation changed page 3 → 4 and reset inner scroll to zero. No horizontal document overflow at 1365px.
 - Tablet emulation: 820px paper layout and native-touch page turn verified in Chromium. Physical touch, native text selection and Safari arbitration still require acceptance.
 - Mobile: 375px and 320px reflow without horizontal document overflow. At 320px, selection toolbar stays within the viewport, the yellow/red/blue targets each measure 44px, and actions retain the specified order. Real software-keyboard, 200% browser zoom and installed-device acceptance remain held.
 - Local preview `http://127.0.0.1:5182/?issue=1739` (or `1740`) uses explicitly mocked member identity/receipt and a read-only private-write endpoint. Expected retry/waiting messages after progress writes are fixture limitations, not successful persisted-member acceptance.
 - Screenshots inspected locally: `/tmp/weekly-v13-desktop-body.png`, `/tmp/weekly-v13-ipad-body.png`, `/tmp/weekly-v13-mobile375.png`, `/tmp/weekly-v13-mobile320-selected.png`. Watermark opacity still needs the user's reading approval with all three highlight colors.
+
+#### Cover correction verification — 2026-10-02
+
+- Unreleased renderer digest: `2f7d70d9a17579f6a15d7dc8f3eff88b2f4943abd50c595f7c78341bd2b093f9`; rebuilt the isolated Linux renderer and refreshed the local UI tarball in Web/Admin. No released renderer was overwritten (`origin/main` has no V1 artifact).
+- New compact-cover and oversized-cover regressions observed RED, then GREEN. Full pinned Linux geometry suite: 34/34, including the 10-question / 5-song cover and existing body/lyrics/back composition. Source IDs, full span text and source evidence preserved for both real issues; zero measured overflow.
+- Shared five-package suites: 252 tests; lint/build passed. Web: 560 tests, lint (one existing LegalRequiredNavigation warning), typecheck/build passed. Admin: 823 tests, lint/build passed.
+- Artifact immutability/bundle, package-contract and two corpus tests passed. Stock `pnpm test:consumers` initially failed with `ERR_PNPM_INVALID_SELECTOR`: the pre-existing artifacts directory also contains a root `hhc-frontend-platform-1.0.32.tgz`, which that script incorrectly treats as a scoped shared package. Left that unrelated artifact and script unchanged; the identical consumer harness, staged with exactly the five scoped package tarballs, passed both Vite and Next builds (`/tmp/weekly-cover-clean-consumer.log`).
+- Inspected actual shared-component output at `/tmp/weekly-cover-visual.kURpqL/{1739,1740}-paper.png` and `1740-mobile.png`. Both paper covers fit one page; both 390px mobile compositions have no horizontal overflow. These are rendered HTML/components with the pinned fonts, not PDF images or design mockups. They omit the host reader controls and watermark; this does not replace physical-device or watermark acceptance.
+- The live local preview loaded the new 14/21-page documents. Interactive-browser screenshots timed out in Ego and Chrome; no new hosted desktop/iPad screenshot acceptance is claimed. Impeccable's baseline scan returned no findings; its plugin path became unavailable before the final scan, so the final review used native geometry and inspected component screenshots instead.
+- Scope remains local-only. No merge, push, publication or production change.
 
 ### Final rulings on acceptance boundaries
 

@@ -268,10 +268,23 @@ SW/app updates must retain compatibility with saved referenced renderer versions
 
 An immutable `TemplateVersion` supplies fixed elements and layout tokens:
 
-- logo, masthead, vision text, labels, contact/QR, and decorations;
+- logo, masthead, vision text, labels, and decorations;
 - source page dimensions, margins, columns, and fixed component slots;
 - responsive mobile composition rules;
 - semantic font-role mapping and typography metrics.
+
+Cover clarification (2026-10-02): desktop/iPad covers end at the weekly verse
+and remain one page. Omit the address/contact block, all QR codes/captions and
+the scan invitation from Online composition; the downloadable PDF is unchanged.
+The theme/title and subtitle share one row, Welcome shares one row with its
+label, and all Worship songs share one row. Each Work point occupies one row,
+using a common font size and native last-line justification to preserve the
+aligned text edges without inserting spaces into stored/copied content.
+Word questions use compact full-width paragraphs. The weekly verse has a small
+heading above full-width scripture, not a narrow side label beside the text.
+Single-row sizing uses measured legal-font widths with a readability floor;
+content that cannot fit fails composition for editing rather than clipping or
+silently creating a second cover. Mobile retains readable, wrapping reflow.
 
 V1 has one operational template and no template canvas UI. Versioning exists
 to keep old published revisions reproducible when the fixed template changes.

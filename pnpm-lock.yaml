@@ -353,7 +353,7 @@ packages:
     version: 1.0.32
 
   '@hallelujahhomechurch/ui@file:../frontend-platform/artifacts/hallelujahhomechurch-ui-1.0.32.tgz':
-    resolution: {integrity: sha512-kIQh57Rum/MZLiBi2TRYWREGBZ8WGuyY5VYjBGO1MsHC6Q3vtefNxWeWVxMpJ8JsdzzsqMPQqlpYLZSuCgABww==, tarball: file:../frontend-platform/artifacts/hallelujahhomechurch-ui-1.0.32.tgz}
+    resolution: {integrity: sha512-o1l1p2SHn8tJLkDkBx8TTeiSVkrC9r8ibNaNz2RDr3iFy3KSVgCmBGAj5EOAEo+aQ2EjYIK48JmmoGyT/XAcWQ==, tarball: file:../frontend-platform/artifacts/hallelujahhomechurch-ui-1.0.32.tgz}
     version: 1.0.32
     peerDependencies:
       react: ^19.0.0
