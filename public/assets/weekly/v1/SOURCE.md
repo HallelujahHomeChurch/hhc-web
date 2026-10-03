@@ -6,8 +6,10 @@ changed typography/layout needs a new template/renderer version.
 
 ## Font sources
 
-All four fonts originate from `google/fonts` commit
+Body, emphasis and symbols originate from `google/fonts` commit
 `9710da1eacb3be272583c3224dcb70f9da6eadbb`, licensed under SIL OFL 1.1.
+Scripture uses the Ministry of Digital Affairs' TW-Kai base-plane font,
+choosing OFL 1.1 from its official dual-license declaration.
 Exact source URLs and SHA-256 values are in `manifest.json`. The complete
 copyright/license notices are bundled as content-hashed TXT files.
 No embedded PDF fonts, original image pixels, sermon text or member metadata
@@ -17,7 +19,7 @@ separately below.
 | Role | Source | Derived family | Weight | Unicode cmap entries |
 | --- | --- | --- | --- | --- |
 | Body/reference/foreign text | Noto Serif TC variable | HHC Weekly Serif | 400 | 20,748 |
-| Scripture | LXGW WenKai TC Regular | HHC Weekly Kai | 400 | 22,401 |
+| Scripture | TW-Kai-98_1.ttf (全字庫正楷體) | HHC Weekly Scripture | 400 | 39,203 |
 | Emphasis | LXGW WenKai TC Bold | HHC Weekly Kai | 700 | 22,401 |
 | Verified font-tagged symbols | Noto Sans Symbols 2 Regular | HHC Weekly Symbols | 400 | 2,955 |
 
@@ -26,9 +28,13 @@ New Ming, BiauKai or the proprietary emphasis face. Font scale, spacing and
 readability must pass the original-PDF/shared-renderer acceptance gate.
 Full upstream cmaps are retained; no sample-specific text subsetting is used.
 Missing future glyphs must be detected by layout validation, not silently
-replaced with platform-dependent glyphs. The three compressed fonts total
-14,309,056 bytes; the symbol font adds 396,064 bytes. Fonts load only in the
+replaced with platform-dependent glyphs. TW-Kai retains the complete base-plane
+file, not the separate Ext-B/Plus files; this is not a claim of full Unicode
+coverage. The four compressed fonts total 24,766,412 bytes. Fonts load only in the
 reader/editor, not the global site shell.
+
+The scripture selection changed before V1 publication on 2026-10-03. No
+published asset bytes or published renderer version were overwritten.
 
 ## Derivation
 
@@ -66,6 +72,14 @@ Run `node scripts/verify-weekly-template-assets.mjs --base-ref origin/main`
 before commit. CI verifies actual bytes, provenance, complete role mapping,
 license presence, unlisted files and append-only history, without downloading
 or regenerating upstream fonts.
+
+TW-Kai is generated with `scripts/generate-weekly-scripture-font.py`, using
+the official `Fonts_Kai.zip` and a complete OFL 1.1 license text. The script
+pins the extracted TTF checksum, preserves original copyright name records,
+renames the primary family, retains every cmap entry, and emits hashed WOFF2
+and license files. Official provenance: <https://data.gov.tw/dataset/5961>.
+The approximately 15 MB scripture asset shares the existing same-origin
+font/measurement/offline pipeline; no CDN or additional loader is used.
 
 ## Church-owned decoration
 
