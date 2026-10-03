@@ -333,7 +333,7 @@ describe('protected weekly reader', () => {
   it('searches loaded text and jumps without requesting another receipt', async () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
-    fireEvent.click(screen.getByText('Search this bulletin', {selector: 'summary'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Search this bulletin'}));
     fireEvent.change(screen.getByRole('searchbox', {name: 'Search this bulletin'}), {target: {value: '內容2'}});
     fireEvent.click(screen.getByRole('button', {name: 'Go to result'}));
     expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p2');
@@ -341,6 +341,28 @@ describe('protected weekly reader', () => {
     expect(container.querySelectorAll('[data-reader-watermark]')).toHaveLength(1);
     expect(container.querySelector('[data-reader-watermark]')).toHaveAttribute('aria-hidden', 'true');
     expect(container.textContent).not.toContain(readerFixture().access.traceCode);
+  });
+  it('keeps search query and result position across repeated jumps and closing the panel', async () => {
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    fireEvent.click(screen.getByRole('button', {name: 'Search this bulletin'}));
+    fireEvent.change(screen.getByRole('searchbox'), {target: {value: '內容'}});
+    fireEvent.click(screen.getByRole('button', {name: 'Next result'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Next result'}));
+    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p2');
+    fireEvent.click(screen.getByRole('button', {name: 'Close'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Search this bulletin'}));
+    expect(screen.getByRole('searchbox')).toHaveValue('內容');
+    expect(screen.getByLabelText('Search results')).toHaveTextContent('3 / 4');
+  });
+  it('does not dismiss mobile navigation when the page input loses focus', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn()})));
+    render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    fireEvent.click(screen.getByRole('button', {name: 'Source page 1 / 4'}));
+    fireEvent.blur(screen.getByRole('spinbutton', {name: 'Page'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Thumbnails'}));
+    expect(screen.getByRole('button', {name: 'Page 4'})).toBeInTheDocument();
   });
   it('announces font loading instead of presenting a blank paper as ready', async () => {
     let ready!: () => void;
@@ -366,6 +388,7 @@ describe('protected weekly reader', () => {
     expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p0');
     fireEvent.click(screen.getByRole('button', {name: 'Next page'}));
     expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p1');
+    fireEvent.click(screen.getByRole('button', {name: 'Source page 2 / 4'}));
     const page = screen.getByRole('spinbutton', {name: 'Page'});
     page.focus();
     fireEvent.change(page, {target: {value: '4'}});
@@ -398,6 +421,12 @@ describe('protected weekly reader', () => {
     expect(container.querySelectorAll('[data-bulletin-page]')).toHaveLength(0);
     expect(screen.queryByRole('button', {name: 'Next page'})).not.toBeInTheDocument();
     expect(container.querySelectorAll('[data-sentence-id]')).toHaveLength(4);
+    expect(screen.getByRole('button', {name: 'Source page 1 / 4'})).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: 'Source page 1 / 4'}));
+    expect(screen.getByRole('complementary', {name: 'Source page'})).toBeInTheDocument();
+    fireEvent.change(screen.getByRole('spinbutton', {name: 'Page'}), {target: {value: '3'}});
+    fireEvent.keyDown(screen.getByRole('spinbutton', {name: 'Page'}), {key: 'Enter'});
+    expect(screen.getByRole('button', {name: 'Source page 3 / 4'})).toBeInTheDocument();
   });
   it('collapses production credits in narrow tablet views without removing article text or stored anchors', async () => {
     vi.stubGlobal('matchMedia', vi.fn(query => ({matches: query === '(max-width: 767px)', addEventListener: vi.fn(), removeEventListener: vi.fn()})));
@@ -415,15 +444,17 @@ describe('protected weekly reader', () => {
     await waitFor(() => expect(container.querySelector('[data-bulletin-mode="mobile"]')).not.toBeNull());
     expect(container.querySelector('[data-sentence-id="s0"]')).toHaveTextContent('內容0。');
     expect(screen.queryByText('Production credit')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: 'More options'}));
     fireEvent.click(screen.getByRole('button', {name: 'Speaker and production details'}));
     expect(container.querySelector('[data-sentence-id="credit-sentence"]')).toHaveTextContent('Production credit');
     fireEvent.click(screen.getByRole('button', {name: 'Speaker and production details'}));
     expect(screen.queryByText('Production credit')).not.toBeInTheDocument();
     expect(fixture.document.content.components[0].bodySection?.header?.contributors).toHaveLength(1);
-    fireEvent.click(screen.getByText(props.messages.search, {selector: 'summary'}));
+    fireEvent.click(screen.getByRole('button', {name: props.messages.search}));
     fireEvent.change(screen.getByRole('searchbox'), {target: {value: 'Production credit'}});
     fireEvent.click(screen.getByRole('button', {name: props.messages.goToResult}));
     expect(container.querySelector('[data-sentence-id="credit-sentence"]')).toHaveTextContent('Production credit');
+    fireEvent.click(screen.getByRole('button', {name: 'More options'}));
     expect(screen.getByRole('button', {name: 'Speaker and production details'})).toHaveAttribute('aria-expanded', 'true');
   });
   it('restores the bound revision page and makes thumbnail copies inert', async () => {
@@ -433,6 +464,7 @@ describe('protected weekly reader', () => {
     expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p0');
     fireEvent.click(screen.getByRole('button', {name: 'Continue reading'}));
     expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p2');
+    fireEvent.click(screen.getByRole('button', {name: 'Source page 3 / 4'}));
     fireEvent.click(screen.getByRole('button', {name: 'Thumbnails'}));
     expect(container.querySelectorAll('[inert][aria-hidden="true"]')).toHaveLength(4);
     fireEvent.click(screen.getByRole('button', {name: 'Page 1'}));
@@ -443,6 +475,7 @@ describe('protected weekly reader', () => {
     const key = `weekly-reader-position:account-a:${readerFixture().document.documentId}:1:anchor`;
     const {unmount} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
+    fireEvent.click(screen.getByRole('button', {name: 'Source page 1 / 4'}));
     fireEvent.click(screen.getByText('Sections', {selector: 'summary'}));
     fireEvent.click(screen.getAllByRole('button', {name: 'Summary'})[2]);
     expect(sessionStorage.getItem(key)).toBe(JSON.stringify({kind: 'component', id: 'c2'}));

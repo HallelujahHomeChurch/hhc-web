@@ -5,6 +5,23 @@
 .weekly-reader :focus-visible { outline: 2px solid var(--hhc-control, #70523c); outline-offset: 3px; }
 .weekly-reader [aria-pressed="true"], .weekly-reader [aria-current="page"] { border-color: var(--hhc-control, #70523c); background: var(--hhc-primary-soft, #efe2ce); }
 .reader-back { display: inline-flex; align-items: center; margin-bottom: .75rem; }
+.reader-chrome { position: sticky; top: 0; z-index: 30; background: var(--hhc-surface); }
+.reader-topbar { display: flex; align-items: center; gap: .25rem; height: 56px; padding-inline: .25rem; border-bottom: 1px solid var(--hhc-control-border); }
+.reader-topbar h1 { flex: 1; min-width: 0; font-size: .95rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-inline: .25rem .75rem; }
+.weekly-reader .reader-topbar :is(button, a) { flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: .5rem; border: 0; border-radius: .4rem; color: inherit; background: transparent; }
+.reader-topbar :is(button, a):hover { background: var(--hhc-surface-raised); }
+.reader-quick-pages { display: flex; align-items: center; font-size: .85rem; font-variant-numeric: tabular-nums; }
+.reader-source-label { margin-inline-end: .35rem; }
+.reader-navigation-panel { position: absolute; top: 56px; right: 0; width: min(380px, calc(100vw - 2rem)); max-height: calc(100dvh - 80px); overflow: auto; padding: 1rem; background: var(--hhc-surface); box-shadow: 0 8px 24px #0002; }
+.reader-navigation-panel > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .75rem; }
+.reader-navigation-panel > header h2 { font-size: 1rem; font-weight: 600; }
+.reader-navigation-panel .reader-search > summary { display: none; }
+.reader-navigation-panel .reader-thumbnails { display: grid; grid-template-columns: repeat(2, 1fr); max-height: none; }
+.reader-navigation-panel .reader-zoom-controls { margin-bottom: 1rem; }
+.reader-navigation-panel .reader-offline-control { display: grid; margin-top: 1rem; }
+.reader-navigation-panel .reader-page-controls { font-size: .85rem; }
+.reader-navigation-panel .reader-page-controls input { width: 4rem; }
+.reader-viewport [data-sentence-id], .reader-viewport [data-component-id] { scroll-margin-top: 72px; }
 .reader-status { max-width: 36rem; margin: 4rem auto; padding: 2rem; text-align: center; }
 .reader-status h1, .reader-heading h1 { font-size: 1.4rem; font-weight: 700; }
 .reader-status p { margin: 1rem 0; }
@@ -13,7 +30,7 @@
 .reader-toolbar, .reader-page-controls { max-width: 75rem; margin: .5rem auto; }
 .reader-page-controls input { width: 5rem; }
 .reader-sections nav { display: flex; flex-wrap: wrap; gap: .5rem; padding: .5rem 0; }
-.reader-viewport { overflow: auto; height: 72dvh; min-height: 20rem; padding: 1rem; background: var(--hhc-surface-raised); border-radius: .75rem; overscroll-behavior: contain; touch-action: auto; }
+.reader-viewport { overflow: auto; height: calc(100dvh - 100px); min-height: 20rem; padding: 1rem; background: var(--hhc-surface-raised); border-radius: .75rem; overscroll-behavior: contain; touch-action: auto; }
 /* Paper clipping containers must share the reader's pan/pinch arbitration. */
 .reader-viewport :where(*) { touch-action: inherit; }
 .reader-scaled-page { position: relative; margin-inline: auto; box-shadow: 0 3px 18px #0002; }
@@ -55,6 +72,10 @@
 .hhc-modal:has(.reader-private-sheet) .hhc-dialog__body { padding: 1rem; }
 .hhc-modal:has(.reader-private-sheet) .hhc-dialog__close { min-width: 44px; min-height: 44px; }
 @media (max-width: 767px) {
+  .reader-topbar { height: 52px; gap: 0; padding: 0; }
+  .reader-topbar h1 { margin-inline: 0 .25rem; font-size: .8rem; }
+  .reader-source-label { display: none; }
+  .reader-navigation-panel { top: 52px; width: min(380px, calc(100vw - 1.5rem)); }
   .hhc-modal-overlay:has(.reader-private-sheet) { align-items: end; padding: 0; }
   .hhc-modal--drawer-right:has(.reader-private-sheet) { inset: auto 0 0; width: 100%; max-width: 100%; height: auto; max-height: 90dvh; border-radius: 1rem 1rem 0 0; padding-bottom: env(safe-area-inset-bottom); }
 }

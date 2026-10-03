@@ -1,5 +1,8 @@
 {
   "weeklyReader": {
+    "printedPage": "紙面のページ番号：{page}",
+    "more": "その他の設定",
+    "sourcePage": "原稿ページ",
     "confirmRetry": "確認して再試行",
     "confirmRetryHelp": "操作の完了を確認できませんでした。ログイン後、元の操作を再試行してください。重複して作成されません。",
     "reviewSync": "同期を確認",

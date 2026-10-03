@@ -3,12 +3,12 @@ import type {MemberOnlineDocument} from '@hallelujahhomechurch/hhc-web-client';
 import {searchSentences} from '@/features/weekly-reader/search';
 import type {ReaderMessages} from './ReaderToolbar';
 
-export function ReaderSearch({document, onJump, messages: m}: {document: MemberOnlineDocument; onJump: (sentenceId: string) => void; messages: ReaderMessages}) {
+export function ReaderSearch({document, onJump, messages: m, expanded = false}: {document: MemberOnlineDocument; onJump: (sentenceId: string) => void; messages: ReaderMessages; expanded?: boolean}) {
   const [query, setQuery] = useState('');
   const [index, setIndex] = useState(0);
   const results = useMemo(() => searchSentences(document.content, query, document.canonicalMetadata), [document, query]);
   function jump(next: number) {const result = results[next]; if (result) {setIndex(next); onJump(result.sentenceId);}}
-  return <details className="reader-search"><summary>{m.search}</summary>
+  return <details className="reader-search" open={expanded}><summary>{m.search}</summary>
     <form role="search" aria-label={m.search} onSubmit={event => {event.preventDefault(); jump(index);}}>
       <label className="sr-only" htmlFor="reader-search-query">{m.search}</label>
       <input id="reader-search-query" type="search" maxLength={256} autoComplete="off" value={query} onChange={event => {setQuery(event.target.value); setIndex(0);}}/>

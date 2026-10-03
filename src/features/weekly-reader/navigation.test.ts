@@ -1,7 +1,23 @@
 import {describe, expect, it} from 'vitest';
-import {pageScale, swipeDirection, keyboardPageDelta, centeredBodyOffset} from './navigation';
+import {pageScale, swipeDirection, keyboardPageDelta, centeredBodyOffset, sourcePageStart, sourcePageForSentence} from './navigation';
 import {readerFixture} from './test-fixture';
 describe('reader navigation', () => {
+  it('tracks the visible source fragment rather than the first page containing its sentence', () => {
+    const doc = readerFixture().document.content;
+    doc.layoutManifest.pages[0].slots[0].fragments = [{sentenceId: 's0', start: 0, end: 2}];
+    doc.layoutManifest.pages[1].slots[0].fragments = [{sentenceId: 's0', start: 2, end: 4}];
+    const root = document.createElement('div');
+    root.innerHTML = '<span data-sentence-id="s0" data-fragment-start="0" data-fragment-end="4">內容0。</span>';
+    const original = Range.prototype.getClientRects;
+    Range.prototype.getClientRects = function () {return [{top: this.startOffset === 0 ? -100 : 100, bottom: this.startOffset === 0 ? -20 : 130}] as unknown as DOMRectList;};
+    try {expect(sourcePageForSentence(root, doc, 's0', 72, 600)).toBe(1);} finally {Range.prototype.getClientRects = original;}
+  });
+  it('uses the exact first source fragment, including a sentence continuing on the next page', () => {
+    const doc = readerFixture().document.content;
+    doc.layoutManifest.pages[2].slots[0].fragments = [{sentenceId: 's1', start: 8, end: 12}];
+    expect(sourcePageStart(doc, 2)).toEqual({sentenceId: 's1', start: 8, end: 9});
+    expect(sourcePageStart(doc, 90)).toBeUndefined();
+  });
   it('centers body text using translation only, without changing widths, fragments or pages', () => {
     const document = readerFixture().document.content;
     expect(centeredBodyOffset(document, 'p0')).toBe(0);

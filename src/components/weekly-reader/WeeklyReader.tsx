@@ -1,19 +1,21 @@
 'use client';
 
-import {useCallback, useEffect, useMemo, useRef, useState, type CSSProperties} from 'react';
+import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode} from 'react';
+import {ArrowLeft, Search, StickyNote, Ellipsis, X} from 'lucide-react';
 import {BulletinDocumentRenderer, ReaderWatermark} from '@hallelujahhomechurch/ui';
 import type {OnlineBulletinAccess, BulletinReaderMutation, BulletinReaderNote} from '@hallelujahhomechurch/hhc-web-client';
 import type {BulletinLocale, BulletinSeries} from '@hallelujahhomechurch/preferences';
 import {useAccountAuth, useAccountIdentity, useAccountSignIn, useBulletinAccess, useBulletinAuthorization} from '@/components/layout/AccountControl';
 import {createReaderApi, verifyReaderAccess, type ReaderSelector} from '@/features/weekly-reader/api';
-import {centeredBodyOffset, keyboardPageDelta, pageScale, swipeDirection, type ReaderZoom} from '@/features/weekly-reader/navigation';
+import {centeredBodyOffset, keyboardPageDelta, pageScale, sourcePageStart, sourcePageForSentence, swipeDirection, type ReaderZoom} from '@/features/weekly-reader/navigation';
+import {fitPaperLines} from '@/features/weekly-reader/paper-lines';
 import {isWeeklyReaderEnabled} from '@/features/weekly-reader/enabled';
 import {getOfflineIdentity, supportsOfflineReader} from '@/features/weekly-reader/offline-store';
 import {watchOfflineAccount} from '@/features/weekly-reader/offline-session';
 import {useReaderSession} from '@/features/weekly-reader/useReaderSession';
 import {usePrivateReader} from '@/features/weekly-reader/usePrivateReader';
 import {readerSentences} from '@/features/weekly-reader/selection';
-import {rangeQuote, type ReaderTextRange} from '@/features/weekly-reader/text-range';
+import {rangeQuote, renderedTextRanges, type ReaderTextRange} from '@/features/weekly-reader/text-range';
 import {selectedHighlight} from '@/features/weekly-reader/highlight-selection';
 import {useTextSelection} from '@/features/weekly-reader/useTextSelection';
 import {copySentences, copyTextRanges} from '@/features/weekly-reader/copy';
@@ -56,7 +58,7 @@ export function WeeklyReader(props: Props) {
   const savedAccount = enabled ? accountId ?? offlineAccount : null;
   const permitted = enabled && accountId && access.status === 'available' && access.editions.some(edition => edition.series === props.series && edition.locale === props.contentLocale);
   return <main className="weekly-reader">
-    <a className="reader-back" href={`/${props.locale}/literature-ministry`}>{m.back}</a>
+    {!permitted && !(savedAccount && offlineAccount === savedAccount) ? <a className="reader-back" href={`/${props.locale}/literature-ministry`}>{m.back}</a> : null}
     {permitted || savedAccount && offlineAccount === savedAccount ? <AuthorizedReader key={`${savedAccount}:${props.issueNumber}:${props.series}:${props.contentLocale}`} {...props} accountId={savedAccount!}/> :
       <section className="reader-status" role="status"><h1>{m.title}</h1><p>{!enabled ? m.unavailable : auth.status === 'anonymous' ? m.signInRequired : auth.status === 'checking' || access.status === 'loading' ? m.loading : m.unavailable}</p>{enabled && auth.status === 'anonymous' ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}</section>}
   </main>;
@@ -76,13 +78,12 @@ function AuthorizedReader(props: Props & {accountId: string}) {
     <div hidden={session.validating} inert={session.validating} onClickCapture={guard} onKeyDownCapture={guard} onPointerDownCapture={guard} onCopyCapture={guard}>
     {session.offline ? <p role="status">{m.offlineNotice}</p> : null}
     {session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}
-    <OfflineControl api={api} value={session.value} selector={selector} locale={props.locale} messages={m} onSaved={session.acceptSaved} onFailure={session.privateFailure}/>
-    <ReaderDocument key={`${session.value.document.documentId}:${session.value.document.revision}`} value={session.value} selector={selector} messages={m} api={api} offline={session.offline} allowAction={session.allowAction} onFailure={session.privateFailure} onUpdated={session.acceptSaved} suspended={!!session.validating}/>
+    <ReaderDocument key={`${session.value.document.documentId}:${session.value.document.revision}`} value={session.value} selector={selector} messages={m} api={api} offline={session.offline} allowAction={session.allowAction} onFailure={session.privateFailure} onUpdated={session.acceptSaved} suspended={!!session.validating} backHref={`/${props.locale}/literature-ministry`} offlineControl={<OfflineControl api={api} value={session.value} selector={selector} locale={props.locale} messages={m} onSaved={session.acceptSaved} onFailure={session.privateFailure}/>}/>
   </div></>;
   return <section className="reader-status" role={session.error ? 'alert' : 'status'}><h1>{m.title}</h1><p>{session.error ? m[session.error] : m.loading}</p>{session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}{session.error ? <button type="button" onClick={session.retry}>{m.retry}</button> : null}</section>;
 }
 
-function ReaderDocument({value, selector, messages: m, api, offline, allowAction, onFailure, onUpdated, suspended}: {value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages; api: ReturnType<typeof createReaderApi>; offline: boolean; allowAction: () => boolean; onFailure: (error: unknown) => void; onUpdated: (value: OnlineBulletinAccess) => void; suspended: boolean}) {
+function ReaderDocument({value, selector, messages: m, api, offline, allowAction, onFailure, onUpdated, suspended, backHref, offlineControl}: {value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages; api: ReturnType<typeof createReaderApi>; offline: boolean; allowAction: () => boolean; onFailure: (error: unknown) => void; onUpdated: (value: OnlineBulletinAccess) => void; suspended: boolean; backHref: string; offlineControl: ReactNode}) {
   const [returned] = useState(() => readReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}));
   const document = useMemo(() => verifyReaderAccess(value, selector), [value, selector]);
   const privateReader = usePrivateReader({api, selector, value, offline, allowAction, onFailure});
@@ -170,6 +171,23 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const [page, setPage] = useState(0);
   const [zoom, setZoom] = useState<ReaderZoom>('page');
   const [mobile, setMobile] = useState(false);
+  const [panel, setPanel] = useState<'pages' | 'search' | 'more' | null>(null);
+  const chromeRef = useRef<HTMLDivElement>(null);
+  const panelTrigger = useRef<HTMLElement | null>(null);
+  const [sourceJump, setSourceJump] = useState<{page: number} | null>(null);
+  const previousMobile = useRef(false);
+  function openPanel(next: 'pages' | 'search' | 'more', trigger: HTMLElement) {
+    if (notes && !closeNotes()) return;
+    clearSelection(); panelTrigger.current = trigger; setPanel(current => current === next ? null : next);
+  }
+  function closePanel() {setPanel(null); panelTrigger.current?.focus();}
+  useEffect(() => {
+    if (!panel) return;
+    chromeRef.current?.querySelector<HTMLElement>(panel === 'search' ? '.reader-search input' : '.reader-navigation-panel > header button')?.focus();
+    const dismiss = (event: PointerEvent) => {if (event.target instanceof Node && !chromeRef.current?.contains(event.target)) setPanel(null);};
+    globalThis.document.addEventListener('pointerdown', dismiss);
+    return () => globalThis.document.removeEventListener('pointerdown', dismiss);
+  }, [panel]);
   const [showProductionDetails, setShowProductionDetails] = useState(false);
   const productionSentenceIds = useMemo(() => new Set(document.components.flatMap(component => {
     const header = component.type === 'bodySection' ? component.bodySection.header : undefined;
@@ -185,6 +203,11 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const gesture = useRef<{x: number; y: number; multiplePointers: boolean} | null>(null);
   const pointers = useRef(new Set<number>());
   const active = document.pages[page];
+  useLayoutEffect(() => {
+    if (mobile || !fontsReady || !paperRef.current) return;
+    const credits = new Map(document.components.flatMap(component => component.type === 'bodySection' ? component.bodySection.header?.contributors.map(credit => [credit.name.id, {speaker: 'bodySpeakerLabel', transcriber: 'transcriberLabel', editor: 'editorLabel'}[credit.role]] as const) ?? [] : []));
+    return fitPaperLines(paperRef.current, credits);
+  }, [document, active.id, mobile, fontsReady, viewport.width, viewport.height, zoom, hasNotes]);
   useEffect(() => {
     saveReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}, {
       revision: value.document.revision, pageId: active.id, selected, selectedRanges: selection.ranges,
@@ -204,6 +227,11 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     try {sessionStorage.removeItem(`${storageKey}:anchor`);} catch { /* Optional restoration. */ }
     const target = Math.max(0, Math.min(document.pages.length - 1, Math.floor(next)));
     setPage(target);
+    if (mobile) {
+      setSourceJump({page: target});
+      const first = sourcePageStart(value.document.content, target);
+      if (first && productionSentenceIds.has(first.sentenceId)) setShowProductionDetails(true);
+    }
     if (record) progress.record(document.pages[target].id);
     return true;
   };
@@ -238,6 +266,10 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     return () => {query.removeEventListener('change', changed); observer?.disconnect();};
   }, [hasNotes]);
   useEffect(() => {
+    if (mobile && !previousMobile.current && page > 0) setSourceJump({page});
+    previousMobile.current = mobile;
+  }, [mobile, page]);
+  useEffect(() => {
     if (offerResume) return;
     try {sessionStorage.setItem(storageKey, active.id);} catch { /* Reading remains available without storage. */ }
     if (!mobile && viewportRef.current) {viewportRef.current.scrollTop = 0; viewportRef.current.scrollLeft = 0;}
@@ -248,6 +280,19 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       pendingAnchor.current = null;
     }
   }, [active.id, mobile, storageKey, fontsReady, offerResume, showProductionDetails]);
+  useEffect(() => {
+    if (!mobile || !fontsReady || !sourceJump) return;
+    const target = sourceJump.page;
+    const first = sourcePageStart(value.document.content, target);
+    const frame = requestAnimationFrame(() => {
+      if (!paperRef.current) return;
+      setSourceJump(null);
+      if (target === 0) {paperRef.current.scrollIntoView({block: 'start'}); return;}
+      const rect = first && renderedTextRanges(paperRef.current, first)[0]?.getBoundingClientRect();
+      if (rect) window.scrollBy({top: rect.top - 72, behavior: 'instant'});
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [sourceJump, mobile, fontsReady, showProductionDetails, value.document.content]);
   useEffect(() => {
     if (!mobile || !fontsReady || notes) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -260,7 +305,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       });
       const id = sentence?.dataset.sentenceId;
       if (!id) return;
-      const index = value.document.content.layoutManifest.pages.findIndex(layout => layout.fixedSlots?.some(slot => `canonical-${slot.element}` === id) || layout.slots.some(slot => slot.fragments.some(fragment => fragment.sentenceId === id)));
+      const index = sourcePageForSentence(viewportRef.current!, value.document.content, id, 80, window.innerHeight);
       if (index < 0) return;
       setResumePending(false); setResumeDismissed(true); setPage(index);
       try {sessionStorage.setItem(`${storageKey}:anchor`, JSON.stringify({kind: 'sentence', id}));} catch { /* Optional restoration. */ }
@@ -280,6 +325,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     const index = document.pages.findIndex(page => page.id === layout?.pageId);
     if (index < 0) return;
     if (!onPage(index)) return;
+    setSourceJump(null);
     if (anchor.kind === 'sentence' && productionSentenceIds.has(anchor.id)) setShowProductionDetails(true);
     if (anchor.kind === 'sentence') progress.record(document.pages[index].id, anchor.id);
     pendingAnchor.current = anchor;
@@ -290,19 +336,35 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     }
   }
   return <section ref={documentRef} className="reader-document" data-notes-panel={notes && wideNotes || undefined} aria-label={m.title} role="region" onKeyDown={event => {
+    if (event.key === 'Escape' && panel) {event.preventDefault(); closePanel(); return;}
     if (event.key === 'Escape' && !notes) {clearSelection(); return;}
     const delta = keyboardPageDelta(event, !!window.getSelection()?.toString());
     if (!mobile && delta) {event.preventDefault(); onPage(page + delta);}
   }}>
-    <header className="reader-heading"><h1 lang={value.document.contentLocale}>{value.document.canonicalMetadata.title}</h1>{value.document.canonicalMetadata.subtitle ? <p lang={value.document.contentLocale}>{value.document.canonicalMetadata.subtitle}</p> : null}{value.document.metadataSyncPending ? <p role="status">{m.metadataPending}</p> : null}</header>
+    <div ref={chromeRef} className="reader-chrome">
+      <header className="reader-topbar">
+        <a href={backHref} aria-label={m.back} title={m.back} onClick={event => {if (notes && !closeNotes()) event.preventDefault();}}><ArrowLeft size={20} aria-hidden="true"/></a>
+        <h1 lang={value.document.contentLocale} title={value.document.canonicalMetadata.title}>{value.document.canonicalMetadata.title}</h1>
+        <PageNavigator document={document} metadata={value.document.canonicalMetadata} page={page} onPage={onPage} messages={m} compact mobile={mobile} onOpen={() => {const trigger = globalThis.document.activeElement; if (trigger instanceof HTMLElement) openPanel('pages', trigger);}}/>
+        <button type="button" aria-label={m.search} title={m.search} aria-expanded={panel === 'search'} onClick={event => openPanel('search', event.currentTarget)}><Search size={20} aria-hidden="true"/></button>
+        <button ref={notesButton} type="button" aria-label={m.myNotes} title={m.myNotes} disabled={!privateReader.state} onClick={() => {setPanel(null); openNotesList(null);}}><StickyNote size={20} aria-hidden="true"/></button>
+        <button type="button" aria-label={m.more} title={m.more} aria-expanded={panel === 'more'} onClick={event => openPanel('more', event.currentTarget)}><Ellipsis size={20} aria-hidden="true"/></button>
+      </header>
+      <aside className="reader-navigation-panel" hidden={!panel} aria-label={panel === 'pages' ? m.sourcePage : panel === 'search' ? m.search : m.more}>
+        <header><h2>{panel === 'pages' ? m.sourcePage : panel === 'search' ? m.search : m.more}</h2><button type="button" aria-label={m.close} onClick={closePanel}><X size={20} aria-hidden="true"/></button></header>
+        {panel === 'pages' ? <><PageNavigator document={document} metadata={value.document.canonicalMetadata} page={page} onPage={onPage} messages={m}/><SectionNavigator document={document} onSection={id => {onAnchor({kind: 'component', id}); setPanel(null);}} messages={m}/></> : null}
+        <div hidden={panel !== 'search'}><ReaderSearch document={value.document} onJump={id => onAnchor({kind: 'sentence', id})} messages={m} expanded/></div>
+        <div hidden={panel !== 'more'}>{!mobile ? <ReaderToolbar messages={m} zoom={zoom} setZoom={setZoom}/> : null}{mobile && productionSentenceIds.size > 0 ? <button type="button" aria-expanded={showProductionDetails} onClick={() => {if (notes && !closeNotes()) return; clearSelection(); setShowProductionDetails(value => !value);}}>{m.productionDetails}</button> : null}{offlineControl}<SyncStatus status={privateReader.status} messages={m}/></div>
+      </aside>
+    </div>
+    {value.document.metadataSyncPending ? <p role="status">{m.metadataPending}</p> : null}
     {offerResume ? <ResumeReadingPrompt messages={m} onContinue={() => {
       if (restoredAnchor || restoredPage > 0) {onPage(restoredPage); if (restoredAnchor) onAnchor(restoredAnchor);}
       else if (cloudProgress?.sentenceId) onAnchor({kind: 'sentence', id: cloudProgress.sentenceId});
       else if (cloudProgress?.componentId) onAnchor({kind: 'component', id: cloudProgress.componentId});
       else onPage(Math.max(0, document.pages.findIndex(page => page.id === cloudProgress?.pageId)));
     }} onStartOver={() => {if (onPage(0, false)) void progress.reset().catch(() => setNotice(m.actionFailed));}}/> : null}
-    <div className="reader-toolbar">{!mobile ? <ReaderToolbar messages={m} zoom={zoom} setZoom={setZoom}/> : null}<SectionNavigator document={document} onSection={id => onAnchor({kind: 'component', id})} messages={m}/><ReaderSearch document={value.document} onJump={id => onAnchor({kind: 'sentence', id})} messages={m}/><button ref={notesButton} type="button" disabled={!privateReader.state} onClick={() => openNotesList(null)}>{m.myNotes}</button></div>
-    <SyncStatus status={privateReader.status} messages={m}/>
+    {privateReader.status !== 'synced' && panel !== 'more' ? <SyncStatus status={privateReader.status} messages={m}/> : null}
     {privateReader.status === 'paused' || privateReader.status === 'action' || privateReader.pendingMutation ? <ReaderRecovery api={api} value={value} selector={selector} messages={m} onUpdated={onUpdated} onFailure={onFailure} suspended={suspended} pendingMutation={privateReader.pendingMutation} onPendingChange={mutation => {
       const previous = privateReader.pendingMutation;
       privateReader.replacePending(mutation);
@@ -318,8 +380,6 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       }
     }).catch(() => setNotice(m.actionFailed));
     }}>{m.confirmRetry}</button></> : null}
-    {mobile && productionSentenceIds.size > 0 ? <div className="reader-toolbar"><button type="button" aria-expanded={showProductionDetails} onClick={() => {if (notes && !closeNotes()) return; clearSelection(); setShowProductionDetails(value => !value);}}>{m.productionDetails}</button></div> : null}
-    {!mobile ? <PageNavigator document={document} metadata={value.document.canonicalMetadata} page={page} onPage={onPage} messages={m}/> : null}
     <div ref={viewportRef} className="reader-viewport" data-mobile={mobile || undefined} style={{touchAction: mobile || zoomed ? 'auto' : 'pan-y pinch-zoom'}} tabIndex={0} onPointerDown={event => {
       if (event.pointerType !== 'touch') return;
       pointers.current.add(event.pointerId);

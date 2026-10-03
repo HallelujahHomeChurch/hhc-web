@@ -1,5 +1,8 @@
 {
   "weeklyReader": {
+    "printedPage": "印刷頁碼：第 {page} 頁",
+    "more": "更多選項",
+    "sourcePage": "原稿頁碼",
     "confirmRetry": "確認並重試",
     "confirmRetryHelp": "這筆操作尚未確認完成。登入後請確認重試原操作，不會重複建立。",
     "reviewSync": "檢查同步",

@@ -1,4 +1,29 @@
 import type {MemberOnlineDocument} from '@hallelujahhomechurch/hhc-web-client';
+import {renderedTextRanges} from './text-range';
+
+export function sourcePageForSentence(root: HTMLElement, document: MemberOnlineDocument['content'], sentenceId: string, top: number, bottom: number) {
+  let result = -1, firstVisibleTop = Infinity;
+  document.layoutManifest.pages.forEach((page, index) => {
+    if (page.fixedSlots?.some(slot => `canonical-${slot.element}` === sentenceId)) result = index;
+    for (const fragment of page.slots.flatMap(slot => slot.fragments)) {
+      if (fragment.sentenceId !== sentenceId) continue;
+      for (const range of renderedTextRanges(root, fragment)) {
+        if (typeof range.getClientRects !== 'function') {if (result < 0) result = index; continue;}
+        const rect = Array.from(range.getClientRects()).find(rect => rect.bottom > top && rect.top < bottom);
+        // A source page break may share a mobile line with the previous page.
+        if (rect && rect.top <= firstVisibleTop) {result = index; firstVisibleTop = rect.top;}
+      }
+    }
+  });
+  return result;
+}
+
+/** A page can begin midway through a sentence; keep its scalar offset. */
+export function sourcePageStart(document: MemberOnlineDocument['content'], index: number) {
+  const page = document.layoutManifest.pages.find(layout => layout.pageId === document.pages[index]?.id);
+  const first = page?.slots.slice().sort((a, b) => a.box.y - b.box.y || a.box.x - b.box.x).flatMap(slot => slot.fragments)[0];
+  return first ? {sentenceId: first.sentenceId, start: first.start, end: first.start + 1} : undefined;
+}
 
 /** Translate the existing body column; never resize text or move it to another page. */
 export function centeredBodyOffset(document: MemberOnlineDocument['content'], pageId: string) {
