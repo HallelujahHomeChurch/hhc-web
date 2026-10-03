@@ -54,7 +54,8 @@ Neither the local foundation nor a read-only bank query is delivery 1A acceptanc
   `donation-api--0000001` has exact nine references and the unchanged image,
   Dapr health 200, disabled readiness 503; public exact Admin checkout 503.
   Central Audit `audit-log--0000002` is healthy at its unchanged digest. Its
-  direct readiness smoke is pending Azure exec throttling recovery; alert
+  direct Dapr readiness smoke subsequently returned 200 after Azure exec
+  throttling recovered; alert
   configuration is not proof of notification delivery or financial Audit dispatch.
 - Subsequent activation slice `a515666` changes only Donation's Sandbox flag and
   readiness plus Gateway's existing `DONATION_SANDBOX_ROUTES_ENABLED` gate.
@@ -63,10 +64,91 @@ Neither the local foundation nor a read-only bank query is delivery 1A acceptanc
   and unsafe-plan mutation tests pass. Gateway Terraform preview is never
   applied because its existing local Bible secret must be preserved by the
   same-image healthy-revision CLI copy; Admin stays disabled until service,
-  Gateway smoke and full-root no-change convergence pass. CI/review pending.
-- Next: reviewed merged-main Sandbox-only enablement, then normal Admin main
-  release and authenticated hosted card-entry smoke.
-  No bank order, card entry or financial outcome has been attempted.
+  Gateway smoke and full-root no-change convergence pass. Review identified a
+  legacy Audit-bootstrap guard allowing an accompanying Audit env value delta;
+  synthetic regression failed, then passed after full non-Donation env equality
+  for the activation shape. Final head `4390cc2`, CI `37099792171` succeeded;
+  PR113 merged `4b7d36d`. Fresh merged-main full-root plan remains exactly two
+  updates. A transient backend connection reset left this task's exact state
+  lease held after planning; no apply had occurred. Native lease release uses
+  only the recorded matching lease ID, never break-lease or `-lock=false`.
+- Donation-only merged-main saved plan applied exactly one update, no creates
+  or deletes. Live `donation-api--0000002` is Healthy/Provisioned/Running, 100%
+  traffic at the unchanged digest, with Sandbox=true and DB readiness `/readyz`.
+  Private Dapr readiness returns 200. The two task-created disabled, zero-traffic
+  predecessors were deactivated, not deleted; rollback remains recoverable and
+  only the active revision consumes the min-replica allocation. Gateway's native
+  same-image revision copy created `api-gateway--donation-sbx-20261003054327`:
+  Healthy/Provisioned/Running, latest=ready, 100% traffic, unchanged digest and
+  exact three-secret inventory. No Gateway Terraform apply was performed.
+  Full-root enabled convergence reports `No changes`. Public checks: forged/
+  unauthenticated Admin checkout 401 JSON, malformed callback 400 JSON, invalid
+  form return 303 to the fixed result URL without a reference, production 404.
+- Full Gateway runtime smoke exposed an existing compatibility defect: its
+  DSR capability assertion required `{"enabled":boolean}` with no extra fields,
+  but the current released Account API correctly also returns
+  `encrypted_delivery`. The exact live smoke exits 1 at that assertion, not a
+  Donation route. Admin remains disabled; no financial acceptance is claimed.
+  Focused Gateway fix keeps the boolean validation while allowing the additional
+  object field; the expanded actual-shape response fixture reproduces RED and
+  passes GREEN after the fix. The release-policy literal assertion was
+  synchronized without removal/bypass. Final head `99e0fb8` passed local exact
+  policy/rollback/Go tests and rebuilt-image routing/maintenance/inactive smoke.
+  Independent review found no Critical/Important and passed nine regex cases.
+  CI `37101586475` succeeded; Gateway PR147 merged `c7f64e7`, normal main release
+  `37101885436` pending. Release and full live smoke exit 0 remain required
+  before the Admin build flag is enabled.
+  Existing release prerequisite variables were refreshed to the verified current
+  Gateway rollback revision/digest and central production Audit revision/digest;
+  token reference names and test Audit revision/digest are unchanged. No guard
+  was disabled. Test Audit remains private/healthy at `audit-log-test--0000001`.
+  Automatic release `37101885436` had already captured the old repository
+  prerequisite values and failed before image build/deployment. Logs confirmed
+  the stale snapshot; current verified metadata is correct. A fresh standard
+  workflow dispatch on the same merged main commit is used, not a bypass or
+  local deployment. The prior healthy runtime remains unchanged.
+- Fresh Gateway main release `37102089466` succeeded, including image/security,
+  routing, deployed-route and OpenAPI publication gates. Live `api-gateway--0000188`
+  is Healthy/Running, 100% traffic at immutable digest
+  `sha256:274faf91328a17ccebeaa7398f2a8e39ce9600c7bdc7b99fe7ff3a96fd768a29`;
+  Sandbox gate=true and the exact three-secret inventory are preserved. Full
+  live runtime smoke prints `GATEWAY_SMOKE_OK` with explicit exit 0.
+  A concurrent Account crypto rollout caused the first subsequent full-root
+  comparison to show one Account update only; infra PR114 already records that
+  configuration. The isolated infra acceptance branch fast-forwards to current
+  main `2dc68bd` and regenerates convergence, without applying or reverting
+  unrelated Account settings. The fresh full-root plan completed successfully
+  with `No changes`.
+- Only Admin's `DONATION_SANDBOX_ENABLED=true` repository build flag was set.
+  Normal main release `37103108743` succeeded on unchanged merged commit
+  `47e6c227af235e4337701e814986e06fc351edda`: 81 files / 815 tests pass,
+  dependency scan, lint/build/policy, deployment and static-origin checks pass.
+  Authenticated live Admin shows the Sandbox banner, amount form and navigation.
+- One authorized TWD 1.00 checkout created order
+  `74af94b2-73ec-4f98-8cb1-a939c30e0df5`. The UI safely retains `create_unknown`
+  rather than presenting an unverified hosted link. No second order/create retry,
+  card typing, payment submission or financial fact occurred.
+  A bounded read-only query of this exact original bank OrderNo passed envelope
+  authentication/decryption and returned S0000 / one matching merchant, order,
+  amount and card type. It has a 14-character transaction ID and a 116-character
+  hosted URL. Only safe metadata was printed; no raw response/URL/token was saved.
+  The actual hosted origin is `https://sandbox.sinopac.com`, not the previously
+  mail-confirmed `https://funbiz.sinopac.com`. Backend/shared Admin allowlists reject
+  it; the agent requested confirmation before changing the bank-origin contract.
+- Live read-only EXPLAIN also identified SQLSTATE 42501 on the expiry cleanup's
+  return-reference row lock. Existing SELECT/INSERT/DELETE is insufficient for
+  FOR UPDATE SKIP LOCKED. Disposable PG17 reproduced the denial, then verified
+  that UPDATE on only `return_refs.expires_at` enables row locking without full
+  table UPDATE or hash/callback-ID updates. Guarded one-column grant applied in
+  the authorized Sandbox DB; live EXPLAIN now passes, all previous denied DDL/
+  history/fact mutation checks still pass. Background original-order reconciliation
+  now exists as pending with zero failed attempts; zero financial outcomes.
+  The task-owned disposable container was stopped/auto-removed; the throwaway
+  query harness was removed, retaining no bank response.
+- Next: obtain the Sandbox origin decision, align backend and shared Admin
+  allowlists via reviewed PRs/normal releases, then resume hosted card-entry smoke.
+  Hosted card input remains unaccepted. Production and full financial acceptance
+  remain closed; an API-created Sandbox order is not a successful payment.
 
 ## Earlier continuation — authorized setup, then pending DB credential (2026-10-03)
 
