@@ -93,6 +93,44 @@
 
 ## Execution decisions
 
+### Selected scripture font — 2026-10-03
+
+- User selected 全字庫正楷體 (TW-Kai). Scripture alone now uses the renamed
+  `HHC Weekly Scripture` regular face; body and emphasis assets are unchanged.
+  The same self-hosted WOFF2, CSS, asset manifest, cmap validation, renderer
+  checksum and offline mechanism remain in use. No CDN/package/extra loader.
+- Producer asset commit: `010f65d`; shared renderer commit: `0373cd1`.
+  New pre-release renderer digest:
+  `22f3015ecfdcf197690bb503e9467dc7515ddfd1bdb6af89ff19462a2211059f`.
+  V1 is absent from both inspected `origin/main` trees. Published V1 immutability
+  checks are unchanged. The old unreleased scripture asset is retained in Git
+  history and in the ignored comparison preview, not shipped in the new bundle.
+- Full base-plane cmap retained (39,203 entries), not a sample subset. Ext-B/Plus
+  are not included; unsupported glyphs still block validation. The scripture
+  WOFF2 is 14,982,568 bytes. Official copyright and complete OFL 1.1 are bundled.
+  First-load cost increases; fonts remain reader-only. Fetch tooling now uses
+  the same 15 MiB per-file ceiling as the producer validator.
+- New Linux renderer composed both reviewed fixtures: 1739 = 12 pages, 1740 =
+  16 pages, exact original sentence/page fragments preserved, zero overflow.
+  Each complete fixture plus assets stays below the existing 32 MiB offline cap
+  (25,115,075 / 25,172,988 bytes). No offline limit was relaxed.
+- Verification: producer checksum/license/immutability tests pass; shared 253
+  tests, lint/build/contracts and packed Vite/Next consumers pass. Local fixture
+  fetch validates all pinned bytes, including the larger font. The producer
+  commit must be pushed before remote fetch/CI can use its new immutable URL;
+  remote fetch/release has not been claimed.
+- Web build passes; lint has zero errors and the existing legal-navigation
+  warning. Full web run: 605 pass, one note-focus assertion failed; isolated
+  complete reader rerun passes 31/31. Admin full attempts encountered timeouts
+  and were stopped under high host load; the observed failed cases pass on
+  isolated rerun (12), bulletin tests pass (20), lint/build pass. This is not an
+  all-green full Admin suite; rerun full suites before any merge gate.
+- Browser: native next-page/fit-width actions worked. Desktop and 390px mobile
+  scripture resolves to the loaded custom `HHC Weekly Scripture` face; mobile
+  has no horizontal overflow. Screenshots were inspected. Desktop preview is
+  handed back at the Genesis passage on source page 2 of 1740. Device emulation
+  is not physical iOS/Android or offline/PWA acceptance. No merge/release.
+
 - User explicitly requested planning and starting implementation in one turn; proceed inline rather than adding another approval round for the already agreed direction.
 - Tasks 1/2 can land locally before the new mutation contract; do not activate partial selection until Tasks 3/4 are complete. Existing preview remains honestly read-only until Task 5.
 
