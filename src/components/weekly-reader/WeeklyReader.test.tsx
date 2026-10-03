@@ -12,7 +12,7 @@ vi.mock('@/components/layout/AccountControl', () => ({
   useBulletinAuthorization: () => authorization
 }));
 const authorization = {getAccessToken: async () => 'token', refreshAfterUnauthorized: async () => null};
-function selectText(element: Element, start?: number, end?: number) {
+function selectText(element: Element, start?: number, end?: number, finish = true) {
   fireEvent.pointerDown(element);
   const range = document.createRange();
   range.selectNodeContents(element);
@@ -23,6 +23,7 @@ function selectText(element: Element, start?: number, end?: number) {
   const selection = window.getSelection()!;
   selection.removeAllRanges(); selection.addRange(range);
   fireEvent(document, new Event('selectionchange'));
+  if (finish) fireEvent.pointerUp(element);
 }
 vi.mock('@/features/weekly-reader/api', async original => ({...await original<typeof import('@/features/weekly-reader/api')>(), createReaderApi: () => ({open: state.open, privateState: state.privateState, mutate: state.mutate})}));
 const props = {locale: 'en' as const, issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const, messages: getMessages('en').weeklyReader};
@@ -32,12 +33,25 @@ function choosePage(page: number) {
 }
 function chooseDirection(name: string) {
   fireEvent.click(screen.getByRole('button', {name: 'Reading direction'}));
-  fireEvent.click(screen.getByRole('button', {name}));
+  expect(document.querySelector('.reader-viewport')).toHaveAttribute('data-direction', name === 'Horizontal paging' ? 'horizontal' : 'vertical');
 }
 beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state.accountId = 'account-a'; state.status = 'authenticated'; state.open.mockReset().mockResolvedValue(readerFixture()); state.privateState.mockReset().mockResolvedValue({state: {accountId: 'account-a', documentId: readerFixture().document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: null, conflicts: []}}); state.mutate.mockReset(); sessionStorage.clear(); vi.stubGlobal('matchMedia', vi.fn(() => ({matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn()})));});
 afterEach(() => {cleanup(); Reflect.deleteProperty(document, 'fonts'); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs();});
 
 describe('protected weekly reader', () => {
+  it('shows annotation actions only after releasing the selection gesture', async () => {
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    const sentence = container.querySelector('[data-sentence-id="s0"]')!;
+    selectText(sentence, 0, 2, false);
+    expect(screen.queryByRole('button', {name: 'Yellow highlight'})).not.toBeInTheDocument();
+    fireEvent.pointerUp(sentence);
+    expect(screen.getByRole('button', {name: 'Yellow highlight'})).toBeInTheDocument();
+    selectText(sentence, 0, 3, false);
+    expect(screen.queryByRole('button', {name: 'Yellow highlight'})).not.toBeInTheDocument();
+    fireEvent.pointerUp(document.body);
+    expect(screen.getByRole('button', {name: 'Yellow highlight'})).toBeInTheDocument();
+  });
   it('keeps in-flight progress out of recovery chrome and opens thumbnails directly', async () => {
     state.mutate.mockReturnValue(new Promise(() => {}));
     const {container} = render(<WeeklyReader {...props}/>);

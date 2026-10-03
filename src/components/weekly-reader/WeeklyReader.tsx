@@ -2,7 +2,7 @@
 
 import {useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {Search, StickyNote, Download, Info, X, ChevronsUpDown, ChevronsLeftRight, ChevronLeft, ChevronRight, PanelLeft} from 'lucide-react';
-import {Button, BulletinDocumentRenderer, ReaderWatermark} from '@hallelujahhomechurch/ui';
+import {BulletinDocumentRenderer, ReaderWatermark} from '@hallelujahhomechurch/ui';
 import {ReaderIconButton as IconButton} from './ReaderIconButton';
 import type {OnlineBulletinAccess, BulletinReaderMutation, BulletinReaderNote} from '@hallelujahhomechurch/hhc-web-client';
 import type {BulletinLocale, BulletinSeries} from '@hallelujahhomechurch/preferences';
@@ -101,7 +101,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const [notes, setNotes] = useState<'list' | 'new' | BulletinReaderNote | null>(returned?.draft ? 'new' : null);
   const [noteFilter, setNoteFilter] = useState<string[] | null>(null);
   const paperRef = useRef<HTMLDivElement>(null);
-  const {selection, setSelection, clear: clearSelection, clearIf} = useTextSelection(paperRef, sentences, {
+  const {selection, selecting, setSelection, clear: clearSelection, clearIf} = useTextSelection(paperRef, sentences, {
     ids: returned?.revision === value.document.revision ? returned.selected.filter(id => sentences.some(sentence => sentence.id === id)) : [],
     ranges: returned?.revision === value.document.revision ? returned.selectedRanges : undefined
   }, !!notes || suspended);
@@ -179,7 +179,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   useEffect(() => {writePaperView(storageKey, {zoom, direction});}, [storageKey, zoom, direction]);
   const [paperJump, setPaperJump] = useState(0);
   const [mobile, setMobile] = useState(false);
-  const [panel, setPanel] = useState<'pages' | 'search' | 'offline' | 'direction' | 'sync' | null>(null);
+  const [panel, setPanel] = useState<'pages' | 'search' | 'offline' | 'sync' | null>(null);
   const chromeRef = useRef<HTMLDivElement>(null);
   const panelTrigger = useRef<HTMLElement | null>(null);
   const [sourceJump, setSourceJump] = useState<{page: number} | null>(null);
@@ -437,13 +437,12 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
         {mobile && productionSentenceIds.size > 0 ? <IconButton variant="ghost" aria-label={m.productionDetails} title={m.productionDetails} aria-expanded={showProductionDetails} onPress={() => {if (notes && !closeNotes()) return; clearSelection(); setShowProductionDetails(value => !value);}} icon={<Info size={20} aria-hidden="true"/>}/> : null}
         {!mobile ? <ReaderToolbar messages={m} zoom={zoom} setZoom={changeZoom}/> : null}
         {!mobile ? <div className="reader-direction-controls" role="group" aria-label={m.readingDirection}>
-          <IconButton variant="ghost" aria-label={m.readingDirection} title={`${m.readingDirection}: ${m[direction]}`} aria-expanded={panel === 'direction'} onPress={event => openPanel('direction', event.target)} icon={direction === 'vertical' ? <ChevronsUpDown size={20} aria-hidden="true"/> : <ChevronsLeftRight size={20} aria-hidden="true"/>}/>
+          <IconButton variant="ghost" aria-label={m.readingDirection} title={`${m[direction]} → ${m[direction === 'vertical' ? 'horizontal' : 'vertical']}`} aria-pressed={direction === 'horizontal'} onPress={() => {if (notes && !closeNotes()) return; clearSelection(); setPanel(null); setDirection(current => current === 'vertical' ? 'horizontal' : 'vertical');}} icon={direction === 'vertical' ? <ChevronsUpDown size={20} aria-hidden="true"/> : <ChevronsLeftRight size={20} aria-hidden="true"/>}/>
         </div> : null}
       </header>
-      <aside className="reader-navigation-panel" data-panel={panel} hidden={!panel} aria-label={panel === 'pages' ? m.thumbnails : panel === 'direction' ? m.readingDirection : panel === 'sync' ? m.syncStatus : panel === 'search' ? m.search : m.offlineContent}>
-        <header><h2>{panel === 'pages' ? m.thumbnails : panel === 'direction' ? m.readingDirection : panel === 'sync' ? m.syncStatus : panel === 'search' ? m.search : m.offlineContent}</h2><IconButton variant="ghost" aria-label={m.close} onPress={closePanel} icon={<X size={20} aria-hidden="true"/>}/></header>
+      <aside className="reader-navigation-panel" data-panel={panel} hidden={!panel} aria-label={panel === 'pages' ? m.thumbnails : panel === 'sync' ? m.syncStatus : panel === 'search' ? m.search : m.offlineContent}>
+        <header><h2>{panel === 'pages' ? m.thumbnails : panel === 'sync' ? m.syncStatus : panel === 'search' ? m.search : m.offlineContent}</h2><IconButton variant="ghost" aria-label={m.close} onPress={closePanel} icon={<X size={20} aria-hidden="true"/>}/></header>
         {panel === 'pages' ? <><PageNavigator document={document} metadata={value.document.canonicalMetadata} traceCode={value.access.traceCode} page={page} onPage={target => {if (onPage(target)) closePanel();}} messages={m}/><SectionNavigator document={document} onSection={id => {onAnchor({kind: 'component', id}); closePanel();}} messages={m}/></> : null}
-        {panel === 'direction' ? <div className="reader-direction-options">{(['vertical', 'horizontal'] as const).map(mode => <Button key={mode} aria-pressed={direction === mode} onPress={() => {setDirection(mode); closePanel();}}>{m[mode]}</Button>)}</div> : null}
         {panel === 'sync' ? <SyncStatus status={syncStatus} messages={m}/> : null}
         <div hidden={panel !== 'search'}><ReaderSearch document={value.document} onJump={id => onAnchor({kind: 'sentence', id})} messages={m} expanded/></div>
         <div hidden={panel !== 'offline'}>{offlineControl}</div>
@@ -490,7 +489,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     {!mobile && direction === 'horizontal' ? <>{page > 0 ? <div className="reader-edge reader-edge-previous"><IconButton variant="ghost" aria-label={m.previous} onPress={() => onPage(page - 1)} icon={<ChevronLeft aria-hidden="true"/>}/></div> : null}{page < document.pages.length - 1 ? <div className="reader-edge reader-edge-next"><IconButton variant="ghost" aria-label={m.next} onPress={() => onPage(page + 1)} icon={<ChevronRight aria-hidden="true"/>}/></div> : null}</> : null}
     </div>
     {notice ? <p role="status">{notice}</p> : null}
-    <SelectionToolbar messages={m} root={paperRef} ranges={selectionRanges} count={selectionRanges.reduce((count, range) => count + range.end - range.start, 0)} color={highlightSelection.color} clearable={highlightSelection.clearable} busy={privateReader.busy || !privateReader.state || privateReader.status === 'paused'} noteOpen={!!notes} noteButtonRef={noteButton}
+    <SelectionToolbar messages={m} root={paperRef} ranges={selectionRanges} count={selecting ? 0 : selectionRanges.reduce((count, range) => count + range.end - range.start, 0)} color={highlightSelection.color} clearable={highlightSelection.clearable} busy={privateReader.busy || !privateReader.state || privateReader.status === 'paused'} noteOpen={!!notes} noteButtonRef={noteButton}
       onColor={color => void action({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, kind: 'setHighlight', payload: {sentenceIds: selected, color, ...(selection.ranges ? {ranges: selection.ranges} : {})}})}
       onClear={() => void action({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, kind: 'clearHighlight', payload: {sentenceIds: selected, ...(selection.ranges ? {ranges: selection.ranges} : {})}})}
       onCopy={() => {const snapshot = selection; void (selection.ranges ? copyTextRanges(value.document, selection.ranges, allowAction) : copySentences(value.document, selected, allowAction)).then(() => {setNotice(m.copySuccess); clearIf(snapshot);}).catch(() => setNotice(m.copyFailed));}}

@@ -29,8 +29,6 @@
 .reader-source-label { margin-inline-end: .35rem; }
 .reader-navigation-panel { position: absolute; top: 100%; right: 0; width: min(380px, calc(100vw - 2rem)); max-height: calc(100dvh - 130px); overflow: auto; padding: 1rem; background: var(--hhc-surface); box-shadow: 0 8px 24px #0002; }
 .reader-navigation-panel[data-panel='pages'] { left: 0; right: auto; width: min(320px, calc(100vw - 2rem)); height: calc(100dvh - 140px); overscroll-behavior: contain; }
-.reader-navigation-panel[data-panel='direction'] { width: min(280px, calc(100vw - 2rem)); }
-.reader-direction-options { display: grid; gap: .5rem; }
 .reader-navigation-panel[hidden] { display: none; }
 .reader-navigation-panel > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .75rem; }
 .reader-navigation-panel > header h2 { font-size: 1rem; font-weight: 600; }
