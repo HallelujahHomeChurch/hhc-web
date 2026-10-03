@@ -209,7 +209,8 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       const header = component.type === 'bodySection' ? component.bodySection.header : undefined;
       return header ? [header.lectureDate.id, ...header.contributors.map(credit => credit.name.id)] : [];
     }));
-    return fitPaperLines(paperRef.current, headers);
+    const cover = document.components.find(component => component.type === 'cover')?.cover;
+    return fitPaperLines(paperRef.current, headers, cover ? {worship: cover.worship.flatMap(item => item.blocks.map(block => block.id)), work: cover.work.flatMap(item => item.blocks.map(block => block.id))} : undefined);
   }, [document, active.id, mobile, fontsReady, viewport.width, viewport.height, zoom, hasNotes]);
   useEffect(() => {
     saveReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}, {
