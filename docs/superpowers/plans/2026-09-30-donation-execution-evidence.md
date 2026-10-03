@@ -4,6 +4,84 @@ Date: 2026-09-30. Approved plan: `2026-09-30-donation-admin-sandbox-first.md`.
 Initial foundation date above; subsequent evidence is recorded by date below.
 Neither the local foundation nor a read-only bank query is delivery 1A acceptance.
 
+## Continuation — approved deployer apply and Sandbox CD (2026-10-03)
+
+- PR6 merged `5942173`; normal main release `37114325767` passed full verify,
+  artifact and publish, then safely diagnosed `runtime-check / authorization`.
+  New rollback succeeded: failed `release-37114325767-1` was deactivated;
+  original `0000002` remains Healthy/active/100. The historical first failed
+  candidate `release-37111894868-1` remains active/0 and is not silently accepted
+  as cleaned up. No Admin release, new order, card entry or charge occurred.
+- Live Azure role definition confirms Donation deployer's sole Container Apps
+  Contributor assignment has empty DataActions. Live provider operations mark
+  `Microsoft.App/containerApps/exec/action` as a DataAction; Microsoft's built-in
+  role documentation likewise separates this from Contributor and places it in
+  Operator, which also grants unnecessary logstream/debug. This corroborates the
+  classified CI authorization failure and explains why control-plane image
+  updates succeeded but exec did not. Proposed minimal follow-up is a dedicated
+  exec-only custom role plus Donation-app-only assignment to the same main-only
+  deployer (two creates, subject to actual full-root preview). RBAC cannot
+  constrain exec to one shell command, so it can read runtime secrets; this
+  security-sensitive authority requires explicit approval before implementation
+  and reviewed saved-plan apply. No permission expansion has occurred.
+- Permission evidence source:
+  https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/containers#container-apps-operator
+- Human approved the bounded rollback/diagnostics follow-up. New branch from
+  latest Donation/main `6751292` reuses the isolated task worktree. Real-script
+  regression observed RED: failed candidate stayed active when predecessor
+  activation returned already-active; guarded rollback passes. A fresh bounded
+  review identified unknown predecessor/candidate state lookup handling;
+  candidate regression was reproduced RED and fixed in one pass. Unknown
+  predecessor now emits a fixed diagnostic and preserves traffic; unknown
+  candidate triggers best-effort deactivation only after predecessor Healthy100
+  verification. Failed queries never disclose captured output.
+- Full disposable PostgreSQL serial race suite, vet/build, release-policy
+  guards, Docker/disabled-image smoke and Trivy configured HIGH/CRITICAL scope
+  pass. OpenAPI remains valid with five existing semantic warnings. PR6's exact
+  final head `f1d3383` CI `37114193558` succeeds; no required check bypass.
+  Fresh full-root post-candidate plan completes No changes (exit 0) after an
+  unrelated plan's lock was released; no force-unlock or extra apply.
+- Release `37111894868` completed with verify/artifact/publish successful but
+  deploy-sandbox failed before traffic cutover. Candidate
+  `donation-api--release-37111894868-1` is Healthy at digest
+  `099936b3f3c994071c8469d400e76ba1e25215967cd4e7cba285e2c5e2bd04a4`,
+  active with 0% traffic; predecessor `donation-api--0000002` remains Healthy,
+  active with 100% traffic. No Admin merge or new checkout was performed.
+- Rollback attempted to activate the already-active predecessor. Azure returned
+  `RevisionAlreadyInRequestedState`, aborting cleanup before candidate
+  deactivation. The original failing verification remains unclassified because
+  its captured output was deliberately not logged. Local read-only candidate
+  `/app/donation-api check` succeeds with `DONATION_RUNTIME_CHECK_OK`; comparison
+  against the pre-release full-root plan finds no protected snapshot differences.
+  These diagnostics do not prove the CI deployer's check succeeded. Next bounded
+  fix: idempotent rollback and safe stage/error-category diagnostics, with
+  regression tests and normal PR/CI/main release; do not bypass the check or
+  broaden identity permissions without separately reviewed evidence.
+- Human explicitly approved the three-create deployer apply plus subsequent
+  normal Sandbox/Admin releases and card-input-only acceptance. Latest merged
+  Infra main `9652263` includes the unrelated member-cohort lifecycle preservation;
+  a fresh full-root saved plan still contains exactly the approved identity,
+  main-only trust and single-app role assignment, with zero changes/deletes.
+  Its strict resource/subject/scope guard passed before applying the saved plan.
+- Apply succeeded: 3 added, 0 changed, 0 destroyed. Independent deployer client
+  `a3696099-20d4-430f-9a12-bbc064855e47`; principal
+  `c4ad3bf8-6c0b-4fc0-9455-18b7226dde00`. Live verification finds exactly one
+  immutable Donation/main OIDC credential and exactly one role assignment:
+  Container Apps Contributor on `donation-api` only. No RG/Gateway/migration/
+  ACR/Key Vault grant. The subsequent full-root detailed plan exits 0 / No changes.
+- Set only Donation's deployment client and enabled-Sandbox repo gate. Disabled
+  updater remains absent/off; publisher unchanged. Normal merged-main release
+  `37111894868` runs at `6751292`, with no local runtime deployment or migration.
+  Live candidate verification must still pass before releasing Admin PR172.
+- Original TWD1 intent's authenticated read-only bank query matches merchant,
+  original order, amount and card type; verified provider status `1C250` with
+  zero outcomes proves expired/unpaid. No duplicate create or financial effect.
+  One-time diagnostic initially failed before bank I/O because `go test` did not
+  forward secure stdin; the compiled test binary received credentials only in
+  memory and passed. Temporary source was removed; no raw response/token saved.
+  Retain the old order and recovery page; a separate Page in TaskSpace91 is used
+  for the next distinct controlled intent, without clearing browser storage.
+
 ## Continuation — verified hosted origin and protected Sandbox CD (2026-10-03)
 
 - Human approved the authenticated bank response's exact HTTPS origin
