@@ -11,9 +11,12 @@ export function NoteIndicators({root, notes, layoutKey, label, onOpen}: {
     if (!element) return;
     const measure = () => {
       const origin = element.getBoundingClientRect().top;
-      const anchors = new Map(Array.from(element.querySelectorAll<HTMLElement>('[data-sentence-id]')).map(sentence => [sentence.dataset.sentenceId!, sentence]));
+      const anchors = Array.from(element.querySelectorAll<HTMLElement>('[data-sentence-id]'));
       const positions = notes.filter(note => !note.deleted).flatMap(note => {
-        const anchor = note.sentenceIds.map(id => anchors.get(id)).find(Boolean);
+        const anchor = note.sentenceIds.flatMap(id => anchors.filter(element => element.dataset.sentenceId === id)).find(element => {
+          const range = note.ranges?.find(range => range.sentenceId === element.dataset.sentenceId);
+          return !range || Number(element.dataset.fragmentStart) < range.end && Number(element.dataset.fragmentEnd) > range.start;
+        });
         return anchor ? [{top: Math.max(0, anchor.getBoundingClientRect().top - origin), id: note.id}] : [];
       }).sort((a, b) => a.top - b.top);
       const grouped: {top: number; ids: string[]}[] = [];

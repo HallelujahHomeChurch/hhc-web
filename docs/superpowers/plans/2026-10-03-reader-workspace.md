@@ -106,4 +106,21 @@
 - Read hhc-web AGENTS/README and traced authorization, reader rendering, offline entry and progress lifecycles.
 - Existing untracked `.impeccable/` is preserved. No implementation files changed during planning.
 - Shared UI primitives already exist; no frontend-platform contract change is planned.
-- Plan reviewed against the approved desktop/tablet/mobile split. Awaiting plan review before execution per writing-plans handoff.
+- Plan reviewed against the approved desktop/tablet/mobile split and subsequently approved for implementation.
+
+## Execution evidence — 2026-10-04
+
+Implementation for Tasks 1–3 is complete locally. Task 1 was committed as `634d5d2`; Tasks 2–3 share paper geometry and are delivered together to keep the intermediate state coherent. The original step checkboxes above are the planned sequence, not a claim that every manual acceptance scenario has been exercised.
+
+- Added account-scoped identifier-only tabs, shared controls, continuous/horizontal paper views, numeric zoom and scoped gestures. Mobile keeps ebook reflow and native browser gestures. No renderer assets, fonts or API contracts changed.
+- Red/green regressions cover paper rendering, gesture focal compensation and resize, split-page note indicators, and flushing the visible position before Home/visibility changes. A fresh-context review found stale anchors, pending-scroll progress loss and resize resets; all three received fixes and regression tests.
+- `corepack pnpm test:run`: 111 files, 631 tests passed (exit 0).
+- `corepack pnpm exec tsc --noEmit`: exit 0.
+- `corepack pnpm lint`: exit 0; one existing warning in `LegalRequiredNavigation.tsx:17` (internal navigation), no errors.
+- `corepack pnpm build`: exit 0 after the review fixes.
+- Standard Docker build was attempted using the configured npm secret. It fails during frozen dependency installation because the existing local `file:../frontend-platform/artifacts/hallelujahhomechurch-account-client-1.0.32.tgz` dependency is outside the Docker context. This is an unresolved pre-merge packaging gate, not a successful container build; dependency/release configuration was not changed in this UI round.
+- Local production reader with simulated API fixtures: 1739 has 12 source pages; 1740 has 16 pages and 16 watermarks in continuous mode. Canonical tab switching restores the selected document's page/view. Horizontal view has one page and working hover navigation.
+- Browser modifier-wheel and emulated two-touch pinch changed paper zoom without changing `visualViewport.scale`; a selected range's saved highlight remained aligned within 2 px at 299% zoom. Mobile emulation at 390 px has no paper zoom controls or document horizontal overflow. Chrome measures 104 px desktop and 100 px mobile, in two permanent rows.
+- Final preview returned to 100% relative zoom and vertical continuous reading, with both sample tabs available. Screenshots: `/tmp/hhc-reader-workspace-final.png`, `/tmp/hhc-reader-workspace-mobile.png`, `/tmp/hhc-reader-workspace-ipad.png`.
+
+Outstanding acceptance gates: physical iOS/Android and Mac trackpad behavior, real member authorization/offline lifecycle, complete manual note editing/dirty-note scenarios, and hosted CI/container/release smoke. Emulated touch and local fixture state do not satisfy those gates. No merge, push, deployment or production mutation was performed; preserve this worktree for follow-up.

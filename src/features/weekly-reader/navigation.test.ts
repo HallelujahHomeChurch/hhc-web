@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {pageScale, swipeDirection, keyboardPageDelta, centeredBodyOffset, sourcePageStart, sourcePageForSentence} from './navigation';
+import {fittedPageScale, clampPaperZoom, swipeDirection, keyboardPageDelta, centeredBodyOffset, sourcePageStart, sourcePageForSentence} from './navigation';
 import {readerFixture} from './test-fixture';
 describe('reader navigation', () => {
   it('tracks the visible source fragment rather than the first page containing its sentence', () => {
@@ -30,10 +30,11 @@ describe('reader navigation', () => {
     expect(document).toEqual(before);
   });
   it('fits the available viewport and bounds explicit zoom', () => {
-    expect(pageScale('page', {width: 600, height: 800}, {width: 900, height: 600})).toBe(.75);
-    expect(pageScale('width', {width: 600, height: 800}, {width: 900, height: 600})).toBe(1.5);
-    expect(pageScale(10, {width: 600, height: 800}, {width: 900, height: 600})).toBe(2.5);
-    expect(pageScale(.1, {width: 600, height: 800}, {width: 900, height: 600})).toBe(.75);
+    expect(fittedPageScale({width: 600, height: 800}, {width: 900, height: 600})).toBe(.75);
+    expect(fittedPageScale({width: 600, height: 800}, {width: 300, height: 900})).toBe(.5);
+    expect(clampPaperZoom(8)).toBe(4);
+    expect(clampPaperZoom(.5)).toBe(1);
+    expect(clampPaperZoom(NaN)).toBe(1);
   });
   it('leaves pinch, zoomed pan, vertical scroll and native selection alone', () => {
     const swipe = {dx: -100, dy: 5, multiplePointers: false, zoomed: false, hasSelection: false};

@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from 'react';
-import {BulletinDocumentRenderer, type BulletinRenderableDocument, type BulletinCanonicalMetadata} from '@hallelujahhomechurch/ui';
+import {Button, BulletinDocumentRenderer, type BulletinRenderableDocument, type BulletinCanonicalMetadata} from '@hallelujahhomechurch/ui';
 import type {ReaderMessages} from './ReaderToolbar';
 import {ChevronLeft, ChevronRight} from 'lucide-react';
 
@@ -14,23 +14,23 @@ export function PageNavigator({document, metadata, page, onPage, messages: m, co
     if (next - 1 !== page || explicit) onPage(next - 1);
   }
   if (compact) return <nav className="reader-quick-pages" aria-label={m.sourcePage}>
-    {!mobile && <button type="button" aria-label={m.previous} title={m.previous} disabled={page === 0} onClick={() => onPage(page - 1)}><ChevronLeft aria-hidden="true" size={18}/></button>}
-    <button type="button" className="reader-page-position" aria-label={`${m.sourcePage} ${page + 1} / ${document.pages.length}`} onClick={onOpen}><span className="reader-source-label">{m.sourcePage}</span> {page + 1}<span className="reader-page-total"> / {document.pages.length}</span></button>
-    {!mobile && <button type="button" aria-label={m.next} title={m.next} disabled={page === document.pages.length - 1} onClick={() => onPage(page + 1)}><ChevronRight aria-hidden="true" size={18}/></button>}
+    {!mobile && <Button type="button" aria-label={m.previous} isDisabled={page === 0} onPress={() => onPage(page - 1)}><ChevronLeft aria-hidden="true" size={18}/></Button>}
+    <Button type="button" className="reader-page-position" aria-label={`${m.sourcePage} ${page + 1} / ${document.pages.length}`} onPress={onOpen}><span className="reader-source-label">{m.sourcePage}</span> {page + 1}<span className="reader-page-total"> / {document.pages.length}</span></Button>
+    {!mobile && <Button type="button" aria-label={m.next} isDisabled={page === document.pages.length - 1} onPress={() => onPage(page + 1)}><ChevronRight aria-hidden="true" size={18}/></Button>}
   </nav>;
   return <>
     <nav className="reader-page-controls" aria-label={m.page}>
-      <button type="button" disabled={page === 0} onClick={() => onPage(page - 1)}>{m.previous}</button>
+      <Button type="button" isDisabled={page === 0} onPress={() => onPage(page - 1)}>{m.previous}</Button>
       <label>{m.page} <input aria-label={m.page} ref={input} type="number" min={1} max={document.pages.length} defaultValue={page + 1} onBlur={event => commitInput(event.currentTarget)} onKeyDown={event => {if (event.key === 'Enter') commitInput(event.currentTarget, true);}}/> / {document.pages.length}</label>
-      <button type="button" disabled={page === document.pages.length - 1} onClick={() => onPage(page + 1)}>{m.next}</button>
-      <button type="button" aria-expanded={thumbnails} onClick={() => setThumbnails(value => !value)}>{m.thumbnails}</button>
+      <Button type="button" isDisabled={page === document.pages.length - 1} onPress={() => onPage(page + 1)}>{m.next}</Button>
+      <Button type="button" aria-expanded={thumbnails} onPress={() => setThumbnails(value => !value)}>{m.thumbnails}</Button>
     </nav>
     {page > 0 && page < document.sourcePageCount - 1 ? <p className="reader-page-caption">{m.printedPage.replace('{page}', String(page))}</p> : null}
     {thumbnails ? <nav className="reader-thumbnails" aria-label={m.thumbnails}>{document.pages.map((entry, index) => {
       const scale = 96 / (entry.width * 4 / 3);
       return <div key={entry.id} className="reader-thumbnail">
         <div aria-hidden="true" inert className="reader-thumbnail-image" style={{width: 96, height: entry.height * 4 / 3 * scale}}><div style={{transform: `scale(${scale})`, transformOrigin: 'top left'}}><BulletinDocumentRenderer document={document} mode="paper" activePage={entry.id} canonicalMetadata={metadata}/></div></div>
-        <button type="button" aria-current={page === index ? 'page' : undefined} onClick={() => onPage(index)}>{m.page} {index + 1}</button>
+        <Button type="button" aria-current={page === index ? 'page' : undefined} onPress={() => onPage(index)}>{m.page} {index + 1}</Button>
       </div>;
     })}</nav> : null}
   </>;

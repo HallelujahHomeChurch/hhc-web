@@ -13,10 +13,14 @@
 .reader-tab > a { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: .75rem; font-size: .875rem; }
 .reader-tab h1 { display: inline; font-size: inherit; font-weight: 600; }
 .reader-tabbar .hhc-icon-button { flex: none; width: 44px; min-height: 44px; padding: .5rem; border: 0; background: transparent; }
+.reader-icon-control { display: inline-flex; flex: none; }
+.reader-topbar .reader-zoom-controls { flex-wrap: nowrap; gap: 0; }
+.reader-zoom-controls output { min-width: 3.5rem; text-align: center; font-size: .8rem; font-variant-numeric: tabular-nums; }
 .reader-topbar { display: flex; align-items: center; gap: .25rem; height: 56px; padding-inline: .25rem; border-bottom: 1px solid var(--hhc-control-border); }
 .reader-topbar h1 { flex: 1; min-width: 0; font-size: .95rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-inline: .25rem .75rem; }
 .weekly-reader .reader-topbar :is(button, a) { flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: .5rem; border: 0; border-radius: .4rem; color: inherit; background: transparent; }
 .reader-topbar :is(button, a):hover { background: var(--hhc-surface-raised); }
+.weekly-reader .reader-topbar button[aria-pressed='true'] { background: var(--hhc-primary-soft); color: var(--hhc-control); }
 .reader-quick-pages { display: flex; align-items: center; font-size: .85rem; font-variant-numeric: tabular-nums; }
 .reader-source-label { margin-inline-end: .35rem; }
 .reader-navigation-panel { position: absolute; top: 100%; right: 0; width: min(380px, calc(100vw - 2rem)); max-height: calc(100dvh - 130px); overflow: auto; padding: 1rem; background: var(--hhc-surface); box-shadow: 0 8px 24px #0002; }
@@ -37,7 +41,17 @@
 .reader-toolbar, .reader-page-controls { max-width: 75rem; margin: .5rem auto; }
 .reader-page-controls input { width: 5rem; }
 .reader-sections nav { display: flex; flex-wrap: wrap; gap: .5rem; padding: .5rem 0; }
-.reader-viewport { overflow: auto; height: calc(100dvh - 100px); min-height: 20rem; padding: 1rem; background: var(--hhc-surface-raised); border-radius: .75rem; overscroll-behavior: contain; touch-action: auto; }
+.reader-stage { position: relative; min-width: 0; }
+.reader-viewport { overflow: auto; height: calc(100dvh - 140px); min-height: 20rem; padding: 1rem; background: var(--hhc-surface-raised); overscroll-behavior: contain; touch-action: auto; scrollbar-color: var(--hhc-control-border) transparent; }
+.reader-direction-controls { display: flex; margin-inline-start: auto; }
+.reader-viewport[data-direction='vertical'] .reader-scaled-page + .reader-scaled-page { margin-top: 8px; }
+.reader-edge { position: absolute; top: 50%; transform: translateY(-50%); z-index: 3; padding: 1rem .25rem; }
+.reader-edge-previous { left: 0; }
+.reader-edge-next { right: 0; }
+.reader-edge button { opacity: 0; transition: opacity 160ms ease-out; }
+.reader-edge:hover button, .reader-edge:focus-within button { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .reader-edge button { transition: none; } }
+@media (hover: none) { .reader-edge { display: none; } }
 /* Paper clipping containers must share the reader's pan/pinch arbitration. */
 .reader-viewport :where(*) { touch-action: inherit; }
 .reader-scaled-page { position: relative; margin-inline: auto; box-shadow: 0 3px 18px #0002; }

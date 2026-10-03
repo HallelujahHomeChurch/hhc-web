@@ -1,4 +1,4 @@
-import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {readerFixture} from '@/features/weekly-reader/test-fixture';
 import {getMessages} from '@/i18n/messages';
@@ -27,9 +27,44 @@ function selectText(element: Element, start?: number, end?: number) {
 vi.mock('@/features/weekly-reader/api', async original => ({...await original<typeof import('@/features/weekly-reader/api')>(), createReaderApi: () => ({open: state.open, privateState: state.privateState, mutate: state.mutate})}));
 const props = {locale: 'en' as const, issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const, messages: getMessages('en').weeklyReader};
 beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state.accountId = 'account-a'; state.status = 'authenticated'; state.open.mockReset().mockResolvedValue(readerFixture()); state.privateState.mockReset().mockResolvedValue({state: {accountId: 'account-a', documentId: readerFixture().document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: null, conflicts: []}}); state.mutate.mockReset(); sessionStorage.clear(); vi.stubGlobal('matchMedia', vi.fn(() => ({matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn()})));});
-afterEach(() => {Reflect.deleteProperty(document, 'fonts'); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs();});
+afterEach(() => {cleanup(); Reflect.deleteProperty(document, 'fonts'); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs();});
 
 describe('protected weekly reader', () => {
+  it.each(['hide', 'home'])('settles continuous paper position on %s and clears an older search anchor', async exit => {
+    const fixture = readerFixture(), key = `weekly-reader-position:account-a:${fixture.document.documentId}:1`;
+    sessionStorage.setItem(`${key}:anchor`, JSON.stringify({kind: 'sentence', id: 's0'}));
+    const cloud = (await state.privateState()).state;
+    state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: cloud, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]}));
+    const {container} = render(<WeeklyReader {...props}/>);
+    await waitFor(() => expect(sessionStorage.getItem(key)).toBe('p0'));
+    const viewport = container.querySelector('.reader-viewport')!;
+    for (const element of container.querySelectorAll<HTMLElement>('[data-paper-index]')) {
+      const index = Number(element.dataset.paperIndex);
+      vi.spyOn(element, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, (index - 2) * 800, 500, 800));
+    }
+    fireEvent.scroll(viewport);
+    if (exit === 'hide') {
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+      fireEvent(document, new Event('visibilitychange'));
+    } else fireEvent.click(screen.getByRole('button', {name: 'Bulletin library'}));
+    await waitFor(() => expect(state.mutate).toHaveBeenCalled(), {timeout: 150});
+    expect(state.mutate.mock.calls[0][2][0]).toMatchObject({kind: 'setProgress', payload: {pageId: 'p2'}});
+    expect(sessionStorage.getItem(`${key}:anchor`)).toBeNull();
+    expect(sessionStorage.getItem(key)).toBe('p2');
+  });
+  it('starts continuous and switches direction without losing the current source page', async () => {
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    await waitFor(() => expect(container.querySelectorAll('[data-paper-index]')).toHaveLength(4));
+    fireEvent.click(screen.getByRole('button', {name: 'Next page'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Horizontal paging'}));
+    expect(container.querySelectorAll('[data-paper-index]')).toHaveLength(1);
+    expect(container.querySelector('[data-paper-index]')).toHaveAttribute('data-paper-index', '1');
+    expect(screen.getByRole('button', {name: 'Source page 2 / 4'})).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: 'Vertical scrolling'}));
+    expect(container.querySelectorAll('[data-paper-index]')).toHaveLength(4);
+    expect(screen.getByRole('button', {name: 'Source page 2 / 4'})).toBeInTheDocument();
+  });
   it('exposes the library, document tab and tools without an overflow menu', async () => {
     render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
@@ -158,13 +193,13 @@ describe('protected weekly reader', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Note'}));
     fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'Keep draft and range'}});
     fireEvent.click(next);
-    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p0');
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p0');
     fireEvent.click(list);
     expect(screen.getByRole('textbox', {name: props.messages.noteText})).toHaveValue('Keep draft and range');
     expect(confirm).toHaveBeenCalled();
     confirm.mockReturnValue(true);
     fireEvent.click(next);
-    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p1');
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p1');
     expect(screen.queryByRole('textbox', {name: props.messages.noteText})).not.toBeInTheDocument();
   });
 
@@ -192,6 +227,7 @@ describe('protected weekly reader', () => {
     vi.stubGlobal('visualViewport', visual);
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
+    fireEvent.click(screen.getByRole('button', {name: 'Horizontal paging'}));
     const viewport = container.querySelector('.reader-viewport')!;
     const swipe = () => {
       for (const [type, x] of [['pointerdown', 200], ['pointerup', 100]] as const) {
@@ -202,10 +238,10 @@ describe('protected weekly reader', () => {
     };
     act(() => {visual.scale = 2; visual.dispatchEvent(new Event('resize'));});
     swipe();
-    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p0');
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p0');
     act(() => {visual.scale = 1; visual.dispatchEvent(new Event('resize'));});
     swipe();
-    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p1');
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p1');
   });
   it('returns focus to the inline note marker after closing its associated notes', async () => {
     const cloud = (await state.privateState()).state;
@@ -290,7 +326,7 @@ describe('protected weekly reader', () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn()})));
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
-    await waitFor(() => expect(container.querySelector('[data-sentence-id="s2"]')).toBeInTheDocument());
+    await waitFor(() => expect(container.querySelector('[data-bulletin-mode="mobile"] [data-sentence-id="s2"]')).toBeInTheDocument());
     expect(state.mutate).not.toHaveBeenCalled();
     for (const element of container.querySelectorAll<HTMLElement>('[data-sentence-id]')) {
       vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({top: element.dataset.sentenceId === 's2' ? 100 : -100, bottom: element.dataset.sentenceId === 's2' ? 130 : -70} as DOMRect);
@@ -310,7 +346,7 @@ describe('protected weekly reader', () => {
     state.privateState.mockResolvedValue({state: cloud});
     state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: {...cloud, progress: null}, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]}));
     const {container} = render(<WeeklyReader {...props}/>);
-    await waitFor(() => expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p2'));
+    await waitFor(() => expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p2'));
     expect(screen.queryByRole('button', {name: 'Start over'})).not.toBeInTheDocument();
     expect(screen.queryByRole('button', {name: 'Continue reading'})).not.toBeInTheDocument();
     expect(state.mutate).not.toHaveBeenCalled();
@@ -332,7 +368,7 @@ describe('protected weekly reader', () => {
     const cloud = (await state.privateState()).state;
     state.privateState.mockResolvedValue({state: {...cloud, progress}});
     const {container} = render(<WeeklyReader {...props}/>);
-    await waitFor(() => expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p2'));
+    await waitFor(() => expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p2'));
   });
   it('does not let late cloud progress undo manual page navigation', async () => {
     const cloud = (await state.privateState()).state;
@@ -341,9 +377,9 @@ describe('protected weekly reader', () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
     fireEvent.click(screen.getByRole('button', {name: 'Next page'}));
-    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p1');
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p1');
     await act(async () => finish({state: {...cloud, progress: {pageId: 'p3'}}}));
-    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p1');
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p1');
   });
   it('keeps a locally saved first page rather than replacing it with cloud progress', async () => {
     const cloud = (await state.privateState()).state;
@@ -352,7 +388,7 @@ describe('protected weekly reader', () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
     await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
-    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p0');
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p0');
     expect(screen.queryByRole('button', {name: 'Continue reading'})).not.toBeInTheDocument();
   });
   it('preserves native selection snapshot on note cancellation and clears it on escape and navigation', async () => {
@@ -388,9 +424,9 @@ describe('protected weekly reader', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Search this bulletin'}));
     fireEvent.change(screen.getByRole('searchbox', {name: 'Search this bulletin'}), {target: {value: '內容2'}});
     fireEvent.click(screen.getByRole('button', {name: 'Go to result'}));
-    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p2');
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p2');
     expect(state.open).toHaveBeenCalledOnce();
-    expect(container.querySelectorAll('[data-reader-watermark]')).toHaveLength(1);
+    expect(container.querySelectorAll('[data-reader-watermark]')).toHaveLength(4);
     expect(container.querySelector('[data-reader-watermark]')).toHaveAttribute('aria-hidden', 'true');
     expect(container.textContent).not.toContain(readerFixture().access.traceCode);
   });
@@ -401,7 +437,7 @@ describe('protected weekly reader', () => {
     fireEvent.change(screen.getByRole('searchbox'), {target: {value: '內容'}});
     fireEvent.click(screen.getByRole('button', {name: 'Next result'}));
     fireEvent.click(screen.getByRole('button', {name: 'Next result'}));
-    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p2');
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p2');
     fireEvent.click(screen.getByRole('button', {name: 'Close'}));
     fireEvent.click(screen.getByRole('button', {name: 'Search this bulletin'}));
     expect(screen.getByRole('searchbox')).toHaveValue('內容');
@@ -436,24 +472,25 @@ describe('protected weekly reader', () => {
   it('renders only the active paper page, supports buttons/direct entry and preserves input arrows', async () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
+    fireEvent.click(screen.getByRole('button', {name: 'Horizontal paging'}));
     expect(container.querySelectorAll('[data-bulletin-page]')).toHaveLength(1);
-    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p0');
-    fireEvent.click(screen.getByRole('button', {name: 'Next page'}));
-    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p1');
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p0');
+    fireEvent.click(screen.getAllByRole('button', {name: 'Next page'})[0]);
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p1');
     fireEvent.click(screen.getByRole('button', {name: 'Source page 2 / 4'}));
     const page = screen.getByRole('spinbutton', {name: 'Page'});
     page.focus();
     fireEvent.change(page, {target: {value: '4'}});
     fireEvent.keyDown(page, {key: 'Enter'});
-    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p3');
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p3');
     expect(screen.getByRole('spinbutton', {name: 'Page'})).toHaveFocus();
     fireEvent.change(page, {target: {value: '999'}});
     fireEvent.keyDown(page, {key: 'Enter'});
     expect(page).toHaveValue(4);
     fireEvent.keyDown(screen.getByRole('spinbutton', {name: 'Page'}), {key: 'ArrowLeft'});
-    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p3');
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p3');
     fireEvent.keyDown(screen.getByRole('region', {name: 'Bulletin reader'}), {key: 'ArrowLeft'});
-    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p2');
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p2');
   });
   it('discards a late response after account switch', async () => {
     let finish!: (value: ReturnType<typeof readerFixture>) => void;
@@ -511,7 +548,7 @@ describe('protected weekly reader', () => {
     sessionStorage.setItem(`weekly-reader-position:account-a:${readerFixture().document.documentId}:1`, 'p2');
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
-    await waitFor(() => expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p2'));
+    await waitFor(() => expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p2'));
     fireEvent.click(screen.getByRole('button', {name: 'Source page 3 / 4'}));
     fireEvent.click(screen.getByRole('button', {name: 'Thumbnails'}));
     expect(container.querySelectorAll('[inert][aria-hidden="true"]')).toHaveLength(4);

@@ -1,4 +1,5 @@
 'use client';
+import {Button} from '@hallelujahhomechurch/ui';
 import {useEffect, useRef, useState} from 'react';
 import type {OnlineBulletinAccess} from '@hallelujahhomechurch/hhc-web-client';
 import type {createReaderApi, ReaderSelector} from '@/features/weekly-reader/api';
@@ -53,7 +54,7 @@ export function OfflineControl({api, value, selector, locale, messages: m, onSav
     finally {setBusy(false);}
   }
   return <div className="reader-offline-control">
-    <button type="button" disabled={busy} onClick={() => void (saved ? remove() : save())}>{busy ? m.savingOffline : saved ? m.removeOffline : m.saveOffline}</button>
+    <Button type="button" isDisabled={busy} onPress={() => void (saved ? remove() : save())}>{busy ? m.savingOffline : saved ? m.removeOffline : m.saveOffline}</Button>
     <a href={`/${locale}/literature-ministry/offline`}>{m.offlineContent}</a>
     {saved ? <span>{m.offlineRevision} {saved.value.access.revision} · {m.offlineSize} {new Intl.NumberFormat(locale, {maximumFractionDigits: 1}).format(saved.size / 1024)} KB · {m.offlineExpiry} {new Intl.DateTimeFormat(locale, {dateStyle: 'short', timeStyle: 'short'}).format(new Date(saved.value.access.offlineValidUntil))}</span> : null}
     {value.access.currentRevision > value.access.revision ? <p role="status">{m.offlineUpdate}</p> : null}

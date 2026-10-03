@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {IconButton} from '@hallelujahhomechurch/ui';
+import {ReaderIconButton as IconButton} from './ReaderIconButton';
 import {Home, X} from 'lucide-react';
 import {addTab, closeTab, readTabs, writeTabs, tabHref, tabKey, type ReaderTab} from '@/features/weekly-reader/workspace';
 import type {Locale} from '@/i18n/locales';
@@ -12,7 +12,9 @@ export function ReaderTabs({accountId, locale, current, title, messages: m, befo
   const {issueNumber, series, contentLocale} = current;
   useEffect(() => {
     const next = addTab(readTabs(accountId), {issueNumber, series, contentLocale});
-    writeTabs(accountId, next); setTabs(next);
+    writeTabs(accountId, next);
+    const frame = requestAnimationFrame(() => setTabs(next));
+    return () => cancelAnimationFrame(frame);
   }, [accountId, issueNumber, series, contentLocale]);
   async function navigate(href: string, next?: ReaderTab[]) {
     if (busy) return;

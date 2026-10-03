@@ -20,3 +20,14 @@ export function readTabs(accountId: string): ReaderTab[] {
 export function writeTabs(accountId: string, tabs: ReaderTab[]) {
   try {sessionStorage.setItem(`weekly-reader-tabs:${accountId}`, JSON.stringify(tabs.map(({issueNumber, series, contentLocale}) => ({issueNumber, series, contentLocale}))));} catch { /* Storage is optional. */ }
 }
+export type PaperView = {zoom: number; direction: 'vertical' | 'horizontal'};
+export function readPaperView(key: string): PaperView {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(`weekly-reader-view:${key}`) ?? 'null');
+    if (value && Number.isFinite(value.zoom) && value.zoom >= 1 && value.zoom <= 4 && ['vertical', 'horizontal'].includes(value.direction)) return {zoom: value.zoom, direction: value.direction};
+  } catch { /* Optional local preferences. */ }
+  return {zoom: 1, direction: 'vertical'};
+}
+export function writePaperView(key: string, view: PaperView) {
+  try {sessionStorage.setItem(`weekly-reader-view:${key}`, JSON.stringify(view));} catch { /* Optional local preferences. */ }
+}

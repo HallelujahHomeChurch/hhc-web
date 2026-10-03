@@ -13,3 +13,12 @@ it('groups nearby note anchors into one accessible target and excludes deleted n
   fireEvent.click(screen.getByRole('button', {name: 'Notes (2)'}));
   expect(onOpen).toHaveBeenCalledWith(['a', 'b']);
 });
+it('anchors a cross-page sentence to its first fragment instead of silently moving the note to the last page', async () => {
+  const root = createRef<HTMLDivElement>();
+  const notes = [{id: 'a', sentenceIds: ['s1'], deleted: false}] as BulletinReaderNote[];
+  const {container} = render(<div ref={root}><span data-sentence-id="s1">First page</span><span data-sentence-id="s1">Next page</span><NoteIndicators root={root} notes={notes} layoutKey="continuous" label="Notes" onOpen={() => {}}/></div>);
+  const anchors = container.querySelectorAll('span');
+  vi.spyOn(anchors[0], 'getBoundingClientRect').mockReturnValue({top: 40} as DOMRect);
+  vi.spyOn(anchors[1], 'getBoundingClientRect').mockReturnValue({top: 900} as DOMRect);
+  await waitFor(() => expect(screen.getByRole('button', {name: 'Notes (1)'})).toHaveStyle({top: '40px'}));
+});

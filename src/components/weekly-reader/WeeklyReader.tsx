@@ -1,13 +1,14 @@
 'use client';
 
-import {useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode} from 'react';
-import {Search, StickyNote, Download, Info, X} from 'lucide-react';
-import {BulletinDocumentRenderer, ReaderWatermark, IconButton} from '@hallelujahhomechurch/ui';
+import {useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type ReactNode} from 'react';
+import {Search, StickyNote, Download, Info, X, ChevronsUpDown, ChevronsLeftRight, ChevronLeft, ChevronRight} from 'lucide-react';
+import {BulletinDocumentRenderer, ReaderWatermark} from '@hallelujahhomechurch/ui';
+import {ReaderIconButton as IconButton} from './ReaderIconButton';
 import type {OnlineBulletinAccess, BulletinReaderMutation, BulletinReaderNote} from '@hallelujahhomechurch/hhc-web-client';
 import type {BulletinLocale, BulletinSeries} from '@hallelujahhomechurch/preferences';
 import {useAccountAuth, useAccountIdentity, useAccountSignIn, useBulletinAccess, useBulletinAuthorization} from '@/components/layout/AccountControl';
 import {createReaderApi, verifyReaderAccess, type ReaderSelector} from '@/features/weekly-reader/api';
-import {centeredBodyOffset, keyboardPageDelta, pageScale, sourcePageStart, sourcePageForSentence, swipeDirection, type ReaderZoom} from '@/features/weekly-reader/navigation';
+import {keyboardPageDelta, pageScale, sourcePageStart, sourcePageForSentence, swipeDirection, type ReaderZoom} from '@/features/weekly-reader/navigation';
 import {fitPaperLines} from '@/features/weekly-reader/paper-lines';
 import {isWeeklyReaderEnabled} from '@/features/weekly-reader/enabled';
 import {getOfflineIdentity, supportsOfflineReader} from '@/features/weekly-reader/offline-store';
@@ -27,6 +28,9 @@ import type {Locale} from '@/i18n/locales';
 import {ReaderToolbar, type ReaderMessages} from './ReaderToolbar';
 import {PageNavigator} from './PageNavigator';
 import {ReaderTabs} from './ReaderTabs';
+import {PaperViewport, type ReadingDirection} from './PaperViewport';
+import {usePaperGestures} from '@/features/weekly-reader/usePaperGestures';
+import {readPaperView, writePaperView} from '@/features/weekly-reader/workspace';
 import {SectionNavigator} from './SectionNavigator';
 import {ReaderSearch} from './ReaderSearch';
 import {OfflineControl} from './OfflineControl';
@@ -167,16 +171,20 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const [resumeResolved, setResumeResolved] = useState(false);
   const cloudProgress = privateReader.state?.progress;
   const [page, setPage] = useState(Math.max(0, restoredPage));
-  const [zoom, setZoom] = useState<ReaderZoom>('page');
+  const [view] = useState(() => readPaperView(storageKey));
+  const [zoom, setZoom] = useState<ReaderZoom>(view.zoom);
+  const [direction, setDirection] = useState<ReadingDirection>(view.direction);
+  useEffect(() => {writePaperView(storageKey, {zoom, direction});}, [storageKey, zoom, direction]);
+  const [paperJump, setPaperJump] = useState(0);
   const [mobile, setMobile] = useState(false);
   const [panel, setPanel] = useState<'pages' | 'search' | 'offline' | null>(null);
   const chromeRef = useRef<HTMLDivElement>(null);
   const panelTrigger = useRef<HTMLElement | null>(null);
   const [sourceJump, setSourceJump] = useState<{page: number} | null>(null);
   const previousMobile = useRef(false);
-  function openPanel(next: 'pages' | 'search' | 'offline', trigger: HTMLElement) {
+  function openPanel(next: 'pages' | 'search' | 'offline', trigger: Element) {
     if (notes && !closeNotes()) return;
-    clearSelection(); panelTrigger.current = trigger; setPanel(current => current === next ? null : next);
+    clearSelection(); panelTrigger.current = trigger instanceof HTMLElement ? trigger : null; setPanel(current => current === next ? null : next);
   }
   function closePanel() {setPanel(null); panelTrigger.current?.focus();}
   useEffect(() => {
@@ -197,6 +205,8 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const [fontsReady, setFontsReady] = useState(() => !globalThis.document?.fonts);
   const [viewport, setViewport] = useState({width: 900, height: 700});
   const viewportRef = useRef<HTMLDivElement>(null);
+  const {changeZoom, captureAnchor} = usePaperGestures({root: viewportRef, enabled: !mobile && !suspended, blocked: !!notes, zoom, setZoom, layoutKey: `${viewport.width}:${viewport.height}`});
+  const preservePaperPosition = useEffectEvent(() => {if (resumeResolved && fontsReady && !mobile) captureAnchor();});
   const pendingAnchor = useRef<Anchor | null>(null);
   const gesture = useRef<{x: number; y: number; multiplePointers: boolean} | null>(null);
   const pointers = useRef(new Set<number>());
@@ -209,7 +219,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     }));
     const cover = document.components.find(component => component.type === 'cover')?.cover;
     return fitPaperLines(paperRef.current, headers, cover ? {worship: cover.worship.flatMap(item => item.blocks.map(block => block.id)), work: cover.work.flatMap(item => item.blocks.map(block => block.id))} : undefined);
-  }, [document, active.id, mobile, fontsReady, viewport.width, viewport.height, zoom, hasNotes]);
+  }, [document, active.id, mobile, fontsReady, viewport.width, viewport.height, zoom, hasNotes, direction]);
   useEffect(() => {
     saveReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}, {
       revision: value.document.revision, pageId: active.id, selected, selectedRanges: selection.ranges,
@@ -219,7 +229,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   }, [selector.accountId, selector.issueNumber, selector.series, selector.contentLocale, value.document.documentId, value.document.revision, active.id, selected, selection.ranges, notes, noteEditorState]);
   const size = {width: active.width * 4 / 3, height: active.height * 4 / 3};
   const scale = pageScale(zoom, size, viewport);
-  const zoomed = nativeZoomed || scale > pageScale('width', size, viewport);
+  const zoomed = nativeZoomed || zoom > 1;
   const onPage = (next: number, record = true) => {
     if (!Number.isFinite(next) || record && notes && !closeNotes()) return false;
     setResumeResolved(true);
@@ -228,6 +238,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     try {sessionStorage.removeItem(`${storageKey}:anchor`);} catch { /* Optional restoration. */ }
     const target = Math.max(0, Math.min(document.pages.length - 1, Math.floor(next)));
     setPage(target);
+    setPaperJump(value => value + 1);
     if (mobile) {
       setSourceJump({page: target});
       const first = sourcePageStart(value.document.content, target);
@@ -261,7 +272,10 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     const root = viewportRef.current;
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(entries => {
       const rect = entries[0]?.contentRect;
-      if (rect?.width && rect.height) setViewport({width: Math.max(1, rect.width - 32 - (hasNotes ? 44 : 0)), height: Math.max(1, rect.height - 32)});
+      if (rect?.width && rect.height) {
+        preservePaperPosition();
+        setViewport({width: Math.max(1, rect.width - 32 - (hasNotes ? 44 : 0)), height: Math.max(1, rect.height - 32)});
+      }
     });
     if (root) observer?.observe(root);
     return () => {query.removeEventListener('change', changed); observer?.disconnect();};
@@ -273,14 +287,58 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   useEffect(() => {
     if (!resumeResolved) return;
     try {sessionStorage.setItem(storageKey, active.id);} catch { /* Reading remains available without storage. */ }
-    if (!mobile && viewportRef.current) {viewportRef.current.scrollTop = 0; viewportRef.current.scrollLeft = 0;}
+  }, [active.id, storageKey, resumeResolved]);
+  const scrollToPage = useEffectEvent(() => {
+    const viewport = viewportRef.current;
+    if (!viewport || mobile || !fontsReady || !resumeResolved) return;
+    const target = viewport.querySelector<HTMLElement>(`[data-paper-index="${page}"]`);
+    if (target) {
+      viewport.scrollTop += target.getBoundingClientRect().top - viewport.getBoundingClientRect().top - 16;
+      viewport.scrollLeft = 0;
+    }
     const anchor = pendingAnchor.current;
-    if (anchor && fontsReady) {
+    if (anchor) {
       const attribute = `data-${anchor.kind}-id`;
-      Array.from(viewportRef.current?.querySelectorAll<HTMLElement>(`[${attribute}]`) ?? []).find(element => element.getAttribute(attribute) === anchor.id)?.scrollIntoView({block: 'start'});
+      Array.from(target?.querySelectorAll<HTMLElement>(`[${attribute}]`) ?? []).find(element => element.getAttribute(attribute) === anchor.id)?.scrollIntoView({block: 'start'});
       pendingAnchor.current = null;
     }
-  }, [active.id, mobile, storageKey, fontsReady, resumeResolved, showProductionDetails]);
+  });
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => scrollToPage());
+    return () => cancelAnimationFrame(frame);
+  }, [paperJump, direction, mobile, fontsReady, resumeResolved]);
+  function recordVisiblePaper() {
+    const root = viewportRef.current;
+    if (!root || mobile || direction !== 'vertical' || !resumeResolved || !fontsReady || suspended || notes || !allowAction()) return;
+    const top = root.getBoundingClientRect().top + 24;
+    const pages = Array.from(root.querySelectorAll<HTMLElement>('[data-paper-index]'));
+    const visible = pages.find(element => element.getBoundingClientRect().bottom > top);
+    if (!visible || visible.getBoundingClientRect().height === 0) return;
+    const next = Number(visible.dataset.paperIndex);
+    const sentence = Array.from(visible.querySelectorAll<HTMLElement>('[data-sentence-id]')).find(element => element.getBoundingClientRect().bottom > top);
+    const id = sentence?.dataset.sentenceId;
+    try {
+      sessionStorage.setItem(storageKey, document.pages[next].id);
+      if (id) sessionStorage.setItem(`${storageKey}:anchor`, JSON.stringify({kind: 'sentence', id}));
+      else sessionStorage.removeItem(`${storageKey}:anchor`);
+    } catch { /* Optional restoration. */ }
+    if (next !== page) setPage(next);
+    recordProgress(document.pages[next].id, id);
+  }
+  const observePaperPage = useEffectEvent(recordVisiblePaper);
+  useEffect(() => {
+    const root = viewportRef.current;
+    if (!root || mobile || direction !== 'vertical') return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const scroll = () => {clearTimeout(timer); timer = setTimeout(() => {timer = undefined; observePaperPage();}, 150);};
+    const hide = () => {
+      if (globalThis.document.visibilityState !== 'hidden' || timer === undefined) return;
+      clearTimeout(timer); timer = undefined; observePaperPage(); void flushProgress();
+    };
+    root.addEventListener('scroll', scroll, {passive: true});
+    globalThis.document.addEventListener('visibilitychange', hide);
+    return () => {clearTimeout(timer); root.removeEventListener('scroll', scroll); globalThis.document.removeEventListener('visibilitychange', hide);};
+  }, [mobile, direction, flushProgress]);
   useEffect(() => {
     if (!mobile || !fontsReady || !sourceJump) return;
     const target = sourceJump.page;
@@ -321,8 +379,9 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     globalThis.document.addEventListener('visibilitychange', hide);
     return () => {clearTimeout(timer); window.removeEventListener('scroll', scroll); globalThis.document.removeEventListener('visibilitychange', hide);};
   }, [mobile, fontsReady, notes, allowAction, value.document, storageKey, recordProgress, flushProgress]);
-  function onAnchor(anchor: Anchor, record = true) {
-    const layout = document.layoutManifest.pages.find(layout => layout.slots.some(slot => anchor.kind === 'component' ? slot.componentId === anchor.id : slot.fragments.some(fragment => fragment.sentenceId === anchor.id)) || anchor.kind === 'sentence' && layout.fixedSlots?.some(slot => `canonical-${slot.element}` === anchor.id));
+  function onAnchor(anchor: Anchor, record = true, preferredPage?: number) {
+    const matches = document.layoutManifest.pages.filter(layout => layout.slots.some(slot => anchor.kind === 'component' ? slot.componentId === anchor.id : slot.fragments.some(fragment => fragment.sentenceId === anchor.id)) || anchor.kind === 'sentence' && layout.fixedSlots?.some(slot => `canonical-${slot.element}` === anchor.id));
+    const layout = matches.find(layout => layout.pageId === document.pages[preferredPage ?? -1]?.id) ?? matches[0];
     const index = document.pages.findIndex(page => page.id === layout?.pageId);
     if (index < 0) return;
     if (!onPage(index, record)) return;
@@ -343,7 +402,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     const target = local ? Math.max(0, restoredPage) : Math.max(0, document.pages.findIndex(page => page.id === cloudProgress?.pageId));
     if (!onPage(target, false)) return;
     const anchor = local ? restoredAnchor : cloudProgress?.sentenceId ? {kind: 'sentence' as const, id: cloudProgress.sentenceId} : cloudProgress?.componentId ? {kind: 'component' as const, id: cloudProgress.componentId} : null;
-    if (anchor) onAnchor(anchor, false);
+    if (anchor) onAnchor(anchor, false, target);
   });
   useEffect(() => {
     if (resumeResolved || !fontsReady || suspended) return;
@@ -355,22 +414,29 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   return <section ref={documentRef} className="reader-document" data-notes-panel={notes && wideNotes || undefined} aria-label={m.title} role="region" onKeyDown={event => {
     if (event.key === 'Escape' && panel) {event.preventDefault(); closePanel(); return;}
     if (event.key === 'Escape' && !notes) {clearSelection(); return;}
+    if (!mobile && (event.ctrlKey || event.metaKey) && ['+', '=', '-'].includes(event.key) && !(event.target instanceof Element && event.target.closest('input,textarea,select,[contenteditable]'))) {
+      event.preventDefault(); changeZoom(zoom + (event.key === '-' ? -.25 : .25)); return;
+    }
     const delta = keyboardPageDelta(event, !!window.getSelection()?.toString());
-    if (!mobile && delta) {event.preventDefault(); onPage(page + delta);}
+    if (!mobile && direction === 'horizontal' && delta) {event.preventDefault(); onPage(page + delta);}
   }}>
     <div ref={chromeRef} className="reader-chrome">
       <ReaderTabs accountId={selector.accountId} locale={backHref.split('/')[1] as Locale} current={selector} title={value.document.canonicalMetadata.title} messages={m} beforeNavigate={async () => {
         if (!allowAction() || privateReader.busy || notes && !closeNotes()) return false;
+        recordVisiblePaper();
         await flushProgress();
         return allowAction();
       }}/>
       <header className="reader-topbar">
         <PageNavigator document={document} metadata={value.document.canonicalMetadata} page={page} onPage={onPage} messages={m} compact mobile={mobile} onOpen={() => {const trigger = globalThis.document.activeElement; if (trigger instanceof HTMLElement) openPanel('pages', trigger);}}/>
         <IconButton variant="ghost" aria-label={m.search} title={m.search} aria-expanded={panel === 'search'} onPress={event => openPanel('search', event.target)} icon={<Search size={20} aria-hidden="true"/>}/>
-        <IconButton ref={notesButton} variant="ghost" aria-label={m.myNotes} title={m.myNotes} isDisabled={!privateReader.state} onPress={() => {setPanel(null); openNotesList(null);}} icon={<StickyNote size={20} aria-hidden="true"/>}/>
+        <IconButton buttonRef={notesButton} variant="ghost" aria-label={m.myNotes} title={m.myNotes} isDisabled={!privateReader.state} onPress={() => {setPanel(null); openNotesList(null);}} icon={<StickyNote size={20} aria-hidden="true"/>}/>
         <IconButton variant="ghost" aria-label={m.offlineContent} title={m.offlineContent} aria-expanded={panel === 'offline'} onPress={event => openPanel('offline', event.target)} icon={<Download size={20} aria-hidden="true"/>}/>
         {mobile && productionSentenceIds.size > 0 ? <IconButton variant="ghost" aria-label={m.productionDetails} title={m.productionDetails} aria-expanded={showProductionDetails} onPress={() => {if (notes && !closeNotes()) return; clearSelection(); setShowProductionDetails(value => !value);}} icon={<Info size={20} aria-hidden="true"/>}/> : null}
-        {!mobile ? <ReaderToolbar messages={m} zoom={zoom} setZoom={setZoom}/> : null}
+        {!mobile ? <ReaderToolbar messages={m} zoom={zoom} setZoom={changeZoom}/> : null}
+        {!mobile ? <div className="reader-direction-controls" role="group" aria-label={m.page}>
+          {(['vertical', 'horizontal'] as const).map(mode => <IconButton key={mode} variant="ghost" aria-label={m[mode]} title={m[mode]} aria-pressed={direction === mode} onPress={() => {if (notes && !closeNotes()) return; clearSelection(); setDirection(mode);}} icon={mode === 'vertical' ? <ChevronsUpDown size={20} aria-hidden="true"/> : <ChevronsLeftRight size={20} aria-hidden="true"/>}/>)}
+        </div> : null}
       </header>
       <aside className="reader-navigation-panel" hidden={!panel} aria-label={panel === 'pages' ? m.sourcePage : panel === 'search' ? m.search : m.offlineContent}>
         <header><h2>{panel === 'pages' ? m.sourcePage : panel === 'search' ? m.search : m.offlineContent}</h2><IconButton variant="ghost" aria-label={m.close} onPress={closePanel} icon={<X size={20} aria-hidden="true"/>}/></header>
@@ -396,8 +462,9 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       }
     }).catch(() => setNotice(m.actionFailed));
     }}>{m.confirmRetry}</button></> : null}
-    <div ref={viewportRef} className="reader-viewport" data-mobile={mobile || undefined} style={{touchAction: mobile || zoomed ? 'auto' : 'pan-y pinch-zoom'}} tabIndex={0} onPointerDown={event => {
-      if (event.pointerType !== 'touch') return;
+    <div className="reader-stage">
+    <div ref={viewportRef} className="reader-viewport" data-mobile={mobile || undefined} data-direction={mobile ? undefined : direction} data-active-page={active.id} style={{touchAction: mobile || notes || nativeZoomed ? 'auto' : direction === 'horizontal' && !zoomed ? 'pan-y' : 'pan-x pan-y'}} tabIndex={0} onPointerDown={event => {
+      if (event.pointerType !== 'touch' || notes || mobile || suspended) return;
       pointers.current.add(event.pointerId);
       if (!gesture.current) gesture.current = {x: event.clientX, y: event.clientY, multiplePointers: false};
       if (pointers.current.size > 1) gesture.current.multiplePointers = true;
@@ -407,15 +474,17 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       if (!start || pointers.current.size) return;
       gesture.current = null;
       const delta = swipeDirection({...start, dx: event.clientX - start.x, dy: event.clientY - start.y, zoomed: zoomed || (window.visualViewport?.scale ?? 1) > 1, hasSelection: !!window.getSelection()?.toString()});
-      if (!mobile && delta) onPage(page + delta);
+      if (!mobile && direction === 'horizontal' && delta) onPage(page + delta);
     }}>
       {!fontsReady ? <p role="status">{m.loading}</p> : null}
-      <div ref={paperRef} className="reader-paper-with-notes" data-has-notes={hasNotes || undefined} aria-hidden={!fontsReady || undefined} style={{visibility: fontsReady ? 'visible' : 'hidden', width: mobile ? undefined : size.width * scale + (hasNotes ? 44 : 0), '--reader-body-offset': `${centeredBodyOffset(value.document.content, active.id) * size.width}px`} as CSSProperties}>
+      <div ref={paperRef} className="reader-paper-with-notes" data-has-notes={hasNotes || undefined} aria-hidden={!fontsReady || undefined} style={{visibility: fontsReady ? 'visible' : 'hidden', width: mobile ? undefined : Math.max(...document.pages.map(entry => entry.width * 4 / 3 * pageScale(zoom, {width: entry.width * 4 / 3, height: entry.height * 4 / 3}, viewport))) + (hasNotes ? 44 : 0)}}>
       {mobile ? <div className="reader-watermarked"><BulletinDocumentRenderer document={mobileDocument} mode="mobile" canonicalMetadata={value.document.canonicalMetadata} sentenceState={sentenceState}/><ReaderWatermark traceCode={value.access.traceCode}/></div> :
-        <div className="reader-scaled-page" style={{width: size.width * scale, height: size.height * scale}}><div className="reader-watermarked" style={{transform: `scale(${scale})`, transformOrigin: 'top left', width: size.width, height: size.height}}><BulletinDocumentRenderer document={document} mode="paper" activePage={active.id} canonicalMetadata={value.document.canonicalMetadata} sentenceState={sentenceState}/><ReaderWatermark traceCode={value.access.traceCode}/></div></div>}
-      <NoteIndicators root={paperRef} notes={privateReader.state?.notes ?? []} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}:${showProductionDetails}`} label={m.myNotes} onOpen={openNotesList}/>
-      <RangeHighlights root={paperRef} highlights={savedHighlights} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}:${showProductionDetails}`} onSelect={selectExisting}/>
+        <PaperViewport document={document} metadata={value.document.canonicalMetadata} sentenceState={sentenceState} traceCode={value.access.traceCode} page={page} direction={direction} zoom={zoom} viewport={viewport}/>}
+      <NoteIndicators root={paperRef} notes={privateReader.state?.notes ?? []} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}:${showProductionDetails}:${direction}`} label={m.myNotes} onOpen={openNotesList}/>
+      <RangeHighlights root={paperRef} highlights={savedHighlights} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}:${showProductionDetails}:${direction}`} onSelect={selectExisting}/>
       </div>
+    </div>
+    {!mobile && direction === 'horizontal' ? <>{page > 0 ? <div className="reader-edge reader-edge-previous"><IconButton variant="ghost" aria-label={m.previous} onPress={() => onPage(page - 1)} icon={<ChevronLeft aria-hidden="true"/>}/></div> : null}{page < document.pages.length - 1 ? <div className="reader-edge reader-edge-next"><IconButton variant="ghost" aria-label={m.next} onPress={() => onPage(page + 1)} icon={<ChevronRight aria-hidden="true"/>}/></div> : null}</> : null}
     </div>
     {notice ? <p role="status">{notice}</p> : null}
     <SelectionToolbar messages={m} root={paperRef} ranges={selectionRanges} count={selectionRanges.reduce((count, range) => count + range.end - range.start, 0)} color={highlightSelection.color} clearable={highlightSelection.clearable} busy={privateReader.busy || !privateReader.state || privateReader.status === 'paused'} noteOpen={!!notes} noteButtonRef={noteButton}

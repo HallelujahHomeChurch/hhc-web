@@ -26,7 +26,7 @@ export function sourcePageStart(document: MemberOnlineDocument['content'], index
 }
 
 /** Translate the existing body column; never resize text or move it to another page. */
-export function centeredBodyOffset(document: MemberOnlineDocument['content'], pageId: string) {
+export function centeredBodyOffset(document: Pick<MemberOnlineDocument['content'], 'components' | 'layoutManifest'>, pageId: string) {
   const slots = document.layoutManifest.pages.find(page => page.pageId === pageId)?.slots ?? [];
   const body = new Set(document.components.filter(component => component.type === 'bodySection').map(component => component.id));
   if (!slots.length || slots.some(slot => !body.has(slot.componentId))) return 0;
@@ -35,11 +35,13 @@ export function centeredBodyOffset(document: MemberOnlineDocument['content'], pa
   return (1 - right - left) / 2;
 }
 
-export type ReaderZoom = 'page' | 'width' | number;
+export type ReaderZoom = number;
+export function clampPaperZoom(value: number) {return Number.isFinite(value) ? Math.max(1, Math.min(4, value)) : 1;}
+export function fittedPageScale(page: {width: number; height: number}, viewport: {width: number; height: number}) {
+  return Math.max(.01, Math.min(viewport.width / page.width, viewport.height / page.height));
+}
 export function pageScale(zoom: ReaderZoom, page: {width: number; height: number}, viewport: {width: number; height: number}) {
-  if (typeof zoom === 'number') return Math.max(.75, Math.min(2.5, zoom));
-  const width = viewport.width / page.width;
-  return Math.max(.1, zoom === 'width' ? width : Math.min(width, viewport.height / page.height));
+  return fittedPageScale(page, viewport) * clampPaperZoom(zoom);
 }
 
 export function swipeDirection({dx, dy, multiplePointers, zoomed, hasSelection}: {dx: number; dy: number; multiplePointers: boolean; zoomed: boolean; hasSelection: boolean}) {
