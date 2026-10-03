@@ -72,6 +72,10 @@
 .reader-color [data-color='yellow'] { background: #ffe123; }
 .reader-color [data-color='red'] { background: #ff7382; }
 .reader-color [data-color='blue'] { background: #4bb4ff; }
+.reader-conflict-fragment { display: inline-block; margin-inline-end: .5em; }
+.reader-conflict-fragment[data-color='yellow'] { background: #ffe12380; }
+.reader-conflict-fragment[data-color='red'] { background: #ff738270; }
+.reader-conflict-fragment[data-color='blue'] { background: #4bb4ff70; }
 .weekly-reader .reader-color[aria-pressed='true'] { border-color: currentColor; }
 @media (max-width: 767px) {
   .reader-document:has(.reader-selection-tools) { padding-bottom: 11rem; scroll-padding-bottom: 11rem; }

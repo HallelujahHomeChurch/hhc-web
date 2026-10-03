@@ -14,6 +14,8 @@
     "recoveryRemoved": "原句已被移除。",
     "recoveryLimit": "句子超過上限，請重新選取最多 500 句。",
     "recoveryColor": "合併後的句子有不同顏色，請選擇要保留的顏色。",
+    "recoveryPartialColor": "此合併含局部標註。選擇顏色並確認後，會以該顏色取代下方完整文字的所有標註，不會只保留原局部範圍。",
+    "recoveryCurrentText": "合併後完整文字",
     "recoveryNote": "這則筆記在雲端已有變更。",
     "recoveryMapping": "無法對應原位置，請選擇目前版本的句子。",
     "recoveryExpired": "此變更已超過 90 天，請確認後以新操作送出。",

@@ -22,6 +22,7 @@ it('requires a new native range after revision change and retains only its exact
   const {container} = render(<ReaderRecovery {...props}/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
   const keep = await screen.findByRole('button', {name: 'Keep local'});
+  await waitFor(() => expect(screen.queryByText(props.messages.syncSyncing)).not.toBeInTheDocument());
   expect(keep).toBeDisabled();
   expect(screen.getByText('容0')).toBeInTheDocument();
   const sentence = container.ownerDocument.querySelector('[data-sentence-id="s0"]')!;
@@ -108,4 +109,20 @@ it('resolves a cloud color conflict without replacing a pending private note', a
   expect(onPendingChange).not.toHaveBeenCalled();
   expect(api.mutate.mock.calls[0][2][0]).toEqual(pending);
   expect(api.mutate.mock.calls[1][2][0].kind).toBe('resolveHighlightMigrationConflict');
+});
+it('shows exact partial conflict snippets and confirms replacement of the full target', async () => {
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  const conflict = {id: 'partial-conflict', sentenceIds: ['s0'], sources: [{sentenceId: 'old', color: 'red', quote: 'ABCDE', segments: [{start: 1, end: 3, color: 'blue'}]}]};
+  mocks.prepare.mockResolvedValue({value, state: {...cloud, conflicts: [conflict]}, queue: [], mutations: [], recovery: [], previousRevision: 1});
+  render(<ReaderRecovery {...props}/>);
+  fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
+  expect(await screen.findByText('BC')).toHaveAttribute('data-color', 'blue');
+  expect(screen.getByText('內容0。')).toBeInTheDocument();
+  await waitFor(() => expect(screen.queryByText(props.messages.syncSyncing)).not.toBeInTheDocument());
+  fireEvent.click(screen.getByRole('button', {name: props.messages.yellowHighlight}));
+  expect(confirm).toHaveBeenCalled(); expect(mocks.choose).not.toHaveBeenCalled();
+  confirm.mockReturnValue(true);
+  fireEvent.click(screen.getByRole('button', {name: props.messages.yellowHighlight}));
+  await waitFor(() => expect(mocks.choose).toHaveBeenCalled());
+  confirm.mockRestore();
 });

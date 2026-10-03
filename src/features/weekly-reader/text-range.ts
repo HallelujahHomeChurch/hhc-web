@@ -64,7 +64,12 @@ export function readTextSelection(root: HTMLElement, selection: Selection | null
     } else ranges.push(range);
     if (ranges.length > 500) return [];
   }
-  try {rangeQuote(ranges, sentences); return ranges;} catch {return [];}
+  try {
+    const quote = rangeQuote(ranges, sentences);
+    // Fixed labels/headings are not anchors. Never silently truncate a mixed
+    // selection; only structural whitespace may differ from the trusted quote.
+    return quote.replace(/\s/gu, '') === selected.toString().replace(/\s/gu, '') ? ranges : [];
+  } catch {return [];}
 }
 
 /** Validate order/continuity before constructing a private quote from trusted text. */

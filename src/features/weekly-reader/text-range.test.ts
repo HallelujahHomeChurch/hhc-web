@@ -24,6 +24,12 @@ function select(start: Node, startOffset: number, end: Node, endOffset: number) 
 afterEach(() => {window.getSelection()?.removeAllRanges(); document.body.replaceChildren();});
 
 describe('canonical native text selection', () => {
+  it('rejects unanchored text mixed into a selection while allowing paragraph whitespace', () => {
+    const root = fixture('<h2>Unanchored heading</h2><span data-sentence-id="b" data-fragment-start="0" data-fragment-end="4">第二句。</span>');
+    expect(readTextSelection(root, select(root.children[0].firstChild!, 0, root.children[1].firstChild!, 2), sentences)).toEqual([]);
+    root.children[0].textContent = '\n  ';
+    expect(readTextSelection(root, select(root.children[0].firstChild!, 0, root.children[1].firstChild!, 2), sentences)).toEqual([{sentenceId: 'b', start: 0, end: 2}]);
+  });
   it('maps persisted scalar offsets back to only visible DOM fragments across fonts', () => {
     const root = fixture('<span data-sentence-id="a" data-fragment-start="1" data-fragment-end="4"><em>😀</em><strong>乙丙</strong></span>');
     expect(renderedTextRanges(root, {sentenceId: 'a', start: 0, end: 3}).map(range => range.toString())).toEqual(['😀乙']);

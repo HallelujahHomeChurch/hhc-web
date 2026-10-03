@@ -14,6 +14,8 @@
     "recoveryRemoved": "元の文は削除されました。",
     "recoveryLimit": "文が多すぎます。最大500文を選択してください。",
     "recoveryColor": "結合された文の色を選択してください。",
+    "recoveryPartialColor": "この結合には部分的なハイライトが含まれます。色を選んで確認すると、元の部分範囲だけでなく、下の対象全文のハイライトがその色に置き換わります。",
+    "recoveryCurrentText": "結合後の全文",
     "recoveryNote": "このノートはクラウドで変更されました。",
     "recoveryMapping": "元の位置に対応できません。現在の文を選択してください。",
     "recoveryExpired": "この変更は90日以上前のものです。確認して新しい操作として送信してください。",

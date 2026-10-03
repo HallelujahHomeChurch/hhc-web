@@ -81,6 +81,7 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
     await prepare(signal);
   }
   const conflict = prepared?.state.conflicts[0];
+  const partialConflict = conflict?.sources.some(source => source.segments?.length);
   const recovery = prepared?.recovery[0];
   const entry = prepared?.queue.find(entry => entry.mutation.mutationId === recovery?.mutationId);
   return <>
@@ -89,7 +90,16 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
       <p>{m.recoveryHelp}</p>
       {busy ? <p role="status">{m.syncSyncing}</p> : null}
       {error ? <p role="alert">{m.actionFailed}</p> : null}
-      {awaitingConfirmation ? <section><p>{m.confirmRetryHelp}</p><button type="button" disabled={busy} onClick={() => void run(retryPending)}>{m.confirmRetry}</button></section> : conflict && prepared ? <section><p>{m.recoveryColor}</p>{conflict.sources.map(source => <blockquote key={source.sentenceId}><span className="reader-color"><span data-color={source.color}/></span>{source.quote}</blockquote>)}<div className="reader-note-actions">{(['yellow', 'red', 'blue'] as const).map(color => <button key={color} className="reader-color" aria-label={m[`${color}Highlight`]} disabled={busy} onClick={() => void run(signal => choose(null, {mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: prepared.value.document.revision, kind: 'resolveHighlightMigrationConflict', payload: {conflictId: conflict.id, chosenColor: color, currentRevision: prepared.value.document.revision}}, signal))}><span data-color={color}/></button>)}</div></section> :
+      {awaitingConfirmation ? <section><p>{m.confirmRetryHelp}</p><button type="button" disabled={busy} onClick={() => void run(retryPending)}>{m.confirmRetry}</button></section> : conflict && prepared ? <section>
+        <p>{partialConflict ? m.recoveryPartialColor : m.recoveryColor}</p>
+        {partialConflict ? <><h3>{m.recoveryCurrentText}</h3><blockquote>{readerSentences(prepared.value.document).filter(sentence => conflict.sentenceIds.includes(sentence.id)).map(sentence => sentence.text).join('\n')}</blockquote></> : null}
+        {conflict.sources.map(source => <blockquote key={`${source.sentenceId}:${source.color}`}>
+          {source.segments?.length ? source.segments.map(part => <span key={`${part.start}:${part.end}`} className="reader-conflict-fragment" data-color={part.color}>{[...source.quote].slice(part.start, part.end).join('')}</span>) : <><span className="reader-color"><span data-color={source.color}/></span>{source.quote}</>}
+        </blockquote>)}
+        <div className="reader-note-actions">{(['yellow', 'red', 'blue'] as const).map(color => <button key={color} className="reader-color" aria-label={m[`${color}Highlight`]} disabled={busy} onClick={() => {
+          if (partialConflict && !window.confirm(m.recoveryPartialColor)) return;
+          void run(signal => choose(null, {mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: prepared.value.document.revision, kind: 'resolveHighlightMigrationConflict', payload: {conflictId: conflict.id, chosenColor: color, currentRevision: prepared.value.document.revision}}, signal));
+        }}><span data-color={color}/></button>)}</div></section> :
         recovery && entry && prepared ? <RecoveryChoice key={`${recovery.mutationId}:${entry.resolution?.mutation?.mutationId ?? ''}:${prepared.state.notes.map(note => note.version).join(',')}`} prepared={prepared} previous={value} original={entry.resolution?.mutation ?? entry.mutation} reason={recovery.reason} messages={m} busy={busy} onChoose={mutation => void run(signal => choose(entry.mutation.mutationId, mutation, signal))}/> :
         prepared ? <button type="button" disabled={busy} onClick={() => void run(async signal => {
           const current = epoch.current === null ? prepared.value : await finishReaderUpgrade(api, selector, prepared, epoch.current, signal);

@@ -106,6 +106,20 @@ describe('protected weekly reader', () => {
     expect(screen.queryByRole('textbox', {name: props.messages.noteText})).not.toBeInTheDocument();
   });
 
+  it('invalidates a snapshot when the same native gesture extends outside the reading surface', async () => {
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    const sentence = container.querySelector('[data-sentence-id="s0"]')!;
+    selectText(sentence, 0, 2);
+    expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
+    const outside = document.createElement('p'); outside.textContent = 'Outside'; document.body.append(outside);
+    const selection = document.getSelection()!, range = document.createRange();
+    range.setStart(sentence.firstChild!.firstChild ?? sentence.firstChild!, 0); range.setEnd(outside.firstChild!, 3);
+    selection.removeAllRanges(); selection.addRange(range); fireEvent(document, new Event('selectionchange'));
+    expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
+    outside.remove();
+  });
+
   it('protects a dirty note when changing pages or opening the notes list', async () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
     const {container} = render(<WeeklyReader {...props}/>);

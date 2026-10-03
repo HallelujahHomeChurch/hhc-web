@@ -32,7 +32,10 @@ export function useTextSelection(root: RefObject<HTMLElement | null>, sentences:
       if (!root.current) return;
       const ranges = readTextSelection(root.current, native, sentences);
       if (ranges.length) {
-        if (newGesture || JSON.stringify(ranges) !== JSON.stringify(current.current.ranges)) setSelection({ids: ranges.map(range => range.sentenceId), ranges});
+        if (newGesture || JSON.stringify(ranges) !== JSON.stringify(current.current.ranges)) {
+          const next = {ids: ranges.map(range => range.sentenceId), ranges};
+          current.current = next; update(next);
+        }
         newGesture = false;
       }
       else if (!preserveSnapshot.current) setSelection({ids: []});

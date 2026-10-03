@@ -32,21 +32,21 @@
 **Files:** Create `src/features/weekly-reader/text-range.ts`, `text-range.test.ts`.
 **Interfaces:** `ReaderTextRange = {sentenceId:string; start:number; end:number}`; `readTextSelection(root: HTMLElement, selection: Selection | null, sentences: readonly ReaderSentence[]): ReaderTextRange[]`; `rangeQuote(ranges, sentences): string`.
 
-- [ ] Write tests for nested fonts + emoji, reverse selection, split fragments, root boundaries, collapsed/foreign/inert selection, duplicates and semantic gaps, invalid offsets and exact quote.
-- [ ] Run `node node_modules/vitest/vitest.mjs run src/features/weekly-reader/text-range.test.ts`; observe missing behavior fail.
-- [ ] Implement the native Range adapter and canonical range validation; do not wire partial ranges to a sentence-only API.
-- [ ] Run the targeted test and `node node_modules/vitest/vitest.mjs run`; both must pass.
-- [ ] Commit this independently testable boundary.
+- [x] Write tests for nested fonts + emoji, reverse selection, split fragments, root boundaries, collapsed/foreign/inert selection, duplicates and semantic gaps, invalid offsets and exact quote.
+- [x] Run `node node_modules/vitest/vitest.mjs run src/features/weekly-reader/text-range.test.ts`; observe missing behavior fail.
+- [x] Implement the native Range adapter and canonical range validation; do not wire partial ranges to a sentence-only API.
+- [x] Run the targeted test and `node node_modules/vitest/vitest.mjs run`; both must pass.
+- [x] Commit this independently testable boundary.
 
 ### Task 2: Fix transient-selection lifecycle
 
 **Files:** Modify `src/components/weekly-reader/WeeklyReader.tsx`, `SelectionToolbar.tsx`, `WeeklyReader.test.tsx`.
 **Interfaces:** Reuse current private mutation outcomes `applied | queued`; dismissal only changes transient UI. This fix must also apply once Task 4 replaces the selection model.
 
-- [ ] Add integration tests for outside pointer/click dismissal, toolbar preservation, successful highlight dismissal, failed highlight preservation, newer selection during an in-flight action, and note editor exclusion.
-- [ ] Run `node node_modules/vitest/vitest.mjs run src/components/weekly-reader/WeeklyReader.test.tsx`; observe the missing lifecycle fail.
-- [ ] Add a scoped document event listener with cleanup; ignore toolbar and note interactions. Clear only the selection belonging to a successfully acknowledged/durably queued action. Preserve failed retry context.
-- [ ] Run full web tests and lint. Commit.
+- [x] Add integration tests for outside pointer/click dismissal, toolbar preservation, successful highlight dismissal, failed highlight preservation, newer selection during an in-flight action, and note editor exclusion.
+- [x] Run `node node_modules/vitest/vitest.mjs run src/components/weekly-reader/WeeklyReader.test.tsx`; observe the missing lifecycle fail.
+- [x] Add a scoped document event listener with cleanup; ignore toolbar and note interactions. Clear only the selection belonging to a successfully acknowledged/durably queued action. Preserve failed retry context.
+- [x] Run full web tests and lint. Commit.
 
 ### Task 3: Range persistence and producer contract
 
@@ -54,30 +54,30 @@
 **Files (frontend-platform):** generated `packages/hhc-web-client/src/generated.ts` and contract tests through existing generation command.
 **Interfaces:** Payload `ranges?: ReaderTextRange[]` must match `sentenceIds`; highlight `segments?: {start:number;end:number;color:yellow|red|blue}[]`; note `ranges?: (ReaderTextRange & {quote:string})[]`. Missing optional properties preserve legacy behavior. Enforce offsets against trusted published text, bound segments and mutation size.
 
-- [ ] Add Go table tests: overlapping recolor, partial clear/split, adjacent merge, old full-sentence fallback, malformed/duplicate/foreign ranges, emoji, version/idempotency and caller-state immutability.
-- [ ] Run `go test ./internal/bulletinreader`; observe failures before implementing interval updates and note quoting.
-- [ ] Add revision tests: identical text preserves offsets, changed/split/merged ambiguous text retains inactive private quote and requires reanchor; never silently expands.
-- [ ] Implement additive JSON persistence, round-trip/DSR tests, OpenAPI schemas and regenerated client. No migration applied to production.
-- [ ] Run `go test -race ./...`, `go vet ./...`, available PostgreSQL integration tests, shared package tests/lint/build/contract checks. Record unavailable database checks separately. Commit each repository.
+- [x] Add Go table tests: overlapping recolor, partial clear/split, adjacent merge, old full-sentence fallback, malformed/duplicate/foreign ranges, emoji, version/idempotency and caller-state immutability.
+- [x] Run `go test ./internal/bulletinreader`; observe failures before implementing interval updates and note quoting.
+- [x] Add revision tests: identical text preserves offsets, changed/split/merged ambiguous text retains inactive private quote and requires reanchor; never silently expands.
+- [x] Implement additive JSON persistence, round-trip/DSR tests, OpenAPI schemas and regenerated client. No migration applied to production.
+- [x] Run `go test -race ./...`, `go vet ./...`, available PostgreSQL integration tests, shared package tests/lint/build/contract checks. Record unavailable database checks separately. Commit each repository.
 
 ### Task 4: Native selection, range rendering and offline lifecycle
 
 **Files (hhc-web):** `WeeklyReader.tsx`, `SelectionToolbar.tsx`, `reader.css`, `NoteEditor.tsx`, `ReaderPrivateState.tsx`, `features/weekly-reader/{private-state,copy,return-state,sync,mutation-recovery}.ts` (locate existing recovery owner before edit), their tests; five reader message dictionaries.
 **Interfaces:** Consume Task 1 ranges and Task 3 generated contract. Store a stable range snapshot before focus changes; quote comes from canonical text, never raw DOM or screen coordinates.
 
-- [ ] Add tests proving a native partial selection sends exact ranges and ordinary sentence clicks no longer select. Cover keyboard, toolbar focus, partial copy, mixed colors, tap existing annotation, cancel and dirty-note confirmation.
+- [x] Add tests proving a native partial selection sends exact ranges and ordinary sentence clicks no longer select. Cover keyboard, toolbar focus, partial copy, mixed colors, tap existing annotation, cancel and dirty-note confirmation.
 - [x] Observe tests fail; wire native `selectionchange` to the host and remove whole-sentence activation callbacks. Reuse existing note/sync/retry controls. Render persisted ranges with host-side DOM Range rectangle overlays, without modifying text nodes or paper geometry. One rendering path avoids maintaining CSS Custom Highlights plus a fallback.
-- [ ] Desktop toolbar follows selection bounds; touch toolbar docks with safe-area spacing. Scroll/zoom refresh coordinates; Escape/outside click clears transient state; page navigation does not steal active native gestures.
-- [ ] Extend optimistic/offline interval updates and account/revision-bound return validation. Block sentence-only automatic remapping of pending partial ranges; retain them in explicit recovery.
-- [ ] Run full web tests/lint/build and shared packed-consumer checks. Commit only when both cloud and durable-queue semantics are covered.
+- [x] Desktop toolbar follows selection bounds; touch toolbar docks with safe-area spacing. Scroll/zoom refresh coordinates; Escape/outside click clears transient state; page navigation does not steal active native gestures.
+- [x] Extend optimistic/offline interval updates and account/revision-bound return validation. Block sentence-only automatic remapping of pending partial ranges; retain them in explicit recovery.
+- [x] Run full web tests/lint/build and shared packed-consumer checks. Commit only when both cloud and durable-queue semantics are covered.
 
 ### Task 5: Truthful writable local interaction preview
 
 **Files:** Move reusable preview handler to a tracked local-only test utility in `hhc-web`; wire `admin-fe/.superpowers/weekly-member-preview/vite.config.ts` locally. Do not ship fake auth/mutations in production.
 **Interfaces:** Existing fixture access format plus in-memory per-document private state using the same local mutation reducer. Original mutation IDs deduplicate; changed payload reuse fails. Label reset-on-restart and simulated persistence.
 
-- [ ] Test apply/read/retry/reset and isolated document state; include forced failure so retry is observable.
-- [ ] Replace intentional 503 only in loopback preview; retain no-store and explicit simulation notice. Never forward fixture mutations to real services.
+- [x] Test apply/read/retry/reset and isolated document state; include forced failure so retry is observable.
+- [x] Replace intentional 503 only in loopback preview; retain no-store and explicit simulation notice. Never forward fixture mutations to real services.
 - [ ] Browser-check select → color → dismiss → reopen → partial clear → copy → note → failure/retry. Real Go persistence is not inferred from this preview.
 
 ### Task 6: Responsive acceptance and handoff
@@ -104,3 +104,5 @@
 - Task 5 loopback simulation implemented and HTTP checked for failure/retry, deduplication, exact range persistence and read-back. It is in-memory only, clearly labelled, and separate from real Go persistence tests. Browser lifecycle acceptance is pending.
 - Task 6 started: desktop body title shadow removed; body column translation centers existing content without changing line widths/page membership; mobile gains inner reading margins and visually quieter contributor metadata. Metadata disclosure/omission, narrow-tablet breakpoint choice and visual acceptance remain pending rather than hiding selectable text without validating range continuity.
 - Browser TaskSpace 60 is `agentDelegatedToUser`. Requested Return to agent; do not work around ownership. Physical iOS/Android/PWA acceptance is also pending. Keep the production feature gate disabled and stop before merge.
+- Independent review found three Important issues (no Critical): inactive partial-source collision during migration; stale selection when a native gesture leaves the reader; silent truncation of non-anchor text. All three reproduced with regression tests and were fixed in one pass. Partial-source conflicts additionally show exact colored snippets and require explicit confirmation before replacing the complete merged target. This is not a second-review approval.
+- Post-review web verification: 597 tests pass, lint has zero errors and one existing legal-navigation warning, production build passes. Go race suite with PostgreSQL and vet pass again. Numerical fixture check: 1739 remains 12 pages / 1740 remains 16 pages; body translation preserves widths/vertical positions. This is not visual acceptance.
