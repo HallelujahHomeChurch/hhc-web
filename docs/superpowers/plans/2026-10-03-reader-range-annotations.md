@@ -66,7 +66,7 @@
 **Interfaces:** Consume Task 1 ranges and Task 3 generated contract. Store a stable range snapshot before focus changes; quote comes from canonical text, never raw DOM or screen coordinates.
 
 - [ ] Add tests proving a native partial selection sends exact ranges and ordinary sentence clicks no longer select. Cover keyboard, toolbar focus, partial copy, mixed colors, tap existing annotation, cancel and dirty-note confirmation.
-- [ ] Observe tests fail; wire native `selectionchange` to the host and remove whole-sentence activation callbacks. Reuse existing note/sync/retry controls. Render persisted ranges through CSS Custom Highlights with feature-detected non-layout-changing fallback; do not fork paper geometry.
+- [x] Observe tests fail; wire native `selectionchange` to the host and remove whole-sentence activation callbacks. Reuse existing note/sync/retry controls. Render persisted ranges with host-side DOM Range rectangle overlays, without modifying text nodes or paper geometry. One rendering path avoids maintaining CSS Custom Highlights plus a fallback.
 - [ ] Desktop toolbar follows selection bounds; touch toolbar docks with safe-area spacing. Scroll/zoom refresh coordinates; Escape/outside click clears transient state; page navigation does not steal active native gestures.
 - [ ] Extend optimistic/offline interval updates and account/revision-bound return validation. Block sentence-only automatic remapping of pending partial ranges; retain them in explicit recovery.
 - [ ] Run full web tests/lint/build and shared packed-consumer checks. Commit only when both cloud and durable-queue semantics are covered.
@@ -95,3 +95,12 @@
 
 - User explicitly requested planning and starting implementation in one turn; proceed inline rather than adding another approval round for the already agreed direction.
 - Tasks 1/2 can land locally before the new mutation contract; do not activate partial selection until Tasks 3/4 are complete. Existing preview remains honestly read-only until Task 5.
+
+## Implementation checkpoint — 2026-10-03
+
+- Tasks 1–2 implemented in `f797461` and `c978c41`; native range integration subsequently replaces the old sentence activation path. UTF-16/scalar, focus, outside dismissal, failure preservation, late acknowledgement and dirty-note navigation have regression coverage.
+- Task 3 implemented: API `1c5e1ec`, shared contract `208999f`. `go test -race ./...` passed against an isolated PostgreSQL 17 database (including migration, round-trip and private export); `go vet ./...` passed. Client tests/lint/build, package contracts and packed Vite/Next consumers passed. No production migration or release.
+- Task 4 implemented pending final review/device acceptance: native range snapshots, partial recolor/clear/copy/notes, old full-sentence compatibility, non-layout-changing overlays, range-bound return state and conservative revision recovery. Manual recovery now requires native reselection for partial ranges rather than silently widening them.
+- Task 5 loopback simulation implemented and HTTP checked for failure/retry, deduplication, exact range persistence and read-back. It is in-memory only, clearly labelled, and separate from real Go persistence tests. Browser lifecycle acceptance is pending.
+- Task 6 started: desktop body title shadow removed; body column translation centers existing content without changing line widths/page membership; mobile gains inner reading margins and visually quieter contributor metadata. Metadata disclosure/omission, narrow-tablet breakpoint choice and visual acceptance remain pending rather than hiding selectable text without validating range continuity.
+- Browser TaskSpace 60 is `agentDelegatedToUser`. Requested Return to agent; do not work around ownership. Physical iOS/Android/PWA acceptance is also pending. Keep the production feature gate disabled and stop before merge.

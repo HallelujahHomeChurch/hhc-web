@@ -1,10 +1,12 @@
 import type {BulletinReaderMutation} from '@hallelujahhomechurch/hhc-web-client';
 import type {ReaderSelector} from './api';
+import type {ReaderTextRange} from './text-range';
 
 type Binding = {accountId: string; documentId: string};
 export type ReaderReturn = {
   edition?: Omit<ReaderSelector, 'accountId'>;
   savedAt: number; revision: number; pageId: string; selected: string[];
+  selectedRanges?: ReaderTextRange[];
   action: BulletinReaderMutation | null;
   draft?: {text: string; noteId?: string; baseVersion?: number};
 };
@@ -13,11 +15,13 @@ const key = ({accountId, documentId}: Binding) => `${prefix}${accountId}:${docum
 const id = (value: unknown) => typeof value === 'string' && value.length > 0 && value.length <= 128;
 const ids = (value: unknown): value is string[] => Array.isArray(value) && value.length <= 500 && value.every(id) && new Set(value).size === value.length;
 const text = (value: unknown) => typeof value === 'string' && [...value].length <= 10000;
+const ranges = (value: unknown, anchors: string[]) => value === undefined || Array.isArray(value) && value.length > 0 && value.length === anchors.length && new Set(value.map(range => range?.sentenceId)).size === value.length && value.every(range => range && anchors.includes(range.sentenceId) && Number.isSafeInteger(range.start) && Number.isSafeInteger(range.end) && range.start >= 0 && range.start < range.end && range.end <= 1000000);
 function validAction(value: unknown): value is BulletinReaderMutation | null {
   if (value === null) return true;
   if (!value || typeof value !== 'object') return false;
   const action = value as BulletinReaderMutation;
   if (!id(action.mutationId) || !Number.isFinite(Date.parse(action.createdAt)) || !Number.isSafeInteger(action.documentRevision) || action.documentRevision < 1 || !action.payload || typeof action.payload !== 'object') return false;
+  if ('ranges' in action.payload && (!('sentenceIds' in action.payload) || !ids(action.payload.sentenceIds) || !ranges(action.payload.ranges, action.payload.sentenceIds))) return false;
   switch (action.kind) {
     case 'setHighlight': return ids(action.payload.sentenceIds) && ['yellow', 'red', 'blue'].includes(action.payload.color);
     case 'clearHighlight': return ids(action.payload.sentenceIds);
@@ -37,6 +41,7 @@ export function readReaderReturn(binding: Binding): ReaderReturn | null {
     if (!raw) return null;
     if (raw.length > 1024 * 1024) throw new Error('invalid_return');
     const value = JSON.parse(raw) as ReaderReturn;
+    if (!ranges(value.selectedRanges, value.selected)) throw new Error('invalid_return');
     const age = Date.now() - value.savedAt;
     if (!Number.isFinite(age) || age < 0 || age >= 30 * 60 * 1000 || !Number.isSafeInteger(value.revision) || value.revision < 1 || typeof value.pageId !== 'string' || value.pageId.length > 128 || !ids(value.selected) || !validAction(value.action) || value.draft && (!text(value.draft.text) || value.draft.noteId !== undefined && !id(value.draft.noteId) || value.draft.baseVersion !== undefined && (!Number.isSafeInteger(value.draft.baseVersion) || value.draft.baseVersion < 1))) throw new Error('invalid_return');
     return value;

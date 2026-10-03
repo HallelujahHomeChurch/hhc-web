@@ -1,5 +1,6 @@
 import type {BulletinReaderMutation, BulletinReaderState, BulletinReaderStateResponse, BulletinReaderHighlightColor, MemberOnlineDocument} from '@hallelujahhomechurch/hhc-web-client';
 import {readerSentences} from './selection';
+import {rangeQuote, type ReaderTextRange} from './text-range';
 
 export type ReaderRecovery = {mutationId: string; reason: 'removed_anchor' | 'anchor_limit' | 'color_conflict' | 'note_conflict' | 'mapping_unavailable' | 'expired_mutation'};
 export function rebaseReaderMutations(pending: readonly BulletinReaderMutation[], previous: BulletinReaderState, current: BulletinReaderState, mappings: NonNullable<BulletinReaderStateResponse['mappings']>) {
@@ -20,6 +21,11 @@ export function rebaseReaderMutations(pending: readonly BulletinReaderMutation[]
   for (const input of pending) {
     const mutation = structuredClone(input);
     if (mutation.documentRevision === current.currentRevision) {mutations.push(mutation); continue;}
+    if ('ranges' in mutation.payload) {
+      // Published sentence mappings do not prove partial text offsets.
+      recovery.push({mutationId: mutation.mutationId, reason: 'mapping_unavailable'});
+      continue;
+    }
     let reason: ReaderRecovery['reason'] | undefined;
     if (mutation.documentRevision !== previous.currentRevision) reason = 'mapping_unavailable';
     if (mutation.kind === 'setHighlight' || mutation.kind === 'clearHighlight' || mutation.kind === 'createNote') {
@@ -47,16 +53,23 @@ export function rebaseReaderMutations(pending: readonly BulletinReaderMutation[]
   return {mutations, recovery};
 }
 
-export function manualReaderRecovery(original: BulletinReaderMutation, state: BulletinReaderState, document: MemberOnlineDocument, choice: {sentenceIds: string[]; text: string; color: BulletinReaderHighlightColor}): BulletinReaderMutation {
+export function manualReaderRecovery(original: BulletinReaderMutation, state: BulletinReaderState, document: MemberOnlineDocument, choice: {sentenceIds: string[]; text: string; color: BulletinReaderHighlightColor; ranges?: ReaderTextRange[]}): BulletinReaderMutation {
   if (state.documentId !== document.documentId || state.currentRevision !== document.revision) throw new Error('invalid_reader_binding');
+  const partial = 'ranges' in original.payload;
+  if (partial && !choice.ranges?.length) throw new Error('range_reselection_required');
+  if (choice.ranges) {
+    rangeQuote(choice.ranges, readerSentences(document));
+    if (JSON.stringify(choice.ranges.map(range => range.sentenceId)) !== JSON.stringify(choice.sentenceIds)) throw new Error('invalid_reader_anchor');
+  }
+  const ranges = choice.ranges ? {ranges: choice.ranges} : {};
   const common = {mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: document.revision};
   const anchors = () => {
     const ids = [...new Set(choice.sentenceIds)], valid = new Set(readerSentences(document).map(sentence => sentence.id));
     if (!ids.length || ids.length > 500 || ids.some(id => !valid.has(id))) throw new Error('invalid_reader_anchor');
     return ids;
   };
-  if (original.kind === 'setHighlight') return {...common, kind: original.kind, payload: {sentenceIds: anchors(), color: choice.color}};
-  if (original.kind === 'clearHighlight') return {...common, kind: original.kind, payload: {sentenceIds: anchors()}};
+  if (original.kind === 'setHighlight') return {...common, kind: original.kind, payload: {sentenceIds: anchors(), color: choice.color, ...ranges}};
+  if (original.kind === 'clearHighlight') return {...common, kind: original.kind, payload: {sentenceIds: anchors(), ...ranges}};
   if (original.kind === 'setProgress') return {...common, kind: original.kind, payload: choice.sentenceIds.length ? {sentenceId: anchors()[0]} : {}};
   if (original.kind === 'resolveHighlightMigrationConflict') throw new Error('invalid_reader_conflict');
   const cloud = state.notes.find(note => note.id === original.payload.noteId && !note.deleted);
@@ -66,5 +79,5 @@ export function manualReaderRecovery(original: BulletinReaderMutation, state: Bu
   }
   if (!choice.text.trim() || [...choice.text].length > 10000) throw new Error('invalid_note_text');
   if (cloud) return {...common, kind: 'editNote', baseVersion: cloud.version, payload: {noteId: cloud.id, text: choice.text}};
-  return {...common, kind: 'createNote', payload: {noteId: original.kind === 'createNote' && !state.notes.some(note => note.id === original.payload.noteId) ? original.payload.noteId : crypto.randomUUID(), sentenceIds: anchors(), text: choice.text}};
+  return {...common, kind: 'createNote', payload: {noteId: original.kind === 'createNote' && !state.notes.some(note => note.id === original.payload.noteId) ? original.payload.noteId : crypto.randomUUID(), sentenceIds: anchors(), text: choice.text, ...ranges}};
 }

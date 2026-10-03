@@ -5,6 +5,13 @@ import {hasPendingReaderWrites} from './offline-store';
 beforeEach(() => {sessionStorage.clear(); vi.useRealTimers();});
 const binding = {accountId: 'account-a', documentId: 'doc-a'};
 const snapshot = {revision: 1, selected: ['s1'], pageId: 'p1', action: null, draft: {text: 'private draft'}};
+it('restores exact partial ranges and rejects malformed persisted offsets', () => {
+  const selectedRanges = [{sentenceId: 's1', start: 1, end: 3}];
+  saveReaderReturn(binding, {...snapshot, selectedRanges});
+  expect(readReaderReturn(binding)?.selectedRanges).toEqual(selectedRanges);
+  saveReaderReturn(binding, {selectedRanges: [{sentenceId: 's1', start: -1, end: 3}]});
+  expect(readReaderReturn(binding)).toBeNull();
+});
 it('restores only the same account and document, without storing content or credentials', () => {
   saveReaderReturn(binding, snapshot);
   expect(readReaderReturn(binding)).toMatchObject(snapshot);

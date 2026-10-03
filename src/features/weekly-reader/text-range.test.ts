@@ -1,5 +1,5 @@
 import {afterEach, describe, expect, it} from 'vitest';
-import {readTextSelection, rangeQuote} from './text-range';
+import {readTextSelection, rangeQuote, renderedTextRanges} from './text-range';
 import type {ReaderSentence} from './selection';
 
 const sentences: ReaderSentence[] = [
@@ -24,6 +24,11 @@ function select(start: Node, startOffset: number, end: Node, endOffset: number) 
 afterEach(() => {window.getSelection()?.removeAllRanges(); document.body.replaceChildren();});
 
 describe('canonical native text selection', () => {
+  it('maps persisted scalar offsets back to only visible DOM fragments across fonts', () => {
+    const root = fixture('<span data-sentence-id="a" data-fragment-start="1" data-fragment-end="4"><em>😀</em><strong>乙丙</strong></span>');
+    expect(renderedTextRanges(root, {sentenceId: 'a', start: 0, end: 3}).map(range => range.toString())).toEqual(['😀乙']);
+    expect(renderedTextRanges(root, {sentenceId: 'foreign', start: 0, end: 2})).toEqual([]);
+  });
   it('converts DOM UTF-16 offsets across typography into scalar offsets and exact quote', () => {
     const root = fixture('<span data-sentence-id="a" data-fragment-start="0" data-fragment-end="5"><em>甲😀</em><strong>乙丙丁</strong></span>');
     const selection = select(root.querySelector('em')!.firstChild!, 1, root.querySelector('strong')!.firstChild!, 1);

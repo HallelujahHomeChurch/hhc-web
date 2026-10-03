@@ -9,6 +9,22 @@ const state = (): BulletinReaderState => ({accountId: 'account-a', documentId: d
 ], notes: [{id: 'note', text: '私人筆記', sentenceIds: ['s0'], inactiveAnchors: [], quote: '內容0。', version: 1, deleted: false, reanchorRequired: false, createdAt: '2026-10-02T00:00:00Z', updatedAt: '2026-10-02T00:00:00Z'}], progress: null, conflicts: []});
 const base = {mutationId: '00000000-0000-4000-8000-000000000010', documentRevision: 1, createdAt: '2026-10-02T01:00:00Z'};
 describe('private reader state', () => {
+  it('recolors only selected scalar offsets and splits partial clears without changing notes', () => {
+    const original = state();
+    const ranges = [{sentenceId: 's0', start: 1, end: 3}];
+    const next = optimisticReaderState(original, {...base, kind: 'setHighlight', payload: {sentenceIds: ['s0'], ranges, color: 'blue'}}, document);
+    expect(next.highlights[0].segments).toEqual([{start: 0, end: 1, color: 'red'}, {start: 1, end: 3, color: 'blue'}, {start: 3, end: 4, color: 'red'}]);
+    expect(original.highlights[0].segments).toBeUndefined();
+    const cleared = optimisticReaderState(next, {...base, kind: 'clearHighlight', payload: {sentenceIds: ['s0'], ranges}}, document);
+    expect(cleared.highlights[0].segments).toEqual([{start: 0, end: 1, color: 'red'}, {start: 3, end: 4, color: 'red'}]);
+    expect(cleared.notes).toEqual(original.notes);
+  });
+  it('durably stores the exact note quote and source offsets, rejecting mismatched range IDs', () => {
+    const ranges = [{sentenceId: 's0', start: 1, end: 3}];
+    const next = applyLocalMutation(state(), {...base, kind: 'createNote', payload: {noteId: 'partial', sentenceIds: ['s0'], ranges, text: 'private'}}, document);
+    expect(next.notes.at(-1)).toMatchObject({quote: '容0', ranges: [{sentenceId: 's0', start: 1, end: 3, quote: '內容0。'}]});
+    expect(() => optimisticReaderState(state(), {...base, kind: 'clearHighlight', payload: {sentenceIds: ['s1'], ranges}}, document)).toThrow();
+  });
   it('replaces mixed colors atomically, preserves notes on Clear, and never mutates the rollback snapshot', () => {
     const original = state();
     const changed = optimisticReaderState(original, {...base, kind: 'setHighlight', payload: {sentenceIds: ['s0', 's1'], color: 'blue'}}, document);

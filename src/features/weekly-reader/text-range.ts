@@ -2,6 +2,31 @@ import type {ReaderSentence} from './selection';
 
 export type ReaderTextRange = {sentenceId: string; start: number; end: number};
 
+/** Recover DOM ranges for the mounted fragments without mutating React's text. */
+export function renderedTextRanges(root: HTMLElement, selected: ReaderTextRange): Range[] {
+  const ranges: Range[] = [];
+  for (const element of root.querySelectorAll<HTMLElement>('[data-sentence-id]')) {
+    if (element.dataset.sentenceId !== selected.sentenceId || element.closest('[inert], [hidden], [aria-hidden="true"]')) continue;
+    const from = Number(element.dataset.fragmentStart), to = Number(element.dataset.fragmentEnd);
+    const start = Math.max(from, selected.start) - from, end = Math.min(to, selected.end) - from;
+    if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start >= end) continue;
+    const walker = root.ownerDocument.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+    const range = root.ownerDocument.createRange();
+    let offset = 0, started = false;
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const points = Array.from(node.textContent ?? '');
+      if (!started && start <= offset + points.length) {
+        range.setStart(node, points.slice(0, start - offset).join('').length); started = true;
+      }
+      if (started && end <= offset + points.length) {
+        range.setEnd(node, points.slice(0, end - offset).join('').length); ranges.push(range); break;
+      }
+      offset += points.length;
+    }
+  }
+  return ranges;
+}
+
 /** Native ranges use UTF-16; persisted anchors use Unicode scalar offsets. */
 export function readTextSelection(root: HTMLElement, selection: Selection | null, sentences: readonly ReaderSentence[]): ReaderTextRange[] {
   if (!selection || selection.isCollapsed || selection.rangeCount !== 1) return [];

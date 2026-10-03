@@ -15,6 +15,25 @@ beforeEach(() => {
   mocks.identity.mockResolvedValue({accountId: 'account-a', epoch: 1}); mocks.read.mockResolvedValue({status: 'available'});
   mocks.prepare.mockResolvedValue({value, state: cloud, queue: [], mutations: [], recovery: [], previousRevision: 1}); mocks.finish.mockResolvedValue(value);
 });
+it('requires a new native range after revision change and retains only its exact offsets', async () => {
+  const mutation = {mutationId: 'partial-old', documentRevision: 1, createdAt: '', kind: 'setHighlight', payload: {sentenceIds: ['s0'], color: 'yellow', ranges: [{sentenceId: 's0', start: 1, end: 3}]}};
+  const current = {...value, document: {...value.document, revision: 2}};
+  mocks.prepare.mockResolvedValue({value: current, state: cloud, queue: [{mutation, sent: true}], mutations: [], recovery: [{mutationId: mutation.mutationId, reason: 'mapping_unavailable'}], previousRevision: 1});
+  const {container} = render(<ReaderRecovery {...props}/>);
+  fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
+  const keep = await screen.findByRole('button', {name: 'Keep local'});
+  expect(keep).toBeDisabled();
+  expect(screen.getByText('容0')).toBeInTheDocument();
+  const sentence = container.ownerDocument.querySelector('[data-sentence-id="s0"]')!;
+  fireEvent.pointerDown(sentence);
+  const native = document.createRange(); native.setStart(sentence.firstChild!, 0); native.setEnd(sentence.firstChild!, 2);
+  document.getSelection()!.removeAllRanges(); document.getSelection()!.addRange(native);
+  fireEvent(document, new Event('selectionchange'));
+  expect(keep).not.toBeDisabled();
+  fireEvent.pointerDown(keep); fireEvent.click(keep);
+  await waitFor(() => expect(mocks.choose).toHaveBeenCalled());
+  expect(mocks.choose.mock.calls[0][2]).toMatchObject({documentRevision: 2, payload: {sentenceIds: ['s0'], ranges: [{sentenceId: 's0', start: 0, end: 2}]}});
+});
 it('requires explicit acceptance before switching and retains the reader on cancellation or failure', async () => {
   render(<ReaderRecovery {...props}/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));

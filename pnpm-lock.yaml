@@ -342,7 +342,7 @@ packages:
     version: 1.0.32
 
   '@hallelujahhomechurch/hhc-web-client@file:../frontend-platform/artifacts/hallelujahhomechurch-hhc-web-client-1.0.32.tgz':
-    resolution: {integrity: sha512-3K3Znmtqz8T0V+Eatuzk9QC6mO7Rx5OhS3yIX7U/cR8hBkoUO+5upFC6X5EXJiC6vbD924Tm/rjyAPIcrCRXwg==, tarball: file:../frontend-platform/artifacts/hallelujahhomechurch-hhc-web-client-1.0.32.tgz}
+    resolution: {integrity: sha512-oyKKCDTxUB3bEk2RGG9SrrW74rkSni2jXW3H6EbhgTzcoXy02JcYB/Vib7Yn/lKpWlRtOv0WnUAvlXi54KeFfw==, tarball: file:../frontend-platform/artifacts/hallelujahhomechurch-hhc-web-client-1.0.32.tgz}
     version: 1.0.32
 
   '@hallelujahhomechurch/operations-client@1.0.26':

@@ -12,12 +12,39 @@ vi.mock('@/components/layout/AccountControl', () => ({
   useBulletinAuthorization: () => authorization
 }));
 const authorization = {getAccessToken: async () => 'token', refreshAfterUnauthorized: async () => null};
+function selectText(element: Element, start?: number, end?: number) {
+  fireEvent.pointerDown(element);
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  if (start !== undefined) {
+    const text = document.createTreeWalker(element, NodeFilter.SHOW_TEXT).nextNode()!;
+    range.setStart(text, start); range.setEnd(text, end!);
+  }
+  const selection = window.getSelection()!;
+  selection.removeAllRanges(); selection.addRange(range);
+  fireEvent(document, new Event('selectionchange'));
+}
 vi.mock('@/features/weekly-reader/api', async original => ({...await original<typeof import('@/features/weekly-reader/api')>(), createReaderApi: () => ({open: state.open, privateState: state.privateState, mutate: state.mutate})}));
 const props = {locale: 'en' as const, issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const, messages: getMessages('en').weeklyReader};
 beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state.accountId = 'account-a'; state.status = 'authenticated'; state.open.mockReset().mockResolvedValue(readerFixture()); state.privateState.mockReset().mockResolvedValue({state: {accountId: 'account-a', documentId: readerFixture().document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: null, conflicts: []}}); state.mutate.mockReset(); sessionStorage.clear(); vi.stubGlobal('matchMedia', vi.fn(() => ({matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn()})));});
 afterEach(() => {Reflect.deleteProperty(document, 'fonts'); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs();});
 
 describe('protected weekly reader', () => {
+  it('selects partial native text instead of activating an entire sentence on click', async () => {
+    const cloud = (await state.privateState()).state;
+    state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: cloud, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]}));
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
+    const sentence = container.querySelector('[data-sentence-id="s0"]')!;
+    fireEvent.click(sentence);
+    expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
+    expect(sentence).not.toHaveAttribute('role', 'button');
+    selectText(sentence, 1, 3);
+    fireEvent.click(screen.getByRole('button', {name: 'Blue highlight'}));
+    await waitFor(() => expect(state.mutate).toHaveBeenCalled());
+    expect(state.mutate.mock.calls[0][2][0].payload).toEqual({sentenceIds: ['s0'], ranges: [{sentenceId: 's0', start: 1, end: 3}], color: 'blue'});
+  });
   it('dismisses transient selection outside the reader without removing a saved highlight', async () => {
     const cloud = (await state.privateState()).state;
     state.privateState.mockResolvedValue({state: {...cloud, highlights: [{sentenceId: 's0', color: 'yellow', quote: '內容0', active: true, version: 1, updatedAt: ''}]}});
@@ -25,12 +52,12 @@ describe('protected weekly reader', () => {
     await screen.findByText('Private weekly');
     await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
     const sentence = container.querySelector('[data-sentence-id="s0"]')!;
-    fireEvent.click(sentence);
+    selectText(sentence);
     fireEvent.pointerDown(document.body);
     expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
     expect(sentence).toHaveAttribute('data-highlight', 'yellow');
     expect(state.mutate).not.toHaveBeenCalled();
-    fireEvent.click(sentence);
+    selectText(sentence);
     fireEvent.click(screen.getByText('Private weekly', {selector: 'h1'}));
     expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
   });
@@ -45,7 +72,7 @@ describe('protected weekly reader', () => {
     await screen.findByText('Private weekly');
     await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
     const sentence = container.querySelector('[data-sentence-id="s0"]')!;
-    fireEvent.click(sentence);
+    selectText(sentence);
     const color = screen.getByRole('button', {name: 'Yellow highlight'});
     fireEvent.pointerDown(color);
     expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
@@ -63,7 +90,7 @@ describe('protected weekly reader', () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
     await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
-    fireEvent.click(container.querySelector('[data-sentence-id="s0"]')!);
+    selectText(container.querySelector('[data-sentence-id="s0"]')!);
     fireEvent.click(screen.getByRole('button', {name: 'Yellow highlight'}));
     await screen.findByText(props.messages.actionFailed);
     expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
@@ -79,6 +106,27 @@ describe('protected weekly reader', () => {
     expect(screen.queryByRole('textbox', {name: props.messages.noteText})).not.toBeInTheDocument();
   });
 
+  it('protects a dirty note when changing pages or opening the notes list', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
+    const next = screen.getByRole('button', {name: 'Next page'});
+    const list = screen.getByRole('button', {name: 'My notes'});
+    selectText(container.querySelector('[data-sentence-id="s0"]')!, 1, 3);
+    fireEvent.click(screen.getByRole('button', {name: 'Note'}));
+    fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'Keep draft and range'}});
+    fireEvent.click(next);
+    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p0');
+    fireEvent.click(list);
+    expect(screen.getByRole('textbox', {name: props.messages.noteText})).toHaveValue('Keep draft and range');
+    expect(confirm).toHaveBeenCalled();
+    confirm.mockReturnValue(true);
+    fireEvent.click(next);
+    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p1');
+    expect(screen.queryByRole('textbox', {name: props.messages.noteText})).not.toBeInTheDocument();
+  });
+
   it('does not clear a newer selection when an older highlight acknowledgement arrives', async () => {
     const cloud = (await state.privateState()).state;
     let acknowledge!: () => void;
@@ -89,13 +137,13 @@ describe('protected weekly reader', () => {
     await screen.findByText('Private weekly');
     await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
     const sentence = container.querySelector('[data-sentence-id="s0"]')!;
-    fireEvent.click(sentence);
+    selectText(sentence);
     fireEvent.click(screen.getByRole('button', {name: 'Yellow highlight'}));
     await waitFor(() => expect(acknowledge).toBeTypeOf('function'));
-    fireEvent.click(sentence); fireEvent.click(sentence);
+    selectText(sentence); selectText(sentence);
     await act(async () => acknowledge());
     expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
-    expect(sentence).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
   });
 
   it('keeps native pinch-zoom panning from turning the paper page', async () => {
@@ -132,7 +180,7 @@ describe('protected weekly reader', () => {
     const first = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
     await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
-    fireEvent.click(first.container.querySelector('[data-sentence-id="s0"]')!);
+    selectText(first.container.querySelector('[data-sentence-id="s0"]')!);
     fireEvent.click(screen.getByRole('button', {name: 'Note'}));
     fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'Return after login'}});
     first.unmount();
@@ -157,7 +205,7 @@ describe('protected weekly reader', () => {
     await screen.findByText('Private weekly');
     await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
     act(() => resize(1300));
-    fireEvent.click(container.querySelector('[data-sentence-id="s0"]')!);
+    selectText(container.querySelector('[data-sentence-id="s0"]')!);
     fireEvent.click(screen.getByRole('button', {name: 'Note'}));
     fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'Do not lose this draft'}});
     act(() => resize(800));
@@ -170,7 +218,7 @@ describe('protected weekly reader', () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
     await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
-    fireEvent.click(container.querySelector('[data-sentence-id="s0"]')!);
+    selectText(container.querySelector('[data-sentence-id="s0"]')!);
     fireEvent.click(screen.getByRole('button', {name: 'Note'}));
     fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'Unsaved private draft'}});
     let finish!: (value: ReturnType<typeof readerFixture>) => void;
@@ -231,7 +279,7 @@ describe('protected weekly reader', () => {
   it('retains selected sentences across foreground authorization checks without permitting actions during validation', async () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
-    fireEvent.click(container.querySelector('[data-sentence-id="s0"]')!);
+    selectText(container.querySelector('[data-sentence-id="s0"]')!);
     let finish!: (value: ReturnType<typeof readerFixture>) => void;
     state.open.mockImplementationOnce(() => new Promise(resolve => {finish = resolve;}));
     fireEvent.focus(window);
@@ -239,26 +287,26 @@ describe('protected weekly reader', () => {
     expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
     await act(async () => finish(readerFixture()));
     await screen.findByRole('button', {name: 'Copy'});
-    expect(container.querySelector('[data-sentence-id="s0"]')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
   });
-  it('toggles sentence selection, preserves it on note cancellation and clears it on desktop page navigation', async () => {
+  it('preserves native selection snapshot on note cancellation and clears it on escape and navigation', async () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
     await waitFor(() => expect(state.privateState).toHaveBeenCalled());
     const sentence = container.querySelector('[data-sentence-id="s0"]')!;
-    fireEvent.click(sentence);
-    expect(sentence).toHaveAttribute('aria-pressed', 'true');
+    selectText(sentence);
+    expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', {name: 'Note'}));
     expect(screen.queryByRole('button', {name: 'Yellow highlight'})).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
     await screen.findByRole('button', {name: 'Yellow highlight'});
-    expect(sentence).toHaveAttribute('aria-pressed', 'true');
-    fireEvent.click(sentence);
+    expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
+    fireEvent.click(document.body);
     expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
-    fireEvent.click(sentence);
+    selectText(sentence);
     fireEvent.keyDown(screen.getByRole('region', {name: 'Bulletin reader'}), {key: 'Escape'});
-    expect(sentence).toHaveAttribute('aria-pressed', 'false');
-    fireEvent.click(sentence);
+    expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
+    selectText(sentence);
     fireEvent.click(screen.getByRole('button', {name: 'Next page'}));
     expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
   });

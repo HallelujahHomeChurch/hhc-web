@@ -1,3 +1,15 @@
+import type {MemberOnlineDocument} from '@hallelujahhomechurch/hhc-web-client';
+
+/** Translate the existing body column; never resize text or move it to another page. */
+export function centeredBodyOffset(document: MemberOnlineDocument['content'], pageId: string) {
+  const slots = document.layoutManifest.pages.find(page => page.pageId === pageId)?.slots ?? [];
+  const body = new Set(document.components.filter(component => component.type === 'bodySection').map(component => component.id));
+  if (!slots.length || slots.some(slot => !body.has(slot.componentId))) return 0;
+  const left = Math.min(...slots.map(slot => slot.box.x));
+  const right = Math.max(...slots.map(slot => slot.box.x + slot.box.width));
+  return (1 - right - left) / 2;
+}
+
 export type ReaderZoom = 'page' | 'width' | number;
 export function pageScale(zoom: ReaderZoom, page: {width: number; height: number}, viewport: {width: number; height: number}) {
   if (typeof zoom === 'number') return Math.max(.75, Math.min(2.5, zoom));

@@ -1,6 +1,18 @@
 import {describe, expect, it} from 'vitest';
-import {pageScale, swipeDirection, keyboardPageDelta} from './navigation';
+import {pageScale, swipeDirection, keyboardPageDelta, centeredBodyOffset} from './navigation';
+import {readerFixture} from './test-fixture';
 describe('reader navigation', () => {
+  it('centers body text using translation only, without changing widths, fragments or pages', () => {
+    const document = readerFixture().document.content;
+    expect(centeredBodyOffset(document, 'p0')).toBe(0);
+    const block = document.components[0].type === 'backSummary' ? document.components[0].items[0].blocks[0] : null;
+    if (!block) throw new Error('fixture');
+    document.components[0] = {id: 'c0', type: 'bodySection', bodySection: {kind: 'sermon', title: block, blocks: []}};
+    document.layoutManifest.pages[0].slots[0].box = {x: .14, y: .1, width: .8, height: .1};
+    const before = structuredClone(document);
+    expect(centeredBodyOffset(document, 'p0')).toBeCloseTo(-.04);
+    expect(document).toEqual(before);
+  });
   it('fits the available viewport and bounds explicit zoom', () => {
     expect(pageScale('page', {width: 600, height: 800}, {width: 900, height: 600})).toBe(.75);
     expect(pageScale('width', {width: 600, height: 800}, {width: 900, height: 600})).toBe(1.5);

@@ -1,10 +1,27 @@
 import {expect, it} from 'vitest';
 import type {BulletinReaderMutation, BulletinReaderState} from '@hallelujahhomechurch/hhc-web-client';
 import {rebaseReaderMutations, manualReaderRecovery} from './rebase';
+
+it('requires explicit recovery for partial ranges when only sentence mappings are available', () => {
+  const state = {accountId: 'a', documentId: 'd', currentRevision: 1, appliedRevision: 1, highlights: [], notes: [], conflicts: [], progress: null};
+  const mutation = {mutationId: 'range', documentRevision: 1, createdAt: '2026-10-03T00:00:00Z', kind: 'setHighlight' as const, payload: {sentenceIds: ['a'], color: 'yellow' as const, ranges: [{sentenceId: 'a', start: 1, end: 2}]}};
+  const result = rebaseReaderMutations([mutation], state, {...state, currentRevision: 2, appliedRevision: 2}, [{fromSentenceId: 'a', toSentenceIds: ['a']}]);
+  expect(result.mutations).toEqual([]);
+  expect(result.recovery).toEqual([{mutationId: 'range', reason: 'mapping_unavailable'}]);
+  expect(mutation.documentRevision).toBe(1);
+});
 import {readerFixture} from './test-fixture';
 
 const state: BulletinReaderState = {accountId: 'a', documentId: 'd', appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: null, conflicts: []};
 const base = {createdAt: '2026-10-02T00:00:00Z', documentRevision: 1};
+it('requires a freshly selected range for manual partial recovery instead of widening to full sentences', () => {
+  const document = readerFixture().document;
+  const cloud = {...state, documentId: document.documentId, currentRevision: document.revision};
+  const original = {...base, mutationId: 'partial', kind: 'setHighlight' as const, payload: {sentenceIds: ['s0'], color: 'yellow' as const, ranges: [{sentenceId: 's0', start: 1, end: 2}]}};
+  const choice = {sentenceIds: ['s0'], text: '', color: 'blue' as const};
+  expect(() => manualReaderRecovery(original, cloud, document, choice)).toThrow('range_reselection_required');
+  expect(manualReaderRecovery(original, cloud, document, {...choice, ranges: [{sentenceId: 's0', start: 0, end: 2}]})).toMatchObject({payload: {sentenceIds: ['s0'], color: 'blue', ranges: [{sentenceId: 's0', start: 0, end: 2}]}});
+});
 it('preserves mutation IDs and expands splits without silently dropping removed anchors or oversized atomic groups', () => {
   const mutation: BulletinReaderMutation = {...base, mutationId: 'id', kind: 'setHighlight', payload: {sentenceIds: ['a', 'b'], color: 'yellow'}};
   const cloud = {...state, appliedRevision: 2, currentRevision: 2};
