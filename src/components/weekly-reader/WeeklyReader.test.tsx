@@ -278,17 +278,15 @@ describe('protected weekly reader', () => {
     await waitFor(() => expect(state.mutate).toHaveBeenCalled(), {timeout: 2500});
     expect(state.mutate.mock.calls[0][2][0]).toMatchObject({kind: 'setProgress', payload: {pageId: 'p2', sentenceId: 's2'}});
   });
-  it('offers cloud progress without jumping and uses Start over as a normal private mutation', async () => {
+  it('automatically restores cloud progress without asking or resetting progress', async () => {
     const cloud = {accountId: 'account-a', documentId: readerFixture().document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: {pageId: 'p2', componentId: 'c2', sentenceId: 's2', recordedAt: '', updatedAt: ''}, conflicts: []};
     state.privateState.mockResolvedValue({state: cloud});
     state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: {...cloud, progress: null}, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]}));
     const {container} = render(<WeeklyReader {...props}/>);
-    await screen.findByRole('button', {name: 'Start over'});
-    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p0');
-    fireEvent.click(screen.getByRole('button', {name: 'Start over'}));
-    await waitFor(() => expect(state.mutate).toHaveBeenCalled());
-    expect(state.mutate.mock.calls[0][2][0]).toMatchObject({kind: 'setProgress', payload: {}});
+    await waitFor(() => expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p2'));
+    expect(screen.queryByRole('button', {name: 'Start over'})).not.toBeInTheDocument();
     expect(screen.queryByRole('button', {name: 'Continue reading'})).not.toBeInTheDocument();
+    expect(state.mutate).not.toHaveBeenCalled();
   });
   it('retains selected sentences across foreground authorization checks without permitting actions during validation', async () => {
     const {container} = render(<WeeklyReader {...props}/>);
@@ -302,6 +300,33 @@ describe('protected weekly reader', () => {
     await act(async () => finish(readerFixture()));
     await screen.findByRole('button', {name: 'Copy'});
     expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
+  });
+  it.each([{pageId: 'p2'}, {pageId: 'p2', componentId: 'c2'}, {pageId: 'p2', sentenceId: 'removed'}])('restores progress with page fallback: %j', async progress => {
+    const cloud = (await state.privateState()).state;
+    state.privateState.mockResolvedValue({state: {...cloud, progress}});
+    const {container} = render(<WeeklyReader {...props}/>);
+    await waitFor(() => expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p2'));
+  });
+  it('does not let late cloud progress undo manual page navigation', async () => {
+    const cloud = (await state.privateState()).state;
+    let finish!: (result: unknown) => void;
+    state.privateState.mockImplementation(() => new Promise(resolve => {finish = resolve;}));
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    fireEvent.click(screen.getByRole('button', {name: 'Next page'}));
+    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p1');
+    await act(async () => finish({state: {...cloud, progress: {pageId: 'p3'}}}));
+    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p1');
+  });
+  it('keeps a locally saved first page rather than replacing it with cloud progress', async () => {
+    const cloud = (await state.privateState()).state;
+    state.privateState.mockResolvedValue({state: {...cloud, progress: {pageId: 'p2'}}});
+    sessionStorage.setItem(`weekly-reader-position:account-a:${readerFixture().document.documentId}:1`, 'p0');
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
+    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p0');
+    expect(screen.queryByRole('button', {name: 'Continue reading'})).not.toBeInTheDocument();
   });
   it('preserves native selection snapshot on note cancellation and clears it on escape and navigation', async () => {
     const {container} = render(<WeeklyReader {...props}/>);
@@ -461,9 +486,7 @@ describe('protected weekly reader', () => {
     sessionStorage.setItem(`weekly-reader-position:account-a:${readerFixture().document.documentId}:1`, 'p2');
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
-    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p0');
-    fireEvent.click(screen.getByRole('button', {name: 'Continue reading'}));
-    expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p2');
+    await waitFor(() => expect(container.querySelector('[data-bulletin-page]')).toHaveAttribute('data-bulletin-page', 'p2'));
     fireEvent.click(screen.getByRole('button', {name: 'Source page 3 / 4'}));
     fireEvent.click(screen.getByRole('button', {name: 'Thumbnails'}));
     expect(container.querySelectorAll('[inert][aria-hidden="true"]')).toHaveLength(4);
@@ -483,8 +506,6 @@ describe('protected weekly reader', () => {
     const scroll = vi.spyOn(HTMLElement.prototype, 'scrollIntoView');
     render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
-    expect(scroll).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', {name: 'Continue reading'}));
     await waitFor(() => expect(scroll).toHaveBeenCalled());
     scroll.mockRestore();
   });

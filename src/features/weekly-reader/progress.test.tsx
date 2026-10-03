@@ -21,12 +21,10 @@ it('records settled navigation once, flushes on hiding, and does not overwrite p
   expect(commit).toHaveBeenCalledTimes(2);
   expect(commit.mock.calls[1][0].payload).toEqual({pageId: 'p3', sentenceId: 's3', componentId: 'c3'});
 });
-it('uses an explicit empty progress mutation for Start over and does not invent a cross-page anchor', async () => {
+it('does not invent a cross-page anchor', async () => {
   vi.useFakeTimers(); const commit = vi.fn().mockResolvedValue(undefined);
   const {result} = renderHook(() => useReaderProgress(readerFixture().document, commit));
   act(() => result.current.record('p1', 's0'));
   await act(async () => vi.advanceTimersByTimeAsync(500));
   expect(commit.mock.calls[0][0].payload).toEqual({pageId: 'p1', sentenceId: 's1', componentId: 'c1'});
-  await act(async () => result.current.reset());
-  expect(commit.mock.calls[1][0].payload).toEqual({});
 });

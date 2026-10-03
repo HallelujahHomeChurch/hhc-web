@@ -28,9 +28,5 @@ export function useReaderProgress(document: MemberOnlineDocument, commit: (mutat
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => void flush(), 500);
   }, [document, flush]);
-  async function reset() {
-    if (timer.current) clearTimeout(timer.current); pending.current = null;
-    await send.current({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: document.revision, kind: 'setProgress', payload: {}});
-  }
-  return {record, flush, reset};
+  return {record, flush};
 }

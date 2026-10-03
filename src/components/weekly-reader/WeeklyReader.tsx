@@ -1,6 +1,6 @@
 'use client';
 
-import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode} from 'react';
+import {useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode} from 'react';
 import {ArrowLeft, Search, StickyNote, Ellipsis, X} from 'lucide-react';
 import {BulletinDocumentRenderer, ReaderWatermark} from '@hallelujahhomechurch/ui';
 import type {OnlineBulletinAccess, BulletinReaderMutation, BulletinReaderNote} from '@hallelujahhomechurch/hhc-web-client';
@@ -29,7 +29,6 @@ import {PageNavigator} from './PageNavigator';
 import {SectionNavigator} from './SectionNavigator';
 import {ReaderSearch} from './ReaderSearch';
 import {OfflineControl} from './OfflineControl';
-import {ResumeReadingPrompt} from './ResumeReadingPrompt';
 import {SelectionToolbar} from './SelectionToolbar';
 import {NoteEditor, type NoteSave, type NoteEditorState} from './NoteEditor';
 import {NotesPanel} from './NotesPanel';
@@ -162,13 +161,11 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     try {const anchor = JSON.parse(sessionStorage.getItem(`${storageKey}:anchor`) ?? 'null'); return anchor && ['component', 'sentence'].includes(anchor.kind) && typeof anchor.id === 'string' ? anchor : null;} catch {return null;}
   });
   const [restoredPage] = useState(() => {
-    try {const id = sessionStorage.getItem(storageKey); return Math.max(0, document.pages.findIndex(page => page.id === id));} catch {return 0;}
+    try {const id = sessionStorage.getItem(storageKey); return document.pages.findIndex(page => page.id === id);} catch {return -1;}
   });
-  const [resumePending, setResumePending] = useState(!!restoredAnchor || restoredPage > 0);
-  const [resumeDismissed, setResumeDismissed] = useState(false);
+  const [resumeResolved, setResumeResolved] = useState(false);
   const cloudProgress = privateReader.state?.progress;
-  const offerResume = resumePending || !resumeDismissed && !!(cloudProgress?.pageId || cloudProgress?.sentenceId || cloudProgress?.componentId);
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(Math.max(0, restoredPage));
   const [zoom, setZoom] = useState<ReaderZoom>('page');
   const [mobile, setMobile] = useState(false);
   const [panel, setPanel] = useState<'pages' | 'search' | 'more' | null>(null);
@@ -223,10 +220,9 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const scale = pageScale(zoom, size, viewport);
   const zoomed = nativeZoomed || scale > pageScale('width', size, viewport);
   const onPage = (next: number, record = true) => {
-    if (!Number.isFinite(next) || notes && !closeNotes()) return false;
-    setResumePending(false);
-    setResumeDismissed(true);
-    clearSelection();
+    if (!Number.isFinite(next) || record && notes && !closeNotes()) return false;
+    setResumeResolved(true);
+    if (record) clearSelection();
     pendingAnchor.current = null;
     try {sessionStorage.removeItem(`${storageKey}:anchor`);} catch { /* Optional restoration. */ }
     const target = Math.max(0, Math.min(document.pages.length - 1, Math.floor(next)));
@@ -274,7 +270,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     previousMobile.current = mobile;
   }, [mobile, page]);
   useEffect(() => {
-    if (offerResume) return;
+    if (!resumeResolved) return;
     try {sessionStorage.setItem(storageKey, active.id);} catch { /* Reading remains available without storage. */ }
     if (!mobile && viewportRef.current) {viewportRef.current.scrollTop = 0; viewportRef.current.scrollLeft = 0;}
     const anchor = pendingAnchor.current;
@@ -283,7 +279,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       Array.from(viewportRef.current?.querySelectorAll<HTMLElement>(`[${attribute}]`) ?? []).find(element => element.getAttribute(attribute) === anchor.id)?.scrollIntoView({block: 'start'});
       pendingAnchor.current = null;
     }
-  }, [active.id, mobile, storageKey, fontsReady, offerResume, showProductionDetails]);
+  }, [active.id, mobile, storageKey, fontsReady, resumeResolved, showProductionDetails]);
   useEffect(() => {
     if (!mobile || !fontsReady || !sourceJump) return;
     const target = sourceJump.page;
@@ -311,7 +307,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       if (!id) return;
       const index = sourcePageForSentence(viewportRef.current!, value.document.content, id, 80, window.innerHeight);
       if (index < 0) return;
-      setResumePending(false); setResumeDismissed(true); setPage(index);
+      setResumeResolved(true); setPage(index);
       try {sessionStorage.setItem(`${storageKey}:anchor`, JSON.stringify({kind: 'sentence', id}));} catch { /* Optional restoration. */ }
       recordProgress(value.document.content.pages[index].id, id);
     };
@@ -324,14 +320,14 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     globalThis.document.addEventListener('visibilitychange', hide);
     return () => {clearTimeout(timer); window.removeEventListener('scroll', scroll); globalThis.document.removeEventListener('visibilitychange', hide);};
   }, [mobile, fontsReady, notes, allowAction, value.document, storageKey, recordProgress, flushProgress]);
-  function onAnchor(anchor: Anchor) {
+  function onAnchor(anchor: Anchor, record = true) {
     const layout = document.layoutManifest.pages.find(layout => layout.slots.some(slot => anchor.kind === 'component' ? slot.componentId === anchor.id : slot.fragments.some(fragment => fragment.sentenceId === anchor.id)) || anchor.kind === 'sentence' && layout.fixedSlots?.some(slot => `canonical-${slot.element}` === anchor.id));
     const index = document.pages.findIndex(page => page.id === layout?.pageId);
     if (index < 0) return;
-    if (!onPage(index)) return;
+    if (!onPage(index, record)) return;
     setSourceJump(null);
     if (anchor.kind === 'sentence' && productionSentenceIds.has(anchor.id)) setShowProductionDetails(true);
-    if (anchor.kind === 'sentence') progress.record(document.pages[index].id, anchor.id);
+    if (record && anchor.kind === 'sentence') progress.record(document.pages[index].id, anchor.id);
     pendingAnchor.current = anchor;
     try {sessionStorage.setItem(`${storageKey}:anchor`, JSON.stringify(anchor));} catch { /* Optional restoration. */ }
     if (mobile || index === page) {
@@ -339,6 +335,22 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       Array.from(viewportRef.current?.querySelectorAll<HTMLElement>(`[${attribute}]`) ?? []).find(element => element.getAttribute(attribute) === anchor.id)?.scrollIntoView({block: 'start'});
     }
   }
+  const restorePosition = useEffectEvent(() => {
+    // Restore once, without rewriting progress or letting late sync undo navigation.
+    if (resumeResolved || suspended) return;
+    const local = restoredPage >= 0 || !!restoredAnchor;
+    const target = local ? Math.max(0, restoredPage) : Math.max(0, document.pages.findIndex(page => page.id === cloudProgress?.pageId));
+    if (!onPage(target, false)) return;
+    const anchor = local ? restoredAnchor : cloudProgress?.sentenceId ? {kind: 'sentence' as const, id: cloudProgress.sentenceId} : cloudProgress?.componentId ? {kind: 'component' as const, id: cloudProgress.componentId} : null;
+    if (anchor) onAnchor(anchor, false);
+  });
+  useEffect(() => {
+    if (resumeResolved || !fontsReady || suspended) return;
+    if (restoredPage < 0 && !restoredAnchor && !privateReader.state && privateReader.status === 'syncing') return;
+    // Anchor scrolling needs the font-ready page's completed layout.
+    const frame = requestAnimationFrame(() => restorePosition());
+    return () => cancelAnimationFrame(frame);
+  }, [resumeResolved, fontsReady, suspended, restoredPage, restoredAnchor, privateReader.state, privateReader.status]);
   return <section ref={documentRef} className="reader-document" data-notes-panel={notes && wideNotes || undefined} aria-label={m.title} role="region" onKeyDown={event => {
     if (event.key === 'Escape' && panel) {event.preventDefault(); closePanel(); return;}
     if (event.key === 'Escape' && !notes) {clearSelection(); return;}
@@ -362,12 +374,6 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       </aside>
     </div>
     {value.document.metadataSyncPending ? <p role="status">{m.metadataPending}</p> : null}
-    {offerResume ? <ResumeReadingPrompt messages={m} onContinue={() => {
-      if (restoredAnchor || restoredPage > 0) {onPage(restoredPage); if (restoredAnchor) onAnchor(restoredAnchor);}
-      else if (cloudProgress?.sentenceId) onAnchor({kind: 'sentence', id: cloudProgress.sentenceId});
-      else if (cloudProgress?.componentId) onAnchor({kind: 'component', id: cloudProgress.componentId});
-      else onPage(Math.max(0, document.pages.findIndex(page => page.id === cloudProgress?.pageId)));
-    }} onStartOver={() => {if (onPage(0, false)) void progress.reset().catch(() => setNotice(m.actionFailed));}}/> : null}
     {privateReader.status !== 'synced' && panel !== 'more' ? <SyncStatus status={privateReader.status} messages={m}/> : null}
     {privateReader.status === 'paused' || privateReader.status === 'action' || privateReader.pendingMutation ? <ReaderRecovery api={api} value={value} selector={selector} messages={m} onUpdated={onUpdated} onFailure={onFailure} suspended={suspended} pendingMutation={privateReader.pendingMutation} onPendingChange={mutation => {
       const previous = privateReader.pendingMutation;
