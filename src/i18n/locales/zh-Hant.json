@@ -39,7 +39,7 @@
       "manual": "若未自動開啟，請從 LINE 選單選擇「在瀏覽器中開啟」。"
     },
     "privacyPolicy": "隱私權",
-    "termsOfUse": "條款",
+    "termsOfUse": "使用條款",
     "legalNavigation": "法律資訊",
     "pagination": {
       "navigation": "內容分頁",
@@ -250,6 +250,16 @@
     "empty": "目前尚未發布週報。"
   },
   "memberVideos": {
+    "quality": "畫質",
+    "auto": "自動",
+    "pause": "暫停",
+    "mute": "靜音",
+    "unmute": "取消靜音",
+    "seek": "播放位置",
+    "volume": "音量",
+    "fullscreen": "全螢幕",
+    "exitFullscreen": "離開全螢幕",
+    "playbackSpeed": "播放速度",
     "heroTitle": "影音專區",
     "heroSubtitle": "最近 30 天的聚會錄影",
     "selectedTitle": "本次選擇的錄影",

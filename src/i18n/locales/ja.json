@@ -250,6 +250,16 @@
     "empty": "公開済みの週報はまだありません。"
   },
   "memberVideos": {
+    "quality": "画質",
+    "auto": "自動",
+    "pause": "一時停止",
+    "mute": "ミュート",
+    "unmute": "ミュート解除",
+    "seek": "再生位置",
+    "volume": "音量",
+    "fullscreen": "全画面",
+    "exitFullscreen": "全画面を終了",
+    "playbackSpeed": "再生速度",
     "heroTitle": "会員向け動画", "heroSubtitle": "過去30日間の集会録画", "selectedTitle": "選択した録画", "listTitle": "過去30日間の録画", "count": "{count} 件", "play": "録画を再生", "select": "選択する", "selected": "選択中", "playing": "再生中", "featured": "注目", "durationUnknown": "再生時間は不明です", "expires": "視聴期限", "loading": "録画を読み込み中", "preparing": "再生を準備中", "empty": "視聴できる録画はありません", "loadError": "録画を読み込めません", "playError": "再生できません。再試行してください。", "expired": "この録画は視聴できません", "retry": "再読み込み", "previous": "前へ", "next": "次へ"
   },
   "privacyPolicy": {

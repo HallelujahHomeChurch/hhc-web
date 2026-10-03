@@ -29,7 +29,7 @@ export function getContentSecurityPolicy({development, sentryDsn}: ContentSecuri
     "worker-src 'self' blob:",
     "manifest-src 'self'",
     "frame-src 'none'",
-    `media-src ${mediaOrigins}`,
+    `media-src blob: ${mediaOrigins}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

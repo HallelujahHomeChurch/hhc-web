@@ -1,3 +1,4 @@
+import {isLegalSnapshot} from '@hallelujahhomechurch/account-client';
 import type {HhcWebClient, PageContent, PublicEditorialPage} from '@hallelujahhomechurch/hhc-web-client';
 import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
 import {publicContentClient} from '@/features/content/client';
@@ -59,6 +60,15 @@ export async function getAboutPage(locale: Locale, client: HhcWebClient = public
 }
 
 export async function getLegalPage(key: 'privacy-policy' | 'terms-of-use', locale: Locale, client: HhcWebClient = publicContentClient()): Promise<PageResult<LegalContent>> {
+  try {
+    const snapshot = await client.getCommonLegalSnapshot(locale);
+    if (!isLegalSnapshot(snapshot) || snapshot.manifest.scope !== 'common' || snapshot.manifest.locale !== locale) throw new PageProjectionError('Common legal snapshot mismatch.');
+    const content = snapshot.documents[key === 'privacy-policy' ? 'privacy' : 'terms'].data;
+    return {content: {...content, heroSubtitle: content.heroSubtitle ?? ''}, availableLocales: [...productLocales], indexable: true, source: 'cms'};
+  } catch (error) {
+    // Existing deployments have no frozen publication until the reviewed rollout.
+    if (!(error instanceof HhcWebApiError && error.status === 404)) throw error;
+  }
   const route = key === 'privacy-policy' ? '/privacy-policy' : '/terms-of-use';
   const page = await requestPage(key, locale, client);
   assertPage(page, locale, key, 'legal.v1', route);
