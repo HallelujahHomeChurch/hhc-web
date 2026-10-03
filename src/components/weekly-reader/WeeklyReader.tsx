@@ -205,8 +205,11 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const active = document.pages[page];
   useLayoutEffect(() => {
     if (mobile || !fontsReady || !paperRef.current) return;
-    const credits = new Map(document.components.flatMap(component => component.type === 'bodySection' ? component.bodySection.header?.contributors.map(credit => [credit.name.id, {speaker: 'bodySpeakerLabel', transcriber: 'transcriberLabel', editor: 'editorLabel'}[credit.role]] as const) ?? [] : []));
-    return fitPaperLines(paperRef.current, credits);
+    const headers = new Set(document.components.flatMap(component => {
+      const header = component.type === 'bodySection' ? component.bodySection.header : undefined;
+      return header ? [header.lectureDate.id, ...header.contributors.map(credit => credit.name.id)] : [];
+    }));
+    return fitPaperLines(paperRef.current, headers);
   }, [document, active.id, mobile, fontsReady, viewport.width, viewport.height, zoom, hasNotes]);
   useEffect(() => {
     saveReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}, {

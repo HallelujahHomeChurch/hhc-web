@@ -126,6 +126,12 @@
 
 ## Compact reader checkpoint — 2026-10-03
 
+### Browser-comment refinement
+
+- Supersedes paper contributor fitting below: hide the first body page's production band (lecture date, issue summary, contributor fields, labels and separator rule). Translate that page's existing body upward into the vacated space; retain font sizes, widths, fragments and page membership. Mobile's existing collapsed-details behavior is unchanged. Cover masthead text shadow removed in the host stylesheet.
+- Regression observed failing before implementation, then passing: metadata omission, same-page translation, unchanged next page/width/text, and cleanup restoration. Full web suite 604 tests / 107 files passed; build passed; lint zero errors / one existing legal-navigation warning. Logs `/tmp/reader-header-{tests,build,lint}.log`.
+- Browser screenshots checked for 1739 and 1740 first body pages and the shadow-free cover. Source slot membership matches the fixture exactly for 1739 first body page and 1740 first/second body pages. Source counts remain 12/16; no re-pagination. No release/merge or physical-device claim.
+
 - Approved follow-up implemented: single-row 56px desktop / 52px mobile chrome; page/search/more panels replace permanent stacked controls. Annotation actions remain contextual. Offline controls and search stay mounted when panels close so operations and result position are retained.
 - Paper-only contributor fields and semantic framed headings fit a single line inside their existing source boxes. Contributor names align with their fixed labels. No canonical text, source fragments, page membership or immutable renderer changes; this is host presentation fitting, not proof of perfect PDF extraction.
 - Mobile page navigation targets the first scalar fragment of the requested source page, including sentence continuations. Scroll progress resolves visible fragments; source page and printed-body page numbers are distinguished. Paper/ebook switching preserves the current source page.
