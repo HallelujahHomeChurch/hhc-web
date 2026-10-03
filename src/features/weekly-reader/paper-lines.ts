@@ -6,6 +6,17 @@ export function fitPaperLines(root: HTMLElement, headerBlockIds: ReadonlySet<str
     restore.push(() => {if (original === null) element.removeAttribute('style'); else element.setAttribute('style', original);});
   };
   for (const page of root.querySelectorAll<HTMLElement>('[data-bulletin-mode="paper"] [data-bulletin-page]')) {
+    const date = page.querySelector<HTMLElement>('[data-fixed-element="date"]');
+    const issue = page.querySelector<HTMLElement>('[data-fixed-element="issueNumber"]');
+    if (date && issue) {
+      remember(date); remember(issue);
+      date.style.width = 'max-content';
+      date.style.whiteSpace = 'nowrap';
+      issue.style.left = `${date.offsetLeft + date.offsetWidth}px`;
+      issue.style.top = date.style.top;
+      issue.style.width = 'max-content';
+      issue.style.whiteSpace = 'nowrap';
+    }
     const blocks = Array.from(page.querySelectorAll<HTMLElement>('[data-block-id]'));
     const header = blocks.filter(block => headerBlockIds.has(block.dataset.blockId!));
     if (!header.length) continue;

@@ -37,6 +37,7 @@
 .reader-watermarked { position: relative; }
 .weekly-reader .hhc-bulletin-v1[data-bulletin-mode='paper'] [data-body-canonical-art] [data-sentence-id] { text-shadow: none; }
 .weekly-reader .hhc-bulletin-v1[data-bulletin-mode='paper'] [data-fixed-element='masthead'] { text-shadow: none; }
+.weekly-reader .hhc-bulletin-v1[data-bulletin-mode='paper'] [data-fixed-element='issueNumber']::before { content: '\00a0'; }
 .weekly-reader .hhc-bulletin-v1[data-bulletin-mode='paper'] :is([data-block-id], [data-fixed-element='speakerLabel'], [data-fixed-element='bodySpeakerLabel'], [data-fixed-element='transcriberLabel'], [data-fixed-element='editorLabel'], [data-fixed-element='authorLabel'], [data-fixed-element='lectureDateMarker'], [data-fixed-element='speakerSeparator']) { translate: var(--reader-body-offset, 0px) 0; }
 .reader-paper-with-notes { position: relative; margin-inline: auto; }
 .reader-range-layer { position: absolute; inset: 0; pointer-events: none; z-index: 1; mix-blend-mode: multiply; }
