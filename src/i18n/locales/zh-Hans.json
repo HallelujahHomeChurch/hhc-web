@@ -5,6 +5,8 @@
     "closeTab": "关闭周报",
     "generalEdition": "一般版",
     "childrenEdition": "儿童版",
+    "readingDirection": "翻页方向",
+    "syncStatus": "同步状态",
     "vertical": "垂直连续阅读",
     "horizontal": "水平翻页",
     "zoomIn": "放大",

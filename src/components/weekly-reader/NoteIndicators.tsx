@@ -3,7 +3,7 @@ import type {BulletinReaderNote} from '@hallelujahhomechurch/hhc-web-client';
 
 export function NoteIndicators({root, notes, layoutKey, label, onOpen}: {
   root: RefObject<HTMLDivElement | null>; notes: readonly BulletinReaderNote[]; layoutKey: string;
-  label: string; onOpen: (noteIds: string[]) => void;
+  label: string; onOpen: (noteIds: string[], trigger: HTMLButtonElement) => void;
 }) {
   const [markers, setMarkers] = useState<{top: number; ids: string[]}[]>([]);
   useEffect(() => {
@@ -32,5 +32,5 @@ export function NoteIndicators({root, notes, layoutKey, label, onOpen}: {
     observer?.observe(element);
     return () => {cancelAnimationFrame(frame); observer?.disconnect();};
   }, [root, notes, layoutKey]);
-  return markers.map(marker => <button type="button" key={marker.ids.join(':')} className="reader-note-indicator" style={{top: marker.top}} aria-label={`${label} (${marker.ids.length})`} onClick={() => onOpen(marker.ids)}><span aria-hidden="true">✎<small>{marker.ids.length > 1 ? marker.ids.length : ''}</small></span></button>);
+  return markers.map(marker => <button type="button" key={marker.ids.join(':')} className="reader-note-indicator" style={{top: marker.top}} aria-label={`${label} (${marker.ids.length})`} onClick={event => onOpen(marker.ids, event.currentTarget)}><span aria-hidden="true">✎<small>{marker.ids.length > 1 ? marker.ids.length : ''}</small></span></button>);
 }

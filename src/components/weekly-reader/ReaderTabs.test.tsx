@@ -7,6 +7,14 @@ const first = {issueNumber: 1739, series: 'general' as const, contentLocale: 'zh
 const second = {...first, issueNumber: 1740};
 const props = {accountId: 'a', locale: 'en' as const, current: second, messages: getMessages('en').weeklyReader};
 beforeEach(() => sessionStorage.clear());
+it('keeps one accessible sync status on the active tab only', async () => {
+  writeTabs('a', [first]);
+  const {rerender} = render(<ReaderTabs {...props} syncStatus="syncing" onSyncDetails={() => {}}/>);
+  expect(await screen.findByRole('button', {name: props.messages.syncSyncing})).toBeInTheDocument();
+  rerender(<ReaderTabs {...props} syncStatus="synced" onSyncDetails={() => {}}/>);
+  expect(screen.getAllByRole('button', {name: props.messages.syncSynced})).toHaveLength(1);
+  expect(screen.queryByRole('button', {name: props.messages.syncSyncing})).not.toBeInTheDocument();
+});
 it('shows existing tabs and uses canonical routes without persisting private titles', async () => {
   writeTabs('a', [first]);
   render(<ReaderTabs {...props} title="Private weekly"/>);

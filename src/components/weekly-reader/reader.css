@@ -6,10 +6,14 @@
 .weekly-reader [aria-pressed="true"], .weekly-reader [aria-current="page"] { border-color: var(--hhc-control, #70523c); background: var(--hhc-primary-soft, #efe2ce); }
 .reader-back { display: inline-flex; align-items: center; margin-bottom: .75rem; }
 .reader-chrome { position: sticky; top: 0; z-index: 30; background: var(--hhc-surface); }
-.reader-tabbar { display: flex; align-items: center; height: 48px; gap: .25rem; background: var(--hhc-surface-raised); }
-.reader-tabs { display: flex; flex: 1; min-width: 0; align-self: stretch; overflow-x: auto; scrollbar-width: thin; }
-.reader-tab { display: flex; align-items: center; flex: 0 0 auto; min-width: 8rem; max-width: 20rem; border-inline-end: 1px solid var(--hhc-control-border); }
-.reader-tab[data-active] { background: var(--hhc-surface); box-shadow: inset 0 3px var(--hhc-control); }
+.reader-tabbar { display: flex; align-items: center; height: 52px; gap: .5rem; background: var(--hhc-primary-soft); padding-inline: .25rem; }
+.reader-tabs { display: flex; flex: 1; min-width: 0; align-self: stretch; align-items: end; gap: .25rem; overflow-x: auto; scrollbar-width: none; }
+.reader-tab { display: flex; align-items: center; flex: 0 0 auto; min-width: 8rem; max-width: min(22rem, 72vw); height: 46px; border-radius: .75rem .75rem 0 0; color: var(--hhc-text-muted); }
+.reader-tab:hover { background: var(--hhc-surface-raised); }
+.reader-tab[data-active] { background: var(--hhc-surface); color: var(--hhc-text); }
+.reader-tab > a[aria-current='page'] { background: transparent; }
+.reader-tab-sync { display: inline-flex; flex: none; color: var(--hhc-text-muted); }
+.reader-tab-sync[data-sync='action'], .reader-tab-sync[data-sync='paused'] { color: var(--hhc-control); }
 .reader-tab > a { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: .75rem; font-size: .875rem; }
 .reader-tab h1 { display: inline; font-size: inherit; font-weight: 600; }
 .reader-tabbar .hhc-icon-button { flex: none; width: 44px; min-height: 44px; padding: .5rem; border: 0; background: transparent; }
@@ -24,6 +28,10 @@
 .reader-quick-pages { display: flex; align-items: center; font-size: .85rem; font-variant-numeric: tabular-nums; }
 .reader-source-label { margin-inline-end: .35rem; }
 .reader-navigation-panel { position: absolute; top: 100%; right: 0; width: min(380px, calc(100vw - 2rem)); max-height: calc(100dvh - 130px); overflow: auto; padding: 1rem; background: var(--hhc-surface); box-shadow: 0 8px 24px #0002; }
+.reader-navigation-panel[data-panel='pages'] { left: 0; right: auto; width: min(320px, calc(100vw - 2rem)); height: calc(100dvh - 140px); overscroll-behavior: contain; }
+.reader-navigation-panel[data-panel='direction'] { width: min(280px, calc(100vw - 2rem)); }
+.reader-direction-options { display: grid; gap: .5rem; }
+.reader-navigation-panel[hidden] { display: none; }
 .reader-navigation-panel > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .75rem; }
 .reader-navigation-panel > header h2 { font-size: 1rem; font-weight: 600; }
 .reader-navigation-panel .reader-search > summary { display: none; }
@@ -136,9 +144,10 @@
 .reader-search form { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .5rem; }
 .reader-search input { min-width: 0; max-width: 100%; }
 .reader-search p { max-width: 48rem; max-height: 8rem; overflow: auto; padding: .5rem; }
-.reader-thumbnails { display: flex; gap: 1rem; overflow: auto; padding: 1rem; max-height: 14rem; }
-.reader-thumbnail { flex: 0 0 auto; display: grid; justify-items: center; gap: .25rem; }
-.reader-thumbnail-image { overflow: hidden; pointer-events: none; user-select: none; }
+.reader-thumbnails { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; padding: .25rem; }
+.weekly-reader .reader-thumbnail { display: grid; justify-items: center; gap: .5rem; padding: .5rem .25rem; height: auto; min-width: 0; border-color: transparent; background: transparent; font-variant-numeric: tabular-nums; }
+.weekly-reader .reader-thumbnail[aria-current='page'] { border-color: var(--hhc-control); background: var(--hhc-primary-soft); }
+.reader-thumbnail-image { display: block; overflow: hidden; pointer-events: none; user-select: none; background: white; box-shadow: 0 2px 6px #0002; }
 .reader-viewport[data-mobile] { height: auto; min-height: 0; overflow: visible; padding: 0; background: transparent; }
 .weekly-reader .hhc-bulletin-v1[data-bulletin-mode='mobile'] { padding: 1.25rem; overflow-wrap: anywhere; }
 .weekly-reader .hhc-bulletin-v1[data-bulletin-mode='mobile'] p:has([data-fixed-element='speakerLabel'], [data-fixed-element='transcriberLabel'], [data-fixed-element='editorLabel']) { font-size: .85em; color: #555; }

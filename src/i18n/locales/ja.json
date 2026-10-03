@@ -5,6 +5,8 @@
     "closeTab": "週報を閉じる",
     "generalEdition": "一般版",
     "childrenEdition": "子ども版",
+    "readingDirection": "ページ送りの方向",
+    "syncStatus": "同期状態",
     "vertical": "縦スクロール",
     "horizontal": "横ページ送り",
     "zoomIn": "拡大",

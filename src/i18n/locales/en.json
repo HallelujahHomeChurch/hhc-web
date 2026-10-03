@@ -5,6 +5,8 @@
     "closeTab": "Close bulletin",
     "generalEdition": "General",
     "childrenEdition": "Children",
+    "readingDirection": "Reading direction",
+    "syncStatus": "Sync status",
     "vertical": "Vertical scrolling",
     "horizontal": "Horizontal paging",
     "zoomIn": "Zoom in",

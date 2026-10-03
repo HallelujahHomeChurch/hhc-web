@@ -5,6 +5,8 @@
     "closeTab": "주보 닫기",
     "generalEdition": "일반판",
     "childrenEdition": "어린이판",
+    "readingDirection": "페이지 넘김 방향",
+    "syncStatus": "동기화 상태",
     "vertical": "세로 스크롤",
     "horizontal": "가로 페이지 넘기기",
     "zoomIn": "확대",

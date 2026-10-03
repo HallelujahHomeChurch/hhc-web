@@ -11,7 +11,7 @@ it('groups nearby note anchors into one accessible target and excludes deleted n
   render(<div ref={root}><span data-sentence-id="s1">First</span><span data-sentence-id="s2">Second</span><NoteIndicators root={root} notes={notes} layoutKey="p1" label="Notes" onOpen={onOpen}/></div>);
   await waitFor(() => expect(screen.getAllByRole('button', {name: 'Notes (2)'})).toHaveLength(1));
   fireEvent.click(screen.getByRole('button', {name: 'Notes (2)'}));
-  expect(onOpen).toHaveBeenCalledWith(['a', 'b']);
+  expect(onOpen).toHaveBeenCalledWith(['a', 'b'], screen.getByRole('button', {name: 'Notes (2)'}));
 });
 it('anchors a cross-page sentence to its first fragment instead of silently moving the note to the last page', async () => {
   const root = createRef<HTMLDivElement>();

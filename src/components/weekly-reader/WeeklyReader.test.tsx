@@ -26,10 +26,32 @@ function selectText(element: Element, start?: number, end?: number) {
 }
 vi.mock('@/features/weekly-reader/api', async original => ({...await original<typeof import('@/features/weekly-reader/api')>(), createReaderApi: () => ({open: state.open, privateState: state.privateState, mutate: state.mutate})}));
 const props = {locale: 'en' as const, issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const, messages: getMessages('en').weeklyReader};
+function choosePage(page: number) {
+  fireEvent.click(screen.getByRole('button', {name: 'Thumbnails'}));
+  fireEvent.click(screen.getByRole('button', {name: `Page ${page}`}));
+}
+function chooseDirection(name: string) {
+  fireEvent.click(screen.getByRole('button', {name: 'Reading direction'}));
+  fireEvent.click(screen.getByRole('button', {name}));
+}
 beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state.accountId = 'account-a'; state.status = 'authenticated'; state.open.mockReset().mockResolvedValue(readerFixture()); state.privateState.mockReset().mockResolvedValue({state: {accountId: 'account-a', documentId: readerFixture().document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: null, conflicts: []}}); state.mutate.mockReset(); sessionStorage.clear(); vi.stubGlobal('matchMedia', vi.fn(() => ({matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn()})));});
 afterEach(() => {cleanup(); Reflect.deleteProperty(document, 'fonts'); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs();});
 
 describe('protected weekly reader', () => {
+  it('keeps in-flight progress out of recovery chrome and opens thumbnails directly', async () => {
+    state.mutate.mockReturnValue(new Promise(() => {}));
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
+    fireEvent.click(screen.getByRole('button', {name: 'Thumbnails'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Page 2'}));
+    expect(screen.queryByRole('complementary', {name: 'Thumbnails'})).not.toBeInTheDocument();
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p1');
+    await waitFor(() => expect(state.mutate).toHaveBeenCalled());
+    expect(screen.queryByText(props.messages.confirmRetryHelp)).not.toBeInTheDocument();
+    expect(container.querySelector('.reader-recovery')).toBeNull();
+    expect(screen.getByRole('button', {name: props.messages.syncSyncing})).toBeInTheDocument();
+  });
   it.each(['hide', 'home'])('settles continuous paper position on %s and clears an older search anchor', async exit => {
     const fixture = readerFixture(), key = `weekly-reader-position:account-a:${fixture.document.documentId}:1`;
     sessionStorage.setItem(`${key}:anchor`, JSON.stringify({kind: 'sentence', id: 's0'}));
@@ -56,14 +78,15 @@ describe('protected weekly reader', () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
     await waitFor(() => expect(container.querySelectorAll('[data-paper-index]')).toHaveLength(4));
-    fireEvent.click(screen.getByRole('button', {name: 'Next page'}));
-    fireEvent.click(screen.getByRole('button', {name: 'Horizontal paging'}));
+    choosePage(2);
+    expect(screen.queryByRole('button', {name: 'Horizontal paging'})).not.toBeInTheDocument();
+    chooseDirection('Horizontal paging');
     expect(container.querySelectorAll('[data-paper-index]')).toHaveLength(1);
     expect(container.querySelector('[data-paper-index]')).toHaveAttribute('data-paper-index', '1');
-    expect(screen.getByRole('button', {name: 'Source page 2 / 4'})).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', {name: 'Vertical scrolling'}));
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p1');
+    chooseDirection('Vertical scrolling');
     expect(container.querySelectorAll('[data-paper-index]')).toHaveLength(4);
-    expect(screen.getByRole('button', {name: 'Source page 2 / 4'})).toBeInTheDocument();
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p1');
   });
   it('exposes the library, document tab and tools without an overflow menu', async () => {
     render(<WeeklyReader {...props}/>);
@@ -155,6 +178,7 @@ describe('protected weekly reader', () => {
     selectText(container.querySelector('[data-sentence-id="s0"]')!);
     fireEvent.click(screen.getByRole('button', {name: 'Yellow highlight'}));
     await screen.findByText(props.messages.actionFailed);
+    expect(screen.getByRole('button', {name: props.messages.syncAction})).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
     expect(container.querySelector('[data-sentence-id="s0"]')).not.toHaveAttribute('data-highlight');
     fireEvent.click(screen.getByRole('button', {name: 'Note'}));
@@ -187,7 +211,7 @@ describe('protected weekly reader', () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
     await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
-    const next = screen.getByRole('button', {name: 'Next page'});
+    const next = screen.getByRole('button', {name: 'Thumbnails'});
     const list = screen.getByRole('button', {name: 'My notes'});
     selectText(container.querySelector('[data-sentence-id="s0"]')!, 1, 3);
     fireEvent.click(screen.getByRole('button', {name: 'Note'}));
@@ -199,6 +223,7 @@ describe('protected weekly reader', () => {
     expect(confirm).toHaveBeenCalled();
     confirm.mockReturnValue(true);
     fireEvent.click(next);
+    fireEvent.click(screen.getByRole('button', {name: 'Page 2'}));
     expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p1');
     expect(screen.queryByRole('textbox', {name: props.messages.noteText})).not.toBeInTheDocument();
   });
@@ -227,7 +252,7 @@ describe('protected weekly reader', () => {
     vi.stubGlobal('visualViewport', visual);
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
-    fireEvent.click(screen.getByRole('button', {name: 'Horizontal paging'}));
+    chooseDirection('Horizontal paging');
     const viewport = container.querySelector('.reader-viewport')!;
     const swipe = () => {
       for (const [type, x] of [['pointerdown', 200], ['pointerup', 100]] as const) {
@@ -327,6 +352,7 @@ describe('protected weekly reader', () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
     await waitFor(() => expect(container.querySelector('[data-bulletin-mode="mobile"] [data-sentence-id="s2"]')).toBeInTheDocument());
+    await screen.findByRole('button', {name: props.messages.syncSynced});
     expect(state.mutate).not.toHaveBeenCalled();
     for (const element of container.querySelectorAll<HTMLElement>('[data-sentence-id]')) {
       vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({top: element.dataset.sentenceId === 's2' ? 100 : -100, bottom: element.dataset.sentenceId === 's2' ? 130 : -70} as DOMRect);
@@ -376,7 +402,7 @@ describe('protected weekly reader', () => {
     state.privateState.mockImplementation(() => new Promise(resolve => {finish = resolve;}));
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
-    fireEvent.click(screen.getByRole('button', {name: 'Next page'}));
+    choosePage(2);
     expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p1');
     await act(async () => finish({state: {...cloud, progress: {pageId: 'p3'}}}));
     expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p1');
@@ -409,7 +435,7 @@ describe('protected weekly reader', () => {
     fireEvent.keyDown(screen.getByRole('region', {name: 'Bulletin reader'}), {key: 'Escape'});
     expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
     selectText(sentence);
-    fireEvent.click(screen.getByRole('button', {name: 'Next page'}));
+    choosePage(2);
     expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
   });
   it('keeps launch disabled unless explicitly enabled after acceptance', () => {
@@ -443,14 +469,15 @@ describe('protected weekly reader', () => {
     expect(screen.getByRole('searchbox')).toHaveValue('內容');
     expect(screen.getByLabelText('Search results')).toHaveTextContent('3 / 4');
   });
-  it('does not dismiss mobile navigation when the page input loses focus', async () => {
+  it('closes mobile thumbnails after selecting the destination', async () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn()})));
     render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
-    fireEvent.click(screen.getByRole('button', {name: 'Source page 1 / 4'}));
-    fireEvent.blur(screen.getByRole('spinbutton', {name: 'Page'}));
     fireEvent.click(screen.getByRole('button', {name: 'Thumbnails'}));
     expect(screen.getByRole('button', {name: 'Page 4'})).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: 'Page 4'}));
+    expect(screen.queryByRole('complementary', {name: 'Thumbnails'})).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Thumbnails'})).toHaveFocus();
   });
   it('announces font loading instead of presenting a blank paper as ready', async () => {
     let ready!: () => void;
@@ -469,26 +496,17 @@ describe('protected weekly reader', () => {
     expect(state.signIn).toHaveBeenCalled();
     expect(state.open).not.toHaveBeenCalled();
   });
-  it('renders only the active paper page, supports buttons/direct entry and preserves input arrows', async () => {
+  it('renders only the active paper page and supports thumbnails and keyboard navigation', async () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
-    fireEvent.click(screen.getByRole('button', {name: 'Horizontal paging'}));
+    chooseDirection('Horizontal paging');
     expect(container.querySelectorAll('[data-bulletin-page]')).toHaveLength(1);
     expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p0');
     fireEvent.click(screen.getAllByRole('button', {name: 'Next page'})[0]);
     expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p1');
-    fireEvent.click(screen.getByRole('button', {name: 'Source page 2 / 4'}));
-    const page = screen.getByRole('spinbutton', {name: 'Page'});
-    page.focus();
-    fireEvent.change(page, {target: {value: '4'}});
-    fireEvent.keyDown(page, {key: 'Enter'});
+    choosePage(4);
     expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p3');
-    expect(screen.getByRole('spinbutton', {name: 'Page'})).toHaveFocus();
-    fireEvent.change(page, {target: {value: '999'}});
-    fireEvent.keyDown(page, {key: 'Enter'});
-    expect(page).toHaveValue(4);
-    fireEvent.keyDown(screen.getByRole('spinbutton', {name: 'Page'}), {key: 'ArrowLeft'});
-    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p3');
+    expect(screen.queryByRole('button', {name: 'Next page'})).not.toBeInTheDocument();
     fireEvent.keyDown(screen.getByRole('region', {name: 'Bulletin reader'}), {key: 'ArrowLeft'});
     expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p2');
   });
@@ -510,12 +528,10 @@ describe('protected weekly reader', () => {
     expect(container.querySelectorAll('[data-bulletin-page]')).toHaveLength(0);
     expect(screen.queryByRole('button', {name: 'Next page'})).not.toBeInTheDocument();
     expect(container.querySelectorAll('[data-sentence-id]')).toHaveLength(4);
-    expect(screen.getByRole('button', {name: 'Source page 1 / 4'})).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', {name: 'Source page 1 / 4'}));
-    expect(screen.getByRole('complementary', {name: 'Source page'})).toBeInTheDocument();
-    fireEvent.change(screen.getByRole('spinbutton', {name: 'Page'}), {target: {value: '3'}});
-    fireEvent.keyDown(screen.getByRole('spinbutton', {name: 'Page'}), {key: 'Enter'});
-    expect(screen.getByRole('button', {name: 'Source page 3 / 4'})).toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: 'Reading direction'})).not.toBeInTheDocument();
+    choosePage(3);
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p2');
+    expect(screen.queryByRole('complementary', {name: 'Thumbnails'})).not.toBeInTheDocument();
   });
   it('collapses production credits in narrow tablet views without removing article text or stored anchors', async () => {
     vi.stubGlobal('matchMedia', vi.fn(query => ({matches: query === '(max-width: 767px)', addEventListener: vi.fn(), removeEventListener: vi.fn()})));
@@ -549,18 +565,17 @@ describe('protected weekly reader', () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
     await waitFor(() => expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p2'));
-    fireEvent.click(screen.getByRole('button', {name: 'Source page 3 / 4'}));
     fireEvent.click(screen.getByRole('button', {name: 'Thumbnails'}));
     expect(container.querySelectorAll('[inert][aria-hidden="true"]')).toHaveLength(4);
     fireEvent.click(screen.getByRole('button', {name: 'Page 1'}));
-    expect(screen.getByRole('spinbutton', {name: 'Page'})).toHaveValue(1);
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p0');
     expect(sessionStorage.getItem(`weekly-reader-position:account-a:${readerFixture().document.documentId}:1`)).toBe('p0');
   });
   it('persists a section anchor and restores it only within the same account/revision', async () => {
     const key = `weekly-reader-position:account-a:${readerFixture().document.documentId}:1:anchor`;
     const {unmount} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
-    fireEvent.click(screen.getByRole('button', {name: 'Source page 1 / 4'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Thumbnails'}));
     fireEvent.click(screen.getByText('Sections', {selector: 'summary'}));
     fireEvent.click(screen.getAllByRole('button', {name: 'Summary'})[2]);
     expect(sessionStorage.getItem(key)).toBe(JSON.stringify({kind: 'component', id: 'c2'}));
