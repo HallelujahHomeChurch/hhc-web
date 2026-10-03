@@ -170,6 +170,13 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const [page, setPage] = useState(0);
   const [zoom, setZoom] = useState<ReaderZoom>('page');
   const [mobile, setMobile] = useState(false);
+  const [showProductionDetails, setShowProductionDetails] = useState(false);
+  const productionSentenceIds = useMemo(() => new Set(document.components.flatMap(component => {
+    const header = component.type === 'bodySection' ? component.bodySection.header : undefined;
+    return header ? [header.lectureDate, ...header.contributors.map(contributor => contributor.name)].flatMap(block => block.sentences.map(sentence => sentence.id)) : [];
+  })), [document]);
+  // Presentation only: canonical text, saved anchors and the immutable paper renderer remain unchanged.
+  const mobileDocument = useMemo(() => showProductionDetails ? document : {...document, components: document.components.map(component => component.type === 'bodySection' && component.bodySection.header ? {...component, bodySection: {...component.bodySection, header: undefined}} : component)}, [document, showProductionDetails]);
   const [nativeZoomed, setNativeZoomed] = useState(false);
   const [fontsReady, setFontsReady] = useState(() => !globalThis.document?.fonts);
   const [viewport, setViewport] = useState({width: 900, height: 700});
@@ -219,7 +226,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     return () => visual?.removeEventListener('resize', changed);
   }, []);
   useEffect(() => {
-    const query = window.matchMedia('(max-width: 639px)');
+    const query = window.matchMedia('(max-width: 767px)');
     const changed = () => setMobile(query.matches);
     changed(); query.addEventListener('change', changed);
     const root = viewportRef.current;
@@ -240,7 +247,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       Array.from(viewportRef.current?.querySelectorAll<HTMLElement>(`[${attribute}]`) ?? []).find(element => element.getAttribute(attribute) === anchor.id)?.scrollIntoView({block: 'start'});
       pendingAnchor.current = null;
     }
-  }, [active.id, mobile, storageKey, fontsReady, offerResume]);
+  }, [active.id, mobile, storageKey, fontsReady, offerResume, showProductionDetails]);
   useEffect(() => {
     if (!mobile || !fontsReady || notes) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -273,6 +280,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     const index = document.pages.findIndex(page => page.id === layout?.pageId);
     if (index < 0) return;
     if (!onPage(index)) return;
+    if (anchor.kind === 'sentence' && productionSentenceIds.has(anchor.id)) setShowProductionDetails(true);
     if (anchor.kind === 'sentence') progress.record(document.pages[index].id, anchor.id);
     pendingAnchor.current = anchor;
     try {sessionStorage.setItem(`${storageKey}:anchor`, JSON.stringify(anchor));} catch { /* Optional restoration. */ }
@@ -310,6 +318,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       }
     }).catch(() => setNotice(m.actionFailed));
     }}>{m.confirmRetry}</button></> : null}
+    {mobile && productionSentenceIds.size > 0 ? <div className="reader-toolbar"><button type="button" aria-expanded={showProductionDetails} onClick={() => {if (notes && !closeNotes()) return; clearSelection(); setShowProductionDetails(value => !value);}}>{m.productionDetails}</button></div> : null}
     {!mobile ? <PageNavigator document={document} metadata={value.document.canonicalMetadata} page={page} onPage={onPage} messages={m}/> : null}
     <div ref={viewportRef} className="reader-viewport" data-mobile={mobile || undefined} style={{touchAction: mobile || zoomed ? 'auto' : 'pan-y pinch-zoom'}} tabIndex={0} onPointerDown={event => {
       if (event.pointerType !== 'touch') return;
@@ -326,10 +335,10 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     }}>
       {!fontsReady ? <p role="status">{m.loading}</p> : null}
       <div ref={paperRef} className="reader-paper-with-notes" data-has-notes={hasNotes || undefined} aria-hidden={!fontsReady || undefined} style={{visibility: fontsReady ? 'visible' : 'hidden', width: mobile ? undefined : size.width * scale + (hasNotes ? 44 : 0), '--reader-body-offset': `${centeredBodyOffset(value.document.content, active.id) * size.width}px`} as CSSProperties}>
-      {mobile ? <div className="reader-watermarked"><BulletinDocumentRenderer document={document} mode="mobile" canonicalMetadata={value.document.canonicalMetadata} sentenceState={sentenceState}/><ReaderWatermark traceCode={value.access.traceCode}/></div> :
+      {mobile ? <div className="reader-watermarked"><BulletinDocumentRenderer document={mobileDocument} mode="mobile" canonicalMetadata={value.document.canonicalMetadata} sentenceState={sentenceState}/><ReaderWatermark traceCode={value.access.traceCode}/></div> :
         <div className="reader-scaled-page" style={{width: size.width * scale, height: size.height * scale}}><div className="reader-watermarked" style={{transform: `scale(${scale})`, transformOrigin: 'top left', width: size.width, height: size.height}}><BulletinDocumentRenderer document={document} mode="paper" activePage={active.id} canonicalMetadata={value.document.canonicalMetadata} sentenceState={sentenceState}/><ReaderWatermark traceCode={value.access.traceCode}/></div></div>}
-      <NoteIndicators root={paperRef} notes={privateReader.state?.notes ?? []} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}`} label={m.myNotes} onOpen={openNotesList}/>
-      <RangeHighlights root={paperRef} highlights={savedHighlights} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}`} onSelect={selectExisting}/>
+      <NoteIndicators root={paperRef} notes={privateReader.state?.notes ?? []} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}:${showProductionDetails}`} label={m.myNotes} onOpen={openNotesList}/>
+      <RangeHighlights root={paperRef} highlights={savedHighlights} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}:${showProductionDetails}`} onSelect={selectExisting}/>
       </div>
     </div>
     {notice ? <p role="status">{notice}</p> : null}

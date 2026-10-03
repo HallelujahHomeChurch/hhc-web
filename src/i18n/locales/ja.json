@@ -20,6 +20,7 @@
     "recoveryMapping": "元の位置に対応できません。現在の文を選択してください。",
     "recoveryExpired": "この変更は90日以上前のものです。確認して新しい操作として送信してください。",
     "myNotes": "マイノート",
+    "productionDetails": "講師・制作情報",
     "noteText": "ノート",
     "noteSave": "保存",
     "noteCancel": "キャンセル",

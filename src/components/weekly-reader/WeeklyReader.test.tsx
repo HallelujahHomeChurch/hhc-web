@@ -399,6 +399,33 @@ describe('protected weekly reader', () => {
     expect(screen.queryByRole('button', {name: 'Next page'})).not.toBeInTheDocument();
     expect(container.querySelectorAll('[data-sentence-id]')).toHaveLength(4);
   });
+  it('collapses production credits in narrow tablet views without removing article text or stored anchors', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(query => ({matches: query === '(max-width: 767px)', addEventListener: vi.fn(), removeEventListener: vi.fn()})));
+    const fixture = readerFixture();
+    const first = fixture.document.content.components[0];
+    if (first.type !== 'backSummary') throw new Error('fixture');
+    const title = first.items[0].blocks[0];
+    const credit = {...title, id: 'credit-block', sentences: [{id: 'credit-sentence', spans: [{text: 'Production credit', fontRole: 'body' as const}]}]};
+    const date = {...title, id: 'lecture-date', sentences: [{id: 'date-sentence', spans: [{text: '2026-09-20', fontRole: 'body' as const}]}]};
+    fixture.document.content.components[0] = {id: 'c0', type: 'bodySection', bodySection: {kind: 'sermon', title, header: {lectureDate: date, contributors: [{role: 'editor', name: credit}]}, blocks: []}};
+    fixture.document.content.layoutManifest.pages[0].slots.push({...fixture.document.content.layoutManifest.pages[0].slots[0], id: 'credit-slot', blockId: 'credit-block', fragments: [{sentenceId: 'credit-sentence', start: 0, end: 17}]});
+    state.open.mockResolvedValue(fixture);
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    await waitFor(() => expect(container.querySelector('[data-bulletin-mode="mobile"]')).not.toBeNull());
+    expect(container.querySelector('[data-sentence-id="s0"]')).toHaveTextContent('內容0。');
+    expect(screen.queryByText('Production credit')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: 'Speaker and production details'}));
+    expect(container.querySelector('[data-sentence-id="credit-sentence"]')).toHaveTextContent('Production credit');
+    fireEvent.click(screen.getByRole('button', {name: 'Speaker and production details'}));
+    expect(screen.queryByText('Production credit')).not.toBeInTheDocument();
+    expect(fixture.document.content.components[0].bodySection?.header?.contributors).toHaveLength(1);
+    fireEvent.click(screen.getByText(props.messages.search, {selector: 'summary'}));
+    fireEvent.change(screen.getByRole('searchbox'), {target: {value: 'Production credit'}});
+    fireEvent.click(screen.getByRole('button', {name: props.messages.goToResult}));
+    expect(container.querySelector('[data-sentence-id="credit-sentence"]')).toHaveTextContent('Production credit');
+    expect(screen.getByRole('button', {name: 'Speaker and production details'})).toHaveAttribute('aria-expanded', 'true');
+  });
   it('restores the bound revision page and makes thumbnail copies inert', async () => {
     sessionStorage.setItem(`weekly-reader-position:account-a:${readerFixture().document.documentId}:1`, 'p2');
     const {container} = render(<WeeklyReader {...props}/>);

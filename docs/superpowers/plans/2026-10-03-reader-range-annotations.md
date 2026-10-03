@@ -78,15 +78,15 @@
 
 - [x] Test apply/read/retry/reset and isolated document state; include forced failure so retry is observable.
 - [x] Replace intentional 503 only in loopback preview; retain no-store and explicit simulation notice. Never forward fixture mutations to real services.
-- [ ] Browser-check select → color → dismiss → reopen → partial clear → copy → note → failure/retry. Real Go persistence is not inferred from this preview.
+- [x] Browser-check select → color → dismiss → reopen → partial clear → copy → note → failure/retry. Real Go persistence is not inferred from this preview.
 
 ### Task 6: Responsive acceptance and handoff
 
 **Files:** Reader CSS/components, shared renderer only where prior requested desktop/mobile layout changes require it; existing template verification scripts and release-evidence notes.
 **Interfaces:** Desktop/iPad wide keep source-page membership; narrow mobile reflows as an ebook. Preserve reading anchor across responsive mode changes.
 
-- [ ] Test desktop body headings without shadow, symmetric readable margins, mobile padding and progressive disclosure of contributor metadata; preserve content and legal fonts.
-- [ ] Inspect desktop and mobile together, fix in one batch and confirm once. Verify both 1739 and 1740; no new overflow/extra paper pages.
+- [x] Test desktop body headings without shadow, symmetric readable margins, mobile padding and progressive disclosure of contributor metadata; preserve content and legal fonts.
+- [x] Inspect desktop and mobile together, fix in one batch and confirm once. Verify both 1739 and 1740; no new overflow/extra paper pages.
 - [ ] Record physical Safari/Android/PWA tests as pending unless actually run. Verify keyboard focus, 44px controls, viewport/keyboard collision, sync failure and note draft safety.
 - [ ] Run repository-required tests/lint/build/contract and packed-consumer checks; obtain one fresh whole-change code review and fix important findings with regression tests.
 - [ ] Hand off commits, plan status, verification and device gaps. Stop before merge/release.
@@ -107,3 +107,19 @@
 - Independent review found three Important issues (no Critical): inactive partial-source collision during migration; stale selection when a native gesture leaves the reader; silent truncation of non-anchor text. All three reproduced with regression tests and were fixed in one pass. Partial-source conflicts additionally show exact colored snippets and require explicit confirmation before replacing the complete merged target. This is not a second-review approval.
 - Post-review web verification: 597 tests pass, lint has zero errors and one existing legal-navigation warning, production build passes. Go race suite with PostgreSQL and vet pass again. Numerical fixture check: 1739 remains 12 pages / 1740 remains 16 pages; body translation preserves widths/vertical positions. This is not visual acceptance.
 - Admin final verification: all 823 tests / 85 files pass with `--maxWorkers=1`; lint and production build pass. Earlier concurrent/isolated failures are recorded in the ledger, not ignored. Final code checkpoints: web `0d00434`, API `e3f1395`, shared client `208999f`. The renderer digest remains `ba4018d92d95719a43bb2c255c3debe3e96be9df3bab631166180b6bb2269bea`.
+
+### Browser checkpoint after user returned TaskSpace 60
+
+- Reloaded the existing preview successfully. Desktop cover/body screenshots obtained; partial native DOM selection of two characters exposed the expected toolbar. Clicking red stored the exact range and dismissed the toolbar.
+- 390px mobile reflow measured 20px inner padding and no horizontal overflow; screenshot captured the docked three-color/clear/copy/note toolbar. Note cancellation prompted before discard, declining retained the draft, and keyboard save succeeded. Read-back confirmed quote `欣賞`, scalar range `[0,2)`, and the red highlight persisted. This remains loopback simulation, not cloud/member acceptance.
+- At 820px the DOM switched to paper mode without horizontal overflow; 1739 still reported 12 pages and 1740 16. Native-device acceptance remains pending.
+- Further browser automation became unreliable after viewport emulation: captureScreenshot timed out, viewport dimensions changed between calls, and clicks reported an unrelated `<main>`/dialog intercepting pointer events. Both wrapper and direct screenshot attempts failed. Do not attribute this to application CSS without further evidence, and do not mark pointer/touch or tablet visual acceptance complete. Restore emulation and hand the same TaskSpace back for browser recovery; no new space or alternate browser workaround.
+- No implementation changes in this verification pass. Mobile metadata disclosure and narrow-tablet refinement remain open.
+
+### Resumed browser and responsive checkpoint — 2026-10-03
+
+- Normal browser input recovered in the same TaskSpace. Real mouse drag selected six contributor characters; yellow save, tapping the saved mark, and clearing passed without deleting the existing note. Copy of the two-character welcome selection reported success. A forced 503 retained the action and selection; explicit retry persisted exactly `[0,2)` in blue, with no duplicated highlight.
+- Mobile production metadata now defaults to collapsed behind a five-locale control. This is a presentation-only document projection: canonical text, saved sentence IDs, offline bytes and the immutable renderer are unchanged. Searching/jumping to a collapsed credit automatically reveals it. The regression covers collapse/expand, unchanged source content, and search navigation.
+- Below 768px use ebook reflow; at 768px and above retain paper-page membership, independently of pointer type. Narrow tablet split views therefore use ebook layout. Do not claim physical tablet acceptance from this breakpoint test.
+- Bounded screenshots inspected: desktop body (`/tmp/reader-resumed-desktop.png`), 820px tablet cover (`/tmp/reader-tablet-final.png`), and 390px body for both issues (`/tmp/reader-1739-mobile-body.png`, `/tmp/reader-1740-mobile-body.png`). Both issues have no horizontal overflow; paper counts remain 12 and 16. Desktop emulation with `mobile:false` avoids the earlier unstable mobile-device override; these are responsive desktop-browser checks, not iOS/Android gesture evidence.
+- Full web suite: 598 tests / 106 files passed. Lint: zero errors, existing legal-navigation warning only. Production build passed. API/shared/Admin were not changed in this checkpoint; their earlier recorded checks still apply. CI/container-release validation and physical Safari/Android/PWA, software-keyboard collision and human watermark acceptance remain release gates. No merge, release or feature-gate activation.

@@ -20,6 +20,7 @@
     "recoveryMapping": "The original position cannot be mapped. Choose a current sentence.",
     "recoveryExpired": "This change is over 90 days old. Review before submitting it as a new action.",
     "myNotes": "My notes",
+    "productionDetails": "Speaker and production details",
     "noteText": "Note",
     "noteSave": "Save",
     "noteCancel": "Cancel",

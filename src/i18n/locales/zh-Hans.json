@@ -20,6 +20,7 @@
     "recoveryMapping": "无法对应原位置，请选择当前版本的句子。",
     "recoveryExpired": "此变更已超过 90 天，请确认后以新操作提交。",
     "myNotes": "我的笔记",
+    "productionDetails": "讲员与制作信息",
     "noteText": "笔记内容",
     "noteSave": "保存",
     "noteCancel": "取消",
