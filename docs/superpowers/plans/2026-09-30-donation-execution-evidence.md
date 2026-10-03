@@ -4,6 +4,100 @@ Date: 2026-09-30. Approved plan: `2026-09-30-donation-admin-sandbox-first.md`.
 Initial foundation date above; subsequent evidence is recorded by date below.
 Neither the local foundation nor a read-only bank query is delivery 1A acceptance.
 
+## Continuation — aligned Sandbox backend release (2026-10-04)
+
+- User approved finishing the bounded Sandbox deployment using the existing
+  service CI/CD conventions. Infra PR117 merged and its fresh merged-main,
+  full-root saved plan applied exactly 2 creates / 0 changes / 0 destroys.
+  Post-apply full-root plan was No changes. The existing main-only deployer
+  retains only Donation-app-scoped Contributor plus the reviewed exec-only
+  DataAction role; no shared-environment or broader IAM grant was added.
+- Donation PR7 merged `22e37ed` after exact-head CI `37134405815` passed.
+  Main release `37134574204` safely classified the remaining failure as
+  `managed-environment-read / managed-environment` and restored the Healthy100
+  predecessor. Azure CLI implicit replica discovery was the cause, not a reason
+  to expand the reviewed app-scoped permission.
+- Donation PR8 merged `0ebd1f0` after exact-head CI `37135420883`, full PostgreSQL
+  race tests, vet/build, image/Trivy and fresh bounded review passed. The release
+  now queries and validates a replica belonging to the candidate revision and
+  explicitly supplies replica/container to exec. Regression tests cover implicit
+  discovery, failed query, wrong revision, unsafe replica and safe rollback.
+  Existing runtime/configuration/schema/public-smoke gates remain mandatory.
+- Normal main release `37135657657` passes verify, artifact, publish and
+  deploy-sandbox, including runtime schema check using the real CI deployer.
+  Live `donation-api--release-37135657657-1` is Healthy/active/100, image
+  `alive.azurecr.io/alive/donation-api@sha256:57a444eddcd59946474cc770f5fff2e315652790edda08e4a7cb18b9ce83fbd6`.
+  Ingress remains private, Dapr `donation-api`, 0.25 CPU / 0.5 GiB, min 1 / max 8,
+  Sandbox enabled; pinned secrets/env/probes are preserved and no migration ran.
+- The normal release retired its predecessor. A fresh exact live preview then
+  confirmed historical task candidate `release-37111894868-1` was Healthy/active/0;
+  it was deactivated, not deleted, and remains recoverable. A fresh active-revision
+  query now returns only the new Healthy100 revision. Independent public probes:
+  unauthenticated Admin checkout 401, malformed Sandbox callback 400, disabled
+  production callback 404. No local command deployed an image or shifted traffic.
+- Admin PR172 merged `2cdf235` after green CI and fresh default full local checks
+  (821 tests / 81 files, lint, enabled build, release policy). Normal main release
+  `37136071327` passes verify/deploy using its existing OIDC, hosting preview,
+  immutable-assets-before-index, origin check and rollback workflow. Public
+  `/donations/sandbox` serves released `index-BZ9_-q1C.js`; bundle release marker
+  equals `2cdf235b5e6914ea2f7166d755fa42f4523440e6`. Public/origin index SHA-256
+  both equal `b9873d1c8c2d220d7647ea0c7b3b2c1ad620214d691469df460c8381859993e6`.
+- Existing authenticated browser TaskSpace91/p2 was reloaded after release.
+  Exactly one TWD1 intent was created: `bddf8e15-e2a6-40c7-8c95-ad4d9029e383`,
+  `checkout_ready`, no financial outcomes. Its link was validated against the
+  exact bank origin before clicking once. Live top-level destination is
+  `https://sandbox.sinopac.com/QPay.WebPaySite/CreditCard` (query/capability omitted).
+  Four PAN segments, expiry month/year and CVV controls are visible, empty,
+  enabled and not read-only. Bank headings confirm hosted card entry. No PAN,
+  expiry or CVV was typed; no payment was submitted and no charge was attempted.
+  The TaskSpace was finished once, retaining only the result bank page for the
+  user. Original expired/unpaid intent remains intact; no duplicate create.
+- Latest Infra `origin/main` `69fbab8` was inspected and advanced only in the
+  clean task checkout. Full-root post-Donation and final post-Admin plans both
+  exit 0 / No changes;
+  unrelated merged member-setting changes were not applied by this task.
+  Bounded card-input setup is complete. Real success/failure payments, bank
+  return/callback/query/capture/reconciliation acceptance and financial review
+  remain open, as do recurring, production, official receipts and tax integration.
+
+## Continuation — approved exec apply and authorization diagnosis (2026-10-03)
+
+- Human approved finishing the bounded Sandbox workflow using aligned normal
+  CI/CD, including the reviewed two-create grant apply. Infra PR117 merged
+  `b536e08`; fresh full-root merged-main saved plan and strict in-memory guard
+  again confirm only the custom exec role and Donation-app assignment creates.
+  Another live local plan initially held the state lease; normal unlock allowed
+  apply without force-unlock, lock bypass or interruption of another task.
+  Apply succeeds: 2 added, 0 changed, 0 destroyed.
+- Live role has exactly the exec DataAction and empty Actions/exclusions. The
+  deployer has exactly Contributor and custom exec, both Donation-app-only;
+  immutable main-only OIDC trust remains unchanged. Subsequent full-root detailed
+  plan exits 0 / No changes. No unrelated refresh difference was applied.
+- Normal main release `37114325767` attempts 2 and 3 reuse the unchanged main
+  `5942173` and successful verify/artifact/publish. Both still fail the schema
+  runtime-check with `authorization`; rollback deactivates each new candidate
+  and retains `0000002` Healthy/active/100. Historical first failed candidate
+  remains active/0. Attempt 3 was after the documented ten-minute role propagation
+  window, so propagation alone is not established as the cause. No check bypass
+  or additional permission is inferred.
+- Diagnostic-only Donation PR7 head `8de9a33` adds fixed-enum action/scope output
+  on authorization failure, never raw captured output or resource URLs. Real
+  deploy-script tests fail RED for missing detail then pass for environment-read,
+  exec, auth-token and unknown errors, redaction, unchanged failure and rollback.
+  Full disposable PostgreSQL serial race suite, vet/build/diff, Docker disabled
+  smoke and configured Trivy HIGH/CRITICAL scope pass; OpenAPI remains valid with
+  five existing warnings. One fresh bounded review has no findings and reruns
+  script/syntax checks. Live permission acceptance, CD, historical cleanup and
+  Admin/card acceptance remain separate executor gates. Exact-head CI is pending.
+  https://github.com/HallelujahHomeChurch/donation-api/pull/7
+- Admin's fresh default full local suite passes 821 tests across 81 files;
+  lint, enabled build and release-policy checks pass. PR172 remains green and
+  unmerged until backend CD succeeds. TaskSpace91 remains agent-owned; p1 original
+  recovery record and p2 empty authenticated form are retained. No new bank intent,
+  card entry, payment, migration, production or recurring enablement occurred.
+- RBAC reference (propagation is not actual acceptance evidence):
+  https://learn.microsoft.com/en-us/azure/role-based-access-control/troubleshooting#symptom---role-assignment-changes-are-not-being-detected
+
 ## Continuation — exec-only grant preparation, not apply (2026-10-03)
 
 - Human approved preparing an exec-only Terraform PR and a full-root preview.
