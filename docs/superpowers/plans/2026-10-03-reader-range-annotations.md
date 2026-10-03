@@ -1,0 +1,97 @@
+# Reader Range Annotations Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Deliver native text selection and a reliable Goodnotes-like private annotation lifecycle without replacing browser selection gestures.
+
+**Architecture:** Preserve semantic sentence IDs and add Unicode scalar ranges. Extend the existing member reader contract/storage and offline pipeline; keep selection presentation in the reader host so annotation changes do not unnecessarily alter the immutable paper renderer.
+
+**Tech Stack:** TypeScript, React, DOM Selection/Range, existing Vitest tooling; Go, PostgreSQL, canonical OpenAPI.
+
+**Spec:** `../specs/2026-10-03-reader-range-annotations.md`
+
+## Global Constraints
+
+- Worktree root: `/Users/rayselfs/Projects/hhc/website/.worktrees/weekly-reader-review-20260930`; continue existing `review/weekly-reader-20260930` branches, preserve prior unmerged implementation.
+- No merge, release, production writes or gate activation. No new UI/selection dependency.
+- Anchors use `[start,end)` Unicode scalar offsets, at most 500 unique sentence anchors.
+- Yellow/red/blue, clear, copy, note; partial clear never deletes notes.
+- Existing whole-sentence data and mutation IDs remain valid. No silent range widening or revision guessing.
+- Authorization, offline identity/expiry/fences, five UI locales, watermark and source-page parity remain mandatory.
+
+## Review Focus
+
+- DOM UTF-16 offsets crossing emoji/inline fonts must become correct scalar offsets (Task 1).
+- Selected paper fragments must not include unmounted pages or hidden duplicate thumbnails (Task 1).
+- Toolbar pointer/focus races and late responses must not lose selection or clear a newer selection (Task 2/4).
+- Retried/offline partial edits must not widen after a source revision changes (Task 3/4).
+- Dirty notes must survive dismissal, authentication refresh and responsive panel changes (Task 4).
+
+### Task 1: Canonical native-selection boundary
+
+**Files:** Create `src/features/weekly-reader/text-range.ts`, `text-range.test.ts`.
+**Interfaces:** `ReaderTextRange = {sentenceId:string; start:number; end:number}`; `readTextSelection(root: HTMLElement, selection: Selection | null, sentences: readonly ReaderSentence[]): ReaderTextRange[]`; `rangeQuote(ranges, sentences): string`.
+
+- [ ] Write tests for nested fonts + emoji, reverse selection, split fragments, root boundaries, collapsed/foreign/inert selection, duplicates and semantic gaps, invalid offsets and exact quote.
+- [ ] Run `node node_modules/vitest/vitest.mjs run src/features/weekly-reader/text-range.test.ts`; observe missing behavior fail.
+- [ ] Implement the native Range adapter and canonical range validation; do not wire partial ranges to a sentence-only API.
+- [ ] Run the targeted test and `node node_modules/vitest/vitest.mjs run`; both must pass.
+- [ ] Commit this independently testable boundary.
+
+### Task 2: Fix transient-selection lifecycle
+
+**Files:** Modify `src/components/weekly-reader/WeeklyReader.tsx`, `SelectionToolbar.tsx`, `WeeklyReader.test.tsx`.
+**Interfaces:** Reuse current private mutation outcomes `applied | queued`; dismissal only changes transient UI. This fix must also apply once Task 4 replaces the selection model.
+
+- [ ] Add integration tests for outside pointer/click dismissal, toolbar preservation, successful highlight dismissal, failed highlight preservation, newer selection during an in-flight action, and note editor exclusion.
+- [ ] Run `node node_modules/vitest/vitest.mjs run src/components/weekly-reader/WeeklyReader.test.tsx`; observe the missing lifecycle fail.
+- [ ] Add a scoped document event listener with cleanup; ignore toolbar and note interactions. Clear only the selection belonging to a successfully acknowledged/durably queued action. Preserve failed retry context.
+- [ ] Run full web tests and lint. Commit.
+
+### Task 3: Range persistence and producer contract
+
+**Files (hhc-web-api):** `internal/bulletinreader/{types,service,migration}.go`, new `ranges.go` and tests; `internal/postgres/bulletin_reader_state.go`, reader integration/DSR tests; next unused additive migration under `internal/migrations/sql`; `openapi.yaml`, `openapi_test.go`.
+**Files (frontend-platform):** generated `packages/hhc-web-client/src/generated.ts` and contract tests through existing generation command.
+**Interfaces:** Payload `ranges?: ReaderTextRange[]` must match `sentenceIds`; highlight `segments?: {start:number;end:number;color:yellow|red|blue}[]`; note `ranges?: (ReaderTextRange & {quote:string})[]`. Missing optional properties preserve legacy behavior. Enforce offsets against trusted published text, bound segments and mutation size.
+
+- [ ] Add Go table tests: overlapping recolor, partial clear/split, adjacent merge, old full-sentence fallback, malformed/duplicate/foreign ranges, emoji, version/idempotency and caller-state immutability.
+- [ ] Run `go test ./internal/bulletinreader`; observe failures before implementing interval updates and note quoting.
+- [ ] Add revision tests: identical text preserves offsets, changed/split/merged ambiguous text retains inactive private quote and requires reanchor; never silently expands.
+- [ ] Implement additive JSON persistence, round-trip/DSR tests, OpenAPI schemas and regenerated client. No migration applied to production.
+- [ ] Run `go test -race ./...`, `go vet ./...`, available PostgreSQL integration tests, shared package tests/lint/build/contract checks. Record unavailable database checks separately. Commit each repository.
+
+### Task 4: Native selection, range rendering and offline lifecycle
+
+**Files (hhc-web):** `WeeklyReader.tsx`, `SelectionToolbar.tsx`, `reader.css`, `NoteEditor.tsx`, `ReaderPrivateState.tsx`, `features/weekly-reader/{private-state,copy,return-state,sync,mutation-recovery}.ts` (locate existing recovery owner before edit), their tests; five reader message dictionaries.
+**Interfaces:** Consume Task 1 ranges and Task 3 generated contract. Store a stable range snapshot before focus changes; quote comes from canonical text, never raw DOM or screen coordinates.
+
+- [ ] Add tests proving a native partial selection sends exact ranges and ordinary sentence clicks no longer select. Cover keyboard, toolbar focus, partial copy, mixed colors, tap existing annotation, cancel and dirty-note confirmation.
+- [ ] Observe tests fail; wire native `selectionchange` to the host and remove whole-sentence activation callbacks. Reuse existing note/sync/retry controls. Render persisted ranges through CSS Custom Highlights with feature-detected non-layout-changing fallback; do not fork paper geometry.
+- [ ] Desktop toolbar follows selection bounds; touch toolbar docks with safe-area spacing. Scroll/zoom refresh coordinates; Escape/outside click clears transient state; page navigation does not steal active native gestures.
+- [ ] Extend optimistic/offline interval updates and account/revision-bound return validation. Block sentence-only automatic remapping of pending partial ranges; retain them in explicit recovery.
+- [ ] Run full web tests/lint/build and shared packed-consumer checks. Commit only when both cloud and durable-queue semantics are covered.
+
+### Task 5: Truthful writable local interaction preview
+
+**Files:** Move reusable preview handler to a tracked local-only test utility in `hhc-web`; wire `admin-fe/.superpowers/weekly-member-preview/vite.config.ts` locally. Do not ship fake auth/mutations in production.
+**Interfaces:** Existing fixture access format plus in-memory per-document private state using the same local mutation reducer. Original mutation IDs deduplicate; changed payload reuse fails. Label reset-on-restart and simulated persistence.
+
+- [ ] Test apply/read/retry/reset and isolated document state; include forced failure so retry is observable.
+- [ ] Replace intentional 503 only in loopback preview; retain no-store and explicit simulation notice. Never forward fixture mutations to real services.
+- [ ] Browser-check select → color → dismiss → reopen → partial clear → copy → note → failure/retry. Real Go persistence is not inferred from this preview.
+
+### Task 6: Responsive acceptance and handoff
+
+**Files:** Reader CSS/components, shared renderer only where prior requested desktop/mobile layout changes require it; existing template verification scripts and release-evidence notes.
+**Interfaces:** Desktop/iPad wide keep source-page membership; narrow mobile reflows as an ebook. Preserve reading anchor across responsive mode changes.
+
+- [ ] Test desktop body headings without shadow, symmetric readable margins, mobile padding and progressive disclosure of contributor metadata; preserve content and legal fonts.
+- [ ] Inspect desktop and mobile together, fix in one batch and confirm once. Verify both 1739 and 1740; no new overflow/extra paper pages.
+- [ ] Record physical Safari/Android/PWA tests as pending unless actually run. Verify keyboard focus, 44px controls, viewport/keyboard collision, sync failure and note draft safety.
+- [ ] Run repository-required tests/lint/build/contract and packed-consumer checks; obtain one fresh whole-change code review and fix important findings with regression tests.
+- [ ] Hand off commits, plan status, verification and device gaps. Stop before merge/release.
+
+## Execution decisions
+
+- User explicitly requested planning and starting implementation in one turn; proceed inline rather than adding another approval round for the already agreed direction.
+- Tasks 1/2 can land locally before the new mutation contract; do not activate partial selection until Tasks 3/4 are complete. Existing preview remains honestly read-only until Task 5.
