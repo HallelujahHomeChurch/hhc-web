@@ -4,6 +4,117 @@ Date: 2026-09-30. Approved plan: `2026-09-30-donation-admin-sandbox-first.md`.
 Initial foundation date above; subsequent evidence is recorded by date below.
 Neither the local foundation nor a read-only bank query is delivery 1A acceptance.
 
+## Continuation — DB credential unblocked and restricted roles configured (2026-10-03)
+
+- User updated the existing protected `.env.json`; fresh TLS `HHCAdmin`
+  authentication succeeded against the verified private PostgreSQL address.
+  No administrator reset or unrelated role/database permission change occurred.
+- Account PR147 merged `89aed0c`; release `37096825480` succeeded. Live
+  `account-api--0000148` is Healthy/Provisioned/Running at immutable digest
+  `sha256:827649d6a75deb1f919a542f1bfd6f94e136829e805a67d6014a222b3bd718fb`;
+  public OIDC discovery returns 200. Dedicated Sandbox permission is available,
+  with no implicit user/staff grant. Admin browser session is authenticated but
+  its page still explicitly says Sandbox is not enabled.
+- Reviewed one-time SQL verified exact empty DB, owner and absent roles before
+  a transaction created `donation_sandbox_runtime` / `donation_sandbox_migrate`.
+  Both have no superuser, role/database creation, replication, inheritance or
+  RLS-bypass privileges. Migration owns only `donation_sandbox`; runtime has
+  CONNECT only until reviewed schema grants. PUBLIC privileges were revoked
+  only in this new donation DB, not unrelated platform databases.
+- Independent random passwords used client-side `psql \\password` with SCRAM;
+  values stayed in memory and Key Vault. New DSN versions verified enabled:
+  `donation-sandbox-runtime-database-url` / `205bca02fd684bd99dcca23d7d30c732`,
+  `donation-sandbox-migration-database-url` / `c7e7053a712549c99694f0408431b743`.
+  Run tag `donation-db-20261003T043657Z-c7c977c6aef2c175`.
+  Exact-role login probes passed. SQL was tested first against disposable PG17;
+  synthetic bootstrap/password/ambiguous-write/enable/read/login failures passed.
+  Review found unconditional NOLOGIN rollback could affect concurrent existing
+  roles; positive post-commit marker regression failed then passed after fix.
+  No secret payload was printed, written to a file, or included in Terraform.
+- Infra PR112 configures disabled runtime references, separate manual migration
+  job using the existing released digest, exact secret-name RBAC, diagnostics,
+  static worker/reconciliation failure alert to the existing operations receiver,
+  and only central production Audit's Donation token (test Audit unchanged).
+  Fresh full-root preview: 17 creates, 2 updates, zero destroys; not yet applied.
+  Twelve Terraform mock contracts and local exact CI plan checks passed.
+  Review found guard-only gaps for vault-wide reads and unrelated Audit updates;
+  negative tests reproduced both, then passed after exact grant/inventory and
+  production-token-only delta checks. Required CI and merge remain pending.
+- Next: reviewed phased saved-plan apply, explicit released-image migration,
+  runtime SQL grants, disabled runtime/Audit smoke and no-change convergence;
+  only then separate reviewed Sandbox service/Gateway/Admin enablement.
+  No bank order, card entry or financial outcome has been attempted.
+
+## Earlier continuation — authorized setup, then pending DB credential (2026-10-03)
+
+- User authorized configuration until they can enter a test card on the
+  bank-hosted page; no production enablement or card entry by the agent.
+- Shared producer PR88 merged `401e8ef`; tag `v1.0.32`, release `37091417067`
+  succeeded. Admin PR170 merged `47e6c2`, required CI `37091837400` and release
+  `37092287385` succeeded. Real registry pins replace task-owned tarballs.
+  Fresh default suite: 815 passed; lint/build/policy passed. Live Admin page and
+  referenced immutable JS return 200. UI build flag stays false and checkout
+  returns 503; this is not hosted-payment readiness.
+- Infra PR111 merged `21b2276`. Reviewed saved plan applied exactly one empty
+  `donation_sandbox` DB create, zero changes/deletes; full-root post-apply plan
+  reported `No changes`. No schema, roles or DSNs applied.
+- Outlook browser recovered the encrypted Sandbox PDF. Fields were decoded
+  only in memory and configured as eight exact Key Vault secrets, independent
+  from production/member data. Reviewed mutation first staged disabled versions,
+  enabled only after all writes, verified values in memory and printed metadata
+  only. Synthetic tests cover ambiguous write, enable, verification and interrupt
+  rollback. Optimized Python is explicitly rejected; no plaintext file saved.
+  Run tag: `donation-sandbox-20261003T032130Z-029ce92da6ea2f19`.
+
+| Key Vault secret | Reviewed enabled version |
+| --- | --- |
+| donation-sandbox-shop-no | 63e0389710a74bc09c8694002ead6e0f |
+| donation-sandbox-hash-a1 | 1fcc732366294f25b5e5bf7c2e9f03aa |
+| donation-sandbox-hash-a2 | edfc346cabd1436ca039f356b14fc948 |
+| donation-sandbox-hash-b1 | 9b9fa572f2c746df870db3af205eccb4 |
+| donation-sandbox-hash-b2 | 54d8fa7a13a64a35b7bb272279ca8b31 |
+| donation-sandbox-x-key | 672c9610c4ae41be9ec946a469d8583e |
+| donation-sandbox-storage-keys | 2d9a2b7ccfd24b108c6044a0778fad5d |
+| audit-log-production-token-donation-api | c58575d9e9a541a6be435c5aad8b78a2 |
+
+No runtime has received these secrets yet. Donation remains private,
+`DONATION_SANDBOX_ENABLED=false`, no secret references, ready revision
+`donation-api--7oci5l2`. No bank order or card entry was attempted.
+
+- Audit PR15 query actor review finding fixed `7ead270` with RED→GREEN tests;
+  fresh full race/vet/policy and CI `37092575268` passed, merged `67d9552`.
+  Release `37092758164` succeeded; verified live ready revision
+  `audit-log--release-37092758164-1`, private runtime Running/Succeeded at digest
+  `sha256:45a4b696ed5707e7eb5ca4aa1d3adc74de9ae8024af6ea7402dd6e9a281f4d44`.
+  Donation token injection and deployed outbox acceptance still untested.
+- Account dedicated permission rebased onto fresh `e246b84` as `4087235`;
+  preserved latest native CLI test while resolving an adjacent additive-test
+  conflict. Full uncached required disposable PostgreSQL/Redis race suite,
+  vet/policy passed; fresh review has no blockers. PR147 pending CI/release.
+- Blocker: controlled `PG_ADMIN_PASSWORD` and existing `postgres-pass` both
+  fail `HHCAdmin` authentication at verified private IP and exact platform DB
+  FQDN via bastion. No shared administrator reset or unrelated role workaround.
+  Requested a fresh credential via existing secure source, never chat plaintext.
+  Next: donation-only runtime/migration roles and DSNs, explicit same-image manual
+  migration job, restricted grants, reviewed Terraform/runtime/Gateway rollout,
+  then Admin build activation and authenticated bank-hosted checkout smoke.
+  Delivery1A, recurring, production, PCI and financial acceptance remain open.
+
+## Continuation — user-requested runtime sizing (2026-10-02)
+
+- User requested the 0.25 CPU tier and max 8. Interpreted max as replica ceiling:
+  0.25 vCPU / 0.5 GiB per replica, minReplicas=1, maxReplicas=8 per revision.
+  This supersedes the earlier 0.5 CPU / 1 GiB fixed-one-replica preview.
+  Private ingress, Dapr and payment-disabled configuration are unchanged.
+- Donation commit `694a7ef` changes only bootstrap sizing and its documentation.
+  Compiled-template checks and full serial disposable PostgreSQL race suite,
+  vet/build, release-policy/rollback checks passed. Disposable database removed.
+- Fresh Azure what-if against published digest `sha256:d5efddf9d80d9b89bd54f80460a49acb3baeff037cb28b40355d49ff985b4149`
+  succeeded with exactly three Creates and no Modify/Delete. The actual preview
+  reports cpu=0.25, memory=0.5Gi, min=1 and max=8. No runtime apply occurred.
+  The max is not eight always-on replicas; multiple active revisions can each
+  have replicas, so it is not an app-wide spending cap.
+
 ## Continuation — approved publisher identity setup (2026-10-02)
 
 - User approved the explicitly disclosed registry-wide AcrPush scope. Fresh
