@@ -44,10 +44,17 @@ Neither the local foundation nor a read-only bank query is delivery 1A acceptanc
   Admin `37106794240` (unchanged default full suite), Infra `37106793654`.
   Infra CI full-root preview independently confirms three creates and all
   unrelated workload/database previews report no changes. Donation PR5 merged
-  `6751292`; Infra PR115 merged `b366a02`. Main release `37107219204` is
-  publishing the verified immutable image only: both runtime deploy gates remain
+  `6751292`; Infra PR115 merged `b366a02`. Main release `37107219204` succeeded,
+  publishing immutable image `sha256:ca4db17d153120bae0504af38473b108fbdfc6714855813c221ef39e50c70b91` only: both runtime deploy gates remain
   absent/off. Admin PR172 remains open and green until compatible backend release.
   Azure deployer apply/role activation and hosted-page acceptance remain pending.
+- Fresh merged-main `b366a02` full-root saved preview independently completes:
+  exactly the same three creates, zero changes/deletes. A transient local ARM
+  route error recovered; no apply occurred. Live read-only verification retains
+  `donation-api--0000002`, old digest `d5efddf...`, private ingress and enabled
+  Sandbox. The new CD path is implemented/released, not yet runtime accepted.
+  Only the task-created disposable PostgreSQL test container was stopped; real
+  Donation data and all worktrees are retained for the remaining gates.
 
 ## Continuation — DB credential unblocked and restricted roles configured (2026-10-03)
 
