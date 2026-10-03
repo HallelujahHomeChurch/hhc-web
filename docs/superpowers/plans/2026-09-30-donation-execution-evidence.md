@@ -19,7 +19,7 @@ Neither the local foundation nor a read-only bank query is delivery 1A acceptanc
   a transaction created `donation_sandbox_runtime` / `donation_sandbox_migrate`.
   Both have no superuser, role/database creation, replication, inheritance or
   RLS-bypass privileges. Migration owns only `donation_sandbox`; runtime has
-  CONNECT only until reviewed schema grants. PUBLIC privileges were revoked
+  CONNECT initially, followed by reviewed schema grants below. PUBLIC privileges were revoked
   only in this new donation DB, not unrelated platform databases.
 - Independent random passwords used client-side `psql \\password` with SCRAM;
   values stayed in memory and Key Vault. New DSN versions verified enabled:
@@ -35,14 +35,37 @@ Neither the local foundation nor a read-only bank query is delivery 1A acceptanc
   job using the existing released digest, exact secret-name RBAC, diagnostics,
   static worker/reconciliation failure alert to the existing operations receiver,
   and only central production Audit's Donation token (test Audit unchanged).
-  Fresh full-root preview: 17 creates, 2 updates, zero destroys; not yet applied.
+  Merged `77a1e0a`; final required CI `37098193695` succeeded. Fresh full-root
+  preview: 17 creates, 2 updates, zero destroys, applied in scoped stages below.
   Twelve Terraform mock contracts and local exact CI plan checks passed.
   Review found guard-only gaps for vault-wide reads and unrelated Audit updates;
   negative tests reproduced both, then passed after exact grant/inventory and
-  production-token-only delta checks. Required CI and merge remain pending.
-- Next: reviewed phased saved-plan apply, explicit released-image migration,
-  runtime SQL grants, disabled runtime/Audit smoke and no-change convergence;
-  only then separate reviewed Sandbox service/Gateway/Admin enablement.
+  production-token-only delta checks. Converged/no-op negative-test fixture was
+  corrected to retain coherent update actions; pre-apply and converged fixtures pass.
+- Applied merged-main saved plans: RBAC only 13 creates; migration job and its
+  diagnostics 2 creates; disabled runtime/Audit token/diagnostics/alert 2 creates,
+  2 updates, zero deletes. Runtime and migration exact secret-name assignments
+  verified, with no vault-wide grant or runtime migration DSN. Manual execution
+  `donation-api-migrate-wbh7mvs` succeeded on the same released immutable image;
+  all eight migration history records are present. Reviewed grants and live
+  runtime login/TLS checks pass: no DB/schema CREATE, DB TEMP, history writes,
+  financial fact UPDATE/DELETE, or order DELETE. No live synthetic fact/reset test.
+- Full-root disabled convergence: `No changes`. Live private Donation revision
+  `donation-api--0000001` has exact nine references and the unchanged image,
+  Dapr health 200, disabled readiness 503; public exact Admin checkout 503.
+  Central Audit `audit-log--0000002` is healthy at its unchanged digest. Its
+  direct readiness smoke is pending Azure exec throttling recovery; alert
+  configuration is not proof of notification delivery or financial Audit dispatch.
+- Subsequent activation slice `a515666` changes only Donation's Sandbox flag and
+  readiness plus Gateway's existing `DONATION_SANDBOX_ROUTES_ENABLED` gate.
+  Full-root saved review plan: zero creates, two updates, zero deletes; contract
+  RED then GREEN, 13 mock tests pass. Both actual scoped workflow guard checks
+  and unsafe-plan mutation tests pass. Gateway Terraform preview is never
+  applied because its existing local Bible secret must be preserved by the
+  same-image healthy-revision CLI copy; Admin stays disabled until service,
+  Gateway smoke and full-root no-change convergence pass. CI/review pending.
+- Next: reviewed merged-main Sandbox-only enablement, then normal Admin main
+  release and authenticated hosted card-entry smoke.
   No bank order, card entry or financial outcome has been attempted.
 
 ## Earlier continuation — authorized setup, then pending DB credential (2026-10-03)
