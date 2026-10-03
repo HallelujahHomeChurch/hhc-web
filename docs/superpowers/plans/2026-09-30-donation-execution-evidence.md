@@ -4,6 +4,51 @@ Date: 2026-09-30. Approved plan: `2026-09-30-donation-admin-sandbox-first.md`.
 Initial foundation date above; subsequent evidence is recorded by date below.
 Neither the local foundation nor a read-only bank query is delivery 1A acceptance.
 
+## Continuation — verified hosted origin and protected Sandbox CD (2026-10-03)
+
+- Human approved the authenticated bank response's exact HTTPS origin
+  `https://sandbox.sinopac.com` for Sandbox only, with no former-origin fallback.
+  Runtime create/original-order recovery and Admin share this fixed origin using
+  the existing generic shared validator; no shared package release is needed.
+  Both regressions were observed RED then GREEN, including HTTP, userinfo,
+  suffix-host, alternate-port, fragment and former-origin rejection.
+- Human separately approved an independent enabled-Sandbox CI/CD gate. Reuse
+  the existing image/traffic rollout; preserve secrets/env/identity/probes and
+  reject incompatible schema without migration. Publisher remains ACR-only.
+  Disabled-only entry still rejects enabled runtimes. Guard/rollback tests pass;
+  full disposable PostgreSQL/race, vet/build/format/OpenAPI, Docker build and
+  disabled-image smoke pass. Remote review/CI/release are not yet accepted.
+- Terraform full-root preview adds exactly three resources: independent
+  `donation-api-deployer`, immutable repository-ID/main-only federated trust,
+  and Container Apps Contributor on `donation-api` alone. No updates/deletes,
+  RG/Gateway/ACR/Key Vault/database grants. Fourteen mock contracts, format and
+  validate pass. Separate approval for merged-main regeneration/apply was asked;
+  no infrastructure mutation has occurred in this slice.
+- Admin default parallel runs failed existing 5-second timeouts outside Donation.
+  Isolated App tests passed 99/99; the full unchanged suite with reduced file
+  concurrency passed 821/821 (81 files), retaining default test timeouts. Lint
+  and enabled Sandbox build pass. Required remote CI still must pass unchanged.
+- The earlier TWD1 unknown intent is retained; its ten-minute hosted URL window
+  has elapsed. Do not re-create it or blindly clear pending state. Before a fresh
+  controlled intent, verify original bank expiration/nonpayment. Browser
+  acceptance remains test-card input only; no card or payment submission.
+- Independent whole-change review accepts Donation `96e41b7`, Admin `78447f7`
+  and Infra `2fef850` with no unresolved Critical/Important/Minor findings.
+  Two rollout defects were reproduced RED then fixed: permit a subsequent
+  guarded release after traffic rollback without trusting ACA latest fields;
+  deactivate the old revision only after final verification to stop its workers.
+  The actual live preflight prefix passes read-only, with no update or payload
+  logging. Dormant disabled-mode gateway-exec permissions are not granted by the
+  new Donation-only deployer; that gate remains off, not live accepted.
+- Required remote CI passes on all exact final heads: Donation `37107016336`,
+  Admin `37106794240` (unchanged default full suite), Infra `37106793654`.
+  Infra CI full-root preview independently confirms three creates and all
+  unrelated workload/database previews report no changes. Donation PR5 merged
+  `6751292`; Infra PR115 merged `b366a02`. Main release `37107219204` is
+  publishing the verified immutable image only: both runtime deploy gates remain
+  absent/off. Admin PR172 remains open and green until compatible backend release.
+  Azure deployer apply/role activation and hosted-page acceptance remain pending.
+
 ## Continuation — DB credential unblocked and restricted roles configured (2026-10-03)
 
 - User updated the existing protected `.env.json`; fresh TLS `HHCAdmin`

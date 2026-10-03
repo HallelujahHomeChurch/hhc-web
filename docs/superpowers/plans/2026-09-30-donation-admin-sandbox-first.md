@@ -10,7 +10,7 @@
 
 **Spec:** [Future domain extension strategy, Phase 14](../specs/2026-07-08-hhc-web-future-domain-extension-strategy.md#phase-14-donations), refined by the approved product decisions below and session `01a02372-2d23-7191-91fc-9f76dab78e4a`.
 
-**Status:** Implementation authorized 2026-09-30. As of 2026-10-03, the 1A backend, encrypted capabilities, reconciliation, shared packages `v1.0.32`, Admin UI and dedicated Account permission are merged/released. Donation's independent Sandbox DB credentials, eight migrations and restricted runtime grants have been verified live. The private Sandbox workload, Gateway gate and Admin build are enabled; full Gateway live smoke passes, Admin release passes 815 tests and the latest-main Terraform plan reports no changes. One controlled TWD 1 checkout exposed an authenticated bank response with hosted origin `https://sandbox.sinopac.com`, differing from the prior mail-confirmed allowlist; it remains safely `create_unknown` while the origin correction awaits confirmation. Expiry cleanup's missing one-column row-lock grant was reproduced, minimally corrected and verified live. The user authorized checkout only until the hosted bank page accepts test-card input; the agent must not enter or submit card data. Hosted-page acceptance remains pending in the execution evidence. Production activation and full financial acceptance remain unauthorized/unaccepted.
+**Status:** Implementation authorized 2026-09-30. As of 2026-10-03, the 1A backend, encrypted capabilities, reconciliation, shared packages `v1.0.32`, Admin UI and dedicated Account permission are merged/released. Donation's independent Sandbox DB credentials, eight migrations and restricted runtime grants have been verified live. The private Sandbox workload, Gateway gate and Admin build are enabled; full Gateway live smoke passes, Admin release passes 815 tests and the latest-main Terraform plan reports no changes. One controlled TWD 1 checkout exposed an authenticated bank response with hosted origin `https://sandbox.sinopac.com`, differing from the prior mail-confirmed allowlist. Human approved the exact Sandbox-origin correction and protected image-only CD path; Donation PR5, Admin PR172 and Infra PR115 are under review/CI. The three-create deployer infrastructure apply remains a separate approval gate; the existing unknown intent is retained without duplicate create. Expiry cleanup's missing one-column row-lock grant was reproduced, minimally corrected and verified live. The user authorized checkout only until the hosted bank page accepts test-card input; the agent must not enter or submit card data. Hosted-page acceptance remains pending in the execution evidence. Production activation and full financial acceptance remain unauthorized/unaccepted.
 
 **Execution:** [Dated local and deployed evidence and remaining work](2026-09-30-donation-execution-evidence.md). Bank-hosted card entry is not payment, callback, capture, reconciliation or delivery 1A acceptance; remaining live financial gates must be recorded separately.
 
@@ -170,6 +170,21 @@ to disabled payments and no background work. Splitting API and workers/jobs is
 allowed when needed, not a requirement to provision another service now.
 Migration execution remains a separately authorized operation, never automatic
 startup DDL. Local implementation/evidence does not authorize route enablement.
+
+Sandbox image-update decision (2026-10-03, explicitly approved): add an
+independent `DONATION_SANDBOX_DEPLOY_ENABLED` normal main CI/CD path for an
+already enabled private runtime. Reuse the disabled path's image/traffic rollout;
+reject simultaneous deploy gates, preserve secrets/env/identity/probes and never
+run migration. A separate Terraform-managed main-only deployer gets Container
+Apps Contributor only on `donation-api`; publisher remains ACR-only. Its reviewed
+three-create preview requires separate approval before apply. Pin the captured
+sole healthy 100% traffic revision, validate the new immutable image/config and
+read-only schema success, then require anonymous/malformed public-route smoke.
+Rollback to the captured revision on failure; do not rely on ACA latest fields
+after rollback. Deactivate the previous revision only after all checks pass so
+old workers do not accumulate; retain recoverable revisions. Release the fixed
+bank-verified `https://sandbox.sinopac.com` backend before the compatible Admin
+origin correction. No original unknown intent may trigger blind duplicate create.
 
 Local completion slice (2026-10-02, donation `a662b0b`): capability encryption/
 retention, live-lease atomic callback completion, original-order outcome recovery
