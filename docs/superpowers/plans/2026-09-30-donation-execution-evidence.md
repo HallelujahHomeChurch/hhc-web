@@ -4,6 +4,45 @@ Date: 2026-09-30. Approved plan: `2026-09-30-donation-admin-sandbox-first.md`.
 Initial foundation date above; subsequent evidence is recorded by date below.
 Neither the local foundation nor a read-only bank query is delivery 1A acceptance.
 
+## Continuation — exec-only grant preparation, not apply (2026-10-03)
+
+- Human approved preparing an exec-only Terraform PR and a full-root preview.
+  Actual apply requires a later reviewed exact-diff approval. Reused the clean
+  isolated Infra worktree; branch `infra/donation-sandbox-exec-check` starts from
+  current `origin/main` `9652263`. Infra PR117 head `a10ee19` adds only the custom
+  role, app-only assignment, contract test and permission-boundary documentation.
+  https://github.com/HallelujahHomeChurch/azure-infra/pull/117
+- Role permissions contain exactly `Microsoft.App/containerApps/exec/action`
+  as a DataAction and no management actions, logstream or debug. Role definition
+  and assignable scope are the existing `alive` RG, not an RG-level grant.
+  Assignment scope is only `donation-api`, binding existing deployer principal
+  `c4ad3bf8-6c0b-4fc0-9455-18b7226dde00`. Existing immutable main-only OIDC trust
+  and Contributor remain unchanged. Exec permits arbitrary container commands
+  and access to runtime secrets; Azure RBAC cannot restrict it to schema checks.
+- Meaningful RED removes the exec DataAction and fails the precise contract
+  assertion; restored permission passes. Full Terraform mocks: 15 passed,
+  0 failed; fmt, validate and diff checks pass. A private, ignored full-root saved
+  plan contains exactly 2 creates, 0 updates, 0 destroys. An in-memory JSON guard
+  verifies exact addresses, permission, principal, scope and computed role-ID
+  reference. This review plan is not authorized for apply and must be regenerated
+  from merged main before any approved apply.
+- Seven refresh-only drift entries are recorded separately from proposed
+  mutations: Account API image/revision, Account migration image, Donation API
+  image/revision, HHC client branch, two worker identity-list orderings, and
+  deployer null-versus-empty tags. The two identity sets are equal and tags are
+  null/empty-equivalent. No non-exec resource has a proposed mutation; this does
+  not claim the refreshed state has no historical drift or authorize fixing it.
+- One fresh bounded independent review reports no Critical/Important/Minor
+  findings; independently reruns both deployer mocks and confirms the two-create
+  plan. Actual grant propagation/CD, historical active/0 revision cleanup,
+  Admin/bank/card acceptance and unrelated drift remain executor gates or
+  out-of-scope follow-ups, not review-derived readiness evidence.
+- Remote CI `37132264190` succeeds for exact head `a10ee19`; PR117 remains open
+  and mergeable after all checks. Live grant remains only
+  Contributor; `0000002` is Healthy/active/100, historical
+  `release-37111894868-1` remains active/0. No merge, apply, Donation/Admin release,
+  bank order, card entry or charge occurred in this preparation scope.
+
 ## Continuation — approved deployer apply and Sandbox CD (2026-10-03)
 
 - PR6 merged `5942173`; normal main release `37114325767` passed full verify,
