@@ -1,8 +1,8 @@
 'use client';
 
 import {useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode} from 'react';
-import {ArrowLeft, Search, StickyNote, Ellipsis, X} from 'lucide-react';
-import {BulletinDocumentRenderer, ReaderWatermark} from '@hallelujahhomechurch/ui';
+import {Search, StickyNote, Download, Info, X} from 'lucide-react';
+import {BulletinDocumentRenderer, ReaderWatermark, IconButton} from '@hallelujahhomechurch/ui';
 import type {OnlineBulletinAccess, BulletinReaderMutation, BulletinReaderNote} from '@hallelujahhomechurch/hhc-web-client';
 import type {BulletinLocale, BulletinSeries} from '@hallelujahhomechurch/preferences';
 import {useAccountAuth, useAccountIdentity, useAccountSignIn, useBulletinAccess, useBulletinAuthorization} from '@/components/layout/AccountControl';
@@ -26,6 +26,7 @@ import {readReaderReturn, saveReaderReturn} from '@/features/weekly-reader/retur
 import type {Locale} from '@/i18n/locales';
 import {ReaderToolbar, type ReaderMessages} from './ReaderToolbar';
 import {PageNavigator} from './PageNavigator';
+import {ReaderTabs} from './ReaderTabs';
 import {SectionNavigator} from './SectionNavigator';
 import {ReaderSearch} from './ReaderSearch';
 import {OfflineControl} from './OfflineControl';
@@ -79,7 +80,7 @@ function AuthorizedReader(props: Props & {accountId: string}) {
     {session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}
     <ReaderDocument key={`${session.value.document.documentId}:${session.value.document.revision}`} value={session.value} selector={selector} messages={m} api={api} offline={session.offline} allowAction={session.allowAction} onFailure={session.privateFailure} onUpdated={session.acceptSaved} suspended={!!session.validating} backHref={`/${props.locale}/literature-ministry`} offlineControl={<OfflineControl api={api} value={session.value} selector={selector} locale={props.locale} messages={m} onSaved={session.acceptSaved} onFailure={session.privateFailure}/>}/>
   </div></>;
-  return <section className="reader-status" role={session.error ? 'alert' : 'status'}><h1>{m.title}</h1><p>{session.error ? m[session.error] : m.loading}</p>{session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}{session.error ? <button type="button" onClick={session.retry}>{m.retry}</button> : null}</section>;
+  return <><ReaderTabs accountId={accountId} locale={props.locale} current={props} messages={m}/><section className="reader-status" role={session.error ? 'alert' : 'status'}><h1>{m.title}</h1><p>{session.error ? m[session.error] : m.loading}</p>{session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}{session.error ? <button type="button" onClick={session.retry}>{m.retry}</button> : null}</section></>;
 }
 
 function ReaderDocument({value, selector, messages: m, api, offline, allowAction, onFailure, onUpdated, suspended, backHref, offlineControl}: {value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages; api: ReturnType<typeof createReaderApi>; offline: boolean; allowAction: () => boolean; onFailure: (error: unknown) => void; onUpdated: (value: OnlineBulletinAccess) => void; suspended: boolean; backHref: string; offlineControl: ReactNode}) {
@@ -168,12 +169,12 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const [page, setPage] = useState(Math.max(0, restoredPage));
   const [zoom, setZoom] = useState<ReaderZoom>('page');
   const [mobile, setMobile] = useState(false);
-  const [panel, setPanel] = useState<'pages' | 'search' | 'more' | null>(null);
+  const [panel, setPanel] = useState<'pages' | 'search' | 'offline' | null>(null);
   const chromeRef = useRef<HTMLDivElement>(null);
   const panelTrigger = useRef<HTMLElement | null>(null);
   const [sourceJump, setSourceJump] = useState<{page: number} | null>(null);
   const previousMobile = useRef(false);
-  function openPanel(next: 'pages' | 'search' | 'more', trigger: HTMLElement) {
+  function openPanel(next: 'pages' | 'search' | 'offline', trigger: HTMLElement) {
     if (notes && !closeNotes()) return;
     clearSelection(); panelTrigger.current = trigger; setPanel(current => current === next ? null : next);
   }
@@ -358,23 +359,28 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     if (!mobile && delta) {event.preventDefault(); onPage(page + delta);}
   }}>
     <div ref={chromeRef} className="reader-chrome">
+      <ReaderTabs accountId={selector.accountId} locale={backHref.split('/')[1] as Locale} current={selector} title={value.document.canonicalMetadata.title} messages={m} beforeNavigate={async () => {
+        if (!allowAction() || privateReader.busy || notes && !closeNotes()) return false;
+        await flushProgress();
+        return allowAction();
+      }}/>
       <header className="reader-topbar">
-        <a href={backHref} aria-label={m.back} title={m.back} onClick={event => {if (notes && !closeNotes()) event.preventDefault();}}><ArrowLeft size={20} aria-hidden="true"/></a>
-        <h1 lang={value.document.contentLocale} title={value.document.canonicalMetadata.title}>{value.document.canonicalMetadata.title}</h1>
         <PageNavigator document={document} metadata={value.document.canonicalMetadata} page={page} onPage={onPage} messages={m} compact mobile={mobile} onOpen={() => {const trigger = globalThis.document.activeElement; if (trigger instanceof HTMLElement) openPanel('pages', trigger);}}/>
-        <button type="button" aria-label={m.search} title={m.search} aria-expanded={panel === 'search'} onClick={event => openPanel('search', event.currentTarget)}><Search size={20} aria-hidden="true"/></button>
-        <button ref={notesButton} type="button" aria-label={m.myNotes} title={m.myNotes} disabled={!privateReader.state} onClick={() => {setPanel(null); openNotesList(null);}}><StickyNote size={20} aria-hidden="true"/></button>
-        <button type="button" aria-label={m.more} title={m.more} aria-expanded={panel === 'more'} onClick={event => openPanel('more', event.currentTarget)}><Ellipsis size={20} aria-hidden="true"/></button>
+        <IconButton variant="ghost" aria-label={m.search} title={m.search} aria-expanded={panel === 'search'} onPress={event => openPanel('search', event.target)} icon={<Search size={20} aria-hidden="true"/>}/>
+        <IconButton ref={notesButton} variant="ghost" aria-label={m.myNotes} title={m.myNotes} isDisabled={!privateReader.state} onPress={() => {setPanel(null); openNotesList(null);}} icon={<StickyNote size={20} aria-hidden="true"/>}/>
+        <IconButton variant="ghost" aria-label={m.offlineContent} title={m.offlineContent} aria-expanded={panel === 'offline'} onPress={event => openPanel('offline', event.target)} icon={<Download size={20} aria-hidden="true"/>}/>
+        {mobile && productionSentenceIds.size > 0 ? <IconButton variant="ghost" aria-label={m.productionDetails} title={m.productionDetails} aria-expanded={showProductionDetails} onPress={() => {if (notes && !closeNotes()) return; clearSelection(); setShowProductionDetails(value => !value);}} icon={<Info size={20} aria-hidden="true"/>}/> : null}
+        {!mobile ? <ReaderToolbar messages={m} zoom={zoom} setZoom={setZoom}/> : null}
       </header>
-      <aside className="reader-navigation-panel" hidden={!panel} aria-label={panel === 'pages' ? m.sourcePage : panel === 'search' ? m.search : m.more}>
-        <header><h2>{panel === 'pages' ? m.sourcePage : panel === 'search' ? m.search : m.more}</h2><button type="button" aria-label={m.close} onClick={closePanel}><X size={20} aria-hidden="true"/></button></header>
+      <aside className="reader-navigation-panel" hidden={!panel} aria-label={panel === 'pages' ? m.sourcePage : panel === 'search' ? m.search : m.offlineContent}>
+        <header><h2>{panel === 'pages' ? m.sourcePage : panel === 'search' ? m.search : m.offlineContent}</h2><IconButton variant="ghost" aria-label={m.close} onPress={closePanel} icon={<X size={20} aria-hidden="true"/>}/></header>
         {panel === 'pages' ? <><PageNavigator document={document} metadata={value.document.canonicalMetadata} page={page} onPage={onPage} messages={m}/><SectionNavigator document={document} onSection={id => {onAnchor({kind: 'component', id}); setPanel(null);}} messages={m}/></> : null}
         <div hidden={panel !== 'search'}><ReaderSearch document={value.document} onJump={id => onAnchor({kind: 'sentence', id})} messages={m} expanded/></div>
-        <div hidden={panel !== 'more'}>{!mobile ? <ReaderToolbar messages={m} zoom={zoom} setZoom={setZoom}/> : null}{mobile && productionSentenceIds.size > 0 ? <button type="button" aria-expanded={showProductionDetails} onClick={() => {if (notes && !closeNotes()) return; clearSelection(); setShowProductionDetails(value => !value);}}>{m.productionDetails}</button> : null}{offlineControl}<SyncStatus status={privateReader.status} messages={m}/></div>
+        <div hidden={panel !== 'offline'}>{offlineControl}</div>
       </aside>
     </div>
     {value.document.metadataSyncPending ? <p role="status">{m.metadataPending}</p> : null}
-    {privateReader.status !== 'synced' && panel !== 'more' ? <SyncStatus status={privateReader.status} messages={m}/> : null}
+    {privateReader.status !== 'synced' ? <SyncStatus status={privateReader.status} messages={m}/> : null}
     {privateReader.status === 'paused' || privateReader.status === 'action' || privateReader.pendingMutation ? <ReaderRecovery api={api} value={value} selector={selector} messages={m} onUpdated={onUpdated} onFailure={onFailure} suspended={suspended} pendingMutation={privateReader.pendingMutation} onPendingChange={mutation => {
       const previous = privateReader.pendingMutation;
       privateReader.replacePending(mutation);

@@ -1,5 +1,14 @@
 {
   "weeklyReader": {
+    "home": "周报列表",
+    "openBulletins": "已打开的周报",
+    "closeTab": "关闭周报",
+    "generalEdition": "一般版",
+    "childrenEdition": "儿童版",
+    "vertical": "垂直连续阅读",
+    "horizontal": "水平翻页",
+    "zoomIn": "放大",
+    "zoomOut": "缩小",
     "printedPage": "印刷页码：第 {page} 页",
     "more": "更多选项",
     "sourcePage": "原稿页码",

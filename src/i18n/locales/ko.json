@@ -1,5 +1,14 @@
 {
   "weeklyReader": {
+    "home": "주보 목록",
+    "openBulletins": "열린 주보",
+    "closeTab": "주보 닫기",
+    "generalEdition": "일반판",
+    "childrenEdition": "어린이판",
+    "vertical": "세로 스크롤",
+    "horizontal": "가로 페이지 넘기기",
+    "zoomIn": "확대",
+    "zoomOut": "축소",
     "printedPage": "인쇄 페이지: {page}",
     "more": "추가 옵션",
     "sourcePage": "원본 페이지",

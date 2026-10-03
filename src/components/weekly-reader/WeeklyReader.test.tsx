@@ -30,6 +30,33 @@ beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state
 afterEach(() => {Reflect.deleteProperty(document, 'fonts'); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs();});
 
 describe('protected weekly reader', () => {
+  it('exposes the library, document tab and tools without an overflow menu', async () => {
+    render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    expect(screen.getByRole('button', {name: 'Bulletin library'})).toBeInTheDocument();
+    expect(screen.getByRole('navigation', {name: 'Open bulletins'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: props.messages.search})).toHaveClass('hhc-button');
+    expect(screen.queryByRole('button', {name: 'More options'})).not.toBeInTheDocument();
+  });
+  it('protects a dirty note when leaving through Home or closing the active bulletin', async () => {
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(private callback: ResizeObserverCallback) {}
+      observe(element: Element) {this.callback([{target: element, contentRect: {width: 1200, height: 800}} as ResizeObserverEntry], this as unknown as ResizeObserver);}
+      disconnect() {}
+    });
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
+    selectText(container.querySelector('[data-sentence-id="s0"]')!);
+    fireEvent.click(screen.getByRole('button', {name: 'Note'}));
+    fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'Unsaved draft'}});
+    fireEvent.click(screen.getByRole('button', {name: 'Bulletin library'}));
+    await waitFor(() => expect(confirm).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole('button', {name: /Close bulletin/}));
+    await waitFor(() => expect(confirm).toHaveBeenCalledTimes(2));
+    expect(screen.getByRole('textbox', {name: props.messages.noteText})).toHaveValue('Unsaved draft');
+  });
   it('selects partial native text instead of activating an entire sentence on click', async () => {
     const cloud = (await state.privateState()).state;
     state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: cloud, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]}));
@@ -469,7 +496,6 @@ describe('protected weekly reader', () => {
     await waitFor(() => expect(container.querySelector('[data-bulletin-mode="mobile"]')).not.toBeNull());
     expect(container.querySelector('[data-sentence-id="s0"]')).toHaveTextContent('內容0。');
     expect(screen.queryByText('Production credit')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', {name: 'More options'}));
     fireEvent.click(screen.getByRole('button', {name: 'Speaker and production details'}));
     expect(container.querySelector('[data-sentence-id="credit-sentence"]')).toHaveTextContent('Production credit');
     fireEvent.click(screen.getByRole('button', {name: 'Speaker and production details'}));
@@ -479,7 +505,6 @@ describe('protected weekly reader', () => {
     fireEvent.change(screen.getByRole('searchbox'), {target: {value: 'Production credit'}});
     fireEvent.click(screen.getByRole('button', {name: props.messages.goToResult}));
     expect(container.querySelector('[data-sentence-id="credit-sentence"]')).toHaveTextContent('Production credit');
-    fireEvent.click(screen.getByRole('button', {name: 'More options'}));
     expect(screen.getByRole('button', {name: 'Speaker and production details'})).toHaveAttribute('aria-expanded', 'true');
   });
   it('restores the bound revision page and makes thumbnail copies inert', async () => {

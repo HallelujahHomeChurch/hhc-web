@@ -1,5 +1,14 @@
 {
   "weeklyReader": {
+    "home": "週報一覧",
+    "openBulletins": "開いている週報",
+    "closeTab": "週報を閉じる",
+    "generalEdition": "一般版",
+    "childrenEdition": "子ども版",
+    "vertical": "縦スクロール",
+    "horizontal": "横ページ送り",
+    "zoomIn": "拡大",
+    "zoomOut": "縮小",
     "printedPage": "紙面のページ番号：{page}",
     "more": "その他の設定",
     "sourcePage": "原稿ページ",

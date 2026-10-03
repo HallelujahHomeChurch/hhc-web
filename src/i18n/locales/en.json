@@ -1,5 +1,14 @@
 {
   "weeklyReader": {
+    "home": "Bulletin library",
+    "openBulletins": "Open bulletins",
+    "closeTab": "Close bulletin",
+    "generalEdition": "General",
+    "childrenEdition": "Children",
+    "vertical": "Vertical scrolling",
+    "horizontal": "Horizontal paging",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
     "printedPage": "Printed page {page}",
     "more": "More options",
     "sourcePage": "Source page",
