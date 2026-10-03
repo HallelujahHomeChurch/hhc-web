@@ -19,6 +19,7 @@
     "noteText": "ノート",
     "noteSave": "保存",
     "noteCancel": "キャンセル",
+    "noteDiscardConfirm": "保存していないノートの変更を破棄しますか？",
     "noteClose": "閉じる",
     "noteEdit": "編集",
     "noteDelete": "削除",

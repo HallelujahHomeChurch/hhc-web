@@ -19,6 +19,7 @@
     "noteText": "노트 내용",
     "noteSave": "저장",
     "noteCancel": "취소",
+    "noteDiscardConfirm": "저장하지 않은 노트 변경 사항을 버릴까요?",
     "noteClose": "닫기",
     "noteEdit": "편집",
     "noteDelete": "삭제",

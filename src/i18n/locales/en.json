@@ -19,6 +19,7 @@
     "noteText": "Note",
     "noteSave": "Save",
     "noteCancel": "Cancel",
+    "noteDiscardConfirm": "Discard your unsaved note changes?",
     "noteClose": "Close",
     "noteEdit": "Edit",
     "noteDelete": "Delete",

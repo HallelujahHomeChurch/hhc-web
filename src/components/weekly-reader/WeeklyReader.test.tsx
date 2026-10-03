@@ -18,6 +18,86 @@ beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state
 afterEach(() => {Reflect.deleteProperty(document, 'fonts'); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs();});
 
 describe('protected weekly reader', () => {
+  it('dismisses transient selection outside the reader without removing a saved highlight', async () => {
+    const cloud = (await state.privateState()).state;
+    state.privateState.mockResolvedValue({state: {...cloud, highlights: [{sentenceId: 's0', color: 'yellow', quote: '內容0', active: true, version: 1, updatedAt: ''}]}});
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
+    const sentence = container.querySelector('[data-sentence-id="s0"]')!;
+    fireEvent.click(sentence);
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
+    expect(sentence).toHaveAttribute('data-highlight', 'yellow');
+    expect(state.mutate).not.toHaveBeenCalled();
+    fireEvent.click(sentence);
+    fireEvent.click(screen.getByText('Private weekly', {selector: 'h1'}));
+    expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
+  });
+
+  it('keeps toolbar selection until acknowledgement, then closes it and preserves the saved color', async () => {
+    const cloud = (await state.privateState()).state;
+    let acknowledge!: () => void;
+    state.mutate.mockImplementation((_selector, _value, mutations) => new Promise(resolve => {
+      acknowledge = () => resolve({state: {...cloud, highlights: [{sentenceId: 's0', color: 'yellow', quote: '內容0', active: true, version: 1, updatedAt: ''}]}, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]});
+    }));
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
+    const sentence = container.querySelector('[data-sentence-id="s0"]')!;
+    fireEvent.click(sentence);
+    const color = screen.getByRole('button', {name: 'Yellow highlight'});
+    fireEvent.pointerDown(color);
+    expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
+    fireEvent.click(color);
+    await waitFor(() => expect(acknowledge).toBeTypeOf('function'));
+    expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
+    await act(async () => acknowledge());
+    expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
+    expect(sentence).toHaveAttribute('data-highlight', 'yellow');
+  });
+
+  it('retains retry context after a failed highlight and does not discard an open note on outside click', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    state.mutate.mockRejectedValue(new Error('temporary'));
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
+    fireEvent.click(container.querySelector('[data-sentence-id="s0"]')!);
+    fireEvent.click(screen.getByRole('button', {name: 'Yellow highlight'}));
+    await screen.findByText(props.messages.actionFailed);
+    expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
+    expect(container.querySelector('[data-sentence-id="s0"]')).not.toHaveAttribute('data-highlight');
+    fireEvent.click(screen.getByRole('button', {name: 'Note'}));
+    fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'Keep this draft'}});
+    fireEvent.pointerDown(document.body);
+    fireEvent.click(document.body);
+    expect(screen.getByRole('textbox', {name: props.messages.noteText})).toHaveValue('Keep this draft');
+    expect(confirm).toHaveBeenCalled();
+    confirm.mockReturnValue(true);
+    fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+    expect(screen.queryByRole('textbox', {name: props.messages.noteText})).not.toBeInTheDocument();
+  });
+
+  it('does not clear a newer selection when an older highlight acknowledgement arrives', async () => {
+    const cloud = (await state.privateState()).state;
+    let acknowledge!: () => void;
+    state.mutate.mockImplementation((_selector, _value, mutations) => new Promise(resolve => {
+      acknowledge = () => resolve({state: cloud, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]});
+    }));
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
+    const sentence = container.querySelector('[data-sentence-id="s0"]')!;
+    fireEvent.click(sentence);
+    fireEvent.click(screen.getByRole('button', {name: 'Yellow highlight'}));
+    await waitFor(() => expect(acknowledge).toBeTypeOf('function'));
+    fireEvent.click(sentence); fireEvent.click(sentence);
+    await act(async () => acknowledge());
+    expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
+    expect(sentence).toHaveAttribute('aria-pressed', 'true');
+  });
+
   it('keeps native pinch-zoom panning from turning the paper page', async () => {
     const visual = Object.assign(new EventTarget(), {scale: 1});
     vi.stubGlobal('visualViewport', visual);

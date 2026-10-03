@@ -103,8 +103,23 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const sentenceState = Object.fromEntries(sentences.map(sentence => [sentence.id, {selected: selected.includes(sentence.id), highlight: highlights[sentence.id]}]));
   const noteAnchors = typeof notes === 'object' && notes ? notes.sentenceIds : selected;
   const noteQuote = typeof notes === 'object' && notes ? notes.quote : sentences.filter(sentence => selected.includes(sentence.id)).map(sentence => sentence.text).join('\n');
+  useEffect(() => {
+    if (!selected.length || notes || suspended) return;
+    const dismiss = (event: Event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest('.reader-selection-tools') || paperRef.current?.contains(target) && target.closest('[data-sentence-id]')) return;
+      setSelected([]);
+    };
+    const owner = documentRef.current?.ownerDocument;
+    owner?.addEventListener('pointerdown', dismiss);
+    owner?.addEventListener('click', dismiss);
+    return () => {owner?.removeEventListener('pointerdown', dismiss); owner?.removeEventListener('click', dismiss);};
+  }, [selected.length, notes, suspended]);
   function closeNotes() {
     if (privateReader.busy) return;
+    const original = typeof notes === 'object' && notes ? notes.text : '';
+    if (notes && notes !== 'list' && noteEditorState && noteEditorState.draft.text !== original && !window.confirm(m.noteDiscardConfirm)) return;
     setNotes(null); setDeletion(null); setNoteEditorState(undefined);
     requestAnimationFrame(() => (noteButton.current ?? notesButton.current)?.focus());
   }
@@ -117,7 +132,14 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     return {status: result.status, note: 'note' in result ? result.note : undefined};
   }
   async function action(mutation: BulletinReaderMutation) {
-    try {const result = await privateReader.mutate(mutation); setNotice(result.status === 'applied' || result.status === 'queued' ? '' : m.syncAction);}
+    const actedSelection = selected;
+    try {
+      const result = await privateReader.mutate(mutation);
+      const saved = result.status === 'applied' || result.status === 'queued';
+      setNotice(saved ? '' : m.syncAction);
+      // An older response must not dismiss a selection made while it was pending.
+      if (saved) setSelected(current => current === actedSelection ? [] : current);
+    }
     catch {setNotice(m.actionFailed);}
   }
   async function deleteNote(note: BulletinReaderNote) {

@@ -19,6 +19,7 @@
     "noteText": "笔记内容",
     "noteSave": "保存",
     "noteCancel": "取消",
+    "noteDiscardConfirm": "要舍弃尚未保存的笔记更改吗？",
     "noteClose": "关闭",
     "noteEdit": "编辑",
     "noteDelete": "删除",

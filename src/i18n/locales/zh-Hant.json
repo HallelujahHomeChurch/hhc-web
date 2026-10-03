@@ -19,6 +19,7 @@
     "noteText": "筆記內容",
     "noteSave": "儲存",
     "noteCancel": "取消",
+    "noteDiscardConfirm": "要捨棄尚未儲存的筆記變更嗎？",
     "noteClose": "關閉",
     "noteEdit": "編輯",
     "noteDelete": "刪除",
