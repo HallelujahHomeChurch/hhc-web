@@ -250,6 +250,11 @@
     "empty": "아직 게시된 주보가 없습니다."
   },
   "memberVideos": {
+    "settings": "재생 설정",
+    "togglePlayback": "재생 또는 일시 정지 (스페이스)",
+    "privateCopy": "HHC 회원 전용",
+    "buffering": "동영상 불러오는 중",
+    "uploadedDate": "업로드 날짜: {date}",
     "quality": "화질",
     "auto": "자동",
     "pause": "일시 정지",

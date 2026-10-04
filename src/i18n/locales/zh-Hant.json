@@ -250,6 +250,11 @@
     "empty": "目前尚未發布週報。"
   },
   "memberVideos": {
+    "settings": "播放設定",
+    "togglePlayback": "播放或暫停（空白鍵）",
+    "privateCopy": "HHC 會員專屬",
+    "buffering": "正在載入影片",
+    "uploadedDate": "上傳日期：{date}",
     "quality": "畫質",
     "auto": "自動",
     "pause": "暫停",

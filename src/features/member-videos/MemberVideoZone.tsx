@@ -15,21 +15,14 @@ type Messages = {
   selectedTitle: string; listTitle: string; count: string; play: string; select: string; selected: string;
   playing: string; featured: string; durationUnknown: string; expires: string; loading: string;
   preparing: string; empty: string; loadError: string; playError: string; expired: string;
-  retry: string; previous: string; next: string;
+  retry: string; previous: string; next: string; uploadedDate: string;
 } & PlayerLabels;
 type ActivePlayback = {recordingId: string; scopeId: string; grant: MemberRecordingPlayback; url: string};
 const pageSize = 12;
 
-function formatDate(value: string | null, locale: Locale, compact = false) {
+function formatDate(value: string | null, locale: Locale) {
   if (!value) return '—';
-  return new Intl.DateTimeFormat(locale, {timeZone: 'Asia/Taipei', year: 'numeric', month: 'short', day: 'numeric', ...(compact ? {} : {hour:'numeric',minute:'2-digit',timeZoneName:'short'} as const)}).format(new Date(value));
-}
-
-function formatDuration(seconds: number | undefined, unknown: string, locale: Locale) {
-  if (!seconds || seconds < 1) return unknown;
-  const minutes = Math.max(1,Math.round(seconds/60));
-  const unit = (value:number,name:'hour'|'minute') => new Intl.NumberFormat(locale,{style:'unit',unit:name,unitDisplay:'long'}).format(value);
-  return [minutes>=60?unit(Math.floor(minutes/60),'hour'):'',minutes%60?unit(minutes%60,'minute'):''].filter(Boolean).join(' ');
+  return new Intl.DateTimeFormat(locale, {timeZone: 'Asia/Taipei', year: 'numeric', month: 'long', day: 'numeric'}).format(new Date(value));
 }
 
 export function MemberVideoZone({locale, messages, hero}: {locale: Locale; messages: Messages; hero: ReactNode}) {
@@ -59,10 +52,10 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
   const mediaFailureReported = useRef(false);
   const [preparing, setPreparing] = useState(false);
   const [playError, setPlayError] = useState('');
-  const [playing, setPlaying] = useState(false);
   const attempt = useRef<AbortController | null>(null);
   const video = useRef<HTMLVideoElement>(null);
   const playerTitle = useRef<HTMLHeadingElement>(null);
+  const playerSection = useRef<HTMLDivElement>(null);
 
   const resolveMissing = useCallback(async (signal: AbortSignal) => {
     try {
@@ -117,10 +110,12 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
     if (playbackRef.current) void api.clear(playbackRef.current.url).catch(() => {});
     playbackRef.current = null;
     setPlayback(null);
-    setPlaying(false);
     setPlayError('');
     setSelectedId(id);
-    queueMicrotask(() => { playerTitle.current?.focus(); playerTitle.current?.scrollIntoView({behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start'}); });
+    queueMicrotask(() => {
+      playerTitle.current?.focus({preventScroll: true});
+      playerSection.current?.scrollIntoView({behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start'});
+    });
   };
 
   const start = async () => {
@@ -176,7 +171,6 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
       void api.clear(playback.url).catch(() => {});
       playbackRef.current = null;
       setPlayback(null);
-      setPlaying(false);
       setPlayError(messages.expired);
     };
     const expiryTimer = window.setTimeout(expire, Math.max(0,expiry-Date.now()));
@@ -230,9 +224,10 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
     }
   }, [messages.playError]);
 
-  const pageCount = Math.ceil((recordings?.length ?? 0) / pageSize);
+  const otherRecordings = recordings?.filter(item => item.id !== selectedId) ?? [];
+  const pageCount = Math.ceil(otherRecordings.length / pageSize);
   const currentPage = Math.min(page, Math.max(1, pageCount));
-  const visibleItems = recordings?.slice((currentPage - 1) * pageSize, currentPage * pageSize) ?? [];
+  const visibleItems = otherRecordings.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   return (
     <main>
       {hero}
@@ -241,21 +236,18 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
           {loadError ? <div role="alert" className="rounded-[14px] border border-panel-border bg-panel p-7 text-center text-ink">{messages.loadError}<button type="button" className="ml-4 min-h-11 rounded-full border border-[var(--hhc-control-border)] px-5 font-semibold" onClick={() => setRetry((value) => value + 1)}>{messages.retry}</button></div> : null}
           {!loadError && !recordings ? <p role="status" className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{messages.loading}</p> : null}
           {!loadError && recordings?.length === 0 ? <p className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{messages.empty}</p> : null}
-          {selected ? <div className="grid gap-4">
-            <p className="text-sm font-semibold tracking-widest text-primary">{messages.selectedTitle}</p>
-            {playback?.recordingId === selected.id ? <HlsPlayer key={playback.url} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} onPlayingChange={setPlaying} onError={mediaError}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950"><button type="button" disabled={preparing} onClick={() => void start()} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground disabled:opacity-60"><Play size={18} aria-hidden="true" />{preparing ? messages.preparing : messages.play}</button></div>}
+          {selected ? <div ref={playerSection} className="grid scroll-mt-28 gap-4">
+            {playback?.recordingId === selected.id ? <HlsPlayer key={playback.url} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} onError={mediaError}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950"><button type="button" disabled={preparing} onClick={() => void start()} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground disabled:opacity-60"><Play size={18} aria-hidden="true" />{preparing ? messages.preparing : messages.play}</button></div>}
             <h2 ref={playerTitle} tabIndex={-1} className="text-2xl font-semibold text-ink outline-none">{selected.title}</h2>
-            <p className="text-sm text-muted">{formatDate(selected.uploadedAt, locale)} · {formatDuration(selected.durationSeconds, messages.durationUnknown, locale)}</p>
-            <p className="text-sm text-muted">{messages.expires} {formatDate(selected.expiresAt, locale)}</p>
+            <p className="text-sm text-muted">{messages.uploadedDate.replace('{date}', formatDate(selected.uploadedAt, locale))}</p>
             {playError ? <p role="alert" className="text-sm text-primary">{playError} <button type="button" className="underline" onClick={() => void start()}>{messages.retry}</button></p> : null}
           </div> : null}
-          {recordings && recordings.length > 0 ? <div className="grid gap-5">
-            <div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-panel-border pt-7"><h2 className="text-2xl font-semibold text-ink">{messages.listTitle}</h2><p className="text-sm text-muted">{messages.count.replace('{count}', String(recordings.length))}</p></div>
+          {otherRecordings.length > 0 ? <div className="grid gap-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-panel-border pt-7"><h2 className="text-2xl font-semibold text-ink">{messages.listTitle}</h2><p className="text-sm text-muted">{messages.count.replace('{count}', String(otherRecordings.length))}</p></div>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{visibleItems.map((item) => <article key={item.id} className="grid min-w-0 gap-3 rounded-[14px] border border-panel-border bg-panel p-5 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)]">
-              <p className="text-sm text-muted">{formatDate(item.uploadedAt, locale, true)}</p>
               <h3 className="break-words text-lg font-semibold text-ink">{item.title}</h3>
-              <p className="text-sm text-muted">{formatDuration(item.durationSeconds, messages.durationUnknown, locale)} · {messages.expires} {formatDate(item.expiresAt, locale, true)}</p>
-              <div className="flex flex-wrap gap-2 text-xs font-semibold text-primary">{item.featured ? <span>{messages.featured}</span> : null}{item.id === selectedId ? <span>{playing && playback?.recordingId === item.id ? messages.playing : messages.selected}</span> : null}</div>
+              <p className="text-sm text-muted">{messages.uploadedDate.replace('{date}', formatDate(item.uploadedAt, locale))}</p>
+              {item.featured ? <span className="text-xs font-semibold text-primary">{messages.featured}</span> : null}
               <button type="button" className="min-h-11 justify-self-start rounded-full border border-[var(--hhc-control-border)] bg-paper px-5 font-semibold text-[var(--hhc-control)] hover:border-primary hover:bg-primary hover:text-primary-foreground focus-visible:outline-2 focus-visible:outline-primary" onClick={() => select(item.id)}>{messages.select}</button>
             </article>)}</div>
             {pageCount > 1 ? <nav aria-label={messages.listTitle} className="flex items-center justify-center gap-4"><button type="button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)} className="min-h-11 px-4 disabled:opacity-40">{messages.previous}</button><span>{currentPage} / {pageCount}</span><button type="button" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)} className="min-h-11 px-4 disabled:opacity-40">{messages.next}</button></nav> : null}

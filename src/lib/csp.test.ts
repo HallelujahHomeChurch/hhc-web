@@ -23,7 +23,7 @@ describe('getContentSecurityPolicy', () => {
   it('allows only current public application dependencies', () => {
     const policy = getContentSecurityPolicy({development: false});
 
-    expect(directive(policy, 'img-src')).toBe("img-src 'self' data: blob: https://i.ytimg.com https://lh3.googleusercontent.com https://profile.line-scdn.net https://ui-avatars.com https://alivestoragebb99ee6e.blob.core.windows.net");
+    expect(directive(policy, 'img-src')).toBe("img-src 'self' data: blob: https://i.ytimg.com https://lh3.googleusercontent.com https://profile.line-scdn.net https://ui-avatars.com https://alivestoragebb99ee6e.blob.core.windows.net https://media.alive.org.tw https://media-test.alive.org.tw");
     expect(directive(policy, 'connect-src')).toBe("connect-src 'self' https://account.alive.org.tw https://account-test.alive.org.tw https://media.alive.org.tw https://media-test.alive.org.tw");
     expect(directive(policy, 'font-src')).toBe("font-src 'self'");
     expect(directive(policy, 'worker-src')).toBe("worker-src 'self' blob:");
