@@ -250,6 +250,11 @@
     "empty": "公開済みの週報はまだありません。"
   },
   "memberVideos": {
+    "settings": "再生設定",
+    "togglePlayback": "再生・一時停止（スペース）",
+    "privateCopy": "HHC 会員限定",
+    "buffering": "動画を読み込み中",
+    "uploadedDate": "アップロード日：{date}",
     "quality": "画質",
     "auto": "自動",
     "pause": "一時停止",

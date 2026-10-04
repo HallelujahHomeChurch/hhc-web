@@ -15,7 +15,7 @@ vi.mock('hls.js',()=>({default:class {
   on(event:string,callback:()=>void){if(event==='manifest')queueMicrotask(callback);}
   attachMedia(){}
 }}));
-const labels={quality:'Quality',auto:'Auto',play:'Play',pause:'Pause',mute:'Mute',unmute:'Unmute',seek:'Playback position',volume:'Volume',fullscreen:'Fullscreen',exitFullscreen:'Exit fullscreen',playbackSpeed:'Speed'};
+const labels={quality:'Quality',auto:'Auto',play:'Play',pause:'Pause',mute:'Mute',unmute:'Unmute',seek:'Playback position',volume:'Volume',fullscreen:'Fullscreen',exitFullscreen:'Exit fullscreen',playbackSpeed:'Speed',settings:'Settings',togglePlayback:'Play or pause',privateCopy:'HHC members only',buffering:'Loading video'};
 const props=()=>({playbackUrl:url,availableQualities:['720p','1080p'] as ('720p'|'1080p')[],watermark:'TRACE123',title:'Sunday',labels,videoRef:createRef<HTMLVideoElement>(),onPlayingChange:vi.fn(),onError:vi.fn()});
 beforeEach(()=>{
   engine.supported=true;engine.instances=[];
@@ -25,10 +25,23 @@ beforeEach(()=>{
 });
 afterEach(()=>vi.restoreAllMocks());
 
+it('keeps K working after toolbar focus but leaves button Space activation native', async()=>{
+  const p=props();render(<HlsPlayer {...p}/>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));
+  const video=p.videoRef.current!;
+  const mute=screen.getByRole('button',{name:'Mute'});
+  mute.focus();
+  vi.mocked(video.play).mockClear();
+  fireEvent.keyDown(mute,{key:'k'});
+  expect(video.play).toHaveBeenCalledOnce();
+  fireEvent.keyDown(mute,{key:' '});
+  expect(video.play).toHaveBeenCalledOnce();
+});
 it('switches MSE quality without seeking or reloading, and returns to automatic adaptation',async()=>{
   const p=props();render(<HlsPlayer {...p}/>);
   await waitFor(()=>expect(engine.instances).toHaveLength(1));
   const video=p.videoRef.current!;video.currentTime=97;
+  fireEvent.click(screen.getByRole('button',{name:'Settings'}));
   fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'1080p'}});
   expect(engine.instances[0].nextLevel).toBe(1);expect(video.currentTime).toBe(97);
   fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'auto'}});
@@ -60,6 +73,7 @@ it('preserves native playback position and paused state across rendition and Aut
   const video=p.videoRef.current!;
   await waitFor(()=>expect(video.src).toBe(url));
   video.currentTime=81;
+  fireEvent.click(screen.getByRole('button',{name:'Settings'}));
   fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'720p'}});
   expect(video.src).toBe(url.replace('master.m3u8','720p/index.m3u8'));
   fireEvent.loadedMetadata(video);
@@ -69,6 +83,55 @@ it('preserves native playback position and paused state across rendition and Aut
   fireEvent.loadedMetadata(video);
   expect(video.src).toBe(url);expect(video.currentTime).toBe(81);
   expect(video.play).toHaveBeenCalledTimes(calls);
+});
+
+it('toggles with Space and the video surface without hijacking form controls', async()=>{
+  const p=props();render(<HlsPlayer {...p}/>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));
+  const video=p.videoRef.current!;
+  vi.mocked(video.play).mockClear();
+  const region=screen.getByRole('region');
+  fireEvent.keyDown(region,{key:' '});
+  expect(video.play).toHaveBeenCalledOnce();
+  Object.defineProperty(video,'paused',{configurable:true,value:false});
+  fireEvent.play(video);
+  fireEvent.click(screen.getByRole('button',{name:'Play or pause'}));
+  expect(video.pause).toHaveBeenCalledOnce();
+  fireEvent.click(screen.getByRole('button',{name:'Settings'}));
+  fireEvent.keyDown(screen.getByRole('combobox',{name:'Speed'}),{key:' '});
+  fireEvent.keyDown(screen.getByRole('slider',{name:'Playback position'}),{key:' '});
+  expect(video.pause).toHaveBeenCalledOnce();
+  fireEvent.keyDown(region,{key:' ',repeat:true});
+  expect(video.pause).toHaveBeenCalledOnce();
+});
+
+it('commits a pointer scrub on release and keeps keyboard seek responsive', async()=>{
+  vi.stubGlobal('fetch',vi.fn().mockResolvedValue({ok:false}));
+  try {
+    const p=props();render(<HlsPlayer {...p}/>);
+    await waitFor(()=>expect(engine.instances).toHaveLength(1));
+    const video=p.videoRef.current!;
+    Object.defineProperty(video,'duration',{configurable:true,value:600});
+    video.currentTime=30; fireEvent.durationChange(video); fireEvent.timeUpdate(video);
+    const seek=screen.getByRole('slider',{name:'Playback position'});
+    fireEvent.pointerDown(seek);
+    fireEvent.change(seek,{target:{value:'240'}});
+    expect(video.currentTime).toBe(30);
+    fireEvent.pointerUp(seek);
+    expect(video.currentTime).toBe(240);
+    fireEvent.keyDown(screen.getByRole('region'),{key:'ArrowRight'});
+    expect(video.currentTime).toBe(245);
+    fireEvent.keyDown(screen.getByRole('region'),{key:'j'});
+    expect(video.currentTime).toBe(235);
+  } finally {vi.unstubAllGlobals();}
+});
+
+it('restores audible volume from a zero-volume slider', async()=>{
+  const p=props();render(<HlsPlayer {...p}/>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));
+  const video=p.videoRef.current!; video.volume=0;fireEvent.volumeChange(video);
+  fireEvent.click(screen.getByRole('button',{name:'Unmute'}));
+  expect(video.volume).toBe(1);expect(video.muted).toBe(false);
 });
 it('fullscreens the container with watermark, not the native video element',async()=>{
   const request=vi.fn().mockResolvedValue(undefined);

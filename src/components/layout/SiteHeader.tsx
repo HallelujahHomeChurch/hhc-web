@@ -11,7 +11,7 @@ import type {Locale} from '@/i18n/locales';
 import {isIPhoneDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 import {StatementStrip} from '@/components/statements/StatementStrip';
 import {LineBrowserNotice, useLineBrowserNotice} from './LineBrowserNotice';
-import {AccountControlSlot, useCanReadBulletin} from './AccountControl';
+import {AccountControlSlot, useCanReadBulletin, useVideoAccess} from './AccountControl';
 
 export type SiteHeaderProps = {
   layout: SiteLayout;
@@ -37,9 +37,10 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
   const t = useTranslations('site');
   const homeHref = `/${locale}`;
   const canReadBulletin = useCanReadBulletin();
+  const canWatchVideo = useVideoAccess() === 'available';
   const navItems = [
     ...layout.header.filter(({key, visible}) => visible && (key !== 'literature-ministry' || canReadBulletin)).map((item) => ({...item, icon: icons[item.key]})),
-    ...(process.env.NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED === 'true' ? [{key: 'member-videos', label: t('nav.memberVideos'), href: `/${locale}/member-videos`, visible: true, icon: PlaySquare}] : [])
+    ...(process.env.NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED === 'true' && canWatchVideo ? [{key: 'member-videos', label: t('nav.memberVideos'), href: `/${locale}/member-videos`, visible: true, icon: PlaySquare}] : [])
   ];
   const mobileNavItems = [{key: 'home', label: t('nav.home'), href: homeHref, icon: House}, ...navItems];
   const accountLabels = {

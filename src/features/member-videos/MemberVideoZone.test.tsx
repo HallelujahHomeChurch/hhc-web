@@ -22,6 +22,7 @@ vi.mock('./api', () => ({createMemberVideoApi: () => videoApi}));
 vi.mock('hls.js',()=>({default:class {static isSupported(){return false;}}}));
 
 const messages = {
+  settings:'Settings',togglePlayback:'Play or pause',privateCopy:'HHC members only',buffering:'Loading video',uploadedDate:'Uploaded: {date}',
   selectedTitle: 'Selected recording', listTitle: 'Recent recordings', count: '{count} gatherings', play: 'Play', select: 'Select', selected: 'Selected',
   playing: 'Playing', featured: 'Featured', durationUnknown: 'Duration unavailable', expires: 'Available until', loading: 'Loading',
   preparing: 'Preparing', empty: 'No recordings', loadError: 'Unavailable', playError: 'Cannot play', expired: 'Expired',
@@ -67,7 +68,7 @@ describe('member video gate', () => {
     render(<MemberVideoZone locale="en" messages={messages} hero={null}/>);
     fireEvent.click(await screen.findByRole('button',{name:'Play'}));
     expect(screen.getByRole('button',{name:'Preparing'})).toBeDisabled();
-    fireEvent.click(screen.getAllByRole('button',{name:'Select'})[1]);
+    fireEvent.click(screen.getByRole('button',{name:'Select'}));
     expect(screen.getByRole('button',{name:'Play'})).toBeEnabled();
   });
   it('does not renew every second when the recording deadline caps the grant', async () => {
@@ -106,17 +107,32 @@ describe('member video gate', () => {
     expect(video.currentTime).toBe(1234);
     expect(HTMLMediaElement.prototype.load).toHaveBeenCalledTimes(loads);
   });
-  it('paginates 18 titled recordings into 12 and 6 without changing the player selection', async () => {
+  it('excludes the selected recording and paginates the other 17 recordings into 12 and 5', async () => {
     state.auth = 'authenticated'; state.access = 'available';
     const records = Array.from({length:18},(_,index)=>({id:`r-${index}`,title:`Recording ${index}`,uploadedAt:new Date(Date.UTC(2026,8,28-index)).toISOString(),expiresAt:'2026-10-28T02:00:00Z',status:'published',featured:false,hidden:false,version:1,packageId,durationSeconds:9000}));
     list.mockResolvedValue(records);
     render(<MemberVideoZone locale="en" messages={messages} hero={<h1>Member Videos</h1>} />);
     await screen.findByRole('heading',{level:2,name:'Recording 0'});
     expect(screen.getAllByRole('article')).toHaveLength(12);
-    expect(screen.getAllByText(/2 hours 30 minutes/).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('heading',{level:3,name:'Recording 0'})).not.toBeInTheDocument();
+    expect(screen.queryByText(/2 hours 30 minutes/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Available until/)).not.toBeInTheDocument();
+    expect(screen.getByText('Uploaded: September 28, 2026')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button',{name:'Next'}));
-    expect(screen.getAllByRole('article')).toHaveLength(6);
+    expect(screen.getAllByRole('article')).toHaveLength(5);
     expect(screen.getByRole('heading',{level:2,name:'Recording 0'})).toBeInTheDocument();
+  });
+  it('moves the chosen card to the player and restores the previous selection to the list', async()=>{
+    state.auth='authenticated';state.access='available';
+    list.mockResolvedValue(['First','Second'].map((title,index)=>({id:`r${index}`,title,uploadedAt:`2026-10-0${4-index}T07:06:00Z`,expiresAt:'2026-11-03T07:06:00Z',featured:false})));
+    render(<MemberVideoZone locale="en" messages={messages} hero={null}/>);
+    await screen.findByRole('heading',{level:2,name:'First'});
+    expect(screen.queryByRole('heading',{level:3,name:'First'})).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button',{name:'Select'}));
+    await waitFor(()=>expect(screen.getByRole('heading',{level:2,name:'Second'})).toHaveFocus());
+    expect(screen.getByRole('heading',{level:3,name:'First'})).toBeInTheDocument();
+    expect(screen.queryByRole('heading',{level:3,name:'Second'})).not.toBeInTheDocument();
+    await waitFor(()=>expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalled());
   });
   it('overlays only the pseudonymous watermark after playback authorization', async () => {
     state.auth = 'authenticated'; state.access = 'available';
