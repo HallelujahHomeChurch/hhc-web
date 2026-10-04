@@ -20,6 +20,10 @@ type Messages = {
 type ActivePlayback = {recordingId: string; scopeId: string; grant: MemberRecordingPlayback; url: string};
 const pageSize = 12;
 
+function newestFirst(items: MemberRecording[]) {
+  return [...items].sort((a, b) => (b.uploadedAt ?? '').localeCompare(a.uploadedAt ?? '') || b.id.localeCompare(a.id));
+}
+
 function formatDate(value: string | null, locale: Locale) {
   if (!value) return '—';
   return new Intl.DateTimeFormat(locale, {timeZone: 'Asia/Taipei', year: 'numeric', month: 'long', day: 'numeric'}).format(new Date(value));
@@ -59,7 +63,7 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
 
   const resolveMissing = useCallback(async (signal: AbortSignal) => {
     try {
-      const items = await api.list(signal);
+      const items = newestFirst(await api.list(signal));
       if (signal.aborted) return;
       setRecordings(items);
       setSelectedId((current) => current && items.some((item) => item.id === current) ? current : items[0]?.id ?? null);
@@ -80,7 +84,7 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
     const controller = new AbortController();
     api.list(controller.signal).then((items) => {
       if (controller.signal.aborted) return;
-      const sorted = [...items].sort((a, b) => Number(b.featured) - Number(a.featured) || (b.uploadedAt??'').localeCompare(a.uploadedAt??'') || a.id.localeCompare(b.id));
+      const sorted = newestFirst(items);
       setRecordings(sorted);
       setSelectedId((current) => current && sorted.some((item) => item.id === current) ? current : sorted[0]?.id ?? null);
       setLoadError(false);
@@ -247,7 +251,6 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{visibleItems.map((item) => <article key={item.id} className="grid min-w-0 gap-3 rounded-[14px] border border-panel-border bg-panel p-5 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)]">
               <h3 className="break-words text-lg font-semibold text-ink">{item.title}</h3>
               <p className="text-sm text-muted">{messages.uploadedDate.replace('{date}', formatDate(item.uploadedAt, locale))}</p>
-              {item.featured ? <span className="text-xs font-semibold text-primary">{messages.featured}</span> : null}
               <button type="button" className="min-h-11 justify-self-start rounded-full border border-[var(--hhc-control-border)] bg-paper px-5 font-semibold text-[var(--hhc-control)] hover:border-primary hover:bg-primary hover:text-primary-foreground focus-visible:outline-2 focus-visible:outline-primary" onClick={() => select(item.id)}>{messages.select}</button>
             </article>)}</div>
             {pageCount > 1 ? <nav aria-label={messages.listTitle} className="flex items-center justify-center gap-4"><button type="button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)} className="min-h-11 px-4 disabled:opacity-40">{messages.previous}</button><span>{currentPage} / {pageCount}</span><button type="button" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)} className="min-h-11 px-4 disabled:opacity-40">{messages.next}</button></nav> : null}
