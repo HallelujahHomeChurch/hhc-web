@@ -47,6 +47,31 @@ beforeEach(() => {
 afterEach(() => {cleanup();vi.useRealTimers();vi.restoreAllMocks();});
 
 describe('member video gate', () => {
+  it.each([true, false])('refresh keeps manual selection when present=%s, otherwise selects newest', async (present) => {
+    state.auth='authenticated';state.access='available';
+    const old={id:'old',title:'Older',uploadedAt:'2026-10-01T00:00:00Z'};
+    const newer={id:'new',title:'Newer',uploadedAt:'2026-10-04T00:00:00Z'};
+    const newest={id:'newest',title:'Newest',uploadedAt:'2026-10-05T00:00:00Z'};
+    list.mockResolvedValueOnce([old,newer]).mockResolvedValueOnce(present ? [old,newest,newer] : [newer,newest]);
+    videoApi.grant.mockRejectedValue(new HhcWebApiError(404,'not_found','Unavailable'));
+    render(<MemberVideoZone locale="en" messages={messages} hero={null}/>);
+    await screen.findByRole('heading',{level:2,name:'Newer'});
+    fireEvent.click(screen.getByRole('button',{name:'Select'}));
+    await screen.findByRole('heading',{level:2,name:'Older'});
+    fireEvent.click(screen.getByRole('button',{name:'Play'}));
+    await waitFor(()=>expect(list).toHaveBeenCalledTimes(2));
+    await screen.findByRole('heading',{level:2,name:present ? 'Older' : 'Newest'});
+    expect(videoApi.exchange).not.toHaveBeenCalled();
+  });
+  it('selects newest uploaded recording even when an older recording was featured',async()=>{
+    state.auth='authenticated';state.access='available';
+    list.mockResolvedValue([{id:'old',title:'Older pinned',uploadedAt:'2026-10-01T00:00:00Z',featured:true},{id:'new',title:'Newest',uploadedAt:'2026-10-05T00:00:00Z',featured:false}]);
+    render(<MemberVideoZone locale="en" messages={messages} hero={null}/>);
+    const play=await screen.findByRole('button',{name:'Play'});
+    expect(screen.getAllByRole('heading',{level:2})[0]).toHaveTextContent('Newest');
+    expect(play).toBeEnabled();
+    expect(videoApi.grant).not.toHaveBeenCalled();
+  });
   it('reports media failure once per playback attempt without private playback details', async () => {
     state.auth='authenticated';state.access='available';
     list.mockResolvedValue([{id:'r1',title:'Sunday',uploadedAt:null,expiresAt:null,featured:false,packageId}]);
