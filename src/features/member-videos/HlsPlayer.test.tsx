@@ -10,7 +10,7 @@ vi.mock('hls.js',()=>({default:class {
   static Events={MANIFEST_PARSED:'manifest',ERROR:'error'};
   nextLevel=-1;
   listeners:Record<string,(...args:unknown[])=>void>={};
-  levels=[{url:[url.replace('master.m3u8','720p/index.m3u8')]},{url:[url.replace('master.m3u8','1080p/index.m3u8')]}];
+  levels=[{url:[url.replace('master.m3u8','720p/index.m3u8')]},{url:[url.replace('master.m3u8','1080p/index.m3u8')]},{url:[url.replace('master.m3u8','480p/index.m3u8')]}];
   loadSource=vi.fn();destroy=vi.fn();
   constructor(public config:{xhrSetup:(xhr:XMLHttpRequest,url:string)=>void}) {engine.instances.push(this);}
   on(event:string,callback:(...args:unknown[])=>void){this.listeners[event]=callback;if(event==='manifest'&&engine.manifestReady)queueMicrotask(callback);}
@@ -18,6 +18,18 @@ vi.mock('hls.js',()=>({default:class {
 }}));
 const labels={quality:'Quality',auto:'Auto',play:'Play',pause:'Pause',mute:'Mute',unmute:'Unmute',seek:'Playback position',volume:'Volume',fullscreen:'Fullscreen',exitFullscreen:'Exit fullscreen',fullscreenError:'Could not exit fullscreen. Retry.',playbackSpeed:'Speed',settings:'Settings',togglePlayback:'Play or pause',privateCopy:'HHC members only',buffering:'Loading video'};
 const props=()=>({playbackUrl:url,availableQualities:['720p','1080p'] as ('720p'|'1080p')[],watermark:'TRACE123',title:'Sunday',labels,videoRef:createRef<HTMLVideoElement>(),onPlayingChange:vi.fn(),onError:vi.fn()});
+
+it('exposes 480p only when provided and keeps its requests inside the authenticated session',async()=>{
+  const p=props();render(<HlsPlayer {...p} availableQualities={['480p','720p','1080p']}/>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));
+  fireEvent.click(screen.getByRole('button',{name:'Settings'}));
+  expect(screen.getByRole('option',{name:'480p'})).toBeInTheDocument();
+  fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'480p'}});
+  expect(engine.instances[0].nextLevel).toBe(2);
+  const xhr=new XMLHttpRequest();
+  engine.instances[0].config.xhrSetup(xhr,url.replace('master.m3u8','480p/seg-000000.m4s'));
+  expect(xhr.withCredentials).toBe(true);
+});
 beforeEach(()=>{
   vi.spyOn(window,'scrollTo').mockImplementation(()=>{});
   vi.spyOn(HTMLElement.prototype,'clientWidth','get').mockReturnValue(1000);

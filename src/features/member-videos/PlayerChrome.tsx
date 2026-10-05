@@ -7,8 +7,9 @@ import {loadPreviewIndex, type PreviewCue} from './preview-index';
 import styles from './PlayerChrome.module.css';
 import {usePlayerFullscreen} from './use-player-fullscreen';
 import {RecordingWatermark} from './RecordingWatermark';
+import {PreviewSprite} from './PreviewSprite';
 
-type Quality = 'auto' | '720p' | '1080p';
+type Quality = 'auto' | '480p' | '720p' | '1080p';
 type Props = {
   container: RefObject<HTMLDivElement | null>; videoRef: RefObject<HTMLVideoElement | null>;
   playbackUrl: string; watermark: string; labels: PlayerLabels;
@@ -31,7 +32,6 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
   const [feedback, setFeedback] = useState<{kind: 'play' | 'pause'; id: number} | null>(null);
   const [preview, setPreview] = useState<number | null>(null), [cues, setCues] = useState<PreviewCue[]>([]);
   const [previewRequested, setPreviewRequested] = useState(false), [scrub, setScrub] = useState<number | null>(null);
-  const [failedImage, setFailedImage] = useState('');
   const hideTimer = useRef(0), feedbackTimer = useRef(0), dragging = useRef(false);
   const menu = useRef<HTMLDivElement>(null), settingsButton = useRef<HTMLButtonElement>(null);
   const playingCallback = useRef(onPlayingChange);
@@ -123,6 +123,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
   const current = scrub ?? time;
   const previewTime = scrub ?? preview;
   const cue = previewTime === null ? undefined : cues.find(cue => cue.start <= previewTime && cue.end > previewTime);
+  const neighbor = cue ? cues.find(item => item.start >= cue.end && item.url !== cue.url)?.url : undefined;
   const controlsVisible = visible || !playing || settings || scrub !== null;
   const percentage = (value: number) => duration > 0 ? `${Math.min(100, Math.max(0, value / duration * 100))}%` : '0%';
   return <>
@@ -146,13 +147,10 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
           onChange={event => { const value = Number(event.target.value); if (dragging.current) setScrub(value); else seek(value); }}
           onPointerUp={event => { seek(Number(event.currentTarget.value)); dragging.current = false; setScrub(null); setPreview(null); }}
           onPointerCancel={() => {dragging.current = false; setScrub(null); setPreview(null);}} />
-        {previewTime !== null && duration > 0 ? <div className={styles.preview} aria-hidden="true" style={{left:`clamp(80px, ${percentage(previewTime)}, calc(100% - 80px))`}}>
-          {cue && failedImage !== cue.url ? <div className={styles.previewImage}>
-            {/* Authenticated sprite requests must retain the media cookie, without an image proxy. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={cue.url} alt="" crossOrigin="use-credentials" referrerPolicy="no-referrer" width={960} height={90} style={{left:-cue.x}} onError={() => setFailedImage(cue.url)}/>
-          </div> : null}<time>{playerClock(previewTime)}</time>
-        </div> : null}
+        <div className={styles.preview} hidden={previewTime===null||duration<=0} aria-hidden="true" style={{left:`clamp(80px, ${percentage(previewTime??0)}, calc(100% - 80px))`}}>
+          {!failed ? <PreviewSprite key={playbackUrl} playbackUrl={playbackUrl} cue={cue} neighbor={neighbor}/> : null}
+          <time>{playerClock(previewTime??0)}</time>
+        </div>
       </div>
       <div className={styles.row}>
         <button type="button" className={styles.button} aria-label={playing ? labels.pause : labels.play} title={playing ? labels.pause : labels.play} onClick={toggle}>{playing ? <Pause size={22} fill="currentColor"/> : <Play size={22} fill="currentColor"/>}</button>

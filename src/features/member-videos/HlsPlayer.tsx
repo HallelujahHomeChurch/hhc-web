@@ -5,7 +5,7 @@ import type Hls from 'hls.js';
 import {PlayerChrome} from './PlayerChrome';
 import styles from './PlayerChrome.module.css';
 
-type Quality = 'auto' | '720p' | '1080p';
+type Quality = 'auto' | '480p' | '720p' | '1080p';
 export type PlayerLabels = {
   quality:string; auto:string; play:string; pause:string; mute:string; unmute:string;
   seek:string; volume:string; fullscreen:string; exitFullscreen:string; fullscreenError:string; playbackSpeed:string;
@@ -21,7 +21,7 @@ function verifyMediaRequest(master:string,target:string) {
   const prefix=base.pathname.replace(/master\.m3u8$/,'');
   const path=url.pathname.slice(prefix.length);
   if(url.origin!==base.origin || url.username || url.password || url.search || url.hash || !url.pathname.startsWith(prefix)
-    || !/^(master\.m3u8|(720p|1080p)\/(index\.m3u8|init\.mp4|seg-\d{6}\.m4s))$/.test(path)) throw new Error('Invalid media request');
+    || !/^(master\.m3u8|(480p|720p|1080p)\/(index\.m3u8|init\.mp4|seg-\d{6}\.m4s))$/.test(path)) throw new Error('Invalid media request');
 }
 
 export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels,videoRef,onPlayingChange,onError,poster}:Props) {
@@ -30,7 +30,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
   const nativePosition=useRef<{time:number;playing:boolean;rate:number}|null>(null);
   const [mode,setMode]=useState<'loading'|'mse'|'native'|'error'>('loading');
   const [quality,setQuality]=useState<Quality>('auto');
-  const qualities=(['720p','1080p'] as const).filter(name=>availableQualities.includes(name));
+  const qualities=(['480p','720p','1080p'] as const).filter(name=>availableQualities.includes(name));
   const handleError=useCallback(()=>{setMode('error');onError();},[onError]);
 
   useEffect(()=>{
