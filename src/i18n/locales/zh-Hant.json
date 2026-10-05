@@ -264,6 +264,7 @@
     "volume": "音量",
     "fullscreen": "全螢幕",
     "exitFullscreen": "離開全螢幕",
+    "fullscreenError": "無法離開全螢幕，請重試或使用裝置的返回控制。",
     "playbackSpeed": "播放速度",
     "heroTitle": "影音專區",
     "heroSubtitle": "最近 30 天的聚會錄影",

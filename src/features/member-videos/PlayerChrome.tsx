@@ -6,6 +6,7 @@ import type {PlayerLabels} from './HlsPlayer';
 import {loadPreviewIndex, type PreviewCue} from './preview-index';
 import styles from './PlayerChrome.module.css';
 import {usePlayerFullscreen} from './use-player-fullscreen';
+import {RecordingWatermark} from './RecordingWatermark';
 
 type Quality = 'auto' | '720p' | '1080p';
 type Props = {
@@ -123,12 +124,11 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
   const previewTime = scrub ?? preview;
   const cue = previewTime === null ? undefined : cues.find(cue => cue.start <= previewTime && cue.end > previewTime);
   const controlsVisible = visible || !playing || settings || scrub !== null;
-  const watermarkPosition = Math.floor(time / 45) % 3;
   const percentage = (value: number) => duration > 0 ? `${Math.min(100, Math.max(0, value / duration * 100))}%` : '0%';
   return <>
     <button type="button" className={styles.surface} aria-label={labels.togglePlayback} tabIndex={-1} onClick={() => {container.current?.focus({preventScroll:true}); toggle();}} />
-    <span aria-hidden="true" className={styles.watermark} style={watermarkPosition === 0 ? {right:16,top:16} : watermarkPosition === 1 ? {left:16,top:16} : {right:16,bottom:100}}><small>{labels.privateCopy}</small>{watermark}</span>
-    {fullscreenState.error ? <div className={styles.fullscreenError} role="alert">{labels.exitFullscreen}</div> : null}
+    <RecordingWatermark container={container} videoRef={videoRef} code={watermark}/>
+    {fullscreenState.error ? <div className={styles.fullscreenError} role="alert">{labels.fullscreenError}</div> : null}
     {feedback ? <div className={styles.feedback} aria-hidden="true"><span key={feedback.id}>{feedback.kind === 'play' ? <Play size={36} fill="currentColor"/> : <Pause size={36} fill="currentColor"/>}</span></div> : null}
     {(loading || waiting) && !failed && !feedback ? <div className={styles.loading} role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{labels.buffering}</span></div> : null}
     {settings ? <div ref={menu} data-controls className={styles.settings} role="group" aria-label={labels.settings}>

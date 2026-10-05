@@ -8,7 +8,7 @@ import styles from './PlayerChrome.module.css';
 type Quality = 'auto' | '720p' | '1080p';
 export type PlayerLabels = {
   quality:string; auto:string; play:string; pause:string; mute:string; unmute:string;
-  seek:string; volume:string; fullscreen:string; exitFullscreen:string; playbackSpeed:string;
+  seek:string; volume:string; fullscreen:string; exitFullscreen:string; fullscreenError:string; playbackSpeed:string;
   settings:string; togglePlayback:string; privateCopy:string; buffering:string;
 };
 type Props = {

@@ -16,9 +16,13 @@ vi.mock('hls.js',()=>({default:class {
   on(event:string,callback:(...args:unknown[])=>void){this.listeners[event]=callback;if(event==='manifest'&&engine.manifestReady)queueMicrotask(callback);}
   attachMedia(){}
 }}));
-const labels={quality:'Quality',auto:'Auto',play:'Play',pause:'Pause',mute:'Mute',unmute:'Unmute',seek:'Playback position',volume:'Volume',fullscreen:'Fullscreen',exitFullscreen:'Exit fullscreen',playbackSpeed:'Speed',settings:'Settings',togglePlayback:'Play or pause',privateCopy:'HHC members only',buffering:'Loading video'};
+const labels={quality:'Quality',auto:'Auto',play:'Play',pause:'Pause',mute:'Mute',unmute:'Unmute',seek:'Playback position',volume:'Volume',fullscreen:'Fullscreen',exitFullscreen:'Exit fullscreen',fullscreenError:'Could not exit fullscreen. Retry.',playbackSpeed:'Speed',settings:'Settings',togglePlayback:'Play or pause',privateCopy:'HHC members only',buffering:'Loading video'};
 const props=()=>({playbackUrl:url,availableQualities:['720p','1080p'] as ('720p'|'1080p')[],watermark:'TRACE123',title:'Sunday',labels,videoRef:createRef<HTMLVideoElement>(),onPlayingChange:vi.fn(),onError:vi.fn()});
 beforeEach(()=>{
+  vi.spyOn(HTMLElement.prototype,'clientWidth','get').mockReturnValue(1000);
+  vi.spyOn(HTMLElement.prototype,'clientHeight','get').mockReturnValue(600);
+  vi.spyOn(HTMLVideoElement.prototype,'videoWidth','get').mockReturnValue(1920);
+  vi.spyOn(HTMLVideoElement.prototype,'videoHeight','get').mockReturnValue(1080);
   engine.supported=true;engine.manifestReady=true;engine.instances=[];
   vi.spyOn(HTMLMediaElement.prototype,'play').mockResolvedValue(undefined);
   vi.spyOn(HTMLMediaElement.prototype,'pause').mockImplementation(()=>{});
@@ -80,7 +84,22 @@ it('does not rebuild or reset the engine when the watermark or cover changes',as
   expect(engine.instances).toHaveLength(1);expect(engine.instances[0].destroy).not.toHaveBeenCalled();
   expect(p.videoRef.current!.currentTime).toBe(150);
   expect(p.videoRef.current!).toHaveAttribute('poster','blob:private-cover');
-  expect(screen.getByText('RENEWED')).toHaveAttribute('aria-hidden','true');
+  expect(screen.getAllByText('RENEWED')).toHaveLength(6);
+  expect(screen.getAllByText('RENEWED')[0].parentElement).toHaveAttribute('aria-hidden','true');
+});
+it('repositions the same watermark overlay for resize and portrait media without reloading',async()=>{
+  const p=props();render(<HlsPlayer {...p} watermark="01234ABCDE"/>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));
+  expect(screen.getAllByText('01234-ABCDE')).toHaveLength(6);
+  vi.spyOn(HTMLElement.prototype,'clientWidth','get').mockReturnValue(390);
+  vi.spyOn(HTMLElement.prototype,'clientHeight','get').mockReturnValue(700);
+  vi.spyOn(HTMLVideoElement.prototype,'videoWidth','get').mockReturnValue(900);
+  vi.spyOn(HTMLVideoElement.prototype,'videoHeight','get').mockReturnValue(1600);
+  fireEvent(p.videoRef.current!,new Event('resize'));
+  const marks=screen.getAllByText('01234-ABCDE');
+  expect(marks).toHaveLength(4);
+  expect(marks[0].parentElement).toHaveStyle({left:'0px',width:'390px'});
+  expect(engine.instances).toHaveLength(1);expect(engine.instances[0].loadSource).toHaveBeenCalledOnce();
 });
 it('omits unavailable quality and sends only media cookies on canonical package requests',async()=>{
   const p=props();render(<HlsPlayer {...p} availableQualities={['720p']}/>);
@@ -165,7 +184,7 @@ it('fullscreens the container with watermark, not the native video element',asyn
     const p=props();render(<HlsPlayer {...p}/>);
     await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Fullscreen'}));});
     expect(request).toHaveBeenCalledOnce();
-    expect(request.mock.contexts[0]).toContainElement(screen.getByText('TRACE123'));
+    expect(request.mock.contexts[0]).toContainElement(screen.getAllByText('TRACE123')[0]);
     expect(p.videoRef.current).not.toHaveAttribute('controls');
   } finally {delete (HTMLElement.prototype as unknown as Record<string,unknown>).requestFullscreen;}
 });
@@ -218,7 +237,7 @@ it('exitFailureDoesNotReenter or claim that native fullscreen ended', async()=>{
   await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Exit fullscreen'})));
   expect(enter).toHaveBeenCalledOnce();expect(screen.getByRole('button',{name:'Exit fullscreen'})).toBeInTheDocument();
   expect(screen.getByRole('region')).not.toHaveAttribute('data-fullscreen','viewport');
-  expect(screen.getByRole('alert')).toHaveTextContent('Exit fullscreen');
+  expect(screen.getByRole('alert')).toHaveTextContent('Could not exit fullscreen');
 });
 
 it('resynchronizes a native exit on foreground and does not steal settings Escape',async()=>{
