@@ -5,7 +5,7 @@ import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
 
 const state = vi.hoisted(() => ({access: 'loading', auth: 'checking'}));
 const list = vi.hoisted(() => vi.fn());
-const videoApi = vi.hoisted(() => ({list: vi.fn(), grant: vi.fn(), exchange: vi.fn(), clear: vi.fn().mockResolvedValue(undefined)}));
+const videoApi = vi.hoisted(() => ({cover:vi.fn(),list: vi.fn(), grant: vi.fn(), exchange: vi.fn(), clear: vi.fn().mockResolvedValue(undefined)}));
 const router = vi.hoisted(() => ({replace: vi.fn()}));
 const replace = router.replace;
 const captureHandledError = vi.hoisted(() => vi.fn());
@@ -14,6 +14,7 @@ const packageId = 'a'.repeat(32);
 const playbackUrl = `https://media.alive.org.tw/videos/r1/packages/${packageId}/sessions/scope/master.m3u8`;
 vi.mock('next/navigation', () => ({useRouter: () => router}));
 vi.mock('@/components/layout/AccountControl', () => ({
+  useAccountIdentity: () => 'member',
   useAccountAuth: () => ({status: state.auth}),
   useVideoAccess: () => state.access,
   useBulletinAuthorization: () => ({getAccessToken: async () => 'token', refreshAfterUnauthorized: async () => null})
@@ -37,6 +38,7 @@ beforeEach(() => {
   list.mockResolvedValue([]);
   videoApi.list.mockReset().mockImplementation(list);
   videoApi.grant.mockReset(); videoApi.exchange.mockReset();
+  videoApi.cover.mockReset().mockRejectedValue(new Error('No cover'));
   HTMLElement.prototype.scrollIntoView = vi.fn();
   window.matchMedia = vi.fn().mockReturnValue({matches:true});
   vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
