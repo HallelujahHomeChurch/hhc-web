@@ -169,3 +169,84 @@ it('fullscreens the container with watermark, not the native video element',asyn
     expect(p.videoRef.current).not.toHaveAttribute('controls');
   } finally {delete (HTMLElement.prototype as unknown as Record<string,unknown>).requestFullscreen;}
 });
+
+it('nativeFullscreenWithoutContainerAPI follows native events without reloading the video', async()=>{
+  const p=props(); render(<HlsPlayer {...p}/>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));
+  const video=p.videoRef.current!;
+  const enter=vi.fn(()=>video.dispatchEvent(new Event('webkitbeginfullscreen')));
+  const exit=vi.fn(()=>video.dispatchEvent(new Event('webkitendfullscreen')));
+  Object.assign(video,{webkitSupportsFullscreen:true,webkitEnterFullscreen:enter,webkitExitFullscreen:exit});
+  video.currentTime=81;video.playbackRate=1.5;
+  await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Fullscreen'})));
+  expect(enter).toHaveBeenCalledOnce();
+  expect(screen.getByRole('button',{name:'Exit fullscreen'})).toBeInTheDocument();
+  fireEvent(video,new Event('webkitendfullscreen'));
+  expect(screen.getByRole('button',{name:'Fullscreen'})).toBeInTheDocument();
+  expect(p.videoRef.current).toBe(video);expect(video.currentTime).toBe(81);expect(video.playbackRate).toBe(1.5);
+  expect(engine.instances[0].loadSource).toHaveBeenCalledOnce();
+});
+
+it('viewportRestoresFocusAndScroll and keeps the player mounted for five cycles', async()=>{
+  const p=props();const view=render(<><button>Outside</button><HlsPlayer {...p}/></>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));
+  const video=p.videoRef.current!;video.currentTime=150;video.playbackRate=1.5;
+  document.body.style.overflow='auto';
+  const outside=screen.getByRole('button',{name:'Outside'});
+  for(let i=0;i<5;i++) {
+    const button=screen.getByRole('button',{name:'Fullscreen'});button.focus();
+    await act(async()=>fireEvent.click(button));
+    expect(screen.getByRole('region')).toHaveAttribute('data-fullscreen','viewport');
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(outside).toHaveAttribute('inert');
+    fireEvent.keyDown(screen.getByRole('region'),{key:'Escape'});
+    expect(document.body.style.overflow).toBe('auto');
+    expect(outside).not.toHaveAttribute('inert');expect(button).toHaveFocus();
+  }
+  expect(p.videoRef.current).toBe(video);expect(video.currentTime).toBe(150);expect(video.playbackRate).toBe(1.5);
+  expect(engine.instances).toHaveLength(1);expect(engine.instances[0].loadSource).toHaveBeenCalledOnce();
+  await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Fullscreen'})));
+  view.unmount();expect(document.body.style.overflow).toBe('auto');document.body.style.overflow='';
+});
+
+it('exitFailureDoesNotReenter or claim that native fullscreen ended', async()=>{
+  const p=props();render(<HlsPlayer {...p}/>);
+  const video=p.videoRef.current!;
+  const enter=vi.fn(()=>video.dispatchEvent(new Event('webkitbeginfullscreen')));
+  Object.assign(video,{webkitEnterFullscreen:enter,webkitExitFullscreen:()=>{throw new Error('denied');}});
+  await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Fullscreen'})));
+  await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Exit fullscreen'})));
+  expect(enter).toHaveBeenCalledOnce();expect(screen.getByRole('button',{name:'Exit fullscreen'})).toBeInTheDocument();
+  expect(screen.getByRole('region')).not.toHaveAttribute('data-fullscreen','viewport');
+  expect(screen.getByRole('alert')).toHaveTextContent('Exit fullscreen');
+});
+
+it('resynchronizes a native exit on foreground and does not steal settings Escape',async()=>{
+  const p=props();render(<HlsPlayer {...p}/>);
+  const video=p.videoRef.current!;
+  Object.assign(video,{webkitDisplayingFullscreen:true,webkitEnterFullscreen:()=>video.dispatchEvent(new Event('webkitbeginfullscreen'))});
+  await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Fullscreen'})));
+  Object.assign(video,{webkitDisplayingFullscreen:false});
+  Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});
+  fireEvent(document,new Event('visibilitychange'));
+  expect(screen.getByRole('button',{name:'Fullscreen'})).toBeInTheDocument();
+  Object.assign(video,{webkitSupportsFullscreen:false});
+  await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Fullscreen'})));
+  fireEvent.click(screen.getByRole('button',{name:'Settings'}));
+  fireEvent.keyDown(screen.getByRole('combobox',{name:'Speed'}),{key:'Escape'});
+  expect(screen.queryByRole('combobox',{name:'Speed'})).not.toBeInTheDocument();
+  expect(screen.getByRole('region')).toHaveAttribute('data-fullscreen','viewport');
+  fireEvent.keyDown(screen.getByRole('region'),{key:'Escape'});
+  expect(screen.getByRole('region')).toHaveAttribute('data-fullscreen','inline');
+});
+
+it('falls back to viewport if fullscreen entry fails and retains an exit button', async()=>{
+  const request=vi.fn().mockRejectedValue(new Error('denied'));
+  Object.defineProperty(HTMLElement.prototype,'requestFullscreen',{configurable:true,value:request});
+  try {
+    const p=props();render(<HlsPlayer {...p}/>);
+    await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Fullscreen'})));
+    expect(screen.getByRole('region')).toHaveAttribute('data-fullscreen','viewport');
+    expect(screen.getByRole('button',{name:'Exit fullscreen'})).toBeInTheDocument();
+  } finally {delete (HTMLElement.prototype as unknown as Record<string,unknown>).requestFullscreen;}
+});

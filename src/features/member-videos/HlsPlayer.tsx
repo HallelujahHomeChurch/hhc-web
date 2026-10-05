@@ -83,7 +83,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
     setQuality(next);
   };
   return <div ref={container} tabIndex={0} role="region" aria-label={`${title} — ${labels.togglePlayback}`} className={styles.player}>
-    <video ref={videoRef} poster={poster} playsInline preload="metadata" controlsList="nodownload nofullscreen noremoteplayback" disablePictureInPicture disableRemotePlayback crossOrigin="use-credentials" aria-label={title} className="h-full w-full object-contain"
+    <video ref={videoRef} poster={poster} playsInline preload="metadata" controlsList="nodownload noremoteplayback" disablePictureInPicture disableRemotePlayback crossOrigin="use-credentials" aria-label={title} className="h-full w-full object-contain"
       onError={handleError}/>
     <PlayerChrome container={container} videoRef={videoRef} playbackUrl={playbackUrl} watermark={watermark} labels={labels} quality={quality} qualities={qualities} loading={mode==='loading'} failed={mode==='error'} onQualityChange={changeQuality} onPlayingChange={onPlayingChange}/>
   </div>;

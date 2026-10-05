@@ -1,5 +1,8 @@
 .player { position:relative; aspect-ratio:16/9; overflow:hidden; border-radius:14px; background:#0a0a0a; color:#fff; outline-offset:4px; }
 .player:fullscreen { aspect-ratio:auto; width:100vw; height:100dvh; border-radius:0; }
+.player[data-fullscreen="viewport"] { position:fixed; inset:0; z-index:100; width:100%; height:100dvh; aspect-ratio:auto; border-radius:0; }
+.fullscreenError { position:absolute; top:max(16px,env(safe-area-inset-top)); left:16px; z-index:6; padding:8px 16px; background:#171717; border-radius:4px; }
+.player:fullscreen .controls, .player[data-fullscreen="viewport"] .controls { padding-left:max(16px,env(safe-area-inset-left)); padding-right:max(16px,env(safe-area-inset-right)); padding-bottom:max(4px,env(safe-area-inset-bottom)); }
 .surface { position:absolute; inset:0; width:100%; cursor:pointer; border:0; background:transparent; }
 .watermark { position:absolute; z-index:2; pointer-events:none; padding:6px 10px; border-radius:4px; background:rgb(0 0 0 / 48%); color:rgb(255 255 255 / 85%); font-size:14px; font-weight:600; line-height:1.5; text-shadow:0 1px 2px #000; }
 .watermark small { display:block; font-size:11px; font-weight:400; }
