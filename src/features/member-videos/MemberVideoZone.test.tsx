@@ -81,6 +81,7 @@ describe('member video gate', () => {
     fireEvent.click(await screen.findByRole('button',{name:'Play'}));
     const video=await screen.findByLabelText('Sunday');
     fireEvent.error(video); fireEvent.error(video);
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
     expect(captureHandledError).toHaveBeenCalledExactlyOnceWith(new Error('Member video media playback failed'), {operation:'member-videos.media'});
     fireEvent.click(screen.getByRole('button',{name:'Retry'}));
     fireEvent.error(await screen.findByLabelText('Sunday'));
@@ -92,7 +93,8 @@ describe('member video gate', () => {
     videoApi.grant.mockImplementation(()=>new Promise(()=>{}));
     render(<MemberVideoZone locale="en" messages={messages} hero={null}/>);
     fireEvent.click(await screen.findByRole('button',{name:'Play'}));
-    expect(screen.getByRole('button',{name:'Preparing'})).toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent('Preparing');
+    expect(screen.queryByRole('button',{name:'Play'})).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button',{name:'Select'}));
     expect(screen.getByRole('button',{name:'Play'})).toBeEnabled();
   });

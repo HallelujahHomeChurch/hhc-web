@@ -2,7 +2,7 @@
 
 import {useCallback, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {useRouter} from 'next/navigation';
-import {Play} from 'lucide-react';
+import {LoaderCircle, Play} from 'lucide-react';
 import type {MemberRecording, MemberRecordingPlayback} from '@hallelujahhomechurch/hhc-web-client';
 import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
 import {useAccountAuth, useBulletinAuthorization, useVideoAccess} from '@/components/layout/AccountControl';
@@ -10,6 +10,7 @@ import type {Locale} from '@/i18n/locales';
 import {captureHandledError} from '@/lib/observability';
 import {createMemberVideoApi} from './api';
 import {HlsPlayer, type PlayerLabels} from './HlsPlayer';
+import playerStyles from './PlayerChrome.module.css';
 
 type Messages = {
   selectedTitle: string; listTitle: string; count: string; play: string; select: string; selected: string;
@@ -241,7 +242,7 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
           {!loadError && !recordings ? <p role="status" className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{messages.loading}</p> : null}
           {!loadError && recordings?.length === 0 ? <p className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{messages.empty}</p> : null}
           {selected ? <div ref={playerSection} className="grid scroll-mt-28 gap-4">
-            {playback?.recordingId === selected.id ? <HlsPlayer key={playback.url} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} onError={mediaError}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950"><button type="button" disabled={preparing} onClick={() => void start()} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground disabled:opacity-60"><Play size={18} aria-hidden="true" />{preparing ? messages.preparing : messages.play}</button></div>}
+            {playback?.recordingId === selected.id ? <HlsPlayer key={playback.url} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} onError={mediaError}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950">{preparing ? <div className={playerStyles.loading} role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{messages.preparing}</span></div> : <button type="button" onClick={() => void start()} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground"><Play size={18} aria-hidden="true" />{messages.play}</button>}</div>}
             <h2 ref={playerTitle} tabIndex={-1} className="text-2xl font-semibold text-ink outline-none">{selected.title}</h2>
             <p className="text-sm text-muted">{messages.uploadedDate.replace('{date}', formatDate(selected.uploadedAt, locale))}</p>
             {playError ? <p role="alert" className="text-sm text-primary">{playError} <button type="button" className="underline" onClick={() => void start()}>{messages.retry}</button></p> : null}

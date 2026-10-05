@@ -6,8 +6,9 @@
 .feedback { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; z-index:3; }
 .feedback > span { display:grid; place-items:center; width:72px; height:72px; border-radius:50%; background:rgb(0 0 0 / 65%); animation:feedback 900ms ease-out both; }
 @keyframes feedback { 0% {opacity:1;transform:scale(.85)} 75% {opacity:1} 100% {opacity:0;transform:scale(1.1)} }
-.loading { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; }
-.loading > span { padding:8px 12px; border-radius:4px; background:rgb(0 0 0 / 70%); font-size:14px; }
+.loading { position:absolute; inset:0; z-index:3; display:grid; place-items:center; color:#fff; pointer-events:none; }
+.loading > svg { width:48px; height:48px; filter:drop-shadow(0 1px 3px rgb(0 0 0 / 70%)); animation:loading 900ms linear infinite; }
+@keyframes loading { to {transform:rotate(360deg)} }
 .controls { position:absolute; inset:auto 0 0; z-index:4; padding:28px 16px 4px; background:linear-gradient(transparent,rgb(0 0 0 / 80%)); transition:opacity 180ms ease-out; }
 .hidden { opacity:0; pointer-events:none; }
 .controls:focus-within { opacity:1; pointer-events:auto; }
@@ -37,4 +38,4 @@
 .settings label { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:14px; min-height:48px; }
 .settings select { min-height:44px; max-width:132px; padding:0 8px; border-radius:4px; background:#292929; color:white; }
 @media(max-width:540px) { .controls {padding:20px 8px 0} .volume {display:none} .time {font-size:12px;margin-left:0} .button {width:40px} .row {gap:0} .watermark {font-size:12px;padding:4px 7px} .watermark small {font-size:10px} .settings {bottom:76px;right:8px;padding:4px 10px} .settings label {min-height:44px;font-size:12px} }
-@media(prefers-reduced-motion:reduce) { .controls {transition:none} .feedback > span {animation:none} }
+@media(prefers-reduced-motion:reduce) { .controls {transition:none} .feedback > span, .loading > svg {animation:none} }
