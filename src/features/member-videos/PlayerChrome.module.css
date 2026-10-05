@@ -4,7 +4,7 @@
 .fullscreenError { position:absolute; top:max(16px,env(safe-area-inset-top)); left:16px; z-index:6; padding:8px 16px; background:#171717; border-radius:4px; }
 .player:fullscreen .controls, .player[data-fullscreen="viewport"] .controls { padding-left:max(16px,env(safe-area-inset-left)); padding-right:max(16px,env(safe-area-inset-right)); padding-bottom:max(4px,env(safe-area-inset-bottom)); }
 .surface { position:absolute; inset:0; width:100%; cursor:pointer; border:0; background:transparent; }
-.watermark { position:absolute; z-index:2; pointer-events:none; user-select:none; display:grid; grid-template-rows:repeat(2, 1fr); place-items:center; overflow:hidden; color:#fff; opacity:.10; font-weight:500; line-height:1; letter-spacing:.02em; text-shadow:0 1px 2px #000; }
+.watermark { position:absolute; z-index:2; pointer-events:none; user-select:none; display:grid; grid-template-rows:repeat(2, 1fr); place-items:center; overflow:hidden; color:#fff; opacity:.10; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-weight:500; line-height:1; letter-spacing:.02em; text-shadow:0 1px 2px #000; }
 .watermark > span { transform:rotate(45deg); white-space:nowrap; }
 .feedback { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; z-index:3; }
 .feedback > span { display:grid; place-items:center; width:72px; height:72px; border-radius:50%; background:rgb(0 0 0 / 65%); animation:feedback 900ms ease-out both; }

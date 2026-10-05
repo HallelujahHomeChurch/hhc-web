@@ -15,8 +15,10 @@ export function usePlayerFullscreen(containerRef: RefObject<HTMLDivElement | nul
   const [error, setError] = useState<string | null>(null);
   const current = useRef<Mode>('inline'), pending = useRef(false), mounted = useRef(false);
   const focusBefore = useRef<HTMLElement | null>(null);
+  const viewportScroll = useRef({x:0, y:0});
   const change = (next: Mode) => {
     if (!mounted.current) return;
+    if (next === 'viewport' && current.current !== 'viewport') viewportScroll.current = {x:window.scrollX, y:window.scrollY};
     current.current = next; setMode(next); setError(null);
     if (next === 'inline') focusBefore.current?.focus({preventScroll:true});
   };
@@ -76,6 +78,7 @@ export function usePlayerFullscreen(containerRef: RefObject<HTMLDivElement | nul
       document.body.style.overflow = overflow;
       for (const {element,inert} of siblings) if (!inert) element.removeAttribute('inert');
       document.removeEventListener('keydown', keyboard);
+      window.scrollTo(viewportScroll.current.x, viewportScroll.current.y);
       focusBefore.current?.focus({preventScroll:true});
     };
   }, [mode, containerRef]);

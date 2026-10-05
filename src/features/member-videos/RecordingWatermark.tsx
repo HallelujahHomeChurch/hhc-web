@@ -1,7 +1,7 @@
 'use client';
 
 import {useEffect, useState, type RefObject} from 'react';
-import {containedVideoRect, displayWatermarkCode} from './recording-watermark';
+import {containedVideoRect, displayWatermarkCode, watermarkLayout} from './recording-watermark';
 import styles from './PlayerChrome.module.css';
 
 export function RecordingWatermark({container, videoRef, code}: {container: RefObject<HTMLDivElement | null>; videoRef: RefObject<HTMLVideoElement | null>; code: string}) {
@@ -19,8 +19,8 @@ export function RecordingWatermark({container, videoRef, code}: {container: RefO
     return () => { observer?.disconnect(); window.removeEventListener('resize', measure); video.removeEventListener('loadedmetadata', measure); video.removeEventListener('resize', measure); };
   }, [container, videoRef]);
   if (!rect || !code) return null;
-  const count = rect.width <= 540 ? 4 : 6;
-  return <div aria-hidden="true" className={styles.watermark} style={{...rect, gridTemplateColumns:`repeat(${count / 2}, 1fr)`, fontSize:Math.max(18, Math.min(46, rect.width * .032))}}>
+  const {count, fontSize} = watermarkLayout(rect.width, rect.height);
+  return <div aria-hidden="true" className={styles.watermark} style={{...rect, gridTemplateColumns:`repeat(${count / 2}, 1fr)`, fontSize}}>
     {Array.from({length:count}, (_, index) => <span key={index}>{displayWatermarkCode(code)}</span>)}
   </div>;
 }

@@ -19,6 +19,7 @@ vi.mock('hls.js',()=>({default:class {
 const labels={quality:'Quality',auto:'Auto',play:'Play',pause:'Pause',mute:'Mute',unmute:'Unmute',seek:'Playback position',volume:'Volume',fullscreen:'Fullscreen',exitFullscreen:'Exit fullscreen',fullscreenError:'Could not exit fullscreen. Retry.',playbackSpeed:'Speed',settings:'Settings',togglePlayback:'Play or pause',privateCopy:'HHC members only',buffering:'Loading video'};
 const props=()=>({playbackUrl:url,availableQualities:['720p','1080p'] as ('720p'|'1080p')[],watermark:'TRACE123',title:'Sunday',labels,videoRef:createRef<HTMLVideoElement>(),onPlayingChange:vi.fn(),onError:vi.fn()});
 beforeEach(()=>{
+  vi.spyOn(window,'scrollTo').mockImplementation(()=>{});
   vi.spyOn(HTMLElement.prototype,'clientWidth','get').mockReturnValue(1000);
   vi.spyOn(HTMLElement.prototype,'clientHeight','get').mockReturnValue(600);
   vi.spyOn(HTMLVideoElement.prototype,'videoWidth','get').mockReturnValue(1920);
@@ -213,12 +214,15 @@ it('viewportRestoresFocusAndScroll and keeps the player mounted for five cycles'
   document.body.style.overflow='auto';
   const outside=screen.getByRole('button',{name:'Outside'});
   for(let i=0;i<5;i++) {
+    Object.defineProperty(window,'scrollY',{value:640,writable:true,configurable:true});
     const button=screen.getByRole('button',{name:'Fullscreen'});button.focus();
     await act(async()=>fireEvent.click(button));
     expect(screen.getByRole('region')).toHaveAttribute('data-fullscreen','viewport');
     expect(document.body.style.overflow).toBe('hidden');
     expect(outside).toHaveAttribute('inert');
+    Object.defineProperty(window,'scrollY',{value:0,writable:true,configurable:true});
     fireEvent.keyDown(screen.getByRole('region'),{key:'Escape'});
+    expect(window.scrollTo).toHaveBeenLastCalledWith(0,640);
     expect(document.body.style.overflow).toBe('auto');
     expect(outside).not.toHaveAttribute('inert');expect(button).toHaveFocus();
   }
