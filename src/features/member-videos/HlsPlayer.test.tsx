@@ -72,13 +72,14 @@ it('switches MSE quality without seeking or reloading, and returns to automatic 
   expect(engine.instances[0].nextLevel).toBe(-1);
   expect(engine.instances[0].loadSource).toHaveBeenCalledTimes(1);
 });
-it('does not rebuild or reset the engine when only the grant or watermark renews',async()=>{
+it('does not rebuild or reset the engine when the watermark or cover changes',async()=>{
   const p=props();const view=render(<HlsPlayer {...p}/>);
   await waitFor(()=>expect(engine.instances).toHaveLength(1));
   p.videoRef.current!.currentTime=150;
-  view.rerender(<HlsPlayer {...p} watermark="RENEWED"/>);
+  view.rerender(<HlsPlayer {...p} watermark="RENEWED" poster="blob:private-cover"/>);
   expect(engine.instances).toHaveLength(1);expect(engine.instances[0].destroy).not.toHaveBeenCalled();
   expect(p.videoRef.current!.currentTime).toBe(150);
+  expect(p.videoRef.current!).toHaveAttribute('poster','blob:private-cover');
   expect(screen.getByText('RENEWED')).toHaveAttribute('aria-hidden','true');
 });
 it('omits unavailable quality and sends only media cookies on canonical package requests',async()=>{
