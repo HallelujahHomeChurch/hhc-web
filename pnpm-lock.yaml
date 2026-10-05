@@ -9,13 +9,18 @@ overrides:
   next@16.3.6>sharp: 0.35.4
   brace-expansion@5.0.9: 5.0.11
 
+patchedDependencies:
+  '@hallelujahhomechurch/account-client@1.0.31':
+    hash: eaa5b0fa2221c829a79c94bc859e2d8292184432d3ef4d95c9e72d3c91923548
+    path: patches/@hallelujahhomechurch__account-client@1.0.31.patch
+
 importers:
 
   .:
     dependencies:
       '@hallelujahhomechurch/account-client':
         specifier: 1.0.31
-        version: 1.0.31
+        version: 1.0.31(patch_hash=eaa5b0fa2221c829a79c94bc859e2d8292184432d3ef4d95c9e72d3c91923548)
       '@hallelujahhomechurch/hhc-web-client':
         specifier: 1.0.34
         version: 1.0.34
@@ -4127,7 +4132,7 @@ snapshots:
 
   '@hallelujahhomechurch/account-client@1.0.26': {}
 
-  '@hallelujahhomechurch/account-client@1.0.31': {}
+  '@hallelujahhomechurch/account-client@1.0.31(patch_hash=eaa5b0fa2221c829a79c94bc859e2d8292184432d3ef4d95c9e72d3c91923548)': {}
 
   '@hallelujahhomechurch/hhc-web-client@1.0.34':
     dependencies:

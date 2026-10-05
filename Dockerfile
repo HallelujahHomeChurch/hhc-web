@@ -7,6 +7,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN corepack enable && corepack prepare pnpm@10.12.1 --activate
 
 COPY package.json pnpm-lock.yaml ./
+COPY patches ./patches
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc pnpm install --frozen-lockfile
 
 COPY . .

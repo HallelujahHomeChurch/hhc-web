@@ -11,7 +11,7 @@ import type {Locale} from '@/i18n/locales';
 import {isIPhoneDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 import {StatementStrip} from '@/components/statements/StatementStrip';
 import {LineBrowserNotice, useLineBrowserNotice} from './LineBrowserNotice';
-import {AccountControlSlot, useCanReadBulletin, useVideoAccess} from './AccountControl';
+import {AccountControlSlot, useNavigationPresentation} from './AccountControl';
 
 export type SiteHeaderProps = {
   layout: SiteLayout;
@@ -36,8 +36,9 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
   const lineNotice = useLineBrowserNotice(pathname);
   const t = useTranslations('site');
   const homeHref = `/${locale}`;
-  const canReadBulletin = useCanReadBulletin();
-  const canWatchVideo = useVideoAccess() === 'available';
+  const navigation = useNavigationPresentation();
+  const canReadBulletin = navigation.sources.operations?.ids.includes('literature-ministry') === true;
+  const canWatchVideo = navigation.sources.operations?.ids.includes('member-videos') === true;
   const navItems = [
     ...layout.header.filter(({key, visible}) => visible && (key !== 'literature-ministry' || canReadBulletin)).map((item) => ({...item, icon: icons[item.key]})),
     ...(process.env.NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED === 'true' && canWatchVideo ? [{key: 'member-videos', label: t('nav.memberVideos'), href: `/${locale}/member-videos`, visible: true, icon: PlaySquare}] : [])
@@ -56,8 +57,8 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
   };
   const isActive = (href: string) => pathname === href || (href !== homeHref && pathname.startsWith(`${href}/`));
   const mobileActiveIndex = mobileNavItems.findIndex(({href}) => isActive(href));
-  const [mobileSelection, setMobileSelection] = useState({pathname, index: mobileActiveIndex});
-  const mobileIndicatorIndex = mobileSelection.pathname === pathname ? mobileSelection.index : mobileActiveIndex;
+  const [mobileSelection, setMobileSelection] = useState({pathname, href: mobileNavItems[mobileActiveIndex]?.href});
+  const mobileIndicatorIndex = mobileSelection.pathname === pathname ? mobileNavItems.findIndex(item => item.href === mobileSelection.href) : mobileActiveIndex;
   const delayedMobileHref = useRef<string | null>(null);
   const mobileNavigationFrame = useRef(0);
   const [mobileChrome, setMobileChrome] = useState({pathname, visible: true});
@@ -67,7 +68,7 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
     getServerStandaloneSnapshot
   );
   const mobileChromeVisible = mobileChrome.pathname === pathname ? mobileChrome.visible : true;
-  const navigateMobile = (event: MouseEvent<HTMLAnchorElement>, href: string, index: number) => {
+  const navigateMobile = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.currentTarget.target === '_blank') return;
     if (delayedMobileHref.current === href) {
       delayedMobileHref.current = null;
@@ -75,7 +76,7 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
     }
     if (mobileNavigationFrame.current) window.cancelAnimationFrame(mobileNavigationFrame.current);
     event.preventDefault();
-    setMobileSelection({pathname, index});
+    setMobileSelection({pathname, href});
     const link = event.currentTarget;
     mobileNavigationFrame.current = window.requestAnimationFrame(() => {
       mobileNavigationFrame.current = window.requestAnimationFrame(() => {
@@ -169,7 +170,7 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
           const active = isActive(item.href);
           const visualActive = mobileIndicatorIndex === index;
           return (
-            <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined} data-active={visualActive || undefined} style={{gridColumn: index + 1, gridRow: 1}} onClick={(event) => navigateMobile(event, item.href, index)}>
+            <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined} data-active={visualActive || undefined} style={{gridColumn: index + 1, gridRow: 1}} onClick={(event) => navigateMobile(event, item.href)}>
               <Icon aria-hidden="true" />
               <span>{item.label}</span>
             </Link>
