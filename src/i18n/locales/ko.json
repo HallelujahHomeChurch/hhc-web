@@ -266,7 +266,7 @@
     "exitFullscreen": "전체 화면 종료",
     "fullscreenError": "전체 화면을 종료할 수 없습니다. 다시 시도하거나 기기의 뒤로 가기를 사용하세요.",
     "playbackSpeed": "재생 속도",
-    "heroTitle": "회원 영상", "heroSubtitle": "최근 30일간의 모임 녹화", "selectedTitle": "선택한 녹화", "listTitle": "최근 30일간의 녹화", "count": "총 {count}개", "play": "녹화 재생", "select": "선택하여 보기", "selected": "선택됨", "playing": "재생 중", "featured": "추천", "durationUnknown": "재생 시간 정보 없음", "expires": "시청 기한", "loading": "녹화 불러오는 중", "preparing": "재생 준비 중", "empty": "시청 가능한 녹화가 없습니다", "loadError": "녹화를 불러올 수 없습니다", "playError": "재생할 수 없습니다. 다시 시도해 주세요.", "expired": "이 녹화는 더 이상 볼 수 없습니다", "retry": "다시 불러오기", "previous": "이전", "next": "다음"
+    "heroTitle": "회원 영상", "heroSubtitle": "최근 모임 녹화", "selectedTitle": "선택한 녹화", "listTitle": "최근 녹화", "count": "총 {count}개", "play": "녹화 재생", "select": "선택하여 보기", "selected": "선택됨", "playing": "재생 중", "featured": "추천", "durationUnknown": "재생 시간 정보 없음", "expires": "시청 기한", "loading": "녹화 불러오는 중", "preparing": "재생 준비 중", "empty": "시청 가능한 녹화가 없습니다", "loadError": "녹화를 불러올 수 없습니다", "playError": "재생할 수 없습니다. 다시 시도해 주세요.", "expired": "이 녹화는 더 이상 볼 수 없습니다", "retry": "다시 불러오기", "previous": "이전", "next": "다음"
   },
   "privacyPolicy": {
     "heroTitle": "개인정보 처리방침",
