@@ -1,7 +1,7 @@
 'use client';
 
 import {useEffect, useRef, useState, useSyncExternalStore, type RefObject} from 'react';
-import {Maximize, Minimize, Pause, Play, Settings, Volume2, VolumeX} from 'lucide-react';
+import {LoaderCircle, Maximize, Minimize, Pause, Play, Settings, Volume2, VolumeX} from 'lucide-react';
 import type {PlayerLabels} from './HlsPlayer';
 import {loadPreviewIndex, type PreviewCue} from './preview-index';
 import styles from './PlayerChrome.module.css';
@@ -13,7 +13,7 @@ const serverFullscreenSupported = () => false;
 type Props = {
   container: RefObject<HTMLDivElement | null>; videoRef: RefObject<HTMLVideoElement | null>;
   playbackUrl: string; watermark: string; labels: PlayerLabels;
-  quality: Quality; qualities: Exclude<Quality, 'auto'>[]; loading: boolean;
+  quality: Quality; qualities: Exclude<Quality, 'auto'>[]; loading: boolean; failed: boolean;
   onQualityChange: (quality: Quality) => void; onPlayingChange?: (playing: boolean) => void;
 };
 
@@ -22,9 +22,9 @@ export function playerClock(seconds: number) {
   return total >= 3600 ? `${Math.floor(total / 3600)}:${String(Math.floor(total / 60) % 60).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}` : `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
 }
 
-export function PlayerChrome({container, videoRef, playbackUrl, watermark, labels, quality, qualities, loading, onQualityChange, onPlayingChange}: Props) {
+export function PlayerChrome({container, videoRef, playbackUrl, watermark, labels, quality, qualities, loading, failed, onQualityChange, onPlayingChange}: Props) {
   const canFullscreen = useSyncExternalStore(subscribeToFullscreenSupport, fullscreenSupported, serverFullscreenSupported);
-  const [playing, setPlaying] = useState(false), [waiting, setWaiting] = useState(false);
+  const [playing, setPlaying] = useState(false), [waiting, setWaiting] = useState(true);
   const [muted, setMuted] = useState(false), [volume, setVolume] = useState(1), [rate, setRate] = useState(1);
   const [time, setTime] = useState(0), [duration, setDuration] = useState(0), [buffered, setBuffered] = useState(0);
   const [fullscreen, setFullscreen] = useState(false), [settings, setSettings] = useState(false), [visible, setVisible] = useState(true);
@@ -51,7 +51,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
       setBuffered(end);
     };
     const startWait = () => setWaiting(true), endWait = () => setWaiting(false);
-    const events: [string, () => void][] = [['play', updatePlay], ['pause', updatePlay], ['ended', updatePlay], ['timeupdate', updateTime], ['durationchange', updateDuration], ['volumechange', updateVolume], ['ratechange', updateRate], ['progress', updateBuffer], ['waiting', startWait], ['playing', endWait], ['canplay', endWait], ['seeked', endWait]];
+    const events: [string, () => void][] = [['play', updatePlay], ['pause', updatePlay], ['ended', updatePlay], ['timeupdate', updateTime], ['durationchange', updateDuration], ['volumechange', updateVolume], ['ratechange', updateRate], ['progress', updateBuffer], ['loadstart', startWait], ['seeking', startWait], ['waiting', startWait], ['playing', endWait], ['canplay', endWait], ['seeked', endWait], ['pause', endWait], ['ended', endWait], ['error', endWait]];
     for (const [event, handler] of events) video.addEventListener(event, handler);
     container.current?.focus({preventScroll: true});
     return () => { for (const [event, handler] of events) video.removeEventListener(event, handler); };
@@ -135,7 +135,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
     <button type="button" className={styles.surface} aria-label={labels.togglePlayback} tabIndex={-1} onClick={() => {container.current?.focus({preventScroll:true}); toggle();}} />
     <span aria-hidden="true" className={styles.watermark} style={watermarkPosition === 0 ? {right:16,top:16} : watermarkPosition === 1 ? {left:16,top:16} : {right:16,bottom:100}}><small>{labels.privateCopy}</small>{watermark}</span>
     {feedback ? <div className={styles.feedback} aria-hidden="true"><span key={feedback.id}>{feedback.kind === 'play' ? <Play size={36} fill="currentColor"/> : <Pause size={36} fill="currentColor"/>}</span></div> : null}
-    {(loading || waiting) && !feedback ? <div className={styles.loading}><span role="status">{labels.buffering}</span></div> : null}
+    {(loading || waiting) && !failed && !feedback ? <div className={styles.loading} role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{labels.buffering}</span></div> : null}
     {settings ? <div ref={menu} data-controls className={styles.settings} role="group" aria-label={labels.settings}>
       <label>{labels.playbackSpeed}<select aria-label={labels.playbackSpeed} value={rate} onChange={event => { if (videoRef.current) videoRef.current.playbackRate = Number(event.target.value); }}>
         {[0.5,0.75,1,1.25,1.5,1.75,2].map(value => <option key={value} value={value}>{value}×</option>)}

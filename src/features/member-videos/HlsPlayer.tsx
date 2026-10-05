@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useRef, useState, type RefObject} from 'react';
+import {useCallback, useEffect, useRef, useState, type RefObject} from 'react';
 import type Hls from 'hls.js';
 import {PlayerChrome} from './PlayerChrome';
 import styles from './PlayerChrome.module.css';
@@ -27,9 +27,10 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
   const container=useRef<HTMLDivElement>(null), engine=useRef<Hls|null>(null);
   const nativeSwitch=useRef<AbortController|null>(null);
   const nativePosition=useRef<{time:number;playing:boolean;rate:number}|null>(null);
-  const [mode,setMode]=useState<'loading'|'mse'|'native'>('loading');
+  const [mode,setMode]=useState<'loading'|'mse'|'native'|'error'>('loading');
   const [quality,setQuality]=useState<Quality>('auto');
   const qualities=(['720p','1080p'] as const).filter(name=>availableQualities.includes(name));
+  const handleError=useCallback(()=>{setMode('error');onError();},[onError]);
 
   useEffect(()=>{
     const video=videoRef.current;
@@ -46,17 +47,17 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
         });
         engine.current=hls;
         hls.on(Hls.Events.MANIFEST_PARSED,()=>{if(!cancelled){setMode('mse');autoplay();}});
-        hls.on(Hls.Events.ERROR,(_event,data)=>{if(data.fatal&&!cancelled)onError();});
+        hls.on(Hls.Events.ERROR,(_event,data)=>{if(data.fatal&&!cancelled)handleError();});
         hls.loadSource(playbackUrl);hls.attachMedia(video);
       } else if(video.canPlayType('application/vnd.apple.mpegurl')) {
         setMode('native');video.src=playbackUrl;video.addEventListener('loadedmetadata',autoplay,{once:true});video.load();
-      } else onError();
-    }).catch(()=>{if(!cancelled)onError();});
+      } else handleError();
+    }).catch(()=>{if(!cancelled)handleError();});
     return ()=>{
       cancelled=true;nativeSwitch.current?.abort();video.removeEventListener('loadedmetadata',autoplay);
       engine.current?.destroy();engine.current=null;video.pause();video.removeAttribute('src');video.load();
     };
-  },[playbackUrl,videoRef,onError]);
+  },[playbackUrl,videoRef,handleError]);
 
   const changeQuality=(next:Quality)=>{
     const video=videoRef.current;
@@ -64,7 +65,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
     if(engine.current) {
       const target=new URL(`${next}/index.m3u8`,playbackUrl).href;
       const index=next==='auto'?-1:engine.current.levels.findIndex(level=>level.url.includes(target));
-      if(next!=='auto'&&index<0){onError();return;}
+      if(next!=='auto'&&index<0){handleError();return;}
       engine.current.nextLevel=index;
     } else if(mode==='native') {
       nativeSwitch.current?.abort();
@@ -82,7 +83,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
   };
   return <div ref={container} tabIndex={0} role="region" aria-label={`${title} — ${labels.togglePlayback}`} className={styles.player}>
     <video ref={videoRef} playsInline preload="metadata" controlsList="nodownload nofullscreen noremoteplayback" disablePictureInPicture disableRemotePlayback crossOrigin="use-credentials" aria-label={title} className="h-full w-full object-contain"
-      onError={onError}/>
-    <PlayerChrome container={container} videoRef={videoRef} playbackUrl={playbackUrl} watermark={watermark} labels={labels} quality={quality} qualities={qualities} loading={mode==='loading'} onQualityChange={changeQuality} onPlayingChange={onPlayingChange}/>
+      onError={handleError}/>
+    <PlayerChrome container={container} videoRef={videoRef} playbackUrl={playbackUrl} watermark={watermark} labels={labels} quality={quality} qualities={qualities} loading={mode==='loading'} failed={mode==='error'} onQualityChange={changeQuality} onPlayingChange={onPlayingChange}/>
   </div>;
 }

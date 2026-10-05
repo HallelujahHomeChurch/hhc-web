@@ -1,29 +1,53 @@
 import {createRef} from 'react';
-import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, beforeEach, expect, it, vi} from 'vitest';
 import {HlsPlayer} from './HlsPlayer';
 
-const engine=vi.hoisted(()=>({supported:true,instances:[] as {nextLevel:number;loadSource:ReturnType<typeof vi.fn>;destroy:ReturnType<typeof vi.fn>;config:{xhrSetup:(xhr:XMLHttpRequest,url:string)=>void}}[]}));
+const engine=vi.hoisted(()=>({supported:true,manifestReady:true,instances:[] as {nextLevel:number;listeners:Record<string,(...args:unknown[])=>void>;loadSource:ReturnType<typeof vi.fn>;destroy:ReturnType<typeof vi.fn>;config:{xhrSetup:(xhr:XMLHttpRequest,url:string)=>void}}[]}));
 const url='https://media.alive.org.tw/videos/r/packages/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/sessions/s/master.m3u8';
 vi.mock('hls.js',()=>({default:class {
   static isSupported(){return engine.supported;}
   static Events={MANIFEST_PARSED:'manifest',ERROR:'error'};
   nextLevel=-1;
+  listeners:Record<string,(...args:unknown[])=>void>={};
   levels=[{url:[url.replace('master.m3u8','720p/index.m3u8')]},{url:[url.replace('master.m3u8','1080p/index.m3u8')]}];
   loadSource=vi.fn();destroy=vi.fn();
   constructor(public config:{xhrSetup:(xhr:XMLHttpRequest,url:string)=>void}) {engine.instances.push(this);}
-  on(event:string,callback:()=>void){if(event==='manifest')queueMicrotask(callback);}
+  on(event:string,callback:(...args:unknown[])=>void){this.listeners[event]=callback;if(event==='manifest'&&engine.manifestReady)queueMicrotask(callback);}
   attachMedia(){}
 }}));
 const labels={quality:'Quality',auto:'Auto',play:'Play',pause:'Pause',mute:'Mute',unmute:'Unmute',seek:'Playback position',volume:'Volume',fullscreen:'Fullscreen',exitFullscreen:'Exit fullscreen',playbackSpeed:'Speed',settings:'Settings',togglePlayback:'Play or pause',privateCopy:'HHC members only',buffering:'Loading video'};
 const props=()=>({playbackUrl:url,availableQualities:['720p','1080p'] as ('720p'|'1080p')[],watermark:'TRACE123',title:'Sunday',labels,videoRef:createRef<HTMLVideoElement>(),onPlayingChange:vi.fn(),onError:vi.fn()});
 beforeEach(()=>{
-  engine.supported=true;engine.instances=[];
+  engine.supported=true;engine.manifestReady=true;engine.instances=[];
   vi.spyOn(HTMLMediaElement.prototype,'play').mockResolvedValue(undefined);
   vi.spyOn(HTMLMediaElement.prototype,'pause').mockImplementation(()=>{});
   vi.spyOn(HTMLMediaElement.prototype,'load').mockImplementation(()=>{});
 });
-afterEach(()=>vi.restoreAllMocks());
+afterEach(()=>{cleanup();vi.restoreAllMocks();});
+
+it.each([false,true])('ends loading on fatal media failure after manifest=%s', async(manifestReady)=>{
+  engine.manifestReady=manifestReady;
+  const p=props();render(<HlsPlayer {...p}/>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));
+  if(manifestReady)fireEvent.waiting(p.videoRef.current!);
+  expect(screen.getByRole('status')).toHaveTextContent('Loading video');
+  act(()=>engine.instances[0].listeners.error('error',{fatal:true}));
+  expect(p.onError).toHaveBeenCalledOnce();
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+});
+
+it('keeps loading through startup, then follows buffering and pause events',async()=>{
+  const p=props();render(<HlsPlayer {...p}/>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));
+  expect(screen.getByRole('status')).toHaveTextContent('Loading video');
+  fireEvent.canPlay(p.videoRef.current!);
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  fireEvent.waiting(p.videoRef.current!);
+  expect(screen.getByRole('status')).toBeInTheDocument();
+  fireEvent.pause(p.videoRef.current!);
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+});
 
 it('keeps K working after toolbar focus but leaves button Space activation native', async()=>{
   const p=props();render(<HlsPlayer {...p}/>);
