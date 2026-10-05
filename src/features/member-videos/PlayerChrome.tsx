@@ -1,15 +1,15 @@
 'use client';
 
-import {useEffect, useRef, useState, useSyncExternalStore, type RefObject} from 'react';
+import {useEffect, useRef, useState, type RefObject} from 'react';
 import {LoaderCircle, Maximize, Minimize, Pause, Play, Settings, Volume2, VolumeX} from 'lucide-react';
 import type {PlayerLabels} from './HlsPlayer';
 import {loadPreviewIndex, type PreviewCue} from './preview-index';
 import styles from './PlayerChrome.module.css';
+import {usePlayerFullscreen} from './use-player-fullscreen';
+import {RecordingWatermark} from './RecordingWatermark';
+import {PreviewSprite} from './PreviewSprite';
 
-type Quality = 'auto' | '720p' | '1080p';
-const subscribeToFullscreenSupport = () => () => {};
-const fullscreenSupported = () => typeof document.documentElement.requestFullscreen === 'function';
-const serverFullscreenSupported = () => false;
+type Quality = 'auto' | '480p' | '720p' | '1080p';
 type Props = {
   container: RefObject<HTMLDivElement | null>; videoRef: RefObject<HTMLVideoElement | null>;
   playbackUrl: string; watermark: string; labels: PlayerLabels;
@@ -23,15 +23,15 @@ export function playerClock(seconds: number) {
 }
 
 export function PlayerChrome({container, videoRef, playbackUrl, watermark, labels, quality, qualities, loading, failed, onQualityChange, onPlayingChange}: Props) {
-  const canFullscreen = useSyncExternalStore(subscribeToFullscreenSupport, fullscreenSupported, serverFullscreenSupported);
+  const fullscreenState = usePlayerFullscreen(container, videoRef);
+  const fullscreen = fullscreenState.mode !== 'inline';
   const [playing, setPlaying] = useState(false), [waiting, setWaiting] = useState(true);
   const [muted, setMuted] = useState(false), [volume, setVolume] = useState(1), [rate, setRate] = useState(1);
   const [time, setTime] = useState(0), [duration, setDuration] = useState(0), [buffered, setBuffered] = useState(0);
-  const [fullscreen, setFullscreen] = useState(false), [settings, setSettings] = useState(false), [visible, setVisible] = useState(true);
+  const [settings, setSettings] = useState(false), [visible, setVisible] = useState(true);
   const [feedback, setFeedback] = useState<{kind: 'play' | 'pause'; id: number} | null>(null);
   const [preview, setPreview] = useState<number | null>(null), [cues, setCues] = useState<PreviewCue[]>([]);
   const [previewRequested, setPreviewRequested] = useState(false), [scrub, setScrub] = useState<number | null>(null);
-  const [failedImage, setFailedImage] = useState('');
   const hideTimer = useRef(0), feedbackTimer = useRef(0), dragging = useRef(false);
   const menu = useRef<HTMLDivElement>(null), settingsButton = useRef<HTMLButtonElement>(null);
   const playingCallback = useRef(onPlayingChange);
@@ -58,10 +58,8 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
   }, [container, videoRef]);
 
   useEffect(() => {
-    const changed = () => setFullscreen(document.fullscreenElement === container.current);
-    document.addEventListener('fullscreenchange', changed);
-    return () => { document.removeEventListener('fullscreenchange', changed); window.clearTimeout(hideTimer.current); window.clearTimeout(feedbackTimer.current); };
-  }, [container]);
+    return () => { window.clearTimeout(hideTimer.current); window.clearTimeout(feedbackTimer.current); };
+  }, []);
 
   useEffect(() => {
     if (!previewRequested) return;
@@ -94,10 +92,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
     feedbackTimer.current = window.setTimeout(() => setFeedback(null), 900);
     showControls();
   };
-  const toggleFullscreen = async () => {
-    try { if (document.fullscreenElement === container.current) await document.exitFullscreen(); else await container.current?.requestFullscreen(); }
-    catch { /* Keep the video and its watermark together when fullscreen is unavailable. */ }
-  };
+  const toggleFullscreen = fullscreenState.toggle;
   const seek = (value: number) => { if (videoRef.current && duration > 0) { videoRef.current.currentTime = Math.min(duration, Math.max(0, value)); setTime(videoRef.current.currentTime); } };
   const keyDown = (event: KeyboardEvent) => {
     if (event.key === 'Escape' && settings) { event.preventDefault(); event.stopPropagation(); setSettings(false); settingsButton.current?.focus(); return; }
@@ -128,12 +123,13 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
   const current = scrub ?? time;
   const previewTime = scrub ?? preview;
   const cue = previewTime === null ? undefined : cues.find(cue => cue.start <= previewTime && cue.end > previewTime);
+  const neighbor = cue ? cues.find(item => item.start >= cue.end && item.url !== cue.url)?.url : undefined;
   const controlsVisible = visible || !playing || settings || scrub !== null;
-  const watermarkPosition = Math.floor(time / 45) % 3;
   const percentage = (value: number) => duration > 0 ? `${Math.min(100, Math.max(0, value / duration * 100))}%` : '0%';
   return <>
     <button type="button" className={styles.surface} aria-label={labels.togglePlayback} tabIndex={-1} onClick={() => {container.current?.focus({preventScroll:true}); toggle();}} />
-    <span aria-hidden="true" className={styles.watermark} style={watermarkPosition === 0 ? {right:16,top:16} : watermarkPosition === 1 ? {left:16,top:16} : {right:16,bottom:100}}><small>{labels.privateCopy}</small>{watermark}</span>
+    <RecordingWatermark container={container} videoRef={videoRef} code={watermark}/>
+    {fullscreenState.error ? <div className={styles.fullscreenError} role="alert">{labels.fullscreenError}</div> : null}
     {feedback ? <div className={styles.feedback} aria-hidden="true"><span key={feedback.id}>{feedback.kind === 'play' ? <Play size={36} fill="currentColor"/> : <Pause size={36} fill="currentColor"/>}</span></div> : null}
     {(loading || waiting) && !failed && !feedback ? <div className={styles.loading} role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{labels.buffering}</span></div> : null}
     {settings ? <div ref={menu} data-controls className={styles.settings} role="group" aria-label={labels.settings}>
@@ -151,13 +147,10 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
           onChange={event => { const value = Number(event.target.value); if (dragging.current) setScrub(value); else seek(value); }}
           onPointerUp={event => { seek(Number(event.currentTarget.value)); dragging.current = false; setScrub(null); setPreview(null); }}
           onPointerCancel={() => {dragging.current = false; setScrub(null); setPreview(null);}} />
-        {previewTime !== null && duration > 0 ? <div className={styles.preview} aria-hidden="true" style={{left:`clamp(80px, ${percentage(previewTime)}, calc(100% - 80px))`}}>
-          {cue && failedImage !== cue.url ? <div className={styles.previewImage}>
-            {/* Authenticated sprite requests must retain the media cookie, without an image proxy. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={cue.url} alt="" crossOrigin="use-credentials" referrerPolicy="no-referrer" width={960} height={90} style={{left:-cue.x}} onError={() => setFailedImage(cue.url)}/>
-          </div> : null}<time>{playerClock(previewTime)}</time>
-        </div> : null}
+        <div className={styles.preview} hidden={previewTime===null||duration<=0} aria-hidden="true" style={{left:`clamp(80px, ${percentage(previewTime??0)}, calc(100% - 80px))`}}>
+          {!failed ? <PreviewSprite key={playbackUrl} playbackUrl={playbackUrl} cue={cue} neighbor={neighbor}/> : null}
+          <time>{playerClock(previewTime??0)}</time>
+        </div>
       </div>
       <div className={styles.row}>
         <button type="button" className={styles.button} aria-label={playing ? labels.pause : labels.play} title={playing ? labels.pause : labels.play} onClick={toggle}>{playing ? <Pause size={22} fill="currentColor"/> : <Play size={22} fill="currentColor"/>}</button>
@@ -165,7 +158,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
         <input type="range" className={styles.volume} aria-label={labels.volume} min={0} max={1} step={0.05} value={muted ? 0 : volume} onChange={event => { if (videoRef.current) { videoRef.current.volume = Number(event.target.value); videoRef.current.muted = false; } }}/>
         <span className={styles.time}>{playerClock(current)} / {playerClock(duration)}</span><span className={styles.spacer}/>
         <button ref={settingsButton} type="button" className={styles.button} aria-label={labels.settings} title={labels.settings} aria-expanded={settings} onClick={() => setSettings(value => !value)}><Settings size={22}/></button>
-        {canFullscreen ? <button type="button" className={styles.button} aria-label={fullscreen ? labels.exitFullscreen : labels.fullscreen} title={fullscreen ? labels.exitFullscreen : labels.fullscreen} onClick={() => void toggleFullscreen()}>{fullscreen ? <Minimize size={22}/> : <Maximize size={22}/>}</button> : null}
+        <button type="button" className={styles.button} aria-label={fullscreen ? labels.exitFullscreen : labels.fullscreen} title={fullscreen ? labels.exitFullscreen : labels.fullscreen} onClick={() => void toggleFullscreen()}>{fullscreen ? <Minimize size={22}/> : <Maximize size={22}/>}</button>
       </div>
     </div>
   </>;

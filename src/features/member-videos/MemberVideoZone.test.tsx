@@ -28,7 +28,7 @@ const messages = {
   playing: 'Playing', featured: 'Featured', durationUnknown: 'Duration unavailable', expires: 'Available until', loading: 'Loading',
   preparing: 'Preparing', empty: 'No recordings', loadError: 'Unavailable', playError: 'Cannot play', expired: 'Expired',
   retry: 'Retry', previous: 'Previous', next: 'Next'
-  ,quality:'Quality',auto:'Auto',pause:'Pause',mute:'Mute',unmute:'Unmute',seek:'Playback position',volume:'Volume',fullscreen:'Fullscreen',exitFullscreen:'Exit fullscreen',playbackSpeed:'Playback speed'
+  ,quality:'Quality',auto:'Auto',pause:'Pause',mute:'Mute',unmute:'Unmute',seek:'Playback position',volume:'Volume',fullscreen:'Fullscreen',exitFullscreen:'Exit fullscreen',fullscreenError:'Could not exit fullscreen',playbackSpeed:'Playback speed'
 };
 
 beforeEach(() => {
@@ -164,13 +164,19 @@ describe('member video gate', () => {
     await waitFor(()=>expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalled());
   });
   it('overlays only the pseudonymous watermark after playback authorization', async () => {
+    vi.spyOn(HTMLElement.prototype,'clientWidth','get').mockReturnValue(390);
+    vi.spyOn(HTMLElement.prototype,'clientHeight','get').mockReturnValue(220);
+    vi.spyOn(HTMLVideoElement.prototype,'videoWidth','get').mockReturnValue(1920);
+    vi.spyOn(HTMLVideoElement.prototype,'videoHeight','get').mockReturnValue(1080);
     state.auth = 'authenticated'; state.access = 'available';
     list.mockResolvedValue([{id:'r1',title:'Sunday',uploadedAt:'2026-09-28T02:00:00Z',expiresAt:'2026-10-28T02:00:00Z',status:'published',featured:false,hidden:false,version:1,packageId}]);
     videoApi.grant.mockResolvedValue({packageId,watermarkCode:'A123B456',expiresAt:new Date(Date.now()+3600000).toISOString()});
     videoApi.exchange.mockResolvedValue(playbackUrl);
     render(<MemberVideoZone locale="en" messages={messages} hero={<h1>Member Videos</h1>} />);
     fireEvent.click(await screen.findByRole('button',{name:'Play'}));
-    expect(await screen.findByText('A123B456')).toHaveAttribute('aria-hidden','true');
+    const marks = await screen.findAllByText('A123B456');
+    expect(marks).toHaveLength(4);
+    expect(marks[0].parentElement).toHaveAttribute('aria-hidden','true');
     expect(screen.getByLabelText('Sunday').getAttribute('controlslist')).toContain('nodownload');
   });
   it('does not fetch or reveal recording content before entitlement and redirects denied members', async () => {

@@ -5,10 +5,10 @@ import type Hls from 'hls.js';
 import {PlayerChrome} from './PlayerChrome';
 import styles from './PlayerChrome.module.css';
 
-type Quality = 'auto' | '720p' | '1080p';
+type Quality = 'auto' | '480p' | '720p' | '1080p';
 export type PlayerLabels = {
   quality:string; auto:string; play:string; pause:string; mute:string; unmute:string;
-  seek:string; volume:string; fullscreen:string; exitFullscreen:string; playbackSpeed:string;
+  seek:string; volume:string; fullscreen:string; exitFullscreen:string; fullscreenError:string; playbackSpeed:string;
   settings:string; togglePlayback:string; privateCopy:string; buffering:string;
 };
 type Props = {
@@ -21,7 +21,7 @@ function verifyMediaRequest(master:string,target:string) {
   const prefix=base.pathname.replace(/master\.m3u8$/,'');
   const path=url.pathname.slice(prefix.length);
   if(url.origin!==base.origin || url.username || url.password || url.search || url.hash || !url.pathname.startsWith(prefix)
-    || !/^(master\.m3u8|(720p|1080p)\/(index\.m3u8|init\.mp4|seg-\d{6}\.m4s))$/.test(path)) throw new Error('Invalid media request');
+    || !/^(master\.m3u8|(480p|720p|1080p)\/(index\.m3u8|init\.mp4|seg-\d{6}\.m4s))$/.test(path)) throw new Error('Invalid media request');
 }
 
 export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels,videoRef,onPlayingChange,onError,poster}:Props) {
@@ -30,7 +30,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
   const nativePosition=useRef<{time:number;playing:boolean;rate:number}|null>(null);
   const [mode,setMode]=useState<'loading'|'mse'|'native'|'error'>('loading');
   const [quality,setQuality]=useState<Quality>('auto');
-  const qualities=(['720p','1080p'] as const).filter(name=>availableQualities.includes(name));
+  const qualities=(['480p','720p','1080p'] as const).filter(name=>availableQualities.includes(name));
   const handleError=useCallback(()=>{setMode('error');onError();},[onError]);
 
   useEffect(()=>{
@@ -83,7 +83,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
     setQuality(next);
   };
   return <div ref={container} tabIndex={0} role="region" aria-label={`${title} — ${labels.togglePlayback}`} className={styles.player}>
-    <video ref={videoRef} poster={poster} playsInline preload="metadata" controlsList="nodownload nofullscreen noremoteplayback" disablePictureInPicture disableRemotePlayback crossOrigin="use-credentials" aria-label={title} className="h-full w-full object-contain"
+    <video ref={videoRef} poster={poster} playsInline preload="metadata" controlsList="nodownload noremoteplayback" disablePictureInPicture disableRemotePlayback crossOrigin="use-credentials" aria-label={title} className="h-full w-full object-contain"
       onError={handleError}/>
     <PlayerChrome container={container} videoRef={videoRef} playbackUrl={playbackUrl} watermark={watermark} labels={labels} quality={quality} qualities={qualities} loading={mode==='loading'} failed={mode==='error'} onQualityChange={changeQuality} onPlayingChange={onPlayingChange}/>
   </div>;
