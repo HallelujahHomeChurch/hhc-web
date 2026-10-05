@@ -20,8 +20,14 @@ function mediaCookieURL(mediaURL: string) {
 }
 
 export function createMemberVideoApi(authorization: Authorization, fetcher: Fetcher = globalThis.fetch.bind(globalThis)) {
-  const client = createHhcWebClient({baseUrl: '/api', getAccessToken: () => null, fetcher: createProtectedFetch(authorization, fetcher)});
+  const protectedFetch=createProtectedFetch(authorization,fetcher);
+  const client = createHhcWebClient({baseUrl: '/api', getAccessToken: () => null, fetcher: protectedFetch});
   return {
+    async cover(id:string,signal?:AbortSignal) {
+      const blob=await client.getMemberRecordingCover(id,signal);
+      if(blob.type!=='image/jpeg'||blob.size>(1<<20)) throw new Error('Invalid recording cover');
+      return blob;
+    },
     list: (signal?: AbortSignal) => client.listMemberRecordings(signal),
     grant: (id: string, scopeId: string, versionId?: string, signal?: AbortSignal) => client.issueRecordingPlayback(id, scopeId, versionId, signal),
     async exchange(playback: MemberRecordingPlayback, signal?: AbortSignal) {

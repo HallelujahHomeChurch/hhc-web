@@ -5,12 +5,13 @@ import {useRouter} from 'next/navigation';
 import {LoaderCircle, Play} from 'lucide-react';
 import type {MemberRecording, MemberRecordingPlayback} from '@hallelujahhomechurch/hhc-web-client';
 import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
-import {useAccountAuth, useBulletinAuthorization, useVideoAccess} from '@/components/layout/AccountControl';
+import {useAccountAuth, useAccountIdentity, useBulletinAuthorization, useVideoAccess} from '@/components/layout/AccountControl';
 import type {Locale} from '@/i18n/locales';
 import {captureHandledError} from '@/lib/observability';
 import {createMemberVideoApi} from './api';
 import {HlsPlayer, type PlayerLabels} from './HlsPlayer';
 import playerStyles from './PlayerChrome.module.css';
+import {RecordingCover,useRecordingCover} from './RecordingCover';
 
 type Messages = {
   selectedTitle: string; listTitle: string; count: string; play: string; select: string; selected: string;
@@ -33,11 +34,12 @@ function formatDate(value: string | null, locale: Locale) {
 export function MemberVideoZone({locale, messages, hero}: {locale: Locale; messages: Messages; hero: ReactNode}) {
   const router = useRouter();
   const auth = useAccountAuth();
+  const identity=useAccountIdentity();
   const access = useVideoAccess();
   useEffect(() => {
     if (auth.status === 'anonymous' || access === 'denied') router.replace(`/${locale}`);
   }, [access, auth.status, locale, router]);
-  if (access === 'available') return <AuthorizedVideoZone locale={locale} messages={messages} hero={hero} />;
+  if (access === 'available') return <AuthorizedVideoZone key={identity} locale={locale} messages={messages} hero={hero} />;
   if (auth.status === 'anonymous' || access === 'denied') return null;
   const unavailable = auth.status === 'unavailable' || access === 'unavailable';
   return <main className="bg-[image:var(--hhc-page-gradient)] py-16"><section className="shell rounded-[14px] border border-panel-border bg-panel p-8 text-center text-ink" role={unavailable ? 'alert' : 'status'}>{unavailable ? messages.loadError : messages.loading}{unavailable ? <button type="button" className="ml-4 min-h-11 rounded-full border border-[var(--hhc-control-border)] px-5 font-semibold" onClick={() => window.location.reload()}>{messages.retry}</button> : null}</section></main>;
@@ -106,6 +108,7 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
   }, [api]);
 
   const selected = recordings?.find((recording) => recording.id === selectedId);
+  const poster=useRecordingCover(api,selected?.id,selected?.expiresAt,selected?.selectedCoverId);
   const select = (id: string) => {
     if (id === selectedId) return;
     attempt.current?.abort();
@@ -242,7 +245,11 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
           {!loadError && !recordings ? <p role="status" className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{messages.loading}</p> : null}
           {!loadError && recordings?.length === 0 ? <p className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{messages.empty}</p> : null}
           {selected ? <div ref={playerSection} className="grid scroll-mt-28 gap-4">
-            {playback?.recordingId === selected.id ? <HlsPlayer key={playback.url} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} onError={mediaError}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950">{preparing ? <div className={playerStyles.loading} role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{messages.preparing}</span></div> : <button type="button" onClick={() => void start()} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground"><Play size={18} aria-hidden="true" />{messages.play}</button>}</div>}
+            {playback?.recordingId === selected.id ? <HlsPlayer key={playback.url} poster={poster} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} onError={mediaError}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {poster?<img src={poster} alt={selected.title} width={1280} height={720} className="absolute inset-0 h-full w-full object-contain"/>:null}
+              {preparing ? <div className={playerStyles.loading} role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{messages.preparing}</span></div> : <button type="button" onClick={() => void start()} className="relative inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground"><Play size={18} aria-hidden="true" />{messages.play}</button>}
+            </div>}
             <h2 ref={playerTitle} tabIndex={-1} className="text-2xl font-semibold text-ink outline-none">{selected.title}</h2>
             <p className="text-sm text-muted">{messages.uploadedDate.replace('{date}', formatDate(selected.uploadedAt, locale))}</p>
             {playError ? <p role="alert" className="text-sm text-primary">{playError} <button type="button" className="underline" onClick={() => void start()}>{messages.retry}</button></p> : null}
@@ -250,6 +257,7 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
           {otherRecordings.length > 0 ? <div className="grid gap-5">
             <div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-panel-border pt-7"><h2 className="text-2xl font-semibold text-ink">{messages.listTitle}</h2><p className="text-sm text-muted">{messages.count.replace('{count}', String(otherRecordings.length))}</p></div>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{visibleItems.map((item) => <article key={item.id} className="grid min-w-0 gap-3 rounded-[14px] border border-panel-border bg-panel p-5 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)]">
+              <RecordingCover api={api} id={item.id} title={item.title} expiresAt={item.expiresAt} revision={item.selectedCoverId}/>
               <h3 className="break-words text-lg font-semibold text-ink">{item.title}</h3>
               <p className="text-sm text-muted">{messages.uploadedDate.replace('{date}', formatDate(item.uploadedAt, locale))}</p>
               <button type="button" className="min-h-11 justify-self-start rounded-full border border-[var(--hhc-control-border)] bg-paper px-5 font-semibold text-[var(--hhc-control)] hover:border-primary hover:bg-primary hover:text-primary-foreground focus-visible:outline-2 focus-visible:outline-primary" onClick={() => select(item.id)}>{messages.select}</button>

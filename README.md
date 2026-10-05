@@ -2,6 +2,15 @@
 
 Next.js public website for `www.alive.org.tw`.
 
+## Private recording covers
+
+Member recording cards and the playback poster use authenticated, same-origin
+cover reads, independent of playback sessions. Images remain temporary object
+URLs scoped to the mounted account/recording and are revoked on changes,
+unmount or expiry. Covers never pass through the public Next image optimizer.
+Missing or unavailable covers retain the video placeholder without blocking
+playback; only the current list page and selected recording are requested.
+
 ## License
 
 The source and first-party content are publicly visible but remain all rights
