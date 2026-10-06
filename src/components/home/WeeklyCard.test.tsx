@@ -36,6 +36,19 @@ describe('WeeklyCard', () => {
     expect(request.url).toContain('/api/member/bulletins/online?series=general&offset=0&limit=1&locales=zh-Hant');
     expect(request.headers.get('authorization')).toBe('Bearer token');
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', {name: 'History'})).not.toBeInTheDocument();
+  });
+
+  it('shows authorized Hans download and reading actions on a Traditional Chinese interface', async () => {
+    access.editions = [{series: 'general', locale: 'zh-Hans'}];
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(discoveryResponse([{...bulletin, locale: 'zh-Hans', title: '简体周报'}], true)));
+    render(<WeeklyCard locale="zh-Hant" ctaLabel="下載 PDF" messages={messages} />);
+
+    expect(await screen.findByRole('button', {name: '下載 PDF: 简中'})).toHaveTextContent('下載 PDF · 简中');
+    expect(screen.getByText('简体周报')).toBeVisible();
+    expect(screen.getByText('简中')).toBeVisible();
+    expect(screen.getByRole('link', {name: 'Read online'})).toHaveAttribute('href', '/zh-Hant/literature-ministry/1737/read/general/zh-Hans');
+    expect(screen.queryByRole('button', {name: /繁中/})).not.toBeInTheDocument();
   });
 
   it('allows retry after a protected request failure', async () => {

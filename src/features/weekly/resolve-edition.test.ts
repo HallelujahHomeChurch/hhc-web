@@ -36,8 +36,18 @@ describe('whole edition resolution',()=>{
   it('keeps Online-only and suppresses Download',()=>{
     expect(resolveEdition({uiLocale:'en',series:'general',authorizedEditions,publishedEditions:[version('en',{pdfPublished:false})]})).toMatchObject({canDownload:false,readUrl:'/en/literature-ministry/1740/read/general/en'});
   });
-  it('does not substitute unentitled Traditional Chinese or unrelated languages',()=>{
+  it.each(['zh-Hant', 'ja', 'ko'] as const)('uses authorized Hans when %s has no authorized matching version', uiLocale=>{
+    const result=resolveEdition({uiLocale,series:'general',authorizedEditions:[{series:'general',locale:'zh-Hans'},{series:'children',locale:'zh-Hant'}],publishedEditions:[version('zh-Hant'),version('en'),version('zh-Hans'),version('zh-Hant',{series:'children'})]});
+    expect(result?.contentLocale).toBe('zh-Hans');
+    expect(result?.downloadVersion?.locale).toBe('zh-Hans');
+    expect(result?.readUrl).toBe(`/${uiLocale}/literature-ministry/1740/read/general/zh-Hans`);
+  });
+  it('falls back to another authorized language when Traditional Chinese is unavailable',()=>{
+    expect(resolveEdition({uiLocale:'ja',series:'general',authorizedEditions,publishedEditions:[version('en')]})).toMatchObject({contentLocale:'en'});
+  });
+  it('does not substitute unentitled, unpublished or other-series versions',()=>{
     expect(resolveEdition({uiLocale:'en',series:'general',authorizedEditions:[{series:'general',locale:'en'}],publishedEditions:[version('zh-Hant')]})).toBeNull();
-    expect(resolveEdition({uiLocale:'ja',series:'general',authorizedEditions,publishedEditions:[version('en')]})).toBeNull();
+    expect(resolveEdition({uiLocale:'zh-Hant',series:'general',authorizedEditions:[{series:'children',locale:'zh-Hant'}],publishedEditions:[version('zh-Hant')]})).toBeNull();
+    expect(resolveEdition({uiLocale:'zh-Hant',series:'general',authorizedEditions,publishedEditions:[version('zh-Hans',{pdfPublished:false,onlineRevision:undefined})]})).toBeNull();
   });
 });
