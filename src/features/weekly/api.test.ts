@@ -6,12 +6,14 @@ const bulletin = {
   issueId: '00000000-0000-4000-8000-000000000001', issueDate: '2026-09-13', issueNumber: 1737,
   series: 'general' as const, locale: 'zh-Hant' as const, date: '2026-09-13', title: '週報', subtitle: '', downloadName: '1737.pdf', publishedAt: '2026-09-13T00:00:00Z', version: 1
 };
+const discovery = {issueId:bulletin.issueId,issueDate:bulletin.issueDate,issueNumber:bulletin.issueNumber,series:bulletin.series,contentLocale:bulletin.locale,canonicalMetadata:{title:bulletin.title,subtitle:bulletin.subtitle,date:bulletin.date,issueNumber:bulletin.issueNumber},pdfPublished:true,onlineRevision:2,documentId:'document-1'};
+const pageEnvelope = {data:{items:[discovery],total:1,offset:0,limit:1},meta:{},error:null};
 
 describe('member weekly API', () => {
   it('uses protected routes and retries once after a 401', async () => {
     const fetcher = vi.fn<typeof fetch>()
       .mockResolvedValueOnce(Response.json({}, {status: 401}))
-      .mockResolvedValueOnce(Response.json({data: bulletin, meta: {}, error: null}));
+      .mockResolvedValueOnce(Response.json(pageEnvelope));
     const refresh = vi.fn().mockResolvedValue('new-token');
     const api = createWeeklyBulletinApi({getAccessToken: vi.fn().mockResolvedValue('old-token'), refreshAfterUnauthorized: refresh}, fetcher);
 
@@ -19,7 +21,7 @@ describe('member weekly API', () => {
     expect(refresh).toHaveBeenCalledWith('old-token');
     expect(fetcher).toHaveBeenCalledTimes(2);
     const request = fetcher.mock.calls[1]?.[0] as Request;
-    expect(request.url).toContain('/api/member/bulletins/latest?locale=zh-Hant&series=general');
+    expect(request.url).toContain('/api/member/bulletins/online?series=general&offset=0&limit=1&locales=zh-Hant');
     expect(request.headers.get('authorization')).toBe('Bearer new-token');
   });
 
@@ -30,22 +32,39 @@ describe('member weekly API', () => {
 
     await expect(api.fetchLatest('general', ['zh-Hant'])).rejects.toMatchObject({status: 403});
     expect(refresh).not.toHaveBeenCalled();
-    expect((fetcher.mock.calls[0]?.[0] as Request).url).toContain('/api/member/bulletins/latest');
+    expect((fetcher.mock.calls[0]?.[0] as Request).url).toContain('/api/member/bulletins/online');
   });
 
-  it('omits a revoked edition without exposing its metadata', async () => {
-    const fetcher = vi.fn<typeof fetch>()
-      .mockResolvedValueOnce(Response.json({data: bulletin, meta: {}, error: null}))
-      .mockResolvedValueOnce(Response.json({}, {status: 404}));
+  it('never treats an authorization denial as language absence or retries through the PDF API', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(Response.json({}, {status:404}));
     const api = createWeeklyBulletinApi({getAccessToken: vi.fn().mockResolvedValue('token'), refreshAfterUnauthorized: vi.fn()}, fetcher);
 
-    await expect(api.fetchLatest('general', ['zh-Hant', 'en'])).resolves.toMatchObject({versions: [expect.objectContaining({locale: 'zh-Hant'})]});
+    await expect(api.fetchLatest('general', ['zh-Hant', 'en'])).rejects.toMatchObject({status:404});
+    expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
-  it('treats a protected archive 404 as an empty result', async () => {
+  it('keeps a protected archive 404 unavailable rather than silently empty', async () => {
     const api = createWeeklyBulletinApi({getAccessToken: vi.fn().mockResolvedValue('token'), refreshAfterUnauthorized: vi.fn()}, vi.fn().mockResolvedValue(Response.json({}, {status: 404})));
 
-    await expect(api.fetchArchive('general', ['zh-Hant'])).resolves.toMatchObject({items: [], totalItems: 0});
+    await expect(api.fetchArchive('general', ['zh-Hant'])).rejects.toMatchObject({status:404});
+  });
+
+  it('uses authoritative union pagination and keeps Online-only separate from Download',async()=>{
+    const fetcher=vi.fn<typeof fetch>().mockResolvedValue(Response.json({data:{items:[{...discovery,pdfPublished:false}],total:25,offset:12,limit:12},meta:{},error:null}));
+    const api=createWeeklyBulletinApi({getAccessToken:vi.fn().mockResolvedValue('token'),refreshAfterUnauthorized:vi.fn()},fetcher);
+    const result=await api.fetchArchive('general',['zh-Hant','en'],{page:2,pageSize:12});
+    expect(result).toMatchObject({page:2,totalItems:25,totalPages:3,items:[{versions:[{pdfPublished:false,onlineRevision:2}]}]});
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    const query=new URL((fetcher.mock.calls[0]![0] as Request).url).searchParams;
+    expect(query.get('locales')).toBe('zh-Hant,en');
+    expect(query.get('offset')).toBe('12');
+  });
+
+  it('only falls back to the existing protected PDF latest on a transient failure',async()=>{
+    const fetcher=vi.fn<typeof fetch>().mockResolvedValueOnce(Response.json({}, {status:503})).mockResolvedValueOnce(Response.json({data:bulletin,meta:{},error:null}));
+    const api=createWeeklyBulletinApi({getAccessToken:vi.fn().mockResolvedValue('token'),refreshAfterUnauthorized:vi.fn()},fetcher);
+    expect(await api.fetchLatest('general',['zh-Hant'])).toMatchObject({pdfFallback:true,versions:[{pdfPublished:true}]});
+    expect((fetcher.mock.calls[1]![0] as Request).url).toContain('/api/member/bulletins/latest');
   });
 
   it('creates, reads, and downloads a prepared bulletin through only the protected job routes', async () => {

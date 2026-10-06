@@ -65,7 +65,7 @@ export default async function LiteratureMinistryPage({params}: LiteratureMinistr
   return (
     <>
       <SiteHeaderServer locale={locale} pathname={`/${locale}/literature-ministry`} />
-      <BulletinAccessGate>
+      <BulletinAccessGate messages={messages.weeklyReader}>
       <main>
         <AboutHero imageUrl={layout.bannerImageUrl} locale={locale} title={messages.literatureMinistry.heroTitle} subtitle={messages.literatureMinistry.heroSubtitle} />
         <div className="bg-[image:var(--hhc-page-gradient)] py-10 pb-14">

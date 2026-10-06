@@ -9,6 +9,7 @@ import {AccountControlProvider} from '@/components/layout/AccountControl';
 import {InitialLoadingBoundary} from '@/components/layout/InitialLoadingBoundary';
 import {StatementProvider} from '@/components/statements/StatementProvider';
 import {TranslationNotice} from '@/components/layout/TranslationNotice';
+import {ReaderServiceWorker} from '@/components/weekly-reader/ReaderServiceWorker';
 
 type LocaleLayoutProps = {
   children: React.ReactNode;
@@ -36,6 +37,7 @@ export default async function LocaleLayout({children, params}: LocaleLayoutProps
   const messages = await getMessages(rawLocale);
   return (
     <NextIntlClientProvider locale={rawLocale} messages={messages}>
+      <ReaderServiceWorker/>
       <AccountControlProvider labels={messages.site.account}>
         <LegalRequiredNavigation />
         <InitialLoadingBoundary label={messages.site.loading}>

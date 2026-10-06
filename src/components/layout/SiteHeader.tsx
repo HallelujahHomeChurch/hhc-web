@@ -1,6 +1,7 @@
 'use client';
 
-import {useEffect, useRef, useState, useSyncExternalStore, type MouseEvent} from 'react';
+import {useRef, useState, useSyncExternalStore, type MouseEvent} from 'react';
+import {useScrollChrome} from './useScrollChrome';
 import Link from 'next/link';
 import Image from 'next/image';
 import {BookOpenText, House, Newspaper, PlaySquare, UsersRound} from 'lucide-react';
@@ -53,7 +54,8 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
     manageAccount: t('account.manageAccount'),
     signIn: t('account.signIn'),
     signOut: t('account.signOut'),
-    signOutError: t('account.signOutError')
+    signOutError: t('account.signOutError'),
+    unsyncedWarning: t('account.unsyncedWarning')
   };
   const isActive = (href: string) => pathname === href || (href !== homeHref && pathname.startsWith(`${href}/`));
   const mobileActiveIndex = mobileNavItems.findIndex(({href}) => isActive(href));
@@ -61,13 +63,12 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
   const mobileIndicatorIndex = mobileSelection.pathname === pathname ? mobileNavItems.findIndex(item => item.href === mobileSelection.href) : mobileActiveIndex;
   const delayedMobileHref = useRef<string | null>(null);
   const mobileNavigationFrame = useRef(0);
-  const [mobileChrome, setMobileChrome] = useState({pathname, visible: true});
+  const {visible: mobileChromeVisible} = useScrollChrome({resetKey: pathname});
   const iphoneStandalone = useSyncExternalStore(
     subscribeToStandaloneMode,
     getIPhoneStandaloneSnapshot,
     getServerStandaloneSnapshot
   );
-  const mobileChromeVisible = mobileChrome.pathname === pathname ? mobileChrome.visible : true;
   const navigateMobile = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.currentTarget.target === '_blank') return;
     if (delayedMobileHref.current === href) {
@@ -87,39 +88,7 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
     });
   };
 
-  useEffect(() => {
-    let previousY = window.scrollY;
-    let direction = 0;
-    let distance = 0;
-    let frame = 0;
-    const onScroll = () => {
-      if (frame) return;
-      frame = window.requestAnimationFrame(() => {
-        const currentY = window.scrollY;
-        const delta = currentY - previousY;
-        const nextDirection = Math.sign(delta);
-        if (nextDirection && nextDirection !== direction) {
-          direction = nextDirection;
-          distance = 0;
-        }
-        distance += Math.abs(delta);
-        if (currentY <= 16) {
-          setMobileChrome({pathname, visible: true});
-          distance = 0;
-        } else if (distance >= 16) {
-          setMobileChrome({pathname, visible: direction < 0});
-          distance = 0;
-        }
-        previousY = currentY;
-        frame = 0;
-      });
-    };
-    window.addEventListener('scroll', onScroll, {passive: true});
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      if (frame) window.cancelAnimationFrame(frame);
-    };
-  }, [pathname]);
+
 
   return (
     <>

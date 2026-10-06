@@ -2,6 +2,7 @@ import createNextIntlPlugin from 'next-intl/plugin';
 import type {NextConfig} from 'next';
 import {accountProxyRewrites} from './src/lib/account-proxy';
 import {getContentSecurityPolicy} from './src/lib/csp';
+import weeklyTemplate from './public/assets/weekly/v1/manifest.json';
 
 const reportOnlyCsp = getContentSecurityPolicy({
   development: process.env.NODE_ENV !== 'production',
@@ -24,7 +25,12 @@ const nextConfig: NextConfig = {
       {protocol: 'https', hostname: 'i.ytimg.com', pathname: '/vi/**'}
     ]
   },
-  headers: async () => [{source: '/:locale/statements/:slug', headers: [{key: 'X-Robots-Tag', value: 'noindex, follow'}]}, {
+  headers: async () => [
+    {source: '/:locale/literature-ministry/offline/reader-shell', headers: [{key: 'X-HHC-Reader-Shell', value: 'public'}, {key: 'X-Robots-Tag', value: 'noindex, nofollow'}]},
+    ...weeklyTemplate.assets.map(asset => ({source: asset.url, headers: [{key: 'Cache-Control', value: 'public, max-age=31536000, immutable'}]})),
+    {source: '/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2', headers: [{key: 'Cache-Control', value: 'public, max-age=31536000, immutable'}]},
+    {source: '/assets/weekly/v1/manifest.json', headers: [{key: 'Cache-Control', value: 'public, max-age=0, must-revalidate'}]},
+    {source: '/:locale/statements/:slug', headers: [{key: 'X-Robots-Tag', value: 'noindex, follow'}]}, {
     source: '/(.*)',
     headers: [{key: 'Content-Security-Policy', value: reportOnlyCsp}]
   }],

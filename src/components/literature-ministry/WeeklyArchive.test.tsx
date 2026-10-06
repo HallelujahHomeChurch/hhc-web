@@ -1,5 +1,5 @@
-import {render, screen, waitFor} from '@testing-library/react';
-import {afterEach, describe, expect, it, vi} from 'vitest';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {WeeklyArchive} from './WeeklyArchive';
 
 const captureHandledError = vi.hoisted(() => vi.fn());
@@ -19,36 +19,50 @@ const messages = {
   general: 'General bulletin', children: "Children's bulletin",
   allIssuesTitle: 'History', paginationNote: 'Newest first', paginationLabel: 'Pages', previousPage: 'Previous',
   nextPage: 'Next', pageLabel: 'Page', loading: 'Loading', loadError: 'Unavailable', retry: 'Retry', empty: 'No bulletins',
-  downloading: 'Preparing download', downloadReady: 'Ready', downloadError: 'Download unavailable'
+  downloading: 'Preparing download', downloadReady: 'Ready', downloadError: 'Download unavailable', readOnline:'Read online'
 };
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   vi.clearAllMocks();
   search.value = '';
   bulletinAccess.editions = [{series: 'general', locale: 'zh-Hant'}];
 });
+beforeEach(() => vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'));
 
 describe('WeeklyArchive', () => {
+  it('keeps the default language visible and discloses other authorized languages', async () => {
+    bulletinAccess.editions = [{series: 'general', locale: 'zh-Hant'}, {series: 'general', locale: 'en'}];
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      const payload = await discoveryResponse(bulletin).json();
+      payload.data.items.push({...payload.data.items[0], contentLocale: 'en', canonicalMetadata: {...payload.data.items[0].canonicalMetadata, title: 'English bulletin'}, onlineRevision: 1});
+      return Response.json(payload);
+    }));
+    render(<WeeklyArchive locale="en" messages={messages}/>);
+    expect(await screen.findAllByRole('link', {name: 'Read online: English'})).toHaveLength(2);
+    for (const button of screen.getAllByRole('button', {name: 'Download PDF: 繁中'})) expect(button).not.toBeVisible();
+    const disclosures = screen.getAllByText('Other languages', {selector: 'summary'});
+    fireEvent.click(disclosures[0]);
+    expect(screen.getAllByRole('button', {name: 'Download PDF: 繁中'})[0]).toBeVisible();
+  });
   it('loads only entitled editions through protected member endpoints', async () => {
-    const fetcher = vi.fn<typeof fetch>().mockImplementation(async (input) => (input as Request).url.includes('/latest')
-      ? Response.json({data: bulletin, meta: {}, error: null})
-      : Response.json({data: [bulletin], meta: {page: 1, pageSize: 12, total: 1}, error: null}));
+    const fetcher = vi.fn<typeof fetch>().mockImplementation(async () => discoveryResponse(bulletin));
     vi.stubGlobal('fetch', fetcher);
 
     render(<WeeklyArchive locale="en" messages={messages} />);
 
-    expect((await screen.findAllByRole('button', {name: '繁中'})).length).toBeGreaterThan(0);
+    expect((await screen.findAllByRole('button', {name: 'Download PDF: 繁中'})).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', {name: 'English'})).not.toBeInTheDocument();
     expect(screen.queryByRole('link', {name: '繁中'})).not.toBeInTheDocument();
-    expect(fetcher.mock.calls.map(([input]) => (input as Request).url)).toContainEqual(expect.stringContaining('/api/member/bulletins?locale=zh-Hant&series=general&page=1&pageSize=12'));
+    expect(fetcher.mock.calls.map(([input]) => (input as Request).url)).toContainEqual(expect.stringContaining('/api/member/bulletins/online?series=general&offset=0&limit=12&locales=zh-Hant'));
   });
 
   it('keeps an unavailable protected archive empty without rendering download controls', async () => {
     vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => Response.json({}, {status: 404})));
     render(<WeeklyArchive locale="en" messages={messages} />);
 
-    expect(await screen.findByText('No bulletins')).toBeInTheDocument();
+    expect((await screen.findAllByText('Unavailable')).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', {name: '繁中'})).not.toBeInTheDocument();
   });
 
@@ -64,24 +78,29 @@ describe('WeeklyArchive', () => {
     bulletinAccess.editions = [{series: 'general', locale: 'zh-Hant'}, {series: 'children', locale: 'zh-Hant'}];
     search.value = 'series=children&page=2';
     const children = {...bulletin, issueId: '00000000-0000-4000-8000-000000000002', issueNumber: 1300, series: 'children', title: '兒童週報'};
-    const fetcher = vi.fn<typeof fetch>().mockImplementation(async (input) => (input as Request).url.includes('/latest')
-      ? Response.json({data: children, meta: {}, error: null})
-      : Response.json({data: [children], meta: {page: 2, pageSize: 12, total: 24}, error: null}));
+    const fetcher = vi.fn<typeof fetch>().mockImplementation(async () => discoveryResponse(children,24));
     vi.stubGlobal('fetch', fetcher);
 
     const view = render(<WeeklyArchive locale="en" messages={messages} />);
     expect((await screen.findAllByText('Issue 1300')).length).toBeGreaterThan(0);
     expect(fetcher.mock.calls.map(([input]) => (input as Request).url)).toEqual(expect.arrayContaining([
-      expect.stringContaining('/latest?locale=zh-Hant&series=children'),
-      expect.stringContaining('series=children&page=2&pageSize=12')
+      expect.stringContaining('series=children&offset=0&limit=1&locales=zh-Hant'),
+      expect.stringContaining('series=children&offset=12&limit=12&locales=zh-Hant')
     ]));
     expect(screen.getByRole('link', {name: 'General bulletin'})).toHaveAttribute('href', '/en/literature-ministry?series=general');
 
     search.value = 'series=children&page=3';
     view.rerender(<WeeklyArchive locale="en" messages={messages} />);
-    await waitFor(() => expect(fetcher.mock.calls.some(([input]) => (input as Request).url.includes('series=children&page=3&pageSize=12'))).toBe(true));
-    expect(fetcher.mock.calls.filter(([input]) => (input as Request).url.includes('/latest'))).toHaveLength(1);
+    await waitFor(() => expect(fetcher.mock.calls.some(([input]) => (input as Request).url.includes('series=children&offset=24&limit=12&locales=zh-Hant'))).toBe(true));
+    expect(fetcher.mock.calls.filter(([input]) => new URL((input as Request).url).searchParams.get('limit')==='1')).toHaveLength(1);
     expect(screen.getAllByText('Issue 1300').length).toBeGreaterThan(0);
+  });
+
+  it('keeps Online-only readable without a Download button',async()=>{
+    vi.stubGlobal('fetch',vi.fn().mockImplementation(async()=>discoveryResponse(bulletin,1,false)));
+    render(<WeeklyArchive locale="en" messages={messages}/>);
+    expect((await screen.findAllByRole('link',{name:'Read online: 繁中'})).length).toBe(2);
+    expect(screen.queryByRole('button',{name:'繁中'})).not.toBeInTheDocument();
   });
 });
 
@@ -89,3 +108,7 @@ const bulletin = {
   issueId: '00000000-0000-4000-8000-000000000001', issueDate: '2026-09-13', issueNumber: 1737,
   series: 'general', locale: 'zh-Hant', title: '週報', subtitle: '', downloadName: '1737.pdf', publishedAt: '2026-09-13T00:00:00Z', version: 1
 };
+
+function discoveryResponse(item: typeof bulletin,total=1,pdfPublished=true) {
+  return Response.json({data:{items:[{issueId:item.issueId,issueDate:item.issueDate,issueNumber:item.issueNumber,series:item.series,contentLocale:item.locale,canonicalMetadata:{title:item.title,subtitle:item.subtitle,date:item.issueDate,issueNumber:item.issueNumber},pdfPublished,onlineRevision:pdfPublished?null:2}],total,offset:0,limit:12},meta:{},error:null});
+}

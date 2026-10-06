@@ -19,6 +19,7 @@ import {captureHandledError} from '@/lib/observability';
 import {getSharedAccountSessionClient} from '@/lib/browser-bootstrap';
 import {accountAuthorizeBaseUrlForBrowser, accountSessionBaseUrlForBrowser, accountSiteUrlForBrowser} from '@/lib/account-origin';
 import {siteConfig} from '@/lib/site';
+import {isWeeklyReaderEnabled} from '@/features/weekly-reader/enabled';
 
 export const accountStateEventName = 'hhc:account-state';
 export const webPassiveSsoAttemptKey = 'hhc_web_passive_sso_attempted';
@@ -33,6 +34,7 @@ type AccountControlLabels = {
   signIn: string;
   signOut: string;
   signOutError: string;
+  unsyncedWarning: string;
 };
 
 type BulletinAccess =
@@ -75,6 +77,10 @@ export function useAccountIdentity() {
   return account?.auth.status === 'authenticated' ? account.auth.session.user.id : null;
 }
 
+export function useAccountSignIn() {
+  return useContext(AccountControlContext)?.beginAuthorization;
+}
+
 export function useAccountAuth(): AccountAuthState {
   return useContext(AccountControlContext)?.auth ?? {status: 'checking'};
 }
@@ -103,8 +109,18 @@ export function useBulletinAuthorization() {
   }), [account?.getAccessToken, account?.refreshAfterUnauthorized]);
 }
 
-export function BulletinAccessGate({children}: {children: ReactNode}) {
-  return useCanReadBulletin() ? children : null;
+export function BulletinAccessGate({children, messages}: {children: ReactNode; messages?: {title: string; loading: string; signInRequired: string; signIn: string; unavailable: string}}) {
+  const access = useBulletinAccess();
+  const auth = useAccountAuth();
+  const signIn = useAccountSignIn();
+  if (access.status === 'available' && access.editions.length) return children;
+  if (!messages) return null;
+  const checking = auth.status === 'checking' || access.status === 'loading';
+  return <main className="shell py-16"><section className="rounded-2xl border border-panel-border bg-paper p-8 text-center" role="status">
+    <h1 className="text-2xl font-semibold">{messages.title}</h1>
+    <p className="mt-4 text-muted">{checking ? messages.loading : auth.status === 'anonymous' ? messages.signInRequired : messages.unavailable}</p>
+    {!checking && auth.status === 'anonymous' ? <button type="button" className="mt-5 min-h-11 rounded-full bg-primary-solid px-5 font-semibold text-primary-foreground" onClick={() => void signIn?.()}>{messages.signIn}</button> : null}
+  </section></main>;
 }
 
 export function AccountControl(props: AccountControlProps) {
@@ -136,6 +152,20 @@ export function AccountControlProvider({
   const [bulletinProjection, setBulletinProjection] = useState<{subject: string; access: BulletinAccess} | null>(null);
   const [videoProjection, setVideoProjection] = useState<{subject: string; access: VideoAccess} | null>(null);
   const [logoutError, setLogoutError] = useState('');
+  const readerAccountId = auth.status === 'authenticated' ? auth.session.user.id : null;
+  useEffect(() => {
+    if (!isWeeklyReaderEnabled()) return;
+    let disposed = false;
+    let stop: (() => void) | undefined;
+    void import('@/features/weekly-reader/offline-session').then(async offline => {
+      if (disposed) return;
+      stop = offline.watchOfflineAccount(accountId => {
+        if (readerAccountId && accountId !== readerAccountId) authRuntime.clear();
+      }, true);
+      if (readerAccountId) await offline.prepareOfflineAccount(readerAccountId);
+    }).catch(() => { /* Online access remains available when local storage is unavailable. */ });
+    return () => {disposed = true; stop?.();};
+  }, [readerAccountId, authRuntime]);
   const bulletinAccess = useMemo<BulletinAccess>(() => {
     if (auth.status !== 'authenticated') return noBulletinAccess;
     if (auth.session.permissionAvailability.status === 'unavailable') return {status: 'unavailable', editions: []};
@@ -212,6 +242,12 @@ export function AccountControlProvider({
   const signOut = useCallback(async () => {
     setLogoutError('');
     try {
+      if (isWeeklyReaderEnabled() && readerAccountId) {
+        const {hasPendingReaderWrites} = await import('@/features/weekly-reader/offline-store');
+        if (await hasPendingReaderWrites(readerAccountId) && !window.confirm(labels.unsyncedWarning)) return false;
+        const offline = await import('@/features/weekly-reader/offline-session');
+        await offline.forgetOfflineAccount(readerAccountId);
+      }
       await authRuntime.signOut();
       notifyAccountStateChange('sign-out');
       return true;
@@ -220,7 +256,7 @@ export function AccountControlProvider({
       setLogoutError(labels.signOutError);
       return false;
     }
-  }, [authRuntime, labels.signOutError]);
+  }, [authRuntime, labels.signOutError, labels.unsyncedWarning, readerAccountId]);
 
   return (
     <AccountControlContext.Provider value={{

@@ -5,16 +5,43 @@ import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
 import {AccountControl, AccountControlProvider, AccountControlView, BulletinAccessGate, useBulletinAccess, webOAuthConfigForBrowser, webPassiveSsoAttemptKey} from './AccountControl';
 
 const captureHandledError = vi.hoisted(() => vi.fn());
+const offline = vi.hoisted(() => ({prepareOfflineAccount: vi.fn().mockResolvedValue(1), forgetOfflineAccount: vi.fn().mockResolvedValue(undefined), watchOfflineAccount: vi.fn(() => () => {})}));
+const pending = vi.hoisted(() => vi.fn().mockResolvedValue(false));
+vi.mock('@/features/weekly-reader/offline-store', () => ({hasPendingReaderWrites: pending}));
+vi.mock('@/features/weekly-reader/offline-session', () => offline);
 vi.mock('@/lib/observability', () => ({captureHandledError}));
 
 const labels = {
   menu: 'Account menu', projectionSystem: 'Projection system', projectionWindowLabel: 'Open in a new window', projectionPopupBlocked: 'Popup blocked.', adminManagement: 'Admin console',
-  manageAccount: 'Manage account', signIn: 'Sign in', signOut: 'Sign out', signOutError: 'Unable to sign out. Try again.'
+  manageAccount: 'Manage account', signIn: 'Sign in', signOut: 'Sign out', signOutError: 'Unable to sign out. Try again.', unsyncedWarning: 'Unsynced changes will be removed. Continue?'
 };
 
-afterEach(() => { sessionStorage.clear(); vi.restoreAllMocks(); vi.unstubAllGlobals(); captureHandledError.mockClear(); });
+afterEach(() => { sessionStorage.clear(); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); captureHandledError.mockClear(); });
 
 describe('AccountControl', () => {
+  it('keeps unsynced notes and the session when the user cancels logout', async () => {
+    vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); pending.mockResolvedValueOnce(true);
+    const logoutAll = vi.fn(); const before = offline.forgetOfflineAccount.mock.calls.length;
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({memberships: [], orgRoles: [], qualifications: [], entitlements: [], version: 'a'.repeat(64)})));
+    render(<AccountControl client={sessionClient([], {status: 'available'}, logoutAll)} labels={labels}/>);
+    await userEvent.click(await screen.findByRole('button', {name: 'Account menu'}));
+    await userEvent.click(screen.getByRole('menuitem', {name: 'Sign out'}));
+    await waitFor(() => expect(window.confirm).toHaveBeenCalledWith(labels.unsyncedWarning));
+    expect(logoutAll).not.toHaveBeenCalled(); expect(offline.forgetOfflineAccount).toHaveBeenCalledTimes(before);
+    expect(screen.getByRole('button', {name: 'Account menu'})).toBeInTheDocument();
+  });
+  it('removes local reader data before completing explicit logout', async () => {
+    vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true');
+    const logoutAll = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({memberships: [], orgRoles: [], qualifications: [], entitlements: [], version: 'a'.repeat(64)})));
+    render(<AccountControl client={sessionClient([], {status: 'available'}, logoutAll)} labels={labels}/>);
+    await userEvent.click(await screen.findByRole('button', {name: 'Account menu'}));
+    await userEvent.click(screen.getByRole('menuitem', {name: 'Sign out'}));
+    await screen.findByRole('link', {name: 'Sign in'});
+    expect(offline.forgetOfflineAccount).toHaveBeenCalledWith('u1');
+    expect(offline.forgetOfflineAccount.mock.invocationCallOrder.at(-1)).toBeLessThan(logoutAll.mock.invocationCallOrder[0]);
+  });
   it.each(['iam:service-principals:read', 'cms:recordings:read'])('exposes Admin for the scoped staff permission %s', async (permission) => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({memberships: [], orgRoles: [], qualifications: [], entitlements: [], version: 'a'.repeat(64)})));
     render(<AccountControl client={sessionClient([permission])} labels={labels} />);
@@ -84,6 +111,15 @@ describe('AccountControl', () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
+  it('offers a generic sign-in state without revealing gated bulletin content', async () => {
+    const fetcher = vi.fn();
+    vi.stubGlobal('fetch', fetcher);
+    render(<AccountControlProvider client={anonymousClient()} labels={labels}><BulletinAccessGate messages={{title: 'Bulletins', loading: 'Checking access', signInRequired: 'Sign in to read', signIn: 'Sign in', unavailable: 'Unavailable'}}><span>Private issue title</span></BulletinAccessGate></AccountControlProvider>);
+    expect(await screen.findByRole('button', {name: 'Sign in'})).toBeVisible();
+    expect(screen.getByText('Sign in to read')).toBeVisible();
+    expect(screen.queryByText('Private issue title')).not.toBeInTheDocument();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
   it('projects General and Children bulletin entitlements independently', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({
       memberships: [], orgRoles: [], qualifications: [],

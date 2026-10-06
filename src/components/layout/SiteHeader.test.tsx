@@ -39,7 +39,8 @@ const accountLabels = {
   manageAccount: '管理帳號',
   signIn: '登入',
   signOut: '登出',
-  signOutError: '登出失敗'
+  signOutError: '登出失敗',
+  unsyncedWarning: '尚有未同步的變更，是否繼續？'
 };
 
 const layout: SiteLayout = {

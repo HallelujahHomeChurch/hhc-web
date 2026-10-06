@@ -1,6 +1,6 @@
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {afterEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {WeeklyCard} from './WeeklyCard';
 
 const captureHandledError = vi.hoisted(() => vi.fn());
@@ -13,17 +13,19 @@ vi.mock('@/components/layout/AccountControl', () => ({
 }));
 vi.mock('@/lib/observability', () => ({captureHandledError}));
 
-const messages = {general: 'General', children: "Children's", loading: 'Loading', downloading: 'Preparing download', downloadReady: 'Ready', downloadError: 'Download unavailable', error: 'Unavailable', retry: 'Retry'};
+const messages = {general: 'General', children: "Children's", loading: 'Loading', downloading: 'Preparing download', downloadReady: 'Ready', downloadError: 'Download unavailable', error: 'Unavailable', retry: 'Retry', readOnline:'Read online', empty:'No bulletins'};
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   vi.clearAllMocks();
   access.editions = [{series: 'general', locale: 'zh-Hant'}];
 });
+beforeEach(() => vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'));
 
 describe('WeeklyCard', () => {
   it('uses the protected member endpoint and renders only entitled editions', async () => {
-    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(Response.json({data: bulletin, meta: {}, error: null}));
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(discoveryResponse([bulletin]));
     vi.stubGlobal('fetch', fetcher);
 
     render(<WeeklyCard locale="en" ctaLabel="Download weekly" messages={messages} />);
@@ -31,15 +33,15 @@ describe('WeeklyCard', () => {
     expect(await screen.findByRole('button', {name: 'Download weekly: 繁中'})).toBeInTheDocument();
     expect(screen.queryByRole('button', {name: /English/})).not.toBeInTheDocument();
     const request = fetcher.mock.calls[0]?.[0] as Request;
-    expect(request.url).toContain('/api/member/bulletins/latest?locale=zh-Hant&series=general');
+    expect(request.url).toContain('/api/member/bulletins/online?series=general&offset=0&limit=1&locales=zh-Hant');
     expect(request.headers.get('authorization')).toBe('Bearer token');
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
   });
 
   it('allows retry after a protected request failure', async () => {
     vi.stubGlobal('fetch', vi.fn()
-      .mockResolvedValueOnce(Response.json({}, {status: 503}))
-      .mockResolvedValueOnce(Response.json({data: bulletin, meta: {}, error: null})));
+      .mockResolvedValueOnce(Response.json({}, {status: 403}))
+      .mockResolvedValueOnce(discoveryResponse([bulletin])));
     render(<WeeklyCard locale="en" ctaLabel="Download" messages={messages} />);
 
     expect(await screen.findByText('Unavailable')).toBeInTheDocument();
@@ -63,7 +65,7 @@ describe('WeeklyCard', () => {
     access.editions = [{series: 'general', locale: 'zh-Hant'}, {series: 'children', locale: 'zh-Hant'}];
     const children = {...bulletin, issueId: '00000000-0000-4000-8000-000000000002', issueNumber: 1300, series: 'children', title: '兒童週報'};
     const general = {...bulletin, issueNumber: 1301};
-    vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockImplementation(async (input) => Response.json({data: (input as Request).url.includes('series=children') ? children : general, meta: {}, error: null})));
+    vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockImplementation(async (input) => discoveryResponse([(input as Request).url.includes('series=children') ? children : general])));
 
     render(<WeeklyCard locale="en" ctaLabel="Download" messages={messages} />);
     expect(await screen.findByText('Issue 1301')).toBeInTheDocument();
@@ -76,9 +78,24 @@ describe('WeeklyCard', () => {
     expect(screen.getByRole('tab', {name: "Children's"})).toHaveFocus();
     expect(document.querySelectorAll('[data-weekly-card]')).toHaveLength(1);
   });
+
+  it('shows one matched-language Download and Online action instead of all three editions',async()=>{
+    access.editions=[{series:'general',locale:'zh-Hant'},{series:'general',locale:'zh-Hans'},{series:'general',locale:'en'}];
+    vi.stubGlobal('fetch',vi.fn().mockResolvedValue(discoveryResponse([bulletin,{...bulletin,locale:'zh-Hans'},{...bulletin,locale:'en'}],true)));
+    render(<WeeklyCard locale="en" ctaLabel="Download" messages={messages}/>);
+    expect(await screen.findByRole('link',{name:'Read online'})).toHaveAttribute('href','/en/literature-ministry/1737/read/general/en');
+    expect(screen.getAllByRole('button',{name:/Download:/})).toHaveLength(1);
+    expect(screen.getByRole('button',{name:'Download: English'})).toBeInTheDocument();
+    expect(screen.getByText('English')).toBeVisible();
+    expect(screen.getByRole('link', {name: 'Read online'}).compareDocumentPosition(screen.getByRole('button', {name: 'Download: English'})) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 });
 
 const bulletin = {
   issueId: '00000000-0000-4000-8000-000000000001', issueDate: '2026-09-13', issueNumber: 1737,
   series: 'general', locale: 'zh-Hant', title: '週報', subtitle: '', downloadName: '1737.pdf', publishedAt: '2026-09-13T00:00:00Z', version: 1
 };
+
+function discoveryResponse(items: (typeof bulletin)[], online=false) {
+  return Response.json({data:{items:items.map(item=>({issueId:item.issueId,issueDate:item.issueDate,issueNumber:item.issueNumber,series:item.series,contentLocale:item.locale,canonicalMetadata:{title:item.title,subtitle:item.subtitle,date:item.issueDate,issueNumber:item.issueNumber},pdfPublished:true,onlineRevision:online?1:null})),total:1,offset:0,limit:1},meta:{},error:null});
+}

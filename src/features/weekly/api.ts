@@ -1,4 +1,4 @@
-import {createHhcWebClient, HhcWebApiError, type BulletinDownloadJob, type ProtectedBulletin} from '@hallelujahhomechurch/hhc-web-client';
+import {createHhcWebClient, HhcWebApiError, type BulletinDownloadJob, type ProtectedBulletin, type OnlineBulletinDiscovery} from '@hallelujahhomechurch/hhc-web-client';
 import {bulletinLocales, type BulletinLocale, type BulletinSeries} from '@hallelujahhomechurch/preferences';
 import type {WeeklyBulletin, WeeklyIssue, WeeklyIssuePage} from './types';
 
@@ -28,8 +28,16 @@ export function createWeeklyBulletinApi(authorization: BulletinAuthorization, fe
 
   return {
     async fetchLatest(series: BulletinSeries, locales: readonly BulletinLocale[], signal?: AbortSignal): Promise<WeeklyIssue | null> {
-      const versions = await Promise.all(locales.map((locale) => absentAsUndefined(() => client.getLatestProtectedBulletin(locale, series, signal))));
-      return groupBulletins(versions.filter(isPresent))[0] ?? null;
+      if (!locales.length) return null;
+      try {
+        const result = await client.listOnlineBulletinDiscovery({series, locales, offset: 0, limit: 1, signal});
+        return groupBulletins(result.items.map(fromDiscovery))[0] ?? null;
+      } catch (error) {
+        if (!isTransient(error) || signal?.aborted) throw error;
+        const versions = await Promise.all(locales.map(locale => client.getLatestProtectedBulletin(locale, series, signal)));
+        const issue = groupBulletins(versions.map(fromPDF).toSorted((a, b) => b.date.localeCompare(a.date)))[0];
+        return issue ? {...issue, pdfFallback: true} : null;
+      }
     },
 
     async fetchArchive(
@@ -39,11 +47,21 @@ export function createWeeklyBulletinApi(authorization: BulletinAuthorization, fe
       signal?: AbortSignal
     ): Promise<WeeklyIssuePage> {
       const normalizedPage = Math.max(1, Math.floor(page));
-      const normalizedPageSize = Math.max(1, Math.floor(pageSize));
-      const pages = await Promise.all(locales.map((locale) => absentAsUndefined(() => client.listProtectedBulletins({locale, series, page: normalizedPage, pageSize: normalizedPageSize, signal}))));
-      const availablePages = pages.filter(isPresent);
-      const items = groupBulletins(availablePages.flatMap((result) => result.data));
-      const totalItems = Math.max(0, ...availablePages.map((result) => result.meta.total));
+      const normalizedPageSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
+      if (!locales.length) return {items: [], page: normalizedPage, pageSize: normalizedPageSize, totalItems: 0, totalPages: 1};
+      let items: WeeklyIssue[];
+      let totalItems: number;
+      try {
+        const result = await client.listOnlineBulletinDiscovery({series, locales, offset: (normalizedPage - 1) * normalizedPageSize, limit: normalizedPageSize, signal});
+        items = groupBulletins(result.items.map(fromDiscovery));
+        totalItems = result.total;
+      } catch (error) {
+        // The legacy PDF API cannot page a multi-language union authoritatively.
+        if (!isTransient(error) || signal?.aborted || locales.length !== 1) throw error;
+        const result = await client.listProtectedBulletins({series, locale: locales[0], page: normalizedPage, pageSize: normalizedPageSize, signal});
+        items = groupBulletins(result.data.map(fromPDF)).map(issue => ({...issue, pdfFallback: true}));
+        totalItems = result.meta.total;
+      }
 
       return {
         items,
@@ -109,41 +127,37 @@ function withToken(request: Request, token: string): Request {
   return new Request(request, {headers});
 }
 
-async function absentAsUndefined<T>(request: () => Promise<T>): Promise<T | undefined> {
-  try {
-    return await request();
-  } catch (error) {
-    if (error instanceof HhcWebApiError && error.status === 404) return undefined;
-    throw error;
-  }
+function isTransient(error: unknown) {
+  return error instanceof HhcWebApiError ? [502, 503, 504].includes(error.status) : error instanceof TypeError;
 }
 
-function groupBulletins(bulletins: ProtectedBulletin[]): WeeklyIssue[] {
+function fromPDF(bulletin: ProtectedBulletin): WeeklyBulletin {
+  return {...bulletin, date: bulletin.issueDate, pdfPublished: true};
+}
+
+function fromDiscovery(bulletin: OnlineBulletinDiscovery['items'][number]): WeeklyBulletin {
+  return {
+    issueId: bulletin.issueId, series: bulletin.series, locale: bulletin.contentLocale,
+    issueNumber: bulletin.issueNumber ?? undefined, date: bulletin.issueDate,
+    title: bulletin.canonicalMetadata.title, subtitle: bulletin.canonicalMetadata.subtitle,
+    downloadName: `${bulletin.issueNumber ?? bulletin.issueDate}-${bulletin.contentLocale}.pdf`,
+    pdfPublished: bulletin.pdfPublished, onlineRevision: bulletin.onlineRevision ?? undefined,
+    documentId: bulletin.documentId
+  };
+}
+
+function groupBulletins(bulletins: WeeklyBulletin[]): WeeklyIssue[] {
   const issues = new Map<string, WeeklyIssue>();
   for (const bulletin of bulletins) {
     const issue = issues.get(bulletin.issueId) ?? {
       id: bulletin.issueId,
       issueNumber: bulletin.issueNumber,
-      date: bulletin.issueDate,
+      date: bulletin.date,
       versions: []
     };
-    issue.versions.push({
-      issueId: bulletin.issueId,
-      series: bulletin.series,
-      locale: bulletin.locale,
-      issueNumber: bulletin.issueNumber,
-      date: bulletin.issueDate,
-      title: bulletin.title,
-      subtitle: bulletin.subtitle,
-      downloadName: bulletin.downloadName
-    });
+    issue.versions.push(bulletin);
     issues.set(issue.id, issue);
   }
   return [...issues.values()]
-    .map((issue) => ({...issue, versions: issue.versions.toSorted((left, right) => bulletinLocales.indexOf(left.locale) - bulletinLocales.indexOf(right.locale))}))
-    .toSorted((left, right) => right.date.localeCompare(left.date));
-}
-
-function isPresent<T>(value: T | undefined): value is T {
-  return value !== undefined;
+    .map((issue) => ({...issue, versions: issue.versions.toSorted((left, right) => bulletinLocales.indexOf(left.locale) - bulletinLocales.indexOf(right.locale))}));
 }

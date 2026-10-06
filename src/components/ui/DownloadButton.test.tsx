@@ -13,6 +13,13 @@ const bulletin = {
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); captureHandledError.mockClear(); localStorage.clear(); });
 
 describe('DownloadButton', () => {
+  it('does not resume a download from a different series', () => {
+    localStorage.setItem(`weekly-download-job:anonymous:${bulletin.issueId}:${bulletin.locale}`, JSON.stringify({idempotencyKey: 'old', jobId: 'other-series'}));
+    localStorage.setItem(`weekly-download-job:anonymous:${bulletin.issueId}:children:${bulletin.locale}`, JSON.stringify({idempotencyKey: 'other', jobId: 'children-job'}));
+    const workflow = {createDownloadJob: vi.fn(), getDownloadJob: vi.fn(), downloadPreparedBulletin: vi.fn()};
+    render(<DownloadButton bulletin={bulletin} workflow={workflow} label="Download" />);
+    expect(workflow.getDownloadJob).not.toHaveBeenCalled();
+  });
   it('downloads only the protected response and never exposes a direct file URL', async () => {
     const download = vi.fn().mockResolvedValue(new Response('pdf', {headers: {'content-disposition': "attachment; filename*=UTF-8''1737-%E9%80%B1%E5%A0%B1.pdf"}}));
     const workflow = {
@@ -44,7 +51,7 @@ describe('DownloadButton', () => {
   });
 
   it('resumes a persisted job without creating a duplicate', async () => {
-    localStorage.setItem(`weekly-download-job:anonymous:${bulletin.issueId}:${bulletin.locale}`, JSON.stringify({idempotencyKey: 'attempt-1', jobId: 'job-1'}));
+    localStorage.setItem(`weekly-download-job:anonymous:${bulletin.issueId}:${bulletin.series}:${bulletin.locale}`, JSON.stringify({idempotencyKey: 'attempt-1', jobId: 'job-1'}));
     const download = vi.fn().mockResolvedValue(new Response('pdf'));
     const workflow = {
       createDownloadJob: vi.fn(),
@@ -59,11 +66,11 @@ describe('DownloadButton', () => {
 
     await waitFor(() => expect(download).toHaveBeenCalledWith(bulletin, 'job-1', expect.any(AbortSignal)));
     expect(workflow.createDownloadJob).not.toHaveBeenCalled();
-    expect(localStorage.getItem(`weekly-download-job:anonymous:${bulletin.issueId}:${bulletin.locale}`)).toBeNull();
+    expect(localStorage.getItem(`weekly-download-job:anonymous:${bulletin.issueId}:${bulletin.series}:${bulletin.locale}`)).toBeNull();
   });
 
   it('keeps the same progress copy when resuming a running job', async () => {
-    localStorage.setItem(`weekly-download-job:anonymous:${bulletin.issueId}:${bulletin.locale}`, JSON.stringify({idempotencyKey: 'attempt-1', jobId: 'job-1'}));
+    localStorage.setItem(`weekly-download-job:anonymous:${bulletin.issueId}:${bulletin.series}:${bulletin.locale}`, JSON.stringify({idempotencyKey: 'attempt-1', jobId: 'job-1'}));
     const workflow = {
       createDownloadJob: vi.fn(),
       getDownloadJob: vi.fn().mockResolvedValue({id: 'job-1', operationProgress: {status: 'running', stage: 'watermarking', percent: 65, updatedAt: '2026-09-21T00:00:00Z', retryAfterMs: 10_000}}),
