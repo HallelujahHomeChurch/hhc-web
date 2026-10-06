@@ -116,7 +116,7 @@ python3 -m fontTools.subset "$ko_source_font" \
   --notdef-outline \
   --recommended-glyphs
 
-python3 - "$output_font" "$ja_output_font" "$ko_output_font" "$ja_text_file" "$ko_text_file" <<'PY'
+python3 - "$output_font" "$ja_output_font" "$ko_output_font" "$ja_text_file" "$ko_text_file" "$text_file" "$sc_output_font" "$sc_text_file" <<'PY'
 from fontTools.ttLib import TTFont
 import pathlib
 import sys
@@ -159,6 +159,11 @@ for name_id, value in ko_replacement.items():
 ko_font.save(ko_path)
 
 verified = TTFont(path, recalcTimestamp=False)
+for font_path, text_path in ((path, pathlib.Path(sys.argv[6])), (pathlib.Path(sys.argv[7]), pathlib.Path(sys.argv[8]))):
+    cmap = TTFont(font_path, recalcTimestamp=False).getBestCmap()
+    missing = sorted({character for character in text_path.read_text(encoding='utf-8') if not character.isspace() and ord(character) not in cmap})
+    if missing:
+        raise SystemExit(f'Missing banner glyphs in {font_path}: {"".join(missing)}')
 visible_names = {record.toUnicode() for record in verified['name'].names if record.nameID in replacement}
 if any('chenyuluoyan' in value.lower() or '辰宇落雁' in value for value in visible_names):
     raise SystemExit('Reserved font name remains in the subset metadata')

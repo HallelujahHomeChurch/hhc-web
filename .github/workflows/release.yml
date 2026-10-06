@@ -43,6 +43,11 @@ jobs:
       - run: corepack pnpm install --frozen-lockfile
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install existing font subset inspection tools
+        run: |
+          python3 -m venv "$RUNNER_TEMP/banner-font-tools"
+          "$RUNNER_TEMP/banner-font-tools/bin/pip" install 'fonttools==4.60.2' 'Brotli==1.2.0'
+          echo "$RUNNER_TEMP/banner-font-tools/bin" >> "$GITHUB_PATH"
       - run: |
           corepack pnpm test:run
           corepack pnpm lint
