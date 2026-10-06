@@ -391,6 +391,11 @@
     "empty": "目前尚未发布周报。"
   },
   "memberVideos": {
+    "settings": "播放设置",
+    "togglePlayback": "播放或暂停（空格键）",
+    "privateCopy": "HHC 会员专属",
+    "buffering": "正在加载视频",
+    "uploadedDate": "上传日期：{date}",
     "quality": "画质",
     "auto": "自动",
     "pause": "暂停",
@@ -400,8 +405,9 @@
     "volume": "音量",
     "fullscreen": "全屏",
     "exitFullscreen": "退出全屏",
+    "fullscreenError": "无法退出全屏，请重试或使用设备的返回控制。",
     "playbackSpeed": "播放速度",
-    "heroTitle": "影音专区", "heroSubtitle": "最近 30 天的聚会录像", "selectedTitle": "本次选择的录像", "listTitle": "最近 30 天的录像", "count": "共 {count} 场", "play": "播放录像", "select": "选择观看", "selected": "已选取", "playing": "播放中", "featured": "置顶", "durationUnknown": "片长暂无资料", "expires": "可观看至", "loading": "正在载入录像", "preparing": "正在准备播放", "empty": "最近 30 天暂无可观看的录像", "loadError": "录像暂时无法载入", "playError": "暂时无法播放，请重试", "expired": "这段录像已无法观看", "retry": "重新载入", "previous": "上一页", "next": "下一页"
+    "heroTitle": "影音专区", "heroSubtitle": "近期聚会录像", "selectedTitle": "本次选择的录像", "listTitle": "最近录像", "count": "共 {count} 场", "play": "播放录像", "select": "选择观看", "selected": "已选取", "playing": "播放中", "featured": "置顶", "durationUnknown": "片长暂无资料", "expires": "可观看至", "loading": "正在载入录像", "preparing": "正在准备播放", "empty": "目前暂无可观看的录像", "loadError": "录像暂时无法载入", "playError": "暂时无法播放，请重试", "expired": "这段录像已无法观看", "retry": "重新载入", "previous": "上一页", "next": "下一页"
   },
   "privacyPolicy": {
     "heroTitle": "隐私权保护政策",

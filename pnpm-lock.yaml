@@ -14,20 +14,20 @@ importers:
   .:
     dependencies:
       '@hallelujahhomechurch/account-client':
-        specifier: file:../frontend-platform/artifacts/hallelujahhomechurch-account-client-1.0.32.tgz
-        version: file:../frontend-platform/artifacts/hallelujahhomechurch-account-client-1.0.32.tgz
+        specifier: 1.0.31
+        version: 1.0.31
       '@hallelujahhomechurch/hhc-web-client':
-        specifier: file:../frontend-platform/artifacts/hallelujahhomechurch-hhc-web-client-1.0.32.tgz
-        version: file:../frontend-platform/artifacts/hallelujahhomechurch-hhc-web-client-1.0.32.tgz
+        specifier: 1.0.34
+        version: 1.0.34
       '@hallelujahhomechurch/operations-client':
         specifier: 1.0.26
         version: 1.0.26
       '@hallelujahhomechurch/preferences':
-        specifier: file:../frontend-platform/artifacts/hallelujahhomechurch-preferences-1.0.32.tgz
-        version: file:../frontend-platform/artifacts/hallelujahhomechurch-preferences-1.0.32.tgz
+        specifier: 1.0.28
+        version: 1.0.28
       '@hallelujahhomechurch/ui':
-        specifier: file:../frontend-platform/artifacts/hallelujahhomechurch-ui-1.0.32.tgz
-        version: file:../frontend-platform/artifacts/hallelujahhomechurch-ui-1.0.32.tgz(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: 1.0.27
+        version: 1.0.27(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@sentry/nextjs':
         specifier: 10.69.0
         version: 10.69.0(@opentelemetry/core@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.11.0(@opentelemetry/api@1.9.1))(next@16.3.6(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@types/node@24.13.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(webpack@5.111.0)
@@ -83,9 +83,6 @@ importers:
       eslint-config-next:
         specifier: 16.3.6
         version: 16.3.6(@typescript-eslint/parser@8.68.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
-      fake-indexeddb:
-        specifier: 6.2.5
-        version: 6.2.5
       jsdom:
         specifier: 29.1.1
         version: 29.1.1
@@ -337,24 +334,20 @@ packages:
   '@hallelujahhomechurch/account-client@1.0.26':
     resolution: {integrity: sha512-Uh3GzK4ARgvlkO0XKrF2MWKNlvaxD8T2sYhIAt05Vbu5xMJE5Q08Wav3ivJ+ue+ECIsI/M5PBAUtau+jjscynA==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/account-client/1.0.26/9be1dc412ec7b74b860f6c491db7ac56effe6689}
 
-  '@hallelujahhomechurch/account-client@file:../frontend-platform/artifacts/hallelujahhomechurch-account-client-1.0.32.tgz':
-    resolution: {integrity: sha512-dRNz6mPdI2xU6nBVUhyGeYV3ldXXam157FUmn61ALgB0pogMUUyVhwZojMcMVO6/1POVyIfFtqM3MEQdCE9Khg==, tarball: file:../frontend-platform/artifacts/hallelujahhomechurch-account-client-1.0.32.tgz}
-    version: 1.0.32
+  '@hallelujahhomechurch/account-client@1.0.31':
+    resolution: {integrity: sha512-N6CydT9v0NduA/g4uPeih0ovJKWsS14F1y/9PkUg42XtJHHCLvLasAv/U0QtCqsU9wmoJY3ZMH3Bwjngqg8DQw==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/account-client/1.0.31/7a020e8e43d94621e0ce1bff2f8169a08375b96b}
 
-  '@hallelujahhomechurch/hhc-web-client@file:../frontend-platform/artifacts/hallelujahhomechurch-hhc-web-client-1.0.32.tgz':
-    resolution: {integrity: sha512-ueRsw6mWpjXJTedro7MXO8DVzyx7Y/nKo1AyIH0ETbCxAKEgN0knmYcr7WrhsEHYYz5wRv+5v6XNSdpB9XNGiw==, tarball: file:../frontend-platform/artifacts/hallelujahhomechurch-hhc-web-client-1.0.32.tgz}
-    version: 1.0.32
+  '@hallelujahhomechurch/hhc-web-client@1.0.34':
+    resolution: {integrity: sha512-Ps32ia9307+PB9lW2SmeOcFYwGo4+AiEIcQlWNB3w3F0dgMCvj0Duduom29QoJXCD2K6GbPToI0O6CItflbxkg==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/hhc-web-client/1.0.34/327a47dcaeb9b7505b6e50c9efb771b822c6c3ed}
 
   '@hallelujahhomechurch/operations-client@1.0.26':
     resolution: {integrity: sha512-wQDPbURQwUWGktdfc0q1xA3mEcIf4+fSAae5FEvxSt76VTTxQreTA7W15H/lfvMe8Ihja+vDpuoPMb3H2ZhCIQ==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/operations-client/1.0.26/a3eb34d6cd16dd3cc74917c720a2adc7ab27053d}
 
-  '@hallelujahhomechurch/preferences@file:../frontend-platform/artifacts/hallelujahhomechurch-preferences-1.0.32.tgz':
-    resolution: {integrity: sha512-LuxJZFSeQXjdtsPO0u8l88uXSYd3tHIBTAOggF7k9eW/Mc4Ooybc25osl8l5iTYLMAgqaHUc+up+11koykzPEQ==, tarball: file:../frontend-platform/artifacts/hallelujahhomechurch-preferences-1.0.32.tgz}
-    version: 1.0.32
+  '@hallelujahhomechurch/preferences@1.0.28':
+    resolution: {integrity: sha512-Ucv6UMYVEL0mWd/oy43Wfrvw0FKoKfVHd4lmNR9OoPE9EBjzsLs7piSn7ifS8UJaMFKpO3HY4EBbCBgQrnH2BQ==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/preferences/1.0.28/4ad149fb2af6cd03e764f453ebb8950c32b13f49}
 
-  '@hallelujahhomechurch/ui@file:../frontend-platform/artifacts/hallelujahhomechurch-ui-1.0.32.tgz':
-    resolution: {integrity: sha512-xErw6L6fEwhva635ixL3WKKoLRUGDXSM6LFbMOQUqEBqFpLYcA3Z68480NHc8Fws65DFzKpoYqT2IHBXALJt7g==, tarball: file:../frontend-platform/artifacts/hallelujahhomechurch-ui-1.0.32.tgz}
-    version: 1.0.32
+  '@hallelujahhomechurch/ui@1.0.27':
+    resolution: {integrity: sha512-mlVsOIYpjOmuoleEx8l+YZfK0Wh2Vx9bSEU5ztbsGGeOJLB/IbYJ68npYbMxwbDAMqo8TmDCKlxaI1Dt4/uftg==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/ui/1.0.27/f5d55a66dbe9402ff4d65b838d6bf09bec9fcb1d}
     peerDependencies:
       react: ^19.0.0
       react-dom: ^19.0.0
@@ -2290,10 +2283,6 @@ packages:
     resolution: {integrity: sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==}
     engines: {node: '>=12.0.0'}
 
-  fake-indexeddb@6.2.5:
-    resolution: {integrity: sha512-CGnyrvbhPlWYMngksqrSSUT1BAVP49dZocrHuK0SvtR0D5TMs5wP0o3j7jexDJW01KSadjBp1M/71o/KR3nD1w==}
-    engines: {node: '>=18'}
-
   fast-deep-equal@3.1.3:
     resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
 
@@ -4138,9 +4127,9 @@ snapshots:
 
   '@hallelujahhomechurch/account-client@1.0.26': {}
 
-  '@hallelujahhomechurch/account-client@file:../frontend-platform/artifacts/hallelujahhomechurch-account-client-1.0.32.tgz': {}
+  '@hallelujahhomechurch/account-client@1.0.31': {}
 
-  '@hallelujahhomechurch/hhc-web-client@file:../frontend-platform/artifacts/hallelujahhomechurch-hhc-web-client-1.0.32.tgz':
+  '@hallelujahhomechurch/hhc-web-client@1.0.34':
     dependencies:
       openapi-fetch: 0.15.2
 
@@ -4149,9 +4138,9 @@ snapshots:
       '@hallelujahhomechurch/account-client': 1.0.26
       openapi-fetch: 0.15.2
 
-  '@hallelujahhomechurch/preferences@file:../frontend-platform/artifacts/hallelujahhomechurch-preferences-1.0.32.tgz': {}
+  '@hallelujahhomechurch/preferences@1.0.28': {}
 
-  '@hallelujahhomechurch/ui@file:../frontend-platform/artifacts/hallelujahhomechurch-ui-1.0.32.tgz(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@hallelujahhomechurch/ui@1.0.27(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@internationalized/date': 3.12.3
       input-otp: 1.4.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -6092,8 +6081,6 @@ snapshots:
   events@3.3.0: {}
 
   expect-type@1.4.0: {}
-
-  fake-indexeddb@6.2.5: {}
 
   fast-deep-equal@3.1.3: {}
 

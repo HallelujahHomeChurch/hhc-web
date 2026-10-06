@@ -181,11 +181,30 @@ describe('SiteHeader', () => {
     expect(within(mobileNavigation).getAllByRole('link').map((link) => link.textContent)).toEqual([
       '首頁',
       '關於我們',
-      '最新消息',
-      '影音專區'
+      '最新消息'
     ]);
     expect(screen.queryByRole('button', {name: '開啟選單'})).not.toBeInTheDocument();
     expect(getSession).toHaveBeenCalledOnce();
+  });
+
+  it.each([true, false])('gates enabled video navigation on the independent viewing entitlement: %s', async (allowed) => {
+    vi.stubEnv('NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED', 'true');
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => Response.json({
+      memberships: [], orgRoles: [], qualifications: [], version: 'a'.repeat(64),
+      entitlements: allowed ? [{assignmentId: 'e1', entitlementCode: 'video.meeting-recordings.access', validFrom: '2026-09-17T00:00:00Z'}] : []
+    })));
+    const client: AccountSessionClient = {...anonymousSessionClient,
+      getSession: async () => ({authenticated: true, user: {id: 'u1', email: 'member@example.com', display_name: '會員', avatar_url: null}, permissions: [], permission_availability: {status: 'available'}}),
+      issueAccessToken: async () => ({accessToken: 'test-token', expiresIn: 300})
+    };
+    render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+      <AccountControlProvider client={client} labels={accountLabels}>
+        <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" />
+      </AccountControlProvider>
+    </NextIntlClientProvider>);
+    await screen.findByRole('button', {name: '帳號選單'});
+    if (allowed) await waitFor(() => expect(screen.getAllByRole('link', {name: '影音專區'})).toHaveLength(2));
+    else expect(screen.queryByRole('link', {name: '影音專區'})).not.toBeInTheDocument();
   });
 
   it('hides the member video link in desktop and mobile navigation by default', () => {

@@ -4,6 +4,16 @@ import {createMemberVideoApi} from './api';
 const authorization = {getAccessToken: async () => 'token', refreshAfterUnauthorized: async () => null};
 
 describe('member video API', () => {
+  it('reads private covers before playback using bearer auth, never a query credential', async () => {
+    const fetcher=vi.fn().mockResolvedValue(new Response('jpeg',{headers:{'content-type':'image/jpeg'}}));
+    const api=createMemberVideoApi(authorization,fetcher);
+    expect((await api.cover('recording')).type).toBe('image/jpeg');
+    const request=fetcher.mock.calls[0][0] as Request;
+    expect(request.url).toBe(new URL('/api/member/recordings/recording/cover',window.location.origin).href);
+    expect(request.headers.get('authorization')).toBe('Bearer token');
+    expect(request.cache).toBe('no-store');
+    expect(request.redirect).toBe('error');
+  });
   it('keeps the media credential in a body-only exchange and rejects another host', async () => {
     const fetcher = vi.fn().mockResolvedValue(new Response(null, {status: 204}));
     const api = createMemberVideoApi(authorization, fetcher);
