@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest';
-import {vi} from 'vitest';
+import {afterEach, vi} from 'vitest';
 
 const mockFont = {
   className: 'mock-font-class',
@@ -22,3 +22,8 @@ HTMLElement.prototype.hasPointerCapture ??= () => false;
 HTMLElement.prototype.setPointerCapture ??= () => undefined;
 HTMLElement.prototype.releasePointerCapture ??= () => undefined;
 HTMLElement.prototype.scrollIntoView ??= () => undefined;
+
+// Navigation snapshots persist across mounts, but must not leak between test cases.
+afterEach(() => {
+  for (const key of Object.keys(localStorage)) if (key.startsWith('hhc:navigation:')) localStorage.removeItem(key)
+})

@@ -1,14 +1,15 @@
 import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import {NextIntlClientProvider} from 'next-intl';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
+import {createNavigationPresentation, type AccountSessionClient} from '@hallelujahhomechurch/account-client';
 import type {SiteLayout} from '@/features/site-layout/types';
 import en from '@/i18n/locales/en.json';
 import ja from '@/i18n/locales/ja.json';
 import ko from '@/i18n/locales/ko.json';
 import zhHant from '@/i18n/locales/zh-Hant.json';
-import {AccountControlProvider} from './AccountControl';
+import {AccountControlProvider, BulletinAccessGate, useAccountAuth} from './AccountControl';
 import {SiteHeader} from './SiteHeader';
+import {InitialLoadingBoundary} from './InitialLoadingBoundary';
 
 const statementStripState = vi.hoisted(() => ({active: false, notice: false}));
 
@@ -71,6 +72,34 @@ afterEach(() => {
 });
 
 describe('SiteHeader', () => {
+  it('restores both navigation bars before session resolves without opening protected content, then removes revoked access', async () => {
+    const cached = createNavigationPresentation({key: 'hhc:navigation:www-web', allowedIds: ['account', 'admin', 'literature-ministry', 'member-videos']});
+    cached.identify('u1');
+    cached.capture('u1')('account', ['account', 'admin']);
+    cached.capture('u1')('operations', ['literature-ministry', 'member-videos']);
+    let resolveSession!: (value: Awaited<ReturnType<AccountSessionClient['getSession']>>) => void;
+    const client: AccountSessionClient = {...anonymousSessionClient, getSession: vi.fn(() => new Promise<Awaited<ReturnType<AccountSessionClient['getSession']>>>(resolve => {resolveSession = resolve;})), issueAccessToken: vi.fn(async () => ({accessToken: 'token', expiresIn: 900}))};
+    const fetcher = vi.fn(async () => Response.json({memberships: [], orgRoles: [], responsibilities: [], entitlements: [], version: 'revoked'}));
+    vi.stubGlobal('fetch', fetcher);
+    function Status() { return <output>{useAccountAuth().status}</output>; }
+    render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+      <AccountControlProvider client={client} labels={accountLabels}>
+        <InitialLoadingBoundary label="Restoring"><SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" /></InitialLoadingBoundary>
+        <Status /><BulletinAccessGate><span>Private bulletin</span></BulletinAccessGate>
+      </AccountControlProvider>
+    </NextIntlClientProvider>);
+    expect(screen.getAllByRole('link', {name: '文字事工'})).toHaveLength(2);
+    expect(screen.queryByText('Restoring')).not.toBeInTheDocument();
+    expect(screen.getByText('checking')).toBeInTheDocument();
+    expect(screen.queryByText('Private bulletin')).not.toBeInTheDocument();
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(client.issueAccessToken).not.toHaveBeenCalled();
+    await act(async () => resolveSession({authenticated: true, user: {id: 'u1', email: 'member@example.test', display_name: 'Member', avatar_url: null}, permissions: [], permission_availability: {status: 'available'}}));
+    await waitFor(() => expect(screen.queryByRole('link', {name: '文字事工'})).not.toBeInTheDocument());
+    expect(screen.queryByText('Private bulletin')).not.toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem('hhc:navigation:www-web')!).sources.operations.ids).toEqual([]);
+  });
+
   it('shows the LINE notice instead of the statement strip and restores the strip on dismissal', async () => {
     vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 LINE/15.0.0');
     statementStripState.active = true;
