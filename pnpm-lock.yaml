@@ -14,8 +14,8 @@ importers:
   .:
     dependencies:
       '@hallelujahhomechurch/account-client':
-        specifier: 1.0.31
-        version: 1.0.31
+        specifier: 1.0.38
+        version: 1.0.38
       '@hallelujahhomechurch/hhc-web-client':
         specifier: 1.0.34
         version: 1.0.34
@@ -334,8 +334,8 @@ packages:
   '@hallelujahhomechurch/account-client@1.0.26':
     resolution: {integrity: sha512-Uh3GzK4ARgvlkO0XKrF2MWKNlvaxD8T2sYhIAt05Vbu5xMJE5Q08Wav3ivJ+ue+ECIsI/M5PBAUtau+jjscynA==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/account-client/1.0.26/9be1dc412ec7b74b860f6c491db7ac56effe6689}
 
-  '@hallelujahhomechurch/account-client@1.0.31':
-    resolution: {integrity: sha512-N6CydT9v0NduA/g4uPeih0ovJKWsS14F1y/9PkUg42XtJHHCLvLasAv/U0QtCqsU9wmoJY3ZMH3Bwjngqg8DQw==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/account-client/1.0.31/7a020e8e43d94621e0ce1bff2f8169a08375b96b}
+  '@hallelujahhomechurch/account-client@1.0.38':
+    resolution: {integrity: sha512-jpzHovC8TPE2V6E+D1LPRxxp9kAK1F1PzyXymy/GeUeLXE6MGPMbmS2iyXmbQdnGS+oKRnzGAz986rJiOBf2Ig==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/account-client/1.0.38/d44d4bd20475e5a4a0b5b58b764834bbd1617165}
 
   '@hallelujahhomechurch/hhc-web-client@1.0.34':
     resolution: {integrity: sha512-Ps32ia9307+PB9lW2SmeOcFYwGo4+AiEIcQlWNB3w3F0dgMCvj0Duduom29QoJXCD2K6GbPToI0O6CItflbxkg==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/hhc-web-client/1.0.34/327a47dcaeb9b7505b6e50c9efb771b822c6c3ed}
@@ -3396,8 +3396,8 @@ packages:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
 
-  source-map-js@1.2.1:
-    resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
+  source-map-js@1.2.2:
+    resolution: {integrity: sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==}
     engines: {node: '>=0.10.0'}
 
   source-map-support@0.5.21:
@@ -4127,7 +4127,7 @@ snapshots:
 
   '@hallelujahhomechurch/account-client@1.0.26': {}
 
-  '@hallelujahhomechurch/account-client@1.0.31': {}
+  '@hallelujahhomechurch/account-client@1.0.38': {}
 
   '@hallelujahhomechurch/hhc-web-client@1.0.34':
     dependencies:
@@ -4994,7 +4994,7 @@ snapshots:
       jiti: 2.7.0
       lightningcss: 1.32.0
       magic-string: 0.30.21
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
       tailwindcss: 4.3.3
 
   '@tailwindcss/oxide-android-arm64@4.3.3':
@@ -5651,7 +5651,7 @@ snapshots:
   css-tree@3.2.1:
     dependencies:
       mdn-data: 2.27.1
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
 
   css.escape@1.5.1: {}
 
@@ -6911,19 +6911,19 @@ snapshots:
     dependencies:
       nanoid: 3.3.18
       picocolors: 1.1.1
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
 
   postcss@8.5.25:
     dependencies:
       nanoid: 3.3.18
       picocolors: 1.1.1
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
 
   postcss@8.5.26:
     dependencies:
       nanoid: 3.3.18
       picocolors: 1.1.1
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
 
   prelude-ls@1.2.1: {}
 
@@ -7238,7 +7238,7 @@ snapshots:
 
   signal-exit@4.1.0: {}
 
-  source-map-js@1.2.1: {}
+  source-map-js@1.2.2: {}
 
   source-map-support@0.5.21:
     dependencies:

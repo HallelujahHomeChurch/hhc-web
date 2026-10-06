@@ -1,9 +1,12 @@
 'use client';
 
-import {createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode} from 'react';
+import {createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode} from 'react';
 import {UserRound} from 'lucide-react';
 import {
   createBrowserAccountAuthRuntime,
+  createNavigationPresentation,
+  emptyNavigationPresentation,
+  type NavigationPresentation,
   type AccountAuthState,
   type AccountSessionClient,
   type BrowserOAuthConfig
@@ -49,6 +52,7 @@ type AccountControlProps = {
 type AccountControlContextValue = {
   accountSiteUrl: string;
   auth: AccountAuthState;
+  navigation: NavigationPresentation;
   bulletinAccess: BulletinAccess;
   videoAccess: VideoAccess;
   beginAuthorization: () => Promise<void>;
@@ -87,6 +91,10 @@ export function useCanReadBulletin() {
   return useBulletinAccess().editions.length > 0;
 }
 
+export function useNavigationPresentation() {
+  return useContext(AccountControlContext)?.navigation ?? {...emptyNavigationPresentation, ready: true};
+}
+
 export function useBulletinAuthorization() {
   const account = useContext(AccountControlContext);
   return useMemo(() => ({
@@ -116,7 +124,9 @@ export function AccountControlProvider({
 }: AccountControlProps & {children: ReactNode}) {
   const sessionClient = useMemo(() => client ?? getSharedAccountSessionClient(), [client]);
   const resolvedOAuth = useMemo(() => oauth ?? webOAuthConfigForBrowser(), [oauth]);
-  const authRuntime = useMemo(() => createBrowserAccountAuthRuntime({client: sessionClient, oauth: resolvedOAuth}), [resolvedOAuth, sessionClient]);
+  const presentation = useMemo(() => createNavigationPresentation({key: 'hhc:navigation:www-web', allowedIds: ['account', 'admin', 'literature-ministry', 'member-videos']}), []);
+  const navigation = useSyncExternalStore(presentation.subscribe, presentation.getSnapshot, () => emptyNavigationPresentation);
+  const authRuntime = useMemo(() => createBrowserAccountAuthRuntime({client: sessionClient, oauth: resolvedOAuth, presentation}), [resolvedOAuth, sessionClient, presentation]);
   const operationsClient = useMemo(() => createOperationsClient({
     baseUrl: '',
     getAccessToken: authRuntime.getAccessToken,
@@ -136,10 +146,16 @@ export function AccountControlProvider({
       : videoProjection?.subject === auth.session.user.id ? videoProjection.access : 'loading';
 
   useEffect(() => {
-    const unsubscribe = authRuntime.subscribe(() => setAuth(authRuntime.getSnapshot()));
+    const unsubscribe = authRuntime.subscribe(() => {
+      const next = authRuntime.getSnapshot();
+      if (next.status === 'authenticated' && next.session.permissionAvailability.status === 'available') {
+        presentation.capture(next.session.user.id)('account', ['account', ...(canAccessAdmin(next.session.permissions) ? ['admin'] : [])]);
+      }
+      setAuth(next);
+    });
     void authRuntime.start();
     return () => { unsubscribe(); authRuntime.dispose(); };
-  }, [authRuntime]);
+  }, [authRuntime, presentation]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -150,15 +166,18 @@ export function AccountControlProvider({
       return () => controller.abort();
     }
 
+    const commitNavigation = presentation.capture(auth.session.user.id);
     void operationsClient.getMyAccess(controller.signal)
       .then((snapshot) => {
         if (controller.signal.aborted) return;
         const entitlements = new Set(snapshot.entitlements.map(({entitlementCode}) => entitlementCode));
+        const editions = bulletinEditions.filter(({series, locale}) => entitlements.has(entitlementByEdition.get(`${series}/${locale}`)!));
+        if (!commitNavigation('operations', [...(editions.length ? ['literature-ministry'] : []), ...(entitlements.has('video.meeting-recordings.access') ? ['member-videos'] : [])])) return;
         setBulletinProjection({
           subject: auth.session.user.id,
           access: {
             status: 'available',
-            editions: bulletinEditions.filter(({series, locale}) => entitlements.has(entitlementByEdition.get(`${series}/${locale}`)!))
+            editions
           }
         });
         setVideoProjection({subject: auth.session.user.id, access: entitlements.has('video.meeting-recordings.access') ? 'available' : 'denied'});
@@ -170,7 +189,7 @@ export function AccountControlProvider({
         setVideoProjection({subject: auth.session.user.id, access: 'unavailable'});
       });
     return () => controller.abort();
-  }, [auth, operationsClient]);
+  }, [auth, operationsClient, presentation]);
 
   const beginAuthorization = useCallback(async (prompt?: 'none') => {
     try {
@@ -193,8 +212,7 @@ export function AccountControlProvider({
   const signOut = useCallback(async () => {
     setLogoutError('');
     try {
-      await sessionClient.logoutAll();
-      authRuntime.clear();
+      await authRuntime.signOut();
       notifyAccountStateChange('sign-out');
       return true;
     } catch (error) {
@@ -202,12 +220,13 @@ export function AccountControlProvider({
       setLogoutError(labels.signOutError);
       return false;
     }
-  }, [authRuntime, labels.signOutError, sessionClient]);
+  }, [authRuntime, labels.signOutError]);
 
   return (
     <AccountControlContext.Provider value={{
       accountSiteUrl,
       auth,
+      navigation,
       bulletinAccess,
       videoAccess,
       beginAuthorization,
@@ -226,8 +245,8 @@ export function AccountControlView() {
   const context = useContext(AccountControlContext);
   if (!context) throw new Error('AccountControlView must be used inside AccountControlProvider.');
 
-  const {accountSiteUrl, auth, beginAuthorization, labels, signOut} = context;
-  if (auth.status === 'checking' || auth.status === 'unavailable') {
+  const {accountSiteUrl, auth, navigation, beginAuthorization, labels, signOut} = context;
+  if ((auth.status === 'checking' || auth.status === 'unavailable') && !navigation.subjectId) {
     return <span className="inline-block size-10 shrink-0" aria-hidden="true" />;
   }
   if (auth.status === 'anonymous') {
@@ -243,20 +262,19 @@ export function AccountControlView() {
     );
   }
 
-  const {session} = auth;
-  const {user} = session;
-  const displayName = user.display_name || user.email.split('@')[0] || user.email;
-  const canOpenAdmin = session.permissionAvailability.status === 'available' && canAccessAdmin(session.permissions);
+  const user = auth.status === 'authenticated' ? auth.session.user : null;
+  const displayName = user ? user.display_name || user.email.split('@')[0] || user.email : '';
+  const canOpenAdmin = navigation.sources.account?.ids.includes('admin') === true;
   return (
     <AccountMenu
-      labels={{menu: labels.menu, greeting: `Hi ${displayName}`, manageAccount: labels.manageAccount, signOut: labels.signOut}}
+      labels={{menu: labels.menu, greeting: displayName ? `Hi ${displayName}` : labels.manageAccount, manageAccount: labels.manageAccount, signOut: labels.signOut}}
       links={[
         {id: 'projection', label: labels.projectionSystem, href: siteConfig.apps.projection, newWindow: {label: labels.projectionWindowLabel, blockedMessage: labels.projectionPopupBlocked}},
         ...(canOpenAdmin ? [{id: 'admin', label: labels.adminManagement, href: siteConfig.apps.admin}] : [])
       ]}
       manageAccountHref={`${accountSiteUrl}/profile`}
       onSignOut={() => void signOut()}
-      user={{name: displayName, email: user.email, avatarUrl: user.avatar_url}}
+      user={{name: displayName, email: user?.email ?? '', avatarUrl: user ? user.avatar_url : '/assets/brand/account-placeholder.svg'}}
     />
   );
 }
