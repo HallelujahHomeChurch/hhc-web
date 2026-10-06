@@ -1,8 +1,10 @@
-import {act, cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, cleanup, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {readerFixture} from '@/features/weekly-reader/test-fixture';
 import {getMessages} from '@/i18n/messages';
 import {WeeklyReader} from './WeeklyReader';
+import {saveReaderReturn} from '@/features/weekly-reader/return-state';
 
 const state = vi.hoisted(() => ({accountId: 'account-a' as string | null, status: 'authenticated', open: vi.fn(), signIn: vi.fn(), privateState: vi.fn(), mutate: vi.fn()}));
 vi.mock('@/components/layout/AccountControl', () => ({
@@ -28,20 +30,188 @@ function selectText(element: Element, start?: number, end?: number, finish = tru
 vi.mock('@/features/weekly-reader/api', async original => ({...await original<typeof import('@/features/weekly-reader/api')>(), createReaderApi: () => ({open: state.open, privateState: state.privateState, mutate: state.mutate})}));
 const props = {locale: 'en' as const, issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const, messages: getMessages('en').weeklyReader};
 function choosePage(page: number) {
-  fireEvent.click(screen.getByRole('button', {name: 'Thumbnails'}));
+  const contents = screen.queryByRole('button', {name: props.messages.contents});
+  fireEvent.click(contents ?? screen.getByRole('button', {name: 'Thumbnails'}));
+  if (contents) fireEvent.click(screen.getByText(props.messages.originalPages, {selector: 'summary'}));
   fireEvent.click(screen.getByRole('button', {name: `Page ${page}`}));
 }
 function chooseDirection(name: string) {
-  fireEvent.click(screen.getByRole('button', {name: 'Reading direction'}));
+  fireEvent.click(screen.getByRole('button', {name: /^Reading direction/}));
   expect(document.querySelector('.reader-viewport')).toHaveAttribute('data-direction', name === 'Horizontal paging' ? 'horizontal' : 'vertical');
 }
 beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state.accountId = 'account-a'; state.status = 'authenticated'; state.open.mockReset().mockResolvedValue(readerFixture()); state.privateState.mockReset().mockResolvedValue({state: {accountId: 'account-a', documentId: readerFixture().document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: null, conflicts: []}}); state.mutate.mockReset(); sessionStorage.clear(); vi.stubGlobal('matchMedia', vi.fn(() => ({matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn()})));});
-afterEach(() => {cleanup(); Reflect.deleteProperty(document, 'fonts'); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs();});
+afterEach(() => {cleanup(); Reflect.deleteProperty(document, 'fonts'); Reflect.deleteProperty(Range.prototype, 'getBoundingClientRect'); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs();});
+beforeEach(() => {Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect(0, 100, 300, 20)});});
 
 describe('protected weekly reader', () => {
+  it('switches the reader theme without changing the website or active document', async () => {
+    localStorage.removeItem('hhc-reader-theme');
+    document.documentElement.dataset.theme = 'light';
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    const page = container.querySelector('[data-active-page]')?.getAttribute('data-active-page');
+    fireEvent.click(screen.getByRole('button', {name: props.messages.darkMode}));
+    expect(container.querySelector('.weekly-reader')).toHaveAttribute('data-theme', 'dark');
+    expect(document.documentElement).toHaveAttribute('data-theme', 'light');
+    expect(localStorage.getItem('hhc-reader-theme')).toBe('dark');
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', page);
+    fireEvent.click(screen.getByRole('button', {name: props.messages.lightMode}));
+    expect(document.documentElement).toHaveAttribute('data-theme', 'light');
+    localStorage.removeItem('hhc-reader-theme');
+  });
+  it.each(['chapter', 'page', 'search', 'resume', 'resume-cover'])('switches mobile chapters via %s while preserving source anchors', async route => {
+    Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect(0, 500, 300, 30)});
+    vi.spyOn(window, 'scrollBy').mockImplementation(() => {});
+    vi.stubGlobal('matchMedia', vi.fn(() => ({matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn()})));
+    const fixture = readerFixture();
+    const blocks = fixture.document.content.components.map(component => component.type === 'backSummary' ? component.items[0].blocks[0] : null!);
+    fixture.document.content.components = [
+      {id: 'c0', type: 'cover', cover: {welcome: [blocks[0]], worship: [], work: [], wordQuestions: [], weeklyVerses: []}},
+      {id: 'c1', type: 'bodySection', bodySection: {kind: 'sermon', title: {...blocks[1], id: 'body-title', sentences: [{id: 'body-heading', spans: [{text: 'Article', fontRole: 'body'}]}]}, blocks: [blocks[1]]}},
+      {id: 'c2', type: 'hymnLyrics', hymnLyrics: {hymns: [{id: 'song', title: blocks[2], sections: []}]}},
+      fixture.document.content.components[3],
+    ];
+    const body = fixture.document.content.components[1];
+    if (body.type === 'bodySection') body.bodySection.header = {lectureDate: {...blocks[1], id: 'credit', sentences: [{id: 'credit-sentence', spans: [{text: 'Production date', fontRole: 'body'}]}]}, contributors: []};
+    const slot = fixture.document.content.layoutManifest.pages[1].slots[0];
+    fixture.document.content.layoutManifest.pages[1].slots.unshift({...slot, id: 'credit-slot', blockId: 'credit', fragments: [{sentenceId: 'credit-sentence', start: 0, end: 15}]});
+    state.open.mockResolvedValue(fixture);
+    if (route === 'resume' || route === 'resume-cover') {
+      const cloud = (await state.privateState()).state;
+      if (route === 'resume-cover') for (const page of fixture.document.content.layoutManifest.pages.slice(0, 2)) page.fixedSlots = [{id: `${page.pageId}-title`, element: 'title', box: {x: 0, y: 0, width: 1, height: .1}, style: blocks[0].style}];
+      state.privateState.mockResolvedValue({state: {...cloud, progress: {pageId: 'p1', sentenceId: route === 'resume-cover' ? 'canonical-title' : 's1', recordedAt: '', updatedAt: ''}}});
+    }
+    const {container} = render(<WeeklyReader {...props}/>);
+    await waitFor(() => expect(container.querySelector('[data-bulletin-mode="mobile"]')).not.toBeNull());
+    await waitFor(() => expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled());
+    if (route !== 'resume') {
+      expect(container.querySelector('[data-chapter="cover"] [data-sentence-id="s0"]')).toBeInTheDocument();
+      expect(container.querySelector('[data-chapter="cover"] [data-sentence-id="s1"]')).toBeNull();
+    }
+    if (route === 'chapter' || route === 'resume-cover') {
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      expect(screen.queryByRole('button', {name: props.messages.productionDetails})).not.toBeInTheDocument();
+      expect(container.querySelector('.reader-chapter-title')).toBeNull();
+      fireEvent.click(screen.getByRole('button', {name: props.messages.contents}));
+      fireEvent.click(within(screen.getByRole('navigation', {name: props.messages.chapters})).getByRole('button', {name: 'Articles'}));
+    }
+    if (route === 'page') choosePage(2);
+    if (route === 'search') {
+      fireEvent.click(screen.getByRole('button', {name: props.messages.search}));
+      fireEvent.change(screen.getByRole('searchbox'), {target: {value: '內容1'}});
+      fireEvent.submit(screen.getByRole('search'));
+      fireEvent.click(screen.getByRole('button', {name: /內容[12]/}));
+    }
+    await waitFor(() => expect(container.querySelector('[data-chapter="body"] [data-sentence-id="s1"]')).toBeInTheDocument());
+    expect(container.querySelector('[data-sentence-id="credit-sentence"]')).toBeNull();
+    expect(container.querySelector('[data-chapter="cover"]')).toBeNull();
+    expect(container.querySelector('[data-chapter="worship"]')).toBeNull();
+    fireEvent.click(screen.getByRole('button', {name: props.messages.next}));
+    expect(container.querySelector('[data-chapter="worship"] [data-sentence-id="s2"]')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: props.messages.next}));
+    expect(screen.queryByRole('button', {name: props.messages.next})).not.toBeInTheDocument();
+    expect(container.querySelector('.reader-chapter-actions')).toBeNull();
+    fireEvent.click(screen.getByRole('button', {name: props.messages.contents}));
+    fireEvent.click(within(screen.getByRole('navigation', {name: props.messages.chapters})).getByRole('button', {name: 'Worship'}));
+    expect(container.querySelector('[data-chapter="worship"]')).toBeInTheDocument();
+  });
+  it.each(['blue', 'clear'])('allows keyboard users to %s an existing exact highlight range', async operation => {
+    const cloud = (await state.privateState()).state;
+    const highlights = [{sentenceId: 's0', quote: '內容0。', color: 'yellow', active: true, version: 1, updatedAt: '', segments: [{start: 1, end: 3, color: 'yellow'}]}];
+    state.privateState.mockResolvedValue({state: {...cloud, highlights}});
+    state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: {...cloud, highlights: []}, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]}));
+    render(<WeeklyReader {...props}/>);
+    const trigger = await screen.findByRole('button', {name: 'My notes'});
+    await waitFor(() => expect(trigger).not.toBeDisabled());
+    const user = userEvent.setup();
+    trigger.focus(); await user.keyboard('{Enter}');
+    const list = await screen.findByRole('region', {name: 'Highlights'});
+    expect(within(list).getByText('容0')).toBeInTheDocument();
+    const control = within(list).getByRole('button', {name: operation === 'blue' ? props.messages.blueHighlight : props.messages.clearHighlight});
+    control.focus(); await user.keyboard('{Enter}');
+    await waitFor(() => expect(state.mutate).toHaveBeenCalled());
+    expect(state.mutate.mock.calls[0][2][0]).toMatchObject({kind: operation === 'blue' ? 'setHighlight' : 'clearHighlight', payload: {sentenceIds: ['s0'], ranges: [{sentenceId: 's0', start: 1, end: 3}], ...(operation === 'blue' ? {color: 'blue'} : {})}});
+    expect(within(list).queryByText('容0')).not.toBeInTheDocument();
+  });
+  it('records the first mobile sentence below the chrome, not the obscured sentence', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn()})));
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains('reader-viewport')) return new DOMRect(0, 128, 390, 600);
+      if (this.classList.contains('reader-tabbar')) return new DOMRect(0, 76, 390, 52);
+      if (this.dataset.sentenceId === 's0') return new DOMRect(0, 90, 300, 30);
+      if (this.dataset.sentenceId === 's1') return new DOMRect(0, 150, 300, 30);
+      return new DOMRect(0, 900, 300, 30);
+    });
+    const cloud = (await state.privateState()).state;
+    state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: cloud, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]}));
+    render(<WeeklyReader {...props}/>);
+    await waitFor(() => expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled());
+    fireEvent.scroll(document.querySelector('.reader-viewport')!);
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    fireEvent(document, new Event('visibilitychange'));
+    await waitFor(() => expect(state.mutate).toHaveBeenCalled());
+    expect(state.mutate.mock.calls[0][2][0]).toMatchObject({kind: 'setProgress', payload: {pageId: 'p1', sentenceId: 's1'}});
+  });
+  it('announces the current reading direction after each toggle', async () => {
+    render(<WeeklyReader {...props}/>);
+    const toggle = await screen.findByRole('button', {name: 'Reading direction: Vertical scrolling'});
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAccessibleName('Reading direction: Horizontal paging');
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAccessibleName('Reading direction: Vertical scrolling');
+  });
+  it.each(['page', 'search', 'resume'])('positions mobile %s below measured chrome', async mode => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn()})));
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains('reader-tabbar')) return new DOMRect(0, 76, 390, 52);
+      return this.classList.contains('reader-viewport') ? new DOMRect(0, 128, 390, 600) : new DOMRect(0, 500, 300, 30);
+    });
+    Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect(0, 500, 300, 30)});
+    const scroll = vi.spyOn(window, 'scrollBy').mockImplementation(() => {});
+    if (mode === 'resume') {
+      const cloud = (await state.privateState()).state;
+      state.privateState.mockResolvedValue({state: {...cloud, progress: {pageId: 'p2', sentenceId: 's2', recordedAt: '', updatedAt: ''}}});
+    }
+    const {container} = render(<WeeklyReader {...props}/>);
+    await waitFor(() => expect(container.querySelector('[data-bulletin-mode="mobile"]')).not.toBeNull());
+    if (mode === 'page') choosePage(3);
+    if (mode === 'search') {
+      fireEvent.click(screen.getByRole('button', {name: props.messages.search}));
+      fireEvent.change(screen.getByRole('searchbox'), {target: {value: '內容2'}});
+      fireEvent.submit(screen.getByRole('search'));
+      fireEvent.click(screen.getByRole('button', {name: /內容[12]/}));
+      expect(screen.queryByRole('complementary', {name: props.messages.search})).not.toBeInTheDocument();
+    }
+    await waitFor(() => expect(container.querySelector('.reader-viewport')!.scrollTop).toBeGreaterThanOrEqual(364));
+    expect(scroll).not.toHaveBeenCalled();
+  });
+  it('restores an existing note quote and edit identity without changing its base version', async () => {
+    const fixture = readerFixture(), cloud = (await state.privateState()).state;
+    const note = {id: 'note-a', sentenceIds: ['s0'], text: 'Cloud text', quote: 'Original quotation', version: 4, deleted: false, inactiveAnchors: ['s0'], reanchorRequired: true, createdAt: '', updatedAt: ''};
+    saveReaderReturn({accountId: 'account-a', documentId: fixture.document.documentId}, {revision: 1, draft: {noteId: 'note-a', baseVersion: 2, text: 'My unsaved edit'}});
+    state.privateState.mockResolvedValue({state: {...cloud, notes: [note]}});
+    state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: {...cloud, notes: [note]}, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]}));
+    render(<WeeklyReader {...props}/>);
+    expect(await screen.findByText('Original quotation')).toBeInTheDocument();
+    expect(screen.getByText(props.messages.noteRemoved)).toBeInTheDocument();
+    expect(screen.getByRole('textbox', {name: props.messages.noteText})).toHaveValue('My unsaved edit');
+    expect(state.mutate).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', {name: props.messages.noteSave}));
+    await waitFor(() => expect(state.mutate).toHaveBeenCalled());
+    expect(state.mutate.mock.calls[0][2][0]).toMatchObject({kind: 'editNote', baseVersion: 2, payload: {noteId: 'note-a', text: 'My unsaved edit'}});
+  });
+  it('keeps a missing existing note draft readable without offering create or save', async () => {
+    saveReaderReturn({accountId: 'account-a', documentId: readerFixture().document.documentId}, {revision: 1, draft: {noteId: 'missing', baseVersion: 1, text: 'Do not discard'}});
+    render(<WeeklyReader {...props}/>);
+    expect(await screen.findByText(props.messages.noteDeleted)).toBeInTheDocument();
+    expect(screen.getByRole('textbox', {name: props.messages.noteText})).toHaveValue('Do not discard');
+    expect(screen.queryByRole('button', {name: props.messages.noteSave})).not.toBeInTheDocument();
+    expect(state.mutate).not.toHaveBeenCalled();
+  });
   it('shows annotation actions only after releasing the selection gesture', async () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).toBeEnabled());
     const sentence = container.querySelector('[data-sentence-id="s0"]')!;
     selectText(sentence, 0, 2, false);
     expect(screen.queryByRole('button', {name: 'Yellow highlight'})).not.toBeInTheDocument();
@@ -64,7 +234,7 @@ describe('protected weekly reader', () => {
     await waitFor(() => expect(state.mutate).toHaveBeenCalled());
     expect(screen.queryByText(props.messages.confirmRetryHelp)).not.toBeInTheDocument();
     expect(container.querySelector('.reader-recovery')).toBeNull();
-    expect(screen.getByRole('button', {name: props.messages.syncSyncing})).toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: props.messages.syncSyncing})).not.toBeInTheDocument();
   });
   it.each(['hide', 'home'])('settles continuous paper position on %s and clears an older search anchor', async exit => {
     const fixture = readerFixture(), key = `weekly-reader-position:account-a:${fixture.document.documentId}:1`;
@@ -107,7 +277,7 @@ describe('protected weekly reader', () => {
     await screen.findByText('Private weekly');
     expect(screen.getByRole('button', {name: 'Bulletin library'})).toBeInTheDocument();
     expect(screen.getByRole('navigation', {name: 'Open bulletins'})).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: props.messages.search})).toHaveClass('hhc-button');
+    expect(screen.getByRole('button', {name: props.messages.search}).closest('.reader-tabbar')).not.toBeNull();
     expect(screen.queryByRole('button', {name: 'More options'})).not.toBeInTheDocument();
   });
   it('protects a dirty note when leaving through Home or closing the active bulletin', async () => {
@@ -192,7 +362,7 @@ describe('protected weekly reader', () => {
     selectText(container.querySelector('[data-sentence-id="s0"]')!);
     fireEvent.click(screen.getByRole('button', {name: 'Yellow highlight'}));
     await screen.findByText(props.messages.actionFailed);
-    expect(screen.getByRole('button', {name: props.messages.syncAction})).toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: props.messages.syncAction})).not.toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
     expect(container.querySelector('[data-sentence-id="s0"]')).not.toHaveAttribute('data-highlight');
     fireEvent.click(screen.getByRole('button', {name: 'Note'}));
@@ -366,13 +536,13 @@ describe('protected weekly reader', () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
     await waitFor(() => expect(container.querySelector('[data-bulletin-mode="mobile"] [data-sentence-id="s2"]')).toBeInTheDocument());
-    await screen.findByRole('button', {name: props.messages.syncSynced});
+    await waitFor(() => expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled());
     expect(state.mutate).not.toHaveBeenCalled();
     for (const element of container.querySelectorAll<HTMLElement>('[data-sentence-id]')) {
       vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({top: element.dataset.sentenceId === 's2' ? 100 : -100, bottom: element.dataset.sentenceId === 's2' ? 130 : -70} as DOMRect);
     }
     state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: (await state.privateState()).state, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]}));
-    fireEvent.scroll(window);
+    fireEvent.scroll(document.querySelector('.reader-viewport')!);
     if (hide) {
       vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
       fireEvent(document, new Event('visibilitychange'));
@@ -463,35 +633,69 @@ describe('protected weekly reader', () => {
     await screen.findByText('Private weekly');
     fireEvent.click(screen.getByRole('button', {name: 'Search this bulletin'}));
     fireEvent.change(screen.getByRole('searchbox', {name: 'Search this bulletin'}), {target: {value: '內容2'}});
-    fireEvent.click(screen.getByRole('button', {name: 'Go to result'}));
+    fireEvent.submit(screen.getByRole('search'));
+    fireEvent.click(screen.getByRole('button', {name: /內容2/}));
     expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p2');
+    await waitFor(() => expect(document.activeElement).toHaveAttribute('data-sentence-id', 's2'));
     expect(state.open).toHaveBeenCalledOnce();
     expect(container.querySelectorAll('[data-reader-watermark]')).toHaveLength(4);
     expect(container.querySelector('[data-reader-watermark]')).toHaveAttribute('aria-hidden', 'true');
     expect(container.textContent).not.toContain(readerFixture().access.traceCode);
+  });
+  it('makes the search panel modal and restores its trigger after backdrop dismissal', async () => {
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    const trigger = screen.getByRole('button', {name: 'Search this bulletin'});
+    fireEvent.click(trigger);
+    expect(screen.getByRole('dialog', {name: 'Search this bulletin'})).toHaveAttribute('aria-modal', 'true');
+    expect(container.querySelector('.reader-stage')).toHaveAttribute('inert');
+    expect(container.querySelector('.reader-chrome-controls')).toHaveAttribute('inert');
+    fireEvent.click(container.querySelector('.reader-panel-backdrop')!);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+  it('uses an unshaded dismiss layer for mobile typography settings', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn()})));
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    fireEvent.click(screen.getByRole('button', {name: props.messages.typography}));
+    expect(container.querySelector('.reader-panel-backdrop')).toHaveAttribute('data-clear', 'true');
+    fireEvent.click(container.querySelector('.reader-panel-backdrop')!);
+    expect(screen.queryByRole('dialog', {name: props.messages.typography})).not.toBeInTheDocument();
+  });
+  it('restores a saved sentence without moving focus into the text', async () => {
+    const key = `weekly-reader-position:account-a:${readerFixture().document.documentId}:1`;
+    sessionStorage.setItem(key, 'p2');
+    sessionStorage.setItem(`${key}:anchor`, JSON.stringify({kind: 'sentence', id: 's2'}));
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    await waitFor(() => expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p2'));
+    await act(async () => {await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));});
+    expect(document.activeElement).not.toHaveAttribute('data-sentence-id');
   });
   it('keeps search query and result position across repeated jumps and closing the panel', async () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
     fireEvent.click(screen.getByRole('button', {name: 'Search this bulletin'}));
     fireEvent.change(screen.getByRole('searchbox'), {target: {value: '內容'}});
-    fireEvent.click(screen.getByRole('button', {name: 'Next result'}));
-    fireEvent.click(screen.getByRole('button', {name: 'Next result'}));
+    fireEvent.submit(screen.getByRole('search'));
+    fireEvent.click(screen.getByRole('button', {name: /內容2/}));
     expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p2');
-    fireEvent.click(screen.getByRole('button', {name: 'Close'}));
-    fireEvent.click(screen.getByRole('button', {name: 'Search this bulletin'}));
+    await userEvent.click(screen.getByRole('button', {name: 'Search this bulletin'}));
     expect(screen.getByRole('searchbox')).toHaveValue('內容');
-    expect(screen.getByLabelText('Search results')).toHaveTextContent('3 / 4');
+    expect(screen.getByLabelText('Search results')).toHaveTextContent('4 search results');
   });
   it('closes mobile thumbnails after selecting the destination', async () => {
+    Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect(0, 100, 100, 20)});
     vi.stubGlobal('matchMedia', vi.fn(() => ({matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn()})));
     render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
-    fireEvent.click(screen.getByRole('button', {name: 'Thumbnails'}));
+    fireEvent.click(screen.getByRole('button', {name: props.messages.contents}));
+    fireEvent.click(screen.getByText(props.messages.originalPages, {selector: 'summary'}));
     expect(screen.getByRole('button', {name: 'Page 4'})).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', {name: 'Page 4'}));
-    expect(screen.queryByRole('complementary', {name: 'Thumbnails'})).not.toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Thumbnails'})).toHaveFocus();
+    expect(screen.queryByRole('dialog', {name: props.messages.contents})).not.toBeInTheDocument();
+    await waitFor(() => expect(document.activeElement).toHaveAttribute('data-sentence-id', 's3'));
   });
   it('announces font loading instead of presenting a blank paper as ready', async () => {
     let ready!: () => void;
@@ -541,13 +745,36 @@ describe('protected weekly reader', () => {
     await waitFor(() => expect(container.querySelector('[data-bulletin-mode="mobile"]')).not.toBeNull());
     expect(container.querySelectorAll('[data-bulletin-page]')).toHaveLength(0);
     expect(screen.queryByRole('button', {name: 'Next page'})).not.toBeInTheDocument();
+    expect(container.querySelector('.reader-topbar button[aria-label="Next page"]')).toBeNull();
     expect(container.querySelectorAll('[data-sentence-id]')).toHaveLength(4);
     expect(screen.queryByRole('button', {name: 'Reading direction'})).not.toBeInTheDocument();
     choosePage(3);
     expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p2');
     expect(screen.queryByRole('complementary', {name: 'Thumbnails'})).not.toBeInTheDocument();
   });
-  it('collapses production credits in narrow tablet views without removing article text or stored anchors', async () => {
+  it('supports backward mobile chapters and reserves note space only in the note chapter', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(query => ({matches: query === '(max-width: 767px)', addEventListener: vi.fn(), removeEventListener: vi.fn()})));
+    const fixture = readerFixture();
+    const first = fixture.document.content.components[0];
+    if (first.type !== 'backSummary') throw new Error('fixture');
+    fixture.document.content.components[0] = {id: first.id, type: 'cover', cover: {welcome: first.items[0].blocks, worship: [], work: [], wordQuestions: [], weeklyVerses: []}};
+    state.open.mockResolvedValue(fixture);
+    const cloud = (await state.privateState()).state;
+    state.privateState.mockResolvedValue({state: {...cloud, notes: [{id: 'back-note', sentenceIds: ['s3'], text: 'Note', quote: '內容3。', version: 1, deleted: false, createdAt: '', updatedAt: ''}]}});
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    await waitFor(() => expect(container.querySelector('[data-chapter="cover"]')).not.toBeNull());
+    expect(container.querySelector('.reader-paper-with-notes')).not.toHaveAttribute('data-has-notes');
+    expect(screen.queryByRole('button', {name: props.messages.previous})).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: props.messages.next}));
+    await waitFor(() => expect(container.querySelector('[data-chapter="back"]')).not.toBeNull());
+    await waitFor(() => expect(container.querySelector('.reader-paper-with-notes')).toHaveAttribute('data-has-notes'));
+    expect(screen.queryByRole('button', {name: props.messages.next})).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: props.messages.previous}));
+    await waitFor(() => expect(container.querySelector('[data-chapter="cover"]')).not.toBeNull());
+    expect(container.querySelector('.reader-paper-with-notes')).not.toHaveAttribute('data-has-notes');
+  });
+  it('collapses production credits in mobile views without removing article text or stored anchors', async () => {
     vi.stubGlobal('matchMedia', vi.fn(query => ({matches: query === '(max-width: 767px)', addEventListener: vi.fn(), removeEventListener: vi.fn()})));
     const fixture = readerFixture();
     const first = fixture.document.content.components[0];
@@ -563,16 +790,13 @@ describe('protected weekly reader', () => {
     await waitFor(() => expect(container.querySelector('[data-bulletin-mode="mobile"]')).not.toBeNull());
     expect(container.querySelector('[data-sentence-id="s0"]')).toHaveTextContent('內容0。');
     expect(screen.queryByText('Production credit')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', {name: 'Speaker and production details'}));
-    expect(container.querySelector('[data-sentence-id="credit-sentence"]')).toHaveTextContent('Production credit');
-    fireEvent.click(screen.getByRole('button', {name: 'Speaker and production details'}));
-    expect(screen.queryByText('Production credit')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: 'Speaker and production details'})).not.toBeInTheDocument();
     expect(fixture.document.content.components[0].bodySection?.header?.contributors).toHaveLength(1);
     fireEvent.click(screen.getByRole('button', {name: props.messages.search}));
     fireEvent.change(screen.getByRole('searchbox'), {target: {value: 'Production credit'}});
-    fireEvent.click(screen.getByRole('button', {name: props.messages.goToResult}));
-    expect(container.querySelector('[data-sentence-id="credit-sentence"]')).toHaveTextContent('Production credit');
-    expect(screen.getByRole('button', {name: 'Speaker and production details'})).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.submit(screen.getByRole('search'));
+    expect(screen.getByLabelText(props.messages.searchResults)).toHaveTextContent(props.messages.noResults);
+    expect(container.querySelector('[data-sentence-id="credit-sentence"]')).toBeNull();
   });
   it('restores the bound revision page and makes thumbnail copies inert', async () => {
     sessionStorage.setItem(`weekly-reader-position:account-a:${readerFixture().document.documentId}:1`, 'p2');

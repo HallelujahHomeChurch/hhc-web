@@ -21,6 +21,7 @@ export type WeeklyBulletin = {
 };
 
 export type WeeklyIssue = {
+  pdfFallback?: boolean;
   id: string;
   issueNumber?: number;
   date: string;

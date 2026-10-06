@@ -4,7 +4,7 @@ import {clearReaderReturns} from './return-state';
 const eventName = 'hhc:weekly-reader-account';
 function clearPositions(accountId: string) {
   try {
-    for (const key of Object.keys(sessionStorage)) if (key.startsWith(`weekly-reader-position:${accountId}:`)) sessionStorage.removeItem(key);
+    for (const key of Object.keys(sessionStorage)) if ((key.startsWith(`weekly-reader-position:${accountId}:`) || key === `weekly-reader-tabs:${accountId}`)) sessionStorage.removeItem(key);
   } catch { /* Session restoration is optional. */ }
 }
 function notify(accountId: string | null) {
@@ -15,6 +15,7 @@ function notify(accountId: string | null) {
 }
 export async function prepareOfflineAccount(accountId: string) {
 	clearReaderReturns(accountId);
+  try {for (const key of Object.keys(sessionStorage)) if (key.startsWith('weekly-reader-tabs:') && key !== `weekly-reader-tabs:${accountId}`) sessionStorage.removeItem(key);} catch { /* Optional session metadata. */ }
   if (!supportsOfflineReader()) return;
   const previous = await getOfflineIdentity();
   const epoch = await activateOfflineAccount(accountId);
@@ -38,6 +39,7 @@ export function watchOfflineAccount(onChange: (accountId: string | null) => void
     try {
       for (const key of Object.keys(sessionStorage)) if (key.startsWith('weekly-reader-position:') && (!data.accountId || !key.startsWith(`weekly-reader-position:${data.accountId}:`))) sessionStorage.removeItem(key);
     } catch { /* Optional restoration. */ }
+    try {for (const key of Object.keys(sessionStorage)) if (key.startsWith('weekly-reader-tabs:') && key !== `weekly-reader-tabs:${data.accountId}`) sessionStorage.removeItem(key);} catch { /* Optional session metadata. */ }
     onChange(data.accountId);
   };
   const local = (event: Event) => receive((event as CustomEvent).detail);

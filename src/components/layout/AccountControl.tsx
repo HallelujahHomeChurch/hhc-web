@@ -101,8 +101,18 @@ export function useBulletinAuthorization() {
   }), [account?.getAccessToken, account?.refreshAfterUnauthorized]);
 }
 
-export function BulletinAccessGate({children}: {children: ReactNode}) {
-  return useCanReadBulletin() ? children : null;
+export function BulletinAccessGate({children, messages}: {children: ReactNode; messages?: {title: string; loading: string; signInRequired: string; signIn: string; unavailable: string}}) {
+  const access = useBulletinAccess();
+  const auth = useAccountAuth();
+  const signIn = useAccountSignIn();
+  if (access.status === 'available' && access.editions.length) return children;
+  if (!messages) return null;
+  const checking = auth.status === 'checking' || access.status === 'loading';
+  return <main className="shell py-16"><section className="rounded-2xl border border-panel-border bg-paper p-8 text-center" role="status">
+    <h1 className="text-2xl font-semibold">{messages.title}</h1>
+    <p className="mt-4 text-muted">{checking ? messages.loading : auth.status === 'anonymous' ? messages.signInRequired : messages.unavailable}</p>
+    {!checking && auth.status === 'anonymous' ? <button type="button" className="mt-5 min-h-11 rounded-full bg-primary-solid px-5 font-semibold text-primary-foreground" onClick={() => void signIn?.()}>{messages.signIn}</button> : null}
+  </section></main>;
 }
 
 export function AccountControl(props: AccountControlProps) {

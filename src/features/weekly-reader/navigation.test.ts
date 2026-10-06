@@ -2,6 +2,13 @@ import {describe, expect, it} from 'vitest';
 import {fittedPageScale, clampPaperZoom, swipeDirection, keyboardPageDelta, centeredBodyOffset, sourcePageStart, sourcePageForSentence} from './navigation';
 import {readerFixture} from './test-fixture';
 describe('reader navigation', () => {
+  it('keeps reflow canonical headings anchored to the cover despite repeated paper art', () => {
+    const doc = readerFixture().document.content;
+    const slot = {id: 'title', element: 'title' as const, box: {x: 0, y: 0, width: 1, height: .1}, style: {fontSize: 16, lineHeight: 24, indent: 0, firstLineIndent: 0, spaceBefore: 0, spaceAfter: 0}};
+    doc.layoutManifest.pages[0].fixedSlots = [slot];
+    doc.layoutManifest.pages[1].fixedSlots = [{...slot, id: 'repeated-title'}];
+    expect(sourcePageForSentence(document.createElement('div'), doc, 'canonical-title', 100, 800)).toBe(0);
+  });
   it('tracks the visible source fragment rather than the first page containing its sentence', () => {
     const doc = readerFixture().document.content;
     doc.layoutManifest.pages[0].slots[0].fragments = [{sentenceId: 's0', start: 0, end: 2}];
@@ -17,6 +24,8 @@ describe('reader navigation', () => {
     doc.layoutManifest.pages[2].slots[0].fragments = [{sentenceId: 's1', start: 8, end: 12}];
     expect(sourcePageStart(doc, 2)).toEqual({sentenceId: 's1', start: 8, end: 9});
     expect(sourcePageStart(doc, 90)).toBeUndefined();
+    doc.layoutManifest.pages[2].slots[0].fragments.unshift({sentenceId: 'hidden-credit', start: 0, end: 3});
+    expect(sourcePageStart(doc, 2, new Set(['hidden-credit']))).toEqual({sentenceId: 's1', start: 8, end: 9});
   });
   it('centers body text using translation only, without changing widths, fragments or pages', () => {
     const document = readerFixture().document.content;

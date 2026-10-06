@@ -1,4 +1,4 @@
-import {render, screen, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {WeeklyArchive} from './WeeklyArchive';
 
@@ -32,13 +32,27 @@ afterEach(() => {
 beforeEach(() => vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'));
 
 describe('WeeklyArchive', () => {
+  it('keeps the default language visible and discloses other authorized languages', async () => {
+    bulletinAccess.editions = [{series: 'general', locale: 'zh-Hant'}, {series: 'general', locale: 'en'}];
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      const payload = await discoveryResponse(bulletin).json();
+      payload.data.items.push({...payload.data.items[0], contentLocale: 'en', canonicalMetadata: {...payload.data.items[0].canonicalMetadata, title: 'English bulletin'}, onlineRevision: 1});
+      return Response.json(payload);
+    }));
+    render(<WeeklyArchive locale="en" messages={messages}/>);
+    expect(await screen.findAllByRole('link', {name: 'Read online: English'})).toHaveLength(2);
+    for (const button of screen.getAllByRole('button', {name: 'Download PDF: 繁中'})) expect(button).not.toBeVisible();
+    const disclosures = screen.getAllByText('Other languages', {selector: 'summary'});
+    fireEvent.click(disclosures[0]);
+    expect(screen.getAllByRole('button', {name: 'Download PDF: 繁中'})[0]).toBeVisible();
+  });
   it('loads only entitled editions through protected member endpoints', async () => {
     const fetcher = vi.fn<typeof fetch>().mockImplementation(async () => discoveryResponse(bulletin));
     vi.stubGlobal('fetch', fetcher);
 
     render(<WeeklyArchive locale="en" messages={messages} />);
 
-    expect((await screen.findAllByRole('button', {name: '繁中'})).length).toBeGreaterThan(0);
+    expect((await screen.findAllByRole('button', {name: 'Download PDF: 繁中'})).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', {name: 'English'})).not.toBeInTheDocument();
     expect(screen.queryByRole('link', {name: '繁中'})).not.toBeInTheDocument();
     expect(fetcher.mock.calls.map(([input]) => (input as Request).url)).toContainEqual(expect.stringContaining('/api/member/bulletins/online?series=general&offset=0&limit=12&locales=zh-Hant'));

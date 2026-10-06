@@ -1,8 +1,12 @@
 'use client';
 
-import {useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type ReactNode} from 'react';
-import {Search, StickyNote, Download, Info, X, ChevronsUpDown, ChevronsLeftRight, ChevronLeft, ChevronRight, PanelLeft} from 'lucide-react';
-import {BulletinDocumentRenderer, ReaderWatermark} from '@hallelujahhomechurch/ui';
+import {useCallback, useEffect, useEffectEvent, useLayoutEffect, useSyncExternalStore, useMemo, useRef, useState, type ReactNode} from 'react';
+import {NotebookPen, Search, ALargeSmall, ArrowUp, ArrowDown, X, ChevronsUpDown, ChevronsLeftRight, ChevronLeft, ChevronRight, PanelLeft, Moon, Sun} from 'lucide-react';
+import {useScrollChrome} from '@/components/layout/useScrollChrome';
+import {isIPhoneDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
+import {ReaderTypography, readTypography, type Typography} from './ReaderTypography';
+import {useReaderTheme} from './useReaderTheme';
+import {BulletinEbook, bulletinChapters, bulletinChapterForAnchor, bulletinMobileDetails, Button, ReaderWatermark} from '@hallelujahhomechurch/ui';
 import {ReaderIconButton as IconButton} from './ReaderIconButton';
 import type {OnlineBulletinAccess, BulletinReaderMutation, BulletinReaderNote} from '@hallelujahhomechurch/hhc-web-client';
 import type {BulletinLocale, BulletinSeries} from '@hallelujahhomechurch/preferences';
@@ -32,19 +36,27 @@ import {PaperViewport, type ReadingDirection} from './PaperViewport';
 import {usePaperGestures} from '@/features/weekly-reader/usePaperGestures';
 import {readPaperView, writePaperView} from '@/features/weekly-reader/workspace';
 import {SectionNavigator} from './SectionNavigator';
+import {ChapterPull} from './ChapterPull';
 import {ReaderSearch} from './ReaderSearch';
 import {OfflineControl} from './OfflineControl';
 import {SelectionToolbar} from './SelectionToolbar';
 import {NoteEditor, type NoteSave, type NoteEditorState} from './NoteEditor';
 import {NotesPanel} from './NotesPanel';
-import {ReaderPrivateState, SyncStatus} from './ReaderPrivateState';
+import {HighlightsPanel} from './HighlightsPanel';
+import {ReaderPrivateState} from './ReaderPrivateState';
 import {ReaderRecovery} from './ReaderRecovery';
 import '@hallelujahhomechurch/ui/bulletin-paper.css';
+import '@hallelujahhomechurch/ui/bulletin-paper-v2.css';
+import '@hallelujahhomechurch/ui/bulletin-ebook.css';
 import './reader.css';
 
 type Props = {locale: Locale; issueNumber: number; series: BulletinSeries; contentLocale: BulletinLocale; messages: ReaderMessages};
+const subscribeStandalone = () => () => undefined;
+const iphoneStandaloneSnapshot = () => isIPhoneDevice() && isStandaloneWebApp();
+const serverStandaloneSnapshot = () => false;
 type Anchor = {kind: 'component' | 'sentence'; id: string};
 export function WeeklyReader(props: Props) {
+  const readerTheme = useReaderTheme();
   const accountId = useAccountIdentity();
   const auth = useAccountAuth();
   const signIn = useAccountSignIn();
@@ -61,14 +73,14 @@ export function WeeklyReader(props: Props) {
   }, [enabled]);
   const savedAccount = enabled ? accountId ?? offlineAccount : null;
   const permitted = enabled && accountId && access.status === 'available' && access.editions.some(edition => edition.series === props.series && edition.locale === props.contentLocale);
-  return <main className="weekly-reader">
+  return <main className="weekly-reader" data-theme={readerTheme.theme} style={{colorScheme: readerTheme.theme}}>
     {!permitted && !(savedAccount && offlineAccount === savedAccount) ? <a className="reader-back" href={`/${props.locale}/literature-ministry`}>{m.back}</a> : null}
-    {permitted || savedAccount && offlineAccount === savedAccount ? <AuthorizedReader key={`${savedAccount}:${props.issueNumber}:${props.series}:${props.contentLocale}`} {...props} accountId={savedAccount!}/> :
+    {permitted || savedAccount && offlineAccount === savedAccount ? <AuthorizedReader key={`${savedAccount}:${props.issueNumber}:${props.series}:${props.contentLocale}`} {...props} accountId={savedAccount!} readerTheme={readerTheme}/> :
       <section className="reader-status" role="status"><h1>{m.title}</h1><p>{!enabled ? m.unavailable : auth.status === 'anonymous' ? m.signInRequired : auth.status === 'checking' || access.status === 'loading' ? m.loading : m.unavailable}</p>{enabled && auth.status === 'anonymous' ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}</section>}
   </main>;
 }
 
-function AuthorizedReader(props: Props & {accountId: string}) {
+function AuthorizedReader(props: Props & {accountId: string; readerTheme: ReturnType<typeof useReaderTheme>}) {
   const signIn = useAccountSignIn();
   const authorization = useBulletinAuthorization();
   const api = useMemo(() => createReaderApi(authorization), [authorization]);
@@ -82,23 +94,22 @@ function AuthorizedReader(props: Props & {accountId: string}) {
     <div hidden={session.validating} inert={session.validating} onClickCapture={guard} onKeyDownCapture={guard} onPointerDownCapture={guard} onCopyCapture={guard}>
     {session.offline ? <p role="status">{m.offlineNotice}</p> : null}
     {session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}
-    <ReaderDocument key={`${session.value.document.documentId}:${session.value.document.revision}`} value={session.value} selector={selector} messages={m} api={api} offline={session.offline} allowAction={session.allowAction} onFailure={session.privateFailure} onUpdated={session.acceptSaved} suspended={!!session.validating} backHref={`/${props.locale}/literature-ministry`} offlineControl={<OfflineControl api={api} value={session.value} selector={selector} locale={props.locale} messages={m} onSaved={session.acceptSaved} onFailure={session.privateFailure}/>}/>
+    <ReaderDocument readerTheme={props.readerTheme} key={`${session.value.document.documentId}:${session.value.document.revision}`} value={session.value} selector={selector} messages={m} api={api} offline={session.offline} allowAction={session.allowAction} onFailure={session.privateFailure} onUpdated={session.acceptSaved} suspended={!!session.validating} backHref={`/${props.locale}/literature-ministry`} offlineControl={<OfflineControl api={api} value={session.value} selector={selector} locale={props.locale} messages={m} onSaved={session.acceptSaved} onFailure={session.privateFailure}/>}/>
   </div></>;
   return <><ReaderTabs accountId={accountId} locale={props.locale} current={props} messages={m}/><section className="reader-status" role={session.error ? 'alert' : 'status'}><h1>{m.title}</h1><p>{session.error ? m[session.error] : m.loading}</p>{session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}{session.error ? <button type="button" onClick={session.retry}>{m.retry}</button> : null}</section></>;
 }
 
-function ReaderDocument({value, selector, messages: m, api, offline, allowAction, onFailure, onUpdated, suspended, backHref, offlineControl}: {value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages; api: ReturnType<typeof createReaderApi>; offline: boolean; allowAction: () => boolean; onFailure: (error: unknown) => void; onUpdated: (value: OnlineBulletinAccess) => void; suspended: boolean; backHref: string; offlineControl: ReactNode}) {
+function ReaderDocument({value, selector, messages: m, api, offline, allowAction, onFailure, onUpdated, suspended, backHref, offlineControl, readerTheme}: {readerTheme: ReturnType<typeof useReaderTheme>; value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages; api: ReturnType<typeof createReaderApi>; offline: boolean; allowAction: () => boolean; onFailure: (error: unknown) => void; onUpdated: (value: OnlineBulletinAccess) => void; suspended: boolean; backHref: string; offlineControl: ReactNode}) {
+  const {theme, toggle: toggleTheme} = readerTheme;
   const [returned] = useState(() => readReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}));
   const document = useMemo(() => verifyReaderAccess(value, selector), [value, selector]);
   const privateReader = usePrivateReader({api, selector, value, offline, allowAction, onFailure});
-  const hasNotes = privateReader.state?.notes.some(note => !note.deleted) ?? false;
   const progress = useReaderProgress(value.document, privateReader.mutate);
   const recordProgress = progress.record;
   const flushProgress = progress.flush;
-  const syncStatus = privateReader.busy ? 'syncing' : privateReader.canRetry ? 'action' : privateReader.status;
   const sentences = useMemo(() => readerSentences(value.document), [value.document]);
   const [notice, setNotice] = useState('');
-  const [notes, setNotes] = useState<'list' | 'new' | BulletinReaderNote | null>(returned?.draft ? 'new' : null);
+  const [notes, setNotes] = useState<'list' | 'new' | 'restore' | BulletinReaderNote | null>(returned?.draft ? returned.draft.noteId ? 'restore' : 'new' : null);
   const [noteFilter, setNoteFilter] = useState<string[] | null>(null);
   const paperRef = useRef<HTMLDivElement>(null);
   const {selection, selecting, setSelection, clear: clearSelection, clearIf} = useTextSelection(paperRef, sentences, {
@@ -121,11 +132,12 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const newNoteId = useRef<string | null>(returned?.action?.kind === 'createNote' ? returned.action.payload.noteId : null);
   const highlights = Object.fromEntries(privateReader.state?.highlights.filter(highlight => highlight.active && !highlight.segments).map(highlight => [highlight.sentenceId, highlight.color]) ?? []);
   const sentenceState = Object.fromEntries(sentences.map(sentence => [sentence.id, {highlight: highlights[sentence.id]}]));
-  const noteAnchors = typeof notes === 'object' && notes ? notes.sentenceIds : selected;
-  const noteQuote = typeof notes === 'object' && notes ? notes.quote : selection.ranges ? rangeQuote(selection.ranges, sentences) : sentences.filter(sentence => selected.includes(sentence.id)).map(sentence => sentence.text).join('\n');
+  const editingNote = typeof notes === 'object' && notes ? notes : notes === 'restore' ? privateReader.state?.notes.find(note => note.id === returned?.draft?.noteId) : undefined;
+  const noteAnchors = editingNote ? editingNote.sentenceIds : selected;
+  const noteQuote = editingNote ? editingNote.quote : selection.ranges ? rangeQuote(selection.ranges, sentences) : sentences.filter(sentence => selected.includes(sentence.id)).map(sentence => sentence.text).join('\n');
   function closeNotes() {
     if (privateReader.busy) return false;
-    const original = typeof notes === 'object' && notes ? notes.text : '';
+    const original = editingNote?.text ?? '';
     if (notes && notes !== 'list' && noteEditorState && noteEditorState.draft.text !== original && !window.confirm(m.noteDiscardConfirm)) return false;
     setNotes(null); setDeletion(null); setNoteEditorState(undefined);
     requestAnimationFrame(() => (noteButton.current ?? notesButton.current)?.focus());
@@ -178,38 +190,65 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const [direction, setDirection] = useState<ReadingDirection>(view.direction);
   useEffect(() => {writePaperView(storageKey, {zoom, direction});}, [storageKey, zoom, direction]);
   const [paperJump, setPaperJump] = useState(0);
-  const [mobile, setMobile] = useState(false);
-  const [panel, setPanel] = useState<'pages' | 'search' | 'offline' | 'sync' | null>(null);
+  const [mobile, setMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
+  const [panel, setPanel] = useState<'pages' | 'search' | 'type' | null>(null);
   const chromeRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const chrome = chromeRef.current;
+    if (!chrome) return;
+    const measure = () => {
+      const shell = documentRef.current?.closest<HTMLElement>('.weekly-reader');
+      shell?.style.setProperty('--reader-shell-top', `${Math.max(0, shell.getBoundingClientRect().top)}px`);
+      documentRef.current?.style.setProperty('--reader-reading-inset', '8px');
+    };
+    measure();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    observer?.observe(chrome);
+    window.addEventListener('resize', measure);
+    return () => {observer?.disconnect(); window.removeEventListener('resize', measure);};
+  }, []);
   const panelTrigger = useRef<HTMLElement | null>(null);
-  const [sourceJump, setSourceJump] = useState<{page: number} | null>(null);
-  const previousMobile = useRef(false);
+  const [sourceJump, setSourceJump] = useState<{page: number; focus: boolean} | null>(null);
+  const previousMobile = useRef(mobile);
+  const chapterEdge = useRef<'top' | 'bottom' | null>(null);
   function openPanel(next: Exclude<typeof panel, null>, trigger: Element) {
     if (notes && !closeNotes()) return;
-    clearSelection(); panelTrigger.current = trigger instanceof HTMLElement ? trigger : null; setPanel(current => current === next ? null : next);
+    revealChrome(); clearSelection(); panelTrigger.current = trigger instanceof HTMLElement ? trigger : null; setPanel(current => current === next ? null : next);
   }
-  function closePanel() {setPanel(null); panelTrigger.current?.focus();}
+  function closePanel(restoreFocus = true) {
+    setPanel(null);
+    if (restoreFocus) requestAnimationFrame(() => panelTrigger.current?.focus({preventScroll: true}));
+  }
   useEffect(() => {
     if (!panel) return;
-    chromeRef.current?.querySelector<HTMLElement>(panel === 'search' ? '.reader-search input' : '.reader-navigation-panel > header button')?.focus();
-    const dismiss = (event: PointerEvent) => {if (event.target instanceof Node && !chromeRef.current?.contains(event.target)) setPanel(null);};
-    globalThis.document.addEventListener('pointerdown', dismiss);
-    return () => globalThis.document.removeEventListener('pointerdown', dismiss);
+    chromeRef.current?.querySelector<HTMLElement>(panel === 'search' ? '.reader-search input' : '.reader-navigation-panel:not([hidden]) > header button')?.focus({preventScroll: true});
   }, [panel]);
-  const [showProductionDetails, setShowProductionDetails] = useState(false);
-  const productionSentenceIds = useMemo(() => new Set(document.components.flatMap(component => {
-    const header = component.type === 'bodySection' ? component.bodySection.header : undefined;
-    return header ? [header.lectureDate, ...header.contributors.map(contributor => contributor.name)].flatMap(block => block.sentences.map(sentence => sentence.id)) : [];
-  })), [document]);
-  // Presentation only: canonical text, saved anchors and the immutable paper renderer remain unchanged.
-  const mobileDocument = useMemo(() => showProductionDetails ? document : {...document, components: document.components.map(component => component.type === 'bodySection' && component.bodySection.header ? {...component, bodySection: {...component.bodySection, header: undefined}} : component)}, [document, showProductionDetails]);
+  const productionSentenceIds = useMemo(() => bulletinMobileDetails(document).sentenceIds, [document]);
+  const chapters = useMemo(() => bulletinChapters(document), [document]);
+  const [chapter, setChapter] = useState(chapters[0]?.id ?? 'cover');
+  const chapterIndex = chapters.findIndex(entry => entry.id === chapter);
+  const hasNotes = privateReader.state?.notes.some(note => !note.deleted && (!mobile || note.ranges?.some(range => bulletinChapterForAnchor(document, {kind: 'sentence', id: range.sentenceId}) === chapter) || note.sentenceIds.some(id => bulletinChapterForAnchor(document, {kind: 'sentence', id}) === chapter))) ?? false;
+  const chapterLabels = {cover: m.chapterCover, body: m.chapterBody, worship: m.chapterWorship, back: m.chapterBack};
+  const chapterHeading = useRef<HTMLDivElement>(null);
   const [nativeZoomed, setNativeZoomed] = useState(false);
   const [fontsReady, setFontsReady] = useState(() => !globalThis.document?.fonts);
   const [viewport, setViewport] = useState({width: 900, height: 700});
   const viewportRef = useRef<HTMLDivElement>(null);
+  const [typography, setTypography] = useState(readTypography);
+  const iphoneStandalone = useSyncExternalStore(subscribeStandalone, iphoneStandaloneSnapshot, serverStandaloneSnapshot);
+  const {visible: chromeVisible, reveal: revealChrome} = useScrollChrome({root: viewportRef, blocked: !mobile || !!panel || !!notes || selecting || selected.length > 0 || suspended});
+  const readingInset = useCallback(() => Math.max(viewportRef.current?.getBoundingClientRect().top ?? 0, mobile && chromeVisible ? chromeRef.current?.querySelector('.reader-tabbar')?.getBoundingClientRect().bottom ?? 0 : 0) + 8, [mobile, chromeVisible]);
+  function changeTypography(next: Typography) {
+    const root = viewportRef.current;
+    const anchor = Array.from(paperRef.current?.querySelectorAll<HTMLElement>('[data-sentence-id]') ?? []).find(node => node.getBoundingClientRect().bottom > readingInset());
+    const top = anchor?.getBoundingClientRect().top;
+    setTypography(next);
+    try {localStorage.setItem('hhc-reader-typography', JSON.stringify(next));} catch { /* Optional local preference. */ }
+    requestAnimationFrame(() => {if (root && anchor && top !== undefined) root.scrollTop += anchor.getBoundingClientRect().top - top;});
+  }
   const {changeZoom, captureAnchor} = usePaperGestures({root: viewportRef, enabled: !mobile && !suspended, blocked: !!notes, zoom, setZoom, layoutKey: `${viewport.width}:${viewport.height}`});
   const preservePaperPosition = useEffectEvent(() => {if (resumeResolved && fontsReady && !mobile) captureAnchor();});
-  const pendingAnchor = useRef<Anchor | null>(null);
+  const pendingAnchor = useRef<(Anchor & {focus: boolean}) | null>(null);
   const gesture = useRef<{x: number; y: number; multiplePointers: boolean} | null>(null);
   const pointers = useRef(new Set<number>());
   const active = document.pages[page];
@@ -234,6 +273,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const zoomed = nativeZoomed || zoom > 1;
   const onPage = (next: number, record = true) => {
     if (!Number.isFinite(next) || record && notes && !closeNotes()) return false;
+    revealChrome();
     setResumeResolved(true);
     if (record) clearSelection();
     pendingAnchor.current = null;
@@ -242,9 +282,10 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     setPage(target);
     setPaperJump(value => value + 1);
     if (mobile) {
-      setSourceJump({page: target});
-      const first = sourcePageStart(value.document.content, target);
-      if (first && productionSentenceIds.has(first.sentenceId)) setShowProductionDetails(true);
+      setSourceJump({page: target, focus: record});
+      const first = sourcePageStart(value.document.content, target, mobile ? productionSentenceIds : undefined);
+      setChapter(first ? bulletinChapterForAnchor(document, {kind: 'sentence', id: first.sentenceId}) ?? chapters[0].id : chapters[0].id);
+
     }
     if (record) progress.record(document.pages[target].id);
     return true;
@@ -282,17 +323,48 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     if (root) observer?.observe(root);
     return () => {query.removeEventListener('change', changed); observer?.disconnect();};
   }, [hasNotes]);
+  const enterReflow = useEffectEvent(() => {
+    const first = sourcePageStart(value.document.content, page, productionSentenceIds);
+    setChapter(first ? bulletinChapterForAnchor(document, {kind: 'sentence', id: first.sentenceId}) ?? chapters[0].id : chapters[0].id);
+
+    if (page > 0) setSourceJump({page, focus: false});
+  });
   useEffect(() => {
-    if (mobile && !previousMobile.current && page > 0) setSourceJump({page});
+    const frame = mobile && !previousMobile.current ? requestAnimationFrame(() => enterReflow()) : undefined;
     previousMobile.current = mobile;
-  }, [mobile, page]);
+    return () => {if (frame !== undefined) cancelAnimationFrame(frame);};
+  }, [mobile]);
   useEffect(() => {
     if (!resumeResolved) return;
     try {sessionStorage.setItem(storageKey, active.id);} catch { /* Reading remains available without storage. */ }
   }, [active.id, storageKey, resumeResolved]);
   const scrollToPage = useEffectEvent(() => {
     const viewport = viewportRef.current;
-    if (!viewport || mobile || !fontsReady || !resumeResolved) return;
+    if (!viewport || !fontsReady || !resumeResolved) return;
+    if (mobile) {
+      if (chapterEdge.current) {
+        // Imperative scrolling of a DOM element, not a React state mutation.
+        viewport.scrollTop = chapterEdge.current === 'bottom' ? viewport.scrollHeight : 0;
+        chapterEdge.current = null; pendingAnchor.current = null;
+        chapterHeading.current?.focus({preventScroll: true});
+        return;
+      }
+      const anchor = pendingAnchor.current;
+      if (anchor) {
+        const attribute = `data-${anchor.kind}-id`;
+        const element = Array.from(viewport.querySelectorAll<HTMLElement>(`[${attribute}]`)).find(element => element.getAttribute(attribute) === anchor.id);
+        if (element) {
+          // Imperative DOM scrolling; this does not mutate React state or the ref itself.
+          viewport.scrollTop += element.getBoundingClientRect().top - readingInset();
+          if (anchor.focus) {
+            element.tabIndex = -1;
+            element.focus({preventScroll: true});
+          }
+        }
+        pendingAnchor.current = null;
+      }
+      return;
+    }
     const target = viewport.querySelector<HTMLElement>(`[data-paper-index="${page}"]`);
     if (target) {
       viewport.scrollTop += target.getBoundingClientRect().top - viewport.getBoundingClientRect().top - 16;
@@ -301,14 +373,21 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     const anchor = pendingAnchor.current;
     if (anchor) {
       const attribute = `data-${anchor.kind}-id`;
-      Array.from(target?.querySelectorAll<HTMLElement>(`[${attribute}]`) ?? []).find(element => element.getAttribute(attribute) === anchor.id)?.scrollIntoView({block: 'start'});
+      const destination = Array.from(target?.querySelectorAll<HTMLElement>(`[${attribute}]`) ?? []).find(element => element.getAttribute(attribute) === anchor.id);
+      if (destination) {
+        destination.scrollIntoView({block: 'start'});
+        if (anchor.focus) {
+          destination.tabIndex = -1;
+          destination.focus({preventScroll: true});
+        }
+      }
       pendingAnchor.current = null;
     }
   });
   useEffect(() => {
     const frame = requestAnimationFrame(() => scrollToPage());
     return () => cancelAnimationFrame(frame);
-  }, [paperJump, direction, mobile, fontsReady, resumeResolved]);
+  }, [paperJump, direction, mobile, fontsReady, resumeResolved, chapter]);
   function recordVisiblePaper() {
     const root = viewportRef.current;
     if (!root || mobile || direction !== 'vertical' || !resumeResolved || !fontsReady || suspended || notes || !allowAction()) return;
@@ -344,29 +423,31 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   useEffect(() => {
     if (!mobile || !fontsReady || !sourceJump) return;
     const target = sourceJump.page;
-    const first = sourcePageStart(value.document.content, target);
+    const first = sourcePageStart(value.document.content, target, mobile ? productionSentenceIds : undefined);
     const frame = requestAnimationFrame(() => {
       if (!paperRef.current) return;
       setSourceJump(null);
-      if (target === 0) {paperRef.current.scrollIntoView({block: 'start'}); return;}
-      const rect = first && renderedTextRanges(paperRef.current, first)[0]?.getBoundingClientRect();
-      if (rect) window.scrollBy({top: rect.top - 72, behavior: 'instant'});
+      const rect = target === 0 ? paperRef.current.getBoundingClientRect() : first && renderedTextRanges(paperRef.current, first)[0]?.getBoundingClientRect();
+      if (rect && viewportRef.current) viewportRef.current.scrollTop += rect.top - readingInset();
+      const destination = first ? Array.from(paperRef.current.querySelectorAll<HTMLElement>('[data-sentence-id]')).find(element => element.dataset.sentenceId === first.sentenceId) : chapterHeading.current;
+      if (destination && sourceJump.focus) {destination.tabIndex = -1; destination.focus({preventScroll: true});}
     });
     return () => cancelAnimationFrame(frame);
-  }, [sourceJump, mobile, fontsReady, showProductionDetails, value.document.content]);
+  }, [sourceJump, mobile, fontsReady, value.document.content, chapter, productionSentenceIds, readingInset]);
   useEffect(() => {
     if (!mobile || !fontsReady || notes) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const settled = () => {
       timer = undefined;
       if (!allowAction()) return;
+      const top = readingInset();
       const sentence = Array.from(viewportRef.current?.querySelectorAll<HTMLElement>('[data-sentence-id]') ?? []).find(element => {
         const rect = element.getBoundingClientRect();
-        return rect.bottom > 80 && rect.top < window.innerHeight;
+        return rect.bottom > top && rect.top < window.innerHeight;
       });
       const id = sentence?.dataset.sentenceId;
       if (!id) return;
-      const index = sourcePageForSentence(viewportRef.current!, value.document.content, id, 80, window.innerHeight);
+      const index = sourcePageForSentence(viewportRef.current!, value.document.content, id, top, window.innerHeight);
       if (index < 0) return;
       setResumeResolved(true); setPage(index);
       try {sessionStorage.setItem(`${storageKey}:anchor`, JSON.stringify({kind: 'sentence', id}));} catch { /* Optional restoration. */ }
@@ -377,33 +458,42 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       if (globalThis.document.visibilityState !== 'hidden' || timer === undefined) return;
       clearTimeout(timer); settled(); void flushProgress();
     };
-    window.addEventListener('scroll', scroll, {passive: true});
+    const scrollRoot = viewportRef.current;
+    scrollRoot?.addEventListener('scroll', scroll, {passive: true});
     globalThis.document.addEventListener('visibilitychange', hide);
-    return () => {clearTimeout(timer); window.removeEventListener('scroll', scroll); globalThis.document.removeEventListener('visibilitychange', hide);};
-  }, [mobile, fontsReady, notes, allowAction, value.document, storageKey, recordProgress, flushProgress]);
+    return () => {clearTimeout(timer); scrollRoot?.removeEventListener('scroll', scroll); globalThis.document.removeEventListener('visibilitychange', hide);};
+  }, [mobile, fontsReady, notes, allowAction, value.document, storageKey, recordProgress, flushProgress, chapter, readingInset]);
   function onAnchor(anchor: Anchor, record = true, preferredPage?: number) {
     const matches = document.layoutManifest.pages.filter(layout => layout.slots.some(slot => anchor.kind === 'component' ? slot.componentId === anchor.id : slot.fragments.some(fragment => fragment.sentenceId === anchor.id)) || anchor.kind === 'sentence' && layout.fixedSlots?.some(slot => `canonical-${slot.element}` === anchor.id));
     const layout = matches.find(layout => layout.pageId === document.pages[preferredPage ?? -1]?.id) ?? matches[0];
     const index = document.pages.findIndex(page => page.id === layout?.pageId);
     if (index < 0) return;
     if (!onPage(index, record)) return;
+    if (mobile && anchor.kind === 'sentence' && productionSentenceIds.has(anchor.id)) return;
+    const targetChapter = bulletinChapterForAnchor(document, anchor);
+    if (targetChapter) setChapter(targetChapter);
     setSourceJump(null);
-    if (anchor.kind === 'sentence' && productionSentenceIds.has(anchor.id)) setShowProductionDetails(true);
     if (record && anchor.kind === 'sentence') progress.record(document.pages[index].id, anchor.id);
-    pendingAnchor.current = anchor;
+    pendingAnchor.current = {...anchor, focus: record};
     try {sessionStorage.setItem(`${storageKey}:anchor`, JSON.stringify(anchor));} catch { /* Optional restoration. */ }
-    if (mobile || index === page) {
+    if (!mobile && index === page) {
       const attribute = `data-${anchor.kind}-id`;
       Array.from(viewportRef.current?.querySelectorAll<HTMLElement>(`[${attribute}]`) ?? []).find(element => element.getAttribute(attribute) === anchor.id)?.scrollIntoView({block: 'start'});
     }
+  }
+  function onChapter(index: number, restore = false) {
+    const target = chapters[index];
+    if (!target || !allowAction() || suspended || notes && !closeNotes()) return;
+    onAnchor({kind: 'component', id: target.componentIds[0]});
+    chapterEdge.current = restore ? 'bottom' : 'top';
   }
   const restorePosition = useEffectEvent(() => {
     // Restore once, without rewriting progress or letting late sync undo navigation.
     if (resumeResolved || suspended) return;
     const local = restoredPage >= 0 || !!restoredAnchor;
     const target = local ? Math.max(0, restoredPage) : Math.max(0, document.pages.findIndex(page => page.id === cloudProgress?.pageId));
-    if (!onPage(target, false)) return;
     const anchor = local ? restoredAnchor : cloudProgress?.sentenceId ? {kind: 'sentence' as const, id: cloudProgress.sentenceId} : cloudProgress?.componentId ? {kind: 'component' as const, id: cloudProgress.componentId} : null;
+    if (!onPage(target, false)) return;
     if (anchor) onAnchor(anchor, false, target);
   });
   useEffect(() => {
@@ -413,8 +503,16 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     const frame = requestAnimationFrame(() => restorePosition());
     return () => cancelAnimationFrame(frame);
   }, [resumeResolved, fontsReady, suspended, restoredPage, restoredAnchor, privateReader.state, privateReader.status]);
-  return <section ref={documentRef} className="reader-document" data-notes-panel={notes && wideNotes || undefined} aria-label={m.title} role="region" onKeyDown={event => {
+  return <section ref={documentRef} className="reader-document" data-mobile={mobile || undefined} data-mobile-hidden={!chromeVisible} data-iphone-standalone={iphoneStandalone || undefined} data-panel-open={!!panel || undefined} data-notes-panel={notes && wideNotes || undefined} aria-label={m.title} role="region" onKeyDown={event => {
+    if (event.key === 'Tab' && panel) {
+      const panelRoot = chromeRef.current?.querySelector<HTMLElement>('.reader-navigation-panel:not([hidden])');
+      const focusable = Array.from(panelRoot?.querySelectorAll<HTMLElement>('button:not(:disabled),input,a[href],summary') ?? []);
+      const first = focusable[0], last = focusable.at(-1);
+      if (event.shiftKey && globalThis.document.activeElement === first) {event.preventDefault(); last?.focus();}
+      else if (!event.shiftKey && globalThis.document.activeElement === last) {event.preventDefault(); first?.focus();}
+    }
     if (event.key === 'Escape' && panel) {event.preventDefault(); closePanel(); return;}
+    if (panel) return;
     if (event.key === 'Escape' && !notes) {clearSelection(); return;}
     if (!mobile && (event.ctrlKey || event.metaKey) && ['+', '=', '-'].includes(event.key) && !(event.target instanceof Element && event.target.closest('input,textarea,select,[contenteditable]'))) {
       event.preventDefault(); changeZoom(zoom + (event.key === '-' ? -.25 : .25)); return;
@@ -423,29 +521,38 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     if (!mobile && direction === 'horizontal' && delta) {event.preventDefault(); onPage(page + delta);}
   }}>
     <div ref={chromeRef} className="reader-chrome">
-      <ReaderTabs accountId={selector.accountId} locale={backHref.split('/')[1] as Locale} current={selector} title={value.document.canonicalMetadata.title} messages={m} syncStatus={syncStatus} onSyncDetails={target => openPanel('sync', target)} beforeNavigate={async () => {
+      <div className="reader-chrome-controls" inert={!!panel}>
+      <ReaderTabs accountId={selector.accountId} locale={backHref.split('/')[1] as Locale} current={selector} title={value.document.canonicalMetadata.title} messages={m} beforeNavigate={async () => {
         if (!allowAction() || privateReader.busy || notes && !closeNotes()) return false;
         recordVisiblePaper();
         await flushProgress();
         return allowAction();
-      }}/>
-      <header className="reader-topbar">
-        <IconButton variant="ghost" aria-label={m.thumbnails} title={m.thumbnails} aria-expanded={panel === 'pages'} onPress={event => openPanel('pages', event.target)} icon={<PanelLeft size={20} aria-hidden="true"/>}/>
-        <IconButton variant="ghost" aria-label={m.search} title={m.search} aria-expanded={panel === 'search'} onPress={event => openPanel('search', event.target)} icon={<Search size={20} aria-hidden="true"/>}/>
-        <IconButton buttonRef={notesButton} variant="ghost" aria-label={m.myNotes} title={m.myNotes} isDisabled={!privateReader.state} onPress={() => {setPanel(null); openNotesList(null);}} icon={<StickyNote size={20} aria-hidden="true"/>}/>
-        <IconButton variant="ghost" aria-label={m.offlineContent} title={m.offlineContent} aria-expanded={panel === 'offline'} onPress={event => openPanel('offline', event.target)} icon={<Download size={20} aria-hidden="true"/>}/>
-        {mobile && productionSentenceIds.size > 0 ? <IconButton variant="ghost" aria-label={m.productionDetails} title={m.productionDetails} aria-expanded={showProductionDetails} onPress={() => {if (notes && !closeNotes()) return; clearSelection(); setShowProductionDetails(value => !value);}} icon={<Info size={20} aria-hidden="true"/>}/> : null}
+      }} search={<IconButton variant="ghost" aria-label={m.search} title={m.search} aria-expanded={panel === 'search'} onPress={event => openPanel('search', event.target)} icon={<Search size={20} aria-hidden="true"/>}/>}/>
+      <header className={mobile ? "reader-topbar site-mobile-tab-bar" : "reader-topbar"} data-mobile-hidden={!chromeVisible} data-iphone-standalone={iphoneStandalone || undefined} aria-label={m.title}>
+        <IconButton variant="ghost" aria-label={mobile ? m.contents : m.thumbnails} title={mobile ? m.contents : m.thumbnails} aria-expanded={panel === 'pages'} onPress={event => openPanel('pages', event.target)} icon={<PanelLeft size={20} aria-hidden="true"/>}/>
+        {mobile ? <IconButton variant="ghost" aria-label={m.typography} aria-expanded={panel === 'type'} onPress={event => openPanel('type', event.target)} icon={<ALargeSmall size={20} aria-hidden="true"/>}/> : null}
+        <IconButton variant="ghost" aria-label={theme === 'dark' ? m.lightMode : m.darkMode} title={theme === 'dark' ? m.lightMode : m.darkMode} aria-pressed={theme === 'dark'} onPress={toggleTheme} icon={theme === 'dark' ? <Sun size={20} aria-hidden="true"/> : <Moon size={20} aria-hidden="true"/>}/>
+        <IconButton buttonRef={notesButton} variant="ghost" aria-label={m.myNotes} aria-description={m.savedHighlights} title={m.myNotes} isDisabled={!privateReader.state} onPress={() => {revealChrome(); setPanel(null); openNotesList(null);}} icon={<NotebookPen size={20} aria-hidden="true"/>}/>
+        {offlineControl}
         {!mobile ? <ReaderToolbar messages={m} zoom={zoom} setZoom={changeZoom}/> : null}
         {!mobile ? <div className="reader-direction-controls" role="group" aria-label={m.readingDirection}>
-          <IconButton variant="ghost" aria-label={m.readingDirection} title={`${m[direction]} → ${m[direction === 'vertical' ? 'horizontal' : 'vertical']}`} aria-pressed={direction === 'horizontal'} onPress={() => {if (notes && !closeNotes()) return; clearSelection(); setPanel(null); setDirection(current => current === 'vertical' ? 'horizontal' : 'vertical');}} icon={direction === 'vertical' ? <ChevronsUpDown size={20} aria-hidden="true"/> : <ChevronsLeftRight size={20} aria-hidden="true"/>}/>
+          <IconButton variant="ghost" aria-label={`${m.readingDirection}: ${m[direction]}`} title={`${m[direction]} → ${m[direction === 'vertical' ? 'horizontal' : 'vertical']}`} aria-pressed={direction === 'horizontal'} onPress={() => {if (notes && !closeNotes()) return; clearSelection(); setPanel(null); setDirection(current => current === 'vertical' ? 'horizontal' : 'vertical');}} icon={direction === 'vertical' ? <ChevronsUpDown size={20} aria-hidden="true"/> : <ChevronsLeftRight size={20} aria-hidden="true"/>}/>
         </div> : null}
       </header>
-      <aside className="reader-navigation-panel" data-panel={panel} hidden={!panel} aria-label={panel === 'pages' ? m.thumbnails : panel === 'sync' ? m.syncStatus : panel === 'search' ? m.search : m.offlineContent}>
-        <header><h2>{panel === 'pages' ? m.thumbnails : panel === 'sync' ? m.syncStatus : panel === 'search' ? m.search : m.offlineContent}</h2><IconButton variant="ghost" aria-label={m.close} onPress={closePanel} icon={<X size={20} aria-hidden="true"/>}/></header>
-        {panel === 'pages' ? <><PageNavigator document={document} metadata={value.document.canonicalMetadata} traceCode={value.access.traceCode} page={page} onPage={target => {if (onPage(target)) closePanel();}} messages={m}/><SectionNavigator document={document} onSection={id => {onAnchor({kind: 'component', id}); closePanel();}} messages={m}/></> : null}
-        {panel === 'sync' ? <SyncStatus status={syncStatus} messages={m}/> : null}
-        <div hidden={panel !== 'search'}><ReaderSearch document={value.document} onJump={id => onAnchor({kind: 'sentence', id})} messages={m} expanded/></div>
-        <div hidden={panel !== 'offline'}>{offlineControl}</div>
+      </div>
+      {panel ? <div className="reader-panel-backdrop" data-clear={panel === 'type' || undefined} aria-hidden="true" onClick={() => closePanel()}/> : null}
+      <aside className="reader-navigation-panel" role="dialog" aria-modal="true" data-panel={panel} hidden={!panel || panel === 'search'} aria-label={panel === 'pages' ? mobile ? m.contents : m.thumbnails : m.typography}>
+        <header><h2>{panel === 'pages' ? mobile ? m.contents : m.thumbnails : m.typography}</h2><IconButton variant="ghost" aria-label={m.close} onPress={() => closePanel()} icon={<X size={20} aria-hidden="true"/>}/></header>
+        {panel === 'pages' ? <>
+          {mobile ? <nav className="reader-chapters" aria-label={m.chapters}>{chapters.map((entry, index) => <Button key={entry.id} variant="ghost" aria-current={entry.id === chapter ? 'location' : undefined} onPress={() => {onChapter(index); closePanel(false);}}>{chapterLabels[entry.id]}</Button>)}</nav> : null}
+          {mobile ? <details className="reader-original-pages"><summary>{m.originalPages}</summary><PageNavigator document={document} metadata={value.document.canonicalMetadata} traceCode={value.access.traceCode} theme={theme} page={page} onPage={target => {if (onPage(target)) closePanel(false);}} messages={m}/></details> : <PageNavigator document={document} metadata={value.document.canonicalMetadata} traceCode={value.access.traceCode} theme={theme} page={page} onPage={target => {if (onPage(target)) closePanel();}} messages={m}/>}
+          <SectionNavigator document={document} onSection={id => {onAnchor({kind: 'component', id}); closePanel(!mobile);}} messages={m}/>
+        </> : null}
+        {panel === 'type' ? <ReaderTypography value={typography} onChange={changeTypography} messages={m}/> : null}
+      </aside>
+      <aside className="reader-navigation-panel reader-search-panel" role="dialog" aria-modal="true" data-panel="search" hidden={panel !== 'search'} aria-label={m.search}>
+        <header><IconButton variant="ghost" aria-label={m.close} onPress={() => closePanel()} icon={<ChevronLeft size={22} aria-hidden="true"/>}/></header>
+        <ReaderSearch document={value.document} mobile={mobile} onJump={id => {onAnchor({kind: 'sentence', id}); closePanel(false);}} messages={m}/>
       </aside>
     </div>
     {value.document.metadataSyncPending ? <p role="status">{m.metadataPending}</p> : null}
@@ -464,7 +571,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       }
     }).catch(() => setNotice(m.actionFailed));
     }}>{m.confirmRetry}</button></> : null}
-    <div className="reader-stage">
+    <div className="reader-stage" inert={!!panel}>
     <div ref={viewportRef} className="reader-viewport" data-mobile={mobile || undefined} data-direction={mobile ? undefined : direction} data-active-page={active.id} style={{touchAction: mobile || notes || nativeZoomed ? 'auto' : direction === 'horizontal' && !zoomed ? 'pan-y' : 'pan-x pan-y'}} tabIndex={0} onPointerDown={event => {
       if (event.pointerType !== 'touch' || notes || mobile || suspended) return;
       pointers.current.add(event.pointerId);
@@ -478,29 +585,42 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       const delta = swipeDirection({...start, dx: event.clientX - start.x, dy: event.clientY - start.y, zoomed: zoomed || (window.visualViewport?.scale ?? 1) > 1, hasSelection: !!window.getSelection()?.toString()});
       if (!mobile && direction === 'horizontal' && delta) onPage(page + delta);
     }}>
+      {mobile && chapterIndex > 0 ? <div className="reader-chapter-boundary"><IconButton variant="ghost" aria-label={m.previous} isDisabled={suspended} onPress={() => onChapter(chapterIndex - 1, true)} icon={<ArrowUp size={20} aria-hidden="true"/>}/></div> : null}
       {!fontsReady ? <p role="status">{m.loading}</p> : null}
       <div ref={paperRef} className="reader-paper-with-notes" data-has-notes={hasNotes || undefined} aria-hidden={!fontsReady || undefined} style={{visibility: fontsReady ? 'visible' : 'hidden', width: mobile ? undefined : Math.max(...document.pages.map(entry => entry.width * 4 / 3 * pageScale(zoom, {width: entry.width * 4 / 3, height: entry.height * 4 / 3}, viewport))) + (hasNotes ? 44 : 0)}}>
-      {mobile ? <div className="reader-watermarked"><BulletinDocumentRenderer document={mobileDocument} mode="mobile" canonicalMetadata={value.document.canonicalMetadata} sentenceState={sentenceState}/><ReaderWatermark traceCode={value.access.traceCode}/></div> :
-        <PaperViewport document={document} metadata={value.document.canonicalMetadata} sentenceState={sentenceState} traceCode={value.access.traceCode} page={page} direction={direction} zoom={zoom} viewport={viewport}/>}
-      <NoteIndicators root={paperRef} notes={privateReader.state?.notes ?? []} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}:${showProductionDetails}:${direction}`} label={m.myNotes} onOpen={openNotesList}/>
-      <RangeHighlights root={paperRef} highlights={savedHighlights} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}:${showProductionDetails}:${direction}`} onSelect={selectExisting}/>
+      {mobile ? <div ref={chapterHeading} tabIndex={-1} role="group" aria-label={chapterLabels[chapter]} className="reader-watermarked" style={{"--reader-font-size": `${typography.size}px`, "--reader-line-height": typography.line} as React.CSSProperties}><BulletinEbook document={document} chapter={chapter} canonicalMetadata={value.document.canonicalMetadata} sentenceState={sentenceState}/><ReaderWatermark traceCode={value.access.traceCode} tone={theme}/></div> :
+        <PaperViewport document={document} metadata={value.document.canonicalMetadata} sentenceState={sentenceState} traceCode={value.access.traceCode} theme={theme} page={page} direction={direction} zoom={zoom} viewport={viewport}/>}
+      <NoteIndicators root={paperRef} notes={privateReader.state?.notes ?? []} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}:${typography.size}:${typography.line}:${direction}:${chapter}`} label={m.myNotes} onOpen={openNotesList}/>
+      <RangeHighlights root={paperRef} highlights={savedHighlights} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}:${typography.size}:${typography.line}:${direction}:${chapter}`} onSelect={selectExisting}/>
       </div>
+      {mobile && chapterIndex < chapters.length - 1 ? <div className="reader-chapter-boundary"><IconButton variant="ghost" aria-label={m.next} isDisabled={suspended} onPress={() => onChapter(chapterIndex + 1)} icon={<ArrowDown size={20} aria-hidden="true"/>}/></div> : null}
+      {mobile ? <ChapterPull key={chapter} root={viewportRef} blocked={!!panel || selecting || selected.length > 0 || !!notes || suspended || nativeZoomed} onPrevious={chapterIndex > 0 ? () => onChapter(chapterIndex - 1, true) : undefined} onNext={chapterIndex < chapters.length - 1 ? () => onChapter(chapterIndex + 1) : undefined}/> : null}
     </div>
-    {!mobile && direction === 'horizontal' ? <>{page > 0 ? <div className="reader-edge reader-edge-previous"><IconButton variant="ghost" aria-label={m.previous} onPress={() => onPage(page - 1)} icon={<ChevronLeft aria-hidden="true"/>}/></div> : null}{page < document.pages.length - 1 ? <div className="reader-edge reader-edge-next"><IconButton variant="ghost" aria-label={m.next} onPress={() => onPage(page + 1)} icon={<ChevronRight aria-hidden="true"/>}/></div> : null}</> : null}
     </div>
-    {notice ? <p role="status">{notice}</p> : null}
+    {!mobile && direction === 'horizontal' ? <div className="reader-page-controls" role="group" aria-label={m.originalPages}>
+      {page > 0 ? <IconButton variant="ghost" aria-label={m.previous} title={m.previous} isDisabled={suspended || page === 0} onPress={() => onPage(page - 1)} icon={<ChevronLeft size={20} aria-hidden="true"/>}/> : null}
+      {page < document.pages.length - 1 ? <IconButton variant="ghost" aria-label={m.next} title={m.next} isDisabled={suspended || page >= document.pages.length - 1} onPress={() => onPage(page + 1)} icon={<ChevronRight size={20} aria-hidden="true"/>}/> : null}
+    </div> : null}
+    {notice ? <p className="reader-action-notice" role="status">{notice}</p> : null}
     <SelectionToolbar messages={m} root={paperRef} ranges={selectionRanges} count={selecting ? 0 : selectionRanges.reduce((count, range) => count + range.end - range.start, 0)} color={highlightSelection.color} clearable={highlightSelection.clearable} busy={privateReader.busy || !privateReader.state || privateReader.status === 'paused'} noteOpen={!!notes} noteButtonRef={noteButton}
       onColor={color => void action({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, kind: 'setHighlight', payload: {sentenceIds: selected, color, ...(selection.ranges ? {ranges: selection.ranges} : {})}})}
       onClear={() => void action({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, kind: 'clearHighlight', payload: {sentenceIds: selected, ...(selection.ranges ? {ranges: selection.ranges} : {})}})}
       onCopy={() => {const snapshot = selection; void (selection.ranges ? copyTextRanges(value.document, selection.ranges, allowAction) : copySentences(value.document, selected, allowAction)).then(() => {setNotice(m.copySuccess); clearIf(snapshot);}).catch(() => setNotice(m.copyFailed));}}
       onNote={() => {newNoteId.current = null; setNoteEditorState(undefined); setNotes('new');}}/>
-    {notes ? <ReaderPrivateState wide={wideNotes} messages={m} onClose={closeNotes} suspended={suspended}>
+    {notes ? <ReaderPrivateState wide={wideNotes} theme={theme} messages={m} onClose={closeNotes} suspended={suspended}>
       {deletion ? <section className="reader-note-editor"><p role="alert">{m.noteConflict}</p><h3>{m.recoveryLocal}</h3><blockquote>{deletion.local.text}</blockquote><h3>{m.recoveryCloud}</h3><blockquote>{deletion.cloud && !deletion.cloud.deleted ? deletion.cloud.text : m.noteDeleted}</blockquote><div className="reader-note-actions">
         <button type="button" disabled={privateReader.busy} onClick={() => setDeletion(null)}>{m.noteCloud}</button>
         {deletion.cloud && !deletion.cloud.deleted ? <><button type="button" disabled={privateReader.busy} onClick={() => {if (window.confirm(m.noteDeleteConfirm)) void deleteNote(deletion.cloud!);}}>{m.noteDelete}</button><button type="button" disabled={privateReader.busy} onClick={() => {setNotes({...deletion.cloud!, text: `${deletion.cloud!.text}\n\n${deletion.local.text}`}); setDeletion(null);}}>{m.noteManual}</button></> : null}
-      </div></section> : notes === 'list' ? <NotesPanel messages={m} notes={(privateReader.state?.notes ?? []).filter(note => !noteFilter || noteFilter.includes(note.id))} onJump={id => onAnchor({kind: 'sentence', id})} onEdit={note => {newNoteId.current = null; setNoteEditorState(undefined); setNotes(note);}} onDelete={note => {
+      </div></section> : notes === 'list' ? <>
+      {notice ? <p role="status">{notice}</p> : null}
+      {!noteFilter ? <HighlightsPanel highlights={savedHighlights} sentences={sentences} messages={m} busy={privateReader.busy || !privateReader.state || privateReader.status === 'paused' || suspended} onChange={(range, color) => action({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, ...(color ? {kind: 'setHighlight' as const, payload: {sentenceIds: [range.sentenceId], ranges: [range], color}} : {kind: 'clearHighlight' as const, payload: {sentenceIds: [range.sentenceId], ranges: [range]}})})}/> : null}
+      <NotesPanel messages={m} notes={(privateReader.state?.notes ?? []).filter(note => !noteFilter || noteFilter.includes(note.id))} onJump={id => onAnchor({kind: 'sentence', id})} onEdit={note => {newNoteId.current = null; setNoteEditorState(undefined); setNotes(note);}} onDelete={note => {
         if (window.confirm(m.noteDeleteConfirm)) void deleteNote(note);
-      }}/> : <NoteEditor key={typeof notes === 'object' ? notes.id : 'new'} messages={m} note={typeof notes === 'object' ? notes : undefined} quote={noteQuote} editorState={noteEditorState} onEditorStateChange={setNoteEditorState} onSave={saveNote} onComplete={() => {if (notes === 'new') clearSelection(); setNotes(null); setNoteEditorState(undefined); requestAnimationFrame(() => notesButton.current?.focus());}} onCancel={closeNotes}/>}
+      }}/></> : notes === 'restore' && (!editingNote || editingNote.deleted) ? <section className="reader-note-editor">
+        <p role="status">{!privateReader.state ? m.loading : m.noteDeleted}</p>
+        <textarea aria-label={m.noteText} readOnly rows={8} value={noteEditorState?.draft.text ?? ''}/>
+        <button type="button" onClick={closeNotes}>{m.noteCancel}</button>
+      </section> : <NoteEditor key={editingNote?.id ?? 'new'} messages={m} note={editingNote} quote={noteQuote} editorState={noteEditorState} onEditorStateChange={setNoteEditorState} onSave={saveNote} onComplete={() => {if (notes === 'new') clearSelection(); setNotes(null); setNoteEditorState(undefined); requestAnimationFrame(() => notesButton.current?.focus());}} onCancel={closeNotes}/>}
     </ReaderPrivateState> : null}
   </section>;
 }

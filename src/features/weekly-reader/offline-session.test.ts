@@ -7,9 +7,11 @@ beforeEach(() => {vi.clearAllMocks(); store.getOfflineIdentity.mockResolvedValue
 
 it('purges old restoration keys on account switch, while preserving unrelated session state', async () => {
   sessionStorage.setItem('weekly-reader-position:old:doc:1', 'p1'); sessionStorage.setItem('unrelated', 'keep');
+  sessionStorage.setItem('weekly-reader-tabs:old', '[{"title":"Private"}]');
   await prepareOfflineAccount('new');
   expect(store.activateOfflineAccount).toHaveBeenCalledWith('new');
   expect(sessionStorage.getItem('weekly-reader-position:old:doc:1')).toBeNull();
+  expect(sessionStorage.getItem('weekly-reader-tabs:old')).toBeNull();
   expect(sessionStorage.getItem('unrelated')).toBe('keep');
 });
 

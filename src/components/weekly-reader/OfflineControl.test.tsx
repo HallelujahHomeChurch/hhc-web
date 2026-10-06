@@ -18,6 +18,24 @@ it('revalidates and stages resources before the atomic commit, and keeps failure
   expect(api.renew.mock.invocationCallOrder[0]).toBeLessThan(store.stageOfflineSave.mock.invocationCallOrder[0]);
   expect(store.stageOfflineSave.mock.invocationCallOrder[0]).toBeLessThan(store.commitOfflineSave.mock.invocationCallOrder[0]);
   expect(props.onSaved).toHaveBeenCalledWith(readerFixture());
+  expect(await screen.findByRole('button', {name: 'Saved offline'})).toBeDisabled();
+});
+it('shows a disabled loading icon until saving completes', async () => {
+  let finish!: (value: ReturnType<typeof readerFixture>) => void;
+  api.renew.mockReturnValueOnce(new Promise(resolve => {finish = resolve;}));
+  render(<OfflineControl {...props}/>);
+  fireEvent.click(await screen.findByRole('button', {name: 'Save offline'}));
+  const loading = await screen.findByRole('button', {name: props.messages.savingOffline});
+  expect(loading).toBeDisabled();
+  expect(loading.closest('.reader-offline-control')).toHaveAttribute('aria-busy', 'true');
+  expect(loading.querySelector('.reader-saving-spinner')).not.toBeNull();
+  finish(readerFixture());
+  expect(await screen.findByRole('button', {name: 'Saved offline'})).toBeDisabled();
+});
+it('allows saving again when the existing offline authorization has expired', async () => {
+  store.readOfflineSave.mockResolvedValue({status: 'expired', save: {size: 100, value: readerFixture()}});
+  render(<OfflineControl {...props}/>);
+  expect(await screen.findByRole('button', {name: 'Save offline'})).toBeEnabled();
 });
 it('retains the existing save and surfaces quota failure rather than reporting success', async () => {
   store.commitOfflineSave.mockRejectedValueOnce(new DOMException('Full', 'QuotaExceededError'));
@@ -40,12 +58,9 @@ it('hides offline controls when the browser cannot provide required storage and 
   render(<OfflineControl {...props}/>);
   expect(screen.queryByRole('button')).not.toBeInTheDocument();
 });
-it('warns before removing unsynced notes and keeps the download when cancelled', async () => {
-  store.readOfflineSave.mockResolvedValue({save: {size: 100, value: readerFixture()}});
-  store.hasPendingReaderWrites.mockResolvedValueOnce(true);
-  vi.spyOn(window, 'confirm').mockReturnValue(false);
+it('shows a disabled saved icon for an available current revision', async () => {
+  store.readOfflineSave.mockResolvedValue({status: 'available', save: {size: 100, value: readerFixture()}});
   render(<OfflineControl {...props}/>);
-  fireEvent.click(await screen.findByRole('button', {name: 'Remove download'}));
-  await waitFor(() => expect(window.confirm).toHaveBeenCalledWith(props.messages.unsyncedWarning));
+  expect(await screen.findByRole('button', {name: 'Saved offline'})).toBeDisabled();
   expect(store.removeOfflineSave).not.toHaveBeenCalled();
 });

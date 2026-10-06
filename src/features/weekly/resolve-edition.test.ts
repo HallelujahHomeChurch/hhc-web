@@ -22,10 +22,16 @@ describe('whole edition resolution',()=>{
   it.each(['zh-Hans','en'] as const)('falls back to authorized Traditional Chinese when %s is absent',uiLocale=>{
     expect(resolveEdition({uiLocale,series:'general',authorizedEditions,publishedEditions:[version('zh-Hant')]})).toMatchObject({contentLocale:'zh-Hant'});
   });
-  it('never borrows a reader from another language or series',()=>{
+  it('falls back each format independently without borrowing another series',()=>{
     const result=resolveEdition({uiLocale:'en',series:'general',authorizedEditions,publishedEditions:[version('en',{onlineRevision:undefined}),version('zh-Hant'),version('en',{series:'children'})]});
     expect(result).toMatchObject({contentLocale:'en',canDownload:true});
-    expect(result?.readUrl).toBeUndefined();
+    expect(result?.readUrl).toBe('/en/literature-ministry/1740/read/general/zh-Hant');
+    expect(result?.downloadVersion?.locale).toBe('en');
+  });
+  it('keeps Hans online-only while downloading the available Hant PDF',()=>{
+    const result=resolveEdition({uiLocale:'zh-Hans',series:'general',authorizedEditions,publishedEditions:[version('zh-Hans',{pdfPublished:false}),version('zh-Hant')]});
+    expect(result?.readUrl).toBe('/zh-Hans/literature-ministry/1740/read/general/zh-Hans');
+    expect(result?.downloadVersion?.locale).toBe('zh-Hant');
   });
   it('keeps Online-only and suppresses Download',()=>{
     expect(resolveEdition({uiLocale:'en',series:'general',authorizedEditions,publishedEditions:[version('en',{pdfPublished:false})]})).toMatchObject({canDownload:false,readUrl:'/en/literature-ministry/1740/read/general/en'});

@@ -1,6 +1,7 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {readerFixture} from './test-fixture';
 import {createReaderApi, verifyReaderAccess} from './api';
+import {BULLETIN_RENDERER_V2_DIGEST,BULLETIN_RENDERER_V2_ASSETS} from '@hallelujahhomechurch/ui';
 
 const client = vi.hoisted(() => ({listOnlineBulletinDiscovery: vi.fn(), openOnlineBulletin: vi.fn(), getReaderState: vi.fn(), applyReaderMutations: vi.fn()}));
 vi.mock('@hallelujahhomechurch/hhc-web-client', async original => ({...await original<typeof import('@hallelujahhomechurch/hhc-web-client')>(), createHhcWebClient: () => client}));
@@ -9,6 +10,17 @@ const auth = {getAccessToken: async () => 'token', refreshAfterUnauthorized: asy
 beforeEach(() => {vi.clearAllMocks(); client.listOnlineBulletinDiscovery.mockResolvedValue({items: [{issueId: readerFixture().document.issueId, issueNumber: 1739, series: 'general', contentLocale: 'zh-Hant', onlineRevision: 1}]}); client.openOnlineBulletin.mockResolvedValue(readerFixture());});
 
 describe('member reader access', () => {
+  it('accepts pinned Simplified V2 only with its exact language and private document binding',()=>{
+    const value=readerFixture();
+    value.document.contentLocale=value.access.contentLocale='zh-Hans';
+    value.document.documentId=value.access.documentId='simplified-document';
+    value.document.content.templateVersion='v2';
+    Object.assign(value.document.content.layoutManifest,{templateVersion:'v2',rendererVersion:'v2',rendererArtifactSha256:BULLETIN_RENDERER_V2_DIGEST,assets:BULLETIN_RENDERER_V2_ASSETS.map(asset=>({url:asset.url,sha256:asset.sha256,kind:asset.kind}))});
+    expect(verifyReaderAccess(value,{...selector,contentLocale:'zh-Hans'}).contentLocale).toBe('zh-Hans');
+    expect(()=>verifyReaderAccess(value,selector)).toThrow('invalid_reader_binding');
+    value.access.documentId='traditional-document';
+    expect(()=>verifyReaderAccess(value,{...selector,contentLocale:'zh-Hans'})).toThrow('invalid_reader_binding');
+  });
   it('opens the latest revision by immutable issue identity only after an explicit update request', async () => {
     const saved = readerFixture();
     const newer = readerFixture(); newer.document.revision = newer.access.revision = newer.access.currentRevision = 2;

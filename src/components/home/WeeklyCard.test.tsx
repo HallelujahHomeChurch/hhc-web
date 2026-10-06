@@ -86,6 +86,8 @@ describe('WeeklyCard', () => {
     expect(await screen.findByRole('link',{name:'Read online'})).toHaveAttribute('href','/en/literature-ministry/1737/read/general/en');
     expect(screen.getAllByRole('button',{name:/Download:/})).toHaveLength(1);
     expect(screen.getByRole('button',{name:'Download: English'})).toBeInTheDocument();
+    expect(screen.getByText('English')).toBeVisible();
+    expect(screen.getByRole('link', {name: 'Read online'}).compareDocumentPosition(screen.getByRole('button', {name: 'Download: English'})) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 

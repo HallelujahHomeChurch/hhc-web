@@ -111,6 +111,15 @@ describe('AccountControl', () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
+  it('offers a generic sign-in state without revealing gated bulletin content', async () => {
+    const fetcher = vi.fn();
+    vi.stubGlobal('fetch', fetcher);
+    render(<AccountControlProvider client={anonymousClient()} labels={labels}><BulletinAccessGate messages={{title: 'Bulletins', loading: 'Checking access', signInRequired: 'Sign in to read', signIn: 'Sign in', unavailable: 'Unavailable'}}><span>Private issue title</span></BulletinAccessGate></AccountControlProvider>);
+    expect(await screen.findByRole('button', {name: 'Sign in'})).toBeVisible();
+    expect(screen.getByText('Sign in to read')).toBeVisible();
+    expect(screen.queryByText('Private issue title')).not.toBeInTheDocument();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
   it('projects General and Children bulletin entitlements independently', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({
       memberships: [], orgRoles: [], qualifications: [],

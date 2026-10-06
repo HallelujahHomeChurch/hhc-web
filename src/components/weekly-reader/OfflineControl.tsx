@@ -1,9 +1,10 @@
 'use client';
-import {Button} from '@hallelujahhomechurch/ui';
+import {Save, Check, LoaderCircle} from 'lucide-react';
+import {ReaderIconButton} from './ReaderIconButton';
 import {useEffect, useRef, useState} from 'react';
 import type {OnlineBulletinAccess} from '@hallelujahhomechurch/hhc-web-client';
 import type {createReaderApi, ReaderSelector} from '@/features/weekly-reader/api';
-import {commitOfflineSave, getOfflineIdentity, hasPendingReaderWrites, readOfflineSave, removeOfflineSave, stageOfflineSave, supportsOfflineReader, type OfflineSave} from '@/features/weekly-reader/offline-store';
+import {commitOfflineSave, getOfflineIdentity, readOfflineSave, stageOfflineSave, supportsOfflineReader, type OfflineSave} from '@/features/weekly-reader/offline-store';
 import type {Locale} from '@/i18n/locales';
 import {prepareOfflineReaderShell} from '@/lib/reader-shell';
 import type {ReaderMessages} from './ReaderToolbar';
@@ -20,7 +21,7 @@ export function OfflineControl({api, value, selector, locale, messages: m, onSav
   useEffect(() => {
     let active = true;
     if (supportsOfflineReader() && 'serviceWorker' in navigator && typeof MessageChannel !== 'undefined') void readOfflineSave({accountId, issueNumber, series, contentLocale}).then(result => {
-      if (active) {setSaved(result?.save ?? null); setReady(true);}
+      if (active) {setSaved(result?.status === 'available' ? result.save : null); setReady(true);}
     }).catch(() => {});
     return () => {active = false; controller.current?.abort();};
   }, [accountId, issueNumber, series, contentLocale, value.access.receiptId]);
@@ -42,22 +43,10 @@ export function OfflineControl({api, value, selector, locale, messages: m, onSav
     } catch (failure) {if (!request.signal.aborted) {setError(true); onFailure(failure);}}
     finally {if (!request.signal.aborted) setBusy(false);}
   }
-  async function remove() {
-    if (busy) return;
-    setBusy(true); setError(false);
-    try {
-      const pending = await hasPendingReaderWrites(accountId, value.document.documentId);
-      if (!window.confirm(pending ? m.unsyncedWarning : m.offlineRemoveConfirm)) return;
-      await removeOfflineSave(selector); setSaved(null);
-    }
-    catch {setError(true);}
-    finally {setBusy(false);}
-  }
-  return <div className="reader-offline-control">
-    <Button type="button" isDisabled={busy} onPress={() => void (saved ? remove() : save())}>{busy ? m.savingOffline : saved ? m.removeOffline : m.saveOffline}</Button>
-    <a href={`/${locale}/literature-ministry/offline`}>{m.offlineContent}</a>
-    {saved ? <span>{m.offlineRevision} {saved.value.access.revision} · {m.offlineSize} {new Intl.NumberFormat(locale, {maximumFractionDigits: 1}).format(saved.size / 1024)} KB · {m.offlineExpiry} {new Intl.DateTimeFormat(locale, {dateStyle: 'short', timeStyle: 'short'}).format(new Date(saved.value.access.offlineValidUntil))}</span> : null}
-    {value.access.currentRevision > value.access.revision ? <p role="status">{m.offlineUpdate}</p> : null}
+  const complete = saved?.value.access.revision === value.access.revision;
+  const label = busy ? m.savingOffline : complete ? m.savedOffline : m.saveOffline;
+  return <div className="reader-offline-control" aria-busy={busy}>
+    <ReaderIconButton variant="ghost" aria-label={label} title={label} isDisabled={busy || complete} onPress={() => void save()} icon={busy ? <LoaderCircle size={20} className="reader-saving-spinner" aria-hidden="true"/> : complete ? <Check size={20} aria-hidden="true"/> : <Save size={20} aria-hidden="true"/>}/>
     {error ? <p role="alert">{m.offlineError}</p> : null}
   </div>;
 }

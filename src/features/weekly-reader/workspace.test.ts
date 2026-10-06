@@ -21,11 +21,11 @@ describe('reader workspace', () => {
     expect(closeTab([first, second], tabKey(second), tabKey(second))).toEqual({tabs: [first], active: first});
     expect(closeTab([first], tabKey(first), tabKey(first))).toEqual({tabs: [], active: null});
   });
-  it('stores identifiers only, isolated by account, and rejects malformed entries', () => {
+  it('keeps titles isolated by account and rejects malformed entries', () => {
     writeTabs('a', [{...first, title: 'private title'} as ReaderTab]);
-    expect(readTabs('a')).toEqual([first]);
+    expect(readTabs('a')).toEqual([{...first, title: 'private title'}]);
     expect(readTabs('b')).toEqual([]);
-    expect(sessionStorage.getItem('weekly-reader-tabs:a')).not.toContain('private title');
+    expect(addTab(readTabs('a'), {...first, title: 'Updated'})).toEqual([{...first, title: 'Updated'}]);
     sessionStorage.setItem('weekly-reader-tabs:a', JSON.stringify([first, {...second, issueNumber: -1}, {...second, contentLocale: 'ja'}]));
     expect(readTabs('a')).toEqual([first]);
     sessionStorage.setItem('weekly-reader-tabs:a', '{');

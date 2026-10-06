@@ -31,6 +31,18 @@ it('atomically saves an exact account edition with hash-verified resources, then
   expect(await readOfflineSave({...route, issueNumber: 1740}, now)).toBeNull();
 });
 
+it('retains Traditional and Simplified offline editions independently with verified V2 fonts',async()=>{
+  const epoch=await activateOfflineAccount(route.accountId);
+  const hans={...route,contentLocale:'zh-Hans' as const};
+  await commitOfflineSave(await stageOfflineSave(readerFixture(),route,fetchAsset,now),epoch,now);
+  await commitOfflineSave(await stageOfflineSave(readerFixture('zh-Hans'),hans,fetchAsset,now),epoch,now);
+  expect(await listOfflineSaves(route.accountId)).toHaveLength(2);
+  expect((await readOfflineSave(hans,now))?.save.value.document.documentId).not.toBe((await readOfflineSave(route,now))?.save.value.document.documentId);
+  await removeOfflineSave(hans);
+  expect(await readOfflineSave(hans,now)).toBeNull();
+  expect((await readOfflineSave(route,now))?.status).toBe('available');
+});
+
 it('does not retain partial resources or replace a saved revision when resource staging fails', async () => {
   const epoch = await activateOfflineAccount('account-a');
   await commitOfflineSave(await stageOfflineSave(readerFixture(), route, fetchAsset, now), epoch, now);

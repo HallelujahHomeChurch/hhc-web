@@ -1,0 +1,23 @@
+import {cleanup, fireEvent, render, screen} from '@testing-library/react';
+import {afterEach, expect, it, vi} from 'vitest';
+import {ReaderSearch} from './ReaderSearch';
+import {readerFixture} from '@/features/weekly-reader/test-fixture';
+import {getMessages} from '@/i18n/messages';
+afterEach(cleanup);
+it('submits explicitly and lists all matches before navigating', () => {
+  const m = getMessages('en').weeklyReader, onJump = vi.fn();
+  render(<ReaderSearch document={readerFixture().document} onJump={onJump} messages={m}/>);
+  fireEvent.change(screen.getByRole('searchbox'), {target: {value: '內容'}});
+  expect(screen.queryByRole('list')).not.toBeInTheDocument();
+  fireEvent.submit(screen.getByRole('search'));
+  expect(screen.getAllByRole('listitem')).toHaveLength(4);
+  expect(onJump).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', {name: /內容2/}));
+  expect(onJump).toHaveBeenCalledWith('s2');
+  fireEvent.change(screen.getByRole('searchbox'), {target: {value: 'not in the document'}});
+  fireEvent.submit(screen.getByRole('search'));
+  expect(screen.getByRole('status')).toHaveTextContent(m.noResults);
+  fireEvent.click(screen.getByRole('button', {name: m.clearHighlight}));
+  expect(screen.getByRole('searchbox')).toHaveValue('');
+  expect(screen.queryByText(m.noResults)).not.toBeInTheDocument();
+});

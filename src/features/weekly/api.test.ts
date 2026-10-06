@@ -63,7 +63,7 @@ describe('member weekly API', () => {
   it('only falls back to the existing protected PDF latest on a transient failure',async()=>{
     const fetcher=vi.fn<typeof fetch>().mockResolvedValueOnce(Response.json({}, {status:503})).mockResolvedValueOnce(Response.json({data:bulletin,meta:{},error:null}));
     const api=createWeeklyBulletinApi({getAccessToken:vi.fn().mockResolvedValue('token'),refreshAfterUnauthorized:vi.fn()},fetcher);
-    expect(await api.fetchLatest('general',['zh-Hant'])).toMatchObject({versions:[{pdfPublished:true}]});
+    expect(await api.fetchLatest('general',['zh-Hant'])).toMatchObject({pdfFallback:true,versions:[{pdfPublished:true}]});
     expect((fetcher.mock.calls[1]![0] as Request).url).toContain('/api/member/bulletins/latest');
   });
 

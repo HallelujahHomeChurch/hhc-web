@@ -35,7 +35,8 @@ export function createWeeklyBulletinApi(authorization: BulletinAuthorization, fe
       } catch (error) {
         if (!isTransient(error) || signal?.aborted) throw error;
         const versions = await Promise.all(locales.map(locale => client.getLatestProtectedBulletin(locale, series, signal)));
-        return groupBulletins(versions.map(fromPDF).toSorted((a, b) => b.date.localeCompare(a.date)))[0] ?? null;
+        const issue = groupBulletins(versions.map(fromPDF).toSorted((a, b) => b.date.localeCompare(a.date)))[0];
+        return issue ? {...issue, pdfFallback: true} : null;
       }
     },
 
@@ -58,7 +59,7 @@ export function createWeeklyBulletinApi(authorization: BulletinAuthorization, fe
         // The legacy PDF API cannot page a multi-language union authoritatively.
         if (!isTransient(error) || signal?.aborted || locales.length !== 1) throw error;
         const result = await client.listProtectedBulletins({series, locale: locales[0], page: normalizedPage, pageSize: normalizedPageSize, signal});
-        items = groupBulletins(result.data.map(fromPDF));
+        items = groupBulletins(result.data.map(fromPDF)).map(issue => ({...issue, pdfFallback: true}));
         totalItems = result.meta.total;
       }
 

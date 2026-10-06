@@ -20,6 +20,16 @@ async function saved() {
   await seedPrivateReplica(selector, state, epoch, now);
   return epoch;
 }
+it('keeps notes, highlights and reading progress inside the exact language document',async()=>{
+  const epoch=await saved(),hansSelector={...selector,contentLocale:'zh-Hans' as const},hans=readerFixture('zh-Hans');
+  await commitOfflineSave({selector:hansSelector,value:hans,epoch,resources:[],size:100,locked:false,lastObservedAt:now},epoch,now);
+  await seedPrivateReplica(hansSelector,{...state,documentId:hans.document.documentId},epoch,now);
+  await enqueuePrivateMutation(selector,note,epoch,now);
+  await enqueuePrivateMutation(selector,{...note,mutationId:crypto.randomUUID(),kind:'setProgress',payload:{pageId:'p1'}},epoch,now);
+  expect((await readPrivateReplica(hansSelector,now))?.queue).toEqual([]);
+  expect((await readPrivateReplica(hansSelector,now))?.state).toMatchObject({notes:[],highlights:[],progress:null});
+  await expect(seedPrivateReplica(hansSelector,state,epoch,now)).rejects.toThrow('invalid_reader_binding');
+});
 it('atomically enqueues a note and its visible state, retains its ID on retry, and clears only after acknowledgement', async () => {
   const epoch = await saved();
   const local = await enqueuePrivateMutation(selector, note, epoch, now);

@@ -1,5 +1,5 @@
 import {createHhcWebClient, type OnlineBulletinAccess, type BulletinReaderMutation} from '@hallelujahhomechurch/hhc-web-client';
-import {requireBulletinRenderer, type BulletinRenderableDocument} from '@hallelujahhomechurch/ui';
+import {requireBulletinRenderer, BULLETIN_RENDERER_V2_ASSETS, type BulletinRenderableDocument} from '@hallelujahhomechurch/ui';
 import type {BulletinLocale, BulletinSeries} from '@hallelujahhomechurch/preferences';
 import {createProtectedFetch} from '@/features/weekly/api';
 import assets from '../../../public/assets/weekly/v1/manifest.json';
@@ -19,12 +19,14 @@ export function verifyReaderAccess(value: OnlineBulletinAccess, expected: Reader
       !access.receiptId || !access.traceCode || !Number.isFinite(Date.parse(access.validatedAt)) ||
       Date.parse(access.offlineValidUntil) - Date.parse(access.validatedAt) !== 604800000) throw new Error('invalid_reader_binding');
   requireBulletinRenderer(content.layoutManifest);
-  if (document.series !== 'general' || document.contentLocale !== 'zh-Hant' || content.schemaVersion !== '1' || content.templateVersion !== 'v1' ||
+  const templateVersion=document.contentLocale==='zh-Hant'?'v1':document.contentLocale==='zh-Hans'?'v2':null;
+  if (document.series !== 'general' || !templateVersion || content.schemaVersion !== '1' || content.templateVersion !== templateVersion ||
       !hash.test(content.layoutManifest.contentHash ?? '') || !hash.test(content.layoutManifest.layoutValidationHash ?? '') ||
       !Number.isInteger(content.printedBodyPageCount) || content.printedBodyPageCount < 2 || content.printedBodyPageCount > 38 ||
       !content.pages.length || content.pages.length > 80 || content.layoutManifest.pages.length !== content.pages.length) throw new Error('update_required');
+  const knownAssets=templateVersion==='v2'?BULLETIN_RENDERER_V2_ASSETS:assets.assets;
   for (const asset of content.layoutManifest.assets) {
-    if (!assets.assets.some(known => known.url === asset.url && known.sha256 === asset.sha256 && known.kind === asset.kind)) throw new Error('update_required');
+    if (!knownAssets.some(known => known.url === asset.url && known.sha256 === asset.sha256 && known.kind === asset.kind)) throw new Error('update_required');
   }
   const pageIds = new Set<string>();
   for (const page of content.pages) {
@@ -34,7 +36,7 @@ export function verifyReaderAccess(value: OnlineBulletinAccess, expected: Reader
   }
   // The worker proof binds its original document; the client already checked the
   // exact response-byte SHA-256. Never hash the redacted projection as that proof.
-  return {...content, contentLocale: 'zh-Hant', sourcePageCount: content.printedBodyPageCount + 2};
+  return {...content, contentLocale: templateVersion==='v2'?'zh-Hans':'zh-Hant', sourcePageCount: content.printedBodyPageCount + 2};
 }
 
 export function createReaderApi(authorization: Authorization, fetcher = globalThis.fetch.bind(globalThis)) {
