@@ -12,9 +12,6 @@
       "next@16.3.6>postcss": "8.5.23",
       "next@16.3.6>sharp": "0.35.4",
       "brace-expansion@5.0.9": "5.0.11"
-    },
-    "patchedDependencies": {
-      "@hallelujahhomechurch/account-client@1.0.31": "patches/@hallelujahhomechurch__account-client@1.0.31.patch"
     }
   },
   "scripts": {
@@ -27,7 +24,7 @@
     "test:run": "node --test scripts/check-static-budgets.node-test.mjs && vitest run"
   },
   "dependencies": {
-    "@hallelujahhomechurch/account-client": "1.0.31",
+    "@hallelujahhomechurch/account-client": "1.0.38",
     "@hallelujahhomechurch/hhc-web-client": "1.0.34",
     "@hallelujahhomechurch/operations-client": "1.0.26",
     "@hallelujahhomechurch/preferences": "1.0.28",
