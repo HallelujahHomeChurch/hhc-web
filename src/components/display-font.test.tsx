@@ -1,9 +1,11 @@
 import {render, screen} from '@testing-library/react';
 import {createHash} from 'node:crypto';
+import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
 import {describe, expect, it, vi} from 'vitest';
 import {AboutHero} from './about/AboutHero';
 import {HomeHero} from './home/HomeHero';
+import {getMessages} from '@/i18n/messages';
 
 vi.mock('@/app/fonts', () => ({
   bannerFontByLocale: {
@@ -14,6 +16,29 @@ vi.mock('@/app/fonts', () => ({
     ko: {className: 'font-hhc-pen-hangul-banner'}
   }
 }));
+
+describe.each([
+  ['zh-Hant','src/assets/fonts/chenyuluoyan/ChenYuluoyan-HHC-Banners.woff2','font-chenyuluoyan-banner'],
+  ['en','src/assets/fonts/chenyuluoyan/ChenYuluoyan-HHC-Banners.woff2','font-chenyuluoyan-banner'],
+  ['zh-Hans','src/assets/fonts/ma-shan-zheng/MaShanZheng-HHC-Banners.woff2','font-ma-shan-zheng'],
+  ['ja','src/assets/fonts/klee-one/KleeOne-HHC-Banners.woff2','font-klee-one-banner'],
+  ['ko','src/assets/fonts/hhc-pen-hangul/HHC-Pen-Hangul-Banners.woff2','font-hhc-pen-hangul-banner']
+] as const)('%s member video banner', (locale,fontPath,className)=>{
+  it('includes every member-video banner character in its locale subset',()=>{
+    const messages=getMessages(locale).memberVideos;
+    const characters=messages.heroTitle+messages.heroSubtitle;
+    const missing=JSON.parse(execFileSync('python3',['-c',
+      'import json,sys; from fontTools.ttLib import TTFont; cmap=TTFont(sys.argv[1]).getBestCmap(); print(json.dumps(sorted({c for c in sys.argv[2] if not c.isspace() and ord(c) not in cmap})))',
+      fontPath,characters],{encoding:'utf8'})) as string[];
+    expect(missing).toEqual([]);
+  });
+  it('uses the existing hero font for the actual title and subtitle',()=>{
+    const messages=getMessages(locale).memberVideos;
+    render(<AboutHero locale={locale} title={messages.heroTitle} subtitle={messages.heroSubtitle}/>);
+    expect(screen.getByRole('heading',{name:messages.heroTitle})).toHaveClass(className);
+    expect(screen.getByText(messages.heroSubtitle)).toHaveClass(className);
+  });
+});
 
 describe.each([
   ['HomeHero', HomeHero],
@@ -57,7 +82,7 @@ describe.each([
     'src/assets/fonts/klee-one/OFL.txt',
     'bf4063f030cc2ae6adf0a11424a1888e5c0eb4438f1f6d02f52294af868e9b3a',
     'src/assets/fonts/klee-one/KleeOne-HHC-Banners.woff2',
-    '617fba728b49323e67a57cad09b3819abb896e2e582841d2ad32dca9890d9730'
+    '5f72cca94added1435efea49f0f218d2dabedb37162d93213a8d94c4a7a8e98a'
   ],
   [
     'HHC Pen Hangul',
@@ -65,7 +90,7 @@ describe.each([
     'src/assets/fonts/hhc-pen-hangul/OFL.txt',
     '6f0d1ab29c7894010dc88831fb7a0a51edb79136e450344183de5b1a8b52bd43',
     'src/assets/fonts/hhc-pen-hangul/HHC-Pen-Hangul-Banners.woff2',
-    '70ca31913168438ae3005791f992b8a9b73b0cd55dad04b73ef71ad7183fa8d2'
+    '638ffd838c14090be71343e3d713974d8b64cc695a42f616608881ec14ce1b98'
   ]
 ] as const)('%s source', (_name, sourcePath, licensePath, sourceHash, derivedPath, derivedHash) => {
   it('records the pinned official revision, source hash, copyright, and OFL', () => {
