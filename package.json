@@ -24,11 +24,11 @@
     "test:run": "node --test scripts/check-static-budgets.node-test.mjs scripts/verify-weekly-template-assets.node-test.mjs && node scripts/verify-weekly-template-assets.mjs --base-ref origin/main && vitest run"
   },
   "dependencies": {
-    "@hallelujahhomechurch/account-client": "file:../frontend-platform/artifacts/hallelujahhomechurch-account-client-1.0.32.tgz",
-    "@hallelujahhomechurch/hhc-web-client": "file:../frontend-platform/artifacts/hallelujahhomechurch-hhc-web-client-1.0.32.tgz",
-    "@hallelujahhomechurch/operations-client": "1.0.26",
-    "@hallelujahhomechurch/preferences": "file:../frontend-platform/artifacts/hallelujahhomechurch-preferences-1.0.32.tgz",
-    "@hallelujahhomechurch/ui": "file:../frontend-platform/artifacts/hallelujahhomechurch-ui-1.0.32.tgz",
+    "@hallelujahhomechurch/account-client": "1.0.37",
+    "@hallelujahhomechurch/hhc-web-client": "1.0.37",
+    "@hallelujahhomechurch/operations-client": "1.0.37",
+    "@hallelujahhomechurch/preferences": "1.0.37",
+    "@hallelujahhomechurch/ui": "1.0.37",
     "@sentry/nextjs": "10.69.0",
     "hls.js": "1.7.3",
     "lucide-react": "^1.24.0",
