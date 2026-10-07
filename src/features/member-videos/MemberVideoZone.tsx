@@ -271,7 +271,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, initial
                 <RecordingCover api={api} id={item.id} title={item.title} expiresAt={item.expiresAt} revision={item.selectedCoverId}/>
                 {item.durationSeconds ? <span className="absolute right-2 bottom-2 rounded bg-black/80 px-1.5 py-0.5 text-xs tabular-nums text-white">{playerClock(item.durationSeconds)}</span> : null}
               </div>
-              <h3 className="break-words text-lg font-semibold text-ink">{view === 'list' || recordingId ? <Link href={`/${locale}/member-videos/${encodeURIComponent(item.id)}?page=${currentPage}`} className="focus-visible:outline-2 focus-visible:outline-primary">{item.title}</Link> : item.title}</h3>
+              <h3 className="break-words text-lg font-semibold text-ink">{view === 'list' || recordingId ? <Link href={`/${locale}/member-videos/${encodeURIComponent(item.id)}?page=${recordingId ? initialPage : currentPage}`} className="focus-visible:outline-2 focus-visible:outline-primary">{item.title}</Link> : item.title}</h3>
               <p className="text-sm text-muted">{messages.uploadedDate.replace('{date}', formatDate(item.uploadedAt, locale))}</p>
               {view !== 'list' && !recordingId ? <button type="button" className="min-h-11 justify-self-start rounded-full border border-[var(--hhc-control-border)] bg-paper px-5 font-semibold text-[var(--hhc-control)] hover:border-primary hover:bg-primary hover:text-primary-foreground focus-visible:outline-2 focus-visible:outline-primary" onClick={() => select(item.id)}>{messages.select}</button> : null}
             </article>)}</div>

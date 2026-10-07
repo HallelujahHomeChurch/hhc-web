@@ -74,6 +74,20 @@ describe('member video gate', () => {
     expect(screen.getByRole('link', {name:'Recent recordings'})).toHaveAttribute('href','/en/member-videos?page=2');
     expect(screen.queryByRole('button', {name:'Next'})).not.toBeInTheDocument();
   });
+  it('preserves library page two through sidebar navigation with thirteen recordings', async () => {
+    state.auth='authenticated'; state.access='available';
+    list.mockResolvedValue(Array.from({length:13}, (_, i) => ({id:`r${i}`, title:`Gathering ${i}`, uploadedAt:`2026-10-${String(i+1).padStart(2,'0')}T00:00:00Z`})));
+    const view=render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r0" initialPage={2}/>);
+    await screen.findByRole('heading', {level:2, name:'Gathering 0'});
+    const links=screen.getAllByRole('link', {name:/Gathering/});
+    expect(links).toHaveLength(10);
+    for (const link of links) expect(link).toHaveAttribute('href', expect.stringMatching(/\?page=2$/));
+    const target=new URL(links[0].getAttribute('href')!, 'https://www.alive.org.tw');
+    expect(target.pathname).toBe('/en/member-videos/r12');
+    view.rerender(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId={target.pathname.split('/').at(-1)} initialPage={Number(target.searchParams.get('page'))}/>);
+    await screen.findByRole('heading', {level:2, name:'Gathering 12'});
+    expect(screen.getByRole('link', {name:'Recent recordings'})).toHaveAttribute('href','/en/member-videos?page=2');
+  });
   it('does not substitute the newest video for an unavailable direct link', async () => {
     state.auth='authenticated'; state.access='available';
     list.mockResolvedValue([{id:'available', title:'Other gathering', uploadedAt:'2026-10-01T00:00:00Z'}]);
