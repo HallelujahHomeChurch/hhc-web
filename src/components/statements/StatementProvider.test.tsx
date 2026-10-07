@@ -19,6 +19,21 @@ beforeEach(() => {
 });
 afterEach(() => {cleanup(); vi.unstubAllGlobals();});
 describe('statement entry', () => {
+ it('removes both the dialog and header strip at the expiry boundary', async () => {
+  const id = `statement-${++sequence}`;
+  const response = payload(id);
+  response.nextChangeAt = response.statement.popupEndsAt = '2026-09-07T10:01:17Z';
+  const fetcher = vi.fn().mockResolvedValueOnce(Response.json({data: response})).mockResolvedValue(Response.json({data: {...response, statement: null, nextChangeAt: null}}));
+  vi.stubGlobal('fetch', fetcher);
+  mount();
+  await screen.findByRole('dialog');
+  expect(screen.getByRole('complementary', {name: '教會聲明'})).toBeInTheDocument();
+  await waitFor(() => {
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('complementary', {name: '教會聲明'})).not.toBeInTheDocument();
+  }, {timeout: 2500});
+ });
+
  it.each([
   '/zh-Hant/maintenance',
   '/en/privacy-policy',
