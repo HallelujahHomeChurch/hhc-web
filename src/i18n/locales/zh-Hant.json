@@ -391,6 +391,9 @@
     "empty": "目前尚未發布週報。"
   },
   "memberVideos": {
+    "backToList": "返回影音專區",
+    "otherVideos": "其他影片",
+    "unavailable": "這部影片目前無法觀看。",
     "settings": "播放設定",
     "togglePlayback": "播放或暫停（空白鍵）",
     "privateCopy": "HHC 會員專屬",

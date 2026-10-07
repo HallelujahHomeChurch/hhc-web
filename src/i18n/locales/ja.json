@@ -391,6 +391,9 @@
     "empty": "公開済みの週報はまだありません。"
   },
   "memberVideos": {
+    "backToList": "動画一覧に戻る",
+    "otherVideos": "他の動画",
+    "unavailable": "この動画は現在視聴できません。",
     "settings": "再生設定",
     "togglePlayback": "再生・一時停止（スペース）",
     "privateCopy": "HHC 会員限定",

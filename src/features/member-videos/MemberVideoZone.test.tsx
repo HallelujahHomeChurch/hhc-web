@@ -49,6 +49,40 @@ beforeEach(() => {
 afterEach(() => {cleanup();vi.useRealTimers();vi.restoreAllMocks();});
 
 describe('member video gate', () => {
+  it('shows a paginated library without requesting playback and links to a refreshable watch page', async () => {
+    state.auth='authenticated'; state.access='available';
+    list.mockResolvedValue(Array.from({length: 15}, (_, i) => ({id: `r${i}`, title: `Gathering ${i}`, uploadedAt: '2026-10-01T00:00:00Z'})));
+    render(<MemberVideoZone locale="en" messages={messages} hero={null} view="list"/>);
+    const links = await screen.findAllByRole('link', {name: /Gathering/});
+    expect(links).toHaveLength(12);
+    expect(links[0]).toHaveAttribute('href', expect.stringMatching(/^\/en\/member-videos\/r[0-9]+\?page=1$/));
+    expect(screen.queryByRole('button', {name:'Play'})).not.toBeInTheDocument();
+    expect(videoApi.grant).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', {name:'Next'}));
+    expect(screen.getAllByRole('link', {name:/Gathering/})).toHaveLength(3);
+  });
+  it('uses the requested video and limits other videos to the newest ten', async () => {
+    state.auth='authenticated'; state.access='available';
+    const items=Array.from({length: 15}, (_, i) => ({id:`r${i}`, title:`Gathering ${i}`, uploadedAt:`2026-10-${String(i+1).padStart(2,'0')}T00:00:00Z`}));
+    list.mockResolvedValue(items);
+    render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r0" initialPage={2}/>);
+    await screen.findByRole('heading', {level:2, name:'Gathering 0'});
+    const links=screen.getAllByRole('link', {name:/Gathering/});
+    expect(links).toHaveLength(10);
+    expect(links[0]).toHaveTextContent('Gathering 14');
+    expect(links[9]).toHaveTextContent('Gathering 5');
+    expect(screen.getByRole('link', {name:'Recent recordings'})).toHaveAttribute('href','/en/member-videos?page=2');
+    expect(screen.queryByRole('button', {name:'Next'})).not.toBeInTheDocument();
+  });
+  it('does not substitute the newest video for an unavailable direct link', async () => {
+    state.auth='authenticated'; state.access='available';
+    list.mockResolvedValue([{id:'available', title:'Other gathering', uploadedAt:'2026-10-01T00:00:00Z'}]);
+    render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="missing"/>);
+    await screen.findByRole('alert');
+    expect(screen.queryByRole('button', {name:'Play'})).not.toBeInTheDocument();
+    expect(videoApi.grant).not.toHaveBeenCalled();
+  });
+
   it.each([true, false])('refresh keeps manual selection when present=%s, otherwise selects newest', async (present) => {
     state.auth='authenticated';state.access='available';
     const old={id:'old',title:'Older',uploadedAt:'2026-10-01T00:00:00Z'};

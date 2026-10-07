@@ -391,6 +391,9 @@
     "empty": "目前尚未发布周报。"
   },
   "memberVideos": {
+    "backToList": "返回影音专区",
+    "otherVideos": "其他影片",
+    "unavailable": "这部影片目前无法观看。",
     "settings": "播放设置",
     "togglePlayback": "播放或暂停（空格键）",
     "privateCopy": "HHC 会员专属",

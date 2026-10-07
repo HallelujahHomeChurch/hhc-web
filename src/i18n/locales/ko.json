@@ -391,6 +391,9 @@
     "empty": "아직 게시된 주보가 없습니다."
   },
   "memberVideos": {
+    "backToList": "동영상 목록으로 돌아가기",
+    "otherVideos": "다른 동영상",
+    "unavailable": "현재 이 동영상을 시청할 수 없습니다.",
     "settings": "재생 설정",
     "togglePlayback": "재생 또는 일시 정지 (스페이스)",
     "privateCopy": "HHC 회원 전용",

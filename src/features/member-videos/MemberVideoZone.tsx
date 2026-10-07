@@ -2,6 +2,7 @@
 
 import {useCallback, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {useRouter} from 'next/navigation';
+import Link from 'next/link';
 import {LoaderCircle, Play} from 'lucide-react';
 import type {MemberRecording, MemberRecordingPlayback} from '@hallelujahhomechurch/hhc-web-client';
 import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
@@ -11,9 +12,11 @@ import {captureHandledError} from '@/lib/observability';
 import {createMemberVideoApi} from './api';
 import {HlsPlayer, type PlayerLabels} from './HlsPlayer';
 import playerStyles from './PlayerChrome.module.css';
+import {playerClock} from './PlayerChrome';
 import {RecordingCover,useRecordingCover} from './RecordingCover';
 
-type Messages = {
+export type Messages = {
+  backToList?: string; otherVideos?: string; unavailable?: string;
   selectedTitle: string; listTitle: string; count: string; play: string; select: string; selected: string;
   playing: string; featured: string; durationUnknown: string; expires: string; loading: string;
   preparing: string; empty: string; loadError: string; playError: string; expired: string;
@@ -21,6 +24,7 @@ type Messages = {
 } & PlayerLabels;
 type ActivePlayback = {recordingId: string; scopeId: string; grant: MemberRecordingPlayback; url: string};
 const pageSize = 12;
+type ZoneProps = {locale: Locale; messages: Messages; hero: ReactNode; view?: 'list' | 'watch'; recordingId?: string; initialPage?: number};
 
 function newestFirst(items: MemberRecording[]) {
   return [...items].sort((a, b) => (b.uploadedAt ?? '').localeCompare(a.uploadedAt ?? '') || b.id.localeCompare(a.id));
@@ -31,7 +35,7 @@ function formatDate(value: string | null, locale: Locale) {
   return new Intl.DateTimeFormat(locale, {timeZone: 'Asia/Taipei', year: 'numeric', month: 'long', day: 'numeric'}).format(new Date(value));
 }
 
-export function MemberVideoZone({locale, messages, hero}: {locale: Locale; messages: Messages; hero: ReactNode}) {
+export function MemberVideoZone({locale, messages, hero, view = 'watch', recordingId, initialPage = 1}: ZoneProps) {
   const router = useRouter();
   const auth = useAccountAuth();
   const identity=useAccountIdentity();
@@ -39,13 +43,13 @@ export function MemberVideoZone({locale, messages, hero}: {locale: Locale; messa
   useEffect(() => {
     if (auth.status === 'anonymous' || access === 'denied') router.replace(`/${locale}`);
   }, [access, auth.status, locale, router]);
-  if (access === 'available') return <AuthorizedVideoZone key={identity} locale={locale} messages={messages} hero={hero} />;
+  if (access === 'available') return <AuthorizedVideoZone key={`${identity}:${recordingId ?? view}`} locale={locale} messages={messages} hero={hero} view={view} recordingId={recordingId} initialPage={initialPage} />;
   if (auth.status === 'anonymous' || access === 'denied') return null;
   const unavailable = auth.status === 'unavailable' || access === 'unavailable';
   return <main className="bg-[image:var(--hhc-page-gradient)] py-16"><section className="shell rounded-[14px] border border-panel-border bg-panel p-8 text-center text-ink" role={unavailable ? 'alert' : 'status'}>{unavailable ? messages.loadError : messages.loading}{unavailable ? <button type="button" className="ml-4 min-h-11 rounded-full border border-[var(--hhc-control-border)] px-5 font-semibold" onClick={() => window.location.reload()}>{messages.retry}</button> : null}</section></main>;
 }
 
-function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages: Messages; hero: ReactNode}) {
+function AuthorizedVideoZone({locale, messages, hero, view, recordingId, initialPage = 1}: ZoneProps) {
   const router = useRouter();
   const authorization = useBulletinAuthorization();
   const api = useMemo(() => createMemberVideoApi(authorization), [authorization]);
@@ -53,7 +57,7 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
   const [loadError, setLoadError] = useState(false);
   const [retry, setRetry] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(initialPage);
   const [playback, setPlayback] = useState<ActivePlayback | null>(null);
   const playbackRef = useRef<ActivePlayback | null>(null);
   const mediaFailureReported = useRef(false);
@@ -69,7 +73,7 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
       const items = newestFirst(await api.list(signal));
       if (signal.aborted) return;
       setRecordings(items);
-      setSelectedId((current) => current && items.some((item) => item.id === current) ? current : items[0]?.id ?? null);
+      setSelectedId((current) => recordingId ? (items.some(item => item.id === recordingId) ? recordingId : null) : view === 'list' ? null : current && items.some((item) => item.id === current) ? current : items[0]?.id ?? null);
     } catch (error) {
       if (signal.aborted) return;
       if (error instanceof HhcWebApiError && error.status === 404) {
@@ -81,7 +85,7 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
         throw error;
       }
     }
-  }, [api, locale, router]);
+  }, [api, locale, router, recordingId, view]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -89,7 +93,7 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
       if (controller.signal.aborted) return;
       const sorted = newestFirst(items);
       setRecordings(sorted);
-      setSelectedId((current) => current && sorted.some((item) => item.id === current) ? current : sorted[0]?.id ?? null);
+      setSelectedId((current) => recordingId ? (sorted.some(item => item.id === recordingId) ? recordingId : null) : view === 'list' ? null : current && sorted.some((item) => item.id === current) ? current : sorted[0]?.id ?? null);
       setLoadError(false);
     }).catch((error: unknown) => {
       if (controller.signal.aborted) return;
@@ -98,7 +102,7 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
       setLoadError(true);
     });
     return () => controller.abort();
-  }, [api, locale, retry, router]);
+  }, [api, locale, retry, router, recordingId, view]);
 
   useEffect(() => {playbackRef.current = playback;}, [playback]);
   useEffect(() => () => {
@@ -235,16 +239,22 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
   const otherRecordings = recordings?.filter(item => item.id !== selectedId) ?? [];
   const pageCount = Math.ceil(otherRecordings.length / pageSize);
   const currentPage = Math.min(page, Math.max(1, pageCount));
-  const visibleItems = otherRecordings.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const changePage = (nextPage: number) => {
+    setPage(nextPage);
+    if (view === 'list') router.replace(`/${locale}/member-videos?page=${nextPage}`, {scroll: false});
+  };
+  const visibleItems = recordingId ? otherRecordings.slice(0, 10) : otherRecordings.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   return (
     <main>
       {hero}
       <div className="bg-[image:var(--hhc-page-gradient)] py-10 pb-14">
-        <section className="shell grid gap-8" aria-label={messages.listTitle}>
+        <section className={`shell grid items-start gap-8 ${recordingId ? 'lg:grid-cols-[minmax(0,1fr)_320px]' : ''}`} aria-label={messages.listTitle}>
+          {recordingId ? <Link href={`/${locale}/member-videos?page=${initialPage}`} className="min-h-11 text-primary underline lg:col-span-2">{messages.backToList ?? messages.listTitle}</Link> : null}
+          {!loadError && recordings && recordingId && !selected ? <p role="alert" className="text-ink">{messages.unavailable ?? messages.expired}</p> : null}
           {loadError ? <div role="alert" className="rounded-[14px] border border-panel-border bg-panel p-7 text-center text-ink">{messages.loadError}<button type="button" className="ml-4 min-h-11 rounded-full border border-[var(--hhc-control-border)] px-5 font-semibold" onClick={() => setRetry((value) => value + 1)}>{messages.retry}</button></div> : null}
           {!loadError && !recordings ? <p role="status" className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{messages.loading}</p> : null}
           {!loadError && recordings?.length === 0 ? <p className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{messages.empty}</p> : null}
-          {selected ? <div ref={playerSection} className="grid scroll-mt-28 gap-4">
+          {selected ? <div ref={playerSection} className="grid min-w-0 scroll-mt-28 gap-4">
             {playback?.recordingId === selected.id ? <HlsPlayer key={playback.url} poster={poster} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} onError={mediaError}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {poster?<img src={poster} alt={selected.title} width={1280} height={720} className="absolute inset-0 h-full w-full object-contain"/>:null}
@@ -255,14 +265,17 @@ function AuthorizedVideoZone({locale, messages, hero}: {locale: Locale; messages
             {playError ? <p role="alert" className="text-sm text-primary">{playError} <button type="button" className="underline" onClick={() => void start()}>{messages.retry}</button></p> : null}
           </div> : null}
           {otherRecordings.length > 0 ? <div className="grid gap-5">
-            <div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-panel-border pt-7"><h2 className="text-2xl font-semibold text-ink">{messages.listTitle}</h2><p className="text-sm text-muted">{messages.count.replace('{count}', String(otherRecordings.length))}</p></div>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{visibleItems.map((item) => <article key={item.id} className="grid min-w-0 gap-3 rounded-[14px] border border-panel-border bg-panel p-5 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)]">
-              <RecordingCover api={api} id={item.id} title={item.title} expiresAt={item.expiresAt} revision={item.selectedCoverId}/>
-              <h3 className="break-words text-lg font-semibold text-ink">{item.title}</h3>
+            <div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-panel-border pt-7"><h2 className="text-2xl font-semibold text-ink">{recordingId ? messages.otherVideos ?? messages.listTitle : messages.listTitle}</h2><p className="text-sm text-muted">{messages.count.replace('{count}', String(otherRecordings.length))}</p></div>
+            <div className={recordingId ? "grid gap-4" : "grid gap-4 md:grid-cols-2 xl:grid-cols-3"}>{visibleItems.map((item) => <article key={item.id} className="grid min-w-0 gap-3 rounded-[14px] border border-panel-border bg-panel p-5 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)]">
+              <div className="relative">
+                <RecordingCover api={api} id={item.id} title={item.title} expiresAt={item.expiresAt} revision={item.selectedCoverId}/>
+                {item.durationSeconds ? <span className="absolute right-2 bottom-2 rounded bg-black/80 px-1.5 py-0.5 text-xs tabular-nums text-white">{playerClock(item.durationSeconds)}</span> : null}
+              </div>
+              <h3 className="break-words text-lg font-semibold text-ink">{view === 'list' || recordingId ? <Link href={`/${locale}/member-videos/${encodeURIComponent(item.id)}?page=${currentPage}`} className="focus-visible:outline-2 focus-visible:outline-primary">{item.title}</Link> : item.title}</h3>
               <p className="text-sm text-muted">{messages.uploadedDate.replace('{date}', formatDate(item.uploadedAt, locale))}</p>
-              <button type="button" className="min-h-11 justify-self-start rounded-full border border-[var(--hhc-control-border)] bg-paper px-5 font-semibold text-[var(--hhc-control)] hover:border-primary hover:bg-primary hover:text-primary-foreground focus-visible:outline-2 focus-visible:outline-primary" onClick={() => select(item.id)}>{messages.select}</button>
+              {view !== 'list' && !recordingId ? <button type="button" className="min-h-11 justify-self-start rounded-full border border-[var(--hhc-control-border)] bg-paper px-5 font-semibold text-[var(--hhc-control)] hover:border-primary hover:bg-primary hover:text-primary-foreground focus-visible:outline-2 focus-visible:outline-primary" onClick={() => select(item.id)}>{messages.select}</button> : null}
             </article>)}</div>
-            {pageCount > 1 ? <nav aria-label={messages.listTitle} className="flex items-center justify-center gap-4"><button type="button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)} className="min-h-11 px-4 disabled:opacity-40">{messages.previous}</button><span>{currentPage} / {pageCount}</span><button type="button" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)} className="min-h-11 px-4 disabled:opacity-40">{messages.next}</button></nav> : null}
+            {!recordingId && pageCount > 1 ? <nav aria-label={messages.listTitle} className="flex items-center justify-center gap-4"><button type="button" disabled={currentPage === 1} onClick={() => changePage(currentPage - 1)} className="min-h-11 px-4 disabled:opacity-40">{messages.previous}</button><span>{currentPage} / {pageCount}</span><button type="button" disabled={currentPage === pageCount} onClick={() => changePage(currentPage + 1)} className="min-h-11 px-4 disabled:opacity-40">{messages.next}</button></nav> : null}
           </div> : null}
         </section>
       </div>
