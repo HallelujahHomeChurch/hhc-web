@@ -379,6 +379,7 @@ describe('protected weekly reader', () => {
   it('invalidates a snapshot when the same native gesture extends outside the reading surface', async () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).toBeEnabled());
     const sentence = container.querySelector('[data-sentence-id="s0"]')!;
     selectText(sentence, 0, 2);
     expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
