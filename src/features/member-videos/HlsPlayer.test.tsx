@@ -330,3 +330,23 @@ it('native live quality switching retains a paused DVR position and intent',asyn
  fireEvent.loadedMetadata(video);fireEvent.progress(video);fireEvent(window,new Event('online'));
  expect(video.currentTime).toBe(60);expect(video.playbackRate).toBe(1.5);expect(remembered).toHaveBeenLastCalledWith(expect.objectContaining({intent:'dvr',quality:'1080p'}));
 });
+it('native live quality switching waits for later seekable progress before restoring DVR',async()=>{
+ engine.supported=false;vi.spyOn(HTMLMediaElement.prototype,'canPlayType').mockReturnValue('probably');
+ const p=props(),remembered=vi.fn();render(<HlsPlayer {...p} playbackMode="live" live={{verifiedEnd:5400,canFollow:true,label:'Live',backToLive:'Back to live'}} onBookmark={remembered}/>);
+ await waitFor(()=>expect(p.videoRef.current?.src).toBe(url));
+ const video=p.videoRef.current!;let end=5400;
+ Object.defineProperty(video,'seekable',{configurable:true,get:()=>({length:end?1:0,start:()=>0,end:()=>end})});
+ await act(async()=>{fireEvent.loadedMetadata(video);});
+ fireEvent.change(screen.getByRole('slider',{name:'Playback position'}),{target:{value:'60'}});fireEvent.pause(video);video.playbackRate=1.5;
+ fireEvent.click(screen.getByRole('button',{name:'Settings'}));fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'1080p'}});
+ end=0;video.currentTime=0;fireEvent.loadedMetadata(video);
+ expect(video.currentTime).toBe(0);
+ // Another quality selection before seekable arrives must keep the original bookmark.
+ fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'720p'}});
+ end=5400;fireEvent.progress(video);
+ expect(video.currentTime).toBe(60);expect(video.playbackRate).toBe(1.5);expect(video.play).toHaveBeenCalledTimes(1);
+ fireEvent(window,new Event('online'));
+ expect(remembered).toHaveBeenLastCalledWith(expect.objectContaining({time:60,intent:'dvr',quality:'720p'}));
+ video.currentTime=75;fireEvent.canPlay(video);fireEvent.progress(video);
+ expect(video.currentTime).toBe(75);
+});

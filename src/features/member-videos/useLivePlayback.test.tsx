@@ -16,6 +16,19 @@ it('renews five-minute grants at four minutes using server time without remounti
  await act(()=>vi.advanceTimersByTimeAsync(1000));expect(api.liveGrant).toHaveBeenCalledTimes(2);
  expect(api.liveGrant.mock.calls[1][2]).toBe(api.liveGrant.mock.calls[0][2]);expect(result.current.playback?.url).toBe(first?.url);expect(api.clearLive).not.toHaveBeenCalled();
 });
+it.each([true,false])('unloads at the old expiry and serializes cookie cleanup with renewal success=%s',async(renewed)=>{
+ const {api,result}=setup();await act(()=>result.current.start());
+ let finishExchange!:()=>void,finishDelete!:()=>void,cookie=true;
+ api.exchangeLive.mockImplementationOnce(async grant=>{await new Promise<void>(resolve=>{finishExchange=resolve;});if(!renewed)throw new Error('offline');cookie=true;return grant.mediaUrl;});
+ api.clearLive.mockImplementation(async()=>{await new Promise<void>(resolve=>{finishDelete=resolve;});cookie=false;});
+ await act(()=>vi.advanceTimersByTimeAsync(240000));
+ await act(()=>vi.advanceTimersByTimeAsync(60000));
+ expect(result.current.playback).toBeNull();expect(api.clearLive).not.toHaveBeenCalled();
+ await act(async()=>{finishExchange();});
+ await act(async()=>{finishDelete?.();});
+ expect(Boolean(result.current.playback)).toBe(renewed);expect(cookie).toBe(renewed);
+ expect(api.clearLive).toHaveBeenCalledTimes(renewed?0:1);
+});
 it('BackgroundSleepResumesExpiredGrantSameScope preserves a paused DVR bookmark after fifteen minutes',async()=>{
  const {api,result}=setup();await act(()=>result.current.start());const scope=api.liveGrant.mock.calls[0][2];
  const bookmark={time:60,paused:true,rate:1.5,quality:'720p' as const,intent:'dvr' as const};act(()=>result.current.remember(bookmark));

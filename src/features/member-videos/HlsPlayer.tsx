@@ -78,7 +78,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
       } else handleError();
     }).catch(()=>{if(!cancelled)handleError();});
     return ()=>{
-      cancelled=true;closing.current=true;nativeSwitch.current?.abort();video.removeEventListener('loadedmetadata',autoplay);
+      cancelled=true;closing.current=true;nativeSwitch.current?.abort();nativePosition.current=null;video.removeEventListener('loadedmetadata',autoplay);
       engine.current?.destroy();engine.current=null;video.pause();video.removeAttribute('src');video.load();
     };
   },[playbackUrl,videoRef,handleError,playbackMode]);
@@ -125,13 +125,16 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
       const controller=new AbortController();nativeSwitch.current=controller;
       const previous=nativePosition.current ?? {time:video.currentTime,playing:!video.paused,rate:video.playbackRate};
       nativePosition.current=previous;
-      video.addEventListener('loadedmetadata',()=>{
+      const restore=()=>{
         const window=playbackMode==='live'&&currentLive.current?liveWindow(video.seekable,currentLive.current.verifiedEnd):null;
+        if(playbackMode==='live'&&!window)return;
         automaticSeek.current=window?Math.max(window.start,Math.min(previous.time,window.end)):Number.isFinite(video.duration)?Math.min(previous.time,video.duration):previous.time;
         video.currentTime=automaticSeek.current;
-        video.playbackRate=previous.rate;nativePosition.current=null;
-        if(previous.playing)void video.play().catch(()=>{});
-      },{once:true,signal:controller.signal});
+        video.playbackRate=previous.rate;
+        if(previous.playing)void video.play().catch(()=>{});else video.pause();
+        nativePosition.current=null;controller.abort();remember();
+      };
+      for(const event of ['loadedmetadata','progress','canplay'])video.addEventListener(event,restore,{signal:controller.signal});
       video.src=next==='auto'?playbackUrl:new URL(`${next}/index.m3u8`,playbackUrl).href;video.load();
     } else return;
     qualityRef.current=next;setQuality(next);remember();
