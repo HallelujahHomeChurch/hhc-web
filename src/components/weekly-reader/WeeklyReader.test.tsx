@@ -564,7 +564,9 @@ describe('protected weekly reader', () => {
   it('retains selected sentences across foreground authorization checks without permitting actions during validation', async () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
     selectText(container.querySelector('[data-sentence-id="s0"]')!);
+    expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
     let finish!: (value: ReturnType<typeof readerFixture>) => void;
     state.open.mockImplementationOnce(() => new Promise(resolve => {finish = resolve;}));
     fireEvent.focus(window);
