@@ -5,7 +5,7 @@ import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
 
 const state = vi.hoisted(() => ({access: 'loading', auth: 'checking'}));
 const list = vi.hoisted(() => vi.fn());
-const videoApi = vi.hoisted(() => ({cover:vi.fn(),list: vi.fn(), grant: vi.fn(), exchange: vi.fn(), clear: vi.fn().mockResolvedValue(undefined)}));
+const videoApi = vi.hoisted(() => ({liveList:vi.fn().mockResolvedValue([]),cover:vi.fn(),list: vi.fn(), grant: vi.fn(), exchange: vi.fn(), clear: vi.fn().mockResolvedValue(undefined)}));
 const router = vi.hoisted(() => ({replace: vi.fn()}));
 const replace = router.replace;
 const captureHandledError = vi.hoisted(() => vi.fn());
@@ -37,6 +37,7 @@ beforeEach(() => {
   captureHandledError.mockReset();
   list.mockResolvedValue([]);
   videoApi.list.mockReset().mockImplementation(list);
+  videoApi.liveList.mockReset().mockResolvedValue([]);
   videoApi.grant.mockReset(); videoApi.exchange.mockReset();
   videoApi.cover.mockReset().mockRejectedValue(new Error('No cover'));
   HTMLElement.prototype.scrollIntoView = vi.fn();
@@ -49,6 +50,14 @@ beforeEach(() => {
 afterEach(() => {cleanup();vi.useRealTimers();vi.restoreAllMocks();});
 
 describe('member video gate', () => {
+  it('shows a live-only recording on its watch route without claiming unavailable or requesting VOD',async()=>{
+    state.auth='authenticated';state.access='available';
+    videoApi.liveList.mockResolvedValue([{id:'r1',captureId:'a'.repeat(32),title:'Sunday live',liveState:'starting',createdAt:'2026-10-07T00:00:00Z',stopAcceptedAt:null,progress:{revision:0,firstSequence:0,lastSequence:-1,mediaEndSeconds:0,lastAdvancedAt:null,endedAt:null,ended:false}}]);
+    render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);
+    expect(await screen.findByRole('heading',{name:'Sunday live'})).toBeVisible();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();expect(videoApi.grant).not.toHaveBeenCalled();
+  });
+
   it('shows a paginated library without requesting playback and links to a refreshable watch page', async () => {
     state.auth='authenticated'; state.access='available';
     list.mockResolvedValue(Array.from({length: 15}, (_, i) => ({id: `r${i}`, title: `Gathering ${i}`, uploadedAt: '2026-10-01T00:00:00Z'})));

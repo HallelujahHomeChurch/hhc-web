@@ -285,3 +285,48 @@ it('falls back to viewport if fullscreen entry fails and retains an exit button'
     expect(screen.getByRole('button',{name:'Exit fullscreen'})).toBeInTheDocument();
   } finally {delete (HTMLElement.prototype as unknown as Record<string,unknown>).requestFullscreen;}
 });
+
+it('starts live behind the verified edge and preserves DVR until an explicit return',async()=>{
+ const p=props();render(<HlsPlayer {...p} playbackMode="live" live={{verifiedEnd:5400,canFollow:true,label:'Live',backToLive:'Back to live'}}/>);
+ await waitFor(()=>expect(engine.instances).toHaveLength(1));
+ const video=p.videoRef.current!;
+ Object.defineProperty(video,'seekable',{configurable:true,value:{length:1,start:()=>0,end:()=>5400}});
+ Object.defineProperty(video,'duration',{configurable:true,value:Infinity});
+ fireEvent.progress(video);
+ expect(video.currentTime).toBe(5370);
+ const seek=screen.getByRole('slider',{name:'Playback position'});
+ expect(seek).toHaveAttribute('max','5400');
+ fireEvent.change(seek,{target:{value:'60'}});
+ fireEvent.progress(video);
+ fireEvent(window,new Event('online'));
+ expect(video.currentTime).toBe(60);
+ fireEvent.click(screen.getByRole('button',{name:'Back to live'}));
+ expect(video.currentTime).toBe(5370);
+ expect(engine.instances[0].config).toMatchObject({backBufferLength:120,maxBufferLength:60,maxMaxBufferLength:120,liveMaxLatencyDuration:Infinity,maxLiveSyncPlaybackRate:1});
+});
+
+it('restores a paused DVR bookmark without first-entry live seeking or autoplay',async()=>{
+ const p=props();const remembered=vi.fn();
+ const live={verifiedEnd:5400,canFollow:true,label:'Live',backToLive:'Back to live'};
+ const {rerender}=render(<HlsPlayer {...p} playbackMode="live" live={live} resume={{time:60,paused:true,rate:1.5,quality:'720p',intent:'dvr'}} onBookmark={remembered}/>);
+ await waitFor(()=>expect(engine.instances).toHaveLength(1));
+ const video=p.videoRef.current!;
+ Object.defineProperty(video,'seekable',{configurable:true,value:{length:1,start:()=>0,end:()=>6300}});
+ fireEvent.loadedMetadata(video);
+ expect(video.currentTime).toBe(60);expect(video.playbackRate).toBe(1.5);expect(video.play).not.toHaveBeenCalled();expect(engine.instances[0].nextLevel).toBe(0);
+ rerender(<HlsPlayer {...p} playbackMode="live" live={{...live,verifiedEnd:6300}} onBookmark={remembered}/>);
+ fireEvent.progress(video);fireEvent(window,new Event('online'));
+ expect(video.currentTime).toBe(60);expect(engine.instances).toHaveLength(1);
+ expect(remembered).toHaveBeenLastCalledWith(expect.objectContaining({time:60,rate:1.5,intent:'dvr'}));
+});
+it('native live quality switching retains a paused DVR position and intent',async()=>{
+ engine.supported=false;
+ vi.spyOn(HTMLMediaElement.prototype,'canPlayType').mockReturnValue('probably');
+ const p=props(),remembered=vi.fn();render(<HlsPlayer {...p} playbackMode="live" live={{verifiedEnd:5400,canFollow:true,label:'Live',backToLive:'Back to live'}} onBookmark={remembered}/>);
+ await waitFor(()=>expect(p.videoRef.current?.src).toBe(url));
+ const video=p.videoRef.current!;Object.defineProperty(video,'seekable',{configurable:true,value:{length:1,start:()=>0,end:()=>5400}});fireEvent.loadedMetadata(video);
+ fireEvent.change(screen.getByRole('slider',{name:'Playback position'}),{target:{value:'60'}});fireEvent.pause(video);video.playbackRate=1.5;
+ fireEvent.click(screen.getByRole('button',{name:'Settings'}));fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'1080p'}});
+ fireEvent.loadedMetadata(video);fireEvent.progress(video);fireEvent(window,new Event('online'));
+ expect(video.currentTime).toBe(60);expect(video.playbackRate).toBe(1.5);expect(remembered).toHaveBeenLastCalledWith(expect.objectContaining({intent:'dvr',quality:'1080p'}));
+});

@@ -391,6 +391,20 @@
     "empty": "目前尚未发布周报。"
   },
   "memberVideos": {
+    "live": {
+      "watchRecording": "接续观看会后影片",
+      "starting": "直播准备中",
+      "live": "直播中，约延迟 1–2 分钟",
+      "recovering": "正在追上直播进度",
+      "interrupted": "直播连接中断",
+      "ending": "直播结束处理中，可继续回看",
+      "ended": "直播已结束，可继续回看",
+      "failed": "直播暂时无法观看",
+      "expired": "直播回看期限已到",
+      "aborted": "直播已停止",
+      "backToLive": "回到直播",
+      "replayUntil": "可回看至 {time}"
+    },
     "backToList": "返回影音专区",
     "otherVideos": "其他影片",
     "unavailable": "这部影片目前无法观看。",

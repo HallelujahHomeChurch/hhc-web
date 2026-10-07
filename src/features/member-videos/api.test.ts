@@ -41,3 +41,16 @@ describe('member video API', () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 });
+
+it('keeps live and VOD exchanges separate and binds every live path ID',async()=>{
+ const fetcher=vi.fn().mockResolvedValue(new Response(null,{status:204}));
+ const api=createMemberVideoApi(authorization,fetcher);
+ const recordingId='11111111-1111-4111-8111-111111111111',captureId='a'.repeat(32),playbackScopeId='22222222-2222-4222-8222-222222222222';
+ const mediaUrl=`https://media.alive.org.tw/videos/${recordingId}/captures/${captureId}/sessions/${playbackScopeId}/master.m3u8`;
+ const grant={recordingId,captureId,playbackScopeId,mediaUrl,exchangeCredential:'secret',issuedAt:'',expiresAt:'',serverNow:'',captureExpiresAt:'',stopAcceptedAt:null,replayUntil:null,terminalReason:null,liveState:'live' as const,progress:{revision:3,firstSequence:0 as const,lastSequence:2,mediaEndSeconds:90,lastAdvancedAt:null,endedAt:null,ended:false},watermarkCode:'trace'};
+ await expect(api.exchangeLive(grant)).resolves.toBe(mediaUrl);
+ expect(String(fetcher.mock.calls[0][0])).toBe(mediaUrl.replace('master.m3u8','cookie'));
+ await expect(api.exchangeLive({...grant,captureId:'b'.repeat(32)})).rejects.toThrow('Invalid media endpoint');
+ await expect(api.exchange({...grant,assetVersionId:captureId})).rejects.toThrow('Invalid media endpoint');
+ await api.clearLive(mediaUrl);expect(fetcher).toHaveBeenCalledTimes(2);
+});
