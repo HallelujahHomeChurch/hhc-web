@@ -298,6 +298,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, initial
             </div>}
             <h2 ref={playerTitle} tabIndex={-1} className="text-2xl font-semibold text-ink outline-none">{selected.title}</h2>
             <p className="text-sm text-muted">{messages.uploadedDate.replace('{date}', formatDate(selected.uploadedAt, locale))}</p>
+            {selected.description?<p className="whitespace-pre-wrap break-words rounded-[14px] bg-panel p-5 text-ink">{selected.description}</p>:null}
             {playError ? <p role="alert" className="text-sm text-primary">{playError} <button type="button" className="underline" onClick={() => void start()}>{messages.retry}</button></p> : null}
           </div> : null}
           {otherRecordings.length > 0 ? <div className="grid gap-5">

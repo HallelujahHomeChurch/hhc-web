@@ -50,6 +50,13 @@ beforeEach(() => {
 afterEach(() => {cleanup();vi.useRealTimers();vi.restoreAllMocks();});
 
 describe('member video gate', () => {
+  it('renders the selected recording description as text and omits absent descriptions',async()=>{
+    state.auth='authenticated';state.access='available';
+    list.mockResolvedValue([{id:'r1',title:'Meeting',description:'<script>alert(1)</script>\nSunday gathering'}]);
+    const {container}=render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);
+    expect(await screen.findByText(/<script>alert/)).toBeVisible();expect(container.querySelector('script')).toBeNull();
+  });
+
   it('shows a live-only recording on its watch route without claiming unavailable or requesting VOD',async()=>{
     state.auth='authenticated';state.access='available';
     videoApi.liveList.mockResolvedValue([{id:'r1',captureId:'a'.repeat(32),title:'Sunday live',liveState:'starting',createdAt:'2026-10-07T00:00:00Z',stopAcceptedAt:null,progress:{revision:0,firstSequence:0,lastSequence:-1,mediaEndSeconds:0,lastAdvancedAt:null,endedAt:null,ended:false}}]);
