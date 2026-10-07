@@ -391,6 +391,24 @@
     "empty": "公開済みの週報はまだありません。"
   },
   "memberVideos": {
+    "description": "動画の説明",
+    "live": {
+      "watchRecording": "公開された録画で視聴を続ける",
+      "starting": "ライブ準備中",
+      "live": "ライブ配信中・約1〜2分の遅延",
+      "recovering": "ライブに追いついています",
+      "interrupted": "ライブ接続が中断しました",
+      "ending": "ライブ終了処理中・引き続き視聴できます",
+      "ended": "ライブ終了・引き続き視聴できます",
+      "failed": "ライブを視聴できません",
+      "expired": "見逃し視聴の期限が切れました",
+      "aborted": "ライブが停止しました",
+      "backToLive": "ライブに戻る",
+      "replayUntil": "視聴期限：{time}"
+    },
+    "backToList": "動画一覧に戻る",
+    "otherVideos": "他の動画",
+    "unavailable": "この動画は現在視聴できません。",
     "settings": "再生設定",
     "togglePlayback": "再生・一時停止（スペース）",
     "privateCopy": "HHC 会員限定",

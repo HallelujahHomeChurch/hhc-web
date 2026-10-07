@@ -382,6 +382,24 @@
     "empty": "No weekly papers have been published yet."
   },
   "memberVideos": {
+    "description": "Video description",
+    "live": {
+      "watchRecording": "Continue with the published recording",
+      "starting": "Preparing live video",
+      "live": "Live · about 1–2 minutes behind",
+      "recovering": "Catching up",
+      "interrupted": "Live connection interrupted",
+      "ending": "Finishing live video; you can keep watching",
+      "ended": "Live ended; you can keep watching",
+      "failed": "Live video is unavailable",
+      "expired": "Live replay has expired",
+      "aborted": "Live video has stopped",
+      "backToLive": "Back to live",
+      "replayUntil": "Replay available until {time}"
+    },
+    "backToList": "Back to videos",
+    "otherVideos": "Other videos",
+    "unavailable": "This video is currently unavailable.",
     "settings": "Playback settings",
     "togglePlayback": "Play or pause (Space)",
     "privateCopy": "HHC members only",
