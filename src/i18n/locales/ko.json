@@ -391,6 +391,7 @@
     "empty": "아직 게시된 주보가 없습니다."
   },
   "memberVideos": {
+    "description": "영상 설명",
     "live": {
       "watchRecording": "게시된 녹화 영상으로 계속 시청",
       "starting": "라이브 준비 중",

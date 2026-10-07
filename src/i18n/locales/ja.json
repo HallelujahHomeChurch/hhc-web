@@ -391,6 +391,7 @@
     "empty": "公開済みの週報はまだありません。"
   },
   "memberVideos": {
+    "description": "動画の説明",
     "live": {
       "watchRecording": "公開された録画で視聴を続ける",
       "starting": "ライブ準備中",

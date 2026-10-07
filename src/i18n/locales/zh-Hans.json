@@ -391,6 +391,7 @@
     "empty": "目前尚未发布周报。"
   },
   "memberVideos": {
+    "description": "视频说明",
     "live": {
       "watchRecording": "接续观看会后影片",
       "starting": "直播准备中",

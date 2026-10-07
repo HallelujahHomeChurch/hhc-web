@@ -23,7 +23,7 @@ export type Messages = {
   selectedTitle: string; listTitle: string; count: string; play: string; select: string; selected: string;
   playing: string; featured: string; durationUnknown: string; expires: string; loading: string;
   preparing: string; empty: string; loadError: string; playError: string; expired: string;
-  retry: string; previous: string; next: string; uploadedDate: string;
+  retry: string; previous: string; next: string; uploadedDate: string; description: string;
 } & PlayerLabels;
 type ActivePlayback = {recordingId: string; scopeId: string; grant: MemberRecordingPlayback; url: string};
 const pageSize = 12;
@@ -298,7 +298,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, initial
             </div>}
             <h2 ref={playerTitle} tabIndex={-1} className="text-2xl font-semibold text-ink outline-none">{selected.title}</h2>
             <p className="text-sm text-muted">{messages.uploadedDate.replace('{date}', formatDate(selected.uploadedAt, locale))}</p>
-            {selected.description?<p className="whitespace-pre-wrap break-words rounded-[14px] bg-panel p-5 text-ink">{selected.description}</p>:null}
+            {selected.description?<details className="rounded-[14px] bg-panel p-5 text-ink"><summary className="min-h-11 cursor-pointer font-semibold focus-visible:outline-2 focus-visible:outline-primary">{messages.description}</summary><p className="whitespace-pre-wrap break-words">{selected.description}</p></details>:null}
             {playError ? <p role="alert" className="text-sm text-primary">{playError} <button type="button" className="underline" onClick={() => void start()}>{messages.retry}</button></p> : null}
           </div> : null}
           {otherRecordings.length > 0 ? <div className="grid gap-5">

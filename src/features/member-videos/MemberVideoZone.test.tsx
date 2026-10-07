@@ -23,6 +23,7 @@ vi.mock('./api', () => ({createMemberVideoApi: () => videoApi}));
 vi.mock('hls.js',()=>({default:class {static isSupported(){return false;}}}));
 
 const messages = {
+  description:'Video description',
   settings:'Settings',togglePlayback:'Play or pause',privateCopy:'HHC members only',buffering:'Loading video',uploadedDate:'Uploaded: {date}',
   selectedTitle: 'Selected recording', listTitle: 'Recent recordings', count: '{count} gatherings', play: 'Play', select: 'Select', selected: 'Selected',
   playing: 'Playing', featured: 'Featured', durationUnknown: 'Duration unavailable', expires: 'Available until', loading: 'Loading',
@@ -50,11 +51,31 @@ beforeEach(() => {
 afterEach(() => {cleanup();vi.useRealTimers();vi.restoreAllMocks();});
 
 describe('member video gate', () => {
-  it('renders the selected recording description as text and omits absent descriptions',async()=>{
+  it('expands plain-text descriptions without replacing the playing video',async()=>{
     state.auth='authenticated';state.access='available';
     list.mockResolvedValue([{id:'r1',title:'Meeting',description:'<script>alert(1)</script>\nSunday gathering'}]);
+    videoApi.grant.mockResolvedValue({packageId,watermarkCode:'trace',expiresAt:new Date(Date.now()+3600000).toISOString()});
+    videoApi.exchange.mockResolvedValue(playbackUrl);
     const {container}=render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);
-    expect(await screen.findByText(/<script>alert/)).toBeVisible();expect(container.querySelector('script')).toBeNull();
+    fireEvent.click(await screen.findByRole('button',{name:'Play'}));
+    const video=await screen.findByLabelText('Meeting');
+    const summary=screen.getByText(messages.description,{selector:'summary'}),details=summary.closest('details')!;
+    const description=screen.getByText(/<script>alert/);
+    expect(details.open).toBe(false);expect(description).not.toBeVisible();
+    fireEvent.click(summary);expect(details.open).toBe(true);expect(description).toBeVisible();
+    expect(description.textContent).toBe('<script>alert(1)</script>\nSunday gathering');
+    expect(description).toHaveClass('whitespace-pre-wrap');expect(container.querySelector('script')).toBeNull();
+    expect(screen.getByLabelText('Meeting')).toBe(video);
+    fireEvent.click(summary);expect(details.open).toBe(false);expect(screen.getByLabelText('Meeting')).toBe(video);
+    expect(videoApi.grant).toHaveBeenCalledTimes(1);
+  });
+  it('omits absent and empty recording descriptions',async()=>{
+    state.auth='authenticated';state.access='available';
+    list.mockResolvedValue([{id:'r1',title:'Meeting'},{id:'r2',title:'Empty',description:''}]);
+    const view=render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);
+    await screen.findByRole('heading',{name:'Meeting'});expect(view.container.querySelector('details')).toBeNull();
+    view.rerender(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r2"/>);
+    await screen.findByRole('heading',{name:'Empty'});expect(view.container.querySelector('details')).toBeNull();
   });
 
   it('shows a live-only recording on its watch route without claiming unavailable or requesting VOD',async()=>{

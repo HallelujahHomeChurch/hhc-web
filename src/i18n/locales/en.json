@@ -382,6 +382,7 @@
     "empty": "No weekly papers have been published yet."
   },
   "memberVideos": {
+    "description": "Video description",
     "live": {
       "watchRecording": "Continue with the published recording",
       "starting": "Preparing live video",

@@ -13,3 +13,15 @@ it('keeps an ended event mounted until an explicit VOD handoff with the same boo
  fireEvent.click(screen.getByRole('button',{name:englishLiveLabels.watchRecording}));
  expect(props.onVod).toHaveBeenCalledWith(session.bookmark.current);
 });
+it('expands the live description without replacing the player and omits empty text',()=>{
+ const props={api:{},recording:{id:'r',captureId:'a'.repeat(32),title:'Gathering',description:'<b>Plain text</b>\nSecond line',liveState:'live',progress:{mediaEndSeconds:5400}},labels:{description:'Video description',play:'Play',retry:'Retry',playError:'Error',loading:'Loading'},liveLabels:englishLiveLabels,locale:'en'} as unknown as ComponentProps<typeof LiveRecordingPlayer>;
+ const view=render(<LiveRecordingPlayer {...props}/>),player=screen.getByTestId('player');
+ const summary=screen.getByText('Video description',{selector:'summary'}),details=summary.closest('details')!;
+ expect(details.open).toBe(false);
+ fireEvent.click(summary);expect(details.open).toBe(true);
+ const text=screen.getByText(/<b>Plain text/);expect(text).toBeVisible();expect(text.textContent).toBe(props.recording.description);expect(text).toHaveClass('whitespace-pre-wrap');expect(view.container.querySelector('b')).toBeNull();
+ expect(screen.getByTestId('player')).toBe(player);
+ fireEvent.click(summary);expect(details.open).toBe(false);expect(screen.getByTestId('player')).toBe(player);
+ view.rerender(<LiveRecordingPlayer {...props} recording={{...props.recording,description:''}}/>);
+ expect(view.container.querySelector('details')).toBeNull();expect(screen.getByTestId('player')).toBe(player);
+});

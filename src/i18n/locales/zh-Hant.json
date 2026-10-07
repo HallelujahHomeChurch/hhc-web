@@ -391,6 +391,7 @@
     "empty": "目前尚未發布週報。"
   },
   "memberVideos": {
+    "description": "影片說明",
     "live": {
       "watchRecording": "接續觀看會後影片",
       "starting": "直播準備中",
