@@ -27,6 +27,7 @@ export function LiveRecordingPlayer({api,recording,labels,liveLabels,locale,onVo
   <h2 className="text-2xl font-semibold text-ink">{recording.title}</h2>
   <p role="status" className="text-sm text-muted">{session.closed?liveLabels.expired:liveLabels[state]}</p>
   {grant?.replayUntil?<p className="text-sm text-muted">{liveLabels.replayUntil.replace('{time}',new Intl.DateTimeFormat(locale,{dateStyle:'short',timeStyle:'short'}).format(new Date(grant.replayUntil)))}</p>:null}
+  {recording.description?<p className="whitespace-pre-wrap break-words rounded-[14px] bg-panel p-5 text-ink">{recording.description}</p>:null}
   {onVod?<button type="button" disabled={switching} className="min-h-11 justify-self-start rounded-full border border-panel-border px-5 text-ink disabled:opacity-50" onClick={async()=>{setSwitching(true);try{if(!await onVod(session.bookmark.current))setMediaError(true);}finally{setSwitching(false);}}}>{liveLabels.watchRecording}</button>:null}
   {(session.error||mediaError)&&!session.closed?<p role="alert" className="text-sm text-primary">{labels.playError} <button type="button" className="min-h-11 underline" disabled={session.pending} onClick={()=>void retry()}>{labels.retry}</button></p>:null}
  </div>;
