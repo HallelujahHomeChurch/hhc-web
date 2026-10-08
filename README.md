@@ -42,6 +42,10 @@ Online bulletin reading is disabled by default. Set the build-time
 `NEXT_PUBLIC_WEEKLY_READER_ENABLED=true` only after private-interaction/offline
 acceptance and human approval of watermark readability. This gate does not grant
 member access and does not disable the existing PDF download workflow.
+Production builds use the repository variable `WEEKLY_READER_ENABLED` (default
+`false`) to set that build argument. Changing a runtime Container App environment
+variable cannot enable an already-built browser bundle; activation requires an
+approved CI/CD release after those acceptance gates.
 
 Explicit offline saves use account-bound IndexedDB with the server's seven-day
 receipt, hash-verified resources and an atomic active-revision pointer. Native
