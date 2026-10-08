@@ -42,3 +42,10 @@
 .settings select { min-height:44px; max-width:132px; padding:0 8px; border-radius:4px; background:#292929; color:white; }
 @media(max-width:540px) { .controls {padding:20px 8px 0} .volume {display:none} .time {font-size:12px;margin-left:0} .button {width:40px} .row {gap:0} .settings {bottom:76px;right:8px;padding:4px 10px} .settings label {min-height:44px;font-size:12px} }
 @media(prefers-reduced-motion:reduce) { .controls {transition:none} .feedback > span, .loading > svg {animation:none} }
+
+.liveButton {width:auto; min-width:0; flex-shrink:1; gap:6px; padding-inline:8px; font-size:13px; white-space:nowrap; max-width:260px; overflow:hidden; text-overflow:ellipsis;}
+.liveDot {width:6px; height:6px; flex-shrink:0; border-radius:50%; background:#a3a3a3;}
+.liveButton[data-live-edge="true"] .liveDot {background:#ff0033;}
+.liveButton:disabled {cursor:default; color:#d4d4d4;}
+
+.liveText {min-width:0; overflow:hidden; text-overflow:ellipsis;}

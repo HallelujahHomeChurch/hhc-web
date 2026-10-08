@@ -10,7 +10,7 @@ import {isLocale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import {getAlternates, getLocalizedPath} from '@/lib/seo';
 
-type PageProps = {params: Promise<{locale: string}>; searchParams: Promise<{page?: string}>};
+type PageProps = {params: Promise<{locale: string}>};
 
 export async function generateMetadata({params}: PageProps): Promise<Metadata> {
   const {locale} = await params;
@@ -24,19 +24,17 @@ export async function generateMetadata({params}: PageProps): Promise<Metadata> {
   };
 }
 
-export default async function MemberVideosPage({params, searchParams}: PageProps) {
+export default async function MemberVideosPage({params}: PageProps) {
   const {locale} = await params;
   if (!isLocale(locale)) notFound();
   setRequestLocale(locale);
-  const page = Number((await searchParams).page);
-  const initialPage = Number.isSafeInteger(page) && page > 0 ? page : 1;
   const messages = getMessages(locale).memberVideos;
   const layout = await getSiteLayout(locale);
   const pathname = `/${locale}/member-videos`;
   return (
     <>
       <SiteHeaderServer locale={locale} pathname={pathname} />
-      <MemberVideoZone view="list" initialPage={initialPage} locale={locale} messages={messages} hero={<AboutHero imageUrl={layout.bannerImageUrl} locale={locale} title={messages.heroTitle} subtitle={messages.heroSubtitle} />} />
+      <MemberVideoZone view="list" locale={locale} messages={messages} hero={<AboutHero imageUrl={layout.bannerImageUrl} locale={locale} title={messages.heroTitle} subtitle={messages.heroSubtitle} />} />
       <SiteFooterServer locale={locale} pathname={pathname} />
     </>
   );
