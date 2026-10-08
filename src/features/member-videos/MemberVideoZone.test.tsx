@@ -5,7 +5,7 @@ import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
 
 const state = vi.hoisted(() => ({access: 'loading', auth: 'checking'}));
 const list = vi.hoisted(() => vi.fn());
-const videoApi = vi.hoisted(() => ({liveList:vi.fn().mockResolvedValue([]),cover:vi.fn(),list: vi.fn(), grant: vi.fn(), exchange: vi.fn(), clear: vi.fn().mockResolvedValue(undefined)}));
+const videoApi = vi.hoisted(() => ({listPage:vi.fn(),liveList:vi.fn().mockResolvedValue([]),cover:vi.fn(),list: vi.fn(), grant: vi.fn(), exchange: vi.fn(), clear: vi.fn().mockResolvedValue(undefined)}));
 const router = vi.hoisted(() => ({replace: vi.fn()}));
 const replace = router.replace;
 const captureHandledError = vi.hoisted(() => vi.fn());
@@ -28,7 +28,7 @@ const messages = {
   selectedTitle: 'Selected recording', listTitle: 'Recent recordings', count: '{count} gatherings', play: 'Play', select: 'Select', selected: 'Selected',
   playing: 'Playing', featured: 'Featured', durationUnknown: 'Duration unavailable', expires: 'Available until', loading: 'Loading',
   preparing: 'Preparing', empty: 'No recordings', loadError: 'Unavailable', playError: 'Cannot play', expired: 'Expired',
-  retry: 'Retry', previous: 'Previous', next: 'Next'
+  loadMore:'Load more', retry: 'Retry', previous: 'Previous', next: 'Next'
   ,quality:'Quality',auto:'Auto',pause:'Pause',mute:'Mute',unmute:'Unmute',seek:'Playback position',volume:'Volume',fullscreen:'Fullscreen',exitFullscreen:'Exit fullscreen',fullscreenError:'Could not exit fullscreen',playbackSpeed:'Playback speed'
 };
 
@@ -38,6 +38,7 @@ beforeEach(() => {
   captureHandledError.mockReset();
   list.mockResolvedValue([]);
   videoApi.list.mockReset().mockImplementation(list);
+  videoApi.listPage.mockReset().mockImplementation(async()=>({items:await list(),nextCursor:null}));
   videoApi.liveList.mockReset().mockResolvedValue([]);
   videoApi.grant.mockReset(); videoApi.exchange.mockReset();
   videoApi.cover.mockReset().mockRejectedValue(new Error('No cover'));
@@ -86,44 +87,88 @@ describe('member video gate', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();expect(videoApi.grant).not.toHaveBeenCalled();
   });
 
-  it('shows a paginated library without requesting playback and links to a refreshable watch page', async () => {
-    state.auth='authenticated'; state.access='available';
-    list.mockResolvedValue(Array.from({length: 15}, (_, i) => ({id: `r${i}`, title: `Gathering ${i}`, uploadedAt: '2026-10-01T00:00:00Z'})));
+  it('appends cursor batches, removes count and pagination, and keeps plain watch links',async()=>{
+    state.auth='authenticated';state.access='available';
+    const items=Array.from({length:15},(_,i)=>({id:`r${i}`,title:`Gathering ${i}`,uploadedAt:new Date(Date.UTC(2026,9,15-i)).toISOString()}));
+    list.mockResolvedValue(items.slice(0,12));
+    videoApi.listPage.mockResolvedValueOnce({items:items.slice(0,12),nextCursor:'next'}).mockResolvedValueOnce({items:[items[11],...items.slice(12)],nextCursor:null});
     render(<MemberVideoZone locale="en" messages={messages} hero={null} view="list"/>);
-    const links = await screen.findAllByRole('link', {name: /Gathering/});
-    expect(links).toHaveLength(12);
-    expect(links[0]).toHaveAttribute('href', expect.stringMatching(/^\/en\/member-videos\/r[0-9]+\?page=1$/));
-    expect(screen.queryByRole('button', {name:'Play'})).not.toBeInTheDocument();
+    expect(await screen.findAllByRole('link',{name:/Gathering/})).toHaveLength(12);
+    expect(screen.queryByRole('heading',{name:'Recent recordings'})).toBeNull();
+    expect(screen.queryByText(/gatherings/)).toBeNull();
+    expect(screen.getAllByRole('link',{name:/Gathering/})[0]).toHaveAttribute('href','/en/member-videos/r0');
+    expect(screen.queryByRole('button',{name:'Next'})).toBeNull();
+    fireEvent.click(screen.getByRole('button',{name:'Load more'}));
+    await waitFor(()=>expect(screen.getAllByRole('link',{name:/Gathering/})).toHaveLength(15));
+    expect(screen.queryByRole('button',{name:'Load more'})).toBeNull();
     expect(videoApi.grant).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', {name:'Next'}));
-    expect(screen.getAllByRole('link', {name:/Gathering/})).toHaveLength(3);
+  });
+  it('keeps loaded cards after a failed next batch and retries the same cursor',async()=>{
+    state.auth='authenticated';state.access='available';
+    videoApi.listPage.mockResolvedValueOnce({items:[{id:'first',title:'First'}],nextCursor:'next'}).mockRejectedValueOnce(new Error('Offline')).mockResolvedValueOnce({items:[{id:'second',title:'Second'}],nextCursor:null});
+    render(<MemberVideoZone locale="en" messages={messages} hero={null} view="list"/>);
+    await screen.findByRole('link',{name:'First'});
+    fireEvent.click(screen.getByRole('button',{name:'Load more'}));
+    fireEvent.click(await screen.findByRole('button',{name:'Retry'}));
+    await screen.findByRole('link',{name:'Second'});
+    expect(screen.getByRole('link',{name:'First'})).toBeVisible();
+    expect(videoApi.listPage.mock.calls[1][0].cursor).toBe('next');expect(videoApi.listPage.mock.calls[2][0].cursor).toBe('next');
+  });
+  it('requests twelve items, prevents duplicate loads and aborts a pending batch on unmount',async()=>{
+    state.auth='authenticated';state.access='available';
+    videoApi.listPage.mockResolvedValueOnce({items:[{id:'first',title:'First'}],nextCursor:'next'}).mockImplementationOnce(()=>new Promise(()=>{}));
+    const view=render(<MemberVideoZone locale="en" messages={messages} hero={null} view="list"/>);
+    await screen.findByRole('link',{name:'First'});
+    const loadMore=screen.getByRole('button',{name:'Load more'});
+    fireEvent.click(loadMore);fireEvent.click(loadMore);
+    expect(videoApi.listPage).toHaveBeenCalledTimes(2);
+    expect(videoApi.listPage.mock.calls[0][0].limit).toBe(12);
+    const request=videoApi.listPage.mock.calls[1][0];
+    expect(request).toMatchObject({limit:12,cursor:'next'});
+    expect(request.signal.aborted).toBe(false);
+    view.unmount();
+    expect(request.signal.aborted).toBe(true);
+  });
+  it('continues after an empty batch and offers retry when its cursor does not advance',async()=>{
+    state.auth='authenticated';state.access='available';
+    videoApi.listPage.mockResolvedValueOnce({items:[],nextCursor:'next'}).mockResolvedValueOnce({items:[],nextCursor:'next'});
+    render(<MemberVideoZone locale="en" messages={messages} hero={null} view="list"/>);
+    fireEvent.click(await screen.findByRole('button',{name:'Load more'}));
+    expect(await screen.findByRole('button',{name:'Retry'})).toBeEnabled();
+    expect(screen.queryByText('No recordings')).toBeNull();
+    expect(videoApi.listPage).toHaveBeenCalledTimes(2);
+  });
+  it('puts livestreams in the same grid before recordings and removes duplicate VOD cards',async()=>{
+    state.auth='authenticated';state.access='available';
+    const live={id:'r1',captureId:'a'.repeat(32),title:'Sunday live',liveState:'live',createdAt:'2026-10-07T00:00:00Z',stopAcceptedAt:null,progress:{revision:1,firstSequence:0,lastSequence:3,mediaEndSeconds:120,lastAdvancedAt:'2026-10-07T00:02:00Z',endedAt:null,ended:false}};
+    videoApi.liveList.mockResolvedValue([live]);list.mockResolvedValue([{id:'r1',title:'Sunday live'},{id:'r2',title:'Earlier'}]);
+    render(<MemberVideoZone locale="en" messages={messages} hero={null} view="list"/>);
+    await screen.findByRole('link',{name:'Earlier'});
+    expect(screen.getAllByRole('article')).toHaveLength(2);
+    expect(screen.getAllByRole('article')[0]).toHaveTextContent('Sunday live');
+    expect(screen.getAllByRole('article')[0]).toHaveTextContent('Live');
+    expect(screen.getByRole('link',{name:'Sunday live — Live'})).toBeVisible();
+    expect(screen.getAllByRole('article')[0].parentElement).toBe(screen.getAllByRole('article')[1].parentElement);
   });
   it('uses the requested video and limits other videos to the newest ten', async () => {
     state.auth='authenticated'; state.access='available';
     const items=Array.from({length: 15}, (_, i) => ({id:`r${i}`, title:`Gathering ${i}`, uploadedAt:`2026-10-${String(i+1).padStart(2,'0')}T00:00:00Z`}));
     list.mockResolvedValue(items);
-    render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r0" initialPage={2}/>);
+    render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r0"/>);
     await screen.findByRole('heading', {level:2, name:'Gathering 0'});
     const links=screen.getAllByRole('link', {name:/Gathering/});
     expect(links).toHaveLength(10);
     expect(links[0]).toHaveTextContent('Gathering 14');
     expect(links[9]).toHaveTextContent('Gathering 5');
-    expect(screen.getByRole('link', {name:'Recent recordings'})).toHaveAttribute('href','/en/member-videos?page=2');
+    expect(screen.getByRole('link', {name:'Recent recordings'})).toHaveAttribute('href','/en/member-videos');
     expect(screen.queryByRole('button', {name:'Next'})).not.toBeInTheDocument();
   });
-  it('preserves library page two through sidebar navigation with thirteen recordings', async () => {
-    state.auth='authenticated'; state.access='available';
-    list.mockResolvedValue(Array.from({length:13}, (_, i) => ({id:`r${i}`, title:`Gathering ${i}`, uploadedAt:`2026-10-${String(i+1).padStart(2,'0')}T00:00:00Z`})));
-    const view=render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r0" initialPage={2}/>);
-    await screen.findByRole('heading', {level:2, name:'Gathering 0'});
-    const links=screen.getAllByRole('link', {name:/Gathering/});
-    expect(links).toHaveLength(10);
-    for (const link of links) expect(link).toHaveAttribute('href', expect.stringMatching(/\?page=2$/));
-    const target=new URL(links[0].getAttribute('href')!, 'https://www.alive.org.tw');
-    expect(target.pathname).toBe('/en/member-videos/r12');
-    view.rerender(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId={target.pathname.split('/').at(-1)} initialPage={Number(target.searchParams.get('page'))}/>);
-    await screen.findByRole('heading', {level:2, name:'Gathering 12'});
-    expect(screen.getByRole('link', {name:'Recent recordings'})).toHaveAttribute('href','/en/member-videos?page=2');
+  it('uses plain watch links throughout the sidebar',async()=>{
+    state.auth='authenticated';state.access='available';
+    list.mockResolvedValue(Array.from({length:13},(_,i)=>({id:`r${i}`,title:`Gathering ${i}`,uploadedAt:`2026-10-${String(i+1).padStart(2,'0')}T00:00:00Z`})));
+    render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r0"/>);
+    await screen.findByRole('heading',{level:2,name:'Gathering 0'});
+    for(const link of screen.getAllByRole('link',{name:/Gathering/}))expect(link.getAttribute('href')).not.toContain('?');
   });
   it('does not substitute the newest video for an unavailable direct link', async () => {
     state.auth='authenticated'; state.access='available';
@@ -221,19 +266,18 @@ describe('member video gate', () => {
     expect(video.currentTime).toBe(1234);
     expect(HTMLMediaElement.prototype.load).toHaveBeenCalledTimes(loads);
   });
-  it('excludes the selected recording and paginates the other 17 recordings into 12 and 5', async () => {
+  it('excludes the selected recording without paginating the remaining cards', async () => {
     state.auth = 'authenticated'; state.access = 'available';
     const records = Array.from({length:18},(_,index)=>({id:`r-${index}`,title:`Recording ${index}`,uploadedAt:new Date(Date.UTC(2026,8,28-index)).toISOString(),expiresAt:'2026-10-28T02:00:00Z',status:'published',featured:false,hidden:false,version:1,packageId,durationSeconds:9000}));
     list.mockResolvedValue(records);
     render(<MemberVideoZone locale="en" messages={messages} hero={<h1>Member Videos</h1>} />);
     await screen.findByRole('heading',{level:2,name:'Recording 0'});
-    expect(screen.getAllByRole('article')).toHaveLength(12);
+    expect(screen.getAllByRole('article')).toHaveLength(17);
     expect(screen.queryByRole('heading',{level:3,name:'Recording 0'})).not.toBeInTheDocument();
     expect(screen.queryByText(/2 hours 30 minutes/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Available until/)).not.toBeInTheDocument();
     expect(screen.getByText('Uploaded: September 28, 2026')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button',{name:'Next'}));
-    expect(screen.getAllByRole('article')).toHaveLength(5);
+    expect(screen.queryByRole('button',{name:'Next'})).toBeNull();
     expect(screen.getByRole('heading',{level:2,name:'Recording 0'})).toBeInTheDocument();
   });
   it('moves the chosen card to the player and restores the previous selection to the list', async()=>{

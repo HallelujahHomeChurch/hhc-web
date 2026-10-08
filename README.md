@@ -9,7 +9,8 @@ cover reads, independent of playback sessions. Images remain temporary object
 URLs scoped to the mounted account/recording and are revoked on changes,
 unmount or expiry. Covers never pass through the public Next image optimizer.
 Missing or unavailable covers retain the video placeholder without blocking
-playback; only the current list page and selected recording are requested.
+playback; only mounted cards and the selected recording are requested. This is
+an in-memory component cache, not a persistent browser image cache.
 
 ## License
 
@@ -88,8 +89,20 @@ validated HLS, including existing ready packages. A missing preview does not
 block playback. Release that producer before this UI; do not proxy private
 sprites through Next Image or expose public object URLs.
 
-Only the Taipei upload date appears below titles. The selected recording is
-excluded from the remaining list, which is paginated in groups of twelve.
+The library uses three thumbnail/title/date cards per desktop row and loads
+cursor batches of twelve on scroll, with an accessible manual load/retry button.
+Live events appear first in the same grid with a top-right live badge. The watch
+page places the player and description beside the newest ten other recordings;
+recommendations move below the player on narrower screens. Only the Taipei upload
+date appears below recording titles; live events show their start date.
+
+Live playback retains the available DVR timeline and replaces the numeric time
+display with a live indicator/button. It is red at the current verified live edge
+and gray during paused or earlier playback; pressing it resumes at the latest
+available position. Stopped events keep their distinct status and disable return.
+
+Search is planned separately in
+[the next-phase search plan](docs/superpowers/plans/2026-10-08-member-video-search.md).
 Banner font regeneration includes the member-video strings in all five locales.
 
 ## Office integration

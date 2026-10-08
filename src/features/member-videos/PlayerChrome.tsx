@@ -29,6 +29,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
   const fullscreen = fullscreenState.mode !== 'inline';
   const [playing, setPlaying] = useState(false), [waiting, setWaiting] = useState(true);
   const [muted, setMuted] = useState(false), [volume, setVolume] = useState(1), [rate, setRate] = useState(1);
+  const [liveRange,setLiveRange]=useState<ReturnType<typeof liveWindow>>(null);
   const [time, setTime] = useState(0), [duration, setDuration] = useState(0), [buffered, setBuffered] = useState(0);
   const [settings, setSettings] = useState(false), [visible, setVisible] = useState(true);
   const [feedback, setFeedback] = useState<{kind: 'play' | 'pause'; id: number} | null>(null);
@@ -44,7 +45,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
     if (!video) return;
     const updatePlay = () => { setPlaying(!video.paused && !video.ended); playingCallback.current?.(!video.paused && !video.ended); };
     const updateTime = () => setTime(video.currentTime);
-    const updateDuration = () => setDuration(live ? liveWindow(video.seekable,live.verifiedEnd)?.end??0 : Number.isFinite(video.duration) ? video.duration : 0);
+    const updateDuration = () => {const range=live ? liveWindow(video.seekable,live.verifiedEnd):null;setLiveRange(range);setDuration(live ? range?.end??0 : Number.isFinite(video.duration) ? video.duration : 0);};
     const updateVolume = () => { setMuted(video.muted); setVolume(video.volume); };
     const updateRate = () => setRate(video.playbackRate);
     const updateBuffer = () => {
@@ -55,6 +56,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
     const startWait = () => setWaiting(true), endWait = () => setWaiting(false);
     const events: [string, () => void][] = [['play', updatePlay], ['pause', updatePlay], ['ended', updatePlay], ['timeupdate', updateTime], ['durationchange', updateDuration], ['loadedmetadata',updateDuration], ['volumechange', updateVolume], ['ratechange', updateRate], ['progress', updateBuffer], ['progress', updateDuration], ['canplay',updateDuration], ['loadstart', startWait], ['seeking', startWait], ['waiting', startWait], ['playing', endWait], ['canplay', endWait], ['seeked', endWait], ['pause', endWait], ['ended', endWait], ['error', endWait]];
     for (const [event, handler] of events) video.addEventListener(event, handler);
+    updatePlay(); updateTime(); updateDuration(); updateVolume(); updateRate();
     return () => { for (const [event, handler] of events) video.removeEventListener(event, handler); };
   }, [container, videoRef,live]);
 
@@ -96,7 +98,8 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
     showControls();
   };
   const toggleFullscreen = fullscreenState.toggle;
-  const seek = (value: number) => { if (videoRef.current && duration > 0) { onDvr?.();videoRef.current.currentTime = Math.min(duration, Math.max(0, value)); setTime(videoRef.current.currentTime); } };
+  const seekStart = liveRange?.start ?? 0;
+  const seek = (value: number) => { if (videoRef.current && duration > seekStart) { onDvr?.();videoRef.current.currentTime = Math.min(duration, Math.max(seekStart, value)); setTime(videoRef.current.currentTime); } };
   const keyDown = (event: KeyboardEvent) => {
     if (event.key === 'Escape' && settings) { event.preventDefault(); event.stopPropagation(); setSettings(false); settingsButton.current?.focus(); return; }
     if (event.altKey || event.ctrlKey || event.metaKey || event.target instanceof HTMLElement && (event.target.closest('input,select,textarea,[contenteditable=true]') || event.key === ' ' && event.target.closest('button'))) return;
@@ -128,7 +131,8 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
   const cue = previewTime === null ? undefined : cues.find(cue => cue.start <= previewTime && cue.end > previewTime);
   const neighbor = cue ? cues.find(item => item.start >= cue.end && item.url !== cue.url)?.url : undefined;
   const controlsVisible = visible || !playing || settings || scrub !== null;
-  const percentage = (value: number) => duration > 0 ? `${Math.min(100, Math.max(0, value / duration * 100))}%` : '0%';
+  const atLive = Boolean(live?.canFollow && liveRange && playing && current >= liveRange.edge - 2);
+  const percentage = (value: number) => duration > seekStart ? `${Math.min(100, Math.max(0, (value - seekStart) / (duration - seekStart) * 100))}%` : '0%';
   return <>
     <button type="button" className={styles.surface} aria-label={labels.togglePlayback} tabIndex={-1} onClick={() => {container.current?.focus({preventScroll:true}); toggle();}} />
     <RecordingWatermark container={container} videoRef={videoRef} code={watermark}/>
@@ -144,8 +148,8 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
     <div data-controls className={`${styles.controls} ${controlsVisible ? '' : styles.hidden}`}>
       <div className={styles.seek} onPointerLeave={() => { if (!dragging.current) setPreview(null); }}>
         <div className={styles.track} aria-hidden="true"><span className={styles.buffered} style={{width:percentage(buffered)}}/><span className={styles.played} style={{width:percentage(current)}}/></div>
-        <input type="range" aria-label={labels.seek} aria-valuetext={`${playerClock(current)} / ${playerClock(duration)}`} min={0} max={duration} step={0.1} value={current} disabled={duration <= 0}
-          onPointerMove={event => { const bounds = event.currentTarget.getBoundingClientRect(); if (duration > 0 && bounds.width > 0) { setPreview(Math.min(duration - 0.001, Math.max(0, (event.clientX - bounds.left) / bounds.width * duration))); setPreviewRequested(true); } }}
+        <input type="range" aria-label={labels.seek} aria-valuetext={`${playerClock(current)} / ${playerClock(duration)}`} min={seekStart} max={duration} step={0.1} value={Math.max(seekStart, Math.min(duration, current))} disabled={duration <= seekStart}
+          onPointerMove={event => { const bounds = event.currentTarget.getBoundingClientRect(); if (duration > 0 && bounds.width > 0) { setPreview(Math.min(duration - 0.001, Math.max(seekStart, seekStart + (event.clientX - bounds.left) / bounds.width * (duration - seekStart)))); setPreviewRequested(true); } }}
           onPointerDown={event => { dragging.current = true; setScrub(Number(event.currentTarget.value)); setPreviewRequested(true); event.currentTarget.setPointerCapture?.(event.pointerId); }}
           onChange={event => { const value = Number(event.target.value); if (dragging.current) setScrub(value); else seek(value); }}
           onPointerUp={event => { seek(Number(event.currentTarget.value)); dragging.current = false; setScrub(null); setPreview(null); }}
@@ -159,8 +163,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
         <button type="button" className={styles.button} aria-label={playing ? labels.pause : labels.play} title={playing ? labels.pause : labels.play} onClick={toggle}>{playing ? <Pause size={22} fill="currentColor"/> : <Play size={22} fill="currentColor"/>}</button>
         <button type="button" className={styles.button} aria-label={muted || volume === 0 ? labels.unmute : labels.mute} title={muted || volume === 0 ? labels.unmute : labels.mute} onClick={() => { const video = videoRef.current; if (video) { if (video.volume === 0) {video.volume = 1; video.muted = false;} else video.muted = !video.muted; } }}>{muted || volume === 0 ? <VolumeX size={22}/> : <Volume2 size={22}/>}</button>
         <input type="range" className={styles.volume} aria-label={labels.volume} min={0} max={1} step={0.05} value={muted ? 0 : volume} onChange={event => { if (videoRef.current) { videoRef.current.volume = Number(event.target.value); videoRef.current.muted = false; } }}/>
-        <span className={styles.time}>{playerClock(current)} / {playerClock(duration)}</span>
-        {live ? <><span aria-live="polite" className="text-xs">{live.label}</span><button type="button" className={styles.button} disabled={!live.canFollow} aria-label={live.backToLive} onClick={onReturnToLive}>{live.backToLive}</button></> : null}<span className={styles.spacer}/>
+        {live ? <button type="button" className={`${styles.button} ${styles.liveButton}`} data-live-edge={atLive} disabled={!live.canFollow || !liveRange} aria-label={live.canFollow ? live.backToLive : live.label} title={live.canFollow ? live.backToLive : live.label} onClick={onReturnToLive}><span className={styles.liveDot} aria-hidden="true"/><span className={styles.liveText}>{live.canFollow ? live.liveLabel ?? live.label : live.label}</span></button> : <span className={styles.time}>{playerClock(current)} / {playerClock(duration)}</span>}<span className={styles.spacer}/>
         <button ref={settingsButton} type="button" className={styles.button} aria-label={labels.settings} title={labels.settings} aria-expanded={settings} onClick={() => setSettings(value => !value)}><Settings size={22}/></button>
         <button type="button" className={styles.button} aria-label={fullscreen ? labels.exitFullscreen : labels.fullscreen} title={fullscreen ? labels.exitFullscreen : labels.fullscreen} onClick={() => void toggleFullscreen()}>{fullscreen ? <Minimize size={22}/> : <Maximize size={22}/>}</button>
       </div>

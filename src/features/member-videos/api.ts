@@ -40,6 +40,7 @@ export function createMemberVideoApi(authorization: Authorization, fetcher: Fetc
       if(blob.type!=='image/jpeg'||blob.size>(1<<20)) throw new Error('Invalid recording cover');
       return blob;
     },
+    listPage: (options: {limit?:number;cursor?:string;signal?:AbortSignal}={})=>client.listMemberRecordingsPage(options),
     list: (signal?: AbortSignal) => client.listMemberRecordings(signal),
     grant: (id: string, scopeId: string, versionId?: string, signal?: AbortSignal) => client.issueRecordingPlayback(id, scopeId, versionId, signal),
     exchange: (playback: MemberRecordingPlayback, signal?:AbortSignal)=>exchange(playback,'vod',signal),

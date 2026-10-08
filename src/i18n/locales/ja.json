@@ -391,8 +391,11 @@
     "empty": "公開済みの週報はまだありません。"
   },
   "memberVideos": {
+    "loadMore": "さらに読み込む",
+    "liveStartedDate": "配信開始：{date}",
     "description": "動画の説明",
     "live": {
+      "liveNow": "ライブ配信中",
       "watchRecording": "公開された録画で視聴を続ける",
       "starting": "ライブ準備中",
       "live": "ライブ配信中・約1〜2分の遅延",
