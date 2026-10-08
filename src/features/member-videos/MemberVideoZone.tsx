@@ -331,7 +331,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId}: ZonePr
                   <div className="grid aspect-video place-items-center rounded-xl bg-neutral-950 text-white"><Play size={28} aria-hidden="true"/></div>
                   <span className={`${zoneStyles.badge} ${item.liveState==='live'?zoneStyles.liveBadge:zoneStyles.stateBadge}`}>{liveBadge(item)}</span>
                 </Link>
-                <div className={zoneStyles.info}><h3 className={zoneStyles.title}><Link href={cardLink(item.id)}>{item.title}<span className="sr-only"> — {liveBadge(item)}</span></Link></h3><p className={zoneStyles.date}>{(messages.liveStartedDate??'{date}').replace('{date}',formatDate(item.createdAt,locale))}</p></div>
+                <div className={zoneStyles.info}><h3 className={zoneStyles.title}><Link href={cardLink(item.id)} aria-label={`${item.title} — ${liveBadge(item)}`}>{item.title}</Link></h3><p className={zoneStyles.date}>{(messages.liveStartedDate??'{date}').replace('{date}',formatDate(item.createdAt,locale))}</p></div>
               </article>)}
               {visibleItems.map(item=><article key={item.id} className={zoneStyles.card}>
                 <Link href={cardLink(item.id)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
