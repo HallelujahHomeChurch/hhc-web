@@ -74,7 +74,8 @@ describe('member video gate', () => {
     list.mockResolvedValue([{id:'r1',title:'Meeting',packageId}]);videoApi.liveList.mockRejectedValue(new Error('Live index offline'));
     videoApi.grant.mockResolvedValue({packageId,watermarkCode:'trace',expiresAt:new Date(Date.now()+3600000).toISOString()});videoApi.exchange.mockResolvedValue(playbackUrl);
     render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);
-    expect(await screen.findByLabelText('Meeting')).toHaveAttribute('src',playbackUrl);
+    const video=await screen.findByLabelText('Meeting');
+    await waitFor(()=>expect(video).toHaveAttribute('src',playbackUrl));
     expect(videoApi.grant).toHaveBeenCalledTimes(1);
   });
 

@@ -395,6 +395,9 @@
     "empty": "公開済みの週報はまだありません。"
   },
   "memberVideos": {
+    "theaterMode": "シアターモード",
+    "exitTheaterMode": "シアターモードを終了",
+    "tapToPlay": "タップして再生",
     "previousVideo": "前の動画",
     "nextVideo": "次の動画",
     "loadMore": "さらに読み込む",

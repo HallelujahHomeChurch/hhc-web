@@ -28,3 +28,10 @@
 .title a {display:inline-block; min-height:44px;}
 
 @media(max-width:767px) {.watchPage {padding-top:0;} .watch {width:100%;} .watch > :not(.video), .watch .video > :not(:first-child) {margin-inline:12px;} .watch .video > :first-child {border-radius:0;} }
+
+@media(pointer:fine) {
+  .watch:has([data-theater="true"]) {width:100%;}
+  .watch:has([data-theater="true"]) > .video {grid-column:1 / -1;}
+  .watch:has([data-theater="true"]) .video > :not(:first-child) {margin-inline:16px;}
+  .watch:has([data-theater="true"]) > .results {grid-row:2;}
+}

@@ -16,7 +16,7 @@ vi.mock('hls.js',()=>({default:class {
   on(event:string,callback:(...args:unknown[])=>void){this.listeners[event]=callback;if(event==='manifest'&&engine.manifestReady)queueMicrotask(callback);}
   attachMedia(){}
 }}));
-const labels={quality:'Quality',auto:'Auto',play:'Play',pause:'Pause',mute:'Mute',unmute:'Unmute',seek:'Playback position',volume:'Volume',fullscreen:'Fullscreen',exitFullscreen:'Exit fullscreen',fullscreenError:'Could not exit fullscreen. Retry.',playbackSpeed:'Speed',settings:'Settings',togglePlayback:'Play or pause',privateCopy:'HHC members only',buffering:'Loading video'};
+const labels={quality:'Quality',auto:'Auto',play:'Play',pause:'Pause',mute:'Mute',unmute:'Unmute',seek:'Playback position',volume:'Volume',fullscreen:'Fullscreen',exitFullscreen:'Exit fullscreen',fullscreenError:'Could not exit fullscreen. Retry.',playbackSpeed:'Speed',theaterMode:'Theater mode',exitTheaterMode:'Exit theater mode',tapToPlay:'Tap to start playback',settings:'Settings',togglePlayback:'Play or pause',privateCopy:'HHC members only',buffering:'Loading video'};
 const props=()=>({playbackUrl:url,availableQualities:['720p','1080p'] as ('720p'|'1080p')[],watermark:'TRACE123',title:'Sunday',labels,videoRef:createRef<HTMLVideoElement>(),onPlayingChange:vi.fn(),onError:vi.fn()});
 
 it('exposes 480p only when provided and keeps its requests inside the authenticated session',async()=>{
@@ -450,4 +450,35 @@ it('includes adjacent video links in the viewport fullscreen keyboard focus loop
   play.focus();expect(fireEvent.keyDown(play,{key:'Tab',shiftKey:true})).toBe(true);
   previous.focus();fireEvent.keyDown(previous,{key:'Tab',shiftKey:true});
   expect(screen.getAllByRole('button',{name:'Exit fullscreen'}).at(-1)).toHaveFocus();
+});
+
+
+it.each([false,true])('exposes play after policy rejection before canplay on native=%s without muting',async(native)=>{
+  touchSurface();engine.supported=!native;
+  if(native)vi.spyOn(HTMLMediaElement.prototype,'canPlayType').mockReturnValue('probably');
+  vi.mocked(HTMLMediaElement.prototype.play).mockRejectedValueOnce(new DOMException('Requires gesture','NotAllowedError'));
+  const p=props();render(<HlsPlayer {...p}/>);const video=p.videoRef.current!;
+  if(native){await waitFor(()=>expect(video.src).toBe(url));fireEvent.loadedMetadata(video);}
+  expect(await screen.findByText('Tap to start playback')).toBeInTheDocument();
+  expect(screen.queryByText('Loading video')).not.toBeInTheDocument();
+  expect(video.muted).toBe(false);
+  fireEvent.click(screen.getByRole('button',{name:'Play'}));
+  expect(video.play).toHaveBeenCalledTimes(2);
+  fireEvent.play(video);fireEvent.playing(video);
+  expect(screen.queryByText('Tap to start playback')).not.toBeInTheDocument();
+  expect(p.onError).not.toHaveBeenCalled();
+});
+
+it('desktop controls link adjacent recordings and toggle theater without rebuilding playback',async()=>{
+ const p=props();render(<HlsPlayer {...p} labels={{...labels,previousVideo:'Previous video',nextVideo:'Next video'}} previousHref="/en/member-videos/first" nextHref="/en/member-videos/third"/>);
+ await waitFor(()=>expect(engine.instances).toHaveLength(1));
+ const video=p.videoRef.current!;video.currentTime=45;
+ expect(screen.getByRole('link',{name:'Previous video'})).toHaveAttribute('href','/en/member-videos/first');
+ expect(screen.getByRole('link',{name:'Next video'})).toHaveAttribute('href','/en/member-videos/third');
+ fireEvent.click(screen.getByRole('button',{name:'Theater mode'}));
+ expect(screen.getByRole('region')).toHaveAttribute('data-theater','true');
+ expect(screen.getByRole('button',{name:'Exit theater mode'})).toHaveAttribute('aria-pressed','true');
+ expect(video.currentTime).toBe(45);expect(p.videoRef.current).toBe(video);expect(engine.instances).toHaveLength(1);
+ fireEvent.click(screen.getByRole('button',{name:'Exit theater mode'}));
+ expect(screen.getByRole('region')).toHaveAttribute('data-theater','false');
 });
