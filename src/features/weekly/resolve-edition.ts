@@ -15,6 +15,9 @@ export function resolveEdition({uiLocale, series, authorizedEditions, publishedE
   publishedEditions: readonly WeeklyBulletin[];
 }) {
   const candidates: BulletinLocale[] = uiLocale === 'en' || uiLocale === 'zh-Hans' ? [uiLocale, 'zh-Hant'] : ['zh-Hant'];
+  for (const edition of authorizedEditions) {
+    if (edition.series === series && !candidates.includes(edition.locale)) candidates.push(edition.locale);
+  }
   const available = candidates.flatMap(locale => authorizedEditions.some(edition => edition.series === series && edition.locale === locale)
     ? publishedEditions.filter(edition => edition.series === series && edition.locale === locale && (edition.pdfPublished !== false || edition.onlineRevision)) : []);
   const version = available[0];

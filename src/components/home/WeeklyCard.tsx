@@ -87,7 +87,7 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
               <DownloadButton
                 bulletin={resolved.downloadVersion}
                 workflow={api}
-                label={resolved.downloadVersion.locale!==resolved.contentLocale?`${ctaLabel} · ${weeklyEditionLabels[resolved.downloadVersion.locale]}`:ctaLabel}
+                label={resolved.downloadVersion.locale!==locale?`${ctaLabel} · ${weeklyEditionLabels[resolved.downloadVersion.locale]}`:ctaLabel}
                 variant={resolved.readUrl ? 'outline' : 'primary'}
                 ariaLabel={`${ctaLabel}: ${weeklyEditionLabels[resolved.downloadVersion.locale]}`}
                 className="px-3 text-sm"
@@ -97,7 +97,6 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
               />
             ) : null}
           </div>
-          <Button href={`/${locale}/literature-ministry?series=${activeSeries}`} variant="ghost" className="mt-3 text-sm">{getMessages(locale).literatureMinistry.allIssuesTitle}</Button>
         </div>
       ) : state === 'error' ? (
         <div>

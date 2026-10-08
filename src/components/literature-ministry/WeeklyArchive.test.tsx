@@ -1,4 +1,4 @@
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {WeeklyArchive} from './WeeklyArchive';
 
@@ -32,19 +32,26 @@ afterEach(() => {
 beforeEach(() => vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'));
 
 describe('WeeklyArchive', () => {
-  it('keeps the default language visible and discloses other authorized languages', async () => {
+  it('shows every authorized language immediately in latest and history', async () => {
     bulletinAccess.editions = [{series: 'general', locale: 'zh-Hant'}, {series: 'general', locale: 'en'}];
     vi.stubGlobal('fetch', vi.fn(async () => {
       const payload = await discoveryResponse(bulletin).json();
-      payload.data.items.push({...payload.data.items[0], contentLocale: 'en', canonicalMetadata: {...payload.data.items[0].canonicalMetadata, title: 'English bulletin'}, onlineRevision: 1});
+      payload.data.items.push(
+        {...payload.data.items[0], contentLocale: 'en', canonicalMetadata: {...payload.data.items[0].canonicalMetadata, title: 'English bulletin'}, onlineRevision: 1},
+        {...payload.data.items[0], contentLocale: 'zh-Hans', onlineRevision: 1}
+      );
       return Response.json(payload);
     }));
     render(<WeeklyArchive locale="en" messages={messages}/>);
     expect(await screen.findAllByRole('link', {name: 'Read online: English'})).toHaveLength(2);
-    for (const button of screen.getAllByRole('button', {name: 'Download PDF: 繁中'})) expect(button).not.toBeVisible();
-    const disclosures = screen.getAllByText('Other languages', {selector: 'summary'});
-    fireEvent.click(disclosures[0]);
-    expect(screen.getAllByRole('button', {name: 'Download PDF: 繁中'})[0]).toBeVisible();
+    for (const label of ['English', '繁中']) {
+      const buttons = screen.getAllByRole('button', {name: `Download PDF: ${label}`});
+      expect(buttons).toHaveLength(2);
+      for (const button of buttons) expect(button).toBeVisible();
+    }
+    expect(screen.queryByText('Other languages', {selector: 'summary'})).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: 'Download PDF: 简中'})).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', {name: 'Read online: 简中'})).not.toBeInTheDocument();
   });
   it('loads only entitled editions through protected member endpoints', async () => {
     const fetcher = vi.fn<typeof fetch>().mockImplementation(async () => discoveryResponse(bulletin));
