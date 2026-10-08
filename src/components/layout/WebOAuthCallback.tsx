@@ -4,7 +4,7 @@ import {createAccountSessionClient, createBrowserAccountAuthRuntime, readOAuthTr
 import {useEffect, useMemo, useState} from 'react';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {webOAuthConfigForBrowser, webPassiveSsoAttemptKey} from './AccountControl';
-import {captureAccountFailure} from '@/lib/account-observability';
+import {captureAccountFailure, observeAccountFetch, recordAccountAuthEvent} from '@/lib/account-observability';
 import {accountSessionBaseUrlForBrowser} from '@/lib/account-origin';
 
 type CallbackLabels = {completing: string; error: string};
@@ -16,10 +16,11 @@ type WebOAuthCallbackProps = {
 };
 
 export function WebOAuthCallback({currentUrl, labels: labelsProp, navigate = defaultNavigate, runtime: providedRuntime}: WebOAuthCallbackProps) {
-  const sessionClient = useMemo(() => createAccountSessionClient({baseUrl: accountSessionBaseUrlForBrowser()}), []);
+  const sessionClient = useMemo(() => createAccountSessionClient({baseUrl: accountSessionBaseUrlForBrowser(), fetcher: observeAccountFetch(fetch)}), []);
   const runtime = useMemo(() => providedRuntime ?? createBrowserAccountAuthRuntime({
     client: sessionClient,
-    oauth: webOAuthConfigForBrowser()
+    oauth: webOAuthConfigForBrowser(),
+    onEvent: recordAccountAuthEvent
   }), [providedRuntime, sessionClient]);
   const returnTo = typeof window === 'undefined'
     ? '/'

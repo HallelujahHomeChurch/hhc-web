@@ -4,12 +4,16 @@ import type {AccountAuthEvent} from '@hallelujahhomechurch/account-client'
 const requestId = /^[A-Za-z0-9._:-]{1,128}$/
 const reportedAccountErrors = new WeakSet<object>()
 
-export function captureAccountFailure(error: unknown, operation = 'account.session') {
+export function isReportedAccountError(error: unknown) {
+  return !!error && typeof error === 'object' && reportedAccountErrors.has(error)
+}
+
+export function captureAccountFailure(error: unknown, operation = 'account.session', context: {endpoint?: string; method?: string} = {}) {
   if (error && typeof error === 'object') {
     if (reportedAccountErrors.has(error)) return
     reportedAccountErrors.add(error)
   }
-  const value = (error && typeof error === 'object' ? error : {}) as {status?: unknown; code?: unknown; requestId?: unknown; endpoint?: unknown; method?: unknown; decodeStage?: unknown; name?: unknown}
+  const value = {...(error && typeof error === 'object' ? error : {}), ...context, name: error instanceof Error ? error.name : undefined} as {status?: unknown; code?: unknown; requestId?: unknown; endpoint?: unknown; method?: unknown; decodeStage?: unknown; name?: unknown}
   const endpoint = typeof value.endpoint === 'string' && ['csrf', 'access_token', 'refresh', 'session', 'logout', 'logout_all', 'oauth_token', 'unknown'].includes(value.endpoint) ? value.endpoint : 'unknown'
   const stage = typeof value.decodeStage === 'string' && ['content_type', 'json', 'schema'].includes(value.decodeStage) ? value.decodeStage : undefined
   const kind = stage || value.code === 'INVALID_RESPONSE' || value.code === 'CSRF_TOKEN_REQUIRED' ? 'invalid_response' : typeof value.status === 'number' ? 'http' : 'network'
@@ -36,14 +40,31 @@ export function recordAccountAuthEvent(event: AccountAuthEvent) {
 
 export function observeAccountFetch(fetcher: typeof fetch): typeof fetch {
   return async (input, init) => {
+    const context = {endpoint: accountEndpoint(input), method: (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase()}
     try {
       const response = await fetcher(input, init)
-      if (response.status >= 500) captureAccountFailure({status: response.status, requestId: response.headers.get('x-hhc-request-id') ?? response.headers.get('x-request-id'), method: init?.method ?? 'GET'})
+      if (response.status >= 500) captureAccountFailure({status: response.status, requestId: response.headers.get('x-hhc-request-id') ?? response.headers.get('x-request-id'), ...context})
       return response
     } catch (error) {
       const signal = init?.signal ?? (input instanceof Request ? input.signal : undefined)
-      if (!signal?.aborted && !(error && typeof error === 'object' && 'name' in error && error.name === 'AbortError')) captureAccountFailure(error)
+      if (!signal?.aborted && !(error && typeof error === 'object' && 'name' in error && error.name === 'AbortError')) captureAccountFailure(error, 'account.session', context)
       throw error
     }
   }
+}
+
+function accountEndpoint(input: RequestInfo | URL) {
+  try {
+    const path = new URL(input instanceof Request ? input.url : String(input), 'https://account.invalid').pathname
+    switch (path) {
+      case '/api/account/v1/csrf-token': return 'csrf'
+      case '/api/account/v1/session/access-token': return 'access_token'
+      case '/api/account/v1/refresh': return 'refresh'
+      case '/api/account/v1/session': return 'session'
+      case '/api/account/v1/session/logout': return 'logout'
+      case '/api/account/v1/session/logout-all': return 'logout_all'
+      case '/api/account/v1/oauth/token': return 'oauth_token'
+      default: return 'unknown'
+    }
+  } catch { return 'unknown' }
 }

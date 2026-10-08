@@ -1,3 +1,4 @@
+import {isReportedAccountError} from './account-observability'
 import * as Sentry from '@sentry/nextjs'
 import type { Breadcrumb } from '@sentry/nextjs'
 
@@ -74,6 +75,7 @@ export function errorTags(error: unknown) {
 }
 
 export function captureHandledError(error: unknown, { operation, level = 'error', tags = {} }: ErrorContext) {
+  if (isReportedAccountError(error)) return
   return Sentry.withScope((scope) => {
     scope.setLevel(level)
     scope.setTag('operation', operation)

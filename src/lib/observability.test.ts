@@ -98,3 +98,22 @@ it('correlates server failure and rejects unsafe metadata', async () => {
   captureAccountFailure({status: 200, code: 'token=secret', endpoint: '/private?token=secret', requestId: 'email@example.test', decodeStage: 'secret', name: 'token=secret'})
   expect(JSON.stringify(sentry.captureException.mock.calls)).not.toContain('secret')
 })
+
+it('reports an observed Account rejection only once when a feature catches the same error', async () => {
+  const error = new TypeError('private response body secret')
+  try { await observeAccountFetch(async () => {throw error})('/api/account/v1/csrf-token') }
+  catch (caught) { captureHandledError(caught, {operation: 'operations.access'}) }
+  expect(sentry.captureException).toHaveBeenCalledOnce()
+  expect(sentry.captureException).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({tags: {api_failure: 'network', operation: 'account.session'}}))
+  expect(JSON.stringify(sentry.captureException.mock.calls)).not.toContain('secret')
+})
+
+it.each([
+  ['/api/account/v1/csrf-token?token=private', 'GET', 'csrf'],
+  ['/api/account/v1/refresh?email=private@example.test', 'POST', 'refresh'],
+  ['/api/account/v1/unknown/private', 'GET', 'unknown'],
+])('classifies network endpoint %s without logging the URL', async (path, method, endpoint) => {
+  await observeAccountFetch(async () => {throw new TypeError('offline')})(path, {method}).catch(() => {})
+  expect(sentry.captureException).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({contexts: {api: expect.objectContaining({endpoint, method})}}))
+  expect(JSON.stringify(sentry.captureException.mock.calls)).not.toContain('private')
+})
