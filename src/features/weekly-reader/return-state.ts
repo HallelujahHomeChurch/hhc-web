@@ -25,7 +25,10 @@ function validAction(value: unknown): value is BulletinReaderMutation | null {
   switch (action.kind) {
     case 'setHighlight': return ids(action.payload.sentenceIds) && ['yellow', 'red', 'blue'].includes(action.payload.color);
     case 'clearHighlight': return ids(action.payload.sentenceIds);
+    case 'restoreHighlight': return id(action.payload.historyId) && ids(action.payload.sentenceIds) && action.payload.sentenceIds.length > 0 && Array.isArray(action.payload.ranges) && ranges(action.payload.ranges, action.payload.sentenceIds) && ['yellow', 'red', 'blue'].includes(action.payload.color);
+    case 'discardHighlightHistory': return id(action.payload.historyId);
     case 'createNote': return id(action.payload.noteId) && ids(action.payload.sentenceIds) && text(action.payload.text);
+    case 'reanchorNote': return id(action.payload.noteId) && ids(action.payload.sentenceIds) && action.payload.sentenceIds.length > 0 && Array.isArray(action.payload.ranges) && ranges(action.payload.ranges, action.payload.sentenceIds) && Number.isSafeInteger(action.baseVersion) && (action.baseVersion ?? 0) > 0;
     case 'editNote': return id(action.payload.noteId) && text(action.payload.text) && Number.isSafeInteger(action.baseVersion) && (action.baseVersion ?? 0) > 0;
     case 'deleteNote': return id(action.payload.noteId) && Number.isSafeInteger(action.baseVersion) && (action.baseVersion ?? 0) > 0;
     case 'setProgress': return Object.values(action.payload).every(value => value === '' || id(value));

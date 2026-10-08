@@ -64,6 +64,25 @@ export function optimisticReaderState(state: BulletinReaderState, mutation: Bull
 /** Call inside the offline transaction, not as an acknowledgement of network I/O. */
 export function applyLocalMutation(state: BulletinReaderState, mutation: BulletinReaderMutation, document: MemberOnlineDocument): BulletinReaderState {
   const projected = optimisticReaderState(state, mutation, document);
+  if (mutation.kind === 'restoreHighlight' || mutation.kind === 'discardHighlightHistory') {
+    const entry = state.highlightHistory?.find(item => item.id === mutation.payload.historyId);
+    if (!entry?.highlight) throw new Error('conflict_not_found');
+    const source = entry.highlight;
+    // Match the server's historical identity fields, excluding activity and timestamps.
+    const identity = (highlight: typeof source) => JSON.stringify([highlight.sentenceId, highlight.version, highlight.quote, highlight.color, highlight.segments?.map(part => [part.start, part.end, part.color]) ?? null]);
+    const matches = (highlight: typeof source) => identity(highlight) === identity(source);
+    let next = projected;
+    if (mutation.kind === 'restoreHighlight') {
+      const {sentenceIds, ranges, color} = mutation.payload;
+      if (!ranges?.length) throw new Error('invalid_anchors');
+      next = optimisticReaderState(state, {...mutation, kind: 'setHighlight', payload: {sentenceIds, ranges, color}}, document);
+    }
+    return {...next,
+      highlightHistory: state.highlightHistory?.map(item => item === entry ? {id: item.id} : item),
+      highlights: next.highlights.filter(highlight => highlight.active || !matches(highlight)),
+      conflicts: next.conflicts.map(conflict => ({...conflict, sources: conflict.sources.filter(source => !matches(source))})).filter(conflict => conflict.sources.length)
+    };
+  }
   if (mutation.kind === 'createNote') {
     const {noteId, sentenceIds, text, ranges} = mutation.payload;
     const ids = new Set(sentenceIds);
@@ -73,6 +92,20 @@ export function applyLocalMutation(state: BulletinReaderState, mutation: Bulleti
     if (ranges !== undefined && (ranges.length !== ids.size || ranges.some(range => !ids.has(range.sentenceId)))) throw new Error('invalid_anchors');
     const quote = ranges === undefined ? sentences.map((sentence, index) => `${index && sentence.componentId !== sentences[index - 1].componentId ? '\n\n' : ''}${sentence.text}`).join('') : rangeQuote(ranges, readerSentences(document));
     return {...state, notes: [...state.notes, {id: noteId, text, sentenceIds: sentences.map(sentence => sentence.id), ...(ranges ? {ranges: ranges.map(range => ({...range, quote: sentences.find(sentence => sentence.id === range.sentenceId)!.text}))} : {}), inactiveAnchors: [], quote, version: 1, deleted: false, reanchorRequired: false, createdAt: mutation.createdAt, updatedAt: mutation.createdAt}]};
+  }
+  if (mutation.kind === 'reanchorNote') {
+    const note = state.notes.find(note => note.id === mutation.payload.noteId);
+    if (!note || note.deleted || note.version !== mutation.baseVersion) throw new Error('note_conflict');
+    if (!note.reanchorRequired && !note.inactiveAnchors.length) throw new Error('invalid_note');
+    const {sentenceIds, ranges} = mutation.payload;
+    const ids = new Set(sentenceIds);
+    const sentences = readerSentences(document).filter(sentence => ids.has(sentence.id));
+    if (!ids.size || ids.size > 500 || ids.size !== sentenceIds.length || sentences.length !== ids.size || !ranges?.length || ranges.length !== ids.size || ranges.some(range => !ids.has(range.sentenceId))) throw new Error('invalid_anchors');
+    rangeQuote(ranges, readerSentences(document));
+    return {...state, notes: state.notes.map(current => current !== note ? current : {
+      ...note, sentenceIds: sentences.map(sentence => sentence.id), ranges: ranges.map(range => ({...range, quote: sentences.find(sentence => sentence.id === range.sentenceId)!.text})),
+      inactiveAnchors: [], reanchorRequired: false, version: note.version + 1, updatedAt: mutation.createdAt
+    })};
   }
   if (mutation.kind === 'editNote' || mutation.kind === 'deleteNote') {
     const note = state.notes.find(note => note.id === mutation.payload.noteId);

@@ -15,6 +15,17 @@ beforeEach(() => {
   mocks.identity.mockResolvedValue({accountId: 'account-a', epoch: 1}); mocks.read.mockResolvedValue({status: 'available'});
   mocks.prepare.mockResolvedValue({value, state: cloud, queue: [], mutations: [], recovery: [], previousRevision: 1}); mocks.finish.mockResolvedValue(value);
 });
+it('shows the original historical range while requiring a fresh location after revision change', async () => {
+  const mutation = {mutationId: 'historical', documentRevision: 1, createdAt: '', kind: 'restoreHighlight', payload: {historyId: 'history', sentenceIds: ['s0'], color: 'red', ranges: [{sentenceId: 's0', start: 0, end: 1}]}};
+  const current = {...value, document: {...value.document, revision: 2}};
+  const history = [{id: 'history', highlight: {sentenceId: 'old', quote: '甲😀乙', active: false, version: 1, updatedAt: '', color: 'red', segments: [{start: 1, end: 2, color: 'red'}]}}];
+  mocks.prepare.mockResolvedValue({value: current, state: {...cloud, highlightHistory: history}, queue: [{mutation, sent: true}], mutations: [], recovery: [{mutationId: mutation.mutationId, reason: 'mapping_unavailable'}], previousRevision: 1});
+  render(<ReaderRecovery {...props}/>);
+  fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
+  expect(await screen.findByText('😀')).toBeInTheDocument();
+  expect(screen.getByRole('button', {name: 'Keep local'})).toBeDisabled();
+  expect(screen.getByRole('radio', {name: props.messages.redHighlight})).toBeChecked();
+});
 it('requires a new native range after revision change and retains only its exact offsets', async () => {
   const mutation = {mutationId: 'partial-old', documentRevision: 1, createdAt: '', kind: 'setHighlight', payload: {sentenceIds: ['s0'], color: 'yellow', ranges: [{sentenceId: 's0', start: 1, end: 3}]}};
   const current = {...value, document: {...value.document, revision: 2}};
@@ -47,6 +58,27 @@ it('requires explicit acceptance before switching and retains the reader on canc
   fireEvent.click(await screen.findByRole('button', {name: 'Apply and synchronize'}));
   await waitFor(() => expect(props.onFailure).toHaveBeenCalled());
   expect(props.onUpdated).not.toHaveBeenCalled();
+});
+it('reselects a queued note anchor without editing or duplicating its private text', async () => {
+  const mutation = {mutationId: 'reanchor-old', documentRevision: 1, createdAt: '', kind: 'reanchorNote', baseVersion: 1, payload: {noteId: 'note', sentenceIds: ['s0'], ranges: [{sentenceId: 's0', start: 1, end: 3}]}};
+  const current = {...value, document: {...value.document, revision: 2}};
+  const note = {id: 'note', text: 'Private unchanged', quote: 'Original preserved', version: 3, deleted: false, sentenceIds: [], inactiveAnchors: [], reanchorRequired: true};
+  mocks.prepare.mockResolvedValue({value: current, state: {...cloud, notes: [note]}, queue: [{mutation, sent: true}], mutations: [], recovery: [{mutationId: mutation.mutationId, reason: 'mapping_unavailable'}], previousRevision: 1});
+  const {container} = render(<ReaderRecovery {...props}/>);
+  fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
+  const keep = await screen.findByRole('button', {name: 'Keep local'});
+  await waitFor(() => expect(screen.queryByText(props.messages.syncSyncing)).not.toBeInTheDocument());
+  expect(keep).toBeDisabled();
+  expect(screen.getByText('Original preserved')).toBeInTheDocument();
+  expect(screen.queryByRole('textbox', {name: 'Note'})).not.toBeInTheDocument();
+  const sentence = container.ownerDocument.querySelector('[data-sentence-id="s1"]')!;
+  fireEvent.pointerDown(sentence);
+  const native = document.createRange(); native.setStart(sentence.firstChild!, 0); native.setEnd(sentence.firstChild!, 2);
+  document.getSelection()!.removeAllRanges(); document.getSelection()!.addRange(native);
+  fireEvent(document, new Event('selectionchange'));
+  fireEvent.pointerDown(keep); fireEvent.click(keep);
+  await waitFor(() => expect(mocks.choose).toHaveBeenCalled());
+  expect(mocks.choose.mock.calls[0][2]).toMatchObject({kind: 'reanchorNote', baseVersion: 3, documentRevision: 2, payload: {noteId: 'note', sentenceIds: ['s1'], ranges: [{sentenceId: 's1', start: 0, end: 2}]}});
 });
 
 it('does not lose an unsaved action on revision update and confirms its original ID before manual recovery', async () => {

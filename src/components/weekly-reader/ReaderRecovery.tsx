@@ -118,18 +118,19 @@ function RecoveryChoice({prepared, previous, original, reason, messages: m, busy
   const rangeRoot = useRef<HTMLDivElement>(null);
   const partial = 'ranges' in original.payload;
   const {selection} = useTextSelection(rangeRoot, sentences, {ids: []}, !partial || busy);
-  const cloud = original.kind === 'createNote' || original.kind === 'editNote' || original.kind === 'deleteNote' ? prepared.state.notes.find(note => note.id === original.payload.noteId && !note.deleted) : undefined;
+  const cloud = original.kind === 'createNote' || original.kind === 'editNote' || original.kind === 'deleteNote' || original.kind === 'reanchorNote' ? prepared.state.notes.find(note => note.id === original.payload.noteId && !note.deleted) : undefined;
   const sourceIds = original.kind === 'setHighlight' || original.kind === 'clearHighlight' || original.kind === 'createNote' ? original.payload.sentenceIds : [];
   const previousSentences = readerSentences(previous.document);
   const sourceRanges = original.kind === 'setHighlight' || original.kind === 'clearHighlight' || original.kind === 'createNote' ? original.payload.ranges : undefined;
-  const sourceQuote = previous.document.revision === original.documentRevision ? sourceRanges ? rangeQuote(sourceRanges, previousSentences) : previousSentences.filter(sentence => sourceIds.includes(sentence.id)).map(sentence => sentence.text).join('\n') : '';
+  const historical = original.kind === 'restoreHighlight' || original.kind === 'discardHighlightHistory' ? prepared.state.highlightHistory?.find(entry => entry.id === original.payload.historyId)?.highlight : undefined;
+  const sourceQuote = historical ? historical.segments?.length ? historical.segments.map(part => [...historical.quote].slice(part.start, part.end).join('')).join(' … ') : historical.quote : previous.document.revision === original.documentRevision ? sourceRanges ? rangeQuote(sourceRanges, previousSentences) : previousSentences.filter(sentence => sourceIds.includes(sentence.id)).map(sentence => sentence.text).join('\n') : '';
   const [text, setText] = useState(original.kind === 'createNote' || original.kind === 'editNote' ? original.payload.text : '');
   const [ids, setIds] = useState<string[]>(original.kind === 'setHighlight' || original.kind === 'clearHighlight' || original.kind === 'createNote' ? original.payload.sentenceIds.filter(id => sentences.some(sentence => sentence.id === id)) : cloud?.sentenceIds ?? []);
-  const [color, setColor] = useState<BulletinReaderHighlightColor>(original.kind === 'setHighlight' ? original.payload.color : 'yellow');
+  const [color, setColor] = useState<BulletinReaderHighlightColor>(original.kind === 'setHighlight' || original.kind === 'restoreHighlight' ? original.payload.color : 'yellow');
   const [search, setSearch] = useState('');
   const [error, setError] = useState(false);
   const note = original.kind === 'createNote' || original.kind === 'editNote';
-  const anchors = original.kind === 'setHighlight' || original.kind === 'clearHighlight' || note && !cloud;
+  const anchors = original.kind === 'setHighlight' || original.kind === 'restoreHighlight' || original.kind === 'clearHighlight' || original.kind === 'reanchorNote' || note && !cloud;
   const description = {removed_anchor: m.recoveryRemoved, anchor_limit: m.recoveryLimit, color_conflict: m.recoveryColor, note_conflict: m.recoveryNote, mapping_unavailable: m.recoveryMapping, expired_mutation: m.recoveryExpired}[reason];
   return <section className="reader-note-editor" data-reader-selection-tools>
     <p role="status">{description}</p>
@@ -137,7 +138,7 @@ function RecoveryChoice({prepared, previous, original, reason, messages: m, busy
     {note || original.kind === 'deleteNote' ? <><h3>{m.recoveryCloud}</h3><blockquote>{cloud?.text ?? m.noteDeleted}</blockquote><h3>{m.recoveryLocal}</h3></> : null}
     {note ? <><label>{m.noteText}<textarea value={text} disabled={busy} onChange={event => setText(event.target.value)}/></label><p>{m.noteCount.replace('{count}', String([...text].length))}</p>{cloud ? <button type="button" disabled={busy} onClick={() => setText(`${cloud.text}\n\n${text}`)}>{m.noteManual}</button> : null}</> : null}
     {original.kind === 'deleteNote' ? <p>{m.noteDeleteConfirm}</p> : null}
-    {original.kind === 'setHighlight' ? <fieldset><legend>{m.highlightColors}</legend>{(['yellow', 'red', 'blue'] as const).map(option => <label key={option}><input type="radio" name="recovery-color" value={option} checked={color === option} onChange={() => setColor(option)} disabled={busy}/>{m[`${option}Highlight`]}</label>)}</fieldset> : null}
+    {original.kind === 'setHighlight' || original.kind === 'restoreHighlight' ? <fieldset><legend>{m.highlightColors}</legend>{(['yellow', 'red', 'blue'] as const).map(option => <label key={option}><input type="radio" name="recovery-color" value={option} checked={color === option} onChange={() => setColor(option)} disabled={busy}/>{m[`${option}Highlight`]}</label>)}</fieldset> : null}
     {anchors && partial ? <fieldset><legend>{m.recoveryRange}</legend><div ref={rangeRoot} className="reader-recovery-anchors reader-recovery-text">{sentences.map(sentence => <p key={sentence.id}><span data-sentence-id={sentence.id} data-fragment-start="0" data-fragment-end={[...sentence.text].length}>{sentence.text}</span></p>)}</div><blockquote>{selection.ranges ? rangeQuote(selection.ranges, sentences) : m.recoveryRange}</blockquote></fieldset> : anchors ? <fieldset><legend>{m.recoveryAnchors}</legend><input type="search" aria-label={m.search} value={search} onChange={event => setSearch(event.target.value)}/><p>{m.recoveryAnchorCount.replace('{count}', String(ids.length))}</p><div className="reader-recovery-anchors">{sentences.filter(sentence => sentence.text.includes(search)).map(sentence => <label key={sentence.id}><input type="checkbox" checked={ids.includes(sentence.id)} disabled={busy || ids.length >= 500 && !ids.includes(sentence.id)} onChange={event => setIds(event.target.checked ? [...ids, sentence.id] : ids.filter(id => id !== sentence.id))}/>{sentence.text}</label>)}</div></fieldset> : null}
     {error ? <p role="alert">{m.actionFailed}</p> : null}
     <div className="reader-note-actions" data-reader-selection-tools><button type="button" disabled={busy} onClick={() => onChoose(null)}>{m.noteCloud}</button><button type="button" disabled={busy || note && (!text.trim() || [...text].length > 10000) || anchors && !(partial ? selection.ids : ids).length || original.kind === 'deleteNote' && !cloud} onClick={() => {

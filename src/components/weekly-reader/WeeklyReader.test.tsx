@@ -48,6 +48,25 @@ afterEach(() => {cleanup(); Reflect.deleteProperty(document, 'fonts'); Reflect.d
 beforeEach(() => {Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect(0, 100, 300, 20)});});
 
 describe('protected weekly reader', () => {
+  it('relinks an unavailable note through the existing private-state API without replacing its text', async () => {
+    const cloud = (await state.privateState()).state;
+    const note = {id: 'note-a', text: 'Keep my note', quote: 'Original source', sentenceIds: [], inactiveAnchors: [], version: 3, deleted: false, reanchorRequired: true, createdAt: '', updatedAt: ''};
+    state.privateState.mockResolvedValue({state: {...cloud, notes: [note]}});
+    state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: {...cloud, notes: [{...note, version: 4, sentenceIds: ['s1'], reanchorRequired: false}]}, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]}));
+    render(<WeeklyReader {...props}/>);
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', {name: 'My notes'}));
+    fireEvent.click(screen.getByRole('button', {name: props.messages.noteReanchor}));
+    const save = screen.getByRole('button', {name: 'Save'});
+    expect(save).toBeDisabled();
+    selectText(document.querySelector('.reader-recovery-text [data-sentence-id="s1"]')!, 1, 3);
+    fireEvent.pointerDown(save); fireEvent.click(save);
+    await waitFor(() => expect(state.mutate).toHaveBeenCalled());
+    expect(state.mutate.mock.calls[0][2][0]).toMatchObject({kind: 'reanchorNote', baseVersion: 3, payload: {noteId: 'note-a', sentenceIds: ['s1'], ranges: [{sentenceId: 's1', start: 1, end: 3}]}});
+    expect(state.mutate.mock.calls[0][2][0].payload).not.toHaveProperty('text');
+    await waitFor(() => expect(screen.queryByRole('button', {name: props.messages.noteReanchor})).not.toBeInTheDocument());
+    expect(screen.getByText('Keep my note')).toBeInTheDocument();
+  });
   it('switches the reader theme without changing the website or active document', async () => {
     localStorage.removeItem('hhc-reader-theme');
     document.documentElement.dataset.theme = 'light';

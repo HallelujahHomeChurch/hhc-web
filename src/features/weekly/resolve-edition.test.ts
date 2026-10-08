@@ -8,6 +8,30 @@ const version = (locale: WeeklyBulletin['locale'], extra: Partial<WeeklyBulletin
 const authorizedEditions = ['zh-Hant','zh-Hans','en'].map(locale=>({series:'general' as const,locale:locale as WeeklyBulletin['locale']}));
 
 describe('whole edition resolution',()=>{
+  it.each(['zh-Hant', 'zh-Hans', 'en', 'ja', 'ko'] as const)('never borrows another edition grant for the %s interface', uiLocale => {
+    const editions = [
+      {series: 'general', locale: 'zh-Hant'},
+      {series: 'general', locale: 'zh-Hans'},
+      {series: 'general', locale: 'en'},
+      {series: 'children', locale: 'zh-Hant'},
+      {series: 'children', locale: 'en'},
+    ] as const;
+    const publishedEditions = editions.map(edition => version(edition.locale, {series: edition.series}));
+    for (const granted of editions) {
+      for (const series of ['general', 'children'] as const) {
+        const result = resolveEdition({uiLocale, series, authorizedEditions: [granted], publishedEditions});
+        if (series !== granted.series) {
+          expect(result).toBeNull();
+          continue;
+        }
+        expect(result?.downloadVersion).toMatchObject(granted);
+        expect(result?.readVersion).toMatchObject(granted);
+        expect(result?.readUrl).toBe(`/${uiLocale}/literature-ministry/1740/read/${granted.series}/${granted.locale}`);
+        const withoutGrantedEdition = publishedEditions.filter(item => item.series !== granted.series || item.locale !== granted.locale);
+        expect(resolveEdition({uiLocale, series, authorizedEditions: [granted], publishedEditions: withoutGrantedEdition})).toBeNull();
+      }
+    }
+  });
   it('keeps PDF download available with the Online launch gate disabled',()=>{
     vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED',undefined);
     const result=resolveEdition({uiLocale:'en',series:'general',authorizedEditions,publishedEditions:[version('en')]});

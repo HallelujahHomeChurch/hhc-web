@@ -42,7 +42,9 @@ import {OfflineControl} from './OfflineControl';
 import {SelectionToolbar} from './SelectionToolbar';
 import {NoteEditor, type NoteSave, type NoteEditorState} from './NoteEditor';
 import {NotesPanel} from './NotesPanel';
+import {NoteReanchor} from './NoteReanchor';
 import {HighlightsPanel} from './HighlightsPanel';
+import {HighlightHistory} from './HighlightHistory';
 import {ReaderPrivateState} from './ReaderPrivateState';
 import {ReaderRecovery} from './ReaderRecovery';
 import '@hallelujahhomechurch/ui/bulletin-paper.css';
@@ -125,6 +127,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   }, [allowAction, notes, suspended, setSelection]);
   const [noteEditorState, setNoteEditorState] = useState<NoteEditorState | undefined>(returned?.draft ? {draft: returned.draft, conflict: null} : undefined);
   const [deletion, setDeletion] = useState<{local: BulletinReaderNote; cloud?: BulletinReaderNote} | null>(null);
+  const [reanchor, setReanchor] = useState<BulletinReaderNote | null>(null);
   const [wideNotes, setWideNotes] = useState(false);
   const documentRef = useRef<HTMLElement>(null);
   const noteButton = useRef<HTMLButtonElement>(null);
@@ -139,7 +142,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     if (privateReader.busy) return false;
     const original = editingNote?.text ?? '';
     if (notes && notes !== 'list' && noteEditorState && noteEditorState.draft.text !== original && !window.confirm(m.noteDiscardConfirm)) return false;
-    setNotes(null); setDeletion(null); setNoteEditorState(undefined);
+    setNotes(null); setDeletion(null); setReanchor(null); setNoteEditorState(undefined);
     requestAnimationFrame(() => (noteButton.current ?? notesButton.current)?.focus());
     return true;
   }
@@ -559,14 +562,14 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     {!privateReader.busy && (privateReader.status === 'paused' || privateReader.status === 'action' || privateReader.pendingMutation) ? <ReaderRecovery api={api} value={value} selector={selector} messages={m} onUpdated={onUpdated} onFailure={onFailure} suspended={suspended} pendingMutation={privateReader.pendingMutation} onPendingChange={mutation => {
       const previous = privateReader.pendingMutation;
       privateReader.replacePending(mutation);
-      if (!mutation && previous && ['createNote', 'editNote', 'deleteNote'].includes(previous.kind)) {setNotes(null); setNoteEditorState(undefined); if (previous.kind === 'createNote') clearSelection();}
+      if (!mutation && previous && ['createNote', 'editNote', 'deleteNote', 'reanchorNote'].includes(previous.kind)) {setNotes(null); setReanchor(null); setNoteEditorState(undefined); if (previous.kind === 'createNote') clearSelection();}
     }}/> : null}
     {!privateReader.busy && privateReader.canRetry && privateReader.status !== 'paused' ? <><p>{m.confirmRetryHelp}</p><button type="button" disabled={privateReader.busy} onClick={() => {
       const snapshot = selection, kind = privateReader.pendingMutation?.kind;
       void privateReader.retry().then(result => {
       if (result?.status === 'note_conflict' && noteEditorState) setNoteEditorState({...noteEditorState, conflict: {status: 'note_conflict', note: result.note}});
       else if (result?.status === 'applied') {
-        if (kind === 'createNote' || kind === 'editNote' || kind === 'deleteNote') {setNotes(null); setNoteEditorState(undefined);}
+        if (kind === 'createNote' || kind === 'editNote' || kind === 'deleteNote' || kind === 'reanchorNote') {setNotes(null); setReanchor(null); setNoteEditorState(undefined);}
         if (kind === 'createNote' || kind === 'setHighlight' || kind === 'clearHighlight') clearIf(snapshot);
       }
     }).catch(() => setNotice(m.actionFailed));
@@ -608,13 +611,21 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       onCopy={() => {const snapshot = selection; void (selection.ranges ? copyTextRanges(value.document, selection.ranges, allowAction) : copySentences(value.document, selected, allowAction)).then(() => {setNotice(m.copySuccess); clearIf(snapshot);}).catch(() => setNotice(m.copyFailed));}}
       onNote={() => {newNoteId.current = null; setNoteEditorState(undefined); setNotes('new');}}/>
     {notes ? <ReaderPrivateState wide={wideNotes} theme={theme} messages={m} onClose={closeNotes} suspended={suspended}>
-      {deletion ? <section className="reader-note-editor"><p role="alert">{m.noteConflict}</p><h3>{m.recoveryLocal}</h3><blockquote>{deletion.local.text}</blockquote><h3>{m.recoveryCloud}</h3><blockquote>{deletion.cloud && !deletion.cloud.deleted ? deletion.cloud.text : m.noteDeleted}</blockquote><div className="reader-note-actions">
+      {reanchor ? <NoteReanchor key={reanchor.id} note={reanchor} document={value.document} messages={m} suspended={suspended} onSave={async (note, ranges) => {
+        const result = await privateReader.mutate({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, kind: 'reanchorNote', baseVersion: note.version, payload: {noteId: note.id, sentenceIds: ranges.map(range => range.sentenceId), ranges}});
+        if (result.status !== 'applied' && result.status !== 'queued' && result.status !== 'note_conflict') throw new Error(result.status);
+        return {status: result.status, note: 'note' in result ? result.note : undefined};
+      }} onComplete={() => setReanchor(null)} onCancel={() => setReanchor(null)}/> : deletion ? <section className="reader-note-editor"><p role="alert">{m.noteConflict}</p><h3>{m.recoveryLocal}</h3><blockquote>{deletion.local.text}</blockquote><h3>{m.recoveryCloud}</h3><blockquote>{deletion.cloud && !deletion.cloud.deleted ? deletion.cloud.text : m.noteDeleted}</blockquote><div className="reader-note-actions">
         <button type="button" disabled={privateReader.busy} onClick={() => setDeletion(null)}>{m.noteCloud}</button>
         {deletion.cloud && !deletion.cloud.deleted ? <><button type="button" disabled={privateReader.busy} onClick={() => {if (window.confirm(m.noteDeleteConfirm)) void deleteNote(deletion.cloud!);}}>{m.noteDelete}</button><button type="button" disabled={privateReader.busy} onClick={() => {setNotes({...deletion.cloud!, text: `${deletion.cloud!.text}\n\n${deletion.local.text}`}); setDeletion(null);}}>{m.noteManual}</button></> : null}
       </div></section> : notes === 'list' ? <>
       {notice ? <p role="status">{notice}</p> : null}
       {!noteFilter ? <HighlightsPanel highlights={savedHighlights} sentences={sentences} messages={m} busy={privateReader.busy || !privateReader.state || privateReader.status === 'paused' || suspended} onChange={(range, color) => action({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, ...(color ? {kind: 'setHighlight' as const, payload: {sentenceIds: [range.sentenceId], ranges: [range], color}} : {kind: 'clearHighlight' as const, payload: {sentenceIds: [range.sentenceId], ranges: [range]}})})}/> : null}
-      <NotesPanel messages={m} notes={(privateReader.state?.notes ?? []).filter(note => !noteFilter || noteFilter.includes(note.id))} onJump={id => onAnchor({kind: 'sentence', id})} onEdit={note => {newNoteId.current = null; setNoteEditorState(undefined); setNotes(note);}} onDelete={note => {
+      {!noteFilter ? <HighlightHistory history={privateReader.state?.highlightHistory} document={value.document} messages={m} busy={privateReader.busy || !privateReader.state || privateReader.status === 'paused' || suspended} onSave={async mutation => {
+        const result = await privateReader.mutate(mutation);
+        if (result.status !== 'applied' && result.status !== 'queued') throw new Error(result.status);
+      }}/> : null}
+      <NotesPanel messages={m} notes={(privateReader.state?.notes ?? []).filter(note => !noteFilter || noteFilter.includes(note.id))} onReanchor={setReanchor} onJump={id => onAnchor({kind: 'sentence', id})} onEdit={note => {newNoteId.current = null; setNoteEditorState(undefined); setNotes(note);}} onDelete={note => {
         if (window.confirm(m.noteDeleteConfirm)) void deleteNote(note);
       }}/></> : notes === 'restore' && (!editingNote || editingNote.deleted) ? <section className="reader-note-editor">
         <p role="status">{!privateReader.state ? m.loading : m.noteDeleted}</p>
