@@ -395,6 +395,8 @@
     "empty": "目前尚未发布周报。"
   },
   "memberVideos": {
+    "previousVideo": "上一部影片",
+    "nextVideo": "下一部影片",
     "loadMore": "加载更多",
     "liveStartedDate": "开播于 {date}",
     "description": "视频说明",

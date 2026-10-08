@@ -185,8 +185,10 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId}: ZonePr
     });
   };
 
-  const start = async (resume?:PlayerBookmark) => {
+  const automaticAttempt = useRef<string|null>(null);
+  const start = useCallback(async (resume?:PlayerBookmark) => {
     if (!selected || preparing) return false;
+    automaticAttempt.current = selected.id;
     mediaFailureReported.current = false;
     attempt.current?.abort();
     const controller = new AbortController();
@@ -214,7 +216,12 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId}: ZonePr
     } finally {
       if (!controller.signal.aborted) setPreparing(false);
     }
-  };
+  }, [selected, preparing, api, locale, router, resolveMissing, messages.playError]);
+
+  useEffect(() => {
+    if (!recordingId || !selected || liveLoading || selectedLive || automaticAttempt.current === selected.id) return;
+    void start();
+  }, [recordingId, selected, liveLoading, selectedLive, start]);
 
   const renew = useCallback(async (current: ActivePlayback, signal: AbortSignal) => {
     const grant = await api.grant(current.recordingId, current.scopeId, current.grant.packageId, signal);
@@ -291,6 +298,9 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId}: ZonePr
     }
   }, [messages.playError]);
 
+  const selectedIndex = recordings?.findIndex(item => item.id === selectedId) ?? -1;
+  const previousRecording = selectedIndex > 0 ? recordings?.[selectedIndex - 1] : undefined;
+  const nextRecording = selectedIndex >= 0 ? recordings?.[selectedIndex + 1] : undefined;
   const liveItems = livestreams.filter(item=>item.id!==recordingId && !['failed','expired','aborted'].includes(item.liveState)).sort((a,b)=>Number(b.liveState==='live')-Number(a.liveState==='live')||b.createdAt.localeCompare(a.createdAt));
   const activeLiveIds = new Set(liveItems.map(item=>item.id));
   const otherRecordings = recordings?.filter(item => item.id !== selectedId && !activeLiveIds.has(item.id)) ?? [];
@@ -301,9 +311,8 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId}: ZonePr
   return (
     <main>
       {hero}
-      <div className="bg-[image:var(--hhc-page-gradient)] py-10 pb-14">
+      <div className={`bg-[image:var(--hhc-page-gradient)] pb-14 ${recordingId ? zoneStyles.watchPage : 'py-10'}`}>
         <section className={`${zoneStyles.zone} ${recordingId ? zoneStyles.watch : zoneStyles.library}`} aria-label={messages.listTitle}>
-          {recordingId ? <Link href={`/${locale}/member-videos`} className={`${zoneStyles.back} min-h-11 text-primary underline`}>{messages.backToList ?? messages.listTitle}</Link> : null}
           {!loadError && recordings && recordingId && !selected && !selectedLive && !liveLoading ? <p role="alert" className="text-ink">{messages.unavailable ?? messages.expired}</p> : null}
           {loadError ? <div role="alert" className="rounded-[14px] border border-panel-border bg-panel p-7 text-center text-ink">{messages.loadError}<button type="button" className="ml-4 min-h-11 rounded-full border border-[var(--hhc-control-border)] px-5 font-semibold" onClick={() => setRetry((value) => value + 1)}>{messages.retry}</button></div> : null}
           {!loadError && !recordings ? <p role="status" className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{messages.loading}</p> : null}
@@ -313,10 +322,10 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId}: ZonePr
             if(await start(bookmark)){vodChosen.current=true;setSelectedLive(null);return true;}return false;
           }:undefined}/>:null}
           {selected && !selectedLive ? <div ref={playerSection} className={`${zoneStyles.video} grid min-w-0 scroll-mt-28 gap-4`}>
-            {playback?.recordingId === selected.id ? <HlsPlayer key={playback.url} resume={vodResume} poster={poster} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} onError={mediaError}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950">
+            {playback?.recordingId === selected.id ? <HlsPlayer key={playback.url} resume={vodResume} poster={poster} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} previousHref={previousRecording ? cardLink(previousRecording.id) : undefined} nextHref={nextRecording ? cardLink(nextRecording.id) : undefined} onError={mediaError}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {poster?<img src={poster} alt={selected.title} width={1280} height={720} className="absolute inset-0 h-full w-full object-contain"/>:null}
-              {preparing ? <div className={playerStyles.loading} role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{messages.preparing}</span></div> : <button type="button" onClick={() => void start()} className="relative inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground"><Play size={18} aria-hidden="true" />{messages.play}</button>}
+              {preparing || recordingId && !playError ? <div className={playerStyles.loading} role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{messages.preparing}</span></div> : !recordingId ? <button type="button" onClick={() => void start()} className="relative inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground"><Play size={18} aria-hidden="true" />{messages.play}</button> : null}
             </div>}
             <h2 ref={playerTitle} tabIndex={-1} className="text-2xl font-semibold text-ink outline-none">{selected.title}</h2>
             <p className="text-sm text-muted">{messages.uploadedDate.replace('{date}', formatDate(selected.uploadedAt, locale))}</p>

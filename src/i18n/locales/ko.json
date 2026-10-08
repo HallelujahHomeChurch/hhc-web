@@ -395,6 +395,8 @@
     "empty": "아직 게시된 주보가 없습니다."
   },
   "memberVideos": {
+    "previousVideo": "이전 동영상",
+    "nextVideo": "다음 동영상",
     "loadMore": "더 보기",
     "liveStartedDate": "방송 시작: {date}",
     "description": "영상 설명",

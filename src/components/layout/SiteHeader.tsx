@@ -37,6 +37,8 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
   const lineNotice = useLineBrowserNotice(pathname);
   const t = useTranslations('site');
   const homeHref = `/${locale}`;
+  const videoHref = `${homeHref}/member-videos`;
+  const logoHref = pathname === videoHref || pathname.startsWith(`${videoHref}/`) ? videoHref : homeHref;
   const navigation = useNavigationPresentation();
   const canReadBulletin = navigation.sources.operations?.ids.includes('literature-ministry') === true;
   const canWatchVideo = navigation.sources.operations?.ids.includes('member-videos') === true;
@@ -95,7 +97,7 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
       <div className="site-top-chrome sticky top-0 z-10" data-mobile-hidden={!mobileChromeVisible}>
         <header className="site-header border-b border-line/70 backdrop-blur-xl" data-iphone-standalone={iphoneStandalone || undefined}>
           <div className="relative flex min-h-[76px] w-full items-center gap-6 px-6 max-[767px]:min-h-[68px] max-[767px]:px-4">
-            <Link href={`/${locale}`} className="inline-flex min-h-11 min-w-max items-center gap-2.5 max-[767px]:min-w-0 max-[767px]:flex-1">
+            <Link href={logoHref} className="inline-flex min-h-11 min-w-max items-center gap-2.5 max-[767px]:min-w-0 max-[767px]:flex-1">
               <span className="grid size-10 shrink-0 place-items-center max-[767px]:size-9" aria-hidden="true">
                 <Image src="/assets/brand/logo.png" alt="" width={40} height={40} className="h-full w-full object-contain" />
               </span>
