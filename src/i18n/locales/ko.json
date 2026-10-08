@@ -391,8 +391,11 @@
     "empty": "아직 게시된 주보가 없습니다."
   },
   "memberVideos": {
+    "loadMore": "더 보기",
+    "liveStartedDate": "방송 시작: {date}",
     "description": "영상 설명",
     "live": {
+      "liveNow": "실시간",
       "watchRecording": "게시된 녹화 영상으로 계속 시청",
       "starting": "라이브 준비 중",
       "live": "라이브 · 약 1~2분 지연",

@@ -296,13 +296,34 @@ it('starts live behind the verified edge and preserves DVR until an explicit ret
  expect(video.currentTime).toBe(5370);
  const seek=screen.getByRole('slider',{name:'Playback position'});
  expect(seek).toHaveAttribute('max','5400');
+ expect(screen.queryByText(/\d+:\d+ \/ \d+:\d+/)).toBeNull();
+ expect(screen.getByRole('button',{name:'Back to live'})).toHaveTextContent('Live');
+ Object.defineProperty(video,'paused',{configurable:true,value:false});
+ fireEvent.timeUpdate(video);fireEvent.play(video);
+ expect(screen.getByRole('button',{name:'Back to live'})).toHaveAttribute('data-live-edge','true');
  fireEvent.change(seek,{target:{value:'60'}});
+ expect(screen.getByRole('button',{name:'Back to live'})).toHaveAttribute('data-live-edge','false');
  fireEvent.progress(video);
  fireEvent(window,new Event('online'));
  expect(video.currentTime).toBe(60);
  fireEvent.click(screen.getByRole('button',{name:'Back to live'}));
  expect(video.currentTime).toBe(5370);
  expect(engine.instances[0].config).toMatchObject({backBufferLength:120,maxBufferLength:60,maxMaxBufferLength:120,liveMaxLatencyDuration:Infinity,maxLiveSyncPlaybackRate:1});
+});
+
+it('disables return when live stops and bounds DVR seeking to the available timeline',async()=>{
+ const p=props();render(<HlsPlayer {...p} playbackMode="live" live={{verifiedEnd:5400,canFollow:false,label:'Live ended',backToLive:'Back to live'}}/>);
+ await waitFor(()=>expect(engine.instances).toHaveLength(1));
+ const video=p.videoRef.current!;
+ Object.defineProperty(video,'seekable',{configurable:true,value:{length:1,start:()=>3600,end:()=>5400}});
+ fireEvent.progress(video);
+ expect(screen.getByRole('button',{name:'Live ended'})).toBeDisabled();
+ expect(screen.getByRole('button',{name:'Live ended'})).toHaveAttribute('data-live-edge','false');
+ const slider=screen.getByRole('slider',{name:'Playback position'});
+ expect(slider).toHaveAttribute('min','3600');
+ video.currentTime=3601;fireEvent.timeUpdate(video);
+ fireEvent.keyDown(screen.getByRole('region'),{key:'ArrowLeft'});
+ expect(video.currentTime).toBe(3600);
 });
 
 it('restores a paused DVR bookmark without first-entry live seeking or autoplay',async()=>{
