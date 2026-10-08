@@ -2,6 +2,7 @@
 
 import {createAccountSessionClient, type AccountSessionClient} from '@hallelujahhomechurch/account-client';
 import {accountSessionBaseUrlForBrowser} from './account-origin';
+import {observeAccountFetch} from './account-observability';
 
 export type PushConfig = {vapidPublicKey: string};
 
@@ -14,7 +15,7 @@ export function resetBrowserBootstrap() {
 }
 
 export function getSharedAccountSessionClient() {
-  return accountSessionClient ??= createAccountSessionClient({baseUrl: accountSessionBaseUrlForBrowser()});
+  return accountSessionClient ??= createAccountSessionClient({baseUrl: accountSessionBaseUrlForBrowser(), fetcher: observeAccountFetch(globalThis.fetch.bind(globalThis))});
 }
 
 export function getSharedPushConfig() {
