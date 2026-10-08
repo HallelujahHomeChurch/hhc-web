@@ -205,7 +205,7 @@ function VersionLinks({locale, readOnlineLabel, issue, workflow, preparingLabel,
     <div className={`grid gap-2.5 ${className}`}>
       {primary ? actions(primary) : null}
       {issue.pdfFallback ? <p role="status" className="text-sm text-muted">{m.pdfFallback}</p> : null}
-      {others.length ? <details><summary className="min-h-11 cursor-pointer py-3 text-sm text-muted">{m.otherLanguages}</summary><div className="grid gap-3">{others.map(actions)}</div></details> : null}
+      {others.map(actions)}
     </div>
   );
 }
