@@ -124,3 +124,15 @@ Only production `www.alive.org.tw` is eligible. The shared analytics choice must
 be explicitly granted; refusal does not affect required services. Public routes
 use fixed categories, and sensitive routes or any query/fragment are excluded.
 A document that started GA reloads before mounting an excluded destination.
+
+## Church statement preferences
+
+“Do not show again” hides only the current published version. Signed-in users
+share the Website API preference across devices and Account; anonymous users
+share version storage only within their browser. Auth bootstrap and preference
+lookup finish before the automatic popup opens. Focus, visibility and visible
+60-second polling refresh state. The existing popup publication window remains
+enforced; the statement strip and article remain available.
+
+Delivery requires frontend-platform v1.0.47 publication before the final registry
+dependency and lockfile update. Local verification uses its packed artifacts.
