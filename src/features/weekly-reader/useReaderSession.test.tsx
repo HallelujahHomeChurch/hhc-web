@@ -10,6 +10,8 @@ vi.mock('./offline-session', () => ({watchOfflineAccount: () => () => {}}));
 const selector = {accountId: 'account-a', issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const};
 const api = {open: vi.fn(), renew: vi.fn()};
 beforeEach(() => {
+  vi.useFakeTimers({toFake: ['Date']});
+  vi.setSystemTime(new Date('2026-10-02T00:00:00Z'));
   vi.clearAllMocks(); store.getOfflineIdentity.mockResolvedValue({accountId: 'account-a', epoch: 1});
   store.lockOfflineSave.mockResolvedValue(undefined); store.removeOfflineSave.mockResolvedValue(undefined); store.renewOfflineSave.mockResolvedValue(undefined);
   store.readOfflineSave.mockResolvedValue(null);
