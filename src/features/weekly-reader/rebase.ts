@@ -47,6 +47,7 @@ export function rebaseReaderMutations(pending: readonly BulletinReaderMutation[]
       mutation.payload = target ? {sentenceId: target} : {};
     }
     if (mutation.kind === 'resolveHighlightMigrationConflict') reason = 'color_conflict';
+    if (mutation.kind === 'discardHighlightHistory' && !current.highlightHistory?.some(entry => entry.id === mutation.payload.historyId && entry.highlight)) reason = 'removed_anchor';
     if (reason) recovery.push({mutationId: mutation.mutationId, reason});
     else {mutation.documentRevision = current.currentRevision; mutations.push(mutation);}
   }
@@ -72,7 +73,19 @@ export function manualReaderRecovery(original: BulletinReaderMutation, state: Bu
   if (original.kind === 'clearHighlight') return {...common, kind: original.kind, payload: {sentenceIds: anchors(), ...ranges}};
   if (original.kind === 'setProgress') return {...common, kind: original.kind, payload: choice.sentenceIds.length ? {sentenceId: anchors()[0]} : {}};
   if (original.kind === 'resolveHighlightMigrationConflict') throw new Error('invalid_reader_conflict');
+  if (original.kind === 'restoreHighlight' || original.kind === 'discardHighlightHistory') {
+    if (!state.highlightHistory?.some(entry => entry.id === original.payload.historyId && entry.highlight)) throw new Error('conflict_not_found');
+    if (original.kind === 'discardHighlightHistory') return {...common, kind: original.kind, payload: {historyId: original.payload.historyId}};
+    if (!choice.ranges?.length) throw new Error('range_reselection_required');
+    return {...common, kind: original.kind, payload: {historyId: original.payload.historyId, sentenceIds: anchors(), ranges: choice.ranges, color: choice.color}};
+  }
   const cloud = state.notes.find(note => note.id === original.payload.noteId && !note.deleted);
+  if (original.kind === 'reanchorNote') {
+    if (!cloud) throw new Error('note_already_deleted');
+    if (!cloud.reanchorRequired && !cloud.inactiveAnchors.length) throw new Error('note_already_reanchored');
+    if (!choice.ranges?.length) throw new Error('range_reselection_required');
+    return {...common, kind: 'reanchorNote', baseVersion: cloud.version, payload: {noteId: cloud.id, sentenceIds: anchors(), ranges: choice.ranges}};
+  }
   if (original.kind === 'deleteNote') {
     if (!cloud) throw new Error('note_already_deleted');
     return {...common, kind: 'deleteNote', baseVersion: cloud.version, payload: {noteId: cloud.id}};

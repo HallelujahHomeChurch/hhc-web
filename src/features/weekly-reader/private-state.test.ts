@@ -9,6 +9,37 @@ const state = (): BulletinReaderState => ({accountId: 'account-a', documentId: d
 ], notes: [{id: 'note', text: '私人筆記', sentenceIds: ['s0'], inactiveAnchors: [], quote: '內容0。', version: 1, deleted: false, reanchorRequired: false, createdAt: '2026-10-02T00:00:00Z', updatedAt: '2026-10-02T00:00:00Z'}], progress: null, conflicts: []});
 const base = {mutationId: '00000000-0000-4000-8000-000000000010', documentRevision: 1, createdAt: '2026-10-02T01:00:00Z'};
 describe('private reader state', () => {
+  it('consumes historical evidence without removing current highlights or changing the rollback snapshot', () => {
+    const original = state();
+    const historical = {...original.highlights[0], active: false, quote: 'Old source'};
+    original.highlightHistory = [{id: 'history', highlight: historical}];
+    original.highlights.push(historical);
+    original.conflicts = [{id: 'conflict', sentenceIds: ['s0'], sources: [historical]}];
+    const discard: BulletinReaderMutation = {...base, kind: 'discardHighlightHistory', payload: {historyId: 'history'}};
+    const next = applyLocalMutation(original, discard, document);
+    expect(next.highlightHistory).toEqual([{id: 'history'}]);
+    expect(next.highlights).toEqual([original.highlights[0]]);
+    expect(next.conflicts).toEqual([]);
+    expect(original.highlightHistory[0].highlight?.quote).toBe('Old source');
+    expect(() => applyLocalMutation(next, discard, document)).toThrow('conflict_not_found');
+    const restore: BulletinReaderMutation = {...base, kind: 'restoreHighlight', payload: {historyId: 'history', sentenceIds: ['s1'], ranges: [{sentenceId: 's1', start: 1, end: 3}], color: 'blue'}};
+    const restored = applyLocalMutation(original, restore, document);
+    expect(restored.highlightHistory).toEqual([{id: 'history'}]);
+    expect(restored.highlights.find(item => item.sentenceId === 's1')?.segments).toEqual([{start: 1, end: 3, color: 'blue'}]);
+    expect(() => applyLocalMutation(original, {...restore, payload: {...restore.payload, ranges: [{sentenceId: 's1', start: 1, end: 99}]}}, document)).toThrow();
+    expect(() => applyLocalMutation(original, {...restore, payload: {...restore.payload, sentenceIds: ['s0'], ranges: [{sentenceId: 's0', start: 0, end: 1}]}}, document)).toThrow('migration_conflict');
+  });
+  it('reanchors an unavailable note without replacing its original quote or private text', () => {
+    const original = state();
+    original.notes[0].reanchorRequired = true;
+    const mutation: BulletinReaderMutation = {...base, kind: 'reanchorNote', baseVersion: 1, payload: {noteId: 'note', sentenceIds: ['s1'], ranges: [{sentenceId: 's1', start: 1, end: 3}]}};
+    const next = applyLocalMutation(original, mutation, document);
+    expect(next.notes[0]).toMatchObject({id: 'note', text: '私人筆記', quote: '內容0。', sentenceIds: ['s1'], ranges: [{sentenceId: 's1', start: 1, end: 3, quote: '內容1。'}], version: 2, reanchorRequired: false, inactiveAnchors: []});
+    expect(original.notes[0]).toMatchObject({version: 1, reanchorRequired: true});
+    expect(() => applyLocalMutation(next, mutation, document)).toThrow('note_conflict');
+    expect(() => applyLocalMutation(state(), mutation, document)).toThrow('invalid_note');
+    expect(() => applyLocalMutation(original, {...mutation, payload: {...mutation.payload, ranges: [{sentenceId: 's1', start: 1, end: 99}]}}, document)).toThrow();
+  });
   it('recolors only selected scalar offsets and splits partial clears without changing notes', () => {
     const original = state();
     const ranges = [{sentenceId: 's0', start: 1, end: 3}];

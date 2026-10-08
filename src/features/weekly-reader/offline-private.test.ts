@@ -20,6 +20,38 @@ async function saved() {
   await seedPrivateReplica(selector, state, epoch, now);
   return epoch;
 }
+it('durably consumes highlight history and retains the same restore ID for offline replay', async () => {
+  const epoch = await saved();
+  const highlight = {sentenceId: 'gone', quote: 'Private old quote', active: false, color: 'red' as const, version: 1, updatedAt: new Date(now).toISOString()};
+  await seedPrivateReplica(selector, {...state, highlightHistory: [{id: 'history', highlight}]}, epoch, now);
+  const mutation: BulletinReaderMutation = {...note, kind: 'restoreHighlight', payload: {historyId: 'history', sentenceIds: ['s1'], ranges: [{sentenceId: 's1', start: 1, end: 3}], color: 'blue'}};
+  const local = await enqueuePrivateMutation(selector, mutation, epoch, now);
+  expect(local.state.highlightHistory).toEqual([{id: 'history'}]);
+  expect(local.state.highlights[0].segments).toEqual([{start: 1, end: 3, color: 'blue'}]);
+  await enqueuePrivateMutation(selector, mutation, epoch, now);
+  expect((await readPrivateReplica(selector, now))?.queue).toHaveLength(1);
+  expect((await claimPrivateMutation(selector, epoch, now))?.mutation).toEqual(mutation);
+  await acknowledgePrivateMutation(selector, {state: local.state, results: [{mutationId: mutation.mutationId, revision: 1, status: 'applied'}]}, epoch, now);
+  expect((await readPrivateReplica(selector, now))?.state.highlightHistory).toEqual([{id: 'history'}]);
+  await expect(enqueuePrivateMutation(selector, {...mutation, mutationId: crypto.randomUUID()}, epoch, now)).rejects.toThrow('conflict_not_found');
+});
+it('persists a reanchor atomically and replays the same identity without losing the original note', async () => {
+  const epoch = await saved();
+  const original = {id: 'old-note', text: 'Private note', quote: 'Old quotation', sentenceIds: [], inactiveAnchors: [], version: 2, deleted: false, reanchorRequired: true, createdAt: new Date(now).toISOString(), updatedAt: new Date(now).toISOString()};
+  await seedPrivateReplica(selector, {...state, notes: [original]}, epoch, now);
+  const mutation: BulletinReaderMutation = {...note, kind: 'reanchorNote', baseVersion: 2, payload: {noteId: original.id, sentenceIds: ['s1'], ranges: [{sentenceId: 's1', start: 1, end: 3}]}};
+  const local = await enqueuePrivateMutation(selector, mutation, epoch, now);
+  expect(local.state.notes).toHaveLength(1);
+  expect(local.state.notes[0]).toMatchObject({id: original.id, text: original.text, quote: original.quote, version: 3, reanchorRequired: false});
+  await enqueuePrivateMutation(selector, mutation, epoch, now);
+  expect((await readPrivateReplica(selector, now))?.queue).toHaveLength(1);
+  expect((await claimPrivateMutation(selector, epoch, now))?.mutation).toEqual(mutation);
+  expect((await claimPrivateMutation(selector, epoch, now))?.mutation).toEqual(mutation);
+  await acknowledgePrivateMutation(selector, {state: local.state, results: [{mutationId: mutation.mutationId, revision: 1, status: 'applied'}]}, epoch, now);
+  const confirmed = await readPrivateReplica(selector, now);
+  expect(confirmed?.queue).toEqual([]);
+  expect(confirmed?.state.notes).toEqual(local.state.notes);
+});
 it('keeps notes, highlights and reading progress inside the exact language document',async()=>{
   const epoch=await saved(),hansSelector={...selector,contentLocale:'zh-Hans' as const},hans=readerFixture('zh-Hans');
   await commitOfflineSave({selector:hansSelector,value:hans,epoch,resources:[],size:100,locked:false,lastObservedAt:now},epoch,now);
