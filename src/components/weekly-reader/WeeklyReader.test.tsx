@@ -14,6 +14,10 @@ vi.mock('@/components/layout/AccountControl', () => ({
   useBulletinAuthorization: () => authorization
 }));
 const authorization = {getAccessToken: async () => 'token', refreshAfterUnauthorized: async () => null};
+beforeEach(() => {
+  vi.useFakeTimers({toFake: ['Date']});
+  vi.setSystemTime(new Date('2026-10-02T00:00:00Z'));
+});
 function selectText(element: Element, start?: number, end?: number, finish = true) {
   fireEvent.pointerDown(element);
   const range = document.createRange();
@@ -39,8 +43,8 @@ function chooseDirection(name: string) {
   fireEvent.click(screen.getByRole('button', {name: /^Reading direction/}));
   expect(document.querySelector('.reader-viewport')).toHaveAttribute('data-direction', name === 'Horizontal paging' ? 'horizontal' : 'vertical');
 }
-beforeEach(() => {vi.spyOn(Date, 'now').mockReturnValue(Date.parse(readerFixture().access.validatedAt) + 60 * 60 * 1000); vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state.accountId = 'account-a'; state.status = 'authenticated'; state.open.mockReset().mockResolvedValue(readerFixture()); state.privateState.mockReset().mockResolvedValue({state: {accountId: 'account-a', documentId: readerFixture().document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: null, conflicts: []}}); state.mutate.mockReset(); sessionStorage.clear(); vi.stubGlobal('matchMedia', vi.fn(() => ({matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn()})));});
-afterEach(() => {cleanup(); Reflect.deleteProperty(document, 'fonts'); Reflect.deleteProperty(Range.prototype, 'getBoundingClientRect'); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs();});
+beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state.accountId = 'account-a'; state.status = 'authenticated'; state.open.mockReset().mockResolvedValue(readerFixture()); state.privateState.mockReset().mockResolvedValue({state: {accountId: 'account-a', documentId: readerFixture().document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: null, conflicts: []}}); state.mutate.mockReset(); sessionStorage.clear(); vi.stubGlobal('matchMedia', vi.fn(() => ({matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn()})));});
+afterEach(() => {cleanup(); Reflect.deleteProperty(document, 'fonts'); Reflect.deleteProperty(Range.prototype, 'getBoundingClientRect'); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.useRealTimers();});
 beforeEach(() => {Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect(0, 100, 300, 20)});});
 
 describe('protected weekly reader', () => {
@@ -379,6 +383,7 @@ describe('protected weekly reader', () => {
   it('invalidates a snapshot when the same native gesture extends outside the reading surface', async () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).toBeEnabled());
     const sentence = container.querySelector('[data-sentence-id="s0"]')!;
     selectText(sentence, 0, 2);
     expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
@@ -564,7 +569,9 @@ describe('protected weekly reader', () => {
   it('retains selected sentences across foreground authorization checks without permitting actions during validation', async () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
     selectText(container.querySelector('[data-sentence-id="s0"]')!);
+    expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
     let finish!: (value: ReturnType<typeof readerFixture>) => void;
     state.open.mockImplementationOnce(() => new Promise(resolve => {finish = resolve;}));
     fireEvent.focus(window);

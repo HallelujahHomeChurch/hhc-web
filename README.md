@@ -56,6 +56,11 @@ remain available across app upgrades for retained saves.
 
 ## Verification
 
+Banner glyph regression tests use the same build-only FontTools/Brotli tools as
+`scripts/subset-display-font.sh`: install `fonttools==4.60.2` and `Brotli==1.2.0`
+in a Python virtual environment before running tests. After changing banner
+translations, regenerate the checked-in subsets with that script.
+
 ```sh
 corepack pnpm test:run
 corepack pnpm lint
