@@ -90,6 +90,7 @@ jobs:
       RELEASE_CONFIRMATION: ${{ github.event_name == 'push' && 'deploy-hhc-web-production' || inputs.confirmation }}
       PROVISION_PERMISSIONS: "false"
       MEMBER_VIDEO_NAV_ENABLED: ${{ vars.MEMBER_VIDEO_NAV_ENABLED || 'false' }}
+      WEEKLY_READER_ENABLED: ${{ vars.WEEKLY_READER_ENABLED || 'false' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Validate release configuration
@@ -100,6 +101,7 @@ jobs:
             test -n "${!name:-}" || { echo "Missing repository variable: ${name}" >&2; exit 1; }
           done
           [[ "$MEMBER_VIDEO_NAV_ENABLED" == false || "$MEMBER_VIDEO_NAV_ENABLED" == true ]]
+          [[ "$WEEKLY_READER_ENABLED" == false || "$WEEKLY_READER_ENABLED" == true ]]
       - name: Set image tag
         run: echo "IMAGE_TAG=main-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
       - name: Sign in to Azure with OIDC
@@ -160,6 +162,7 @@ jobs:
             --build-arg NEXT_PUBLIC_SENTRY_DSN="${{ vars.SENTRY_DSN }}" \
             --build-arg NEXT_PUBLIC_SENTRY_RELEASE="$GITHUB_SHA" \
             --build-arg NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED="$MEMBER_VIDEO_NAV_ENABLED" \
+            --build-arg NEXT_PUBLIC_WEEKLY_READER_ENABLED="$WEEKLY_READER_ENABLED" \
             --build-arg SENTRY_ORG="${{ vars.SENTRY_ORG }}" \
             --build-arg SENTRY_PROJECT="${{ vars.SENTRY_PROJECT }}" \
             -t "$image_ref" .
