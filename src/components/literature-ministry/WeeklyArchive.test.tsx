@@ -47,7 +47,11 @@ describe('WeeklyArchive', () => {
     for (const label of ['English', '繁中']) {
       const buttons = screen.getAllByRole('button', {name: `Download PDF: ${label}`});
       expect(buttons).toHaveLength(2);
-      for (const button of buttons) expect(button).toBeVisible();
+      for (const button of buttons) {
+        expect(button).toBeVisible();
+        expect(button).toHaveTextContent(label);
+        expect(button.parentElement?.parentElement).toHaveClass('justify-end');
+      }
     }
     expect(screen.queryByText('Other languages', {selector: 'summary'})).not.toBeInTheDocument();
     expect(screen.queryByRole('button', {name: 'Download PDF: 简中'})).not.toBeInTheDocument();

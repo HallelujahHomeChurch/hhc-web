@@ -194,18 +194,19 @@ function VersionLinks({locale, readOnlineLabel, issue, workflow, preparingLabel,
   const actions = (version: WeeklyIssue['versions'][number]) => {
     const href = readerUrl(locale, version);
     const label = weeklyEditionLabels[version.locale];
-    return <div key={`${version.series}/${version.locale}`} className="flex flex-wrap items-center gap-2">
-      <span lang={version.locale} className="text-sm text-muted">{label}</span>
-      {href ? <Button href={href} ariaLabel={`${readOnlineLabel}: ${label}`}>{readOnlineLabel}</Button> : null}
-      {version.pdfPublished !== false ? <DownloadButton bulletin={version} workflow={workflow} label={m.downloadPdf} ariaLabel={`${m.downloadPdf}: ${label}`} variant="outline" preparingLabel={preparingLabel} readyLabel={readyLabel} errorLabel={errorLabel}/> : null}
+    return <div key={`${version.series}/${version.locale}`} className="grid min-w-0 content-start gap-2">
+      {version.pdfPublished !== false ? <DownloadButton bulletin={version} workflow={workflow} className="whitespace-nowrap max-[860px]:min-w-0 max-[860px]:px-3" label={label} ariaLabel={`${m.downloadPdf}: ${label}`} variant="outline" preparingLabel={preparingLabel} readyLabel={readyLabel} errorLabel={errorLabel}/> : null}
+      {href ? <Button href={href} variant="outline" className="min-w-0 px-3" ariaLabel={`${readOnlineLabel}: ${label}`}>{version.pdfPublished === false ? `${label} · ${readOnlineLabel}` : readOnlineLabel}</Button> : null}
       {!href && version.pdfPublished === false ? <span className="text-sm text-muted">{m.empty}</span> : null}
     </div>;
   };
   return (
     <div className={`grid gap-2.5 ${className}`}>
-      {primary ? actions(primary) : null}
+      <div className="flex justify-end gap-2.5 max-[860px]:grid max-[860px]:grid-flow-col max-[860px]:auto-cols-fr">
+        {primary ? actions(primary) : null}
+        {others.map(actions)}
+      </div>
       {issue.pdfFallback ? <p role="status" className="text-sm text-muted">{m.pdfFallback}</p> : null}
-      {others.map(actions)}
     </div>
   );
 }
