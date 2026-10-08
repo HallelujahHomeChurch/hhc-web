@@ -41,7 +41,7 @@ beforeEach(()=>{
   vi.spyOn(HTMLMediaElement.prototype,'pause').mockImplementation(()=>{});
   vi.spyOn(HTMLMediaElement.prototype,'load').mockImplementation(()=>{});
 });
-afterEach(()=>{cleanup();vi.restoreAllMocks();});
+afterEach(()=>{cleanup();vi.useRealTimers();vi.unstubAllGlobals();vi.restoreAllMocks();});
 
 it.each([false,true])('ends loading on fatal media failure after manifest=%s', async(manifestReady)=>{
   engine.manifestReady=manifestReady;
@@ -370,4 +370,84 @@ it('native live quality switching waits for later seekable progress before resto
  expect(remembered).toHaveBeenLastCalledWith(expect.objectContaining({time:60,intent:'dvr',quality:'720p'}));
  video.currentTime=75;fireEvent.canPlay(video);fireEvent.progress(video);
  expect(video.currentTime).toBe(75);
+});
+
+
+function touchSurface() {
+  vi.stubGlobal('matchMedia',vi.fn().mockReturnValue({matches:true,addEventListener:vi.fn(),removeEventListener:vi.fn()}));
+}
+function touch(element:HTMLElement,type:string,x=300,y=100) {
+  fireEvent(element,new PointerEvent(type,{bubbles:true,pointerId:1,pointerType:'touch',isPrimary:true,clientX:x,clientY:y}));
+}
+it('touch taps toggle controls without pausing; double taps seek and clamp at the video ends',async()=>{
+  touchSurface();const p=props();render(<HlsPlayer {...p}/>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));
+  const video=p.videoRef.current!;
+  Object.defineProperty(video,'paused',{configurable:true,value:false});
+  Object.defineProperty(video,'duration',{configurable:true,value:100});
+  fireEvent.play(video);fireEvent.canPlay(video);fireEvent.durationChange(video);
+  const surface=screen.getByRole('button',{name:'Play or pause'});
+  vi.spyOn(surface,'getBoundingClientRect').mockReturnValue({left:0,width:600} as DOMRect);
+  vi.useFakeTimers();
+  touch(surface,'pointerdown');touch(surface,'pointerup');
+  act(()=>vi.advanceTimersByTime(300));
+  expect(video.pause).not.toHaveBeenCalled();
+  expect(screen.getByRole('region')).toHaveAttribute('data-controls-visible','false');
+  video.currentTime=95;
+  touch(surface,'pointerdown',500);touch(surface,'pointerup',500);
+  touch(surface,'pointerdown',500);touch(surface,'pointerup',500);
+  expect(video.currentTime).toBe(100);
+  act(()=>vi.advanceTimersByTime(1000));
+  video.currentTime=5;
+  touch(surface,'pointerdown',100);touch(surface,'pointerup',100);
+  touch(surface,'pointerdown',100);touch(surface,'pointerup',100);
+  expect(video.currentTime).toBe(0);expect(video.pause).not.toHaveBeenCalled();
+});
+it('restores the original speed after a held touch is released or cancelled',async()=>{
+  touchSurface();const p=props();render(<HlsPlayer {...p}/>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));
+  const video=p.videoRef.current!;Object.defineProperty(video,'paused',{configurable:true,value:false});video.playbackRate=1.5;fireEvent.play(video);
+  const surface=screen.getByRole('button',{name:'Play or pause'});vi.useFakeTimers();
+  touch(surface,'pointerdown');act(()=>vi.advanceTimersByTime(500));expect(video.playbackRate).toBe(2);
+  touch(surface,'pointerup');expect(video.playbackRate).toBe(1.5);
+  touch(surface,'pointerdown');act(()=>vi.advanceTimersByTime(500));touch(surface,'pointercancel');expect(video.playbackRate).toBe(1.5);
+});
+it('swipes into and out of a full viewport while retaining the same video and watermark',async()=>{
+  touchSurface();const p=props();render(<HlsPlayer {...p}/>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));
+  const video=p.videoRef.current!;video.currentTime=81;
+  const enter=vi.fn();Object.assign(video,{webkitEnterFullscreen:enter,webkitSupportsFullscreen:true});
+  const surface=screen.getByRole('button',{name:'Play or pause'});
+  await act(async()=>{touch(surface,'pointerdown',300,180);touch(surface,'pointermove',300,50);touch(surface,'pointerup',300,50);});
+  expect(screen.getByRole('region')).toHaveAttribute('data-fullscreen','viewport');
+  expect(enter).not.toHaveBeenCalled();
+  await act(async()=>{touch(surface,'pointerdown',300,50);touch(surface,'pointermove',300,180);touch(surface,'pointerup',300,180);});
+  expect(screen.getByRole('region')).toHaveAttribute('data-fullscreen','inline');expect(p.videoRef.current).toBe(video);expect(video.currentTime).toBe(81);
+});
+
+it('offers a central play control when audible autoplay is blocked, without claiming a media failure',async()=>{
+  touchSurface();vi.mocked(HTMLMediaElement.prototype.play).mockRejectedValueOnce(new DOMException('Autoplay blocked','NotAllowedError'));
+  const p=props();render(<HlsPlayer {...p}/>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));fireEvent.canPlay(p.videoRef.current!);
+  fireEvent.click(screen.getByRole('button',{name:'Play'}));
+  expect(p.videoRef.current!.play).toHaveBeenCalledTimes(2);expect(p.onError).not.toHaveBeenCalled();
+});
+
+it('touch skip controls link to adjacent recordings and omit missing neighbors',async()=>{
+  touchSurface();const p=props();const view=render(<HlsPlayer {...p} labels={{...labels,previousVideo:'Previous video',nextVideo:'Next video'}} previousHref="/en/member-videos/first" nextHref="/en/member-videos/third"/>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));
+  expect(screen.getByRole('link',{name:'Previous video'})).toHaveAttribute('href','/en/member-videos/first');
+  expect(screen.getByRole('link',{name:'Next video'})).toHaveAttribute('href','/en/member-videos/third');
+  view.rerender(<HlsPlayer {...p} labels={{...labels,previousVideo:'Previous video',nextVideo:'Next video'}} nextHref="/en/member-videos/third"/>);
+  expect(screen.queryByRole('link',{name:'Previous video'})).toBeNull();
+});
+
+it('includes adjacent video links in the viewport fullscreen keyboard focus loop',async()=>{
+  touchSurface();const p=props();render(<HlsPlayer {...p} labels={{...labels,previousVideo:'Previous video',nextVideo:'Next video'}} previousHref="/en/member-videos/first" nextHref="/en/member-videos/third"/>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));fireEvent.canPlay(p.videoRef.current!);
+  await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Fullscreen'})));
+  const previous=screen.getByRole('link',{name:'Previous video'}),play=screen.getByRole('button',{name:'Play'});
+  play.focus();expect(fireEvent.keyDown(play,{key:'Tab',shiftKey:true})).toBe(true);
+  previous.focus();fireEvent.keyDown(previous,{key:'Tab',shiftKey:true});
+  expect(screen.getAllByRole('button',{name:'Exit fullscreen'}).at(-1)).toHaveFocus();
 });

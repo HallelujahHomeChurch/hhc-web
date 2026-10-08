@@ -10,7 +10,7 @@ type NativeVideo = HTMLVideoElement & {
   webkitExitFullscreen?: () => void;
 };
 
-export function usePlayerFullscreen(containerRef: RefObject<HTMLDivElement | null>, videoRef: RefObject<HTMLVideoElement | null>) {
+export function usePlayerFullscreen(containerRef: RefObject<HTMLDivElement | null>, videoRef: RefObject<HTMLVideoElement | null>, preferViewport = false) {
   const [mode, setMode] = useState<Mode>('inline');
   const [error, setError] = useState<string | null>(null);
   const current = useRef<Mode>('inline'), pending = useRef(false), mounted = useRef(false);
@@ -67,7 +67,7 @@ export function usePlayerFullscreen(containerRef: RefObject<HTMLDivElement | nul
       if (event.defaultPrevented) return;
       if (event.key === 'Escape') {event.preventDefault();change('inline');}
       if (event.key !== 'Tab') return;
-      const items = Array.from(root.querySelectorAll<HTMLElement>('button:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex="0"]')).filter(item => item.tabIndex >= 0 && !item.closest('[hidden],[inert]'));
+      const items = Array.from(root.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex="0"]')).filter(item => item.tabIndex >= 0 && !item.closest('[hidden],[inert]'));
       const first = items[0] ?? root, last = items.at(-1) ?? root;
       if (event.shiftKey && (document.activeElement === first || document.activeElement === root)) {event.preventDefault();last.focus();}
       else if (!event.shiftKey && document.activeElement === last) {event.preventDefault();first.focus();}
@@ -106,7 +106,7 @@ export function usePlayerFullscreen(containerRef: RefObject<HTMLDivElement | nul
         try {await root.requestFullscreen();return;} catch { /* Try native, then same-DOM viewport expansion. */ }
       }
       if (!mounted.current) return;
-      if (typeof video.webkitEnterFullscreen === 'function' && video.webkitSupportsFullscreen !== false) {
+      if (!preferViewport && typeof video.webkitEnterFullscreen === 'function' && video.webkitSupportsFullscreen !== false) {
         try {video.webkitEnterFullscreen();return;} catch { /* Unsupported media or expired activation: viewport works without it. */ }
       }
       change('viewport');

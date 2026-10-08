@@ -395,6 +395,8 @@
     "empty": "公開済みの週報はまだありません。"
   },
   "memberVideos": {
+    "previousVideo": "前の動画",
+    "nextVideo": "次の動画",
     "loadMore": "さらに読み込む",
     "liveStartedDate": "配信開始：{date}",
     "description": "動画の説明",

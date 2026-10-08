@@ -10,11 +10,12 @@ type Quality = 'auto' | '480p' | '720p' | '1080p';
 export type PlayerLabels = {
   quality:string; auto:string; play:string; pause:string; mute:string; unmute:string;
   seek:string; volume:string; fullscreen:string; exitFullscreen:string; fullscreenError:string; playbackSpeed:string;
+  previousVideo?:string; nextVideo?:string;
   settings:string; togglePlayback:string; privateCopy:string; buffering:string;
 };
 type Props = {
   playbackMode?: 'vod' | 'live'; live?: LivePlayerState; resume?: PlayerBookmark; onBookmark?: (value: PlayerBookmark) => void;
-  poster?:string;
+  poster?:string; previousHref?:string; nextHref?:string;
   playbackUrl:string; availableQualities:Exclude<Quality,'auto'>[]; watermark:string; title:string;
   labels:PlayerLabels; videoRef:RefObject<HTMLVideoElement|null>; onPlayingChange?:(playing:boolean)=>void; onError:()=>void;
 };
@@ -26,7 +27,7 @@ function verifyMediaRequest(master:string,target:string) {
     || !/^(master\.m3u8|(480p|720p|1080p)\/(index\.m3u8|init\.mp4|seg-\d{6}\.m4s))$/.test(path)) throw new Error('Invalid media request');
 }
 
-export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels,videoRef,onPlayingChange,onError,poster,playbackMode='vod',live,resume,onBookmark}:Props) {
+export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels,videoRef,onPlayingChange,onError,poster,previousHref,nextHref,playbackMode='vod',live,resume,onBookmark}:Props) {
   const container=useRef<HTMLDivElement>(null), engine=useRef<Hls|null>(null);
   const nativeSwitch=useRef<AbortController|null>(null);
   const nativePosition=useRef<{time:number;playing:boolean;rate:number}|null>(null);
@@ -142,6 +143,6 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
   return <div ref={container} tabIndex={0} role="region" aria-label={`${title} — ${labels.togglePlayback}`} className={styles.player}>
     <video ref={videoRef} poster={poster} playsInline preload="metadata" controlsList="nodownload noremoteplayback" disablePictureInPicture disableRemotePlayback crossOrigin="use-credentials" aria-label={title} className="h-full w-full object-contain"
       onError={handleError}/>
-    <PlayerChrome container={container} videoRef={videoRef} playbackUrl={playbackUrl} watermark={watermark} labels={labels} quality={quality} qualities={qualities} loading={mode==='loading'} failed={mode==='error'} onQualityChange={changeQuality} onPlayingChange={onPlayingChange} live={playbackMode==='live'?live:undefined} onDvr={dvr} onReturnToLive={returnToLive}/>
+    <PlayerChrome container={container} videoRef={videoRef} playbackUrl={playbackUrl} watermark={watermark} labels={labels} quality={quality} qualities={qualities} previousHref={previousHref} nextHref={nextHref} loading={mode==='loading'} failed={mode==='error'} onQualityChange={changeQuality} onPlayingChange={onPlayingChange} live={playbackMode==='live'?live:undefined} onDvr={dvr} onReturnToLive={returnToLive}/>
   </div>;
 }

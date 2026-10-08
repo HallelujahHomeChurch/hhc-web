@@ -72,6 +72,12 @@ afterEach(() => {
 });
 
 describe('SiteHeader', () => {
+  it.each(['/zh-Hant/member-videos','/zh-Hant/member-videos/r1','/zh-Hant/member-videos-other'])('uses the video library logo destination only inside its route: %s',(pathname)=>{
+    render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname={pathname} sessionClient={anonymousSessionClient}/></NextIntlClientProvider>);
+    expect(screen.getByRole('link',{name:/哈利路亞家教會/})).toHaveAttribute('href',pathname.endsWith('-other')?'/zh-Hant':'/zh-Hant/member-videos');
+    expect(screen.getByRole('link',{name:'首頁'})).toHaveAttribute('href','/zh-Hant');
+  });
+
   it('restores both navigation bars before session resolves without opening protected content, then removes revoked access', async () => {
     const cached = createNavigationPresentation({key: 'hhc:navigation:www-web', allowedIds: ['account', 'admin', 'literature-ministry', 'member-videos']});
     cached.identify('u1');

@@ -3,6 +3,7 @@
 import {useCallback, useRef, useState} from 'react';
 import type {MemberLiveRecording} from '@hallelujahhomechurch/hhc-web-client';
 import type {createMemberVideoApi} from './api';
+import zoneStyles from './MemberVideoZone.module.css';
 import {HlsPlayer,type PlayerLabels} from './HlsPlayer';
 import {useLivePlayback} from './useLivePlayback';
 import type {PlayerBookmark} from './live-player';
@@ -20,7 +21,7 @@ export function LiveRecordingPlayer({api,recording,labels,liveLabels,locale,onVo
  const playable=!session.closed&&!['failed','expired','aborted'].includes(state);
  const verifiedEnd=Math.max(recording.progress.mediaEndSeconds,grant?.progress.mediaEndSeconds??0);
  const retry=async()=>{const rebuild=mediaError;setMediaError(false);await session.start();if(rebuild)setPlayerRevision(value=>value+1);};
- return <div className="grid min-w-0 gap-4">
+ return <div className={`${zoneStyles.video} grid min-w-0 gap-4`}>
   {session.playback&&playable?<HlsPlayer key={`${session.playback.url}:${playerRevision}`} playbackMode="live" playbackUrl={session.playback.url} videoRef={video} title={recording.title} labels={labels} availableQualities={['480p','720p','1080p']} watermark={session.playback.grant.watermarkCode} onError={onError} onBookmark={session.remember} resume={session.bookmark.current} live={{verifiedEnd,canFollow:state==='live',label:liveLabels[state],backToLive:liveLabels.backToLive,liveLabel:liveLabels.liveNow??liveLabels.live}}/>:<div className="grid aspect-video place-items-center rounded-[14px] bg-neutral-950 text-white">
    {session.pending?<p role="status">{labels.loading}</p>:playable?<button type="button" className="min-h-11 rounded-full bg-primary px-6 font-semibold text-primary-foreground" onClick={()=>void retry()}>{session.error?labels.retry:labels.play}</button>:<p role="status">{liveLabels[state]}</p>}
   </div>}
