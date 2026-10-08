@@ -386,8 +386,11 @@
     "empty": "No weekly papers have been published yet."
   },
   "memberVideos": {
+    "loadMore": "Load more",
+    "liveStartedDate": "Started {date}",
     "description": "Video description",
     "live": {
+      "liveNow": "Live",
       "watchRecording": "Continue with the published recording",
       "starting": "Preparing live video",
       "live": "Live · about 1–2 minutes behind",

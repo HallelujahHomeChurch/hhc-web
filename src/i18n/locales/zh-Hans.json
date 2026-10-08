@@ -395,8 +395,11 @@
     "empty": "目前尚未发布周报。"
   },
   "memberVideos": {
+    "loadMore": "加载更多",
+    "liveStartedDate": "开播于 {date}",
     "description": "视频说明",
     "live": {
+      "liveNow": "直播中",
       "watchRecording": "接续观看会后影片",
       "starting": "直播准备中",
       "live": "直播中，约延迟 1–2 分钟",

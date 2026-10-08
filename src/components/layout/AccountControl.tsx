@@ -16,6 +16,7 @@ import {createOperationsClient} from '@hallelujahhomechurch/operations-client';
 import {bulletinEditions, type BulletinEdition} from '@hallelujahhomechurch/preferences';
 import {AccountMenu, Toast} from '@hallelujahhomechurch/ui';
 import {captureHandledError} from '@/lib/observability';
+import {recordAccountAuthEvent} from '@/lib/account-observability';
 import {getSharedAccountSessionClient} from '@/lib/browser-bootstrap';
 import {accountAuthorizeBaseUrlForBrowser, accountSessionBaseUrlForBrowser, accountSiteUrlForBrowser} from '@/lib/account-origin';
 import {siteConfig} from '@/lib/site';
@@ -142,7 +143,7 @@ export function AccountControlProvider({
   const resolvedOAuth = useMemo(() => oauth ?? webOAuthConfigForBrowser(), [oauth]);
   const presentation = useMemo(() => createNavigationPresentation({key: 'hhc:navigation:www-web', allowedIds: ['account', 'admin', 'literature-ministry', 'member-videos']}), []);
   const navigation = useSyncExternalStore(presentation.subscribe, presentation.getSnapshot, () => emptyNavigationPresentation);
-  const authRuntime = useMemo(() => createBrowserAccountAuthRuntime({client: sessionClient, oauth: resolvedOAuth, presentation}), [resolvedOAuth, sessionClient, presentation]);
+  const authRuntime = useMemo(() => createBrowserAccountAuthRuntime({client: sessionClient, oauth: resolvedOAuth, presentation, onEvent: recordAccountAuthEvent}), [resolvedOAuth, sessionClient, presentation]);
   const operationsClient = useMemo(() => createOperationsClient({
     baseUrl: '',
     getAccessToken: authRuntime.getAccessToken,

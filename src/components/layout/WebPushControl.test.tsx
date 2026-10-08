@@ -107,6 +107,22 @@ describe('WebPushControl', () => {
     expect(screen.getByRole('button', {name: labels.disable})).toBeInTheDocument();
   });
 
+  it.each([
+    undefined,
+    {},
+    {pushManager: {}},
+    {pushManager: {getSubscription: vi.fn()}},
+    {pushManager: {subscribe: vi.fn()}},
+  ])('hides unsupported returned capabilities without binding an account: %s', async (returned) => {
+    account.current = authenticatedAccount();
+    vi.mocked(navigator.serviceWorker.register).mockResolvedValue(returned as unknown as ServiceWorkerRegistration);
+    const {container} = render(<WebPushControl locale="en" labels={labels} />);
+    await waitFor(() => expect(container).toBeEmptyDOMElement());
+    expect(captureHandledError).not.toHaveBeenCalled();
+    expect(requestPermission).not.toHaveBeenCalled();
+    expect(vi.mocked(fetch).mock.calls.some(([url]) => String(url).endsWith('/push-subscriptions/bind'))).toBe(false);
+  });
+
   it('reports an initialization failure', async () => {
     vi.mocked(navigator.serviceWorker.register).mockRejectedValue(new Error('registration failed'));
 

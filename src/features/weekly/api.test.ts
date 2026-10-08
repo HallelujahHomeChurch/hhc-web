@@ -98,3 +98,47 @@ it('signals a typed legal review requirement before protected content can be use
  try {await expect(api.fetchLatest('general',['en'])).rejects.toBeInstanceOf(HhcWebApiError);expect(event).toHaveBeenCalledOnce()}
  finally {window.removeEventListener('hhc:legal-required',event)}
 });
+
+
+describe('weekly browser compatibility', () => {
+  it('loads multilingual discovery and PDF fallback without toSorted and preserves input order', async () => {
+    const original = Object.getOwnPropertyDescriptor(Array.prototype, 'toSorted');
+    Object.defineProperty(Array.prototype, 'toSorted', {configurable: true, value: undefined});
+    const items = ['en', 'zh-Hans', 'zh-Hant'].map(contentLocale => ({...discovery, contentLocale}));
+    const fetcher = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json({...pageEnvelope, data: {...pageEnvelope.data, items}}))
+      .mockResolvedValueOnce(Response.json({...pageEnvelope, data: {...pageEnvelope.data, items}}))
+      .mockResolvedValueOnce(Response.json({}, {status: 503}))
+      .mockResolvedValueOnce(Response.json({data: {...bulletin, issueId: 'older', issueDate: '2026-09-06'}, meta: {}, error: null}))
+      .mockResolvedValueOnce(Response.json({data: {...bulletin, locale: 'en'}, meta: {}, error: null}))
+      .mockResolvedValueOnce(Response.json({}, {status: 503}))
+      .mockResolvedValueOnce(Response.json({data: [bulletin], meta: {total: 1}, error: null}));
+    const api = createWeeklyBulletinApi({getAccessToken: async () => 'token', refreshAfterUnauthorized: vi.fn()}, fetcher);
+    try {
+      expect((await api.fetchLatest('general', ['en', 'zh-Hans', 'zh-Hant']))?.versions.map(v => v.locale)).toEqual(['zh-Hant', 'zh-Hans', 'en']);
+      expect((await api.fetchArchive('general', ['en', 'zh-Hans', 'zh-Hant'])).items[0].versions.map(v => v.locale)).toEqual(['zh-Hant', 'zh-Hans', 'en']);
+      expect(await api.fetchLatest('general', ['zh-Hant', 'en'])).toMatchObject({id: bulletin.issueId, pdfFallback: true});
+      expect((await api.fetchArchive('general', ['zh-Hant'])).items[0]).toMatchObject({pdfFallback: true});
+      expect(items.map(item => item.contentLocale)).toEqual(['en', 'zh-Hans', 'zh-Hant']);
+    } finally {
+      if (original) Object.defineProperty(Array.prototype, 'toSorted', original);
+      else Reflect.deleteProperty(Array.prototype, 'toSorted');
+    }
+  });
+
+  it.each(['latest', 'archive'] as const)('does not retry PDF after %s discovery conversion fails', async (operation) => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(Response.json({...pageEnvelope, data: {...pageEnvelope.data, items: [{...discovery, canonicalMetadata: null}]}}));
+    const api = createWeeklyBulletinApi({getAccessToken: async () => 'token', refreshAfterUnauthorized: vi.fn()}, fetcher);
+    await expect(operation === 'latest' ? api.fetchLatest('general', ['en']) : api.fetchArchive('general', ['en'])).rejects.toBeInstanceOf(TypeError);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not retry a forbidden archive through PDF', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(Response.json({}, {status: 403}));
+    const refresh = vi.fn();
+    const api = createWeeklyBulletinApi({getAccessToken: async () => 'token', refreshAfterUnauthorized: refresh}, fetcher);
+    await expect(api.fetchArchive('general', ['en'])).rejects.toMatchObject({status: 403});
+    expect(fetcher).toHaveBeenCalledOnce();
+    expect(refresh).not.toHaveBeenCalled();
+  });
+});

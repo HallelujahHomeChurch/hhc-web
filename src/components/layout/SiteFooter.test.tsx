@@ -35,7 +35,7 @@ describe('SiteFooter', () => {
   it('renders brand, custom language selector, notification control, and social links without footer navigation', async () => {
     Object.defineProperty(navigator, 'serviceWorker', {
       configurable: true,
-      value: {register: vi.fn().mockResolvedValue({pushManager: {getSubscription: vi.fn().mockResolvedValue(null)}})}
+      value: {register: vi.fn().mockResolvedValue({pushManager: {getSubscription: vi.fn().mockResolvedValue(null), subscribe: vi.fn()}})}
     });
     Object.defineProperty(globalThis, 'PushManager', {configurable: true, value: class {}});
     Object.defineProperty(globalThis, 'Notification', {configurable: true, value: {permission: 'default'}});
