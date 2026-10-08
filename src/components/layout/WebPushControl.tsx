@@ -226,6 +226,13 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
           navigator.serviceWorker.register('/sw.js'),
           getSharedPushConfig()
         ]);
+        if (!serviceWorker?.pushManager
+          || typeof serviceWorker.pushManager.getSubscription !== 'function'
+          || typeof serviceWorker.pushManager.subscribe !== 'function') {
+          registration.current = null;
+          if (active) setState('unsupported');
+          return;
+        }
         registration.current = serviceWorker;
         vapidPublicKey.current = config.vapidPublicKey;
         const subscription = await serviceWorker.pushManager.getSubscription();

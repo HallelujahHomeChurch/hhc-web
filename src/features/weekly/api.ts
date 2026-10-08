@@ -29,15 +29,16 @@ export function createWeeklyBulletinApi(authorization: BulletinAuthorization, fe
   return {
     async fetchLatest(series: BulletinSeries, locales: readonly BulletinLocale[], signal?: AbortSignal): Promise<WeeklyIssue | null> {
       if (!locales.length) return null;
+      let result: OnlineBulletinDiscovery;
       try {
-        const result = await client.listOnlineBulletinDiscovery({series, locales, offset: 0, limit: 1, signal});
-        return groupBulletins(result.items.map(fromDiscovery))[0] ?? null;
+        result = await client.listOnlineBulletinDiscovery({series, locales, offset: 0, limit: 1, signal});
       } catch (error) {
         if (!isTransient(error) || signal?.aborted) throw error;
         const versions = await Promise.all(locales.map(locale => client.getLatestProtectedBulletin(locale, series, signal)));
-        const issue = groupBulletins(versions.map(fromPDF).toSorted((a, b) => b.date.localeCompare(a.date)))[0];
+        const issue = groupBulletins(versions.map(fromPDF).sort((a, b) => b.date.localeCompare(a.date)))[0];
         return issue ? {...issue, pdfFallback: true} : null;
       }
+      return groupBulletins(result.items.map(fromDiscovery))[0] ?? null;
     },
 
     async fetchArchive(
@@ -49,12 +50,12 @@ export function createWeeklyBulletinApi(authorization: BulletinAuthorization, fe
       const normalizedPage = Math.max(1, Math.floor(page));
       const normalizedPageSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
       if (!locales.length) return {items: [], page: normalizedPage, pageSize: normalizedPageSize, totalItems: 0, totalPages: 1};
-      let items: WeeklyIssue[];
-      let totalItems: number;
+      let items: WeeklyIssue[] = [];
+      let totalItems = 0;
+      let discovery: OnlineBulletinDiscovery | undefined;
       try {
         const result = await client.listOnlineBulletinDiscovery({series, locales, offset: (normalizedPage - 1) * normalizedPageSize, limit: normalizedPageSize, signal});
-        items = groupBulletins(result.items.map(fromDiscovery));
-        totalItems = result.total;
+        discovery = result;
       } catch (error) {
         // The legacy PDF API cannot page a multi-language union authoritatively.
         if (!isTransient(error) || signal?.aborted || locales.length !== 1) throw error;
@@ -63,6 +64,10 @@ export function createWeeklyBulletinApi(authorization: BulletinAuthorization, fe
         totalItems = result.meta.total;
       }
 
+      if (discovery) {
+        items = groupBulletins(discovery.items.map(fromDiscovery));
+        totalItems = discovery.total;
+      }
       return {
         items,
         page: normalizedPage,
@@ -159,5 +164,5 @@ function groupBulletins(bulletins: WeeklyBulletin[]): WeeklyIssue[] {
     issues.set(issue.id, issue);
   }
   return [...issues.values()]
-    .map((issue) => ({...issue, versions: issue.versions.toSorted((left, right) => bulletinLocales.indexOf(left.locale) - bulletinLocales.indexOf(right.locale))}));
+    .map((issue) => ({...issue, versions: [...issue.versions].sort((left, right) => bulletinLocales.indexOf(left.locale) - bulletinLocales.indexOf(right.locale))}));
 }

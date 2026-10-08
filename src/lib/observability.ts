@@ -1,3 +1,4 @@
+import {isReportedAccountError} from './account-observability'
 import * as Sentry from '@sentry/nextjs'
 import type { Breadcrumb } from '@sentry/nextjs'
 
@@ -33,6 +34,13 @@ function sanitizeValue(value: unknown, depth = 0): unknown {
 export function sanitizeSentryEvent(event: Record<string, unknown>): Record<string, unknown> {
   const sanitized = sanitizeValue(event) as Record<string, unknown>
   delete sanitized.user
+  if ((sanitized.tags as Record<string, unknown> | undefined)?.api_failure) {
+    delete sanitized.request
+    delete sanitized.breadcrumbs
+    delete sanitized.extra
+    sanitized.transaction = (sanitized.tags as Record<string, unknown>).operation
+    return sanitized
+  }
 
   const request = event.request
   if (request && typeof request === 'object' && 'url' in request && typeof request.url === 'string') {
@@ -67,6 +75,7 @@ export function errorTags(error: unknown) {
 }
 
 export function captureHandledError(error: unknown, { operation, level = 'error', tags = {} }: ErrorContext) {
+  if (isReportedAccountError(error)) return
   return Sentry.withScope((scope) => {
     scope.setLevel(level)
     scope.setTag('operation', operation)
