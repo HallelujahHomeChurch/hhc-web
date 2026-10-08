@@ -25,7 +25,7 @@
     "test:run": "node --test scripts/check-static-budgets.node-test.mjs scripts/verify-weekly-template-assets.node-test.mjs && node scripts/verify-weekly-template-assets.mjs --base-ref origin/main && vitest run"
   },
   "dependencies": {
-    "@hallelujahhomechurch/account-client": "1.0.38",
+    "@hallelujahhomechurch/account-client": "1.0.45",
     "@hallelujahhomechurch/hhc-web-client": "1.0.43",
     "@hallelujahhomechurch/operations-client": "1.0.37",
     "@hallelujahhomechurch/preferences": "1.0.37",
