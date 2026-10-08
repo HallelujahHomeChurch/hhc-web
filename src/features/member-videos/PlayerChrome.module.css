@@ -1,4 +1,4 @@
-.player { position:relative; aspect-ratio:16/9; overflow:hidden; border-radius:14px; background:#0a0a0a; color:#fff; outline-offset:4px; }
+.player { container-type:inline-size; position:relative; aspect-ratio:16/9; overflow:hidden; border-radius:14px; background:#0a0a0a; color:#fff; outline-offset:4px; }
 .player:fullscreen { aspect-ratio:auto; width:100vw; height:100dvh; border-radius:0; }
 .player[data-fullscreen="viewport"] { position:fixed; inset:0; z-index:100; width:100%; height:100dvh; aspect-ratio:auto; border-radius:0; }
 .fullscreenError { position:absolute; top:max(16px,env(safe-area-inset-top)); left:16px; z-index:6; padding:8px 16px; background:#171717; border-radius:4px; }
@@ -82,3 +82,42 @@
 .player[data-touch="true"]:fullscreen .seek, .player[data-touch="true"][data-fullscreen="viewport"] .seek {margin-inline:0;}
 
 .player[data-touch="true"][data-controls-visible="true"]::after {content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:rgb(0 0 0 / 15%);}
+
+.playPrompt {position:absolute;top:calc(50% + 44px);left:50%;transform:translateX(-50%);z-index:4;margin:0;max-width:calc(100% - 24px);border-radius:20px;padding:6px 14px;background:rgb(40 40 40 / 70%);color:white;text-align:center;font-size:13px;pointer-events:none;}
+.skipGroup, .volumeControl {display:flex;align-items:center;}
+.player[data-touch="false"] {--hhc-player-accent:#ff0033;}
+.player[data-touch="false"] .controls {padding:0 12px 8px;background:linear-gradient(transparent,rgb(0 0 0 / 18%));}
+.player[data-touch="false"] .row {gap:8px;}
+.player[data-touch="false"] .button {border-radius:50%;background:rgb(70 70 70 / 45%);}
+.player[data-touch="false"] .button:hover {background:rgb(50 50 50 / 65%);}
+.player[data-touch="false"] .skipGroup, .player[data-touch="false"] .volumeControl {border-radius:24px;background:rgb(70 70 70 / 45%);}
+.player[data-touch="false"] .skipGroup .button, .player[data-touch="false"] .volumeControl .button {background:transparent;}
+.player[data-touch="false"] .time {display:grid;place-items:center;min-height:40px;margin:0;padding-inline:14px;border-radius:24px;background:rgb(70 70 70 / 55%);}
+.player[data-touch="false"] .volume {width:0;opacity:0;margin:0;transition:width 150ms ease-out,opacity 150ms ease-out;}
+.player[data-touch="false"] .volumeControl:hover .volume, .player[data-touch="false"] .volumeControl:focus-within .volume {width:72px;opacity:1;margin-right:12px;}
+.player[data-touch="false"] .seek, .player[data-touch="false"] .seek input {height:18px;}
+.player[data-touch="false"] .track {height:3px;border-radius:2px;background:rgb(80 80 80 / 40%);}
+.player[data-touch="false"] .played {background:linear-gradient(to right,#ff0033,#ff0066);}
+.player[data-touch="false"] .seek input::-webkit-slider-runnable-track {height:3px;}
+.player[data-touch="false"] .seek input::-moz-range-track {height:3px;}
+.player[data-touch="false"] .seek input::-webkit-slider-thumb {margin-top:-4.5px;background:#ff0066;}
+.player[data-touch="false"] .seek input::-moz-range-thumb {background:#ff0066;}
+@media(pointer:fine) {
+  .player[data-theater="true"]:not(:fullscreen):not([data-fullscreen="viewport"]) {height:min(75dvh,900px);aspect-ratio:auto;border-radius:0;}
+}
+@media(prefers-reduced-motion:reduce) {.volume {transition:none;}}
+.rightControls {display:contents;}
+.player[data-touch="false"] .rightControls {display:flex;border-radius:24px;background:rgb(70 70 70 / 45%);}
+.player[data-touch="false"] .rightControls .button {background:transparent;}
+.player[data-touch="true"] .rightControls .button {border-radius:50%;background:rgb(40 40 40 / 60%);}
+
+@container(max-width:520px) {
+  .player[data-touch="false"] .skipGroup {display:none;}
+  .player[data-touch="false"] .controls {padding-inline:8px;}
+  .player[data-touch="false"] .row {gap:4px;}
+  .player[data-touch="false"] .button {width:40px;}
+  .player[data-touch="false"] .time {display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;line-height:40px;padding-inline:8px;font-size:12px;}
+}
+@container(max-width:400px) {
+  .player[data-touch="false"] .theaterButton[aria-pressed="false"] {display:none;}
+}
