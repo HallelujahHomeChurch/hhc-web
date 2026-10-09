@@ -134,7 +134,8 @@ Banner font regeneration includes the member-video strings in all five locales.
 The mobile bar has two content slots and an account slot on the right. The first
 slot prefers authorized literature ministry over news; the second prefers enabled,
 authorized recordings over About. Hidden projected items are omitted. The brand
-always returns to the site home, including from video pages. Public news/About
+returns to the video library from watch pages; on the library and other pages it
+returns to the site home. Public news/About
 remain available on the home page and in the footer. Desktop navigation retains
 its existing destinations; simplified legal pages retain header account access.
 
