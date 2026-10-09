@@ -88,6 +88,9 @@ commands; surface single-click waits 500ms for click arbitration, while keyboard
 and toolbar actions remain immediate. Form controls keep native keyboard behavior.
 The settings menu has playback-speed and quality submenus, selected checkmarks,
 keyboard navigation and a back action, contained within the fullscreen player.
+In the HLS.js player, Auto starts with the lowest available rendition (480p when
+present), then keeps adapting to measured bandwidth and buffering. Restored manual
+quality is preserved. Native HLS chooses its own starting rendition.
 Auto shows the rendered resolution only when HLS or native video reports it. Explicit quality changes rebuild the MSE buffers
 and restore position, pause state, and speed; commands made during that brief
 reload take precedence. This prevents cached lower-quality frames and stale
