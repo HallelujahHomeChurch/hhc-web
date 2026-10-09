@@ -105,9 +105,14 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
   const chromeRef=useRef<HTMLDivElement>(null);
   useLayoutEffect(()=>{
     const chrome=chromeRef.current;if(!chrome)return;
-    const measure=()=>document.documentElement.style.setProperty('--site-top-chrome-height',`${chrome.getBoundingClientRect().height}px`);
+    const measure=()=>{
+      const height=chrome.getBoundingClientRect().height,viewportHeight=window.visualViewport?.height??window.innerHeight;
+      document.documentElement.style.setProperty('--site-top-chrome-height',`${height}px`);
+      document.documentElement.style.setProperty('--site-watch-position',viewportHeight-height-window.innerWidth*9/16>=160?'sticky':'static');
+    };
+    window.addEventListener('resize',measure);window.visualViewport?.addEventListener('resize',measure);
     measure();const observer=typeof ResizeObserver==='function'?new ResizeObserver(measure):null;observer?.observe(chrome);
-    return()=>{observer?.disconnect();document.documentElement.style.removeProperty('--site-top-chrome-height');};
+    return()=>{observer?.disconnect();window.removeEventListener('resize',measure);window.visualViewport?.removeEventListener('resize',measure);document.documentElement.style.removeProperty('--site-top-chrome-height');document.documentElement.style.removeProperty('--site-watch-position');};
   },[]);
   const {visible: mobileChromeVisible} = useScrollChrome({resetKey: pathname, blocked: searchOpen});
   const iphoneStandalone = useSyncExternalStore(

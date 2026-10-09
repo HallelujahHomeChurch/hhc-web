@@ -48,6 +48,6 @@
 @media(max-width:767px) and (orientation:portrait) {
   /* The whole watch section contains the sticky player, including recommendations. */
   .watch .video {display:contents;}
-  .watch .video > :first-child:not(:fullscreen):not([data-fullscreen="viewport"]) {position:sticky;top:var(--site-watch-offset,0px);z-index:1;margin-inline:0;transition:top 220ms cubic-bezier(.22,1,.36,1);}
+  .watch .video > :first-child:not(:fullscreen):not([data-fullscreen="viewport"]) {position:var(--site-watch-position,sticky);top:var(--site-watch-offset,0px);z-index:1;margin-inline:0;transition:top 220ms cubic-bezier(.22,1,.36,1);}
 }
 @media(prefers-reduced-motion:reduce) {.watch .video > :first-child {transition:none;}}

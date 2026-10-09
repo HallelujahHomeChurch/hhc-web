@@ -678,3 +678,7 @@ it('allows seeking away from ended VOD without Replay resetting the selected pos
 it('waits for a slower native desktop double click before issuing live pause commands',async()=>{
  const p=props();render(<HlsPlayer {...p} playbackMode="live" live={{verifiedEnd:100,canFollow:true,label:'Live',backToLive:'Back to live'}}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));const surface=screen.getByRole('button',{name:'Play or pause'}),video=p.videoRef.current!;Object.defineProperty(video,'paused',{value:false,configurable:true});fireEvent.play(video);vi.mocked(video.pause).mockClear();vi.useFakeTimers();fireEvent.click(surface,{detail:1});await act(()=>vi.advanceTimersByTimeAsync(350));fireEvent.click(surface,{detail:2});fireEvent.doubleClick(surface);await act(()=>vi.advanceTimersByTimeAsync(300));expect(video.pause).not.toHaveBeenCalled();
 });
+
+it('cancels a scrub when pointer capture is lost without committing a seek',async()=>{
+ const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));const video=p.videoRef.current!;Object.defineProperty(video,'duration',{value:200,configurable:true});video.currentTime=30;fireEvent.durationChange(video);fireEvent.timeUpdate(video);const input=screen.getByRole('slider',{name:'Playback position'});fireEvent.pointerDown(input);fireEvent.change(input,{target:{value:'150'}});fireEvent.lostPointerCapture(input);fireEvent.pointerUp(input);expect(video.currentTime).toBe(30);
+});

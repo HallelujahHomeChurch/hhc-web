@@ -160,3 +160,8 @@
 
 .replay {position:absolute;inset:0;z-index:4;display:grid;place-content:center;justify-items:center;gap:8px;pointer-events:none;}
 .replay .centerPlay {pointer-events:auto;}
+
+@container(max-width:360px) {
+  .player[data-touch="true"] .centerControls {bottom:44px;}
+  .player[data-touch="true"] .playPrompt {width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
+}

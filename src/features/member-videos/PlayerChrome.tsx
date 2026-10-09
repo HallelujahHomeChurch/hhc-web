@@ -246,6 +246,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
     return () => { root.removeEventListener('keydown', keyboard); root.removeEventListener('pointermove', mouseMove); root.removeEventListener('focusin', showControls); root.removeEventListener('focusout', showControls); root.removeEventListener('pointerleave', showControls); video?.removeEventListener('play', showControls); video?.removeEventListener('pause', showControls); video?.removeEventListener('canplay', showControls); };
   });
 
+  const cancelScrub=()=>{dragging.current=false;setScrub(null);setPreview(null);};
   const current = scrub ?? time;
   const previewTime = scrub ?? preview;
   const cue = previewTime === null ? undefined : cues.find(cue => cue.start <= previewTime && cue.end > previewTime);
@@ -292,8 +293,8 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
           onPointerMove={event => { const bounds = event.currentTarget.getBoundingClientRect(); if (duration > 0 && bounds.width > 0) { setPreview(Math.min(duration - 0.001, Math.max(seekStart, seekStart + (event.clientX - bounds.left) / bounds.width * (duration - seekStart)))); setPreviewRequested(true); } }}
           onPointerDown={event => { dragging.current = true; setScrub(Number(event.currentTarget.value)); setPreviewRequested(true); event.currentTarget.setPointerCapture?.(event.pointerId); }}
           onChange={event => { const value = Number(event.target.value); if (dragging.current) setScrub(value); else seek(value); }}
-          onPointerUp={event => { seek(Number(event.currentTarget.value)); dragging.current = false; setScrub(null); setPreview(null); }}
-          onPointerCancel={() => {dragging.current = false; setScrub(null); setPreview(null);}} />
+          onPointerUp={event => { if(dragging.current)seek(Number(event.currentTarget.value));cancelScrub(); }}
+          onPointerCancel={cancelScrub} onLostPointerCapture={cancelScrub} />
         <div className={styles.preview} hidden={previewTime===null||duration<=0} aria-hidden="true" style={{left:`clamp(80px, ${percentage(previewTime??0)}, calc(100% - 80px))`}}>
           {!failed && !live ? <PreviewSprite key={playbackUrl} playbackUrl={playbackUrl} cue={cue} neighbor={neighbor}/> : null}
           <time>{playerClock(previewTime??0)}</time>
