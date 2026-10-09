@@ -12,7 +12,7 @@ import {useAccountAuth, useAccountIdentity, useBulletinAuthorization, useVideoAc
 import type {Locale} from '@/i18n/locales';
 import {captureHandledError} from '@/lib/observability';
 import {createMemberVideoApi} from './api';
-import {forgetVideoPosition,readVideoPosition,rememberVideoPosition,videoSearchHref,videoSearchRefreshEvent,type VideoSearchLabels} from './search';
+import {videoSearchHref,videoSearchRefreshEvent,type VideoSearchLabels} from './search';
 import {HlsPlayer, type PlayerLabels} from './HlsPlayer';
 import playerStyles from './PlayerChrome.module.css';
 import {playerClock} from './PlayerChrome';
@@ -47,7 +47,6 @@ export function MemberVideoZone({locale, messages, hero, view = 'watch', recordi
   const auth = useAccountAuth();
   const identity=useAccountIdentity();
   const access = useVideoAccess();
-  useEffect(()=>{if(auth.status==='anonymous')forgetVideoPosition();},[auth.status]);
   useEffect(() => {
     if (auth.status === 'anonymous' || access === 'denied') router.replace(`/${locale}`);
   }, [access, auth.status, locale, router]);
@@ -61,12 +60,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
   const router = useRouter();
   const authorization = useBulletinAuthorization();
   const identity = useAccountIdentity();
-  const [initialPosition] = useState(()=>view==='list' ? readVideoPosition(identity,locale,query) : null);
-  const returnPosition = useRef(initialPosition);
-  const [restoring,setRestoring] = useState(Boolean(initialPosition));
-  const [batches,setBatches] = useState(0);
   const batchesRef = useRef(0);
-  useEffect(()=>{batchesRef.current=batches;},[batches]);
   const previousLiveIDs = useRef(new Set<string>());
   const listGeneration = useRef(0);
   const api = useMemo(() => createMemberVideoApi(authorization), [authorization]);
@@ -123,7 +117,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
     request.then(({items,nextCursor}) => {
       if (controller.signal.aborted || generation!==listGeneration.current) return;
       const sorted = newestFirst(items);
-      setBatches(1);
+      batchesRef.current=1;
       setRecordings(sorted);
       setNextCursor(nextCursor);setMoreLoading(false);setMoreError(false);
       setSelectedId((current) => recordingId ? (sorted.some(item => item.id === recordingId) ? recordingId : null) : view === 'list' ? null : current && sorted.some((item) => item.id === current) ? current : sorted[0]?.id ?? null);
@@ -146,7 +140,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
       if(controller.signal.aborted)return;
       if(page.nextCursor===nextCursor)throw new Error('Recording cursor did not advance');
       setRecordings(current=>{const items=new Map((current??[]).map(item=>[item.id,item]));for(const item of page.items)items.set(item.id,item);return [...items.values()];});
-      setNextCursor(page.nextCursor);setBatches(value=>value+1);
+      setNextCursor(page.nextCursor);batchesRef.current+=1;
     } catch(error) {
       if(controller.signal.aborted)return;
       if(error instanceof HhcWebApiError&&error.status===401){router.replace(`/${locale}`);return;}
@@ -158,25 +152,13 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
     if(view!=='list')return;
     const refresh=()=>{
       ++listGeneration.current;moreAttempt.current?.abort();morePending.current=false;
-      returnPosition.current=null;setRestoring(false);setRecordings(null);setNextCursor(null);
-      batchesRef.current=0;setBatches(0);setMoreLoading(false);setMoreError(false);setLoadError(false);setRetry(value=>value+1);
+      setRecordings(null);setNextCursor(null);
+      batchesRef.current=0;setMoreLoading(false);setMoreError(false);setLoadError(false);setRetry(value=>value+1);
     };
     window.addEventListener(videoSearchRefreshEvent,refresh);
     return()=>window.removeEventListener(videoSearchRefreshEvent,refresh);
   },[view]);
 
-  useEffect(()=>{
-    const target=returnPosition.current;
-    if(!restoring||!target||!recordings||loadError||moreError||moreLoading||liveLoading)return;
-    if(batches<target.batches&&nextCursor!==null){void loadMore();return;}
-    const frame=window.requestAnimationFrame(()=>{
-      const anchor=document.getElementById(`recording-${target.anchor}`);
-      const top=anchor ? window.scrollY+anchor.getBoundingClientRect().top-target.offset : target.scrollY;
-      window.scrollTo({top:Math.max(0,Math.min(top,document.documentElement.scrollHeight-window.innerHeight))});
-      returnPosition.current=null;setRestoring(false);
-    });
-    return()=>window.cancelAnimationFrame(frame);
-  },[restoring,recordings,loadError,moreError,moreLoading,batches,nextCursor,loadMore,liveLoading]);
 
   useEffect(()=>{
     if(view==='list'&&invalidQuery)return;
@@ -365,30 +347,23 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
   const otherRecordings = recordings?.filter(item => item.id !== selectedId && !activeLiveIds.has(item.id)) ?? [];
   const visibleItems = recordingId ? otherRecordings.slice(0, 10) : otherRecordings;
   const liveLabels=messages.live??englishLiveLabels;
-  const cardLink=(id:string)=>videoSearchHref(locale,query,id);
-  const remember=(id:string)=>{
-    if(view!=='list')return;
-    const anchor=document.getElementById(`recording-${id}`);
-    rememberVideoPosition(identity,locale,query,{batches,anchor:id,offset:anchor?.getBoundingClientRect().top??0,scrollY:window.scrollY});
-  };
+  const cardLink=(id:string)=>`/${locale}/member-videos/${encodeURIComponent(id)}`;
   const searchMode=view==='list'&&Boolean(query||invalidQuery);
-  const searchLabels=messages.search??{results:'Results for {query}',empty:'No results for {query}',clear:'Clear search',back:'Back to search results',tooLong:'Search accepts one query of up to 100 characters.'};
-  const backToSearch=recordingId&&query?<Link className={zoneStyles.back} href={videoSearchHref(locale,query)}>{searchLabels.back}</Link>:null;
+  const searchLabels=messages.search??{results:'Results for {query}',empty:'No results for {query}',clear:'Clear search',tooLong:'Search accepts one query of up to 100 characters.'};
   const liveBadge=(item:MemberLiveRecording)=>liveViewerLabel(item.liveState,liveLabels);
   return (
     <main>
       {!searchMode?hero:null}
       <div className={`bg-[image:var(--hhc-page-gradient)] pb-14 ${recordingId ? zoneStyles.watchPage : 'py-10'}`}>
         <section className={`${zoneStyles.zone} ${recordingId ? zoneStyles.watch : searchMode ? zoneStyles.search : zoneStyles.library}`} aria-label={messages.listTitle}>
-          {!selected&&!selectedLive?backToSearch:null}
           {searchMode ? <h1 className={zoneStyles.searchHeading}>{searchLabels.results.replace('{query}',query)}</h1>:null}
-          {invalidQuery&&view==='list' ? <div role="alert" className="text-ink">{searchLabels.tooLong} <Link href={videoSearchHref(locale,'')} onClick={forgetVideoPosition} className="underline">{searchLabels.clear}</Link></div>:null}
+          {invalidQuery&&view==='list' ? <div role="alert" className="text-ink">{searchLabels.tooLong} <Link href={videoSearchHref(locale,'')} className="underline">{searchLabels.clear}</Link></div>:null}
           {!loadError && recordings && recordingId && !selected && !selectedLive && !liveLoading ? <p role="alert" className="text-ink">{messages.unavailable ?? messages.expired}</p> : null}
           {loadError ? <div role="alert" className="rounded-[14px] border border-panel-border bg-panel p-7 text-center text-ink">{messages.loadError}<button type="button" className="ml-4 min-h-11 rounded-full border border-[var(--hhc-control-border)] px-5 font-semibold" onClick={() => setRetry((value) => value + 1)}>{messages.retry}</button></div> : null}
           {!invalidQuery && !loadError && !recordings ? <p role="status" className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{messages.loading}</p> : null}
-          {!loadError && recordings?.length === 0 && nextCursor===null && !livestreams.length && !selectedLive ? <p className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{searchMode ? <>{searchLabels.empty.replace('{query}',query)} <Link href={videoSearchHref(locale,'')} onClick={forgetVideoPosition} className="underline">{searchLabels.clear}</Link></> : messages.empty}</p> : null}
+          {!loadError && recordings?.length === 0 && nextCursor===null && !livestreams.length && !selectedLive ? <p className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{searchMode ? <>{searchLabels.empty.replace('{query}',query)} <Link href={videoSearchHref(locale,'')} className="underline">{searchLabels.clear}</Link></> : messages.empty}</p> : null}
           {liveError?<p role="status" className="text-sm text-muted">{messages.loadError}</p>:null}
-          {recordingId&&selectedLive?<LiveRecordingPlayer key={selectedLive.captureId} api={api} recording={selectedLive} labels={messages} liveLabels={messages.live??englishLiveLabels} locale={locale} backToSearch={backToSearch} onVod={selected?.packageId===selectedLive.captureId?async bookmark=>{
+          {recordingId&&selectedLive?<LiveRecordingPlayer key={selectedLive.captureId} api={api} recording={selectedLive} labels={messages} liveLabels={messages.live??englishLiveLabels} locale={locale} onVod={selected?.packageId===selectedLive.captureId?async bookmark=>{
             if(await start(bookmark)){vodChosen.current=true;setSelectedLive(null);return true;}return false;
           }:undefined}/>:null}
           {selected && !selectedLive ? <div ref={playerSection} className={`${zoneStyles.video} grid min-w-0 scroll-mt-28 gap-4`}>
@@ -399,7 +374,6 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
             </div>}
             <h2 ref={playerTitle} tabIndex={-1} className="text-2xl font-semibold text-ink outline-none">{selected.title}</h2>
             <p className="text-sm text-muted">{messages.uploadedDate.replace('{date}', formatDate(selected.uploadedAt, locale))}</p>
-            {backToSearch}
             {selected.description?<details className="rounded-xl bg-panel p-4 text-ink"><summary className="min-h-11 cursor-pointer font-semibold focus-visible:outline-2 focus-visible:outline-primary">{messages.description}</summary><p className="whitespace-pre-wrap break-words">{selected.description}</p></details>:null}
             {playError ? <p role="alert" className="text-sm text-primary">{playError} <button type="button" className="underline" onClick={() => void start(vodBookmark.current)}>{messages.retry}</button></p> : null}
           </div> : null}
@@ -407,24 +381,24 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
             {recordingId ? <h2 className="sr-only">{messages.otherVideos??messages.listTitle}</h2>:null}
             <div className={recordingId ? zoneStyles.recommendations : searchMode ? zoneStyles.searchList : zoneStyles.grid}>
               {liveItems.map(item=><article id={`recording-${item.id}`} key={item.captureId} className={zoneStyles.card}>
-                <Link href={cardLink(item.id)} onClick={()=>remember(item.id)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
+                <Link href={cardLink(item.id)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
                   <div className="grid aspect-video place-items-center rounded-xl bg-neutral-950 text-white"><Play size={28} aria-hidden="true"/></div>
                   <span className={`${zoneStyles.badge} ${item.liveState==='live'?zoneStyles.liveBadge:zoneStyles.stateBadge}`}>{liveBadge(item)}</span>
                 </Link>
-                <div className={zoneStyles.info}><h3 className={zoneStyles.title}><Link href={cardLink(item.id)} onClick={()=>remember(item.id)} aria-label={`${item.title} — ${liveBadge(item)}`}>{item.title}</Link></h3><p className={zoneStyles.date}>{(messages.liveStartedDate??'{date}').replace('{date}',formatDate(item.createdAt,locale))}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}</div>
+                <div className={zoneStyles.info}><h3 className={zoneStyles.title}><Link href={cardLink(item.id)} aria-label={`${item.title} — ${liveBadge(item)}`}>{item.title}</Link></h3><p className={zoneStyles.date}>{(messages.liveStartedDate??'{date}').replace('{date}',formatDate(item.createdAt,locale))}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}</div>
               </article>)}
               {visibleItems.map(item=><article id={`recording-${item.id}`} key={item.id} className={zoneStyles.card}>
-                <Link href={cardLink(item.id)} onClick={()=>remember(item.id)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
+                <Link href={cardLink(item.id)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
                   <RecordingCover api={api} id={item.id} title={item.title} expiresAt={item.expiresAt} revision={item.selectedCoverId}/>
                   {item.durationSeconds ? <span className={zoneStyles.duration}>{playerClock(item.durationSeconds)}</span>:null}
                 </Link>
-                <div className={zoneStyles.info}><h3 className={zoneStyles.title}>{view==='list'||recordingId ? <Link href={cardLink(item.id)} onClick={()=>remember(item.id)}>{item.title}</Link>:item.title}</h3><p className={zoneStyles.date}>{formatDate(item.uploadedAt,locale)}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}
+                <div className={zoneStyles.info}><h3 className={zoneStyles.title}>{view==='list'||recordingId ? <Link href={cardLink(item.id)}>{item.title}</Link>:item.title}</h3><p className={zoneStyles.date}>{formatDate(item.uploadedAt,locale)}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}
                   {view!=='list'&&!recordingId ? <button type="button" className="min-h-11 justify-self-start text-primary underline focus-visible:outline-2 focus-visible:outline-primary" onClick={()=>select(item.id)}>{messages.select}</button>:null}
                 </div>
               </article>)}
             </div>
-            {view==='list' ? <LoadMoreTrigger hasMore={nextCursor!==null} loading={moreLoading||restoring&&!moreError} error={moreError} onLoadMore={loadMore} labels={{loadMore:messages.loadMore??'Load more',loading:messages.loading,retry:messages.retry}}/>:null}
-          </div>:view==='list'&&nextCursor!==null ? <LoadMoreTrigger hasMore loading={moreLoading||restoring&&!moreError} error={moreError} onLoadMore={loadMore} labels={{loadMore:messages.loadMore??'Load more',loading:messages.loading,retry:messages.retry}}/>:null}
+            {view==='list' ? <LoadMoreTrigger hasMore={nextCursor!==null} loading={moreLoading} error={moreError} onLoadMore={loadMore} labels={{loadMore:messages.loadMore??'Load more',loading:messages.loading,retry:messages.retry}}/>:null}
+          </div>:view==='list'&&nextCursor!==null ? <LoadMoreTrigger hasMore loading={moreLoading} error={moreError} onLoadMore={loadMore} labels={{loadMore:messages.loadMore??'Load more',loading:messages.loading,retry:messages.retry}}/>:null}
         </section>
       </div>
     </main>

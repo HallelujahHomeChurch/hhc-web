@@ -79,9 +79,17 @@ afterEach(() => {
 });
 
 describe('SiteHeader', () => {
-  it.each(['/zh-Hant/member-videos','/zh-Hant/member-videos/r1','/zh-Hant/member-videos-other'])('always returns home from the brand, including video routes: %s',(pathname)=>{
+  it.each([
+    ['/zh-Hant/member-videos','/zh-Hant','首頁'],
+    ['/zh-Hant/member-videos/','/zh-Hant','首頁'],
+    ['/zh-Hant/member-videos/r1','/zh-Hant/member-videos','影音專區'],
+    ['/zh-Hant/member-videos-other','/zh-Hant','首頁'],
+    ['/zh-Hant/news','/zh-Hant','首頁']
+  ])('routes the brand from %s to %s',(pathname,href,label)=>{
     render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname={pathname} sessionClient={anonymousSessionClient}/></NextIntlClientProvider>);
-    expect(screen.getByRole('link',{name:/哈利路亞家教會/})).toHaveAttribute('href','/zh-Hant');
+    const brand=screen.getByRole('link',{name:/哈利路亞家教會/});
+    expect(brand).toHaveAttribute('href',href);
+    expect(brand).toHaveAttribute('aria-label',`${label} · 哈利路亞家教會`);
     expect(screen.queryByRole('link',{name:'首頁'})).not.toBeInTheDocument();
   });
 
