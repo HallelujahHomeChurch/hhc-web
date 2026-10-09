@@ -1,3 +1,4 @@
+import {Blob} from 'node:buffer';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {DownloadButton} from './DownloadButton';
@@ -10,9 +11,57 @@ const bulletin = {
   issueNumber: 1737, date: '2026-09-13', title: '週報', subtitle: '', downloadName: '1737.pdf'
 };
 
-afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); captureHandledError.mockClear(); localStorage.clear(); });
+afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); captureHandledError.mockClear(); localStorage.clear(); });
 
 describe('DownloadButton', () => {
+  it('keeps the PWA file readable after opening and retrying, then releases it on unmount', async () => {
+    vi.stubGlobal('Blob', Blob);
+    vi.stubGlobal('matchMedia', () => ({matches: true}));
+    const workflow = {
+      createDownloadJob: vi.fn().mockResolvedValue({id: 'job-1', operationProgress: {status: 'ready', stage: 'ready', percent: 100, updatedAt: '2026-09-21T00:00:00Z', retryAfterMs: 1_000}}),
+      getDownloadJob: vi.fn(),
+      downloadPreparedBulletin: vi.fn().mockResolvedValue(new Response('pdf'))
+    };
+    const view = render(<DownloadButton bulletin={bulletin} workflow={workflow} label="下載週報" />);
+    fireEvent.click(screen.getByRole('button', {name: '下載週報'}));
+    const link = await screen.findByRole('link', {name: '下載週報'});
+    const url = link.getAttribute('href')!;
+    link.addEventListener('click', (event) => event.preventDefault());
+    expect(await (await fetch(url)).text()).toBe('pdf');
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      fireEvent.click(link);
+      expect(await (await fetch(url)).text()).toBe('pdf');
+      expect(screen.getByRole('link', {name: '下載週報'})).toHaveAttribute('href', url);
+    }
+    view.unmount();
+    await expect(fetch(url)).rejects.toThrow();
+  });
+
+  it('keeps a browser download readable beyond the handoff and releases replaced files', async () => {
+    vi.stubGlobal('Blob', Blob);
+    const workflow = {
+      createDownloadJob: vi.fn().mockResolvedValue({id: 'job-1', operationProgress: {status: 'ready', stage: 'ready', percent: 100, updatedAt: '2026-09-21T00:00:00Z', retryAfterMs: 1_000}}),
+      getDownloadJob: vi.fn(),
+      downloadPreparedBulletin: vi.fn().mockImplementation(() => Promise.resolve(new Response('pdf')))
+    };
+    const urls: string[] = [];
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) { urls.push(this.href); });
+    const view = render(<DownloadButton bulletin={bulletin} workflow={workflow} label="下載週報" />);
+    fireEvent.click(screen.getByRole('button', {name: '下載週報'}));
+    await waitFor(() => expect(urls).toHaveLength(1));
+    expect(await (await fetch(urls[0])).text()).toBe('pdf');
+    await act(async () => { await new Promise((resolve) => window.setTimeout(resolve, 1_100)); });
+    expect(await (await fetch(urls[0])).text()).toBe('pdf');
+
+    fireEvent.click(screen.getByRole('button', {name: '下載週報'}));
+    await waitFor(() => expect(urls).toHaveLength(2));
+    await expect(fetch(urls[0])).rejects.toThrow();
+    expect(await (await fetch(urls[1])).text()).toBe('pdf');
+    view.unmount();
+    await expect(fetch(urls[1])).rejects.toThrow();
+  });
+
   it('does not resume a download from a different series', () => {
     localStorage.setItem(`weekly-download-job:anonymous:${bulletin.issueId}:${bulletin.locale}`, JSON.stringify({idempotencyKey: 'old', jobId: 'other-series'}));
     localStorage.setItem(`weekly-download-job:anonymous:${bulletin.issueId}:children:${bulletin.locale}`, JSON.stringify({idempotencyKey: 'other', jobId: 'children-job'}));
