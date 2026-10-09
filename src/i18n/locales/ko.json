@@ -396,6 +396,9 @@
     "empty": "아직 게시된 주보가 없습니다."
   },
   "memberVideos": {
+    "theaterMode": "영화관 모드",
+    "exitTheaterMode": "영화관 모드 종료",
+    "tapToPlay": "탭하여 재생",
     "previousVideo": "이전 동영상",
     "nextVideo": "다음 동영상",
     "loadMore": "더 보기",

@@ -396,6 +396,9 @@
     "empty": "目前尚未发布周报。"
   },
   "memberVideos": {
+    "theaterMode": "影院模式",
+    "exitTheaterMode": "退出影院模式",
+    "tapToPlay": "点一下开始播放",
     "previousVideo": "上一部影片",
     "nextVideo": "下一部影片",
     "loadMore": "加载更多",

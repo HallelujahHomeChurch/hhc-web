@@ -10,7 +10,7 @@ type Quality = 'auto' | '480p' | '720p' | '1080p';
 export type PlayerLabels = {
   quality:string; auto:string; play:string; pause:string; mute:string; unmute:string;
   seek:string; volume:string; fullscreen:string; exitFullscreen:string; fullscreenError:string; playbackSpeed:string;
-  previousVideo?:string; nextVideo?:string;
+  previousVideo?:string; nextVideo?:string; theaterMode?:string; exitTheaterMode?:string; tapToPlay?:string;
   settings:string; togglePlayback:string; privateCopy:string; buffering:string;
 };
 type Props = {
@@ -31,6 +31,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
   const container=useRef<HTMLDivElement>(null), engine=useRef<Hls|null>(null);
   const nativeSwitch=useRef<AbortController|null>(null);
   const nativePosition=useRef<{time:number;playing:boolean;rate:number}|null>(null);
+  const [autoplayBlocked,setAutoplayBlocked]=useState(false);
   const [mode,setMode]=useState<'loading'|'mse'|'native'|'error'>('loading');
   const [quality,setQuality]=useState<Quality>(resume?.quality ?? 'auto');
   const intent=useRef<PlaybackIntent>(resume?.intent ?? 'followLive'), positioned=useRef(false), closing=useRef(false);
@@ -56,7 +57,12 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
     const video=videoRef.current;
     if(!video)return;
     let cancelled=false;closing.current=false;
-    const autoplay=()=>{if(!initialBookmark.current?.paused)void video.play().catch(()=>{});};
+    const autoplay=()=>{
+      if(initialBookmark.current?.paused)return;
+      void video.play().catch((error:unknown)=>{
+        if(!cancelled && error instanceof DOMException && error.name==='NotAllowedError')setAutoplayBlocked(true);
+      });
+    };
     void import('hls.js').then(({default:Hls})=>{
       if(cancelled)return;
       if(Hls.isSupported()) {
@@ -142,7 +148,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
   };
   return <div ref={container} tabIndex={0} role="region" aria-label={`${title} — ${labels.togglePlayback}`} className={styles.player}>
     <video ref={videoRef} poster={poster} playsInline preload="metadata" controlsList="nodownload noremoteplayback" disablePictureInPicture disableRemotePlayback crossOrigin="use-credentials" aria-label={title} className="h-full w-full object-contain"
-      onError={handleError}/>
-    <PlayerChrome container={container} videoRef={videoRef} playbackUrl={playbackUrl} watermark={watermark} labels={labels} quality={quality} qualities={qualities} previousHref={previousHref} nextHref={nextHref} loading={mode==='loading'} failed={mode==='error'} onQualityChange={changeQuality} onPlayingChange={onPlayingChange} live={playbackMode==='live'?live:undefined} onDvr={dvr} onReturnToLive={returnToLive}/>
+      onPlay={()=>setAutoplayBlocked(false)} onError={handleError}/>
+    <PlayerChrome container={container} videoRef={videoRef} playbackUrl={playbackUrl} watermark={watermark} labels={labels} quality={quality} qualities={qualities} previousHref={previousHref} nextHref={nextHref} autoplayBlocked={autoplayBlocked} loading={mode==='loading'} failed={mode==='error'} onQualityChange={changeQuality} onPlayingChange={onPlayingChange} live={playbackMode==='live'?live:undefined} onDvr={dvr} onReturnToLive={returnToLive}/>
   </div>;
 }

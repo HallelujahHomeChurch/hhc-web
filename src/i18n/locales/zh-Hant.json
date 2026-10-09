@@ -396,6 +396,9 @@
     "empty": "目前尚未發布週報。"
   },
   "memberVideos": {
+    "theaterMode": "劇院模式",
+    "exitTheaterMode": "結束劇院模式",
+    "tapToPlay": "點一下開始播放",
     "previousVideo": "上一部影片",
     "nextVideo": "下一部影片",
     "loadMore": "載入更多",
