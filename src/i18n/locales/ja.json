@@ -225,7 +225,17 @@
       "submit": "検索",
       "clear": "検索をクリア",
       "close": "検索を閉じる",
-      "placeholder": "検索"
+      "placeholder": "検索",
+      "unavailable": "検索（準備中）",
+      "video": {
+        "label": "動画を検索",
+        "placeholder": "動画のタイトルや説明を検索",
+        "results": "「{query}」の検索結果",
+        "empty": "「{query}」に一致する動画はありません",
+        "clear": "検索をクリア",
+        "back": "検索結果に戻る",
+        "tooLong": "検索は100文字以内の1件のクエリにしてください。"
+      }
     }
   },
   "home": {

@@ -11,6 +11,9 @@ import {AccountControlProvider, BulletinAccessGate, useAccountAuth} from './Acco
 import {SiteHeader} from './SiteHeader';
 import {InitialLoadingBoundary} from './InitialLoadingBoundary';
 
+const searchRouter = vi.hoisted(() => ({push:vi.fn()}));
+vi.mock('next/navigation',()=>({useRouter:()=>searchRouter}));
+
 const statementStripState = vi.hoisted(() => ({active: false, notice: false}));
 
 vi.mock('@/components/statements/StatementProvider', () => ({
@@ -82,11 +85,11 @@ describe('SiteHeader', () => {
     expect(screen.queryByRole('link',{name:'首頁'})).not.toBeInTheDocument();
   });
 
-  it('keeps a UI-only search available to anonymous visitors', async () => {
-    render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" sessionClient={anonymousSessionClient} /></NextIntlClientProvider>);
-    const search = screen.getByRole('button', {name: '搜尋'});
+  it('keeps video search available on the video route before qualification resolves', async () => {
+    render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/member-videos" sessionClient={anonymousSessionClient} /></NextIntlClientProvider>);
+    const search = screen.getByRole('button', {name: '搜尋影片'});
     fireEvent.click(search);
-    const input = await screen.findByRole('searchbox', {name: '搜尋'});
+    const input = await screen.findByRole('searchbox', {name: '搜尋影片'});
     await waitFor(() => expect(input).toHaveFocus());
     fireEvent.change(input, {target: {value: '主日'}});
     fireEvent.click(screen.getByRole('button', {name: '關閉搜尋'}));
@@ -98,14 +101,13 @@ describe('SiteHeader', () => {
   it('reserves center navigation only when the expanded field cannot fit beside it', async () => {
     let width = 1024;
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
-      const node = this;
-      const bounds = node.classList.contains('site-header-row') ? [0, width] : node.classList.contains('site-header-brand') ? [24, 240] : node.classList.contains('site-header-account') ? [width - 64, width - 24] : node.id === 'site-navigation' ? [width / 2 - 220, width / 2 + 220] : [0, 0];
+      const bounds = this.classList.contains('site-header-row') ? [0, width] : this.classList.contains('site-header-brand') ? [24, 240] : this.classList.contains('site-header-account') ? [width - 64, width - 24] : this.id === 'site-navigation' ? [width / 2 - 220, width / 2 + 220] : [0, 0];
       return {x: bounds[0], y: 0, left: bounds[0], right: bounds[1], top: 0, bottom: 76, width: bounds[1] - bounds[0], height: 76, toJSON: () => ({})};
     });
-    render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" sessionClient={anonymousSessionClient} /></NextIntlClientProvider>);
+    render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/member-videos" sessionClient={anonymousSessionClient} /></NextIntlClientProvider>);
     const header = screen.getByRole('banner');
     await waitFor(() => expect(header).toHaveAttribute('data-search-replaces-nav', 'true'));
-    fireEvent.click(screen.getByRole('button', {name: '搜尋'}));
+    fireEvent.click(screen.getByRole('button', {name: '搜尋影片'}));
     expect(header).toHaveAttribute('data-search-open', 'true');
     width = 1920;
     fireEvent(window, new Event('resize'));
@@ -608,4 +610,9 @@ describe('SiteHeader', () => {
     </NextIntlClientProvider>);
     expect(screen.queryByRole('complementary', {name: '瀏覽器開啟提示'})).not.toBeInTheDocument();
   });
+});
+
+it.each(['/zh-Hant','/zh-Hant/news','/zh-Hant/member-videos-other'])('shows a disabled search on other routes: %s',pathname=>{
+ render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname={pathname} sessionClient={anonymousSessionClient}/></NextIntlClientProvider>);
+ expect(screen.getByRole('button',{name:'搜尋（尚未開放）'})).toBeDisabled();
 });

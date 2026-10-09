@@ -5,6 +5,7 @@ import {SiteHeader} from './SiteHeader';
 type SiteHeaderServerProps = {
   locale: Locale;
   pathname: string;
+  searchQuery?: string;
 };
 
 export async function SiteHeaderServer(props: SiteHeaderServerProps) {

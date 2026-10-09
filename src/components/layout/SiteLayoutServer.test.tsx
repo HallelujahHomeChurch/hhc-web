@@ -32,6 +32,7 @@ describe('site layout server wrappers', () => {
     expectTypeOf<Parameters<typeof SiteHeaderServer>[0]>().toEqualTypeOf<{
       locale: Locale;
       pathname: string;
+      searchQuery?: string;
     }>();
   });
 

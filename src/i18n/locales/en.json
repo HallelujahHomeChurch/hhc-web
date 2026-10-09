@@ -225,7 +225,17 @@
       "submit": "Search",
       "clear": "Clear search",
       "close": "Close search",
-      "placeholder": "Search"
+      "placeholder": "Search",
+      "unavailable": "Search (not yet available)",
+      "video": {
+        "label": "Search videos",
+        "placeholder": "Search video titles or descriptions",
+        "results": "Results for “{query}”",
+        "empty": "No videos match “{query}”",
+        "clear": "Clear search",
+        "back": "Back to search results",
+        "tooLong": "Search accepts one query of up to 100 characters."
+      }
     }
   },
   "home": {

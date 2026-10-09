@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {BookOpenText, Newspaper, PlaySquare, UsersRound} from 'lucide-react';
 import {useTranslations} from 'next-intl';
+import {VideoSearchField} from '@/features/member-videos/VideoSearchField';
 import {ExpandableSearchField} from '@hallelujahhomechurch/ui';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
 import type {SiteLayout} from '@/features/site-layout/types';
@@ -21,6 +22,7 @@ export type SiteHeaderProps = {
   pathname: string;
   sessionClient?: AccountSessionClient;
   showNavigation?: boolean;
+  searchQuery?: string;
 };
 
 const subscribeToStandaloneMode = () => () => undefined;
@@ -51,7 +53,7 @@ export function SiteHeader(props: SiteHeaderProps) {
   return <AccountControlScope client={props.sessionClient} labels={accountLabels}><SiteHeaderContent {...props} /></AccountControlScope>;
 }
 
-function SiteHeaderContent({layout, locale, pathname, showNavigation = true}: SiteHeaderProps) {
+function SiteHeaderContent({layout, locale, pathname, showNavigation = true, searchQuery = ''}: SiteHeaderProps) {
   const lineNotice = useLineBrowserNotice(pathname);
   const t = useTranslations('site');
   const homeHref = `/${locale}`;
@@ -66,8 +68,11 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true}: Si
     navItems.find(item => item.key === 'literature-ministry') ?? navItems.find(item => item.key === 'news'),
     navItems.find(item => item.key === 'member-videos') ?? navItems.find(item => item.key === 'about')
   ].filter((item): item is typeof navItems[number] => Boolean(item));
-  const [searchState, setSearchState] = useState({pathname, open: false});
-  const searchOpen = searchState.pathname === pathname && searchState.open;
+  const videoRoot = `/${locale}/member-videos`;
+  const videoSearchEnabled = pathname === videoRoot || pathname.startsWith(`${videoRoot}/`);
+  const searchKey = `${pathname}:${searchQuery}`;
+  const [searchState, setSearchState] = useState({pathname:searchKey, open: false});
+  const searchOpen = searchState.pathname === searchKey && searchState.open;
   const rowRef = useRef<HTMLDivElement>(null);
   const brandRef = useRef<HTMLAnchorElement>(null);
   const navRef = useRef<HTMLElement>(null);
@@ -162,7 +167,7 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true}: Si
             </nav> : null}
             <div className="site-header-controls ml-auto flex shrink-0 items-center gap-4">
               <div className="site-header-search">
-                <ExpandableSearchField key={pathname} label={t('search.label')} submitLabel={t('search.submit')} clearLabel={t('search.clear')} closeLabel={t('search.close')} placeholder={t('search.placeholder')} onExpandedChange={open => setSearchState({pathname, open})} />
+                {videoSearchEnabled ? <VideoSearchField key={searchKey} locale={locale} query={searchQuery} isLibrary={pathname===videoRoot} label={t('search.video.label')} submitLabel={t('search.submit')} clearLabel={t('search.clear')} closeLabel={t('search.close')} placeholder={t('search.video.placeholder')} onExpandedChange={open=>setSearchState({pathname:searchKey,open})}/> : <ExpandableSearchField label={t('search.unavailable')} submitLabel={t('search.submit')} clearLabel={t('search.clear')} isDisabled/>}
               </div>
               <div ref={accountRef} className="site-header-account shrink-0" data-mobile-retained={!showNavigation}><AccountControlView /></div>
             </div>

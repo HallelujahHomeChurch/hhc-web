@@ -515,6 +515,7 @@
 /* Integrate shared controls in their layer so local sizing can override defaults. */
 @layer hhc.components {
   .site-header-search .hhc-expandable-search__field input { font-size: 16px; }
+  .site-header-search .hhc-expandable-search__trigger:disabled { opacity: .4; cursor: not-allowed; }
   @media (min-width: 768px) {
     .site-header[data-search-open="true"][data-search-replaces-nav="true"] .hhc-expandable-search { width: 100%; }
   }
