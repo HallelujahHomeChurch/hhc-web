@@ -682,3 +682,7 @@ it('waits for a slower native desktop double click before issuing live pause com
 it('cancels a scrub when pointer capture is lost without committing a seek',async()=>{
  const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));const video=p.videoRef.current!;Object.defineProperty(video,'duration',{value:200,configurable:true});video.currentTime=30;fireEvent.durationChange(video);fireEvent.timeUpdate(video);const input=screen.getByRole('slider',{name:'Playback position'});fireEvent.pointerDown(input);fireEvent.change(input,{target:{value:'150'}});fireEvent.lostPointerCapture(input);fireEvent.pointerUp(input);expect(video.currentTime).toBe(30);
 });
+
+it('disables quality choices if media fails while the submenu is open',async()=>{
+ const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));openSubmenu('Quality');act(()=>engine.instances[0].listeners.error('error',{fatal:true}));for(const option of screen.getAllByRole('menuitemradio'))expect(option).toBeDisabled();expect(engine.instances[0].recoverMediaError).not.toHaveBeenCalled();
+});

@@ -74,6 +74,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
     };
     void import('hls.js').then(({default:Hls})=>{
       if(cancelled)return;
+      setActiveHeight(null);
       if(Hls.isSupported()) {
         const hls=new Hls({
           enableWorker:true, debug:false, maxBufferLength:60, maxMaxBufferLength:120,
