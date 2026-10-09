@@ -43,7 +43,7 @@ it('retains Traditional and Simplified offline editions independently with verif
   expect((await readOfflineSave(route,now))?.status).toBe('available');
 });
 
-it.each([undefined,'v3','v4','v5','v6'] as const)('retains both language editions with renderer %s and unchanged seven-day expiry',async rendererVersion=>{
+it.each([undefined,'v3','v4','v5','v6','v7'] as const)('retains both language editions with renderer %s and unchanged seven-day expiry',async rendererVersion=>{
   const epoch=await activateOfflineAccount(route.accountId);
   for(const contentLocale of ['zh-Hant','zh-Hans'] as const){
     const value=readerFixture(contentLocale,rendererVersion),selector={...route,contentLocale};
@@ -70,6 +70,23 @@ it.each(['digest','asset'] as const)('rejects an altered V6 %s without replacing
   expect(saved?.status).toBe('available');
   expect(saved?.save.value.access.revision).toBe(1);
   expect(saved?.save.value.document.content.layoutManifest.rendererVersion).toBe('v1');
+});
+
+it.each([['zh-Hant', 'v7', 32], ['zh-Hans', 'v7', 40], ['zh-Hans', 'v6', 32]] as const)('bounds %s %s offline streaming at %s MiB without replacing saved content', async (contentLocale, version, limit) => {
+  const selector = {...route, contentLocale};
+  const epoch = await activateOfflineAccount(route.accountId);
+  await commitOfflineSave(await stageOfflineSave(readerFixture(contentLocale), selector, fetchAsset, now), epoch, now);
+  const cancel = vi.fn();
+  let chunks = 0;
+  const fetchOversized = async () => new Response(new ReadableStream({
+    pull(controller) {chunks++; controller.enqueue(new Uint8Array(1024 * 1024));},
+    cancel
+  }));
+  await expect(stageOfflineSave(readerFixture(contentLocale, version), selector, fetchOversized, now)).rejects.toThrow('offline_asset_too_large');
+  expect(cancel).toHaveBeenCalledOnce();
+  expect(chunks).toBeGreaterThanOrEqual(limit);
+  expect(chunks).toBeLessThanOrEqual(limit + 1);
+  expect((await readOfflineSave(selector, now))?.save.value.document.content.layoutManifest.rendererVersion).toBe(contentLocale === 'zh-Hans' ? 'v2' : 'v1');
 });
 
 it('does not retain partial resources or replace a saved revision when resource staging fails', async () => {
