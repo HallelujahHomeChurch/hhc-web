@@ -150,7 +150,9 @@
       "memberVideos": "影音专区",
       "menu": "选单",
       "openMenu": "开启菜单",
-      "closeMenu": "关闭菜单"
+      "closeMenu": "关闭菜单",
+      "my": "我的",
+      "public": "教会信息"
     },
     "account": {
       "menu": "帐号菜单",
@@ -217,6 +219,13 @@
       "notifications": "网站通知",
       "notificationDescription": "订阅网站通知，接收周报与重要消息。",
       "email": "Email 订阅设置"
+    },
+    "search": {
+      "label": "搜索",
+      "submit": "搜索",
+      "clear": "清除搜索",
+      "close": "关闭搜索",
+      "placeholder": "搜索"
     }
   },
   "home": {

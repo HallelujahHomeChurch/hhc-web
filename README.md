@@ -109,6 +109,23 @@ Search is planned separately in
 [the next-phase search plan](docs/superpowers/plans/2026-10-08-member-video-search.md).
 Banner font regeneration includes the member-video strings in all five locales.
 
+## Header search and mobile navigation
+
+The mobile bar has two content slots and an account slot on the right. The first
+slot prefers authorized literature ministry over news; the second prefers enabled,
+authorized recordings over About. Hidden projected items are omitted. The brand
+always returns to the site home, including from video pages. Public news/About
+remain available on the home page and in the footer. Desktop navigation retains
+its existing destinations; simplified legal pages retain header account access.
+
+Search is visible to every visitor. The shared expandable field exposes only UI
+behavior in this phase: draft entry, clear, close, focus restoration and IME
+handling. It performs no query requests or results navigation. Mobile expansion
+replaces the entire header row with an opaque surface; desktop expansion replaces
+center navigation only if the measured space cannot fit both. Search and an open
+mobile account panel keep mobile chrome visible. Context-specific video/global
+search providers and results are a later delivery.
+
 ## Office integration
 
 The HTTPS-only Windows Docker Desktop stack is documented in

@@ -150,7 +150,9 @@
       "memberVideos": "Member Videos",
       "menu": "Menu",
       "openMenu": "Open menu",
-      "closeMenu": "Close menu"
+      "closeMenu": "Close menu",
+      "my": "My account",
+      "public": "Church information"
     },
     "account": {
       "menu": "Account menu",
@@ -217,6 +219,13 @@
       "notifications": "Website notifications",
       "notificationDescription": "Receive weekly bulletins and important website updates.",
       "email": "Email subscription settings"
+    },
+    "search": {
+      "label": "Search",
+      "submit": "Search",
+      "clear": "Clear search",
+      "close": "Close search",
+      "placeholder": "Search"
     }
   },
   "home": {
