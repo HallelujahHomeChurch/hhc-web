@@ -25,16 +25,6 @@ export function sourcePageStart(document: MemberOnlineDocument['content'], index
   return first ? {sentenceId: first.sentenceId, start: first.start, end: first.start + 1} : undefined;
 }
 
-/** Translate the existing body column; never resize text or move it to another page. */
-export function centeredBodyOffset(document: Pick<MemberOnlineDocument['content'], 'components' | 'layoutManifest'>, pageId: string) {
-  const slots = document.layoutManifest.pages.find(page => page.pageId === pageId)?.slots ?? [];
-  const body = new Set(document.components.filter(component => component.type === 'bodySection').map(component => component.id));
-  if (!slots.length || slots.some(slot => !body.has(slot.componentId))) return 0;
-  const left = Math.min(...slots.map(slot => slot.box.x));
-  const right = Math.max(...slots.map(slot => slot.box.x + slot.box.width));
-  return (1 - right - left) / 2;
-}
-
 export type ReaderZoom = number;
 export function clampPaperZoom(value: number) {return Number.isFinite(value) ? Math.max(1, Math.min(4, value)) : 1;}
 export function fittedPageScale(page: {width: number; height: number}, viewport: {width: number; height: number}) {
