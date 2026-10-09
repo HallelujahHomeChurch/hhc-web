@@ -157,7 +157,7 @@ describe('protected weekly reader', () => {
     expect(document.documentElement).toHaveAttribute('data-theme', 'light');
     localStorage.removeItem('hhc-reader-theme');
   });
-  it.each(['chapter', 'page', 'search', 'resume', 'resume-cover'])('switches mobile chapters via %s while preserving source anchors', async route => {
+  it.each(['chapter', 'page', 'search', 'resume', 'resume-cover', 'pull', 'pull-selection', 'pull-pinch'])('switches mobile chapters via %s while preserving source anchors', async route => {
     Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect(0, 500, 300, 30)});
     vi.spyOn(window, 'scrollBy').mockImplementation(() => {});
     vi.stubGlobal('matchMedia', vi.fn(() => ({matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn()})));
@@ -194,6 +194,30 @@ describe('protected weekly reader', () => {
       fireEvent.click(within(screen.getByRole('navigation', {name: props.messages.chapters})).getByRole('button', {name: 'Articles'}));
     }
     if (route === 'page') choosePage(2);
+    if (route.startsWith('pull')) {
+      const viewport = container.querySelector('.reader-viewport')!;
+      Object.defineProperties(viewport, {scrollHeight: {value: 1000}, clientHeight: {value: 400}, scrollTop: {value: 600, writable: true}});
+      const text = container.querySelector('[data-sentence-id="s0"]')!;
+      const touch = (y: number) => ({identifier: 1, clientX: 100, clientY: y});
+      fireEvent.pointerDown(text, {pointerType: 'touch', pointerId: 1});
+      fireEvent.touchStart(text, {touches: [touch(200)]});
+      if (route === 'pull-selection') {
+        const range = document.createRange(); range.selectNodeContents(text);
+        window.getSelection()!.removeAllRanges(); window.getSelection()!.addRange(range);
+        expect(window.getSelection()!.toString()).toBe('內容0。');
+        fireEvent(document, new Event('selectionchange'));
+      }
+      if (route === 'pull-pinch') fireEvent.touchStart(text, {touches: [touch(200), {...touch(210), identifier: 2}]});
+      fireEvent.touchMove(text, {touches: [touch(100)]});
+      fireEvent.touchEnd(text, {touches: [], changedTouches: [touch(100)]});
+      fireEvent.pointerUp(text, {pointerType: 'touch', pointerId: 1});
+      if (route !== 'pull') {
+        expect(container.querySelector('[data-chapter="cover"]')).toBeInTheDocument();
+        expect(container.querySelector('[data-chapter="body"]')).toBeNull();
+        fireEvent.keyDown(document, {key: 'Escape'});
+        fireEvent.click(screen.getByRole('button', {name: props.messages.next}));
+      }
+    }
     if (route === 'search') {
       fireEvent.click(screen.getByRole('button', {name: props.messages.search}));
       fireEvent.change(screen.getByRole('searchbox'), {target: {value: '內容1'}});
@@ -204,6 +228,18 @@ describe('protected weekly reader', () => {
     expect(container.querySelector('[data-sentence-id="credit-sentence"]')).toBeNull();
     expect(container.querySelector('[data-chapter="cover"]')).toBeNull();
     expect(container.querySelector('[data-chapter="worship"]')).toBeNull();
+    if (route === 'pull') {
+      const viewport = container.querySelector('.reader-viewport')!;
+      viewport.scrollTop = 0;
+      const text = container.querySelector('[data-sentence-id="s1"]')!;
+      const touch = (y: number) => ({identifier: 1, clientX: 100, clientY: y});
+      fireEvent.pointerDown(text, {pointerType: 'touch', pointerId: 1});
+      fireEvent.touchStart(text, {touches: [touch(100)]});
+      fireEvent.touchMove(text, {touches: [touch(200)]});
+      fireEvent.touchEnd(text, {touches: [], changedTouches: [touch(200)]});
+      expect(container.querySelector('[data-chapter="cover"]')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', {name: props.messages.next}));
+    }
     fireEvent.click(screen.getByRole('button', {name: props.messages.next}));
     expect(container.querySelector('[data-chapter="worship"] [data-sentence-id="s2"]')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', {name: props.messages.next}));
