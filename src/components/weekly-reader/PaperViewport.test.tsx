@@ -6,16 +6,17 @@ import {verifyReaderAccess} from '@/features/weekly-reader/api';
 const value = readerFixture();
 const document = verifyReaderAccess(value, {accountId: 'account-a', issueNumber: 1739, series: 'general', contentLocale: 'zh-Hant'});
 const props = {document, metadata: value.document.canonicalMetadata, traceCode: value.access.traceCode, page: 2, zoom: 1, viewport: {width: 600, height: 800}, direction: 'vertical' as const};
-it('aligns back-cover frames outside text and separates sections without changing source content', () => {
+it.each([true, false])('aligns back-cover frames outside text with summary frame %s without changing source content', (hasSummaryFrame) => {
   const source = structuredClone(document);
   source.components[1] = {...source.components[1], type: 'announcements'} as typeof source.components[number];
   source.components[2] = {...source.components[2], type: 'victoriesAndPrayers'} as typeof source.components[number];
   const page = source.layoutManifest.pages[0];
   page.slots = source.layoutManifest.pages.slice(0, 3).map((p, i) => ({...p.slots[0], box: {x: .04, y: .1 + i * .2, width: .92, height: .18}}));
   page.fixedSlots = (['summaryFrame', 'announcementsFrame', 'prayersFrame'] as const).map((element, i) => ({id: element, element, box: {x: .04, y: .09 + i * .2, width: .92, height: .2}, style: {fontSize: 11, lineHeight: 14, indent: 0, firstLineIndent: 0, spaceBefore: 0, spaceAfter: 0}}));
+  if (!hasSummaryFrame) page.fixedSlots.shift();
   const before = JSON.stringify(source);
   const result = paperPresentation(source).layoutManifest.pages[0];
-  const frames = result.fixedSlots!;
+  const frames = hasSummaryFrame ? result.fixedSlots! : [{box: result.slots[0].box}, ...result.fixedSlots!];
   expect(frames[1].box.x).toBe(frames[2].box.x);
   expect(frames[1].box.width).toBe(frames[2].box.width);
   for (let i = 1; i < 3; i++) {
