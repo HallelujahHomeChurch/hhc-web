@@ -313,6 +313,9 @@
       padding-bottom: calc(84px + env(safe-area-inset-bottom));
     }
 
+    body { --site-watch-offset:var(--site-top-chrome-height,0px); }
+    body:has(.site-top-chrome[data-mobile-hidden="true"]):not(:has(.site-top-chrome:focus-within,.site-header-account[data-mobile-retained="true"] [aria-expanded="true"],.site-mobile-account [aria-expanded="true"])) { --site-watch-offset:0px; }
+
     .site-top-chrome[data-mobile-hidden="true"] {
       transform: translateY(-100%);
     }
