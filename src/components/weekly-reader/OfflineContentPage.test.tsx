@@ -4,9 +4,11 @@ import {readerFixture} from '@/features/weekly-reader/test-fixture';
 import {getMessages} from '@/i18n/messages';
 import {OfflineContentPage} from './OfflineContentPage';
 const store = vi.hoisted(() => ({supportsOfflineReader: () => true, getOfflineIdentity: vi.fn(), listOfflineSaves: vi.fn(), readOfflineSave: vi.fn(), removeOfflineSave: vi.fn(), hasPendingReaderWrites: vi.fn().mockResolvedValue(false)}));
+const identity = vi.hoisted(() => ({accountId: null as string | null}));
 vi.mock('@/features/weekly-reader/offline-store', () => store);
 vi.mock('@/features/weekly-reader/offline-session', () => ({watchOfflineAccount: () => () => {}}));
-vi.mock('@/components/layout/AccountControl', () => ({useAccountIdentity: () => null}));
+vi.mock('@/components/layout/AccountControl', () => ({useAccountIdentity: () => identity.accountId}));
+beforeEach(() => {identity.accountId = null;});
 beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); store.getOfflineIdentity.mockResolvedValue({accountId: 'account-a', epoch: 1}); store.listOfflineSaves.mockResolvedValue([{selector: {accountId: 'account-a', issueNumber: 1739, series: 'general', contentLocale: 'zh-Hant'}, value: readerFixture(), size: 1024}]); store.readOfflineSave.mockResolvedValue({status: 'expired'}); store.removeOfflineSave.mockResolvedValue(undefined);});
 it('lists only the saved account with expiry and a reconnect state, without rendering private body text', async () => {
   render(<OfflineContentPage locale="en" messages={getMessages('en').weeklyReader}/>);
@@ -17,4 +19,14 @@ it('lists only the saved account with expiry and a reconnect state, without rend
   vi.spyOn(window, 'confirm').mockReturnValue(true);
   fireEvent.click(screen.getByRole('button', {name: 'Remove download'}));
   await waitFor(() => expect(store.removeOfflineSave).toHaveBeenCalled());
+});
+
+it('hides the previous account downloads as soon as the signed-in account changes', async () => {
+  identity.accountId = 'account-a';
+  const view = render(<OfflineContentPage locale="en" messages={getMessages('en').weeklyReader}/>);
+  await screen.findByRole('link', {name: /1739 · General bulletin/});
+  identity.accountId = 'account-b';
+  view.rerender(<OfflineContentPage locale="en" messages={getMessages('en').weeklyReader}/>);
+  expect(screen.queryByRole('link', {name: /1739 · General bulletin/})).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', {name: 'Remove download'})).not.toBeInTheDocument();
 });

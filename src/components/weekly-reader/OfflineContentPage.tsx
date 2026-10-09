@@ -12,7 +12,9 @@ import './reader.css';
 
 export function OfflineContentPage({locale, messages: m}: {locale: Locale; messages: ReaderMessages}) {
   const accountId = useAccountIdentity();
-  const [items, setItems] = useState<{save: OfflineSave; available: boolean}[]>([]);
+  const [savedItems, setItems] = useState<{save: OfflineSave; available: boolean}[]>([]);
+  // Auth can change before the asynchronous offline-account purge completes.
+  const items = savedItems.filter(({save}) => !accountId || save.selector.accountId === accountId);
   const [error, setError] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const enabled = isWeeklyReaderEnabled();
