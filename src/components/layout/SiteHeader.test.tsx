@@ -1,6 +1,6 @@
 import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import {NextIntlClientProvider} from 'next-intl';
-import {afterEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {createNavigationPresentation, type AccountSessionClient} from '@hallelujahhomechurch/account-client';
 import type {SiteLayout} from '@/features/site-layout/types';
 import en from '@/i18n/locales/en.json';
@@ -10,6 +10,9 @@ import zhHant from '@/i18n/locales/zh-Hant.json';
 import {AccountControlProvider, BulletinAccessGate, useAccountAuth} from './AccountControl';
 import {SiteHeader} from './SiteHeader';
 import {InitialLoadingBoundary} from './InitialLoadingBoundary';
+
+const searchRouter = vi.hoisted(() => ({push:vi.fn()}));
+vi.mock('next/navigation',()=>({useRouter:()=>searchRouter}));
 
 const statementStripState = vi.hoisted(() => ({active: false, notice: false}));
 
@@ -62,6 +65,10 @@ const layout: SiteLayout = {
   publishedAt: '2026-08-28T18:13:22.234929Z'
 };
 
+beforeEach(() => {
+  vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
+});
+
 afterEach(() => {
   statementStripState.active = false;
   statementStripState.notice = false;
@@ -72,10 +79,41 @@ afterEach(() => {
 });
 
 describe('SiteHeader', () => {
-  it.each(['/zh-Hant/member-videos','/zh-Hant/member-videos/r1','/zh-Hant/member-videos-other'])('uses the video library logo destination only inside its route: %s',(pathname)=>{
+  it.each(['/zh-Hant/member-videos','/zh-Hant/member-videos/r1','/zh-Hant/member-videos-other'])('always returns home from the brand, including video routes: %s',(pathname)=>{
     render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname={pathname} sessionClient={anonymousSessionClient}/></NextIntlClientProvider>);
-    expect(screen.getByRole('link',{name:/哈利路亞家教會/})).toHaveAttribute('href',pathname.endsWith('-other')?'/zh-Hant':'/zh-Hant/member-videos');
-    expect(screen.getByRole('link',{name:'首頁'})).toHaveAttribute('href','/zh-Hant');
+    expect(screen.getByRole('link',{name:/哈利路亞家教會/})).toHaveAttribute('href','/zh-Hant');
+    expect(screen.queryByRole('link',{name:'首頁'})).not.toBeInTheDocument();
+  });
+
+  it('keeps video search available on the video route before qualification resolves', async () => {
+    render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/member-videos" sessionClient={anonymousSessionClient} /></NextIntlClientProvider>);
+    const search = screen.getByRole('button', {name: '搜尋影片'});
+    fireEvent.click(search);
+    const input = await screen.findByRole('searchbox', {name: '搜尋影片'});
+    await waitFor(() => expect(input).toHaveFocus());
+    fireEvent.change(input, {target: {value: '主日'}});
+    fireEvent.click(screen.getByRole('button', {name: '關閉搜尋'}));
+    expect(search).toHaveFocus();
+    fireEvent.click(search);
+    expect(input).toHaveValue('主日');
+  });
+
+  it('reserves center navigation only when the expanded field cannot fit beside it', async () => {
+    let width = 1024;
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      const bounds = this.classList.contains('site-header-row') ? [0, width] : this.classList.contains('site-header-brand') ? [24, 240] : this.classList.contains('site-header-account') ? [width - 64, width - 24] : this.id === 'site-navigation' ? [width / 2 - 220, width / 2 + 220] : [0, 0];
+      return {x: bounds[0], y: 0, left: bounds[0], right: bounds[1], top: 0, bottom: 76, width: bounds[1] - bounds[0], height: 76, toJSON: () => ({})};
+    });
+    render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/member-videos" sessionClient={anonymousSessionClient} /></NextIntlClientProvider>);
+    const header = screen.getByRole('banner');
+    await waitFor(() => expect(header).toHaveAttribute('data-search-replaces-nav', 'true'));
+    fireEvent.click(screen.getByRole('button', {name: '搜尋影片'}));
+    expect(header).toHaveAttribute('data-search-open', 'true');
+    width = 1920;
+    fireEvent(window, new Event('resize'));
+    await waitFor(() => expect(header).toHaveAttribute('data-search-replaces-nav', 'false'));
+    fireEvent.click(screen.getByRole('button', {name: '關閉搜尋'}));
+    expect(header).toHaveAttribute('data-search-open', 'false');
   });
 
   it('restores both navigation bars before session resolves without opening protected content, then removes revoked access', async () => {
@@ -188,9 +226,9 @@ describe('SiteHeader', () => {
     expect(aboutLink).toHaveAttribute('data-active', 'true');
     const accountEntry = await screen.findByRole('link', {name: '登入'});
     expect(accountEntry).toBeInTheDocument();
-    expect(accountEntry.parentElement).toHaveClass('ml-auto', 'shrink-0');
+    expect(accountEntry.parentElement).toHaveClass('site-header-account');
     expect(screen.getByRole('banner').firstElementChild).toHaveClass('max-[767px]:px-4');
-    expect(brandLink).not.toHaveAttribute('aria-label');
+    expect(brandLink).toHaveAttribute('aria-label', '首頁 · 哈利路亞家教會');
     expect(aboutLink.className).toContain('font-semibold');
     expect(aboutLink.className).not.toContain('font-extrabold');
     expect(aboutLink.className).toContain('hover:text-primary');
@@ -200,7 +238,7 @@ describe('SiteHeader', () => {
     expect(aboutLink.className).toContain('data-[active=true]:after:scale-x-100');
   });
 
-  it('renders Home first and hides member-only weekly navigation for an anonymous visitor', async () => {
+  it('keeps two public destinations and the account last for anonymous visitors', async () => {
     vi.stubEnv('NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED', 'true');
     const getSession = vi.fn().mockResolvedValue({authenticated: false});
 
@@ -214,9 +252,9 @@ describe('SiteHeader', () => {
     const mobileNavigation = screen.getByRole('navigation', {name: '選單'});
     expect(mobileNavigation).toHaveClass('site-mobile-tab-bar');
     expect(within(mobileNavigation).getAllByRole('link').map((link) => link.textContent)).toEqual([
-      '首頁',
+      '最新消息',
       '關於我們',
-      '最新消息'
+      ''
     ]);
     expect(screen.queryByRole('button', {name: '開啟選單'})).not.toBeInTheDocument();
     expect(getSession).toHaveBeenCalledOnce();
@@ -240,6 +278,24 @@ describe('SiteHeader', () => {
     await screen.findByRole('button', {name: '帳號選單'});
     if (allowed) await waitFor(() => expect(screen.getAllByRole('link', {name: '影音專區'})).toHaveLength(2));
     else expect(screen.queryByRole('link', {name: '影音專區'})).not.toBeInTheDocument();
+  });
+
+  it('replaces public mobile destinations with entitled content while keeping account last', async () => {
+    vi.stubEnv('NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED', 'true');
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({memberships: [], orgRoles: [], qualifications: [], version: 'a'.repeat(64), entitlements: [
+      {assignmentId: 'e1', entitlementCode: 'video.meeting-recordings.access', validFrom: '2026-09-17T00:00:00Z'},
+      {assignmentId: 'e2', entitlementCode: 'bulletin.general.zh-Hant.access', validFrom: '2026-09-17T00:00:00Z'}
+    ]})));
+    const client: AccountSessionClient = {...anonymousSessionClient, getSession: async () => ({authenticated: true, user: {id: 'u1', email: 'member@example.test', display_name: 'Member', avatar_url: null}, permissions: [], permission_availability: {status: 'available'}}), issueAccessToken: async () => ({accessToken: 'test-token', expiresIn: 900})};
+    render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" sessionClient={client} /></NextIntlClientProvider>);
+    const mobile = screen.getByRole('navigation', {name: '選單'});
+    await within(mobile).findByRole('button', {name: '我的'});
+    await waitFor(() => expect(within(mobile).getAllByRole('link').map(link => link.textContent)).toEqual(['文字事工', '影音專區']));
+    expect(within(mobile).queryByRole('link', {name: '最新消息'})).not.toBeInTheDocument();
+    expect(within(mobile).queryByRole('link', {name: '關於我們'})).not.toBeInTheDocument();
+    expect(mobile.lastElementChild).toContainElement(within(mobile).getByRole('button', {name: '我的'}));
+    expect(mobile).toHaveStyle({gridTemplateColumns: 'repeat(3, minmax(0, 1fr))'});
+    expect(within(screen.getByRole('navigation', {name: '主要導覽'})).getByRole('link', {name: '最新消息'})).toBeInTheDocument();
   });
 
   it('hides the member video link in desktop and mobile navigation by default', () => {
@@ -289,7 +345,7 @@ describe('SiteHeader', () => {
     expect(screen.getByRole('link', {name: '登入'})).toBeInTheDocument();
   });
 
-  it('selects Home only on the locale root', async () => {
+  it('does not select a bottom destination on the locale root', async () => {
     const {rerender} = render(
       <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
         <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" sessionClient={anonymousSessionClient} />
@@ -298,7 +354,8 @@ describe('SiteHeader', () => {
 
     await screen.findByRole('link', {name: '登入'});
     const mobileNavigation = screen.getByRole('navigation', {name: '選單'});
-    expect(within(mobileNavigation).getByRole('link', {name: '首頁'})).toHaveAttribute('aria-current', 'page');
+    expect(within(mobileNavigation).getByRole('link', {name: '我的'})).toHaveAttribute('href', expect.stringContaining('/login'));
+    expect(within(mobileNavigation).queryByRole('link', {name: '首頁'})).not.toBeInTheDocument();
 
     rerender(
       <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
@@ -306,7 +363,7 @@ describe('SiteHeader', () => {
       </NextIntlClientProvider>
     );
 
-    expect(within(mobileNavigation).getByRole('link', {name: '首頁'})).not.toHaveAttribute('aria-current');
+    expect(within(mobileNavigation).queryByRole('link', {name: '首頁'})).not.toBeInTheDocument();
     expect(within(mobileNavigation).getByRole('link', {name: '關於我們'})).toHaveAttribute('aria-current', 'page');
   });
 
@@ -334,7 +391,7 @@ describe('SiteHeader', () => {
     const aboutClick = vi.spyOn(aboutLink, 'click');
     fireEvent.click(newsLink);
 
-    expect(container.querySelector('[data-mobile-nav-indicator]')).toHaveStyle({transform: 'translate3d(200%, 0, 0)'});
+    expect(container.querySelector('[data-mobile-nav-indicator]')).toHaveStyle({transform: 'translate3d(0%, 0, 0)'});
     expect(newsLink).toHaveAttribute('data-active', 'true');
     act(() => frames.get(1)?.(0));
     fireEvent.click(aboutLink);
@@ -344,7 +401,7 @@ describe('SiteHeader', () => {
     act(() => frames.get(3)?.(16));
     act(() => frames.get(4)?.(32));
     expect(aboutClick).toHaveBeenCalledOnce();
-    expect(mobileNavigation.getByRole('link', {name: '首頁'})).not.toHaveAttribute('data-active');
+    expect(newsLink).not.toHaveAttribute('data-active');
   });
 
   it('lets long localized branding shrink before the fixed account slot at mobile zoom widths', async () => {
@@ -488,7 +545,7 @@ describe('SiteHeader', () => {
     });
   });
 
-  it('keeps Home in the mobile navigation when all projected items are hidden', async () => {
+  it('keeps the account last when all projected items are hidden', async () => {
     render(
       <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
         <SiteHeader
@@ -503,7 +560,8 @@ describe('SiteHeader', () => {
     await screen.findByRole('link', {name: '登入'});
     const mobileNavigation = screen.getByRole('navigation', {name: '選單'});
     expect(within(mobileNavigation).getAllByRole('link')).toHaveLength(1);
-    expect(within(mobileNavigation).getByRole('link', {name: '首頁'})).toHaveAttribute('aria-current', 'page');
+    expect(within(mobileNavigation).getByRole('link', {name: '我的'})).toHaveAttribute('href', expect.stringContaining('/login'));
+    expect(within(mobileNavigation).queryByRole('link', {name: '首頁'})).not.toBeInTheDocument();
     expect(mobileNavigation).toHaveStyle({gridTemplateColumns: 'repeat(1, minmax(0, 1fr))'});
   });
 
@@ -552,4 +610,9 @@ describe('SiteHeader', () => {
     </NextIntlClientProvider>);
     expect(screen.queryByRole('complementary', {name: '瀏覽器開啟提示'})).not.toBeInTheDocument();
   });
+});
+
+it.each(['/zh-Hant','/zh-Hant/news','/zh-Hant/member-videos-other'])('shows a disabled search on other routes: %s',pathname=>{
+ render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname={pathname} sessionClient={anonymousSessionClient}/></NextIntlClientProvider>);
+ expect(screen.getByRole('button',{name:'搜尋（尚未開放）'})).toBeDisabled();
 });

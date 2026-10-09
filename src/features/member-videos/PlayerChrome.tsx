@@ -4,7 +4,7 @@ import {useEffect, useRef, useState, useSyncExternalStore, type PointerEvent as 
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {ChevronDown, ChevronLeft, ChevronRight, SkipBack, SkipForward, LoaderCircle, RectangleHorizontal, Maximize, Minimize, Pause, Play, Settings, Volume2, VolumeX} from 'lucide-react';
-import {liveWindow,type LivePlayerState} from './live-player';
+import {liveWindow,type LivePlayerState,type PlayerBookmark} from './live-player';
 import type {PlayerLabels} from './HlsPlayer';
 import {loadPreviewIndex, type PreviewCue} from './preview-index';
 import styles from './PlayerChrome.module.css';
@@ -19,6 +19,7 @@ type Props = {
   container: RefObject<HTMLDivElement | null>; videoRef: RefObject<HTMLVideoElement | null>;
   playbackUrl: string; watermark: string; labels: PlayerLabels;
   quality: Quality; qualities: Exclude<Quality, 'auto'>[]; autoplayBlocked?:boolean; loading: boolean; failed: boolean;
+  onPlaybackChange?: (value:Partial<Pick<PlayerBookmark,'time'|'paused'|'rate'>>)=>void;
   onQualityChange: (quality: Quality) => void; onPlayingChange?: (playing: boolean) => void;
 };
 
@@ -35,7 +36,7 @@ export function playerClock(seconds: number) {
   return total >= 3600 ? `${Math.floor(total / 3600)}:${String(Math.floor(total / 60) % 60).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}` : `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
 }
 
-export function PlayerChrome({container, videoRef, playbackUrl, watermark, labels, quality, qualities, autoplayBlocked=false, loading, failed, onQualityChange, onPlayingChange,live,onDvr,onReturnToLive,previousHref,nextHref}: Props) {
+export function PlayerChrome({container, videoRef, playbackUrl, watermark, labels, quality, qualities, autoplayBlocked=false, loading, failed, onQualityChange, onPlaybackChange,onPlayingChange,live,onDvr,onReturnToLive,previousHref,nextHref}: Props) {
   const router = useRouter();
   const touchUI = useSyncExternalStore(subscribeTouch, touchSnapshot, () => false);
   const fullscreenState = usePlayerFullscreen(container, videoRef, touchUI);
@@ -114,6 +115,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
     const video = videoRef.current;
     if (!video) return;
     const kind = video.paused ? 'play' : 'pause';
+    onPlaybackChange?.({paused:!video.paused});
     if (video.paused) void video.play().catch(() => {}); else {onDvr?.();video.pause();}
     if (!touchUI) {
       setFeedback({kind, id: Date.now()});
@@ -124,7 +126,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
   };
   const toggleFullscreen = fullscreenState.toggle;
   const seekStart = liveRange?.start ?? 0;
-  const seek = (value: number) => { if (videoRef.current && duration > seekStart) { onDvr?.();videoRef.current.currentTime = Math.min(duration, Math.max(seekStart, value)); setTime(videoRef.current.currentTime); } };
+  const seek = (value: number) => { if (videoRef.current && duration > seekStart) { onDvr?.();videoRef.current.currentTime = Math.min(duration, Math.max(seekStart, value)); setTime(videoRef.current.currentTime);onPlaybackChange?.({time:videoRef.current.currentTime}); } };
   const seekBy = (seconds:number) => {
     if (!videoRef.current || duration <= seekStart) return;
     seek(videoRef.current.currentTime + seconds);
@@ -133,9 +135,10 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
     window.clearTimeout(feedbackTimer.current);
     feedbackTimer.current=window.setTimeout(()=>setFeedback(null),900);
   };
+  const changeRate=(rate:number)=>{if(videoRef.current){videoRef.current.playbackRate=rate;onPlaybackChange?.({rate});}};
   const cancelGesture = () => {
     window.clearTimeout(holdTimer.current);
-    if (gesture.current?.rate != null && videoRef.current) videoRef.current.playbackRate = gesture.current.rate;
+    if (gesture.current?.rate != null) changeRate(gesture.current.rate);
     gesture.current = null; setHolding(false);
   };
   const pointerDown = (event:ReactPointerEvent<HTMLButtonElement>) => {
@@ -147,7 +150,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
       const video = videoRef.current, active = gesture.current;
       if (video && active && !active.moved && !video.paused && !failed && !loading) {
         window.clearTimeout(tapTimer.current);lastTap.current=null;
-        active.rate = video.playbackRate;video.playbackRate = 2;setHolding(true);
+        active.rate = video.playbackRate;changeRate(2);setHolding(true);
       }
     }, 450);
   };
@@ -156,7 +159,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
     if (!active || active.id !== event.pointerId) return;
     if (Math.hypot(event.clientX-active.x,event.clientY-active.y)>12) {
       active.moved=true;window.clearTimeout(holdTimer.current);
-      if (active.rate != null && videoRef.current) {videoRef.current.playbackRate=active.rate;active.rate=null;setHolding(false);}
+      if (active.rate != null && videoRef.current) {changeRate(active.rate);active.rate=null;setHolding(false);}
     }
   };
   const pointerUp = (event:ReactPointerEvent<HTMLButtonElement>) => {
@@ -198,7 +201,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
     else if (key === 't') {if(!touchUI && labels.theaterMode && labels.exitTheaterMode)setTheater(value=>!value);}
     else if (key === 'p' || key === 'n') { const href=key==='p'?previousHref:nextHref;if(href)router.push(href); }
     else if (key === 'arrowup' || key === 'arrowdown') { const video=videoRef.current;if(video){video.volume=Math.min(1,Math.max(0,video.volume+(key==='arrowup' ? 0.05 : -0.05)));video.muted=false;} }
-    else if (key === '<' || key === '>') { const video=videoRef.current;if(video)video.playbackRate=Math.min(2,Math.max(.5,video.playbackRate+(key==='>' ? 0.25 : -0.25))); }
+    else if (key === '<' || key === '>') { const video=videoRef.current;if(video)changeRate(Math.min(2,Math.max(.5,video.playbackRate+(key==='>' ? 0.25 : -0.25)))); }
     else if (key === 'home' || key === 'end' || /^[0-9]$/.test(key)) seek(key==='end'?duration:key==='home'?seekStart:seekStart+(duration-seekStart)*Number(key)/10);
     else seekBy(key === 'arrowleft' ? -5 : key === 'arrowright' ? 5 : key === 'j' ? -10 : 10);
     showControls();
@@ -251,7 +254,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
     </div> : null}
     {autoplayBlocked && !failed && labels.tapToPlay ? <p className={styles.playPrompt} role="status">{labels.tapToPlay}</p> : null}
     {settings ? <div ref={menu} data-controls className={styles.settings} role="group" aria-label={labels.settings}>
-      <label>{labels.playbackSpeed}<select aria-label={labels.playbackSpeed} value={rate} onChange={event => { if (videoRef.current) videoRef.current.playbackRate = Number(event.target.value); }}>
+      <label>{labels.playbackSpeed}<select aria-label={labels.playbackSpeed} value={rate} onChange={event => changeRate(Number(event.target.value))}>
         {[0.5,0.75,1,1.25,1.5,1.75,2].map(value => <option key={value} value={value}>{value}×</option>)}
       </select></label>
       <label>{labels.quality}<select aria-label={labels.quality} value={quality} disabled={loading} onChange={event => onQualityChange(event.target.value as Quality)}><option value="auto">{labels.auto}</option>{qualities.map(name => <option key={name} value={name}>{name}</option>)}</select></label>

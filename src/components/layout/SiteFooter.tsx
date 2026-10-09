@@ -69,6 +69,9 @@ export function SiteFooter({layout, locale, pathname}: SiteFooterProps) {
             </div>
           </div>
         </div>
+        <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm" aria-label={t('nav.public')}>
+          {layout.header.filter(item => item.visible && (item.key === 'about' || item.key === 'news')).map(item => <Link key={item.key} href={item.href} className="inline-flex min-h-11 items-center hover:text-primary">{item.label}</Link>)}
+        </nav>
         <div className="flex items-center justify-between gap-4 border-t border-line pt-4 text-xs font-medium text-muted max-[620px]:flex-col max-[620px]:items-start">
           <p>© {year} {layout.copyrightHolder}. {layout.allRightsReserved}</p>
           <nav className="flex items-center gap-[7px]" aria-label={t('legalNavigation')}>

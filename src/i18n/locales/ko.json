@@ -150,7 +150,9 @@
       "memberVideos": "회원 영상",
       "menu": "메뉴",
       "openMenu": "메뉴 열기",
-      "closeMenu": "메뉴 닫기"
+      "closeMenu": "메뉴 닫기",
+      "my": "내 계정",
+      "public": "교회 정보"
     },
     "account": {
       "menu": "계정 메뉴",
@@ -217,6 +219,23 @@
       "notifications": "웹사이트 알림",
       "notificationDescription": "주보와 중요한 소식을 받아보세요.",
       "email": "이메일 구독 설정"
+    },
+    "search": {
+      "label": "검색",
+      "submit": "검색",
+      "clear": "검색 지우기",
+      "close": "검색 닫기",
+      "placeholder": "검색",
+      "unavailable": "검색 (준비 중)",
+      "video": {
+        "label": "영상 검색",
+        "placeholder": "영상 제목 또는 설명 검색",
+        "results": "“{query}” 검색 결과",
+        "empty": "“{query}”에 일치하는 영상이 없습니다",
+        "clear": "검색 지우기",
+        "back": "검색 결과로 돌아가기",
+        "tooLong": "검색어는 100자 이하의 단일 쿼리여야 합니다."
+      }
     }
   },
   "home": {

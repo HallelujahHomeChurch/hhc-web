@@ -150,7 +150,9 @@
       "memberVideos": "影音专区",
       "menu": "选单",
       "openMenu": "开启菜单",
-      "closeMenu": "关闭菜单"
+      "closeMenu": "关闭菜单",
+      "my": "我的",
+      "public": "教会信息"
     },
     "account": {
       "menu": "帐号菜单",
@@ -217,6 +219,23 @@
       "notifications": "网站通知",
       "notificationDescription": "订阅网站通知，接收周报与重要消息。",
       "email": "Email 订阅设置"
+    },
+    "search": {
+      "label": "搜索",
+      "submit": "搜索",
+      "clear": "清除搜索",
+      "close": "关闭搜索",
+      "placeholder": "搜索",
+      "unavailable": "搜索（尚未开放）",
+      "video": {
+        "label": "搜索视频",
+        "placeholder": "搜索视频标题或说明",
+        "results": "“{query}”的搜索结果",
+        "empty": "找不到符合“{query}”的视频",
+        "clear": "清除搜索",
+        "back": "返回搜索结果",
+        "tooLong": "搜索最多 100 个字符，且只能有一个查询。"
+      }
     }
   },
   "home": {

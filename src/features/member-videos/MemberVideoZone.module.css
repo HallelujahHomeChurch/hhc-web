@@ -35,3 +35,12 @@
   .watch:has([data-theater="true"]) .video > :not(:first-child) {margin-inline:16px;}
   .watch:has([data-theater="true"]) > .results {grid-row:2;}
 }
+
+.search {max-width:1200px;}
+.searchHeading {font-size:20px;line-height:1.4;font-weight:600;color:var(--color-ink);overflow-wrap:anywhere;}
+.searchList {display:grid;gap:24px;}
+.searchList .card {grid-template-columns:minmax(0,42%) minmax(0,1fr);gap:20px;}
+.searchList .title {font-size:20px;}
+.summary {font-size:14px;line-height:1.5;color:var(--color-muted);overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow-wrap:anywhere;}
+.back {font-size:14px;min-height:44px;display:inline-flex;align-items:center;color:var(--color-primary);}
+@media(max-width:639px){.searchList .card {grid-template-columns:minmax(0,1fr);gap:10px;}.searchList .title {font-size:16px;}}

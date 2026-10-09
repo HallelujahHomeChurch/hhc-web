@@ -150,7 +150,9 @@
       "memberVideos": "Member Videos",
       "menu": "Menu",
       "openMenu": "Open menu",
-      "closeMenu": "Close menu"
+      "closeMenu": "Close menu",
+      "my": "My account",
+      "public": "Church information"
     },
     "account": {
       "menu": "Account menu",
@@ -217,6 +219,23 @@
       "notifications": "Website notifications",
       "notificationDescription": "Receive weekly bulletins and important website updates.",
       "email": "Email subscription settings"
+    },
+    "search": {
+      "label": "Search",
+      "submit": "Search",
+      "clear": "Clear search",
+      "close": "Close search",
+      "placeholder": "Search",
+      "unavailable": "Search (not yet available)",
+      "video": {
+        "label": "Search videos",
+        "placeholder": "Search video titles or descriptions",
+        "results": "Results for “{query}”",
+        "empty": "No videos match “{query}”",
+        "clear": "Clear search",
+        "back": "Back to search results",
+        "tooLong": "Search accepts one query of up to 100 characters."
+      }
     }
   },
   "home": {

@@ -150,7 +150,9 @@
       "memberVideos": "会員向け動画",
       "menu": "メニュー",
       "openMenu": "メニューを開く",
-      "closeMenu": "メニューを閉じる"
+      "closeMenu": "メニューを閉じる",
+      "my": "マイページ",
+      "public": "教会情報"
     },
     "account": {
       "menu": "アカウントメニュー",
@@ -217,6 +219,23 @@
       "notifications": "サイト通知",
       "notificationDescription": "週報や重要なお知らせを受け取れます。",
       "email": "メール購読設定"
+    },
+    "search": {
+      "label": "検索",
+      "submit": "検索",
+      "clear": "検索をクリア",
+      "close": "検索を閉じる",
+      "placeholder": "検索",
+      "unavailable": "検索（準備中）",
+      "video": {
+        "label": "動画を検索",
+        "placeholder": "動画のタイトルや説明を検索",
+        "results": "「{query}」の検索結果",
+        "empty": "「{query}」に一致する動画はありません",
+        "clear": "検索をクリア",
+        "back": "検索結果に戻る",
+        "tooLong": "検索は100文字以内の1件のクエリにしてください。"
+      }
     }
   },
   "home": {

@@ -7,12 +7,13 @@ import playerStyles from './PlayerChrome.module.css';
 const router=vi.hoisted(()=>({push:vi.fn()}));
 vi.mock('next/navigation',()=>({useRouter:()=>router}));
 
-const engine=vi.hoisted(()=>({supported:true,manifestReady:true,instances:[] as {nextLevel:number;listeners:Record<string,(...args:unknown[])=>void>;loadSource:ReturnType<typeof vi.fn>;destroy:ReturnType<typeof vi.fn>;config:{xhrSetup:(xhr:XMLHttpRequest,url:string)=>void}}[]}));
+const engine=vi.hoisted(()=>({supported:true,manifestReady:true,instances:[] as {nextLevel:number;loadLevel:number;recoverMediaError:ReturnType<typeof vi.fn>;listeners:Record<string,(...args:unknown[])=>void>;loadSource:ReturnType<typeof vi.fn>;destroy:ReturnType<typeof vi.fn>;config:{xhrSetup:(xhr:XMLHttpRequest,url:string)=>void}}[]}));
 const url='https://media.alive.org.tw/videos/r/packages/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/sessions/s/master.m3u8';
 vi.mock('hls.js',()=>({default:class {
   static isSupported(){return engine.supported;}
   static Events={MANIFEST_PARSED:'manifest',ERROR:'error'};
-  nextLevel=-1;
+  nextLevel=-1;loadLevel=-1;
+  recoverMediaError=vi.fn();
   listeners:Record<string,(...args:unknown[])=>void>={};
   levels=[{url:[url.replace('master.m3u8','720p/index.m3u8')]},{url:[url.replace('master.m3u8','1080p/index.m3u8')]},{url:[url.replace('master.m3u8','480p/index.m3u8')]}];
   loadSource=vi.fn();destroy=vi.fn();
@@ -29,7 +30,8 @@ it('exposes 480p only when provided and keeps its requests inside the authentica
   fireEvent.click(screen.getByRole('button',{name:'Settings'}));
   expect(screen.getByRole('option',{name:'480p'})).toBeInTheDocument();
   fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'480p'}});
-  expect(engine.instances[0].nextLevel).toBe(2);
+  expect(engine.instances[0].loadLevel).toBe(2);
+  expect(engine.instances[0].recoverMediaError).toHaveBeenCalledOnce();
   const xhr=new XMLHttpRequest();
   engine.instances[0].config.xhrSetup(xhr,url.replace('master.m3u8','480p/seg-000000.m4s'));
   expect(xhr.withCredentials).toBe(true);
@@ -40,6 +42,7 @@ beforeEach(()=>{
   vi.spyOn(HTMLElement.prototype,'clientHeight','get').mockReturnValue(600);
   vi.spyOn(HTMLVideoElement.prototype,'videoWidth','get').mockReturnValue(1920);
   vi.spyOn(HTMLVideoElement.prototype,'videoHeight','get').mockReturnValue(1080);
+  vi.spyOn(HTMLMediaElement.prototype,'readyState','get').mockReturnValue(1);
   router.push.mockClear();
   engine.supported=true;engine.manifestReady=true;engine.instances=[];
   vi.spyOn(HTMLMediaElement.prototype,'play').mockResolvedValue(undefined);
@@ -83,16 +86,49 @@ it('keeps K working after toolbar focus but leaves button Space activation nativ
   fireEvent.keyDown(mute,{key:' '});
   expect(video.play).toHaveBeenCalledOnce();
 });
-it('switches MSE quality without seeking or reloading, and returns to automatic adaptation',async()=>{
+it('rebuilds MSE buffers for manual quality and auto without reloading the manifest',async()=>{
   const p=props();render(<HlsPlayer {...p}/>);
   await waitFor(()=>expect(engine.instances).toHaveLength(1));
   const video=p.videoRef.current!;video.currentTime=97;
   fireEvent.click(screen.getByRole('button',{name:'Settings'}));
   fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'1080p'}});
-  expect(engine.instances[0].nextLevel).toBe(1);expect(video.currentTime).toBe(97);
+  expect(engine.instances[0].loadLevel).toBe(1);expect(video.currentTime).toBe(97);
+  expect(engine.instances[0].recoverMediaError).toHaveBeenCalledOnce();
+  fireEvent.loadedMetadata(video);
   fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'auto'}});
-  expect(engine.instances[0].nextLevel).toBe(-1);
+  expect(engine.instances[0].loadLevel).toBe(-1);
+  expect(engine.instances[0].recoverMediaError).toHaveBeenCalledTimes(2);
   expect(engine.instances[0].loadSource).toHaveBeenCalledTimes(1);
+});
+
+it.each([true,false])('restores MSE quality position, rate and paused=%s after replaying an ended VOD',async(paused)=>{
+  const p=props();const onBookmark=vi.fn();render(<HlsPlayer {...p} onBookmark={onBookmark}/>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));
+  const video=p.videoRef.current!;
+  Object.defineProperty(video,'duration',{configurable:true,value:2375.936});
+  act(()=>{video.currentTime=2375.936;fireEvent.ended(video);video.currentTime=100;video.playbackRate=1.5;});
+  Object.defineProperty(video,'paused',{configurable:true,value:paused});
+  fireEvent.click(screen.getByRole('button',{name:'Settings'}));
+  engine.instances[0].recoverMediaError.mockImplementation(()=>{video.currentTime=0;video.playbackRate=1;fireEvent.timeUpdate(video);});
+  onBookmark.mockClear();vi.mocked(video.play).mockClear();vi.mocked(video.pause).mockClear();
+  fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'1080p'}});
+  expect(engine.instances[0].loadLevel).toBe(1);
+  expect(engine.instances[0].recoverMediaError).toHaveBeenCalledOnce();
+  expect(onBookmark).not.toHaveBeenCalled();
+  fireEvent.loadedMetadata(video);
+  expect(video.currentTime).toBe(100);expect(video.playbackRate).toBe(1.5);
+  expect(paused?video.pause:video.play).toHaveBeenCalledOnce();
+  expect(onBookmark).toHaveBeenLastCalledWith(expect.objectContaining({time:100,quality:'1080p',rate:1.5,paused}));
+});
+it('keeps explicit speed, seek and play commands made while MSE quality is reattaching',async()=>{
+ const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));
+ const video=p.videoRef.current!;Object.defineProperty(video,'duration',{configurable:true,value:600});fireEvent.durationChange(video);video.currentTime=100;
+ fireEvent.click(screen.getByRole('button',{name:'Settings'}));fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'1080p'}});
+ fireEvent.change(screen.getByRole('combobox',{name:'Speed'}),{target:{value:'2'}});
+ fireEvent.change(screen.getByRole('slider',{name:'Playback position'}),{target:{value:'180'}});
+ fireEvent.click(screen.getByRole('button',{name:'Play'}));vi.mocked(video.play).mockClear();
+ fireEvent.loadedMetadata(video);
+ expect(video.currentTime).toBe(180);expect(video.playbackRate).toBe(2);expect(video.play).toHaveBeenCalledOnce();
 });
 it('does not rebuild or reset the engine when the watermark or cover changes',async()=>{
   const p=props();const view=render(<HlsPlayer {...p}/>);
@@ -358,10 +394,10 @@ it('native live quality switching retains a paused DVR position and intent',asyn
  fireEvent.loadedMetadata(video);fireEvent.progress(video);fireEvent(window,new Event('online'));
  expect(video.currentTime).toBe(60);expect(video.playbackRate).toBe(1.5);expect(remembered).toHaveBeenLastCalledWith(expect.objectContaining({intent:'dvr',quality:'1080p'}));
 });
-it('native live quality switching waits for later seekable progress before restoring DVR',async()=>{
- engine.supported=false;vi.spyOn(HTMLMediaElement.prototype,'canPlayType').mockReturnValue('probably');
+it.each([false,true])('native=%s live quality switching waits for later seekable progress before restoring DVR',async(native)=>{
+ engine.supported=!native;if(native)vi.spyOn(HTMLMediaElement.prototype,'canPlayType').mockReturnValue('probably');
  const p=props(),remembered=vi.fn();render(<HlsPlayer {...p} playbackMode="live" live={{verifiedEnd:5400,canFollow:true,label:'Live',backToLive:'Back to live'}} onBookmark={remembered}/>);
- await waitFor(()=>expect(p.videoRef.current?.src).toBe(url));
+ await waitFor(()=>expect(native?p.videoRef.current?.src:engine.instances.length).toBe(native?url:1));
  const video=p.videoRef.current!;let end=5400;
  Object.defineProperty(video,'seekable',{configurable:true,get:()=>({length:end?1:0,start:()=>0,end:()=>end})});
  await act(async()=>{fireEvent.loadedMetadata(video);});

@@ -84,8 +84,11 @@ authorization boundary; list, grant, and media requests retain their checks.
 
 The focused player supports Space/K, arrows (5 seconds), J/L (10 seconds), M,
 and F. Form controls keep native keyboard behavior. The settings menu contains
-quality and playback speed. Fullscreen contains the entire player and its
-pseudonymous watermark; the watermark discourages sharing, not screen capture.
+quality and playback speed. Explicit quality changes rebuild the MSE buffers
+and restore position, pause state, and speed; commands made during that brief
+reload take precedence. This prevents cached lower-quality frames and stale
+end-of-stream work from shortening the replay timeline. Fullscreen contains
+the entire player and its pseudonymous watermark; the watermark discourages sharing, not screen capture.
 
 Timeline previews lazily request `previews/index.vtt` and bounded 160×90 sprites
 inside the same authenticated playback session. Asset API generates them from
@@ -105,9 +108,32 @@ display with a live indicator/button. It is red at the current verified live edg
 and gray during paused or earlier playback; pressing it resumes at the latest
 available position. Stopped events keep their distinct status and disable return.
 
-Search is planned separately in
-[the next-phase search plan](docs/superpowers/plans/2026-10-08-member-video-search.md).
+Search implementation and producer-first release gates follow the
+[companion search plan](https://github.com/HallelujahHomeChurch/hhc-web/pull/167).
 Banner font regeneration includes the member-video strings in all five locales.
+
+## Header search and mobile navigation
+
+The mobile bar has two content slots and an account slot on the right. The first
+slot prefers authorized literature ministry over news; the second prefers enabled,
+authorized recordings over About. Hidden projected items are omitted. The brand
+always returns to the site home, including from video pages. Public news/About
+remain available on the home page and in the footer. Desktop navigation retains
+its existing destinations; simplified legal pages retain header account access.
+
+Search is visible to every visitor and enabled only on member-video library,
+result and watch routes. Other pages show a disabled trigger until their search
+behavior is implemented. Video submissions update the URL `q` and search literal
+words across published titles and descriptions after membership, entitlement and
+legal checks. Results use fresh cursor batches; watch recommendations stay
+unfiltered and preserve the source query when returning to results.
+
+The shared field keeps draft entry, clear, close, focus restoration and IME
+handling. Mobile expansion covers the entire header row with an opaque surface;
+desktop expansion replaces center navigation only when both cannot fit. Global
+search and subtitle indexing are outside this change. UI and SDK 1.0.49 must be
+published and pinned with a fresh registry lockfile before this draft can merge;
+local preview dependencies are never committed.
 
 ## Office integration
 

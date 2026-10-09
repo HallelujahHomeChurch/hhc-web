@@ -1,18 +1,20 @@
 'use client';
 
-import {useRef, useState, useSyncExternalStore, type MouseEvent} from 'react';
+import {useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type MouseEvent} from 'react';
 import {useScrollChrome} from './useScrollChrome';
 import Link from 'next/link';
 import Image from 'next/image';
-import {BookOpenText, House, Newspaper, PlaySquare, UsersRound} from 'lucide-react';
+import {BookOpenText, Newspaper, PlaySquare, UsersRound} from 'lucide-react';
 import {useTranslations} from 'next-intl';
+import {VideoSearchField} from '@/features/member-videos/VideoSearchField';
+import {ExpandableSearchField} from '@hallelujahhomechurch/ui';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
 import type {SiteLayout} from '@/features/site-layout/types';
 import type {Locale} from '@/i18n/locales';
 import {isIPhoneDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 import {StatementStrip} from '@/components/statements/StatementStrip';
 import {LineBrowserNotice, useLineBrowserNotice} from './LineBrowserNotice';
-import {AccountControlSlot, useNavigationPresentation} from './AccountControl';
+import {AccountControlScope, AccountControlView, useNavigationPresentation} from './AccountControl';
 
 export type SiteHeaderProps = {
   layout: SiteLayout;
@@ -20,6 +22,7 @@ export type SiteHeaderProps = {
   pathname: string;
   sessionClient?: AccountSessionClient;
   showNavigation?: boolean;
+  searchQuery?: string;
 };
 
 const subscribeToStandaloneMode = () => () => undefined;
@@ -33,20 +36,8 @@ const icons = {
   'member-videos': PlaySquare
 };
 
-export function SiteHeader({layout, locale, pathname, sessionClient, showNavigation = true}: SiteHeaderProps) {
-  const lineNotice = useLineBrowserNotice(pathname);
+export function SiteHeader(props: SiteHeaderProps) {
   const t = useTranslations('site');
-  const homeHref = `/${locale}`;
-  const videoHref = `${homeHref}/member-videos`;
-  const logoHref = pathname === videoHref || pathname.startsWith(`${videoHref}/`) ? videoHref : homeHref;
-  const navigation = useNavigationPresentation();
-  const canReadBulletin = navigation.sources.operations?.ids.includes('literature-ministry') === true;
-  const canWatchVideo = navigation.sources.operations?.ids.includes('member-videos') === true;
-  const navItems = [
-    ...layout.header.filter(({key, visible}) => visible && (key !== 'literature-ministry' || canReadBulletin)).map((item) => ({...item, icon: icons[item.key]})),
-    ...(process.env.NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED === 'true' && canWatchVideo ? [{key: 'member-videos', label: t('nav.memberVideos'), href: `/${locale}/member-videos`, visible: true, icon: PlaySquare}] : [])
-  ];
-  const mobileNavItems = [{key: 'home', label: t('nav.home'), href: homeHref, icon: House}, ...navItems];
   const accountLabels = {
     menu: t('account.menu'),
     projectionSystem: t('account.projectionSystem'),
@@ -59,13 +50,59 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
     signOutError: t('account.signOutError'),
     unsyncedWarning: t('account.unsyncedWarning')
   };
+  return <AccountControlScope client={props.sessionClient} labels={accountLabels}><SiteHeaderContent {...props} /></AccountControlScope>;
+}
+
+function SiteHeaderContent({layout, locale, pathname, showNavigation = true, searchQuery = ''}: SiteHeaderProps) {
+  const lineNotice = useLineBrowserNotice(pathname);
+  const t = useTranslations('site');
+  const homeHref = `/${locale}`;
+  const navigation = useNavigationPresentation();
+  const canReadBulletin = navigation.sources.operations?.ids.includes('literature-ministry') === true;
+  const canWatchVideo = navigation.sources.operations?.ids.includes('member-videos') === true;
+  const navItems = [
+    ...layout.header.filter(({key, visible}) => visible && (key !== 'literature-ministry' || canReadBulletin)).map((item) => ({...item, icon: icons[item.key]})),
+    ...(process.env.NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED === 'true' && canWatchVideo ? [{key: 'member-videos', label: t('nav.memberVideos'), href: `/${locale}/member-videos`, visible: true, icon: PlaySquare}] : [])
+  ];
+  const mobileNavItems = [
+    navItems.find(item => item.key === 'literature-ministry') ?? navItems.find(item => item.key === 'news'),
+    navItems.find(item => item.key === 'member-videos') ?? navItems.find(item => item.key === 'about')
+  ].filter((item): item is typeof navItems[number] => Boolean(item));
+  const videoRoot = `/${locale}/member-videos`;
+  const videoSearchEnabled = pathname === videoRoot || pathname.startsWith(`${videoRoot}/`);
+  const searchKey = `${pathname}:${searchQuery}`;
+  const [searchState, setSearchState] = useState({pathname:searchKey, open: false});
+  const searchOpen = searchState.pathname === searchKey && searchState.open;
+  const rowRef = useRef<HTMLDivElement>(null);
+  const brandRef = useRef<HTMLAnchorElement>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const accountRef = useRef<HTMLDivElement>(null);
+  const [searchLayout, setSearchLayout] = useState({replaceNav: false, start: 0, end: 0});
+  useLayoutEffect(() => {
+    const row = rowRef.current, brand = brandRef.current, nav = navRef.current, account = accountRef.current;
+    if (!row || !brand || !account) return;
+    let active = true;
+    const measure = () => {
+      if (!active) return;
+      const bounds = row.getBoundingClientRect(), brandBounds = brand.getBoundingClientRect(), accountBounds = account.getBoundingClientRect();
+      const next = {replaceNav: Boolean(nav && nav.getBoundingClientRect().right + 16 > accountBounds.left - 16 - 280), start: brandBounds.right - bounds.left + 16, end: bounds.right - accountBounds.left + 16};
+      setSearchLayout(previous => previous.replaceNav === next.replaceNav && previous.start === next.start && previous.end === next.end ? previous : next);
+    };
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    for (const element of [row, brand, nav, account]) if (element) observer?.observe(element);
+    queueMicrotask(measure);
+    window.addEventListener('resize', measure);
+    void document.fonts?.ready.then(measure);
+    return () => {active = false; observer?.disconnect(); window.removeEventListener('resize', measure);};
+  }, [locale, navItems.length]);
+
   const isActive = (href: string) => pathname === href || (href !== homeHref && pathname.startsWith(`${href}/`));
   const mobileActiveIndex = mobileNavItems.findIndex(({href}) => isActive(href));
   const [mobileSelection, setMobileSelection] = useState({pathname, href: mobileNavItems[mobileActiveIndex]?.href});
   const mobileIndicatorIndex = mobileSelection.pathname === pathname ? mobileNavItems.findIndex(item => item.href === mobileSelection.href) : mobileActiveIndex;
   const delayedMobileHref = useRef<string | null>(null);
   const mobileNavigationFrame = useRef(0);
-  const {visible: mobileChromeVisible} = useScrollChrome({resetKey: pathname});
+  const {visible: mobileChromeVisible} = useScrollChrome({resetKey: pathname, blocked: searchOpen});
   const iphoneStandalone = useSyncExternalStore(
     subscribeToStandaloneMode,
     getIPhoneStandaloneSnapshot,
@@ -95,9 +132,9 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
   return (
     <>
       <div className="site-top-chrome sticky top-0 z-10" data-mobile-hidden={!mobileChromeVisible}>
-        <header className="site-header border-b border-line/70 backdrop-blur-xl" data-iphone-standalone={iphoneStandalone || undefined}>
-          <div className="relative flex min-h-[76px] w-full items-center gap-6 px-6 max-[767px]:min-h-[68px] max-[767px]:px-4">
-            <Link href={logoHref} className="inline-flex min-h-11 min-w-max items-center gap-2.5 max-[767px]:min-w-0 max-[767px]:flex-1">
+        <header data-search-open={searchOpen} data-search-replaces-nav={searchLayout.replaceNav} className="site-header border-b border-line/70 backdrop-blur-xl" data-iphone-standalone={iphoneStandalone || undefined}>
+          <div ref={rowRef} style={{'--site-search-start': `${searchLayout.start}px`, '--site-search-end': `${searchLayout.end}px`} as CSSProperties} className="site-header-row relative flex min-h-[76px] w-full items-center gap-6 px-6 max-[767px]:min-h-[68px] max-[767px]:px-4">
+            <Link ref={brandRef} href={homeHref} aria-label={`${t('nav.home')} · ${layout.siteName}`} className="site-header-brand inline-flex min-h-11 min-w-max items-center gap-2.5 max-[767px]:min-w-0 max-[767px]:flex-1">
               <span className="grid size-10 shrink-0 place-items-center max-[767px]:size-9" aria-hidden="true">
                 <Image src="/assets/brand/logo.png" alt="" width={40} height={40} className="h-full w-full object-contain" />
               </span>
@@ -111,6 +148,7 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
               </span>
             </Link>
             {showNavigation ? <nav
+              ref={navRef}
               id="site-navigation"
               className="absolute left-1/2 top-0 flex h-full -translate-x-1/2 items-stretch max-[767px]:hidden"
               aria-label={t('nav.primary')}
@@ -127,14 +165,17 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
                   </Link>
                 ))}
             </nav> : null}
-            <div className="ml-auto shrink-0">
-              <AccountControlSlot client={sessionClient} labels={accountLabels} />
+            <div className="site-header-controls ml-auto flex shrink-0 items-center gap-4">
+              <div className="site-header-search">
+                {videoSearchEnabled ? <VideoSearchField key={searchKey} locale={locale} query={searchQuery} isLibrary={pathname===videoRoot} label={t('search.video.label')} submitLabel={t('search.submit')} clearLabel={t('search.clear')} closeLabel={t('search.close')} placeholder={t('search.video.placeholder')} onExpandedChange={open=>setSearchState({pathname:searchKey,open})}/> : <ExpandableSearchField label={t('search.unavailable')} submitLabel={t('search.submit')} clearLabel={t('search.clear')} isDisabled/>}
+              </div>
+              <div ref={accountRef} className="site-header-account shrink-0" data-mobile-retained={!showNavigation}><AccountControlView /></div>
             </div>
           </div>
         </header>
         {lineNotice.visible ? <LineBrowserNotice pathname={pathname} onClose={lineNotice.close} /> : <StatementStrip />}
       </div>
-      {showNavigation ? <nav className="site-mobile-tab-bar" style={{gridTemplateColumns: `repeat(${mobileNavItems.length}, minmax(0, 1fr))`}} aria-label={t('nav.menu')} data-mobile-hidden={!mobileChromeVisible} data-iphone-standalone={iphoneStandalone || undefined}>
+      {showNavigation ? <nav className="site-mobile-tab-bar" style={{gridTemplateColumns: `repeat(${mobileNavItems.length + 1}, minmax(0, 1fr))`}} aria-label={t('nav.menu')} data-mobile-hidden={!mobileChromeVisible} data-iphone-standalone={iphoneStandalone || undefined}>
         <span aria-hidden="true" className="site-mobile-tab-indicator" data-mobile-nav-indicator data-visible={mobileIndicatorIndex >= 0} style={{transform: `translate3d(${Math.max(0, mobileIndicatorIndex) * 100}%, 0, 0)`}} />
         {mobileNavItems.map((item, index) => {
           const Icon = item.icon;
@@ -147,6 +188,10 @@ export function SiteHeader({layout, locale, pathname, sessionClient, showNavigat
             </Link>
           );
         })}
+        <div className="site-mobile-account" data-label={t('nav.my')} style={{gridColumn: mobileNavItems.length + 1, gridRow: 1}}>
+          <AccountControlView menuLabel={t('nav.my')} />
+          <span aria-hidden="true">{t('nav.my')}</span>
+        </div>
       </nav> : null}
     </>
   );

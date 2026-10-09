@@ -1,0 +1,33 @@
+import {cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
+import {afterEach,expect,it,vi} from 'vitest';
+import {VideoSearchField} from './VideoSearchField';
+import {videoSearchRefreshEvent} from './search';
+const router=vi.hoisted(()=>({push:vi.fn()}));
+vi.mock('next/navigation',()=>({useRouter:()=>router}));
+afterEach(()=>{cleanup();router.push.mockClear();vi.restoreAllMocks();});
+const labels={label:'Search videos',submitLabel:'Submit',clearLabel:'Clear',closeLabel:'Close'};
+it('submits video searches and clears back to browse without losing the Enter/IME boundary',async()=>{
+ render(<VideoSearchField {...labels} locale="en" query="faith" isLibrary/>);
+ fireEvent.click(screen.getByRole('button',{name:'Search videos'}));
+ const input=screen.getByRole('searchbox',{name:'Search videos'});
+ await waitFor(()=>expect(input).toHaveFocus());
+ fireEvent.change(input,{target:{value:'Hope 主日'}});
+ fireEvent.keyDown(input,{key:'Enter',isComposing:true});
+ expect(router.push).not.toHaveBeenCalled();
+ fireEvent.keyDown(input,{key:'Enter'});
+ expect(router.push).toHaveBeenCalledWith('/en/member-videos?q=hope+%E4%B8%BB%E6%97%A5');
+ fireEvent.click(screen.getByRole('button',{name:'Search videos'}));
+ fireEvent.click(screen.getByRole('button',{name:'Clear'}));
+ fireEvent.keyDown(input,{key:'Enter'});
+ expect(router.push).toHaveBeenLastCalledWith('/en/member-videos');
+});
+it('repeats an unchanged library query through a new read rather than a no-op route refresh',async()=>{
+ const refresh=vi.fn();window.addEventListener(videoSearchRefreshEvent,refresh);
+ vi.spyOn(window,'scrollTo').mockImplementation(()=>{});
+ render(<VideoSearchField {...labels} locale="en" query="faith" isLibrary/>);
+ fireEvent.click(screen.getByRole('button',{name:'Search videos'}));
+ const input=screen.getByRole('searchbox',{name:'Search videos'});
+ await waitFor(()=>expect(input).toHaveFocus());fireEvent.keyDown(input,{key:'Enter'});
+ expect(refresh).toHaveBeenCalledOnce();expect(router.push).not.toHaveBeenCalled();
+ window.removeEventListener(videoSearchRefreshEvent,refresh);
+});

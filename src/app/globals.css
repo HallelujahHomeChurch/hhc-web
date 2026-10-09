@@ -276,6 +276,22 @@
   }
 
   .site-top-chrome,
+  .site-header-search { z-index: 2; }
+  @media (min-width: 768px) {
+    .site-header[data-search-open="true"][data-search-replaces-nav="true"] #site-navigation { visibility: hidden; }
+    .site-header[data-search-open="true"][data-search-replaces-nav="true"] .site-header-search {
+      position: absolute;
+      inset-block: 0;
+      inset-inline: var(--site-search-start) var(--site-search-end);
+      display: flex;
+      align-items: center;
+      background: var(--color-paper);
+    }
+  }
+  body:has(.site-header-account[data-mobile-retained="true"] [aria-expanded="true"]) .site-top-chrome,
+  body:has(.site-mobile-account [aria-expanded="true"]) .site-top-chrome,
+  body:has(.site-mobile-account [aria-expanded="true"]) .site-mobile-tab-bar { transform: none; }
+
   .site-mobile-tab-bar {
     transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
   }
@@ -304,6 +320,43 @@
     .site-top-chrome:focus-within {
       transform: translateY(0);
     }
+
+    .site-header-account:not([data-mobile-retained="true"]) { display: none; }
+    .site-header[data-search-open="true"] .site-header-brand,
+    .site-header[data-search-open="true"] .site-header-account { visibility: hidden; }
+    .site-header[data-search-open="true"] .site-header-search {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--color-paper);
+    }
+    .site-mobile-account { position: relative; z-index: 1; min-height: var(--mobile-item-height); }
+    .site-mobile-account > a,
+    .site-mobile-account > span[aria-hidden="true"]:first-child {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      width: 100%;
+      height: var(--mobile-item-height);
+      padding-top: 2px;
+      border-radius: var(--mobile-item-radius);
+    }
+    .site-mobile-account > span:last-child { position: absolute; inset-inline: 0; bottom: 3px; text-align: center; font-size: 11px; line-height: 16px; pointer-events: none; }
+    .site-mobile-account > a svg { width: 26px; height: 26px; }
+    body:has(.site-mobile-account [aria-expanded="true"]) .hhc-menu__popover {
+      position: fixed !important;
+      inset: auto 12px calc(72px + env(safe-area-inset-bottom)) !important;
+      width: calc(100vw - 24px);
+      max-width: none;
+      max-height: min(70dvh, 480px);
+      overflow-y: auto;
+      transform: none !important;
+      padding: 8px;
+      border-radius: 16px;
+    }
+    body:has(.site-mobile-account [aria-expanded="true"]) .hhc-menu__item { min-height: 44px; }
 
     .site-mobile-tab-bar {
       position: fixed;
@@ -458,3 +511,21 @@
 .analytics-preferences {margin: 24px auto; padding: 16px; width: min(100% - 32px, 880px); border-top: 1px solid var(--color-line, #ddd); font-size: 14px;}
 .analytics-preferences summary {cursor: pointer;}
 .analytics-preferences button {min-height: 44px; padding: 8px 16px; border: 1px solid currentColor; border-radius: 6px; cursor: pointer;}
+
+/* Integrate shared controls in their layer so local sizing can override defaults. */
+@layer hhc.components {
+  .site-header-search .hhc-expandable-search__field input { font-size: 16px; }
+  .site-header-search .hhc-expandable-search__trigger:disabled { opacity: .4; cursor: not-allowed; }
+  @media (min-width: 768px) {
+    .site-header[data-search-open="true"][data-search-replaces-nav="true"] .hhc-expandable-search { width: 100%; }
+  }
+  @media (max-width: 767px) {
+    .site-header-search .hhc-expandable-search { width: 44px; height: 44px; }
+    .site-header-search .hhc-expandable-search__trigger,
+    .site-header-search .hhc-expandable-search__clear,
+    .site-header-search .hhc-expandable-search__close { width: 44px; height: 44px; }
+    .site-header[data-search-open="true"] .hhc-expandable-search { width: 100%; transition: none; }
+    .site-mobile-account .hhc-account-menu__trigger { display: flex; justify-content: center; align-items: flex-start; width: 100%; height: var(--mobile-item-height); padding-top: 2px; border-radius: var(--mobile-item-radius); }
+    .site-mobile-account .hhc-avatar { width: 26px; height: 26px; min-width: 26px; min-height: 26px; }
+  }
+}

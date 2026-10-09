@@ -78,6 +78,17 @@ describe('SiteFooter', () => {
     expect(screen.getByText('/')).toHaveAttribute('aria-hidden', 'true');
   });
 
+  it('retains visible public destinations for members outside the bottom navigation', () => {
+    render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteFooter layout={{...layout, header: [
+      {key: 'about', label: '關於我們', href: '/zh-Hant/about', visible: true},
+      {key: 'news', label: '最新消息', href: '/zh-Hant/news', visible: true},
+      {key: 'literature-ministry', label: '文字事工', href: '/zh-Hant/literature-ministry', visible: true}
+    ]}} locale="zh-Hant" pathname="/zh-Hant/member-videos" /></NextIntlClientProvider>);
+    expect(screen.getByRole('link', {name: '最新消息'})).toHaveAttribute('href', '/zh-Hant/news');
+    expect(screen.getByRole('link', {name: '關於我們'})).toHaveAttribute('href', '/zh-Hant/about');
+    expect(screen.queryByRole('link', {name: '文字事工'})).not.toBeInTheDocument();
+  });
+
   it.each([
     ['ja', ja, 'ソーシャルメディア'],
     ['ko', ko, '소셜 미디어']

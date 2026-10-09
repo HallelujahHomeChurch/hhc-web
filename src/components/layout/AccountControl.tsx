@@ -128,6 +128,10 @@ export function AccountControl(props: AccountControlProps) {
   return <AccountControlProvider {...props}><AccountControlView /></AccountControlProvider>;
 }
 
+export function AccountControlScope({children, ...props}: AccountControlProps & {children: ReactNode}) {
+  return useContext(AccountControlContext) ? children : <AccountControlProvider {...props}>{children}</AccountControlProvider>;
+}
+
 export function AccountControlSlot(props: AccountControlProps) {
   return useContext(AccountControlContext) ? <AccountControlView /> : <AccountControl {...props} />;
 }
@@ -278,7 +282,7 @@ export function AccountControlProvider({
   );
 }
 
-export function AccountControlView() {
+export function AccountControlView({menuLabel}: {menuLabel?: string} = {}) {
   const context = useContext(AccountControlContext);
   if (!context) throw new Error('AccountControlView must be used inside AccountControlProvider.');
 
@@ -291,7 +295,7 @@ export function AccountControlView() {
       <a
         className="grid size-10 shrink-0 place-items-center rounded-full text-ink hover:bg-primary-soft hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         href={`${accountSiteUrl}/login`}
-        aria-label={labels.signIn}
+        aria-label={menuLabel ?? labels.signIn}
         onClick={(event) => { event.preventDefault(); void beginAuthorization(); }}
       >
         <UserRound size={21} aria-hidden="true" />
@@ -304,7 +308,7 @@ export function AccountControlView() {
   const canOpenAdmin = navigation.sources.account?.ids.includes('admin') === true;
   return (
     <AccountMenu
-      labels={{menu: labels.menu, greeting: displayName ? `Hi ${displayName}` : labels.manageAccount, manageAccount: labels.manageAccount, signOut: labels.signOut}}
+      labels={{menu: menuLabel ?? labels.menu, greeting: displayName ? `Hi ${displayName}` : labels.manageAccount, manageAccount: labels.manageAccount, signOut: labels.signOut}}
       links={[
         {id: 'projection', label: labels.projectionSystem, href: siteConfig.apps.projection, newWindow: {label: labels.projectionWindowLabel, blockedMessage: labels.projectionPopupBlocked}},
         ...(canOpenAdmin ? [{id: 'admin', label: labels.adminManagement, href: siteConfig.apps.admin}] : [])
