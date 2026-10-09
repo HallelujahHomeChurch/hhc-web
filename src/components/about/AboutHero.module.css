@@ -1,0 +1,7 @@
+@media(max-width:767px) {
+  .compactMobile {min-height:0;}
+  .compactMobile > div:last-child {min-height:0;padding-block:24px;}
+  .compactMobile > div:last-child > div {padding-top:0;}
+  .compactMobile h1 {white-space:normal;font-size:28px;line-height:1.2;letter-spacing:.02em;}
+  .compactMobile p {margin-top:8px;font-size:16px;line-height:1.5;letter-spacing:0;}
+}
