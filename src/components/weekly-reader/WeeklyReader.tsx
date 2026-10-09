@@ -598,7 +598,8 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       <RangeHighlights root={paperRef} highlights={savedHighlights} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}:${typography.size}:${typography.line}:${direction}:${chapter}`} onSelect={selectExisting}/>
       </div>
       {mobile && chapterIndex < chapters.length - 1 ? <div className="reader-chapter-boundary"><IconButton variant="ghost" aria-label={m.next} isDisabled={suspended} onPress={() => onChapter(chapterIndex + 1)} icon={<ArrowDown size={20} aria-hidden="true"/>}/></div> : null}
-      {mobile ? <ChapterPull key={chapter} root={viewportRef} blocked={!!panel || selecting || selected.length > 0 || !!notes || suspended || nativeZoomed} onPrevious={chapterIndex > 0 ? () => onChapter(chapterIndex - 1, true) : undefined} onNext={chapterIndex < chapters.length - 1 ? () => onChapter(chapterIndex + 1) : undefined}/> : null}
+      {/* An ordinary touch also sets selecting; only captured/native text selection blocks chapter pulls. */}
+      {mobile ? <ChapterPull key={chapter} root={viewportRef} blocked={!!panel || selected.length > 0 || !!notes || suspended || nativeZoomed} onPrevious={chapterIndex > 0 ? () => onChapter(chapterIndex - 1, true) : undefined} onNext={chapterIndex < chapters.length - 1 ? () => onChapter(chapterIndex + 1) : undefined}/> : null}
     </div>
     </div>
     {!mobile && direction === 'horizontal' ? <div className="reader-page-controls" role="group" aria-label={m.originalPages}>

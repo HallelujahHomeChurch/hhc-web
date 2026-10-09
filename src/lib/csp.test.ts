@@ -6,6 +6,13 @@ function directive(policy: string, name: string) {
 }
 
 describe('getContentSecurityPolicy', () => {
+  it('allows same-origin styles when WebKit falls back from style-src-elem to style-src', () => {
+    const policy = getContentSecurityPolicy({development: false});
+
+    expect(directive(policy, 'style-src')).toBe("style-src 'self' 'unsafe-inline'");
+    expect(directive(policy, 'default-src')).toBe("default-src 'none'");
+  });
+
   it('sets a strict baseline for executable content', () => {
     const policy = getContentSecurityPolicy({development: false});
 
