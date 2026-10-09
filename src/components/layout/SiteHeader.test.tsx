@@ -39,6 +39,7 @@ const accountLabels = {
   menu: '帳號選單',
   projectionSystem: '投影系統', projectionWindowLabel: '另開視窗', projectionPopupBlocked: '瀏覽器阻擋開啟視窗。',
   adminManagement: '後台管理',
+  organizationManagement: '小家管理',
   manageAccount: '管理帳號',
   signIn: '登入',
   signOut: '登出',

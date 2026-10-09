@@ -45,6 +45,7 @@ export function SiteHeader(props: SiteHeaderProps) {
     projectionPopupBlocked: t('account.projectionPopupBlocked'),
     adminManagement: t('account.adminManagement'),
     manageAccount: t('account.manageAccount'),
+    organizationManagement: t('account.organizationManagement'),
     signIn: t('account.signIn'),
     signOut: t('account.signOut'),
     signOutError: t('account.signOutError'),

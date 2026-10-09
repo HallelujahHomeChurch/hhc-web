@@ -32,6 +32,7 @@ type AccountControlLabels = {
   projectionPopupBlocked: string;
   adminManagement: string;
   manageAccount: string;
+  organizationManagement: string;
   signIn: string;
   signOut: string;
   signOutError: string;
@@ -56,6 +57,7 @@ type AccountControlContextValue = {
   accountSiteUrl: string;
   auth: AccountAuthState;
   navigation: NavigationPresentation;
+  canManageOrganizations: boolean;
   bulletinAccess: BulletinAccess;
   videoAccess: VideoAccess;
   beginAuthorization: () => Promise<void>;
@@ -156,6 +158,7 @@ export function AccountControlProvider({
   const [auth, setAuth] = useState<AccountAuthState>(authRuntime.getSnapshot());
   const [bulletinProjection, setBulletinProjection] = useState<{subject: string; access: BulletinAccess} | null>(null);
   const [videoProjection, setVideoProjection] = useState<{subject: string; access: VideoAccess} | null>(null);
+  const [managedProjection, setManagedProjection] = useState<{session: AccountAuthState; allowed: boolean} | null>(null);
   const [logoutError, setLogoutError] = useState('');
   const readerAccountId = auth.status === 'authenticated' ? auth.session.user.id : null;
   useEffect(() => {
@@ -179,6 +182,9 @@ export function AccountControlProvider({
   const videoAccess: VideoAccess = auth.status !== 'authenticated' ? 'loading'
     : auth.session.permissionAvailability.status === 'unavailable' ? 'unavailable'
       : videoProjection?.subject === auth.session.user.id ? videoProjection.access : 'loading';
+  const canManageOrganizations = auth.status === 'authenticated'
+    && auth.session.permissionAvailability.status === 'available'
+    && managedProjection?.session === auth && managedProjection.allowed;
 
   useEffect(() => {
     const unsubscribe = authRuntime.subscribe(() => {
@@ -208,6 +214,7 @@ export function AccountControlProvider({
         const entitlements = new Set(snapshot.entitlements.map(({entitlementCode}) => entitlementCode));
         const editions = bulletinEditions.filter(({series, locale}) => entitlements.has(entitlementByEdition.get(`${series}/${locale}`)!));
         if (!commitNavigation('operations', [...(editions.length ? ['literature-ministry'] : []), ...(entitlements.has('video.meeting-recordings.access') ? ['member-videos'] : [])])) return;
+        setManagedProjection({session: auth, allowed: Boolean(snapshot.churchMembership && snapshot.responsibilities.length > 0)});
         setBulletinProjection({
           subject: auth.session.user.id,
           access: {
@@ -268,6 +275,7 @@ export function AccountControlProvider({
       accountSiteUrl,
       auth,
       navigation,
+      canManageOrganizations,
       bulletinAccess,
       videoAccess,
       beginAuthorization,
@@ -286,7 +294,7 @@ export function AccountControlView({menuLabel}: {menuLabel?: string} = {}) {
   const context = useContext(AccountControlContext);
   if (!context) throw new Error('AccountControlView must be used inside AccountControlProvider.');
 
-  const {accountSiteUrl, auth, navigation, beginAuthorization, labels, signOut} = context;
+  const {accountSiteUrl, auth, navigation, canManageOrganizations, beginAuthorization, labels, signOut} = context;
   if ((auth.status === 'checking' || auth.status === 'unavailable') && !navigation.subjectId) {
     return <span className="inline-block size-10 shrink-0" aria-hidden="true" />;
   }
@@ -311,9 +319,10 @@ export function AccountControlView({menuLabel}: {menuLabel?: string} = {}) {
       labels={{menu: menuLabel ?? labels.menu, greeting: displayName ? `Hi ${displayName}` : labels.manageAccount, manageAccount: labels.manageAccount, signOut: labels.signOut}}
       links={[
         {id: 'projection', label: labels.projectionSystem, href: siteConfig.apps.projection, newWindow: {label: labels.projectionWindowLabel, blockedMessage: labels.projectionPopupBlocked}},
-        ...(canOpenAdmin ? [{id: 'admin', label: labels.adminManagement, href: siteConfig.apps.admin}] : [])
+        ...(canOpenAdmin ? [{id: 'admin', label: labels.adminManagement, href: siteConfig.apps.admin}] : []),
+        {id: 'manage', label: labels.manageAccount, href: `${accountSiteUrl}/profile`},
+        ...(canManageOrganizations ? [{id: 'organizations', label: labels.organizationManagement, href: `${accountSiteUrl}/organizations`}] : [])
       ]}
-      manageAccountHref={`${accountSiteUrl}/profile`}
       onSignOut={() => void signOut()}
       user={{name: displayName, email: user?.email ?? '', avatarUrl: user ? user.avatar_url : '/assets/brand/account-placeholder.svg'}}
     />

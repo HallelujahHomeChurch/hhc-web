@@ -1,4 +1,4 @@
-import {render, screen, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
@@ -13,12 +13,59 @@ vi.mock('@/lib/observability', () => ({captureHandledError}));
 
 const labels = {
   menu: 'Account menu', projectionSystem: 'Projection system', projectionWindowLabel: 'Open in a new window', projectionPopupBlocked: 'Popup blocked.', adminManagement: 'Admin console',
-  manageAccount: 'Manage account', signIn: 'Sign in', signOut: 'Sign out', signOutError: 'Unable to sign out. Try again.', unsyncedWarning: 'Unsynced changes will be removed. Continue?'
+  manageAccount: 'Manage account', organizationManagement: 'Small group management', signIn: 'Sign in', signOut: 'Sign out', signOutError: 'Unable to sign out. Try again.', unsyncedWarning: 'Unsynced changes will be removed. Continue?'
+};
+
+const managedAccessSnapshot = {
+  memberDetailsEligible: true,
+  churchMembership: {membershipId: 'membership-1', church: {id: 'church-1', kind: 'church', name: 'Church'}},
+  memberships: [], orgRoles: [], entitlements: [],
+  responsibilities: [{responsibilityId: 'responsibility-1', orgUnit: {id: 'unit-1', kind: 'small_group', name: 'Group'}}],
+  version: 'a'.repeat(64)
 };
 
 afterEach(() => { sessionStorage.clear(); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); captureHandledError.mockClear(); });
 
 describe('AccountControl', () => {
+  it('links a responsible member directly to Account small group management without another access request', async () => {
+    const fetcher = vi.fn().mockResolvedValue(Response.json(managedAccessSnapshot));
+    vi.stubGlobal('fetch', fetcher);
+    render(<AccountControl client={sessionClient([])} labels={labels} accountSiteUrl="https://account.alive.org.tw" />);
+    await userEvent.click(await screen.findByRole('button', {name: 'Account menu'}));
+    expect(await screen.findByRole('menuitem', {name: 'Small group management'})).toHaveAttribute('href', 'https://account.alive.org.tw/organizations');
+    const items = screen.getAllByRole('menuitem');
+    expect(items.indexOf(screen.getByRole('menuitem', {name: 'Small group management'}))).toBe(items.indexOf(screen.getByRole('menuitem', {name: 'Manage account'})) + 1);
+    expect(fetcher).toHaveBeenCalledOnce();
+    await userEvent.click(screen.getByRole('menuitem', {name: 'Sign out'}));
+    await screen.findByRole('link', {name: 'Sign in'});
+    expect(screen.queryByRole('menuitem', {name: 'Small group management'})).not.toBeInTheDocument();
+  });
+
+  it.each([
+    {...managedAccessSnapshot, responsibilities: []},
+    {...managedAccessSnapshot, churchMembership: undefined}
+  ])('hides small group management without active membership and responsibility', async (access) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(access)));
+    render(<AccountControl client={sessionClient([])} labels={labels} />);
+    await userEvent.click(await screen.findByRole('button', {name: 'Account menu'}));
+    expect(screen.queryByRole('menuitem', {name: 'Small group management'})).not.toBeInTheDocument();
+  });
+
+  it.each(['revoked', 'failed', 'switched'] as const)('does not retain the management shortcut when access is %s', async (change) => {
+    const fetcher = vi.fn().mockResolvedValueOnce(Response.json(managedAccessSnapshot));
+    vi.stubGlobal('fetch', fetcher);
+    const client = sessionClient([]);
+    render(<AccountControl client={client} labels={labels} />);
+    await userEvent.click(await screen.findByRole('button', {name: 'Account menu'}));
+    await screen.findByRole('menuitem', {name: 'Small group management'});
+    if (change === 'switched') vi.mocked(client.getSession).mockResolvedValue({authenticated: true, user: {id: 'u2', email: 'other@example.com', display_name: 'Other', avatar_url: null}, permissions: [], permission_availability: {status: 'available'}});
+    if (change === 'failed') fetcher.mockRejectedValueOnce(new Error('unavailable'));
+    else fetcher.mockResolvedValueOnce(Response.json({...managedAccessSnapshot, responsibilities: []}));
+    fireEvent(window, new Event('focus'));
+    await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByRole('menuitem', {name: 'Small group management'})).not.toBeInTheDocument());
+  });
+
   it('keeps unsynced notes and the session when the user cancels logout', async () => {
     vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); pending.mockResolvedValueOnce(true);
     const logoutAll = vi.fn(); const before = offline.forgetOfflineAccount.mock.calls.length;
@@ -159,6 +206,8 @@ describe('AccountControl', () => {
     expect(await screen.findByRole('link', {name: 'Sign in'})).toBeInTheDocument();
   });
 });
+
+
 
 function anonymousClient(): AccountSessionClient {
   return {
