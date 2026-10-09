@@ -2,11 +2,22 @@ import {describe, expect, it} from 'vitest';
 import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
 import {AccountSessionError} from '@hallelujahhomechurch/account-client';
 import {evaluateOfflineAccess, readerFailureAction} from './offline-access';
+import {readerFixture} from './test-fixture';
 
 const binding = {accountId: 'a', documentId: 'd', series: 'general', contentLocale: 'zh-Hant', revision: 1} as const;
 const start = Date.parse('2026-10-01T00:00:00Z');
 const input = {binding, expected: binding, validatedAt: start, offlineValidUntil: start + 604800000, now: start + 1000, lastObservedAt: start, logoutEpoch: 0, currentLogoutEpoch: 0, locked: false};
 describe('seven-day explicit offline access', () => {
+  it.each(['zh-Hant','zh-Hans'] as const)('keeps V6 %s authorization, logout and clock checks independent of renderer support',contentLocale=>{
+    const receipt=readerFixture(contentLocale,'v6').access;
+    const binding={accountId:receipt.accountId,documentId:receipt.documentId,series:receipt.series,contentLocale:receipt.contentLocale,revision:receipt.revision};
+    const value={...input,binding,expected:binding,validatedAt:Date.parse(receipt.validatedAt),offlineValidUntil:Date.parse(receipt.offlineValidUntil)};
+    expect(evaluateOfflineAccess({...value,now:start+604799999})).toBe('available');
+    expect(evaluateOfflineAccess({...value,now:start+604800000})).toBe('expired');
+    expect(evaluateOfflineAccess({...value,expected:{...binding,contentLocale:contentLocale==='zh-Hant'?'zh-Hans':'zh-Hant'}})).toBe('unavailable');
+    expect(evaluateOfflineAccess({...value,currentLogoutEpoch:1})).toBe('unavailable');
+    expect(evaluateOfflineAccess({...value,now:start-1})).toBe('revalidation_required');
+  });
   it.each([[0, 'available'], [604799999, 'available'], [604800000, 'expired'], [604800001, 'expired']] as const)('evaluates the exact %i millisecond boundary', (elapsed, expected) => {
     expect(evaluateOfflineAccess({...input, now: start + elapsed})).toBe(expected);
   });

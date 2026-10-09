@@ -10,7 +10,7 @@ const state = vi.hoisted(() => ({accountId: 'account-a' as string | null, status
 vi.mock('@/components/layout/AccountControl', () => ({
   useAccountIdentity: () => state.accountId, useAccountAuth: () => ({status: state.status}),
   useAccountSignIn: () => state.signIn,
-  useBulletinAccess: () => ({status: 'available', editions: state.accountId ? [{series: 'general', locale: 'zh-Hant'}] : []}),
+  useBulletinAccess: () => ({status: 'available', editions: state.accountId ? [{series: 'general', locale: 'zh-Hant'}, {series: 'general', locale: 'zh-Hans'}] : []}),
   useBulletinAuthorization: () => authorization
 }));
 const authorization = {getAccessToken: async () => 'token', refreshAfterUnauthorized: async () => null};
@@ -48,6 +48,70 @@ afterEach(() => {cleanup(); Reflect.deleteProperty(document, 'fonts'); Reflect.d
 beforeEach(() => {Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect(0, 100, 300, 20)});});
 
 describe('protected weekly reader', () => {
+  it.each([
+    ['zh-Hant',1440],['zh-Hans',1440],['zh-Hant',1024],['zh-Hans',1024],['zh-Hant',390],['zh-Hans',390],
+  ] as const)('reads historical V6 %s at width %i with unchanged source anchors and independent theme',async(contentLocale,width)=>{
+    const mobile=width<768;
+    vi.stubGlobal('matchMedia',vi.fn(query=>({matches:query==='(max-width: 767px)'&&mobile,addEventListener:vi.fn(),removeEventListener:vi.fn()})));
+    vi.stubGlobal('ResizeObserver',class{
+      constructor(private callback:ResizeObserverCallback){}
+      observe(element:Element){this.callback([{target:element,contentRect:{width,height:800}} as ResizeObserverEntry],this as unknown as ResizeObserver);}
+      disconnect(){}
+    });
+    vi.spyOn(HTMLElement.prototype,'getBoundingClientRect').mockImplementation(function(this:HTMLElement){
+      if(this.classList.contains('reader-tabbar'))return new DOMRect(0,76,width,52);
+      return this.classList.contains('reader-viewport')?new DOMRect(0,128,width,600):new DOMRect(0,500,300,30);
+    });
+    Object.defineProperty(Range.prototype,'getBoundingClientRect',{configurable:true,value:()=>new DOMRect(0,500,300,30)});
+    const fixture=readerFixture(contentLocale,'v6');
+    const first=fixture.document.content.components[0],second=fixture.document.content.components[1];
+    if(first.type!=='backSummary'||second.type!=='backSummary')throw new Error('fixture');
+    const welcome=first.items[0].blocks[0],paragraph=second.items[0].blocks[0];
+    const credit={...paragraph,id:'credit',sentences:[{id:'credit-sentence',spans:[{text:'Production credit',fontRole:'body' as const}]}]};
+    fixture.document.content.components[0]={id:'c0',type:'cover',cover:{welcome:[welcome],worship:[],work:[],wordQuestions:[],weeklyVerses:[]}};
+    fixture.document.content.components[1]={id:'c1',type:'bodySection',bodySection:{kind:'sermon',title:{...paragraph,id:'article-title',sentences:[{id:'article-heading',spans:[{text:'Article',fontRole:'body'}]}]},header:{lectureDate:credit,contributors:[]},blocks:[paragraph]}};
+    const rows=contentLocale==='zh-Hans'?[
+      ['historicalVision','一个异象：合一与宣教'],['historicalGospelGoals','两个目标：福音为华人、华人为福音'],['historicalActions','三个行动：共同生活、爱与成全、恩膏传承'],['historicalCommitment','四个坚持：宣教主导、灵恩神学、团队事奉、门徒训练'],
+    ] as const:[
+      ['historicalVision','一個異象：合一與宣教'],['historicalGoals','兩個目標：宣教為中國、中國為宣教'],['historicalActions','三個行動：共同生活、愛與成全、恩膏傳承'],['historicalCommitment','四個堅持：宣教主導、靈恩神學、團隊事奉、門徒訓練'],
+    ] as const;
+    fixture.document.content.layoutManifest.pages[0].fixedSlots=rows.map(([element],index)=>({id:element,element,style:{...welcome.style,fontSize:9.6,lineHeight:12},box:{x:.422+index*.0336,y:.1465+index*.019,width:.48-index*.0336,height:.02}}));
+    fixture.document.content.layoutManifest.pages[1].slots.push({...fixture.document.content.layoutManifest.pages[1].slots[0],id:'credit-slot',blockId:'credit',fragments:[{sentenceId:'credit-sentence',start:0,end:17}]});
+    const original=JSON.stringify(fixture);
+    state.open.mockResolvedValue(fixture);
+    const cloud=(await state.privateState()).state;
+    state.privateState.mockResolvedValue({state:{...cloud,documentId:fixture.document.documentId}});
+    const previousTheme=localStorage.getItem('hhc-reader-theme');
+    localStorage.removeItem('hhc-reader-theme');document.documentElement.dataset.theme='light';
+    try{
+      const {container}=render(<WeeklyReader {...props} contentLocale={contentLocale}/>);
+      await waitFor(()=>expect(container.querySelector(`[data-bulletin-mode="${mobile?'mobile':'paper'}"]`)).not.toBeNull());
+      const paper=container.querySelector('.reader-paper-with-notes')!;
+      for(const [,text] of rows)expect(within(paper as HTMLElement).getByText(text)).toBeInTheDocument();
+      if(mobile){
+        for(const element of ['welcomeLabel','worshipLabel','workLabel','wordLabel'])expect(paper.querySelector(`[data-fixed-element="${element}"]`)?.textContent).not.toMatch(/[：:]\s*$/);
+        expect(paper.querySelector('[data-sentence-id="credit-sentence"]')).toBeNull();
+      }
+      choosePage(2);
+      await waitFor(()=>expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page','p1'));
+      const anchor=paper.querySelector('[data-sentence-id="s1"]');
+      expect(anchor).toHaveTextContent('內容1。');expect(anchor).toHaveAttribute('data-fragment-start','0');expect(anchor).toHaveAttribute('data-fragment-end','4');
+      expect(screen.queryByRole('complementary',{name:props.messages.contents})).not.toBeInTheDocument();
+      if(mobile){
+        expect(container.querySelector('[data-chapter="body"]')).toBeInTheDocument();
+        expect(container.querySelector('[data-chapter="cover"]')).toBeNull();
+        expect(container.querySelector('[data-sentence-id="credit-sentence"]')).toBeNull();
+        await waitFor(()=>expect(container.querySelector('.reader-viewport')!.scrollTop).toBeGreaterThanOrEqual(364));
+      }
+      fireEvent.click(screen.getByRole('button',{name:props.messages.darkMode}));
+      expect(container.querySelector('.weekly-reader')).toHaveAttribute('data-theme','dark');
+      expect(document.documentElement).toHaveAttribute('data-theme','light');
+      expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page','p1');
+      expect(JSON.stringify(fixture)).toBe(original);
+    }finally{
+      if(previousTheme===null)localStorage.removeItem('hhc-reader-theme');else localStorage.setItem('hhc-reader-theme',previousTheme);
+    }
+  });
   it('relinks an unavailable note through the existing private-state API without replacing its text', async () => {
     const cloud = (await state.privateState()).state;
     const note = {id: 'note-a', text: 'Keep my note', quote: 'Original source', sentenceIds: [], inactiveAnchors: [], version: 3, deleted: false, reanchorRequired: true, createdAt: '', updatedAt: ''};

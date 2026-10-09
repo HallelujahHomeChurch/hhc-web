@@ -1,7 +1,7 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {readerFixture} from './test-fixture';
 import {createReaderApi, verifyReaderAccess} from './api';
-import {BULLETIN_RENDERER_V2_DIGEST,BULLETIN_RENDERER_V2_ASSETS,BULLETIN_RENDERER_V3_DIGEST,BULLETIN_RENDERER_V4_DIGEST,BULLETIN_RENDERER_V5_DIGEST} from '@hallelujahhomechurch/ui';
+import {BULLETIN_RENDERER_V2_DIGEST,BULLETIN_RENDERER_V2_ASSETS} from '@hallelujahhomechurch/ui';
 
 const client = vi.hoisted(() => ({listOnlineBulletinDiscovery: vi.fn(), openOnlineBulletin: vi.fn(), getReaderState: vi.fn(), applyReaderMutations: vi.fn()}));
 vi.mock('@hallelujahhomechurch/hhc-web-client', async original => ({...await original<typeof import('@hallelujahhomechurch/hhc-web-client')>(), createHhcWebClient: () => client}));
@@ -10,19 +10,19 @@ const auth = {getAccessToken: async () => 'token', refreshAfterUnauthorized: asy
 beforeEach(() => {vi.clearAllMocks(); client.listOnlineBulletinDiscovery.mockResolvedValue({items: [{issueId: readerFixture().document.issueId, issueNumber: 1739, series: 'general', contentLocale: 'zh-Hant', onlineRevision: 1}]}); client.openOnlineBulletin.mockResolvedValue(readerFixture());});
 
 describe('member reader access', () => {
-  it.each(['zh-Hant','zh-Hans'] as const)('accepts V3/V4/V5 with the existing %s template while retaining receipt verification',contentLocale=>{
-    for (const rendererVersion of ['v3','v4','v5'] as const) {
-    const value=readerFixture();
-    value.document.contentLocale=value.access.contentLocale=contentLocale;
-    if(contentLocale==='zh-Hans'){
-      value.document.content.templateVersion='v2';
-      Object.assign(value.document.content.layoutManifest,{templateVersion:'v2',assets:BULLETIN_RENDERER_V2_ASSETS.map(asset=>({url:asset.url,sha256:asset.sha256,kind:asset.kind}))});
-    }
-    Object.assign(value.document.content.layoutManifest,{rendererVersion,rendererArtifactSha256:rendererVersion==='v5'?BULLETIN_RENDERER_V5_DIGEST:rendererVersion==='v4'?BULLETIN_RENDERER_V4_DIGEST:BULLETIN_RENDERER_V3_DIGEST});
+  it.each(['zh-Hant','zh-Hans'] as const)('accepts V3–V6 with the existing %s template while retaining receipt verification',contentLocale=>{
+    for (const rendererVersion of ['v3','v4','v5','v6'] as const) {
+    const value=readerFixture(contentLocale,rendererVersion);
     expect(verifyReaderAccess(value,{...selector,contentLocale}).contentLocale).toBe(contentLocale);
     value.access.accountId='another-account';
     expect(()=>verifyReaderAccess(value,{...selector,contentLocale})).toThrow('invalid_reader_binding');
     }
+  });
+  it.each(['digest','asset'] as const)('rejects an altered V6 %s before exposing private content',reason=>{
+    const value=readerFixture('zh-Hant','v6');
+    if(reason==='digest')value.document.content.layoutManifest.rendererArtifactSha256='0'.repeat(64);
+    else value.document.content.layoutManifest.assets[0].sha256='0'.repeat(64);
+    expect(()=>verifyReaderAccess(value,selector)).toThrow('update_required');
   });
   it('accepts pinned Simplified V2 only with its exact language and private document binding',()=>{
     const value=readerFixture();

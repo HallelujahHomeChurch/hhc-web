@@ -138,5 +138,5 @@ lookup finish before the automatic popup opens. Focus, visibility and visible
 60-second polling refresh state. The existing popup publication window remains
 enforced; the statement strip and article remain available.
 
-Website client and browser preferences use the exact published
-frontend-platform v1.0.47 packages and registry lockfile.
+Website client and bulletin UI use exact published frontend-platform v1.0.48
+packages; browser preferences retain v1.0.47. All use the registry lockfile.
