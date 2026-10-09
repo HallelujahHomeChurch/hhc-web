@@ -37,7 +37,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
   const [quality,setQuality]=useState<Quality>(resume?.quality ?? 'auto');
   const intent=useRef<PlaybackIntent>(resume?.intent ?? 'followLive'), positioned=useRef(false), closing=useRef(false);
   const failed=useRef(false), pausedIntent=useRef(resume?.paused??true);
-  const automaticSeek=useRef<number|null>(null), recovery=useRef(false);
+  const automaticSeek=useRef<number|null>(null);
   const currentLive=useRef(live), bookmarkCallback=useRef(onBookmark), qualityRef=useRef(quality), initialBookmark=useRef(resume);
   useEffect(()=>{currentLive.current=live;bookmarkCallback.current=onBookmark;qualityRef.current=quality;},[live,onBookmark,quality]);
   const remember=useCallback(()=>{
@@ -65,7 +65,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
   useEffect(()=>{
     const video=videoRef.current;
     if(!video)return;
-    let cancelled=false;closing.current=false;failed.current=false;
+    let cancelled=false;closing.current=false;failed.current=false;positioned.current=false;
     const autoplay=()=>{
       if(initialBookmark.current?.paused)return;
       void video.play().catch((error:unknown)=>{
@@ -104,7 +104,6 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
 
   useEffect(()=>{
     const video=videoRef.current;if(!video)return;
-    positioned.current=false;
     const position=()=>{
       const state=currentLive.current;
       if(qualityPosition.current||closing.current||failed.current)return;
@@ -118,19 +117,21 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
           video.playbackRate=saved.rate;if(saved.paused)video.pause();
         }else if(window){automaticSeek.current=window.edge;video.currentTime=window.edge;}
         positioned.current=true;remember();
-      }else if(window&&recovery.current&&state?.canFollow&&intent.current==='followLive'){
-        recovery.current=false;automaticSeek.current=window.edge;video.currentTime=window.edge;remember();
+      }else if(window&&state?.canFollow&&intent.current==='followLive'&&!video.paused&&window.edge-video.currentTime>60){
+        // Upstream recovery does not fire the viewer's browser online event.
+        automaticSeek.current=window.edge;video.currentTime=window.edge;remember();
       }
     };
     const seeking=()=>{if(!positioned.current||closing.current||qualityPosition.current)return;if(automaticSeek.current!==null&&Math.abs(video.currentTime-automaticSeek.current)<0.1){automaticSeek.current=null;return;}dvr();};
     const resolution=()=>{if(!engine.current)setActiveHeight(video.videoHeight>0?video.videoHeight:null);};
     const paused=()=>{if(!closing.current&&!failed.current&&!video.error&&positioned.current&&!qualityPosition.current){pausedIntent.current=true;dvr();}};
-    const online=()=>{recovery.current=true;position();};
-    const events:[string,()=>void][]=[['loadedmetadata',position],['progress',position],['durationchange',position],['canplay',position],['seeking',seeking],['pause',paused],['timeupdate',remember],['ratechange',remember],['play',remember],['loadedmetadata',resolution],['resize',resolution]];
+    const online=()=>position();
+    const events:[string,()=>void][]=[['loadedmetadata',position],['progress',position],['durationchange',position],['canplay',position],['seeking',seeking],['pause',paused],['timeupdate',position],['timeupdate',remember],['ratechange',remember],['play',remember],['loadedmetadata',resolution],['resize',resolution]];
     for(const [event,handler] of events)video.addEventListener(event,handler);
     window.addEventListener('online',online);
+    if(playbackMode==='live')position();
     return()=>{for(const [event,handler] of events)video.removeEventListener(event,handler);window.removeEventListener('online',online);};
-  },[playbackUrl,playbackMode,videoRef,remember,dvr]);
+  },[playbackUrl,playbackMode,videoRef,remember,dvr,live?.verifiedEnd,live?.canFollow]);
 
   const changeQuality=(next:Quality)=>{
     const video=videoRef.current;

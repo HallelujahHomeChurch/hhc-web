@@ -1,11 +1,11 @@
-import {cleanup,fireEvent,render,screen} from '@testing-library/react';
+import {act,cleanup,fireEvent,render,screen} from '@testing-library/react';
 import {afterEach,expect,it,vi} from 'vitest';
-import type {ComponentProps} from 'react';
+import type {ComponentProps,RefObject} from 'react';
 import {LiveRecordingPlayer,englishLiveLabels} from './LiveRecordingPlayer';
-const session=vi.hoisted(()=>({playback:{url:'same-live-url',grant:{liveState:'ended',watermarkCode:'trace',replayUntil:'2026-10-07T12:00:00Z',progress:{mediaEndSeconds:5400}}},pending:false,error:false,closed:false,bookmark:{current:{time:60,paused:true,rate:1.5,quality:'720p',intent:'dvr'}},remember:vi.fn(),start:vi.fn().mockResolvedValue(undefined)}));
+const session=vi.hoisted(()=>({playback:{url:'same-live-url',grant:{liveState:'ended',serverNow:'2026-10-09T05:30:00Z',stopAcceptedAt:null as string|null,watermarkCode:'trace',replayUntil:'2026-10-07T12:00:00Z',progress:{mediaEndSeconds:5400}}},pending:false,error:false,closed:false,bookmark:{current:{time:60,paused:true,rate:1.5,quality:'720p',intent:'dvr'}},remember:vi.fn(),start:vi.fn().mockResolvedValue(undefined)}));
 vi.mock('./useLivePlayback',()=>({useLivePlayback:()=>session}));
-vi.mock('./HlsPlayer',()=>({HlsPlayer:({live}:{live:{label:string}})=><div data-testid="player">{live.label}</div>}));
-afterEach(()=>{cleanup();session.playback.grant.liveState='ended';session.error=false;});
+vi.mock('./HlsPlayer',()=>({HlsPlayer:({live,onBookmark,videoRef}:{live:{label:string};onBookmark:(value:unknown)=>void;videoRef:RefObject<HTMLVideoElement|null>})=><div data-testid="player">{live.label}<video ref={videoRef}/><button onClick={()=>onBookmark({time:1430,paused:false,rate:1,quality:'auto',intent:'followLive'})}>Advance playback</button></div>}));
+afterEach(()=>{cleanup();session.playback.grant.liveState='ended';session.error=false;vi.useRealTimers();vi.restoreAllMocks();});
 it('keeps an ended event mounted until an explicit VOD handoff with the same bookmark',async()=>{
  const props={api:{},recording:{id:'r',captureId:'a'.repeat(32),title:'Gathering',liveState:'live',progress:{mediaEndSeconds:5400}},labels:{play:'Play',retry:'Retry',playError:'Error',loading:'Loading'},liveLabels:englishLiveLabels,locale:'en',onVod:vi.fn().mockResolvedValue(true)} as unknown as ComponentProps<typeof LiveRecordingPlayer>;
  render(<LiveRecordingPlayer {...props}/>);
@@ -34,4 +34,23 @@ it('keeps recovering source state out of viewer copy while keeping actual playba
  expect(screen.getByTestId('player')).toHaveTextContent('Live');
  session.error=true;view.rerender(<LiveRecordingPlayer {...props}/>);
  expect(screen.getByRole('alert')).toHaveTextContent('Error');
+});
+
+it('shows the actual-position estimated delay instead of a fixed one-to-two-minute claim',()=>{
+ session.playback.grant.liveState='live';vi.spyOn(performance,'now').mockReturnValue(1000);
+ const props={api:{},recording:{id:'r',captureId:'a'.repeat(32),createdAt:'2026-10-09T05:00:00Z',title:'Gathering',liveState:'live',progress:{mediaEndSeconds:1680}},labels:{play:'Play',retry:'Retry',playError:'Error',loading:'Loading'},liveLabels:englishLiveLabels,locale:'en'} as unknown as ComponentProps<typeof LiveRecordingPlayer>;
+ render(<LiveRecordingPlayer {...props}/>);
+ expect(screen.queryByText(/1–2 minutes/)).not.toBeInTheDocument();
+ vi.mocked(performance.now).mockReturnValue(11000);fireEvent.click(screen.getByRole('button',{name:'Advance playback'}));
+ expect(screen.getByRole('status')).toHaveTextContent('Live · estimated delay 380 seconds');
+});
+
+it('keeps delay current while playback is paused or stalled',()=>{
+ vi.useFakeTimers();session.playback.grant.liveState='live';vi.spyOn(performance,'now').mockReturnValue(1000);
+ const props={api:{},recording:{id:'r',captureId:'a'.repeat(32),createdAt:'2026-10-09T05:00:00Z',title:'Gathering',liveState:'live',progress:{mediaEndSeconds:1680}},labels:{play:'Play',retry:'Retry',playError:'Error',loading:'Loading'},liveLabels:englishLiveLabels,locale:'en'} as unknown as ComponentProps<typeof LiveRecordingPlayer>;
+ const view=render(<LiveRecordingPlayer {...props}/>),video=view.container.querySelector('video')!;
+ Object.defineProperty(video,'readyState',{configurable:true,value:2});video.currentTime=1430;
+ fireEvent.click(screen.getByRole('button',{name:'Advance playback'}));expect(screen.getByRole('status')).toHaveTextContent('370 seconds');
+ vi.mocked(performance.now).mockReturnValue(61000);act(()=>vi.advanceTimersByTime(1000));
+ expect(screen.getByRole('status')).toHaveTextContent('430 seconds');
 });

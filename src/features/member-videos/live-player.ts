@@ -2,6 +2,13 @@ export type PlaybackIntent = 'followLive' | 'dvr';
 export type PlayerBookmark = {time: number; paused: boolean; rate: number; quality: 'auto' | '480p' | '720p' | '1080p'; intent: PlaybackIntent};
 export type LivePlayerState = {verifiedEnd: number; canFollow: boolean; label: string; backToLive: string; liveLabel?: string};
 
+export function estimatedLiveDelay(createdAt:string,serverNow:string,elapsedSeconds:number,position:number,stoppedAt?:string|null) {
+  const start=Date.parse(createdAt),now=Date.parse(serverNow)+elapsedSeconds*1000;
+  const end=stoppedAt?Math.min(now,Date.parse(stoppedAt)):now;
+  if(![start,end,position].every(Number.isFinite)||elapsedSeconds<0||position<0)return null;
+  return Math.max(0,Math.round((end-start)/1000-position));
+}
+
 // seekable describes the EVENT timeline; buffered only describes cached bytes.
 export function liveWindow(seekable: TimeRanges, verifiedEnd: number) {
   if (!seekable.length || !Number.isFinite(verifiedEnd) || verifiedEnd <= 0) return null;
