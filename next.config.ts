@@ -29,6 +29,8 @@ const nextConfig: NextConfig = {
     {source: '/:locale/literature-ministry/offline/reader-shell', headers: [{key: 'X-HHC-Reader-Shell', value: 'public'}, {key: 'X-Robots-Tag', value: 'noindex, nofollow'}]},
     ...weeklyTemplate.assets.map(asset => ({source: asset.url, headers: [{key: 'Cache-Control', value: 'public, max-age=31536000, immutable'}]})),
     {source: '/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2', headers: [{key: 'Cache-Control', value: 'public, max-age=31536000, immutable'}]},
+    {source: '/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2', headers: [{key: 'Cache-Control', value: 'public, max-age=31536000, immutable'}]},
+    {source: '/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2', headers: [{key: 'Cache-Control', value: 'public, max-age=31536000, immutable'}]},
     {source: '/assets/weekly/v1/manifest.json', headers: [{key: 'Cache-Control', value: 'public, max-age=0, must-revalidate'}]},
     {source: '/:locale/statements/:slug', headers: [{key: 'X-Robots-Tag', value: 'noindex, follow'}]}, {
     source: '/(.*)',
