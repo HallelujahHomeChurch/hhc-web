@@ -7,7 +7,7 @@ import playerStyles from './PlayerChrome.module.css';
 const router=vi.hoisted(()=>({push:vi.fn()}));
 vi.mock('next/navigation',()=>({useRouter:()=>router}));
 
-const engine=vi.hoisted(()=>({supported:true,manifestReady:true,instances:[] as {nextLevel:number;loadLevel:number;recoverMediaError:ReturnType<typeof vi.fn>;listeners:Record<string,(...args:unknown[])=>void>;loadSource:ReturnType<typeof vi.fn>;destroy:ReturnType<typeof vi.fn>;config:{xhrSetup:(xhr:XMLHttpRequest,url:string)=>void}}[]}));
+const engine=vi.hoisted(()=>({supported:true,manifestReady:true,instances:[] as {nextLevel:number;loadLevel:number;recoverMediaError:ReturnType<typeof vi.fn>;listeners:Record<string,(...args:unknown[])=>void>;loadSource:ReturnType<typeof vi.fn>;destroy:ReturnType<typeof vi.fn>;config:{startLevel?:number;xhrSetup:(xhr:XMLHttpRequest,url:string)=>void}}[]}));
 const url='https://media.alive.org.tw/videos/r/packages/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/sessions/s/master.m3u8';
 vi.mock('hls.js',()=>({default:class {
   static isSupported(){return engine.supported;}
@@ -17,7 +17,7 @@ vi.mock('hls.js',()=>({default:class {
   listeners:Record<string,(...args:unknown[])=>void>={};
   levels=[{height:720,url:[url.replace('master.m3u8','720p/index.m3u8')]},{height:1080,url:[url.replace('master.m3u8','1080p/index.m3u8')]},{height:480,url:[url.replace('master.m3u8','480p/index.m3u8')]}];
   loadSource=vi.fn();destroy=vi.fn();
-  constructor(public config:{xhrSetup:(xhr:XMLHttpRequest,url:string)=>void}) {engine.instances.push(this);}
+  constructor(public config:{startLevel?:number;xhrSetup:(xhr:XMLHttpRequest,url:string)=>void}) {engine.instances.push(this);}
   on(event:string,callback:(...args:unknown[])=>void){this.listeners[event]=callback;if(event==='manifest'&&engine.manifestReady)queueMicrotask(callback);}
   attachMedia(){}
 }}));
@@ -31,6 +31,20 @@ function openSubmenu(name:string){
 }
 function chooseQuality(value:string){openSubmenu('Quality');fireEvent.click(screen.getByRole('menuitemradio',{name:value==='auto'?/^Auto/:value}));}
 function chooseSpeed(value:string){openSubmenu('Speed');fireEvent.click(screen.getByRole('menuitemradio',{name:`${value}×`}));}
+
+it.each(['vod','live'] as const)('starts %s Auto at the lowest rendition without locking adaptive quality',async(playbackMode)=>{
+  const p=props();render(<HlsPlayer {...p} playbackMode={playbackMode} availableQualities={['480p','720p','1080p']}/>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));
+  expect(engine.instances[0].config.startLevel).toBe(0);
+  expect(engine.instances[0].loadLevel).toBe(-1);
+  expect(engine.instances[0].nextLevel).toBe(-1);
+});
+
+it('keeps a restored manual rendition independent of the Auto startup level',async()=>{
+  const p=props();render(<HlsPlayer {...p} resume={{time:100,paused:true,rate:1.5,quality:'1080p',intent:'dvr'}}/>);
+  await waitFor(()=>expect(engine.instances[0]?.nextLevel).toBe(1));
+  expect(engine.instances[0].config.startLevel).toBeUndefined();
+});
 
 it('exposes 480p only when provided and keeps its requests inside the authenticated session',async()=>{
   const p=props();render(<HlsPlayer {...p} availableQualities={['480p','720p','1080p']}/>);

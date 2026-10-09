@@ -78,6 +78,8 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
       if(Hls.isSupported()) {
         const hls=new Hls({
           enableWorker:true, debug:false, maxBufferLength:60, maxMaxBufferLength:120,
+          // HLS levels are sorted by resolution; start low without disabling ABR.
+          startLevel:qualityRef.current==='auto'?0:undefined,
           ...(playbackMode==='live'?{backBufferLength:120,lowLatencyMode:false,liveSyncDuration:30,liveMaxLatencyDuration:Infinity,maxLiveSyncPlaybackRate:1}:{}),
           xhrSetup:(xhr,url)=>{verifyMediaRequest(playbackUrl,url);xhr.withCredentials=true;},
           fetchSetup:(context,init)=>{verifyMediaRequest(playbackUrl,context.url);return new Request(context.url,{...init,credentials:'include',redirect:'error',referrerPolicy:'no-referrer'});},
