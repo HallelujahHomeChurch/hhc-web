@@ -122,8 +122,8 @@ export async function stageOfflineSave(value: OnlineBulletinAccess, selector: Re
   verifyReaderAccess(value, selector);
   const resources: OfflineSave['resources'] = [];
   let size = new TextEncoder().encode(JSON.stringify(value)).byteLength;
-  // V7 Hans adds 8.1 MB of pinned TC fallback fonts; retain the previous content headroom.
-  const maxSize = (value.document.contentLocale === 'zh-Hans' && value.document.content.layoutManifest.rendererVersion === 'v7' ? 40 : 32) * 1024 * 1024;
+  // V7/V8 Hans add 8.1 MB of pinned TC fallback fonts; retain the previous content headroom.
+  const maxSize = (value.document.contentLocale === 'zh-Hans' && ['v7', 'v8'].includes(value.document.content.layoutManifest.rendererVersion) ? 40 : 32) * 1024 * 1024;
   for (const asset of value.document.content.layoutManifest.assets) {
     signal?.throwIfAborted();
     // verifyReaderAccess restricts these to exact code-owned public URLs/digests.

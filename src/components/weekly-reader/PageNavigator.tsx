@@ -10,7 +10,7 @@ export function PageNavigator({document, metadata, page, onPage, messages: m, tr
   return <nav ref={root} className="reader-thumbnails" aria-label={m.thumbnails}>{document.pages.map((entry, index) => {
     const scale = 112 / (entry.width * 4 / 3);
     return <Button key={entry.id} type="button" className="reader-thumbnail" aria-label={`${m.page} ${index + 1}`} aria-current={page === index ? 'page' : undefined} onPress={() => onPage(index)}>
-      <span aria-hidden="true" inert className="reader-thumbnail-image" style={{width: 112, height: entry.height * 4 / 3 * scale}}><span style={{display: 'block', position: 'relative', width: entry.width * 4 / 3, transform: `scale(${scale})`, transformOrigin: 'top left'}}><BulletinDocumentRenderer document={presentation} mode="paper" activePage={entry.id} canonicalMetadata={metadata}/><ReaderWatermark traceCode={traceCode} tone={theme}/></span></span>
+      <span aria-hidden="true" inert className="reader-thumbnail-image" data-reader-renderer={document.layoutManifest.rendererVersion} style={{width: 112, height: entry.height * 4 / 3 * scale}}><span style={{display: 'block', position: 'relative', width: entry.width * 4 / 3, transform: `scale(${scale})`, transformOrigin: 'top left'}}><BulletinDocumentRenderer document={presentation} mode="paper" activePage={entry.id} canonicalMetadata={metadata}/><ReaderWatermark traceCode={traceCode} tone={theme}/></span></span>
       <span>{index + 1}</span>
     </Button>;
   })}</nav>;
