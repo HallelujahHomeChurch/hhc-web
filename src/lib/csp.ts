@@ -21,6 +21,7 @@ export function getContentSecurityPolicy({development, sentryDsn}: ContentSecuri
     "default-src 'none'",
     `script-src 'self' 'unsafe-inline'${development ? " 'unsafe-eval'" : ''}`,
     "script-src-attr 'none'",
+    "style-src 'self' 'unsafe-inline'",
     "style-src-elem 'self' 'unsafe-inline'",
     "style-src-attr 'unsafe-inline'",
     `img-src 'self' data: blob: https://i.ytimg.com https://lh3.googleusercontent.com https://profile.line-scdn.net https://ui-avatars.com https://alivestoragebb99ee6e.blob.core.windows.net ${mediaOrigins}`,
