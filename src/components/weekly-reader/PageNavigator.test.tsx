@@ -8,7 +8,8 @@ import {PageNavigator} from './PageNavigator';
 afterEach(cleanup);
 it.each(['v6', 'v7', 'v8'] as const)('preserves version-aware issue spacing in %s thumbnails', version => {
   const fixture = readerFixture('zh-Hant', version);
-  const {container} = render(<div className="weekly-reader"><PageNavigator document={fixture.document.content} metadata={fixture.document.canonicalMetadata} page={0} onPage={vi.fn()} messages={getMessages('en').weeklyReader} traceCode={fixture.access.traceCode}/></div>);
+  const content = {...fixture.document.content, contentLocale: 'zh-Hant' as const, sourcePageCount: fixture.document.content.pages.length};
+  const {container} = render(<div className="weekly-reader"><PageNavigator document={content} metadata={fixture.document.canonicalMetadata} page={0} onPage={vi.fn()} messages={getMessages('en').weeklyReader} traceCode={fixture.access.traceCode}/></div>);
   const thumbnail = container.querySelector('.reader-thumbnail-image')!;
   expect(thumbnail).toHaveAttribute('data-reader-renderer', version);
   const issue = document.createElement('span');
