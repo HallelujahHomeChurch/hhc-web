@@ -1,10 +1,53 @@
 'use client';
 
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
+import type {MemberLiveRecording} from '@hallelujahhomechurch/hhc-web-client';
 import {Play} from 'lucide-react';
 import type {createMemberVideoApi} from './api';
 
 type CoverApi=ReturnType<typeof createMemberVideoApi>;
+
+export function useLiveRecordingCover(api:CoverApi,recording:MemberLiveRecording,enabled=true){
+  const {id,captureId,coverRevision,createdAt}=recording;
+  const [value,setValue]=useState<{api:CoverApi;id:string;captureId:string;url:string}|null>(null);
+  const current=useRef(value);
+  useEffect(()=>()=>{if(current.current)URL.revokeObjectURL(current.current.url);current.current=null;},[]);
+  useEffect(()=>{
+    const abort=new AbortController();
+    const expiresAt=Date.parse(createdAt)+24*60*60*1000;
+    const expired=()=>!Number.isFinite(expiresAt)||expiresAt<=Date.now();
+    const discard=()=>{if(current.current)URL.revokeObjectURL(current.current.url);current.current=null;setValue(null);};
+    if(current.current&&(current.current.api!==api||current.current.id!==id||current.current.captureId!==captureId))discard();
+    if(!enabled||expired()||!coverRevision){discard();return;}
+    void api.liveCover(id,captureId,abort.signal).then(blob=>{
+      if(abort.signal.aborted||expired())return;
+      if(current.current)URL.revokeObjectURL(current.current.url);
+      const next={api,id,captureId,url:URL.createObjectURL(blob)};current.current=next;setValue(next);
+    }).catch((error:unknown)=>{
+      if(abort.signal.aborted)return;
+      const status=typeof error==='object'&&error!==null&&'status' in error?error.status:undefined;
+      if(status===401||status===403||status===404||status===428)discard();
+    });
+    const timer=window.setInterval(()=>{if(expired()){abort.abort();discard();window.clearInterval(timer);}},30_000);
+    return()=>{abort.abort();window.clearInterval(timer);};
+  },[api,id,captureId,coverRevision,createdAt,enabled]);
+  return enabled&&value?.api===api&&value.id===id&&value.captureId===captureId?value.url:undefined;
+}
+
+export function LiveCoverSurface({url,title}:{url?:string;title:string}){
+  return <div className="grid aspect-video place-items-center overflow-hidden rounded-lg bg-panel text-muted">
+    {/* Private object URLs bypass the public optimizer. The fallback is public HHC branding. */}
+    {/* eslint-disable-next-line @next/next/no-img-element */}
+    {url?<img src={url} alt={title} width={1280} height={720} loading="lazy" className="h-full w-full object-cover"/>:<div className="flex items-center gap-3" aria-label="HHC">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/assets/brand/logo.png" alt="" width={56} height={56} className="size-14 object-contain"/><span className="text-2xl font-semibold tracking-widest">HHC</span>
+    </div>}
+  </div>;
+}
+export function LiveRecordingCover({api,recording}:{api:CoverApi;recording:MemberLiveRecording}){
+  const url=useLiveRecordingCover(api,recording);
+  return <LiveCoverSurface url={url} title={recording.title}/>;
+}
 
 // Keep private bytes local to this mounted viewer; never use the public image
 // optimizer, persistent storage, or playback grants for a cover.
