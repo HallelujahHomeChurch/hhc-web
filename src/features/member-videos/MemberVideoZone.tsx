@@ -373,13 +373,14 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
   };
   const searchMode=view==='list'&&Boolean(query||invalidQuery);
   const searchLabels=messages.search??{results:'Results for {query}',empty:'No results for {query}',clear:'Clear search',back:'Back to search results',tooLong:'Search accepts one query of up to 100 characters.'};
+  const backToSearch=recordingId&&query?<Link className={zoneStyles.back} href={videoSearchHref(locale,query)}>{searchLabels.back}</Link>:null;
   const liveBadge=(item:MemberLiveRecording)=>liveViewerLabel(item.liveState,liveLabels);
   return (
     <main>
       {!searchMode?hero:null}
       <div className={`bg-[image:var(--hhc-page-gradient)] pb-14 ${recordingId ? zoneStyles.watchPage : 'py-10'}`}>
         <section className={`${zoneStyles.zone} ${recordingId ? zoneStyles.watch : searchMode ? zoneStyles.search : zoneStyles.library}`} aria-label={messages.listTitle}>
-          {recordingId&&query ? <Link className={zoneStyles.back} href={videoSearchHref(locale,query)}>{searchLabels.back}</Link>:null}
+          {!selected&&!selectedLive?backToSearch:null}
           {searchMode ? <h1 className={zoneStyles.searchHeading}>{searchLabels.results.replace('{query}',query)}</h1>:null}
           {invalidQuery&&view==='list' ? <div role="alert" className="text-ink">{searchLabels.tooLong} <Link href={videoSearchHref(locale,'')} onClick={forgetVideoPosition} className="underline">{searchLabels.clear}</Link></div>:null}
           {!loadError && recordings && recordingId && !selected && !selectedLive && !liveLoading ? <p role="alert" className="text-ink">{messages.unavailable ?? messages.expired}</p> : null}
@@ -387,7 +388,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
           {!invalidQuery && !loadError && !recordings ? <p role="status" className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{messages.loading}</p> : null}
           {!loadError && recordings?.length === 0 && nextCursor===null && !livestreams.length && !selectedLive ? <p className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{searchMode ? <>{searchLabels.empty.replace('{query}',query)} <Link href={videoSearchHref(locale,'')} onClick={forgetVideoPosition} className="underline">{searchLabels.clear}</Link></> : messages.empty}</p> : null}
           {liveError?<p role="status" className="text-sm text-muted">{messages.loadError}</p>:null}
-          {recordingId&&selectedLive?<LiveRecordingPlayer key={selectedLive.captureId} api={api} recording={selectedLive} labels={messages} liveLabels={messages.live??englishLiveLabels} locale={locale} onVod={selected?.packageId===selectedLive.captureId?async bookmark=>{
+          {recordingId&&selectedLive?<LiveRecordingPlayer key={selectedLive.captureId} api={api} recording={selectedLive} labels={messages} liveLabels={messages.live??englishLiveLabels} locale={locale} backToSearch={backToSearch} onVod={selected?.packageId===selectedLive.captureId?async bookmark=>{
             if(await start(bookmark)){vodChosen.current=true;setSelectedLive(null);return true;}return false;
           }:undefined}/>:null}
           {selected && !selectedLive ? <div ref={playerSection} className={`${zoneStyles.video} grid min-w-0 scroll-mt-28 gap-4`}>
@@ -398,6 +399,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
             </div>}
             <h2 ref={playerTitle} tabIndex={-1} className="text-2xl font-semibold text-ink outline-none">{selected.title}</h2>
             <p className="text-sm text-muted">{messages.uploadedDate.replace('{date}', formatDate(selected.uploadedAt, locale))}</p>
+            {backToSearch}
             {selected.description?<details className="rounded-xl bg-panel p-4 text-ink"><summary className="min-h-11 cursor-pointer font-semibold focus-visible:outline-2 focus-visible:outline-primary">{messages.description}</summary><p className="whitespace-pre-wrap break-words">{selected.description}</p></details>:null}
             {playError ? <p role="alert" className="text-sm text-primary">{playError} <button type="button" className="underline" onClick={() => void start(vodBookmark.current)}>{messages.retry}</button></p> : null}
           </div> : null}

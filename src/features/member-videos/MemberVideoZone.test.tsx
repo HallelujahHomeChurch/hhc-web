@@ -440,7 +440,8 @@ it('keeps watch selection and other recommendations independent of the source qu
  await screen.findByRole('heading',{name:'Selected'});
  expect(videoApi.listPage).not.toHaveBeenCalled();expect(videoApi.liveList).toHaveBeenCalledWith(expect.any(AbortSignal),undefined);
  expect(screen.getByRole('link',{name:'Other latest recording'})).toHaveAttribute('href','/en/member-videos/r2?q=faith');
- expect(screen.getByRole('link',{name:'Back to search results'})).toHaveAttribute('href','/en/member-videos?q=faith');
+ const back=screen.getByRole('link',{name:'Back to search results'});expect(back).toHaveAttribute('href','/en/member-videos?q=faith');
+ expect(screen.getByRole('heading',{name:'Selected'}).compareDocumentPosition(back)&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
 
 it('returns to the loaded depth by refetching fresh batches and restores a bounded position',async()=>{
