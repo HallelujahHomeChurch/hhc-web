@@ -9,6 +9,7 @@ import {useLivePlayback} from './useLivePlayback';
 import {estimatedLiveDelay,type PlayerBookmark} from './live-player';
 import {LoaderCircle} from 'lucide-react';
 import playerStyles from './PlayerChrome.module.css';
+import {useLiveRecordingCover,LiveCoverSurface} from './RecordingCover';
 
 export type LiveLabels={starting:string;live:string;recovering:string;interrupted:string;ending:string;ended:string;failed:string;expired:string;aborted:string;backToLive:string;replayUntil:string;watchRecording:string;liveNow?:string};
 export const englishLiveLabels:LiveLabels={liveNow:'Live',starting:'Preparing live video',live:'Live · estimated delay {delay}',recovering:'Catching up',interrupted:'Live connection interrupted',ending:'Finishing live video; you can keep watching',ended:'Live ended; you can keep watching',failed:'Live video is unavailable',expired:'Live replay has expired',aborted:'Live video has stopped',backToLive:'Back to live',replayUntil:'Replay available until {time}',watchRecording:'Continue with the published recording'};
@@ -33,6 +34,7 @@ export function LiveRecordingPlayer({api,recording,labels,liveLabels,locale,onVo
  const onBookmark=useCallback((bookmark:PlayerBookmark)=>{remember(bookmark);updateDelay(bookmark.time);},[remember,updateDelay]);
  const state=grant&&['ending','ended'].includes(grant.liveState)?grant.liveState:recording.liveState;
  const playable=!session.closed&&!['failed','expired','aborted'].includes(state);
+ const poster=useLiveRecordingCover(api,recording,playable);
  useEffect(()=>{
   if(!livePlayback||!['live','recovering'].includes(state))return;
   const timer=window.setInterval(()=>{if(video.current&&video.current.readyState>=2)updateDelay(video.current.currentTime);},1000);
@@ -42,7 +44,7 @@ export function LiveRecordingPlayer({api,recording,labels,liveLabels,locale,onVo
  const verifiedEnd=Math.max(recording.progress.mediaEndSeconds,grant?.progress.mediaEndSeconds??0);
  const retry=async()=>{const rebuild=mediaError;setMediaError(false);await session.start();if(rebuild)setPlayerRevision(value=>value+1);};
  return <div className={`${zoneStyles.video} grid min-w-0 gap-4`}>
-  {session.playback&&playable?<HlsPlayer key={`${session.playback.url}:${playerRevision}`} playbackMode="live" playbackUrl={session.playback.url} videoRef={video} title={recording.title} labels={labels} availableQualities={['480p','720p','1080p']} watermark={session.playback.grant.watermarkCode} onError={onError} onBookmark={onBookmark} resume={session.bookmark.current} live={{verifiedEnd,canFollow:state==='live',label:liveViewerLabel(state,liveLabels),backToLive:liveLabels.backToLive,liveLabel:liveLabels.liveNow??liveLabels.live}}/>:<div className="relative grid aspect-video place-items-center rounded-[14px] bg-neutral-950 text-white">
+  {session.playback&&playable?<HlsPlayer key={`${session.playback.url}:${playerRevision}`} playbackMode="live" poster={poster??'/assets/brand/live-placeholder.svg'} playbackUrl={session.playback.url} videoRef={video} title={recording.title} labels={labels} availableQualities={['480p','720p','1080p']} watermark={session.playback.grant.watermarkCode} onError={onError} onBookmark={onBookmark} resume={session.bookmark.current} live={{verifiedEnd,canFollow:state==='live',label:liveViewerLabel(state,liveLabels),backToLive:liveLabels.backToLive,liveLabel:liveLabels.liveNow??liveLabels.live}}/>:<div className="relative isolate grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950 text-white"><div className="absolute inset-0 -z-10" aria-hidden="true"><LiveCoverSurface url={poster} title={recording.title}/></div>
    {playable?(session.pending||!session.error?<div className={playerStyles.loading} role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{labels.loading}</span></div>:<p>{labels.playError}</p>):<p role="status">{session.closed?liveLabels.expired:liveLabels[state]}</p>}
   </div>}
   <h2 className="text-2xl font-semibold text-ink">{recording.title}</h2>

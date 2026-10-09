@@ -40,6 +40,11 @@ export function createMemberVideoApi(authorization: Authorization, fetcher: Fetc
       if(blob.type!=='image/jpeg'||blob.size>(1<<20)) throw new Error('Invalid recording cover');
       return blob;
     },
+    async liveCover(id:string,captureId:string,signal?:AbortSignal) {
+      const blob=await client.getMemberLiveCover(id,captureId,signal);
+      if(blob.type!=='image/jpeg'||blob.size<1||blob.size>(1<<20))throw new Error('Invalid live thumbnail');
+      return blob;
+    },
     listPage: (options: {limit?:number;cursor?:string;q?:string;signal?:AbortSignal}={})=>client.listMemberRecordingsPage(options),
     list: (signal?: AbortSignal) => client.listMemberRecordings(signal),
     grant: (id: string, scopeId: string, versionId?: string, signal?: AbortSignal) => client.issueRecordingPlayback(id, scopeId, versionId, signal),

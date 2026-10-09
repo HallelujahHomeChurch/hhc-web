@@ -16,7 +16,7 @@ import {videoSearchHref,videoSearchRefreshEvent,type VideoSearchLabels} from './
 import {HlsPlayer, type PlayerLabels} from './HlsPlayer';
 import playerStyles from './PlayerChrome.module.css';
 import {playerClock} from './PlayerChrome';
-import {RecordingCover,useRecordingCover} from './RecordingCover';
+import {LiveRecordingCover,RecordingCover,useRecordingCover} from './RecordingCover';
 import {LiveRecordingPlayer,liveViewerLabel,englishLiveLabels,type LiveLabels} from './LiveRecordingPlayer';
 import type {PlayerBookmark} from './live-player';
 
@@ -382,7 +382,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
             <div className={recordingId ? zoneStyles.recommendations : searchMode ? zoneStyles.searchList : zoneStyles.grid}>
               {liveItems.map(item=><article id={`recording-${item.id}`} key={item.captureId} className={zoneStyles.card}>
                 <Link href={cardLink(item.id)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
-                  <div className="grid aspect-video place-items-center rounded-xl bg-neutral-950 text-white"><Play size={28} aria-hidden="true"/></div>
+                  <LiveRecordingCover api={api} recording={item}/>
                   <span className={`${zoneStyles.badge} ${item.liveState==='live'?zoneStyles.liveBadge:zoneStyles.stateBadge}`}>{liveBadge(item)}</span>
                 </Link>
                 <div className={zoneStyles.info}><h3 className={zoneStyles.title}><Link href={cardLink(item.id)} aria-label={`${item.title} — ${liveBadge(item)}`}>{item.title}</Link></h3><p className={zoneStyles.date}>{(messages.liveStartedDate??'{date}').replace('{date}',formatDate(item.createdAt,locale))}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}</div>

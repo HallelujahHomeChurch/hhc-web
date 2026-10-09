@@ -195,3 +195,17 @@ enabling V8 production; upgrading the renderer does not activate the reader.
 V7/V8 Simplified offline saves have a 40 MiB streaming limit to accommodate 35.3 MB
 of pinned fonts/assets; all other saves retain 32 MiB. Failed staging never
 replaces an existing offline revision.
+
+## Live thumbnails
+
+Live cards, member search/recommendations and the live player poster share an
+authenticated thumbnail keyed by API/account instance, recording, capture and
+immutable cover revision. Each mount keeps a private Blob/object URL; scope changes,
+authorization failures, expiry and unmount abort/revoke it. A temporary refresh
+failure keeps the previous valid image. HHC branding covers the no-image state.
+Images bypass Next public optimization and persistent caches. This does not change
+live-following, DVR, ABR or playback grant semantics.
+
+Consumer release requires the reviewed and published shared Website client plus
+CMS/Gateway live-cover producers. Local packed verification is not production or
+physical OBS acceptance.
