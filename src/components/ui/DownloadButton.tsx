@@ -119,6 +119,8 @@ function DownloadButtonWorkflow({
     const blob = await response.blob();
     request.signal.throwIfAborted();
     const url = URL.createObjectURL(blob);
+    // Keep the URL readable during Android's download/preview handoff; release it on replacement or unmount.
+    if (objectURL.current) URL.revokeObjectURL(objectURL.current);
     objectURL.current = url;
     const filename = parseDownloadFilename(response.headers.get('content-disposition'), bulletin.downloadName);
     clearAttempt();
@@ -132,10 +134,6 @@ function DownloadButtonWorkflow({
     link.href = url;
     link.download = filename;
     link.click();
-    window.setTimeout(() => {
-      URL.revokeObjectURL(url);
-      if (objectURL.current === url) objectURL.current = null;
-    }, 1_000);
   }
 
   function handleFailure(error: unknown, request: AbortController) {
@@ -187,11 +185,7 @@ function DownloadButtonWorkflow({
 
   return <>
     {readyDownload ? (
-      <a href={readyDownload.url} download={readyDownload.filename} target="_blank" rel="noopener" aria-label={ariaLabel} className={classes} onClick={() => {
-        URL.revokeObjectURL(readyDownload.url);
-        if (objectURL.current === readyDownload.url) objectURL.current = null;
-        setReadyDownload(null);
-      }}>{content}</a>
+      <a href={readyDownload.url} download={readyDownload.filename} target="_blank" rel="noopener" aria-label={ariaLabel} className={classes}>{content}</a>
     ) : (
       <button type="button" aria-label={ariaLabel} aria-busy={preparing} disabled={preparing} className={classes} onClick={startDownload}>{content}</button>
     )}
