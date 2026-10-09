@@ -148,3 +148,7 @@
 .seekForward {--seek-shift:-20px}
 @keyframes seekArrowSlide {from {transform:translateX(var(--seek-shift))} to {transform:translateX(0)}}
 @media(prefers-reduced-motion:reduce) { .player[data-touch="false"] .seekBack > span, .player[data-touch="false"] .seekForward > span, .player[data-touch="false"] .seekArrows svg {animation:none} }
+
+.player[data-touch="true"] .seek, .player[data-touch="true"] .seek input {height:44px;}
+.player[data-touch="true"] .track {height:3px;}
+.player[data-touch="true"] .preview {bottom:48px;}
