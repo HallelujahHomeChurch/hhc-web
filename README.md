@@ -120,8 +120,8 @@ Mobile browse uses a compact hero. In portrait, the same watch player stays visi
 through descriptions and recommendations, using measured top chrome and its
 existing hide/search state. Short available viewports and landscape use normal
 flow. The touch timeline has a separate 44px hit row; cancelled or lost-capture
-scrubs do not commit. Search return follows stable watch metadata rather than
-adding a row above the player.
+scrubs do not commit. Watch links omit the source search query; searching again uses the header search
+field. Search depth and scroll position are not cached for returning to results.
 
 Live playback retains the available DVR timeline and replaces the numeric time
 display with a live indicator/button. It is red at the current verified live edge
@@ -137,7 +137,8 @@ Banner font regeneration includes the member-video strings in all five locales.
 The mobile bar has two content slots and an account slot on the right. The first
 slot prefers authorized literature ministry over news; the second prefers enabled,
 authorized recordings over About. Hidden projected items are omitted. The brand
-always returns to the site home, including from video pages. Public news/About
+returns to the video library from watch pages; on the library and other pages it
+returns to the site home. Public news/About
 remain available on the home page and in the footer. Desktop navigation retains
 its existing destinations; simplified legal pages retain header account access.
 

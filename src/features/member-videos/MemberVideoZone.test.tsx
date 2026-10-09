@@ -1,7 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {MemberVideoZone} from './MemberVideoZone';
-import {forgetVideoPosition,videoSearchRefreshEvent} from './search';
+import {videoSearchRefreshEvent} from './search';
 import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
 
 const state = vi.hoisted(() => ({access: 'loading', auth: 'checking'}));
@@ -53,7 +53,7 @@ beforeEach(() => {
   vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(() => {});
   vi.spyOn(HTMLMediaElement.prototype, 'canPlayType').mockReturnValue('probably');
 });
-afterEach(() => {forgetVideoPosition();cleanup();vi.useRealTimers();vi.restoreAllMocks();});
+afterEach(() => {cleanup();vi.useRealTimers();vi.restoreAllMocks();});
 
 describe('member video gate', () => {
   it('does not start twice or discard a bookmark when switching a live watch route to VOD',async()=>{
@@ -398,24 +398,24 @@ describe('member video gate', () => {
   });
 });
 
-it('uses server video search batches and preserves source query without filtering watch recommendations',async()=>{
+it('uses server search batches and opens watch routes without carrying the query',async()=>{
  state.auth='authenticated';state.access='available';
  videoApi.listPage.mockResolvedValue({items:[{id:'r1',title:'Faith meeting',description:'Hope together',uploadedAt:'2026-10-08T00:00:00Z'}],nextCursor:'next'});
  videoApi.liveList.mockResolvedValue([{id:'live',captureId:packageId,title:'Faith live',description:'Hope today',liveState:'live',createdAt:'2026-10-09T00:00:00Z'}]);
- render(<MemberVideoZone view="list" query="faith" locale="en" messages={{...messages,search:{results:'Results for {query}',empty:'No results for {query}',clear:'Clear search',back:'Back to search results',tooLong:'Invalid query'}}} hero={<div>Browse hero</div>}/>);
+ render(<MemberVideoZone view="list" query="faith" locale="en" messages={{...messages,search:{results:'Results for {query}',empty:'No results for {query}',clear:'Clear search',tooLong:'Invalid query'}}} hero={<div>Browse hero</div>}/>);
  await screen.findByRole('link',{name:'Faith meeting'});
  expect(videoApi.listPage).toHaveBeenCalledWith(expect.objectContaining({limit:12,q:'faith'}));
  expect(videoApi.liveList).toHaveBeenCalledWith(expect.any(AbortSignal),'faith');
  expect(screen.getByRole('heading',{name:'Results for faith'})).toBeInTheDocument();
  expect(screen.queryByText('Browse hero')).not.toBeInTheDocument();
  expect(screen.getByText('Hope together')).toBeInTheDocument();
- expect(screen.getByRole('link',{name:'Faith meeting'})).toHaveAttribute('href','/en/member-videos/r1?q=faith');
+ expect(screen.getByRole('link',{name:'Faith meeting'})).toHaveAttribute('href','/en/member-videos/r1');
  fireEvent.click(screen.getByRole('button',{name:'Load more'}));
  await waitFor(()=>expect(videoApi.listPage).toHaveBeenCalledWith(expect.objectContaining({cursor:'next',q:'faith'})));
 });
 it('does not query media for an invalid search and offers a clear action',async()=>{
  state.auth='authenticated';state.access='available';
- render(<MemberVideoZone view="list" query="bad" invalidQuery locale="en" messages={{...messages,search:{results:'Results for {query}',empty:'No results for {query}',clear:'Clear search',back:'Back to search results',tooLong:'Invalid query'}}} hero={null}/>);
+ render(<MemberVideoZone view="list" query="bad" invalidQuery locale="en" messages={{...messages,search:{results:'Results for {query}',empty:'No results for {query}',clear:'Clear search',tooLong:'Invalid query'}}} hero={null}/>);
  expect(await screen.findByRole('alert')).toHaveTextContent('Invalid query');
  expect(videoApi.listPage).not.toHaveBeenCalled();expect(videoApi.liveList).not.toHaveBeenCalled();
  fireEvent.click(screen.getByRole('link',{name:'Clear search'}));
@@ -439,27 +439,11 @@ it('keeps watch selection and other recommendations independent of the source qu
  render(<MemberVideoZone query="faith" recordingId="r1" locale="en" messages={messages} hero={null}/>);
  await screen.findByRole('heading',{name:'Selected'});
  expect(videoApi.listPage).not.toHaveBeenCalled();expect(videoApi.liveList).toHaveBeenCalledWith(expect.any(AbortSignal),undefined);
- expect(screen.getByRole('link',{name:'Other latest recording'})).toHaveAttribute('href','/en/member-videos/r2?q=faith');
- const back=screen.getByRole('link',{name:'Back to search results'});expect(back).toHaveAttribute('href','/en/member-videos?q=faith');
- expect(screen.getByRole('heading',{name:'Selected'}).compareDocumentPosition(back)&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+ expect(screen.getByRole('link',{name:'Other latest recording'})).toHaveAttribute('href','/en/member-videos/r2');
+ expect(screen.queryByRole('link',{name:'Back to search results'})).not.toBeInTheDocument();
 });
 
-it('returns to the loaded depth by refetching fresh batches and restores a bounded position',async()=>{
- state.auth='authenticated';state.access='available';
- vi.spyOn(window,'scrollTo').mockImplementation(()=>{});
- videoApi.listPage.mockResolvedValueOnce({items:[{id:'r1',title:'First'}],nextCursor:'next'}).mockResolvedValueOnce({items:[{id:'r2',title:'Second'}],nextCursor:'tail'});
- const first=render(<MemberVideoZone view="list" query="faith" locale="en" messages={messages} hero={null}/>);
- await screen.findByRole('link',{name:'First'});fireEvent.click(screen.getByRole('button',{name:'Load more'}));
- const selected=await screen.findByRole('link',{name:'Second'});fireEvent.click(selected);first.unmount();
- videoApi.listPage.mockResolvedValueOnce({items:[{id:'r1',title:'First reread'}],nextCursor:'new-next'}).mockResolvedValueOnce({items:[{id:'r2',title:'Second reread'}],nextCursor:'new-tail'});
- render(<MemberVideoZone view="list" query="faith" locale="en" messages={messages} hero={null}/>);
- await screen.findByRole('link',{name:'Second reread'});
- expect(screen.queryByRole('link',{name:'Second'})).not.toBeInTheDocument();
- await waitFor(()=>expect(window.scrollTo).toHaveBeenCalled());
- expect(videoApi.listPage).toHaveBeenCalledTimes(4);
- expect(videoApi.listPage.mock.calls[2][0]).toMatchObject({limit:12,q:'faith'});
- expect(videoApi.listPage.mock.calls[3][0]).toMatchObject({cursor:'new-next',q:'faith'});
-});
+
 it('repeats the same query with a fresh first page',async()=>{
  state.auth='authenticated';state.access='available';
  videoApi.listPage.mockResolvedValueOnce({items:[{id:'r1',title:'Before'}],nextCursor:'next'}).mockResolvedValueOnce({items:[{id:'r2',title:'After'}],nextCursor:null});
@@ -511,22 +495,7 @@ it('preserves a displaced head boundary and older continuation when live becomes
  fireEvent.click(screen.getByRole('button',{name:'Load more'}));
  await waitFor(()=>expect(videoApi.listPage.mock.calls[3][0]).toHaveProperty('cursor','c24'));
 });
-it('waits for initial live rows before restoring the clicked anchor',async()=>{
- state.auth='authenticated';state.access='available';
- vi.spyOn(window,'scrollTo').mockImplementation(()=>{});
- list.mockResolvedValue([{id:'r1',title:'Recording'}]);
- const first=render(<MemberVideoZone view="list" query="faith" locale="en" messages={messages} hero={null}/>);
- fireEvent.click(await screen.findByRole('link',{name:'Recording'}));first.unmount();
- let finish!:(value:unknown)=>void;
- videoApi.liveList.mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}));
- render(<MemberVideoZone view="list" query="faith" locale="en" messages={messages} hero={null}/>);
- await screen.findByRole('link',{name:'Recording'});
- await new Promise(resolve=>window.setTimeout(resolve,50));
- expect(window.scrollTo).not.toHaveBeenCalled();
- await act(async()=>finish([{id:'live',captureId:packageId,title:'Late live',liveState:'live'}]));
- await screen.findByRole('link',{name:'Late live — Live'});
- await waitFor(()=>expect(window.scrollTo).toHaveBeenCalled());
-});
+
 
 it('retries VOD at the frozen pre-error position with the same rate, quality and playing intent',async()=>{
  state.auth='authenticated';state.access='available';list.mockResolvedValue([{id:'r1',title:'Meeting',packageId}]);
@@ -543,4 +512,17 @@ it('retries VOD at the frozen pre-error position with the same rate, quality and
 it('attempts playback again after an initial media failure without an invented pause',async()=>{
  state.auth='authenticated';state.access='available';list.mockResolvedValue([{id:'r1',title:'Initial failure',packageId}]);vi.spyOn(HTMLMediaElement.prototype,'canPlayType').mockReturnValue('probably');videoApi.grant.mockResolvedValue({packageId,expiresAt:new Date(Date.now()+3600000).toISOString(),watermarkCode:'TRACE',renditions:[]});videoApi.exchange.mockResolvedValue(playbackUrl);
  render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);const video=await screen.findByLabelText('Initial failure',{selector:'video'}) as HTMLVideoElement;await waitFor(()=>expect(video.src).toBe(playbackUrl));fireEvent.error(video);fireEvent.click(screen.getByRole('button',{name:'Retry'}));await waitFor(()=>expect(videoApi.grant).toHaveBeenCalledTimes(2));await waitFor(()=>expect(screen.getByLabelText('Initial failure',{selector:'video'})).not.toBe(video));const resumed=screen.getByLabelText('Initial failure',{selector:'video'}) as HTMLVideoElement;await waitFor(()=>expect(resumed.src).toBe(playbackUrl));vi.mocked(resumed.play).mockClear();fireEvent.loadedMetadata(resumed);expect(resumed.play).toHaveBeenCalledOnce();
+});
+
+it('starts a fresh search page after opening a result without restoring list depth or scroll',async()=>{
+ state.auth='authenticated';state.access='available';
+ const scroll=vi.spyOn(window,'scrollTo').mockImplementation(()=>{});
+ videoApi.listPage.mockResolvedValueOnce({items:[{id:'r1',title:'First'}],nextCursor:'next'}).mockResolvedValueOnce({items:[{id:'r2',title:'Second'}],nextCursor:'tail'});
+ const first=render(<MemberVideoZone view="list" query="faith" locale="en" messages={messages} hero={null}/>);
+ await screen.findByRole('link',{name:'First'});fireEvent.click(screen.getByRole('button',{name:'Load more'}));
+ fireEvent.click(await screen.findByRole('link',{name:'Second'}));first.unmount();
+ videoApi.listPage.mockResolvedValueOnce({items:[{id:'r1',title:'Fresh first'}],nextCursor:'fresh-next'});
+ render(<MemberVideoZone view="list" query="faith" locale="en" messages={messages} hero={null}/>);
+ await screen.findByRole('link',{name:'Fresh first'});
+ expect(videoApi.listPage).toHaveBeenCalledTimes(3);expect(videoApi.listPage.mock.calls[2][0]).not.toHaveProperty('cursor');expect(scroll).not.toHaveBeenCalled();
 });

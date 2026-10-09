@@ -42,7 +42,6 @@
 .searchList .card {grid-template-columns:minmax(0,42%) minmax(0,1fr);gap:20px;}
 .searchList .title {font-size:20px;}
 .summary {font-size:14px;line-height:1.5;color:var(--color-muted);overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow-wrap:anywhere;}
-.back {font-size:14px;min-height:44px;display:inline-flex;align-items:center;color:var(--color-primary);}
 @media(max-width:639px){.searchList .card {grid-template-columns:minmax(0,1fr);gap:10px;}.searchList .title {font-size:16px;}}
 
 @media(max-width:767px) and (orientation:portrait) {
