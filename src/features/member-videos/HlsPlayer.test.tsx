@@ -594,3 +594,21 @@ it.each([false,true])('does not seek when theater mode is unavailable, touch=%s'
   fireEvent.keyDown(screen.getByRole('region'),{key:'t'});expect(video.currentTime).toBe(100);
   expect(screen.getByRole('region')).toHaveAttribute('data-theater','false');
 });
+
+it('freezes latest in-flight quality commands before a fatal error can erase playback intent',async()=>{
+ const p=props(),onBookmark=vi.fn();render(<HlsPlayer {...p} onBookmark={onBookmark}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));
+ const video=p.videoRef.current!;Object.defineProperty(video,'duration',{configurable:true,value:7200});fireEvent.loadedMetadata(video);fireEvent.durationChange(video);
+ video.currentTime=2820;video.playbackRate=1.5;Object.defineProperty(video,'paused',{configurable:true,value:false});fireEvent.play(video);fireEvent.timeUpdate(video);
+ fireEvent.click(screen.getByRole('button',{name:'Settings'}));fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'1080p'}});
+ fireEvent.change(screen.getByRole('combobox',{name:'Speed'}),{target:{value:'2'}});fireEvent.change(screen.getByRole('slider',{name:'Playback position'}),{target:{value:'3000'}});
+ act(()=>{video.currentTime=0;Object.defineProperty(video,'paused',{configurable:true,value:true});engine.instances[0].listeners.error('error',{fatal:true});});
+ expect(p.onError).toHaveBeenCalledWith({time:3000,paused:false,rate:2,quality:'1080p',intent:'dvr'});
+ const calls=onBookmark.mock.calls.length;fireEvent.pause(video);fireEvent.timeUpdate(video);fireEvent.loadedMetadata(video);
+ expect(onBookmark).toHaveBeenCalledTimes(calls);expect(p.onError).toHaveBeenCalledTimes(1);
+});
+it('preserves an explicit pause after the last timeupdate in the fatal snapshot',async()=>{
+ const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));
+ const video=p.videoRef.current!;video.currentTime=75;fireEvent.loadedMetadata(video);Object.defineProperty(video,'paused',{configurable:true,value:false});fireEvent.play(video);
+ fireEvent.click(screen.getByRole('button',{name:'Pause'}));fireEvent.error(video);
+ expect(p.onError).toHaveBeenCalledWith(expect.objectContaining({time:75,paused:true}));
+});

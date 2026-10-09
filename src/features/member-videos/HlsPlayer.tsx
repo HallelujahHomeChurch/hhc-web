@@ -17,7 +17,7 @@ type Props = {
   playbackMode?: 'vod' | 'live'; live?: LivePlayerState; resume?: PlayerBookmark; onBookmark?: (value: PlayerBookmark) => void;
   poster?:string; previousHref?:string; nextHref?:string;
   playbackUrl:string; availableQualities:Exclude<Quality,'auto'>[]; watermark:string; title:string;
-  labels:PlayerLabels; videoRef:RefObject<HTMLVideoElement|null>; onPlayingChange?:(playing:boolean)=>void; onError:()=>void;
+  labels:PlayerLabels; videoRef:RefObject<HTMLVideoElement|null>; onPlayingChange?:(playing:boolean)=>void; onError:(bookmark?:PlayerBookmark)=>void;
 };
 function verifyMediaRequest(master:string,target:string) {
   const base=new URL(master), url=new URL(target,base);
@@ -35,12 +35,13 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
   const [mode,setMode]=useState<'loading'|'mse'|'native'|'error'>('loading');
   const [quality,setQuality]=useState<Quality>(resume?.quality ?? 'auto');
   const intent=useRef<PlaybackIntent>(resume?.intent ?? 'followLive'), positioned=useRef(false), closing=useRef(false);
+  const failed=useRef(false), pausedIntent=useRef(resume?.paused??true);
   const automaticSeek=useRef<number|null>(null), recovery=useRef(false);
   const currentLive=useRef(live), bookmarkCallback=useRef(onBookmark), qualityRef=useRef(quality), initialBookmark=useRef(resume);
   useEffect(()=>{currentLive.current=live;bookmarkCallback.current=onBookmark;qualityRef.current=quality;},[live,onBookmark,quality]);
   const remember=useCallback(()=>{
     const video=videoRef.current;
-    if(video&&!closing.current&&!qualityPosition.current)bookmarkCallback.current?.({time:video.currentTime,paused:video.paused,rate:video.playbackRate,quality:qualityRef.current,intent:intent.current});
+    if(video&&!closing.current&&!failed.current&&!qualityPosition.current)bookmarkCallback.current?.({time:video.currentTime,paused:video.paused,rate:video.playbackRate,quality:qualityRef.current,intent:intent.current});
   },[videoRef]);
   const dvr=useCallback(()=>{intent.current='dvr';remember();},[remember]);
   const returnToLive=()=>{
@@ -52,12 +53,18 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
     void video.play().catch(()=>{});remember();
   };
   const qualities=(['480p','720p','1080p'] as const).filter(name=>availableQualities.includes(name));
-  const handleError=useCallback(()=>{setMode('error');onError();},[onError]);
+  const handleError=useCallback(()=>{
+    if(failed.current)return;
+    const video=videoRef.current;
+    const position=qualityPosition.current??{time:video?.currentTime??0,paused:pausedIntent.current,rate:video?.playbackRate??1};
+    const bookmark={...position,quality:qualityRef.current,intent:intent.current};
+    failed.current=true;qualitySwitch.current?.abort();setMode('error');onError(bookmark);
+  },[onError,videoRef]);
 
   useEffect(()=>{
     const video=videoRef.current;
     if(!video)return;
-    let cancelled=false;closing.current=false;
+    let cancelled=false;closing.current=false;failed.current=false;
     const autoplay=()=>{
       if(initialBookmark.current?.paused)return;
       void video.play().catch((error:unknown)=>{
@@ -96,7 +103,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
     positioned.current=false;
     const position=()=>{
       const state=currentLive.current;
-      if(qualityPosition.current||closing.current)return;
+      if(qualityPosition.current||closing.current||failed.current)return;
       const window=playbackMode==='live'&&state?liveWindow(video.seekable,state.verifiedEnd):null;
       if(playbackMode==='live'&&!window)return;
       if(!positioned.current){
@@ -112,7 +119,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
       }
     };
     const seeking=()=>{if(!positioned.current||closing.current||qualityPosition.current)return;if(automaticSeek.current!==null&&Math.abs(video.currentTime-automaticSeek.current)<0.1){automaticSeek.current=null;return;}dvr();};
-    const paused=()=>{if(!closing.current&&positioned.current&&!qualityPosition.current)dvr();};
+    const paused=()=>{if(!closing.current&&!failed.current&&!video.error&&positioned.current&&!qualityPosition.current){pausedIntent.current=true;dvr();}};
     const online=()=>{recovery.current=true;position();};
     const events:[string,()=>void][]=[['loadedmetadata',position],['progress',position],['durationchange',position],['canplay',position],['seeking',seeking],['pause',paused],['timeupdate',remember],['ratechange',remember],['play',remember]];
     for(const [event,handler] of events)video.addEventListener(event,handler);
@@ -156,7 +163,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
   };
   return <div ref={container} tabIndex={0} role="region" aria-label={`${title} — ${labels.togglePlayback}`} className={styles.player}>
     <video ref={videoRef} poster={poster} playsInline preload="metadata" controlsList="nodownload noremoteplayback" disablePictureInPicture disableRemotePlayback crossOrigin="use-credentials" aria-label={title} className="h-full w-full object-contain"
-      onPlay={()=>setAutoplayBlocked(false)} onError={handleError}/>
-    <PlayerChrome container={container} videoRef={videoRef} playbackUrl={playbackUrl} watermark={watermark} labels={labels} quality={quality} qualities={qualities} previousHref={previousHref} nextHref={nextHref} autoplayBlocked={autoplayBlocked} loading={mode==='loading'} failed={mode==='error'} onQualityChange={changeQuality} onPlaybackChange={value=>{if(qualityPosition.current)Object.assign(qualityPosition.current,value);}} onPlayingChange={onPlayingChange} live={playbackMode==='live'?live:undefined} onDvr={dvr} onReturnToLive={returnToLive}/>
+      onPlay={()=>{pausedIntent.current=false;setAutoplayBlocked(false);}} onError={handleError}/>
+    <PlayerChrome container={container} videoRef={videoRef} playbackUrl={playbackUrl} watermark={watermark} labels={labels} quality={quality} qualities={qualities} previousHref={previousHref} nextHref={nextHref} autoplayBlocked={autoplayBlocked} loading={mode==='loading'} failed={mode==='error'} onQualityChange={changeQuality} onPlaybackChange={value=>{if(value.paused!==undefined)pausedIntent.current=value.paused;if(qualityPosition.current)Object.assign(qualityPosition.current,value);}} onPlayingChange={onPlayingChange} live={playbackMode==='live'?live:undefined} onDvr={dvr} onReturnToLive={returnToLive}/>
   </div>;
 }

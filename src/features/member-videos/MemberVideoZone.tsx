@@ -86,6 +86,8 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
   const [playback, setPlayback] = useState<ActivePlayback | null>(null);
   const playbackRef = useRef<ActivePlayback | null>(null);
   const mediaFailureReported = useRef(false);
+  const vodBookmark=useRef<PlayerBookmark|undefined>(undefined), bookmarkFrozen=useRef(false);
+  const rememberVod=useCallback((value:PlayerBookmark)=>{if(!bookmarkFrozen.current)vodBookmark.current=value;},[]);
   const [preparing, setPreparing] = useState(false);
   const [playError, setPlayError] = useState('');
   const attempt = useRef<AbortController | null>(null);
@@ -221,6 +223,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
   }, [api]);
 
   const selected = recordings?.find((recording) => recording.id === selectedId);
+  useEffect(()=>{vodBookmark.current=undefined;bookmarkFrozen.current=false;},[identity,selected?.id,selected?.packageId]);
   const poster=useRecordingCover(api,selected?.id,selected?.expiresAt,selected?.selectedCoverId);
   const select = (id: string) => {
     if (id === selectedId) return;
@@ -244,6 +247,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
     if (!selected || preparing) return false;
     automaticAttempt.current = selected.id;
     mediaFailureReported.current = false;
+    bookmarkFrozen.current=true;
     attempt.current?.abort();
     const controller = new AbortController();
     attempt.current = controller;
@@ -257,7 +261,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
       const scopeId = crypto.randomUUID();
       const grant = await api.grant(selected.id, scopeId, selected.packageId, controller.signal);
       const url = await api.exchange(grant, controller.signal);
-      if (!controller.signal.aborted) {setVodResume(resume);setPlayback({recordingId: selected.id, scopeId, grant, url});return true;}
+      if (!controller.signal.aborted) {bookmarkFrozen.current=false;setVodResume(resume);setPlayback({recordingId: selected.id, scopeId, grant, url});return true;}
     } catch (error) {
       if (!controller.signal.aborted) {
         if (error instanceof HhcWebApiError && error.status === 401) {router.replace(`/${locale}`); return;}
@@ -343,7 +347,8 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
     return () => {controller.abort(); window.clearTimeout(timer); window.clearTimeout(expiryTimer); document.removeEventListener('visibilitychange', visible); window.removeEventListener('online', visible);};
   }, [api, locale, messages.playError, messages.expired, playback, recordings, renew, resolveMissing, router]);
 
-  const mediaError = useCallback(() => {
+  const mediaError = useCallback((bookmark?:PlayerBookmark) => {
+    if(!bookmarkFrozen.current){if(bookmark)vodBookmark.current=bookmark;bookmarkFrozen.current=true;}
     video.current?.pause();
     setPlayError(messages.playError);
     if (!mediaFailureReported.current) {
@@ -386,7 +391,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
             if(await start(bookmark)){vodChosen.current=true;setSelectedLive(null);return true;}return false;
           }:undefined}/>:null}
           {selected && !selectedLive ? <div ref={playerSection} className={`${zoneStyles.video} grid min-w-0 scroll-mt-28 gap-4`}>
-            {playback?.recordingId === selected.id ? <HlsPlayer key={playback.url} resume={vodResume} poster={poster} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} previousHref={previousRecording ? cardLink(previousRecording.id) : undefined} nextHref={nextRecording ? cardLink(nextRecording.id) : undefined} onError={mediaError}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950">
+            {playback?.recordingId === selected.id ? <HlsPlayer key={playback.url} resume={vodResume} poster={poster} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} previousHref={previousRecording ? cardLink(previousRecording.id) : undefined} nextHref={nextRecording ? cardLink(nextRecording.id) : undefined} onError={mediaError} onBookmark={rememberVod}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {poster?<img src={poster} alt={selected.title} width={1280} height={720} className="absolute inset-0 h-full w-full object-contain"/>:null}
               {preparing || recordingId && !playError ? <div className={playerStyles.loading} role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{messages.preparing}</span></div> : !recordingId ? <button type="button" onClick={() => void start()} className="relative inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground"><Play size={18} aria-hidden="true" />{messages.play}</button> : null}
@@ -394,7 +399,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
             <h2 ref={playerTitle} tabIndex={-1} className="text-2xl font-semibold text-ink outline-none">{selected.title}</h2>
             <p className="text-sm text-muted">{messages.uploadedDate.replace('{date}', formatDate(selected.uploadedAt, locale))}</p>
             {selected.description?<details className="rounded-xl bg-panel p-4 text-ink"><summary className="min-h-11 cursor-pointer font-semibold focus-visible:outline-2 focus-visible:outline-primary">{messages.description}</summary><p className="whitespace-pre-wrap break-words">{selected.description}</p></details>:null}
-            {playError ? <p role="alert" className="text-sm text-primary">{playError} <button type="button" className="underline" onClick={() => void start()}>{messages.retry}</button></p> : null}
+            {playError ? <p role="alert" className="text-sm text-primary">{playError} <button type="button" className="underline" onClick={() => void start(vodBookmark.current)}>{messages.retry}</button></p> : null}
           </div> : null}
           {liveItems.length>0||visibleItems.length>0 ? <div className={zoneStyles.results}>
             {recordingId ? <h2 className="sr-only">{messages.otherVideos??messages.listTitle}</h2>:null}

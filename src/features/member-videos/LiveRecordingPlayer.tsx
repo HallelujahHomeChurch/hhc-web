@@ -20,7 +20,7 @@ export function LiveRecordingPlayer({api,recording,labels,liveLabels,locale,onVo
  const awaitingMedia=recording.liveState==='starting'&&recording.progress.lastSequence<2;
  const session=useLivePlayback(api,recording.id,recording.captureId,awaitingMedia),video=useRef<HTMLVideoElement>(null);
  const [mediaError,setMediaError]=useState(false),[playerRevision,setPlayerRevision]=useState(0),[switching,setSwitching]=useState(false);
- const onError=useCallback(()=>{setMediaError(true);},[]);
+ const onError=useCallback((bookmark?:PlayerBookmark)=>{if(bookmark)session.remember(bookmark);setMediaError(true);},[session.remember]);
  const grant=session.playback?.grant;
  const state=grant&&['ending','ended'].includes(grant.liveState)?grant.liveState:recording.liveState;
  const playable=!session.closed&&!['failed','expired','aborted'].includes(state);
