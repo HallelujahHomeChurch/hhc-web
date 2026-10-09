@@ -75,8 +75,9 @@
 
 - API [PR172](https://github.com/HallelujahHomeChurch/hhc-web-api/pull/172)：`c75f5ea`，完整 Go race／PostgreSQL 搜尋與游標測試、vet、OpenAPI 與發布政策已在本機通過。
 - Gateway [PR157](https://github.com/HallelujahHomeChurch/api-gateway/pull/157)：`5b8d93c`，protected GET q forwarding；live playback POST 仍拒絕 query。路由／Docker runtime／安全日誌驗證通過。
-- 共用套件 [PR106](https://github.com/HallelujahHomeChurch/frontend-platform/pull/106)：`bc49ce7`，預備 `1.0.48`。SDK 76、UI 112 tests 與打包消費端通過；schema 只同步本次兩個影音 GET canonical path，其他域維持原先 pinned 契約。
+- 共用套件 [PR106](https://github.com/HallelujahHomeChurch/frontend-platform/pull/106)：`54769dc`，預備 `1.0.49`。SDK 76、UI 116 tests 與打包消費端通過；schema 只同步本次兩個影音 GET canonical path，其他域沿用最新版 main 已合併的契約，保留 V6 renderer 與打包驗證。
 - 網站 [草稿 PR172](https://github.com/HallelujahHomeChurch/hhc-web/pull/172)：加入標題／說明搜尋、query-bound 分段、返回結果深度與位置、直播移出更新及其他頁 disabled。完整 859 tests、production build、lint、靜態效能與發布政策用本地 preview 套件通過。官方 manifest 仍保留已發布版本，未提交 file dependency。
+- `1.0.48` 已由上游 V6 PR107 使用；本次共用分支已 rebase `80bc70d` 並預備 `1.0.49`，網站也 rebase `030da9b` 保留最新播放器修正。官方網站原先 SDK pin 已更新為 `1.0.47`，UI 仍為 `1.0.44`；1.0.49 正式發布前不提交暫存依賴。
 - 獨立覆核發現並修正：nullable account identity、同關鍵字 refresh 舊 continuation、直播轉錄影擠出批次邊界、返回時等待直播首批；新增回歸測試。
 - 依 API → Gateway → 共用套件 → 網站順序，在各 PR CI 通過與核准後合併／發布。共用套件正式發布後，網站再固定 UI／SDK 的正式精確版本、產生 lockfile並重跑 CI；草稿目前不可合併。不得以本地 preview 代替正式 CI。
 - 正式環境搜尋、會員權限與播放 smoke，以及實體手機驗收仍待發布後執行。全域搜尋／字幕索引／搜尋引擎不在本次範圍。
