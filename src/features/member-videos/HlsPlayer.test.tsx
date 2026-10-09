@@ -7,7 +7,7 @@ import playerStyles from './PlayerChrome.module.css';
 const router=vi.hoisted(()=>({push:vi.fn()}));
 vi.mock('next/navigation',()=>({useRouter:()=>router}));
 
-const engine=vi.hoisted(()=>({supported:true,manifestReady:true,instances:[] as {nextLevel:number;loadLevel:number;recoverMediaError:ReturnType<typeof vi.fn>;listeners:Record<string,(...args:unknown[])=>void>;loadSource:ReturnType<typeof vi.fn>;destroy:ReturnType<typeof vi.fn>;config:{xhrSetup:(xhr:XMLHttpRequest,url:string)=>void}}[]}));
+const engine=vi.hoisted(()=>({supported:true,manifestReady:true,instances:[] as {nextLevel:number;loadLevel:number;recoverMediaError:ReturnType<typeof vi.fn>;listeners:Record<string,(...args:unknown[])=>void>;loadSource:ReturnType<typeof vi.fn>;destroy:ReturnType<typeof vi.fn>;config:{startLevel?:number;xhrSetup:(xhr:XMLHttpRequest,url:string)=>void}}[]}));
 const url='https://media.alive.org.tw/videos/r/packages/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/sessions/s/master.m3u8';
 vi.mock('hls.js',()=>({default:class {
   static isSupported(){return engine.supported;}
@@ -17,7 +17,7 @@ vi.mock('hls.js',()=>({default:class {
   listeners:Record<string,(...args:unknown[])=>void>={};
   levels=[{height:720,url:[url.replace('master.m3u8','720p/index.m3u8')]},{height:1080,url:[url.replace('master.m3u8','1080p/index.m3u8')]},{height:480,url:[url.replace('master.m3u8','480p/index.m3u8')]}];
   loadSource=vi.fn();destroy=vi.fn();
-  constructor(public config:{xhrSetup:(xhr:XMLHttpRequest,url:string)=>void}) {engine.instances.push(this);}
+  constructor(public config:{startLevel?:number;xhrSetup:(xhr:XMLHttpRequest,url:string)=>void}) {engine.instances.push(this);}
   on(event:string,callback:(...args:unknown[])=>void){this.listeners[event]=callback;if(event==='manifest'&&engine.manifestReady)queueMicrotask(callback);}
   attachMedia(){}
 }}));
@@ -31,6 +31,20 @@ function openSubmenu(name:string){
 }
 function chooseQuality(value:string){openSubmenu('Quality');fireEvent.click(screen.getByRole('menuitemradio',{name:value==='auto'?/^Auto/:value}));}
 function chooseSpeed(value:string){openSubmenu('Speed');fireEvent.click(screen.getByRole('menuitemradio',{name:`${value}×`}));}
+
+it.each(['vod','live'] as const)('starts %s Auto at the lowest rendition without locking adaptive quality',async(playbackMode)=>{
+  const p=props();render(<HlsPlayer {...p} playbackMode={playbackMode} availableQualities={['480p','720p','1080p']}/>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));
+  expect(engine.instances[0].config.startLevel).toBe(0);
+  expect(engine.instances[0].loadLevel).toBe(-1);
+  expect(engine.instances[0].nextLevel).toBe(-1);
+});
+
+it('keeps a restored manual rendition independent of the Auto startup level',async()=>{
+  const p=props();render(<HlsPlayer {...p} resume={{time:100,paused:true,rate:1.5,quality:'1080p',intent:'dvr'}}/>);
+  await waitFor(()=>expect(engine.instances[0]?.nextLevel).toBe(1));
+  expect(engine.instances[0].config.startLevel).toBeUndefined();
+});
 
 it('exposes 480p only when provided and keeps its requests inside the authenticated session',async()=>{
   const p=props();render(<HlsPlayer {...p} availableQualities={['480p','720p','1080p']}/>);
@@ -360,6 +374,52 @@ it('starts live behind the verified edge and preserves DVR until an explicit ret
  fireEvent.click(screen.getByRole('button',{name:'Back to live'}));
  expect(video.currentTime).toBe(5370);
  expect(engine.instances[0].config).toMatchObject({backBufferLength:120,maxBufferLength:60,maxMaxBufferLength:120,liveMaxLatencyDuration:Infinity,maxLiveSyncPlaybackRate:1});
+});
+
+it.each([false,true])('native=%s resumes follow-live after upstream recovery without a browser online event',async(native)=>{
+ engine.supported=!native;if(native)vi.spyOn(HTMLMediaElement.prototype,'canPlayType').mockReturnValue('probably');
+ const p=props(),onBookmark=vi.fn();
+ const live={verifiedEnd:1200,canFollow:true,label:'Live',backToLive:'Back to live'};
+ const view=render(<HlsPlayer {...p} playbackMode="live" live={live} onBookmark={onBookmark}/>);
+ await waitFor(()=>expect(native?p.videoRef.current?.src:engine.instances.length).toBe(native?url:1));
+ const video=p.videoRef.current!;let end=1200;
+ Object.defineProperty(video,'seekable',{configurable:true,get:()=>({length:1,start:()=>0,end:()=>end})});
+ Object.defineProperty(video,'paused',{configurable:true,value:false});
+ fireEvent.progress(video);fireEvent.seeking(video);fireEvent.seeked(video);
+ expect(video.currentTime).toBe(1170);
+ view.rerender(<HlsPlayer {...p} playbackMode="live" live={{...live,canFollow:false}} onBookmark={onBookmark}/>);
+ video.currentTime=1200;fireEvent.timeUpdate(video);
+ // The backend recovers before this rendition's seekable timeline catches up.
+ view.rerender(<HlsPlayer {...p} playbackMode="live" live={{...live,verifiedEnd:1500}} onBookmark={onBookmark}/>);
+ expect(video.currentTime).toBe(1200);
+ end=1500;fireEvent.progress(video);
+ expect(video.currentTime).toBe(1470);
+ // Browsers may dispatch seeking after playback has advanced past the assigned target.
+ video.currentTime=1470.5;fireEvent.seeking(video);fireEvent.timeUpdate(video);
+ expect(onBookmark).toHaveBeenLastCalledWith(expect.objectContaining({time:1470.5,intent:'followLive'}));
+ fireEvent.seeked(video);
+ video.currentTime=1480;fireEvent.timeUpdate(video);fireEvent.progress(video);
+ expect(video.currentTime).toBe(1480);
+ video.currentTime=1100;fireEvent.seeking(video);fireEvent.progress(video);
+ expect(video.currentTime).toBe(1100);
+ expect(onBookmark).toHaveBeenLastCalledWith(expect.objectContaining({time:1100,intent:'dvr'}));
+});
+
+it.each(['seek','pause','rate'] as const)('preserves explicit %s during upstream recovery',async(command)=>{
+ const p=props(),onBookmark=vi.fn(),live={verifiedEnd:1200,canFollow:true,label:'Live',backToLive:'Back to live'};
+ const view=render(<HlsPlayer {...p} playbackMode="live" live={live} onBookmark={onBookmark}/>);
+ await waitFor(()=>expect(engine.instances).toHaveLength(1));
+ const video=p.videoRef.current!;Object.defineProperty(video,'seekable',{configurable:true,value:{length:1,start:()=>0,end:()=>1500}});
+ Object.defineProperty(video,'paused',{configurable:true,value:false});fireEvent.progress(video);fireEvent.seeking(video);
+ view.rerender(<HlsPlayer {...p} playbackMode="live" live={{...live,canFollow:false}} onBookmark={onBookmark}/>);
+ if(command==='seek')fireEvent.change(screen.getByRole('slider',{name:'Playback position'}),{target:{value:'600'}});
+ if(command==='pause')fireEvent.pause(video);
+ if(command==='rate')chooseSpeed('1.5');
+ const time=video.currentTime;
+ view.rerender(<HlsPlayer {...p} playbackMode="live" live={{...live,verifiedEnd:1500}} onBookmark={onBookmark}/>);
+ fireEvent.progress(video);fireEvent.timeUpdate(video);fireEvent(window,new Event('online'));
+ expect(video.currentTime).toBe(time);expect(video.playbackRate).toBe(command==='rate'?1.5:1);
+ expect(onBookmark).toHaveBeenLastCalledWith(expect.objectContaining({intent:'dvr'}));
 });
 
 it('disables return when live stops and bounds DVR seeking to the available timeline',async()=>{

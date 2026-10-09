@@ -88,6 +88,9 @@ commands; surface single-click waits 500ms for click arbitration, while keyboard
 and toolbar actions remain immediate. Form controls keep native keyboard behavior.
 The settings menu has playback-speed and quality submenus, selected checkmarks,
 keyboard navigation and a back action, contained within the fullscreen player.
+In the HLS.js player, Auto starts with the lowest available rendition (480p when
+present), then keeps adapting to measured bandwidth and buffering. Restored manual
+quality is preserved. Native HLS chooses its own starting rendition.
 Auto shows the rendered resolution only when HLS or native video reports it. Explicit quality changes rebuild the MSE buffers
 and restore position, pause state, and speed; commands made during that brief
 reload take precedence. This prevents cached lower-quality frames and stale
@@ -182,13 +185,13 @@ lookup finish before the automatic popup opens. Focus, visibility and visible
 60-second polling refresh state. The existing popup publication window remains
 enforced; the statement strip and article remain available.
 
-Website client and bulletin UI use exact published frontend-platform v1.0.50
+Website client and bulletin UI use exact published frontend-platform v1.0.51
 packages; browser preferences retain v1.0.47. All use the registry lockfile.
 
-The bulletin reader accepts V7 alongside frozen V1–V6. Its Simplified font
-allowlist includes only V7's pinned Traditional body/bold fallback, retaining
+The bulletin reader accepts V8 alongside frozen V1–V7. V8 reuses V7's assets;
+the Simplified font allowlist includes only their pinned Traditional body/bold fallback, retaining
 account, edition, revision and offline-expiry checks. Deploy this consumer before
-enabling V7 production; upgrading the renderer does not activate the reader.
-V7 Simplified offline saves have a 40 MiB streaming limit to accommodate 35.3 MB
+enabling V8 production; upgrading the renderer does not activate the reader.
+V7/V8 Simplified offline saves have a 40 MiB streaming limit to accommodate 35.3 MB
 of pinned fonts/assets; all other saves retain 32 MiB. Failed staging never
 replaces an existing offline revision.

@@ -428,7 +428,7 @@
       "liveNow": "실시간",
       "watchRecording": "게시된 녹화 영상으로 계속 시청",
       "starting": "라이브 준비 중",
-      "live": "라이브 · 약 1~2분 지연",
+      "live": "라이브 · 예상 지연 {delay}",
       "recovering": "라이브를 따라잡는 중",
       "interrupted": "라이브 연결이 끊겼습니다",
       "ending": "라이브 종료 처리 중 · 계속 시청할 수 있습니다",

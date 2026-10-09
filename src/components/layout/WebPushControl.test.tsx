@@ -94,7 +94,8 @@ describe('WebPushControl', () => {
 
     await user.click(button);
 
-    await waitFor(() => expect(subscribe).toHaveBeenCalledOnce());
+    expect(await screen.findByRole('button', {name: labels.disable})).toBeInTheDocument();
+    expect(subscribe).toHaveBeenCalledOnce();
     expect(requestPermission).toHaveBeenCalledOnce();
     expect(subscribe).toHaveBeenCalledWith({
       userVisibleOnly: true,
@@ -104,7 +105,6 @@ describe('WebPushControl', () => {
       '/api/engagement/v1/push/subscriptions',
       expect.objectContaining({method: 'POST'})
     );
-    expect(screen.getByRole('button', {name: labels.disable})).toBeInTheDocument();
   });
 
   it.each([

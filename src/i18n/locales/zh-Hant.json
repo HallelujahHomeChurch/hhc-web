@@ -428,7 +428,7 @@
       "liveNow": "直播中",
       "watchRecording": "接續觀看會後影片",
       "starting": "直播準備中",
-      "live": "直播中，約延遲 1–2 分鐘",
+      "live": "直播中，預估延遲 {delay}",
       "recovering": "正在追上直播進度",
       "interrupted": "直播連線中斷",
       "ending": "直播結束處理中，可繼續回看",

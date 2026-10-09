@@ -62,7 +62,7 @@ export function PaperViewport({document, metadata, sentenceState, traceCode, the
     if (direction === 'horizontal' && index !== page) return null;
     const size = {width: entry.width * 4 / 3, height: entry.height * 4 / 3};
     const scale = pageScale(zoom, size, viewport);
-    return <div key={entry.id} className="reader-scaled-page" data-paper-index={index} style={{width: size.width * scale, height: size.height * scale, '--reader-body-offset': `${centeredBodyOffset(document, entry.id) * size.width}px`} as CSSProperties}>
+    return <div key={entry.id} className="reader-scaled-page" data-paper-index={index} data-reader-renderer={document.layoutManifest.rendererVersion} style={{width: size.width * scale, height: size.height * scale, '--reader-body-offset': `${centeredBodyOffset(document, entry.id) * size.width}px`} as CSSProperties}>
       <div className="reader-watermarked" style={{transform: `scale(${scale})`, transformOrigin: 'top left', width: size.width, height: size.height}}>
         <BulletinDocumentRenderer document={presentation} mode="paper" activePage={entry.id} canonicalMetadata={metadata} sentenceState={sentenceState}/>
         <ReaderWatermark traceCode={traceCode} tone={theme}/>

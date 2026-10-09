@@ -10,8 +10,8 @@ const auth = {getAccessToken: async () => 'token', refreshAfterUnauthorized: asy
 beforeEach(() => {vi.clearAllMocks(); client.listOnlineBulletinDiscovery.mockResolvedValue({items: [{issueId: readerFixture().document.issueId, issueNumber: 1739, series: 'general', contentLocale: 'zh-Hant', onlineRevision: 1}]}); client.openOnlineBulletin.mockResolvedValue(readerFixture());});
 
 describe('member reader access', () => {
-  it.each(['zh-Hant','zh-Hans'] as const)('accepts V3–V7 with the existing %s template while retaining receipt verification',contentLocale=>{
-    for (const rendererVersion of ['v3','v4','v5','v6','v7'] as const) {
+  it.each(['zh-Hant','zh-Hans'] as const)('accepts V3–V8 with the existing %s template while retaining receipt verification',contentLocale=>{
+    for (const rendererVersion of ['v3','v4','v5','v6','v7','v8'] as const) {
     const value=readerFixture(contentLocale,rendererVersion);
     expect(verifyReaderAccess(value,{...selector,contentLocale}).contentLocale).toBe(contentLocale);
     value.access.accountId='another-account';
@@ -24,9 +24,9 @@ describe('member reader access', () => {
     else value.document.content.layoutManifest.assets[0].sha256='0'.repeat(64);
     expect(()=>verifyReaderAccess(value,selector)).toThrow('update_required');
   });
-  it.each(['zh-Hant', 'zh-Hans'] as const)('rejects altered V7 assets and digest for %s', contentLocale => {
+  it.each((['zh-Hant', 'zh-Hans'] as const).flatMap(locale => (['v7', 'v8'] as const).map(version => [locale, version] as const)))('rejects altered %s %s assets and digest', (contentLocale, version) => {
     for (const field of ['digest', 'sha256', 'url', 'kind'] as const) {
-      const value = readerFixture(contentLocale, 'v7');
+      const value = readerFixture(contentLocale, version);
       const manifest = value.document.content.layoutManifest;
       if (field === 'digest') manifest.rendererArtifactSha256 = '0'.repeat(64);
       else if (field === 'sha256') manifest.assets[0].sha256 = '0'.repeat(64);

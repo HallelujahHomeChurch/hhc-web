@@ -43,7 +43,7 @@ it('retains Traditional and Simplified offline editions independently with verif
   expect((await readOfflineSave(route,now))?.status).toBe('available');
 });
 
-it.each([undefined,'v3','v4','v5','v6','v7'] as const)('retains both language editions with renderer %s and unchanged seven-day expiry',async rendererVersion=>{
+it.each([undefined,'v3','v4','v5','v6','v7','v8'] as const)('retains both language editions with renderer %s and unchanged seven-day expiry',async rendererVersion=>{
   const epoch=await activateOfflineAccount(route.accountId);
   for(const contentLocale of ['zh-Hant','zh-Hans'] as const){
     const value=readerFixture(contentLocale,rendererVersion),selector={...route,contentLocale};
@@ -72,7 +72,7 @@ it.each(['digest','asset'] as const)('rejects an altered V6 %s without replacing
   expect(saved?.save.value.document.content.layoutManifest.rendererVersion).toBe('v1');
 });
 
-it.each([['zh-Hant', 'v7', 32], ['zh-Hans', 'v7', 40], ['zh-Hans', 'v6', 32]] as const)('bounds %s %s offline streaming at %s MiB without replacing saved content', async (contentLocale, version, limit) => {
+it.each([['zh-Hant', 'v7', 32], ['zh-Hans', 'v7', 40], ['zh-Hant', 'v8', 32], ['zh-Hans', 'v8', 40], ['zh-Hans', 'v6', 32]] as const)('bounds %s %s offline streaming at %s MiB without replacing saved content', async (contentLocale, version, limit) => {
   const selector = {...route, contentLocale};
   const epoch = await activateOfflineAccount(route.accountId);
   await commitOfflineSave(await stageOfflineSave(readerFixture(contentLocale), selector, fetchAsset, now), epoch, now);
