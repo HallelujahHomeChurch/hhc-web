@@ -44,7 +44,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
     const video=videoRef.current;
     if(video&&!closing.current&&!failed.current&&!qualityPosition.current)bookmarkCallback.current?.({time:video.currentTime,paused:video.paused,rate:video.playbackRate,quality:qualityRef.current,intent:intent.current});
   },[videoRef]);
-  const dvr=useCallback(()=>{intent.current='dvr';remember();},[remember]);
+  const dvr=useCallback(()=>{automaticSeek.current=null;intent.current='dvr';remember();},[remember]);
   const returnToLive=()=>{
     const video=videoRef.current, state=currentLive.current;
     if(!video||!state?.canFollow)return;
@@ -122,11 +122,12 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
         automaticSeek.current=window.edge;video.currentTime=window.edge;remember();
       }
     };
-    const seeking=()=>{if(!positioned.current||closing.current||qualityPosition.current)return;if(automaticSeek.current!==null&&Math.abs(video.currentTime-automaticSeek.current)<0.1){automaticSeek.current=null;return;}dvr();};
+    const seeking=()=>{if(!positioned.current||closing.current||qualityPosition.current||automaticSeek.current!==null)return;dvr();};
+    const seeked=()=>{automaticSeek.current=null;};
     const resolution=()=>{if(!engine.current)setActiveHeight(video.videoHeight>0?video.videoHeight:null);};
     const paused=()=>{if(!closing.current&&!failed.current&&!video.error&&positioned.current&&!qualityPosition.current){pausedIntent.current=true;dvr();}};
     const online=()=>position();
-    const events:[string,()=>void][]=[['loadedmetadata',position],['progress',position],['durationchange',position],['canplay',position],['seeking',seeking],['pause',paused],['timeupdate',position],['timeupdate',remember],['ratechange',remember],['play',remember],['loadedmetadata',resolution],['resize',resolution]];
+    const events:[string,()=>void][]=[['loadedmetadata',position],['progress',position],['durationchange',position],['canplay',position],['seeking',seeking],['seeked',seeked],['pause',paused],['timeupdate',position],['timeupdate',remember],['ratechange',remember],['play',remember],['loadedmetadata',resolution],['resize',resolution]];
     for(const [event,handler] of events)video.addEventListener(event,handler);
     window.addEventListener('online',online);
     if(playbackMode==='live')position();

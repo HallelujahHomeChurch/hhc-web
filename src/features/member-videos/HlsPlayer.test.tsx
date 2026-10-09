@@ -379,8 +379,10 @@ it.each([false,true])('native=%s resumes follow-live after upstream recovery wit
  view.rerender(<HlsPlayer {...p} playbackMode="live" live={{...live,verifiedEnd:1500}} onBookmark={onBookmark}/>);
  expect(video.currentTime).toBe(1200);
  end=1500;fireEvent.progress(video);
- expect(video.currentTime).toBe(1470);fireEvent.seeking(video);
- expect(onBookmark).toHaveBeenLastCalledWith(expect.objectContaining({time:1470,intent:'followLive'}));
+ expect(video.currentTime).toBe(1470);
+ // Browsers may dispatch seeking after playback has advanced past the assigned target.
+ video.currentTime=1470.5;fireEvent.seeking(video);fireEvent.timeUpdate(video);
+ expect(onBookmark).toHaveBeenLastCalledWith(expect.objectContaining({time:1470.5,intent:'followLive'}));
  video.currentTime=1480;fireEvent.timeUpdate(video);fireEvent.progress(video);
  expect(video.currentTime).toBe(1480);
 });
