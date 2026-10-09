@@ -49,6 +49,7 @@ import {ReaderPrivateState} from './ReaderPrivateState';
 import {ReaderRecovery} from './ReaderRecovery';
 import '@hallelujahhomechurch/ui/bulletin-paper.css';
 import '@hallelujahhomechurch/ui/bulletin-paper-v2.css';
+import '@hallelujahhomechurch/ui/bulletin-paper-v7.css';
 import '@hallelujahhomechurch/ui/bulletin-ebook.css';
 import './reader.css';
 

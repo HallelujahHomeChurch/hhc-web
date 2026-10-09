@@ -10,8 +10,8 @@ const auth = {getAccessToken: async () => 'token', refreshAfterUnauthorized: asy
 beforeEach(() => {vi.clearAllMocks(); client.listOnlineBulletinDiscovery.mockResolvedValue({items: [{issueId: readerFixture().document.issueId, issueNumber: 1739, series: 'general', contentLocale: 'zh-Hant', onlineRevision: 1}]}); client.openOnlineBulletin.mockResolvedValue(readerFixture());});
 
 describe('member reader access', () => {
-  it.each(['zh-Hant','zh-Hans'] as const)('accepts V3–V6 with the existing %s template while retaining receipt verification',contentLocale=>{
-    for (const rendererVersion of ['v3','v4','v5','v6'] as const) {
+  it.each(['zh-Hant','zh-Hans'] as const)('accepts V3–V7 with the existing %s template while retaining receipt verification',contentLocale=>{
+    for (const rendererVersion of ['v3','v4','v5','v6','v7'] as const) {
     const value=readerFixture(contentLocale,rendererVersion);
     expect(verifyReaderAccess(value,{...selector,contentLocale}).contentLocale).toBe(contentLocale);
     value.access.accountId='another-account';
@@ -23,6 +23,24 @@ describe('member reader access', () => {
     if(reason==='digest')value.document.content.layoutManifest.rendererArtifactSha256='0'.repeat(64);
     else value.document.content.layoutManifest.assets[0].sha256='0'.repeat(64);
     expect(()=>verifyReaderAccess(value,selector)).toThrow('update_required');
+  });
+  it.each(['zh-Hant', 'zh-Hans'] as const)('rejects altered V7 assets and digest for %s', contentLocale => {
+    for (const field of ['digest', 'sha256', 'url', 'kind'] as const) {
+      const value = readerFixture(contentLocale, 'v7');
+      const manifest = value.document.content.layoutManifest;
+      if (field === 'digest') manifest.rendererArtifactSha256 = '0'.repeat(64);
+      else if (field === 'sha256') manifest.assets[0].sha256 = '0'.repeat(64);
+      else if (field === 'url') manifest.assets[0].url = 'https://outside.invalid/font.woff2';
+      else manifest.assets[0].kind = 'decoration';
+      expect(() => verifyReaderAccess(value, {...selector, contentLocale})).toThrow('update_required');
+    }
+  });
+  it.each(['zh-Hant', 'zh-Hans'] as const)('does not extend old %s renderers with V7 font permissions', contentLocale => {
+    const value = readerFixture(contentLocale, 'v6');
+    const bold = readerFixture(contentLocale, 'v7').document.content.layoutManifest.assets.find(asset => asset.url.includes('body-bold-49bf74'));
+    expect(bold).toBeDefined();
+    value.document.content.layoutManifest.assets.push(bold!);
+    expect(() => verifyReaderAccess(value, {...selector, contentLocale})).toThrow('update_required');
   });
   it('accepts pinned Simplified V2 only with its exact language and private document binding',()=>{
     const value=readerFixture();

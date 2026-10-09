@@ -1,10 +1,13 @@
 import {act, cleanup, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {readFileSync} from 'node:fs';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {readerFixture} from '@/features/weekly-reader/test-fixture';
 import {getMessages} from '@/i18n/messages';
 import {WeeklyReader} from './WeeklyReader';
 import {saveReaderReturn} from '@/features/weekly-reader/return-state';
+
+const bulletinCss = ['bulletin-paper.css', 'bulletin-paper-v2.css', 'bulletin-paper-v7.css', 'bulletin-ebook.css'].map(file => readFileSync(new URL(import.meta.resolve(`@hallelujahhomechurch/ui/${file}`)), 'utf8')).join('\n');
 
 const state = vi.hoisted(() => ({accountId: 'account-a' as string | null, status: 'authenticated', open: vi.fn(), signIn: vi.fn(), privateState: vi.fn(), mutate: vi.fn()}));
 vi.mock('@/components/layout/AccountControl', () => ({
@@ -48,9 +51,9 @@ afterEach(() => {cleanup(); Reflect.deleteProperty(document, 'fonts'); Reflect.d
 beforeEach(() => {Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect(0, 100, 300, 20)});});
 
 describe('protected weekly reader', () => {
-  it.each([
+  it.each(([
     ['zh-Hant',1440],['zh-Hans',1440],['zh-Hant',1024],['zh-Hans',1024],['zh-Hant',390],['zh-Hans',390],
-  ] as const)('reads historical V6 %s at width %i with unchanged source anchors and independent theme',async(contentLocale,width)=>{
+  ] as const).flatMap(([locale,width])=>(['v6','v7'] as const).map(version=>[locale,width,version] as const)))('reads historical %s at width %i with %s, unchanged source anchors and independent theme',async(contentLocale,width,rendererVersion)=>{
     const mobile=width<768;
     vi.stubGlobal('matchMedia',vi.fn(query=>({matches:query==='(max-width: 767px)'&&mobile,addEventListener:vi.fn(),removeEventListener:vi.fn()})));
     vi.stubGlobal('ResizeObserver',class{
@@ -63,10 +66,11 @@ describe('protected weekly reader', () => {
       return this.classList.contains('reader-viewport')?new DOMRect(0,128,width,600):new DOMRect(0,500,300,30);
     });
     Object.defineProperty(Range.prototype,'getBoundingClientRect',{configurable:true,value:()=>new DOMRect(0,500,300,30)});
-    const fixture=readerFixture(contentLocale,'v6');
+    const fixture=readerFixture(contentLocale,rendererVersion);
     const first=fixture.document.content.components[0],second=fixture.document.content.components[1];
     if(first.type!=='backSummary'||second.type!=='backSummary')throw new Error('fixture');
     const welcome=first.items[0].blocks[0],paragraph=second.items[0].blocks[0];
+    paragraph.sentences[0].spans[0].fontRole='emphasis';
     const credit={...paragraph,id:'credit',sentences:[{id:'credit-sentence',spans:[{text:'Production credit',fontRole:'body' as const}]}]};
     fixture.document.content.components[0]={id:'c0',type:'cover',cover:{welcome:[welcome],worship:[],work:[],wordQuestions:[],weeklyVerses:[]}};
     fixture.document.content.components[1]={id:'c1',type:'bodySection',bodySection:{kind:'sermon',title:{...paragraph,id:'article-title',sentences:[{id:'article-heading',spans:[{text:'Article',fontRole:'body'}]}]},header:{lectureDate:credit,contributors:[]},blocks:[paragraph]}};
@@ -84,7 +88,7 @@ describe('protected weekly reader', () => {
     const previousTheme=localStorage.getItem('hhc-reader-theme');
     localStorage.removeItem('hhc-reader-theme');document.documentElement.dataset.theme='light';
     try{
-      const {container}=render(<WeeklyReader {...props} contentLocale={contentLocale}/>);
+      const {container}=render(<><style>{bulletinCss}</style><WeeklyReader {...props} contentLocale={contentLocale}/></>);
       await waitFor(()=>expect(container.querySelector(`[data-bulletin-mode="${mobile?'mobile':'paper'}"]`)).not.toBeNull());
       const paper=container.querySelector('.reader-paper-with-notes')!;
       for(const [,text] of rows)expect(within(paper as HTMLElement).getByText(text)).toBeInTheDocument();
@@ -96,6 +100,12 @@ describe('protected weekly reader', () => {
       await waitFor(()=>expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page','p1'));
       const anchor=paper.querySelector('[data-sentence-id="s1"]');
       expect(anchor).toHaveTextContent('內容1。');expect(anchor).toHaveAttribute('data-fragment-start','0');expect(anchor).toHaveAttribute('data-fragment-end','4');
+      if(rendererVersion==='v7'){
+        const emphasis=anchor!.querySelector<HTMLElement>('[data-font-role="emphasis"]')!;
+        expect(emphasis.style.fontFamily).toContain('HHC Weekly Serif');
+        expect(emphasis.style.fontFamily).not.toContain('Kai');
+        expect(getComputedStyle(emphasis).fontWeight).toBe('700');
+      }
       expect(screen.queryByRole('complementary',{name:props.messages.contents})).not.toBeInTheDocument();
       if(mobile){
         expect(container.querySelector('[data-chapter="body"]')).toBeInTheDocument();
