@@ -686,3 +686,7 @@ it('cancels a scrub when pointer capture is lost without committing a seek',asyn
 it('disables quality choices if media fails while the submenu is open',async()=>{
  const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));openSubmenu('Quality');act(()=>engine.instances[0].listeners.error('error',{fatal:true}));for(const option of screen.getAllByRole('menuitemradio'))expect(option).toBeDisabled();expect(engine.instances[0].recoverMediaError).not.toHaveBeenCalled();
 });
+
+it('cancels a pending desktop surface click when its pointer is cancelled',async()=>{
+ const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));const video=p.videoRef.current!,surface=screen.getByRole('button',{name:'Play or pause'});vi.mocked(video.play).mockClear();vi.useFakeTimers();fireEvent.click(surface,{detail:1});fireEvent.pointerCancel(surface);await act(()=>vi.advanceTimersByTimeAsync(550));expect(video.play).not.toHaveBeenCalled();
+});

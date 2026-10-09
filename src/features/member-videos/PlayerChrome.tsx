@@ -158,7 +158,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
   };
   const changeRate=(rate:number)=>{if(videoRef.current){videoRef.current.playbackRate=rate;onPlaybackChange?.({rate});}};
   const cancelGesture = () => {
-    window.clearTimeout(holdTimer.current);
+    window.clearTimeout(clickTimer.current);window.clearTimeout(holdTimer.current);
     if (gesture.current?.rate != null) changeRate(gesture.current.rate);
     gesture.current = null; setHolding(false);
   };
