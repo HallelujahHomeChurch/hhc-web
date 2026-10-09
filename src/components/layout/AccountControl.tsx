@@ -313,15 +313,15 @@ export function AccountControlView({menuLabel}: {menuLabel?: string} = {}) {
 
   const user = auth.status === 'authenticated' ? auth.session.user : null;
   const displayName = user ? user.display_name || user.email.split('@')[0] || user.email : '';
-  const canOpenAdmin = navigation.sources.account?.ids.includes('admin') === true;
+  const canOpenAdmin = auth.status === 'authenticated' && auth.session.permissionAvailability.status === 'available' && canAccessAdmin(auth.session.permissions);
   return (
     <AccountMenu
       labels={{menu: menuLabel ?? labels.menu, greeting: displayName ? `Hi ${displayName}` : labels.manageAccount, manageAccount: labels.manageAccount, signOut: labels.signOut}}
       links={[
         {id: 'projection', label: labels.projectionSystem, href: siteConfig.apps.projection, newWindow: {label: labels.projectionWindowLabel, blockedMessage: labels.projectionPopupBlocked}},
-        ...(canOpenAdmin ? [{id: 'admin', label: labels.adminManagement, href: siteConfig.apps.admin}] : []),
         {id: 'manage', label: labels.manageAccount, href: `${accountSiteUrl}/profile`},
-        ...(canManageOrganizations ? [{id: 'organizations', label: labels.organizationManagement, href: `${accountSiteUrl}/organizations`}] : [])
+        ...(canManageOrganizations ? [{id: 'organizations', label: labels.organizationManagement, href: `${accountSiteUrl}/organizations`}] : []),
+        ...(canOpenAdmin ? [{id: 'admin', label: labels.adminManagement, href: siteConfig.apps.admin}] : [])
       ]}
       onSignOut={() => void signOut()}
       user={{name: displayName, email: user?.email ?? '', avatarUrl: user ? user.avatar_url : '/assets/brand/account-placeholder.svg'}}

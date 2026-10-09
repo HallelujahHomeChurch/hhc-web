@@ -117,3 +117,18 @@ it.each([
   expect(sentry.captureException).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({contexts: {api: expect.objectContaining({endpoint, method})}}))
   expect(JSON.stringify(sentry.captureException.mock.calls)).not.toContain('private')
 })
+
+it('adds safe API status and code tags with explicit context taking precedence',()=>{
+ const error=Object.assign(new Error('unavailable'),{status:503,code:'HOME_UNAVAILABLE'});
+ captureHandledError(error,{operation:'home.content',tags:{status:504}});
+ expect(sentry.scope.setTag).toHaveBeenCalledWith('status','504');
+ expect(sentry.scope.setTag).toHaveBeenCalledWith('code','HOME_UNAVAILABLE');
+});
+it('does not attach unbounded or sensitive API error codes',()=>{
+ captureHandledError(Object.assign(new Error('failure'),{status:503,code:'token=secret'}),{operation:'home.content'});
+ expect(sentry.scope.setTag).not.toHaveBeenCalledWith('code',expect.anything());
+});
+it('does not report an expected cancelled request as a handled failure',()=>{
+ captureHandledError(new DOMException('cancelled','AbortError'),{operation:'home.content'});
+ expect(sentry.captureException).not.toHaveBeenCalled();
+});

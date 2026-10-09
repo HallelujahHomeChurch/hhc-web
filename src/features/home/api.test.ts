@@ -49,6 +49,13 @@ describe('getHomeContent', () => {
     expect(getHome).toHaveBeenCalledTimes(1);
     expect(listPublicContent).not.toHaveBeenCalled();
     expect(content).toEqual({news: [], videos: [], newsFailed: true, videosFailed: true});
-    expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'home.content', tags: {locale: 'en'}});
+    expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'home.content', tags: {locale: 'en', phase: 'fetch'}});
   });
+});
+
+it('classifies malformed response mapping separately from request failure',async()=>{
+ captureHandledError.mockClear();
+ const getHome=vi.fn().mockResolvedValue({news:null,videos:[]});
+ expect(await getHomeContent('en',{getHome} as unknown as HhcWebClient)).toMatchObject({newsFailed:true,videosFailed:true});
+ expect(captureHandledError).toHaveBeenCalledWith(expect.anything(),{operation:'home.content',tags:{locale:'en',phase:'map'}});
 });

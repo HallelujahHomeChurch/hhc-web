@@ -31,3 +31,19 @@ it('releases private object URLs and rejects stale responses after changing reco
   view.unmount();
   expect(revoke).toHaveBeenCalledTimes(2);
 });
+
+it('defers offscreen cover bytes until the card approaches the viewport',async()=>{
+ let notify!:(entries:Partial<IntersectionObserverEntry>[])=>void;
+ const disconnect=vi.fn();
+ vi.stubGlobal('IntersectionObserver',class {constructor(callback:typeof notify){notify=callback} observe(){} disconnect=disconnect});
+ vi.spyOn(URL,'createObjectURL').mockReturnValue('blob:near');
+ vi.spyOn(URL,'revokeObjectURL').mockImplementation(()=>{});
+ const cover=vi.fn().mockResolvedValue(new Blob(['jpeg']));
+ render(<RecordingCover api={{cover} as unknown as ReturnType<typeof createMemberVideoApi>} id="one" title="One"/>);
+ expect(cover).not.toHaveBeenCalled();
+ notify([{isIntersecting:true}]);
+ await screen.findByRole('img');
+ expect(cover).toHaveBeenCalledOnce();
+ expect(disconnect).toHaveBeenCalled();
+ vi.unstubAllGlobals();
+});

@@ -5,9 +5,11 @@ import {mapVideoItem} from '@/features/videos/api';
 import type {Locale} from '@/i18n/locales';
 import {captureHandledError} from '@/lib/observability';
 
-export async function getHomeContent(locale: Locale, client: HhcWebClient = publicContentClient()) {
+export async function getHomeContent(locale: Locale, client: HhcWebClient = publicContentClient(true)) {
+  let phase = 'fetch';
   try {
     const home = await client.getHome(locale);
+    phase = 'map';
     return {
       news: home.news.map((value) => mapNewsItem(value, locale)),
       videos: home.videos.map((value) => mapVideoItem(value, locale)),
@@ -15,7 +17,7 @@ export async function getHomeContent(locale: Locale, client: HhcWebClient = publ
       videosFailed: false
     };
   } catch (error) {
-    captureHandledError(error, {operation: 'home.content', tags: {locale}});
+    captureHandledError(error, {operation: 'home.content', tags: {locale, phase}});
     return {news: [], videos: [], newsFailed: true, videosFailed: true};
   }
 }
