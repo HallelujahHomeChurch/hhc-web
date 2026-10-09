@@ -52,7 +52,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
   const [previewRequested, setPreviewRequested] = useState(false), [scrub, setScrub] = useState<number | null>(null);
   const [holding, setHolding] = useState(false);
   const gesture = useRef<{id:number;x:number;y:number;moved:boolean;rate:number|null}|null>(null);
-  const holdTimer = useRef(0), tapTimer = useRef(0);
+  const holdTimer = useRef(0), tapTimer = useRef(0), clickTimer=useRef(0);
   const lastTap = useRef<{time:number;side:'back'|'forward'|'center'}|null>(null);
   const hideTimer = useRef(0), feedbackTimer = useRef(0), dragging = useRef(false);
   const menu = useRef<HTMLDivElement>(null), settingsButton = useRef<HTMLButtonElement>(null);
@@ -83,7 +83,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
 
   useEffect(() => {
     const video=videoRef.current;
-    return () => { window.clearTimeout(hideTimer.current); window.clearTimeout(feedbackTimer.current); window.clearTimeout(holdTimer.current); window.clearTimeout(tapTimer.current);
+    return () => { window.clearTimeout(hideTimer.current); window.clearTimeout(feedbackTimer.current); window.clearTimeout(holdTimer.current); window.clearTimeout(tapTimer.current);window.clearTimeout(clickTimer.current);
       if (gesture.current?.rate != null && video) video.playbackRate = gesture.current.rate;
     };
   }, [videoRef]);
@@ -237,7 +237,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
   const atLive = Boolean(live?.canFollow && liveRange && playing && current >= liveRange.edge - 2);
   const percentage = (value: number) => duration > seekStart ? `${Math.min(100, Math.max(0, (value - seekStart) / (duration - seekStart) * 100))}%` : '0%';
   return <>
-    <button type="button" className={styles.surface} aria-label={labels.togglePlayback} tabIndex={-1} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={cancelGesture} onLostPointerCapture={cancelGesture} onContextMenu={event=>{if(touchUI)event.preventDefault();}} onClick={event => {if(!touchUI || event.detail===0){container.current?.focus({preventScroll:true}); toggle();}}} />
+    <button type="button" className={styles.surface} aria-label={labels.togglePlayback} tabIndex={-1} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={cancelGesture} onLostPointerCapture={cancelGesture} onContextMenu={event=>{if(touchUI)event.preventDefault();}} onClick={event=>{if(event.detail===0){toggle();return;}if(touchUI)return;container.current?.focus({preventScroll:true});window.clearTimeout(clickTimer.current);if(event.detail===1)clickTimer.current=window.setTimeout(toggle,300);}} onDoubleClick={()=>{if(!touchUI){window.clearTimeout(clickTimer.current);void toggleFullscreen();}}} />
     <RecordingWatermark container={container} videoRef={videoRef} code={watermark}/>
     {fullscreenState.error ? <div className={styles.fullscreenError} role="alert">{labels.fullscreenError}</div> : null}
     {holding ? <div className={styles.speedFeedback} aria-hidden="true">2×</div> : null}

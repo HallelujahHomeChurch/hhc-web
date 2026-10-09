@@ -612,3 +612,14 @@ it('preserves an explicit pause after the last timeupdate in the fatal snapshot'
  fireEvent.click(screen.getByRole('button',{name:'Pause'}));fireEvent.error(video);
  expect(p.onError).toHaveBeenCalledWith(expect.objectContaining({time:75,paused:true}));
 });
+
+it('arbitrates desktop double click without changing live playback intent',async()=>{
+ const p=props(),onBookmark=vi.fn();render(<HlsPlayer {...p} onBookmark={onBookmark} live={{verifiedEnd:100,canFollow:true,label:'Live',backToLive:'Back to live'}} playbackMode="live"/>);
+ await waitFor(()=>expect(engine.instances).toHaveLength(1));
+ const root=screen.getByRole('region'),surface=screen.getByRole('button',{name:'Play or pause'}),video=p.videoRef.current!;
+ const request=vi.fn().mockResolvedValue(undefined);Object.defineProperty(root,'requestFullscreen',{value:request,configurable:true});
+ Object.defineProperty(video,'paused',{value:false,configurable:true});fireEvent.play(video);vi.mocked(video.pause).mockClear();onBookmark.mockClear();
+ vi.useFakeTimers();fireEvent.click(surface,{detail:1});fireEvent.click(surface,{detail:2});fireEvent.doubleClick(surface);await act(()=>vi.advanceTimersByTimeAsync(350));
+ expect(request).toHaveBeenCalledOnce();expect(video.pause).not.toHaveBeenCalled();expect(onBookmark).not.toHaveBeenCalled();
+ fireEvent.click(surface,{detail:0});expect(video.pause).toHaveBeenCalledOnce();
+});
