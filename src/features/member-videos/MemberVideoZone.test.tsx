@@ -187,6 +187,14 @@ describe('member video gate', () => {
     expect(screen.queryByText('No recordings')).toBeNull();
     expect(videoApi.listPage).toHaveBeenCalledTimes(2);
   });
+  it('uses a compact live label for recovering entries instead of exposing source recovery',async()=>{
+    state.access='available';state.auth='authenticated';
+    videoApi.liveList.mockResolvedValue([{id:'r1',captureId:packageId,title:'Recovering stream',liveState:'recovering',createdAt:'2026-10-07T00:00:00Z',progress:{mediaEndSeconds:120}}]);
+    list.mockResolvedValue([]);
+    render(<MemberVideoZone locale="en" messages={messages} hero={null} view="list"/>);
+    expect(await screen.findByRole('link',{name:'Recovering stream — Live'})).toBeVisible();
+    expect(screen.queryByText('Catching up')).not.toBeInTheDocument();
+  });
   it('puts livestreams in the same grid before recordings and removes duplicate VOD cards',async()=>{
     state.auth='authenticated';state.access='available';
     const live={id:'r1',captureId:'a'.repeat(32),title:'Sunday live',liveState:'live',createdAt:'2026-10-07T00:00:00Z',stopAcceptedAt:null,progress:{revision:1,firstSequence:0,lastSequence:3,mediaEndSeconds:120,lastAdvancedAt:'2026-10-07T00:02:00Z',endedAt:null,ended:false}};
