@@ -16,7 +16,7 @@ import {HlsPlayer, type PlayerLabels} from './HlsPlayer';
 import playerStyles from './PlayerChrome.module.css';
 import {playerClock} from './PlayerChrome';
 import {RecordingCover,useRecordingCover} from './RecordingCover';
-import {LiveRecordingPlayer,englishLiveLabels,type LiveLabels} from './LiveRecordingPlayer';
+import {LiveRecordingPlayer,liveViewerLabel,englishLiveLabels,type LiveLabels} from './LiveRecordingPlayer';
 import type {PlayerBookmark} from './live-player';
 
 export type Messages = {
@@ -307,7 +307,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId}: ZonePr
   const visibleItems = recordingId ? otherRecordings.slice(0, 10) : otherRecordings;
   const liveLabels=messages.live??englishLiveLabels;
   const cardLink=(id:string)=>`/${locale}/member-videos/${encodeURIComponent(id)}`;
-  const liveBadge=(item:MemberLiveRecording)=>item.liveState==='live' ? liveLabels.liveNow??'Live' : liveLabels[item.liveState];
+  const liveBadge=(item:MemberLiveRecording)=>liveViewerLabel(item.liveState,liveLabels);
   return (
     <main>
       {hero}
