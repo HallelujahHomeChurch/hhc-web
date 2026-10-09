@@ -371,7 +371,7 @@ it.each([false,true])('native=%s resumes follow-live after upstream recovery wit
  const video=p.videoRef.current!;let end=1200;
  Object.defineProperty(video,'seekable',{configurable:true,get:()=>({length:1,start:()=>0,end:()=>end})});
  Object.defineProperty(video,'paused',{configurable:true,value:false});
- fireEvent.progress(video);fireEvent.seeking(video);
+ fireEvent.progress(video);fireEvent.seeking(video);fireEvent.seeked(video);
  expect(video.currentTime).toBe(1170);
  view.rerender(<HlsPlayer {...p} playbackMode="live" live={{...live,canFollow:false}} onBookmark={onBookmark}/>);
  video.currentTime=1200;fireEvent.timeUpdate(video);
@@ -383,8 +383,12 @@ it.each([false,true])('native=%s resumes follow-live after upstream recovery wit
  // Browsers may dispatch seeking after playback has advanced past the assigned target.
  video.currentTime=1470.5;fireEvent.seeking(video);fireEvent.timeUpdate(video);
  expect(onBookmark).toHaveBeenLastCalledWith(expect.objectContaining({time:1470.5,intent:'followLive'}));
+ fireEvent.seeked(video);
  video.currentTime=1480;fireEvent.timeUpdate(video);fireEvent.progress(video);
  expect(video.currentTime).toBe(1480);
+ video.currentTime=1100;fireEvent.seeking(video);fireEvent.progress(video);
+ expect(video.currentTime).toBe(1100);
+ expect(onBookmark).toHaveBeenLastCalledWith(expect.objectContaining({time:1100,intent:'dvr'}));
 });
 
 it.each(['seek','pause','rate'] as const)('preserves explicit %s during upstream recovery',async(command)=>{
