@@ -2,6 +2,10 @@ import {createRef} from 'react';
 import {act, cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, beforeEach, expect, it, vi} from 'vitest';
 import {HlsPlayer} from './HlsPlayer';
+import playerStyles from './PlayerChrome.module.css';
+
+const router=vi.hoisted(()=>({push:vi.fn()}));
+vi.mock('next/navigation',()=>({useRouter:()=>router}));
 
 const engine=vi.hoisted(()=>({supported:true,manifestReady:true,instances:[] as {nextLevel:number;listeners:Record<string,(...args:unknown[])=>void>;loadSource:ReturnType<typeof vi.fn>;destroy:ReturnType<typeof vi.fn>;config:{xhrSetup:(xhr:XMLHttpRequest,url:string)=>void}}[]}));
 const url='https://media.alive.org.tw/videos/r/packages/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/sessions/s/master.m3u8';
@@ -36,6 +40,7 @@ beforeEach(()=>{
   vi.spyOn(HTMLElement.prototype,'clientHeight','get').mockReturnValue(600);
   vi.spyOn(HTMLVideoElement.prototype,'videoWidth','get').mockReturnValue(1920);
   vi.spyOn(HTMLVideoElement.prototype,'videoHeight','get').mockReturnValue(1080);
+  router.push.mockClear();
   engine.supported=true;engine.manifestReady=true;engine.instances=[];
   vi.spyOn(HTMLMediaElement.prototype,'play').mockResolvedValue(undefined);
   vi.spyOn(HTMLMediaElement.prototype,'pause').mockImplementation(()=>{});
@@ -157,9 +162,9 @@ it('toggles with Space and the video surface without hijacking form controls', a
   fireEvent.click(screen.getByRole('button',{name:'Settings'}));
   fireEvent.keyDown(screen.getByRole('combobox',{name:'Speed'}),{key:' '});
   fireEvent.keyDown(screen.getByRole('slider',{name:'Playback position'}),{key:' '});
-  expect(video.pause).toHaveBeenCalledOnce();
+  expect(video.pause).toHaveBeenCalledTimes(2);
   fireEvent.keyDown(region,{key:' ',repeat:true});
-  expect(video.pause).toHaveBeenCalledOnce();
+  expect(video.pause).toHaveBeenCalledTimes(2);
 });
 
 it('commits a pointer scrub on release and keeps keyboard seek responsive', async()=>{
@@ -180,6 +185,8 @@ it('commits a pointer scrub on release and keeps keyboard seek responsive', asyn
     expect(video.currentTime).toBe(245);
     fireEvent.keyDown(screen.getByRole('region'),{key:'j'});
     expect(video.currentTime).toBe(235);
+    fireEvent.keyDown(seek,{key:'ArrowLeft'});
+    expect(video.currentTime).toBe(230);
   } finally {vi.unstubAllGlobals();}
 });
 
@@ -379,6 +386,19 @@ function touchSurface() {
 function touch(element:HTMLElement,type:string,x=300,y=100) {
   fireEvent(element,new PointerEvent(type,{bubbles:true,pointerId:1,pointerType:'touch',isPrimary:true,clientX:x,clientY:y}));
 }
+it.each([false,true])('shows transient play/pause feedback only on desktop, touch=%s',async(touchUI)=>{
+  vi.stubGlobal('matchMedia',vi.fn().mockReturnValue({matches:touchUI,addEventListener:vi.fn(),removeEventListener:vi.fn()}));
+  const p=props();const view=render(<HlsPlayer {...p}/>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));
+  const video=p.videoRef.current!;fireEvent.canPlay(video);
+  fireEvent.click(screen.getByRole('button',{name:'Play'}));
+  expect(video.play).toHaveBeenCalledTimes(2);
+  expect(Boolean(view.container.querySelector(`.${playerStyles.feedback}`))).toBe(!touchUI);
+  Object.defineProperty(video,'paused',{configurable:true,value:false});fireEvent.play(video);
+  fireEvent.click(screen.getByRole('button',{name:'Pause'}));
+  expect(video.pause).toHaveBeenCalledOnce();
+  expect(Boolean(view.container.querySelector(`.${playerStyles.feedback}`))).toBe(!touchUI);
+});
 it('touch taps toggle controls without pausing; double taps seek and clamp at the video ends',async()=>{
   touchSurface();const p=props();render(<HlsPlayer {...p}/>);
   await waitFor(()=>expect(engine.instances).toHaveLength(1));
@@ -397,11 +417,15 @@ it('touch taps toggle controls without pausing; double taps seek and clamp at th
   touch(surface,'pointerdown',500);touch(surface,'pointerup',500);
   touch(surface,'pointerdown',500);touch(surface,'pointerup',500);
   expect(video.currentTime).toBe(100);
+  expect(screen.getByText('+10')).toBeInTheDocument();
+  touch(surface,'pointerdown',500);touch(surface,'pointerup',500);
+  expect(video.currentTime).toBe(100);expect(screen.getByText('+20')).toBeInTheDocument();
   act(()=>vi.advanceTimersByTime(1000));
   video.currentTime=5;
   touch(surface,'pointerdown',100);touch(surface,'pointerup',100);
   touch(surface,'pointerdown',100);touch(surface,'pointerup',100);
   expect(video.currentTime).toBe(0);expect(video.pause).not.toHaveBeenCalled();
+  expect(screen.getByText('−10')).toBeInTheDocument();
 });
 it('restores the original speed after a held touch is released or cancelled',async()=>{
   touchSurface();const p=props();render(<HlsPlayer {...p}/>);
@@ -481,4 +505,56 @@ it('desktop controls link adjacent recordings and toggle theater without rebuild
  expect(video.currentTime).toBe(45);expect(p.videoRef.current).toBe(video);expect(engine.instances).toHaveLength(1);
  fireEvent.click(screen.getByRole('button',{name:'Exit theater mode'}));
  expect(screen.getByRole('region')).toHaveAttribute('data-theater','false');
+});
+
+it('provides seek feedback and the remaining player keyboard shortcuts without resuming a paused video',async()=>{
+  const p=props();render(<HlsPlayer {...p} previousHref="/en/member-videos/first" nextHref="/en/member-videos/third"/>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));
+  const video=p.videoRef.current!,region=screen.getByRole('region');
+  Object.defineProperty(video,'duration',{configurable:true,value:600});fireEvent.durationChange(video);fireEvent.canPlay(video);
+  video.currentTime=100;vi.mocked(video.play).mockClear();
+  fireEvent.keyDown(region,{key:'ArrowRight'});expect(video.currentTime).toBe(105);expect(screen.getByText('+5')).toBeInTheDocument();
+  fireEvent.keyDown(region,{key:'ArrowRight',repeat:true});expect(video.currentTime).toBe(110);expect(screen.getByText('+10')).toBeInTheDocument();
+  fireEvent.keyDown(region,{key:'j'});expect(video.currentTime).toBe(100);expect(screen.getByText('−10')).toBeInTheDocument();
+  fireEvent.keyDown(region,{key:'5'});expect(video.currentTime).toBe(300);
+  fireEvent.keyDown(region,{key:'Home'});expect(video.currentTime).toBe(0);
+  fireEvent.keyDown(region,{key:'End'});expect(video.currentTime).toBe(600);
+  video.volume=.98;fireEvent.keyDown(region,{key:'ArrowUp'});expect(video.volume).toBe(1);
+  video.volume=.02;fireEvent.keyDown(region,{key:'ArrowDown'});expect(video.volume).toBe(0);
+  fireEvent.keyDown(region,{key:'>',shiftKey:true});expect(video.playbackRate).toBe(1.25);
+  fireEvent.keyDown(region,{key:'<',shiftKey:true});expect(video.playbackRate).toBe(1);
+  fireEvent.keyDown(region,{key:'t'});expect(region).toHaveAttribute('data-theater','true');
+  fireEvent.keyDown(region,{key:'N',shiftKey:true});expect(router.push).toHaveBeenLastCalledWith('/en/member-videos/third');
+  fireEvent.keyDown(region,{key:'P',shiftKey:true});expect(router.push).toHaveBeenLastCalledWith('/en/member-videos/first');
+  expect(video.play).not.toHaveBeenCalled();
+});
+it.each([false,true])('hides idle paused controls while keeping settings accessible, touch=%s',async(touchUI)=>{
+  vi.stubGlobal('matchMedia',vi.fn().mockReturnValue({matches:touchUI,addEventListener:vi.fn(),removeEventListener:vi.fn()}));
+  const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));
+  vi.useFakeTimers();fireEvent.canPlay(p.videoRef.current!);fireEvent.pause(p.videoRef.current!);
+  act(()=>vi.advanceTimersByTime(3000));expect(screen.getByRole('region')).toHaveAttribute('data-controls-visible','false');
+  fireEvent.focusIn(screen.getByRole('region'));fireEvent.click(screen.getByRole('button',{name:'Settings'}));
+  act(()=>vi.advanceTimersByTime(3000));expect(screen.getByRole('region')).toHaveAttribute('data-controls-visible','true');
+  fireEvent.click(screen.getByRole('button',{name:'Settings'}));
+  fireEvent.mouseOut(screen.getByRole('button',{name:'Settings'}));
+  fireEvent.mouseOver(screen.getByRole('button',{name:'Play or pause'}));
+  fireEvent.pointerMove(screen.getByRole('button',{name:'Play or pause'}),{pointerType:'mouse'});
+  act(()=>vi.advanceTimersByTime(3000));expect(screen.getByRole('region')).toHaveAttribute('data-controls-visible','false');
+});
+
+it('keeps a blocked-autoplay play entry visible beyond the idle timeout',async()=>{
+  touchSurface();vi.mocked(HTMLMediaElement.prototype.play).mockRejectedValueOnce(new DOMException('Autoplay blocked','NotAllowedError'));
+  const p=props();render(<HlsPlayer {...p}/>);await screen.findByText('Tap to start playback');
+  vi.useFakeTimers();fireEvent.canPlay(p.videoRef.current!);act(()=>vi.advanceTimersByTime(3000));
+  expect(screen.getByRole('region')).toHaveAttribute('data-controls-visible','true');
+  expect(screen.getByRole('button',{name:'Play'})).toBeVisible();
+});
+
+it.each([false,true])('does not seek when theater mode is unavailable, touch=%s',async(touchUI)=>{
+  vi.stubGlobal('matchMedia',vi.fn().mockReturnValue({matches:touchUI,addEventListener:vi.fn(),removeEventListener:vi.fn()}));
+  const p=props();render(<HlsPlayer {...p} labels={touchUI?labels:{...labels,theaterMode:undefined,exitTheaterMode:undefined}}/>);
+  await waitFor(()=>expect(engine.instances).toHaveLength(1));
+  const video=p.videoRef.current!;Object.defineProperty(video,'duration',{configurable:true,value:600});fireEvent.durationChange(video);video.currentTime=100;
+  fireEvent.keyDown(screen.getByRole('region'),{key:'t'});expect(video.currentTime).toBe(100);
+  expect(screen.getByRole('region')).toHaveAttribute('data-theater','false');
 });
