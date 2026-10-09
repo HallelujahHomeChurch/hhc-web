@@ -420,7 +420,7 @@
       "liveNow": "Live",
       "watchRecording": "Continue with the published recording",
       "starting": "Preparing live video",
-      "live": "Live · about 1–2 minutes behind",
+      "live": "Live · estimated delay {delay}",
       "recovering": "Catching up",
       "interrupted": "Live connection interrupted",
       "ending": "Finishing live video; you can keep watching",
