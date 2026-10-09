@@ -24,10 +24,10 @@ export function verifyReaderAccess(value: OnlineBulletinAccess, expected: Reader
       !hash.test(content.layoutManifest.contentHash ?? '') || !hash.test(content.layoutManifest.layoutValidationHash ?? '') ||
       !Number.isInteger(content.printedBodyPageCount) || content.printedBodyPageCount < 2 || content.printedBodyPageCount > 38 ||
       !content.pages.length || content.pages.length > 80 || content.layoutManifest.pages.length !== content.pages.length) throw new Error('update_required');
-  const v7 = content.layoutManifest.rendererVersion === 'v7';
+  const v7Fonts = content.layoutManifest.rendererVersion === 'v7' || content.layoutManifest.rendererVersion === 'v8';
   const knownAssets = templateVersion === 'v2'
-    ? [...BULLETIN_RENDERER_V2_ASSETS, ...(v7 ? BULLETIN_RENDERER_V7_ASSETS.filter(asset => asset.kind === 'font' && (asset.roles?.includes('body') || asset.roles?.includes('emphasis'))) : [])]
-    : v7 ? BULLETIN_RENDERER_V7_ASSETS : assets.assets;
+    ? [...BULLETIN_RENDERER_V2_ASSETS, ...(v7Fonts ? BULLETIN_RENDERER_V7_ASSETS.filter(asset => asset.kind === 'font' && (asset.roles?.includes('body') || asset.roles?.includes('emphasis'))) : [])]
+    : v7Fonts ? BULLETIN_RENDERER_V7_ASSETS : assets.assets;
   for (const asset of content.layoutManifest.assets) {
     if (!knownAssets.some(known => known.url === asset.url && known.sha256 === asset.sha256 && known.kind === asset.kind)) throw new Error('update_required');
   }

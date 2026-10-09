@@ -53,7 +53,7 @@ beforeEach(() => {Object.defineProperty(Range.prototype, 'getBoundingClientRect'
 describe('protected weekly reader', () => {
   it.each(([
     ['zh-Hant',1440],['zh-Hans',1440],['zh-Hant',1024],['zh-Hans',1024],['zh-Hant',390],['zh-Hans',390],
-  ] as const).flatMap(([locale,width])=>(['v6','v7'] as const).map(version=>[locale,width,version] as const)))('reads historical %s at width %i with %s, unchanged source anchors and independent theme',async(contentLocale,width,rendererVersion)=>{
+  ] as const).flatMap(([locale,width])=>(['v6','v7','v8'] as const).map(version=>[locale,width,version] as const)))('reads historical %s at width %i with %s, unchanged source anchors and independent theme',async(contentLocale,width,rendererVersion)=>{
     const mobile=width<768;
     vi.stubGlobal('matchMedia',vi.fn(query=>({matches:query==='(max-width: 767px)'&&mobile,addEventListener:vi.fn(),removeEventListener:vi.fn()})));
     vi.stubGlobal('ResizeObserver',class{
@@ -91,6 +91,7 @@ describe('protected weekly reader', () => {
       const {container}=render(<><style>{bulletinCss}</style><WeeklyReader {...props} contentLocale={contentLocale}/></>);
       await waitFor(()=>expect(container.querySelector(`[data-bulletin-mode="${mobile?'mobile':'paper'}"]`)).not.toBeNull());
       const paper=container.querySelector('.reader-paper-with-notes')!;
+      if(!mobile)expect(paper.querySelector('.reader-scaled-page')).toHaveAttribute('data-reader-renderer',rendererVersion);
       for(const [,text] of rows)expect(within(paper as HTMLElement).getByText(text)).toBeInTheDocument();
       if(mobile){
         for(const element of ['welcomeLabel','worshipLabel','workLabel','wordLabel'])expect(paper.querySelector(`[data-fixed-element="${element}"]`)?.textContent).not.toMatch(/[：:]\s*$/);
@@ -100,7 +101,7 @@ describe('protected weekly reader', () => {
       await waitFor(()=>expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page','p1'));
       const anchor=paper.querySelector('[data-sentence-id="s1"]');
       expect(anchor).toHaveTextContent('內容1。');expect(anchor).toHaveAttribute('data-fragment-start','0');expect(anchor).toHaveAttribute('data-fragment-end','4');
-      if(rendererVersion==='v7'){
+      if(rendererVersion==='v7'||rendererVersion==='v8'){
         const emphasis=anchor!.querySelector<HTMLElement>('[data-font-role="emphasis"]')!;
         expect(emphasis.style.fontFamily).toContain('HHC Weekly Serif');
         expect(emphasis.style.fontFamily).not.toContain('Kai');
