@@ -11,11 +11,11 @@ const engine=vi.hoisted(()=>({supported:true,manifestReady:true,instances:[] as 
 const url='https://media.alive.org.tw/videos/r/packages/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/sessions/s/master.m3u8';
 vi.mock('hls.js',()=>({default:class {
   static isSupported(){return engine.supported;}
-  static Events={MANIFEST_PARSED:'manifest',ERROR:'error'};
+  static Events={MANIFEST_PARSED:'manifest',ERROR:'error',LEVEL_SWITCHED:'levelSwitched'};
   nextLevel=-1;loadLevel=-1;
   recoverMediaError=vi.fn();
   listeners:Record<string,(...args:unknown[])=>void>={};
-  levels=[{url:[url.replace('master.m3u8','720p/index.m3u8')]},{url:[url.replace('master.m3u8','1080p/index.m3u8')]},{url:[url.replace('master.m3u8','480p/index.m3u8')]}];
+  levels=[{height:720,url:[url.replace('master.m3u8','720p/index.m3u8')]},{height:1080,url:[url.replace('master.m3u8','1080p/index.m3u8')]},{height:480,url:[url.replace('master.m3u8','480p/index.m3u8')]}];
   loadSource=vi.fn();destroy=vi.fn();
   constructor(public config:{xhrSetup:(xhr:XMLHttpRequest,url:string)=>void}) {engine.instances.push(this);}
   on(event:string,callback:(...args:unknown[])=>void){this.listeners[event]=callback;if(event==='manifest'&&engine.manifestReady)queueMicrotask(callback);}
@@ -622,4 +622,14 @@ it('arbitrates desktop double click without changing live playback intent',async
  vi.useFakeTimers();fireEvent.click(surface,{detail:1});fireEvent.click(surface,{detail:2});fireEvent.doubleClick(surface);await act(()=>vi.advanceTimersByTimeAsync(350));
  expect(request).toHaveBeenCalledOnce();expect(video.pause).not.toHaveBeenCalled();expect(onBookmark).not.toHaveBeenCalled();
  fireEvent.click(surface,{detail:0});expect(video.pause).toHaveBeenCalledOnce();
+});
+
+it('reports Auto only from a rendered HLS level without rebuilding the session',async()=>{
+ const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));
+ fireEvent.click(screen.getByRole('button',{name:'Settings'}));
+ expect(screen.getByRole('option',{name:'Auto'})).toBeInTheDocument();
+ act(()=>engine.instances[0].listeners.levelSwitched('levelSwitched',{level:0}));
+ expect(screen.getByRole('option',{name:'Auto (720p)'})).toBeInTheDocument();
+ act(()=>engine.instances[0].listeners.levelSwitched('levelSwitched',{level:1}));
+ expect(screen.getByRole('option',{name:'Auto (1080p)'})).toBeInTheDocument();expect(engine.instances).toHaveLength(1);expect(engine.instances[0].recoverMediaError).not.toHaveBeenCalled();
 });

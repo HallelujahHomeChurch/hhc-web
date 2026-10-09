@@ -33,6 +33,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
   const qualityPosition=useRef<Pick<PlayerBookmark,'time'|'paused'|'rate'>|null>(null);
   const [autoplayBlocked,setAutoplayBlocked]=useState(false);
   const [mode,setMode]=useState<'loading'|'mse'|'native'|'error'>('loading');
+  const [activeHeight,setActiveHeight]=useState<number|null>(null);
   const [quality,setQuality]=useState<Quality>(resume?.quality ?? 'auto');
   const intent=useRef<PlaybackIntent>(resume?.intent ?? 'followLive'), positioned=useRef(false), closing=useRef(false);
   const failed=useRef(false), pausedIntent=useRef(resume?.paused??true);
@@ -81,6 +82,8 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
           fetchSetup:(context,init)=>{verifyMediaRequest(playbackUrl,context.url);return new Request(context.url,{...init,credentials:'include',redirect:'error',referrerPolicy:'no-referrer'});},
         });
         engine.current=hls;
+        // LEVEL_SWITCHED follows the fragment currently playing, not the next ABR choice.
+        hls.on(Hls.Events.LEVEL_SWITCHED,(_event,data)=>{if(!cancelled&&!failed.current){const height=hls.levels[data.level]?.height;setActiveHeight(height>0?height:null);}});
         hls.on(Hls.Events.MANIFEST_PARSED,()=>{if(!cancelled){
           const selected=qualityRef.current;
           if(selected!=='auto'){const target=new URL(`${selected}/index.m3u8`,playbackUrl).href;hls.nextLevel=hls.levels.findIndex(level=>level.url.includes(target));}
@@ -119,9 +122,10 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
       }
     };
     const seeking=()=>{if(!positioned.current||closing.current||qualityPosition.current)return;if(automaticSeek.current!==null&&Math.abs(video.currentTime-automaticSeek.current)<0.1){automaticSeek.current=null;return;}dvr();};
+    const resolution=()=>{if(!engine.current)setActiveHeight(video.videoHeight>0?video.videoHeight:null);};
     const paused=()=>{if(!closing.current&&!failed.current&&!video.error&&positioned.current&&!qualityPosition.current){pausedIntent.current=true;dvr();}};
     const online=()=>{recovery.current=true;position();};
-    const events:[string,()=>void][]=[['loadedmetadata',position],['progress',position],['durationchange',position],['canplay',position],['seeking',seeking],['pause',paused],['timeupdate',remember],['ratechange',remember],['play',remember]];
+    const events:[string,()=>void][]=[['loadedmetadata',position],['progress',position],['durationchange',position],['canplay',position],['seeking',seeking],['pause',paused],['timeupdate',remember],['ratechange',remember],['play',remember],['loadedmetadata',resolution],['resize',resolution]];
     for(const [event,handler] of events)video.addEventListener(event,handler);
     window.addEventListener('online',online);
     return()=>{for(const [event,handler] of events)video.removeEventListener(event,handler);window.removeEventListener('online',online);};
@@ -164,6 +168,6 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
   return <div ref={container} tabIndex={0} role="region" aria-label={`${title} — ${labels.togglePlayback}`} className={styles.player}>
     <video ref={videoRef} poster={poster} playsInline preload="metadata" controlsList="nodownload noremoteplayback" disablePictureInPicture disableRemotePlayback crossOrigin="use-credentials" aria-label={title} className="h-full w-full object-contain"
       onPlay={()=>{pausedIntent.current=false;setAutoplayBlocked(false);}} onError={handleError}/>
-    <PlayerChrome container={container} videoRef={videoRef} playbackUrl={playbackUrl} watermark={watermark} labels={labels} quality={quality} qualities={qualities} previousHref={previousHref} nextHref={nextHref} autoplayBlocked={autoplayBlocked} loading={mode==='loading'} failed={mode==='error'} onQualityChange={changeQuality} onPlaybackChange={value=>{if(value.paused!==undefined)pausedIntent.current=value.paused;if(qualityPosition.current)Object.assign(qualityPosition.current,value);}} onPlayingChange={onPlayingChange} live={playbackMode==='live'?live:undefined} onDvr={dvr} onReturnToLive={returnToLive}/>
+    <PlayerChrome container={container} videoRef={videoRef} playbackUrl={playbackUrl} watermark={watermark} labels={labels} quality={quality} activeHeight={activeHeight} qualities={qualities} previousHref={previousHref} nextHref={nextHref} autoplayBlocked={autoplayBlocked} loading={mode==='loading'} failed={mode==='error'} onQualityChange={changeQuality} onPlaybackChange={value=>{if(value.paused!==undefined)pausedIntent.current=value.paused;if(qualityPosition.current)Object.assign(qualityPosition.current,value);}} onPlayingChange={onPlayingChange} live={playbackMode==='live'?live:undefined} onDvr={dvr} onReturnToLive={returnToLive}/>
   </div>;
 }

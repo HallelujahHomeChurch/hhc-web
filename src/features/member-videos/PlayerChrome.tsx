@@ -18,7 +18,7 @@ type Props = {
   live?: LivePlayerState; onDvr?:()=>void; onReturnToLive?:()=>void;
   container: RefObject<HTMLDivElement | null>; videoRef: RefObject<HTMLVideoElement | null>;
   playbackUrl: string; watermark: string; labels: PlayerLabels;
-  quality: Quality; qualities: Exclude<Quality, 'auto'>[]; autoplayBlocked?:boolean; loading: boolean; failed: boolean;
+  quality: Quality; activeHeight?:number|null; qualities: Exclude<Quality, 'auto'>[]; autoplayBlocked?:boolean; loading: boolean; failed: boolean;
   onPlaybackChange?: (value:Partial<Pick<PlayerBookmark,'time'|'paused'|'rate'>>)=>void;
   onQualityChange: (quality: Quality) => void; onPlayingChange?: (playing: boolean) => void;
 };
@@ -36,7 +36,7 @@ export function playerClock(seconds: number) {
   return total >= 3600 ? `${Math.floor(total / 3600)}:${String(Math.floor(total / 60) % 60).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}` : `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
 }
 
-export function PlayerChrome({container, videoRef, playbackUrl, watermark, labels, quality, qualities, autoplayBlocked=false, loading, failed, onQualityChange, onPlaybackChange,onPlayingChange,live,onDvr,onReturnToLive,previousHref,nextHref}: Props) {
+export function PlayerChrome({container, videoRef, playbackUrl, watermark, labels, quality, activeHeight, qualities, autoplayBlocked=false, loading, failed, onQualityChange, onPlaybackChange,onPlayingChange,live,onDvr,onReturnToLive,previousHref,nextHref}: Props) {
   const router = useRouter();
   const touchUI = useSyncExternalStore(subscribeTouch, touchSnapshot, () => false);
   const fullscreenState = usePlayerFullscreen(container, videoRef, touchUI);
@@ -257,7 +257,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
       <label>{labels.playbackSpeed}<select aria-label={labels.playbackSpeed} value={rate} onChange={event => changeRate(Number(event.target.value))}>
         {[0.5,0.75,1,1.25,1.5,1.75,2].map(value => <option key={value} value={value}>{value}×</option>)}
       </select></label>
-      <label>{labels.quality}<select aria-label={labels.quality} value={quality} disabled={loading} onChange={event => onQualityChange(event.target.value as Quality)}><option value="auto">{labels.auto}</option>{qualities.map(name => <option key={name} value={name}>{name}</option>)}</select></label>
+      <label>{labels.quality}<select aria-label={labels.quality} value={quality} disabled={loading} onChange={event => onQualityChange(event.target.value as Quality)}><option value="auto">{labels.auto}{activeHeight?` (${activeHeight}p)`:null}</option>{qualities.map(name => <option key={name} value={name}>{name}</option>)}</select></label>
     </div> : null}
     <div data-controls className={`${styles.controls} ${controlsVisible ? '' : styles.hidden}`}>
       <div className={styles.seek} onPointerLeave={() => { if (!dragging.current) setPreview(null); }}>
