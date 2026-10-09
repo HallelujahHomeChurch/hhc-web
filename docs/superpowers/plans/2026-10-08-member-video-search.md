@@ -1,6 +1,6 @@
-# 影音專區搜尋：下一階段
+# 影音專區搜尋：實作與交付
 
-狀態：查詢與結果仍在規劃；2026-10-09 已依最新確認更新 header 搜尋入口。入口 UI 與手機導覽另案實作，尚未發布。2026-10-08 的正式版重審基準如下。影音列表與觀看頁改版已發布，搜尋可獨立開始，不以直播實場驗收完成為前提。本文件的新增設計是下一階段提案，不代表功能已上版。
+狀態：2026-10-09 已依最新授權實作影音搜尋，其他頁搜尋入口維持可見但 disabled；未做全域搜尋。API PR172、Gateway PR157、共用套件 PR106 與網站草稿 PR172 尚未合併／發布。2026-10-08 的正式版重審基準如下。搜尋不以直播實場驗收完成為前提。
 
 基準：hhc-web `c0cf694607be13641fbd83bb464fc63ffee4fb99`，其中影音版型由 PR #165／`c43448af1895a3ac64b8eadf28a118afa501e913` 交付；hhc-web-api `2f105e880c714f69b2acbe2b9762071466cda159`；正式共用 UI／SDK `1.0.44`；api-gateway `fd50c25c27de6899b8291c80e9af7ae6efd810a8`。
 
@@ -22,9 +22,9 @@
 
 ## 操作與畫面
 
-- header 搜尋入口對所有訪客顯示。先交付展開／關閉、輸入與清除 UI，本次不送出查詢、不切換結果頁。下一階段將查詢行為做成可重用功能：影音列表、結果與觀看頁採影音搜尋；其他頁面可接全域搜尋。全域的資料來源、權限與 API 另行定義，本文件的 q 契約只適用影音。
+- header 搜尋入口對所有訪客顯示。只有影音列表、結果與觀看頁可使用影片搜尋；其他頁面入口 disabled，無法展開或送出。沿用共用欄位與最小影音路由 adapter；不先建立全域 provider 框架。未來其他頁面補入功能後才取消 disabled；其資料來源、權限與 API 另行定義。
 - 沿用共用 ExpandableSearchField。桌面入口在 avatar 左側；展開空間足夠時保留中間 nav，不足時暫以搜尋取代 nav，保留 logo 與帳號。手機展開成完整不透明 header row，完全覆蓋 logo；操作至少 44px。關閉保留草稿並還原焦點，清除只清除草稿。
-- 搜尋入口可見性不代表影片存取權。下一階段在影音頁送出搜尋仍須沿用登入、entitlement 與法律條款流程，不能由全域搜尋洩漏會員影片。
+- 搜尋入口可見性不代表影片存取權。影音頁送出搜尋沿用登入、entitlement 與法律條款流程；SSR 不注入會員結果。
 - 輸入草稿與已送出的 q 分開。按 Enter／搜尋按鈕才送出，中文輸入法組字中的 Enter 不觸發。URL 使用 `/[locale]/member-videos?q=...`；重新整理、分享與瀏覽器前進／後退均重建已送出的查詢。再次送出相同 q 也重新取得第一批。
 - 清除輸入按鈕只清除草稿；送出空白，或點無結果狀態中的「清除搜尋」，移除 q 並回到三欄瀏覽。不要每打一個字就清空結果或發請求。
 - 第一階段搜尋影片標題與影片說明；不搜尋字幕或影片內容。不加入頻道、觀看次數、廣告、熱門排序或推薦演算法。
@@ -60,7 +60,7 @@
 1. API：在同一 PR 更新兩個 GET 的 canonical OpenAPI、查詢驗證、詞匹配、VOD／直播可見性與 query-bound keyset 測試；先發布並驗證真正接受 q。
 2. api-gateway：只調整直播列表 GET，移除全 query 拒絕並轉送 `$is_args$args`，由 API 驗證可接受的參數；播放 POST 維持拒絕 query。新增路由、會員授權、參數轉送與安全 logging 測試。API 先發布，Gateway 再發布並以正式 same-origin 路由 smoke；兩者就緒前網站不送 q。
 3. frontend-platform：同步 canonical schema 與兩個 SDK 方法的 q 選項，驗證原無參數呼叫；發布正式版本。繼續使用現有 LoadMoreTrigger，沒有 UI package 改動時不為搜尋另造共用元件。
-4. hhc-web：固定已發布 SDK 版本，將既有 header 搜尋入口接到可重用的查詢行為與影音 adapter，加入 searchParams 處理、結果版型、查詢來源與返回還原。header UI 與查詢生命週期可重用，provider 依頁面決定搜尋範圍；首個影音 adapter 完成後再依全域需求擴充，不先造未使用的框架。影片 card 的重用限網站影音 feature；共用套件不承擔會員授權、搜尋排序或返回狀態。
+4. hhc-web：固定已發布 SDK 版本，將既有 header 搜尋入口接到影音 adapter，加入 searchParams 處理、結果版型、查詢來源與返回還原。共用 UI 保留查詢 callback，實際影片查詢與返回狀態由影音 feature 擁有；其他頁 disabled，後續按實際需求擴充。影片 card 的重用限網站影音 feature；共用套件不承擔會員授權、搜尋排序或返回狀態。
 
 實作驗收案例：
 
@@ -71,4 +71,12 @@
 - 直播符合／不符合、狀態更新、直播與 VOD 同 ID、直播移出後第一批更新與 continuation、不即時發布的會後錄影在下次查詢才出現。以既有 C1 fixtures 驗證，不等待 Windows 真場直播才測搜尋。
 - 320／390／768／1024／1440／1920px，搜尋結果獨立寬度、16:9 縮圖、紅色 chip／時間位置、無總場次／分頁／分隔線、鍵盤 focus、載入與無結果的可讀狀態；正式會員錄影播放及權限檢查仍須 smoke。
 
-本文件只修訂計畫與驗收範圍。header 入口 UI 另案交付；查詢、結果、全域資料源、各 repository 的 PR／CI／發布與正式搜尋驗收仍待下一階段。
+## 實作驗證與發布 gate（2026-10-09）
+
+- API [PR172](https://github.com/HallelujahHomeChurch/hhc-web-api/pull/172)：`c75f5ea`，完整 Go race／PostgreSQL 搜尋與游標測試、vet、OpenAPI 與發布政策已在本機通過。
+- Gateway [PR157](https://github.com/HallelujahHomeChurch/api-gateway/pull/157)：`5b8d93c`，protected GET q forwarding；live playback POST 仍拒絕 query。路由／Docker runtime／安全日誌驗證通過。
+- 共用套件 [PR106](https://github.com/HallelujahHomeChurch/frontend-platform/pull/106)：`bc49ce7`，預備 `1.0.48`。SDK 76、UI 112 tests 與打包消費端通過；schema 只同步本次兩個影音 GET canonical path，其他域維持原先 pinned 契約。
+- 網站 [草稿 PR172](https://github.com/HallelujahHomeChurch/hhc-web/pull/172)：加入標題／說明搜尋、query-bound 分段、返回結果深度與位置、直播移出更新及其他頁 disabled。完整 859 tests、production build、lint、靜態效能與發布政策用本地 preview 套件通過。官方 manifest 仍保留已發布版本，未提交 file dependency。
+- 獨立覆核發現並修正：nullable account identity、同關鍵字 refresh 舊 continuation、直播轉錄影擠出批次邊界、返回時等待直播首批；新增回歸測試。
+- 依 API → Gateway → 共用套件 → 網站順序，在各 PR CI 通過與核准後合併／發布。共用套件正式發布後，網站再固定 UI／SDK 的正式精確版本、產生 lockfile並重跑 CI；草稿目前不可合併。不得以本地 preview 代替正式 CI。
+- 正式環境搜尋、會員權限與播放 smoke，以及實體手機驗收仍待發布後執行。全域搜尋／字幕索引／搜尋引擎不在本次範圍。
