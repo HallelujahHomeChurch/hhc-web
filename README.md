@@ -84,8 +84,11 @@ authorization boundary; list, grant, and media requests retain their checks.
 
 The focused player supports Space/K, arrows (5 seconds), J/L (10 seconds), M,
 and F. Form controls keep native keyboard behavior. The settings menu contains
-quality and playback speed. Fullscreen contains the entire player and its
-pseudonymous watermark; the watermark discourages sharing, not screen capture.
+quality and playback speed. Explicit quality changes rebuild the MSE buffers
+and restore position, pause state, and speed; commands made during that brief
+reload take precedence. This prevents cached lower-quality frames and stale
+end-of-stream work from shortening the replay timeline. Fullscreen contains
+the entire player and its pseudonymous watermark; the watermark discourages sharing, not screen capture.
 
 Timeline previews lazily request `previews/index.vtt` and bounded 160×90 sprites
 inside the same authenticated playback session. Asset API generates them from

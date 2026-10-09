@@ -26,10 +26,10 @@
   },
   "dependencies": {
     "@hallelujahhomechurch/account-client": "1.0.45",
-    "@hallelujahhomechurch/hhc-web-client": "1.0.48",
+    "@hallelujahhomechurch/hhc-web-client": "1.0.49",
     "@hallelujahhomechurch/operations-client": "1.0.37",
     "@hallelujahhomechurch/preferences": "1.0.47",
-    "@hallelujahhomechurch/ui": "1.0.48",
+    "@hallelujahhomechurch/ui": "1.0.49",
     "@sentry/nextjs": "10.69.0",
     "hls.js": "1.7.3",
     "lucide-react": "^1.24.0",
