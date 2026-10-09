@@ -429,7 +429,7 @@
       "liveNow": "直播中",
       "watchRecording": "接续观看会后影片",
       "starting": "直播准备中",
-      "live": "直播中，约延迟 1–2 分钟",
+      "live": "直播中，预计延迟 {delay}",
       "recovering": "正在追上直播进度",
       "interrupted": "直播连接中断",
       "ending": "直播结束处理中，可继续回看",

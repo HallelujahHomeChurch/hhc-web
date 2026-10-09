@@ -156,7 +156,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
     window.clearTimeout(feedbackTimer.current);
     feedbackTimer.current=window.setTimeout(()=>setFeedback(null),900);
   };
-  const changeRate=(rate:number)=>{if(videoRef.current){videoRef.current.playbackRate=rate;onPlaybackChange?.({rate});}};
+  const changeRate=(rate:number)=>{if(videoRef.current){if(live)onDvr?.();videoRef.current.playbackRate=rate;onPlaybackChange?.({rate});}};
   const cancelGesture = () => {
     window.clearTimeout(clickTimer.current);window.clearTimeout(holdTimer.current);
     if (gesture.current?.rate != null) changeRate(gesture.current.rate);
