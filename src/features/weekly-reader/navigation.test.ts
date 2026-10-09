@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {fittedPageScale, clampPaperZoom, swipeDirection, keyboardPageDelta, centeredBodyOffset, sourcePageStart, sourcePageForSentence} from './navigation';
+import {fittedPageScale, clampPaperZoom, swipeDirection, keyboardPageDelta, sourcePageStart, sourcePageForSentence} from './navigation';
 import {readerFixture} from './test-fixture';
 describe('reader navigation', () => {
   it('keeps reflow canonical headings anchored to the cover despite repeated paper art', () => {
@@ -26,17 +26,6 @@ describe('reader navigation', () => {
     expect(sourcePageStart(doc, 90)).toBeUndefined();
     doc.layoutManifest.pages[2].slots[0].fragments.unshift({sentenceId: 'hidden-credit', start: 0, end: 3});
     expect(sourcePageStart(doc, 2, new Set(['hidden-credit']))).toEqual({sentenceId: 's1', start: 8, end: 9});
-  });
-  it('centers body text using translation only, without changing widths, fragments or pages', () => {
-    const document = readerFixture().document.content;
-    expect(centeredBodyOffset(document, 'p0')).toBe(0);
-    const block = document.components[0].type === 'backSummary' ? document.components[0].items[0].blocks[0] : null;
-    if (!block) throw new Error('fixture');
-    document.components[0] = {id: 'c0', type: 'bodySection', bodySection: {kind: 'sermon', title: block, blocks: []}};
-    document.layoutManifest.pages[0].slots[0].box = {x: .14, y: .1, width: .8, height: .1};
-    const before = structuredClone(document);
-    expect(centeredBodyOffset(document, 'p0')).toBeCloseTo(-.04);
-    expect(document).toEqual(before);
   });
   it('fits the available viewport and bounds explicit zoom', () => {
     expect(fittedPageScale({width: 600, height: 800}, {width: 900, height: 600})).toBe(.75);

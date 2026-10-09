@@ -6,6 +6,23 @@ import {verifyReaderAccess} from '@/features/weekly-reader/api';
 const value = readerFixture();
 const document = verifyReaderAccess(value, {accountId: 'account-a', issueNumber: 1739, series: 'general', contentLocale: 'zh-Hant'});
 const props = {document, metadata: value.document.canonicalMetadata, traceCode: value.access.traceCode, page: 2, zoom: 1, viewport: {width: 600, height: 800}, direction: 'vertical' as const};
+it.each(['vertical', 'horizontal'] as const)('centers every retained paper page in %s mode with no source reflow', direction => {
+  const source = structuredClone(document);
+  for (const page of source.layoutManifest.pages) {
+    page.slots[0].box = {x: .14, y: .3, width: .8, height: .1};
+    page.fixedSlots = [{id: `${page.pageId}-title`, element: 'title', style: {fontSize: 12, lineHeight: 15, indent: 0, firstLineIndent: 0, spaceBefore: 0, spaceAfter: 0}, box: {x: .2, y: .1, width: .6, height: .1}}];
+  }
+  const before = structuredClone(source);
+  const {container} = render(<PaperViewport {...props} document={source} direction={direction}/>);
+  for (const page of container.querySelectorAll('[data-bulletin-page]')) {
+    const paragraph = page.querySelector<HTMLElement>('[data-block-id]')!;
+    expect(parseFloat(paragraph.style.left)).toBeCloseTo(10);
+    expect(parseFloat(paragraph.style.width)).toBe(80);
+    expect(parseFloat(page.querySelector<HTMLElement>('[data-fixed-element="title"]')!.style.left)).toBeCloseTo(16);
+  }
+  expect(container.querySelectorAll('[data-bulletin-page]')).toHaveLength(direction === 'vertical' ? 4 : 1);
+  expect(source).toEqual(before);
+});
 it.each([true, false])('aligns back-cover frames outside text with summary frame %s without changing source content', (hasSummaryFrame) => {
   const source = structuredClone(document);
   source.components[1] = {...source.components[1], type: 'announcements'} as typeof source.components[number];
