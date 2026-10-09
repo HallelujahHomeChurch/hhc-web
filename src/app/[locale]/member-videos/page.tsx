@@ -37,7 +37,7 @@ export default async function MemberVideosPage({params,searchParams}: PageProps)
   return (
     <>
       <SiteHeaderServer locale={locale} pathname={pathname} searchQuery={query} />
-      <MemberVideoZone view="list" query={query} invalidQuery={invalid} locale={locale} messages={messages} hero={<AboutHero imageUrl={layout.bannerImageUrl} locale={locale} title={messages.heroTitle} subtitle={messages.heroSubtitle} />} />
+      <MemberVideoZone view="list" query={query} invalidQuery={invalid} locale={locale} messages={messages} hero={<AboutHero compactMobile imageUrl={layout.bannerImageUrl} locale={locale} title={messages.heroTitle} subtitle={messages.heroSubtitle} />} />
       <SiteFooterServer locale={locale} pathname={pathname} />
     </>
   );

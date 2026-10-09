@@ -417,6 +417,8 @@
   "memberVideos": {
     "theaterMode": "劇院模式",
     "exitTheaterMode": "結束劇院模式",
+    "settingsBack": "返回",
+    "replay": "重播",
     "tapToPlay": "點一下開始播放",
     "previousVideo": "上一部影片",
     "nextVideo": "下一部影片",

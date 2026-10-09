@@ -417,6 +417,8 @@
   "memberVideos": {
     "theaterMode": "影院模式",
     "exitTheaterMode": "退出影院模式",
+    "settingsBack": "返回",
+    "replay": "重播",
     "tapToPlay": "点一下开始播放",
     "previousVideo": "上一部影片",
     "nextVideo": "下一部影片",

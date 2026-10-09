@@ -417,6 +417,8 @@
   "memberVideos": {
     "theaterMode": "シアターモード",
     "exitTheaterMode": "シアターモードを終了",
+    "settingsBack": "戻る",
+    "replay": "もう一度再生",
     "tapToPlay": "タップして再生",
     "previousVideo": "前の動画",
     "nextVideo": "次の動画",

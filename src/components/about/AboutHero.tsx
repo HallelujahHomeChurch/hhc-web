@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import styles from './AboutHero.module.css';
 import {bannerFontByLocale} from '@/app/fonts';
 import type {Locale} from '@/i18n/locales';
 
@@ -7,9 +8,10 @@ type AboutHeroProps = {
   title: string;
   subtitle: string;
   imageUrl?: string;
+  compactMobile?: boolean;
 };
 
-export function AboutHero({locale, title, subtitle, imageUrl = '/assets/banners/hero.jpg'}: AboutHeroProps) {
+export function AboutHero({locale, title, subtitle, imageUrl = '/assets/banners/hero.jpg', compactMobile=false}: AboutHeroProps) {
   const displayFont = bannerFontByLocale[locale].className;
   const titleTypography = locale === 'ja'
     ? 'text-[clamp(44px,5.8vw,76px)] tracking-[0.03em] max-[620px]:whitespace-normal max-[620px]:text-[clamp(34px,10vw,46px)] max-[620px]:tracking-[0.01em]'
@@ -24,7 +26,7 @@ export function AboutHero({locale, title, subtitle, imageUrl = '/assets/banners/
 
   return (
     <section
-      className="relative min-h-[clamp(430px,56vw,610px)] overflow-hidden bg-paper"
+      className={`relative min-h-[clamp(430px,56vw,610px)] overflow-hidden bg-paper ${compactMobile?styles.compactMobile:''}`}
       aria-labelledby="page-title"
     >
       <picture className="absolute inset-0">

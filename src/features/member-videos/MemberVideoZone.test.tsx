@@ -440,7 +440,8 @@ it('keeps watch selection and other recommendations independent of the source qu
  await screen.findByRole('heading',{name:'Selected'});
  expect(videoApi.listPage).not.toHaveBeenCalled();expect(videoApi.liveList).toHaveBeenCalledWith(expect.any(AbortSignal),undefined);
  expect(screen.getByRole('link',{name:'Other latest recording'})).toHaveAttribute('href','/en/member-videos/r2?q=faith');
- expect(screen.getByRole('link',{name:'Back to search results'})).toHaveAttribute('href','/en/member-videos?q=faith');
+ const back=screen.getByRole('link',{name:'Back to search results'});expect(back).toHaveAttribute('href','/en/member-videos?q=faith');
+ expect(screen.getByRole('heading',{name:'Selected'}).compareDocumentPosition(back)&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
 
 it('returns to the loaded depth by refetching fresh batches and restores a bounded position',async()=>{
@@ -525,4 +526,21 @@ it('waits for initial live rows before restoring the clicked anchor',async()=>{
  await act(async()=>finish([{id:'live',captureId:packageId,title:'Late live',liveState:'live'}]));
  await screen.findByRole('link',{name:'Late live — Live'});
  await waitFor(()=>expect(window.scrollTo).toHaveBeenCalled());
+});
+
+it('retries VOD at the frozen pre-error position with the same rate, quality and playing intent',async()=>{
+ state.auth='authenticated';state.access='available';list.mockResolvedValue([{id:'r1',title:'Meeting',packageId}]);
+ videoApi.grant.mockResolvedValue({packageId,watermarkCode:'trace',expiresAt:new Date(Date.now()+3600000).toISOString()});videoApi.exchange.mockResolvedValue(playbackUrl);
+ render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);
+ const video=await screen.findByLabelText('Meeting') as HTMLVideoElement;await waitFor(()=>expect(video).toHaveAttribute('src',playbackUrl));
+ Object.defineProperty(video,'duration',{configurable:true,value:7200});fireEvent.loadedMetadata(video);video.currentTime=2820;video.playbackRate=1.5;Object.defineProperty(video,'paused',{configurable:true,value:false});fireEvent.play(video);fireEvent.timeUpdate(video);
+ fireEvent.error(video);video.currentTime=0;fireEvent.pause(video);fireEvent.timeUpdate(video);vi.mocked(video.play).mockClear();
+ fireEvent.click(screen.getByRole('button',{name:'Retry'}));const resumed=await screen.findByLabelText('Meeting') as HTMLVideoElement;
+ await waitFor(()=>expect(videoApi.grant).toHaveBeenCalledTimes(2));fireEvent.loadedMetadata(resumed);
+ expect(resumed.currentTime).toBe(2820);expect(resumed.playbackRate).toBe(1.5);expect(resumed.play).toHaveBeenCalled();
+});
+
+it('attempts playback again after an initial media failure without an invented pause',async()=>{
+ state.auth='authenticated';state.access='available';list.mockResolvedValue([{id:'r1',title:'Initial failure',packageId}]);vi.spyOn(HTMLMediaElement.prototype,'canPlayType').mockReturnValue('probably');videoApi.grant.mockResolvedValue({packageId,expiresAt:new Date(Date.now()+3600000).toISOString(),watermarkCode:'TRACE',renditions:[]});videoApi.exchange.mockResolvedValue(playbackUrl);
+ render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);const video=await screen.findByLabelText('Initial failure',{selector:'video'}) as HTMLVideoElement;await waitFor(()=>expect(video.src).toBe(playbackUrl));fireEvent.error(video);fireEvent.click(screen.getByRole('button',{name:'Retry'}));await waitFor(()=>expect(videoApi.grant).toHaveBeenCalledTimes(2));await waitFor(()=>expect(screen.getByLabelText('Initial failure',{selector:'video'})).not.toBe(video));const resumed=screen.getByLabelText('Initial failure',{selector:'video'}) as HTMLVideoElement;await waitFor(()=>expect(resumed.src).toBe(playbackUrl));vi.mocked(resumed.play).mockClear();fireEvent.loadedMetadata(resumed);expect(resumed.play).toHaveBeenCalledOnce();
 });

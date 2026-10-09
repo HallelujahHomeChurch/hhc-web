@@ -83,12 +83,23 @@ The navigation entry requires both `NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED=true`
 authorization boundary; list, grant, and media requests retain their checks.
 
 The focused player supports Space/K, arrows (5 seconds), J/L (10 seconds), M,
-and F. Form controls keep native keyboard behavior. The settings menu contains
-quality and playback speed. Explicit quality changes rebuild the MSE buffers
+and F. Desktop surface double-click toggles fullscreen without issuing playback
+commands; surface single-click waits 500ms for click arbitration, while keyboard
+and toolbar actions remain immediate. Form controls keep native keyboard behavior.
+The settings menu has playback-speed and quality submenus, selected checkmarks,
+keyboard navigation and a back action, contained within the fullscreen player.
+Auto shows the rendered resolution only when HLS or native video reports it. Explicit quality changes rebuild the MSE buffers
 and restore position, pause state, and speed; commands made during that brief
 reload take precedence. This prevents cached lower-quality frames and stale
 end-of-stream work from shortening the replay timeline. Fullscreen contains
 the entire player and its pseudonymous watermark; the watermark discourages sharing, not screen capture.
+
+Live watch routes prepare playback automatically. Both live and VOD attempt audible
+playback and retain a neutral Play fallback when browser autoplay is blocked;
+they never silently mute. Media-error Retry retains the latest position, pause
+intent, speed and quality, including commands during rendition reattachment.
+Finished VOD exposes Replay without starting another recording or acquiring a
+new session. Live end-of-stream retains DVR and the explicit recording handoff.
 
 Timeline previews lazily request `previews/index.vtt` and bounded 160×90 sprites
 inside the same authenticated playback session. Asset API generates them from
@@ -102,6 +113,12 @@ Live events appear first in the same grid with a top-right live badge. The watch
 page places the player and description beside the newest ten other recordings;
 recommendations move below the player on narrower screens. Only the Taipei upload
 date appears below recording titles; live events show their start date.
+Mobile browse uses a compact hero. In portrait, the same watch player stays visible
+through descriptions and recommendations, using measured top chrome and its
+existing hide/search state. Short available viewports and landscape use normal
+flow. The touch timeline has a separate 44px hit row; cancelled or lost-capture
+scrubs do not commit. Search return follows stable watch metadata rather than
+adding a row above the player.
 
 Live playback retains the available DVR timeline and replaces the numeric time
 display with a live indicator/button. It is red at the current verified live edge

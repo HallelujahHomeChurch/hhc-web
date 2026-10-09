@@ -1,9 +1,9 @@
 'use client';
 
-import {useEffect, useRef, useState, useSyncExternalStore, type PointerEvent as ReactPointerEvent, type RefObject} from 'react';
+import {useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type RefObject} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
-import {ChevronDown, ChevronLeft, ChevronRight, SkipBack, SkipForward, LoaderCircle, RectangleHorizontal, Maximize, Minimize, Pause, Play, Settings, Volume2, VolumeX} from 'lucide-react';
+import {Check, ChevronDown, ChevronLeft, ChevronRight, SkipBack, SkipForward, LoaderCircle, RectangleHorizontal, Maximize, Minimize, RotateCcw, Pause, Play, Settings, Volume2, VolumeX} from 'lucide-react';
 import {liveWindow,type LivePlayerState,type PlayerBookmark} from './live-player';
 import type {PlayerLabels} from './HlsPlayer';
 import {loadPreviewIndex, type PreviewCue} from './preview-index';
@@ -18,7 +18,7 @@ type Props = {
   live?: LivePlayerState; onDvr?:()=>void; onReturnToLive?:()=>void;
   container: RefObject<HTMLDivElement | null>; videoRef: RefObject<HTMLVideoElement | null>;
   playbackUrl: string; watermark: string; labels: PlayerLabels;
-  quality: Quality; qualities: Exclude<Quality, 'auto'>[]; autoplayBlocked?:boolean; loading: boolean; failed: boolean;
+  quality: Quality; activeHeight?:number|null; qualities: Exclude<Quality, 'auto'>[]; autoplayBlocked?:boolean; loading: boolean; failed: boolean;
   onPlaybackChange?: (value:Partial<Pick<PlayerBookmark,'time'|'paused'|'rate'>>)=>void;
   onQualityChange: (quality: Quality) => void; onPlayingChange?: (playing: boolean) => void;
 };
@@ -36,23 +36,25 @@ export function playerClock(seconds: number) {
   return total >= 3600 ? `${Math.floor(total / 3600)}:${String(Math.floor(total / 60) % 60).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}` : `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
 }
 
-export function PlayerChrome({container, videoRef, playbackUrl, watermark, labels, quality, qualities, autoplayBlocked=false, loading, failed, onQualityChange, onPlaybackChange,onPlayingChange,live,onDvr,onReturnToLive,previousHref,nextHref}: Props) {
+export function PlayerChrome({container, videoRef, playbackUrl, watermark, labels, quality, activeHeight, qualities, autoplayBlocked=false, loading, failed, onQualityChange, onPlaybackChange,onPlayingChange,live,onDvr,onReturnToLive,previousHref,nextHref}: Props) {
   const router = useRouter();
   const touchUI = useSyncExternalStore(subscribeTouch, touchSnapshot, () => false);
   const fullscreenState = usePlayerFullscreen(container, videoRef, touchUI);
   const fullscreen = fullscreenState.mode !== 'inline';
+  const [ended,setEnded]=useState(false), [playBlocked,setPlayBlocked]=useState(false);
   const [playing, setPlaying] = useState(false), [waiting, setWaiting] = useState(true);
   const [muted, setMuted] = useState(false), [volume, setVolume] = useState(1), [rate, setRate] = useState(1);
   const [liveRange,setLiveRange]=useState<ReturnType<typeof liveWindow>>(null);
   const [time, setTime] = useState(0), [duration, setDuration] = useState(0), [buffered, setBuffered] = useState(0);
   const [theater,setTheater]=useState(false);
+  const [settingsView,setSettingsView]=useState<'root'|'speed'|'quality'>('root');
   const [settings, setSettings] = useState(false), [visible, setVisible] = useState(true);
   const [feedback, setFeedback] = useState<{kind: 'play' | 'pause' | 'back' | 'forward'; id: number; seconds?:number} | null>(null);
   const [preview, setPreview] = useState<number | null>(null), [cues, setCues] = useState<PreviewCue[]>([]);
   const [previewRequested, setPreviewRequested] = useState(false), [scrub, setScrub] = useState<number | null>(null);
   const [holding, setHolding] = useState(false);
   const gesture = useRef<{id:number;x:number;y:number;moved:boolean;rate:number|null}|null>(null);
-  const holdTimer = useRef(0), tapTimer = useRef(0);
+  const holdTimer = useRef(0), tapTimer = useRef(0), clickTimer=useRef(0);
   const lastTap = useRef<{time:number;side:'back'|'forward'|'center'}|null>(null);
   const hideTimer = useRef(0), feedbackTimer = useRef(0), dragging = useRef(false);
   const menu = useRef<HTMLDivElement>(null), settingsButton = useRef<HTMLButtonElement>(null);
@@ -62,8 +64,8 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    const updatePlay = () => { setPlaying(!video.paused && !video.ended); playingCallback.current?.(!video.paused && !video.ended); };
-    const updateTime = () => setTime(video.currentTime);
+    const updatePlay = () => {setEnded(!live&&video.ended);if(!video.paused)setPlayBlocked(false); setPlaying(!video.paused && !video.ended); playingCallback.current?.(!video.paused && !video.ended); };
+    const updateTime = () => {setTime(video.currentTime);setEnded(!live&&video.ended);};
     const updateDuration = () => {const range=live ? liveWindow(video.seekable,live.verifiedEnd):null;setLiveRange(range);setDuration(live ? range?.end??0 : Number.isFinite(video.duration) ? video.duration : 0);};
     const updateVolume = () => { setMuted(video.muted); setVolume(video.volume); };
     const updateRate = () => setRate(video.playbackRate);
@@ -73,7 +75,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
       setBuffered(end);
     };
     const startWait = () => setWaiting(true), endWait = () => setWaiting(false);
-    const events: [string, () => void][] = [['play', updatePlay], ['pause', updatePlay], ['ended', updatePlay], ['timeupdate', updateTime], ['durationchange', updateDuration], ['loadedmetadata',updateDuration], ['volumechange', updateVolume], ['ratechange', updateRate], ['progress', updateBuffer], ['progress', updateDuration], ['canplay',updateDuration], ['loadstart', startWait], ['seeking', startWait], ['waiting', startWait], ['playing', endWait], ['canplay', endWait], ['seeked', endWait], ['pause', endWait], ['ended', endWait], ['error', endWait]];
+    const events: [string, () => void][] = [['play', updatePlay], ['pause', updatePlay], ['ended', updatePlay], ['timeupdate', updateTime], ['seeked',updatePlay], ['durationchange', updateDuration], ['loadedmetadata',updateDuration], ['volumechange', updateVolume], ['ratechange', updateRate], ['progress', updateBuffer], ['progress', updateDuration], ['canplay',updateDuration], ['loadstart', startWait], ['seeking', startWait], ['waiting', startWait], ['playing', endWait], ['canplay', endWait], ['seeked', endWait], ['pause', endWait], ['ended', endWait], ['error', endWait]];
     for (const [event, handler] of events) video.addEventListener(event, handler);
     updatePlay(); updateTime(); updateDuration(); updateVolume(); updateRate();
     return () => { for (const [event, handler] of events) video.removeEventListener(event, handler); };
@@ -83,7 +85,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
 
   useEffect(() => {
     const video=videoRef.current;
-    return () => { window.clearTimeout(hideTimer.current); window.clearTimeout(feedbackTimer.current); window.clearTimeout(holdTimer.current); window.clearTimeout(tapTimer.current);
+    return () => { window.clearTimeout(hideTimer.current); window.clearTimeout(feedbackTimer.current); window.clearTimeout(holdTimer.current); window.clearTimeout(tapTimer.current);window.clearTimeout(clickTimer.current);
       if (gesture.current?.rate != null && video) video.playbackRate = gesture.current.rate;
     };
   }, [videoRef]);
@@ -111,12 +113,31 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
     return () => document.removeEventListener('pointerdown', close);
   });
 
+  useEffect(()=>{
+    const selected=menu.current?.querySelector<HTMLElement>('[aria-checked="true"]');
+    if(settings&&selected&&menu.current)menu.current.scrollTop=Math.max(0,selected.offsetTop-menu.current.clientHeight/2);
+    if(settings)(menu.current?.querySelector<HTMLElement>('[aria-checked="true"]')??menu.current?.querySelector('button'))?.focus({preventScroll:true});
+  },[settings,settingsView]);
+  const closeSettings=()=>{setSettings(false);settingsButton.current?.focus();showControls();};
+  const openSettings=()=>{setSettingsView('root');setSettings(value=>!value);showControls();};
+  const chooseSetting=(event:ReactMouseEvent<HTMLButtonElement>)=>{const value=event.currentTarget.value;if(settingsView==='speed')changeRate(Number(value));else onQualityChange(value as Quality);closeSettings();};
+  const menuKeys=(event:ReactKeyboardEvent<HTMLDivElement>)=>{
+    const buttons=Array.from(menu.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')??[]);
+    const index=buttons.indexOf(document.activeElement as HTMLButtonElement);
+    if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)){
+      event.preventDefault();event.stopPropagation();
+      buttons[event.key==='Home'?0:event.key==='End'?buttons.length-1:(index+(event.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length]?.focus();
+    }else if(event.key==='Escape'||event.key==='ArrowLeft'){
+      event.preventDefault();event.stopPropagation();if(event.key==='ArrowLeft'&&settingsView!=='root')setSettingsView('root');else closeSettings();
+    }
+  };
   const toggle = () => {
     const video = videoRef.current;
     if (!video) return;
+    if(ended&&video.ended&&!live){video.currentTime=0;setTime(0);setEnded(false);onPlaybackChange?.({time:0,paused:false});void video.play().catch(()=>setPlayBlocked(true));showControls();return;}
     const kind = video.paused ? 'play' : 'pause';
     onPlaybackChange?.({paused:!video.paused});
-    if (video.paused) void video.play().catch(() => {}); else {onDvr?.();video.pause();}
+    if (video.paused) void video.play().catch(() => setPlayBlocked(true)); else {onDvr?.();video.pause();}
     if (!touchUI) {
       setFeedback({kind, id: Date.now()});
       window.clearTimeout(feedbackTimer.current);
@@ -126,7 +147,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
   };
   const toggleFullscreen = fullscreenState.toggle;
   const seekStart = liveRange?.start ?? 0;
-  const seek = (value: number) => { if (videoRef.current && duration > seekStart) { onDvr?.();videoRef.current.currentTime = Math.min(duration, Math.max(seekStart, value)); setTime(videoRef.current.currentTime);onPlaybackChange?.({time:videoRef.current.currentTime}); } };
+  const seek = (value: number) => { if (videoRef.current && duration > seekStart) { onDvr?.();videoRef.current.currentTime = Math.min(duration, Math.max(seekStart, value)); setTime(videoRef.current.currentTime);if(!live)setEnded(false);onPlaybackChange?.({time:videoRef.current.currentTime}); } };
   const seekBy = (seconds:number) => {
     if (!videoRef.current || duration <= seekStart) return;
     seek(videoRef.current.currentTime + seconds);
@@ -137,7 +158,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
   };
   const changeRate=(rate:number)=>{if(videoRef.current){videoRef.current.playbackRate=rate;onPlaybackChange?.({rate});}};
   const cancelGesture = () => {
-    window.clearTimeout(holdTimer.current);
+    window.clearTimeout(clickTimer.current);window.clearTimeout(holdTimer.current);
     if (gesture.current?.rate != null) changeRate(gesture.current.rate);
     gesture.current = null; setHolding(false);
   };
@@ -188,6 +209,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
     }
   };
   const keyDown = (event: KeyboardEvent) => {
+    if(event.defaultPrevented||event.target instanceof HTMLElement&&event.target.closest('[role=menu]'))return;
     if (event.key === 'Escape' && settings) { event.preventDefault(); event.stopPropagation(); setSettings(false); settingsButton.current?.focus(); showControls(); return; }
     const key = event.key.toLowerCase();
     const seekInput=event.target instanceof HTMLInputElement && event.target.getAttribute('aria-label')===labels.seek;
@@ -224,11 +246,12 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
     return () => { root.removeEventListener('keydown', keyboard); root.removeEventListener('pointermove', mouseMove); root.removeEventListener('focusin', showControls); root.removeEventListener('focusout', showControls); root.removeEventListener('pointerleave', showControls); video?.removeEventListener('play', showControls); video?.removeEventListener('pause', showControls); video?.removeEventListener('canplay', showControls); };
   });
 
+  const cancelScrub=()=>{dragging.current=false;setScrub(null);setPreview(null);};
   const current = scrub ?? time;
   const previewTime = scrub ?? preview;
   const cue = previewTime === null ? undefined : cues.find(cue => cue.start <= previewTime && cue.end > previewTime);
   const neighbor = cue ? cues.find(item => item.start >= cue.end && item.url !== cue.url)?.url : undefined;
-  const controlsVisible = visible || autoplayBlocked || settings || scrub !== null;
+  const controlsVisible = visible || autoplayBlocked || playBlocked || settings || scrub !== null;
   useEffect(() => {
     const root=container.current;if(!root)return;
     root.setAttribute('data-theater',String(theater&&!touchUI));root.setAttribute('data-touch',String(touchUI));root.setAttribute('data-controls-visible',String(controlsVisible));
@@ -237,27 +260,31 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
   const atLive = Boolean(live?.canFollow && liveRange && playing && current >= liveRange.edge - 2);
   const percentage = (value: number) => duration > seekStart ? `${Math.min(100, Math.max(0, (value - seekStart) / (duration - seekStart) * 100))}%` : '0%';
   return <>
-    <button type="button" className={styles.surface} aria-label={labels.togglePlayback} tabIndex={-1} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={cancelGesture} onLostPointerCapture={cancelGesture} onContextMenu={event=>{if(touchUI)event.preventDefault();}} onClick={event => {if(!touchUI || event.detail===0){container.current?.focus({preventScroll:true}); toggle();}}} />
+    <button type="button" className={styles.surface} aria-label={labels.togglePlayback} tabIndex={-1} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={cancelGesture} onLostPointerCapture={cancelGesture} onContextMenu={event=>{if(touchUI)event.preventDefault();}} onClick={event=>{if(event.detail===0){toggle();return;}if(touchUI)return;container.current?.focus({preventScroll:true});window.clearTimeout(clickTimer.current);if(event.detail===1)clickTimer.current=window.setTimeout(toggle,500);}} onDoubleClick={()=>{if(!touchUI){window.clearTimeout(clickTimer.current);void toggleFullscreen();}}} />
     <RecordingWatermark container={container} videoRef={videoRef} code={watermark}/>
     {fullscreenState.error ? <div className={styles.fullscreenError} role="alert">{labels.fullscreenError}</div> : null}
     {holding ? <div className={styles.speedFeedback} aria-hidden="true">2×</div> : null}
     {feedback ? <div className={`${styles.feedback} ${feedback.kind==='back'?styles.seekBack:feedback.kind==='forward'?styles.seekForward:styles.playbackFeedback}`} aria-hidden="true"><span key={feedback.id}>{feedback.kind === 'play' ? <Play size={36} fill="currentColor"/> : feedback.kind === 'pause' ? <Pause size={36} fill="currentColor"/> : <><span className={styles.seekArrows}>{touchUI ? <><i/><i/><i/></> : feedback.kind==='back' ? <ChevronLeft/> : <ChevronRight/>}</span><span>{feedback.kind==='back'?'−':'+'}{feedback.seconds}</span><span className="sr-only">{labels.seek}</span></>}</span></div> : null}
-    {(loading || waiting) && !autoplayBlocked && !failed && !feedback ? <div className={styles.loading} role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{labels.buffering}</span></div> : null}
-    {touchUI || autoplayBlocked && !failed ? <div data-controls className={`${styles.centerControls} ${controlsVisible ? '' : styles.hidden}`}>
+    {(loading || waiting) && !autoplayBlocked && !playBlocked && !failed && !feedback ? <div className={styles.loading} role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{labels.buffering}</span></div> : null}
+    {!ended&&(touchUI || (autoplayBlocked||playBlocked) && !failed) ? <div data-controls className={`${styles.centerControls} ${controlsVisible ? '' : styles.hidden}`}>
       {touchUI && previousHref && labels.previousVideo ? <Link href={previousHref} className={styles.skip} aria-label={labels.previousVideo}><SkipBack fill="currentColor"/></Link> : <span/>}
-      {(!loading && !waiting || autoplayBlocked) && !failed ? <button type="button" className={styles.centerPlay} aria-label={playing ? labels.pause : labels.play} onClick={toggle}>{playing ? <Pause fill="currentColor"/> : <Play fill="currentColor"/>}</button> : <span/>}
+      {(!loading && !waiting || autoplayBlocked||playBlocked) && !failed ? <button type="button" className={styles.centerPlay} aria-label={playing ? labels.pause : labels.play} onClick={toggle}>{playing ? <Pause fill="currentColor"/> : <Play fill="currentColor"/>}</button> : <span/>}
       {touchUI && nextHref && labels.nextVideo ? <Link href={nextHref} className={styles.skip} aria-label={labels.nextVideo}><SkipForward fill="currentColor"/></Link> : <span/>}
     </div> : null}
     {touchUI ? <div data-controls className={`${styles.topControls} ${controlsVisible ? '' : styles.hidden}`}>
       {fullscreen ? <button type="button" className={styles.button} aria-label={labels.exitFullscreen} onClick={()=>void fullscreenState.exit()}><ChevronDown/></button> : <span/>}
-      <button ref={settingsButton} type="button" className={styles.button} aria-label={labels.settings} aria-expanded={settings} onClick={()=>{setSettings(value=>!value);showControls();}}><Settings/></button>
+      <button ref={settingsButton} type="button" className={styles.button} aria-label={labels.settings} aria-expanded={settings} onClick={openSettings}><Settings/></button>
     </div> : null}
-    {autoplayBlocked && !failed && labels.tapToPlay ? <p className={styles.playPrompt} role="status">{labels.tapToPlay}</p> : null}
-    {settings ? <div ref={menu} data-controls className={styles.settings} role="group" aria-label={labels.settings}>
-      <label>{labels.playbackSpeed}<select aria-label={labels.playbackSpeed} value={rate} onChange={event => changeRate(Number(event.target.value))}>
-        {[0.5,0.75,1,1.25,1.5,1.75,2].map(value => <option key={value} value={value}>{value}×</option>)}
-      </select></label>
-      <label>{labels.quality}<select aria-label={labels.quality} value={quality} disabled={loading} onChange={event => onQualityChange(event.target.value as Quality)}><option value="auto">{labels.auto}</option>{qualities.map(name => <option key={name} value={name}>{name}</option>)}</select></label>
+    {(autoplayBlocked||playBlocked) && !failed && labels.tapToPlay ? <p className={styles.playPrompt} role="status">{labels.tapToPlay}</p> : null}
+    {ended&&!failed?<div className={styles.replay}><button type="button" className={styles.centerPlay} aria-label={labels.replay??'Replay'} onClick={toggle}><RotateCcw/></button><span>{labels.replay??'Replay'}</span></div>:null}
+    {settings ? <div ref={menu} data-controls className={styles.settings} role="menu" aria-label={settingsView==='root'?labels.settings:settingsView==='speed'?labels.playbackSpeed:labels.quality} onKeyDown={menuKeys}>
+      {settingsView==='root'?<>
+        <button type="button" role="menuitem" aria-label={labels.playbackSpeed} onClick={()=>setSettingsView('speed')}><span>{labels.playbackSpeed}</span><span>{rate}× <ChevronRight size={18}/></span></button>
+        <button type="button" role="menuitem" aria-label={labels.quality} disabled={loading||failed} onClick={()=>setSettingsView('quality')}><span>{labels.quality}</span><span>{quality==='auto'?`${labels.auto}${activeHeight?` (${activeHeight}p)`:''}`:quality} <ChevronRight size={18}/></span></button>
+      </>:<>
+        <button type="button" className={styles.settingsBack} role="menuitem" aria-label={labels.settingsBack??'Back'} onClick={()=>setSettingsView('root')}><ChevronLeft size={18}/><span>{settingsView==='speed'?labels.playbackSpeed:labels.quality}</span></button>
+        {settingsView==='speed'?[0.5,0.75,1,1.25,1.5,1.75,2].map(value=><button key={value} type="button" role="menuitemradio" aria-checked={rate===value} value={value} onClick={chooseSetting}><span className={styles.check}>{rate===value?<Check size={18}/>:null}</span>{value}×</button>):(['auto',...qualities] as Quality[]).map(value=><button key={value} type="button" role="menuitemradio" aria-checked={quality===value} disabled={loading||failed} value={value} onClick={chooseSetting}><span className={styles.check}>{quality===value?<Check size={18}/>:null}</span>{value==='auto'?`${labels.auto}${activeHeight?` (${activeHeight}p)`:''}`:value}</button>)}
+      </>}
     </div> : null}
     <div data-controls className={`${styles.controls} ${controlsVisible ? '' : styles.hidden}`}>
       <div className={styles.seek} onPointerLeave={() => { if (!dragging.current) setPreview(null); }}>
@@ -266,15 +293,15 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
           onPointerMove={event => { const bounds = event.currentTarget.getBoundingClientRect(); if (duration > 0 && bounds.width > 0) { setPreview(Math.min(duration - 0.001, Math.max(seekStart, seekStart + (event.clientX - bounds.left) / bounds.width * (duration - seekStart)))); setPreviewRequested(true); } }}
           onPointerDown={event => { dragging.current = true; setScrub(Number(event.currentTarget.value)); setPreviewRequested(true); event.currentTarget.setPointerCapture?.(event.pointerId); }}
           onChange={event => { const value = Number(event.target.value); if (dragging.current) setScrub(value); else seek(value); }}
-          onPointerUp={event => { seek(Number(event.currentTarget.value)); dragging.current = false; setScrub(null); setPreview(null); }}
-          onPointerCancel={() => {dragging.current = false; setScrub(null); setPreview(null);}} />
+          onPointerUp={event => { if(dragging.current)seek(Number(event.currentTarget.value));cancelScrub(); }}
+          onPointerCancel={cancelScrub} onLostPointerCapture={cancelScrub} />
         <div className={styles.preview} hidden={previewTime===null||duration<=0} aria-hidden="true" style={{left:`clamp(80px, ${percentage(previewTime??0)}, calc(100% - 80px))`}}>
           {!failed && !live ? <PreviewSprite key={playbackUrl} playbackUrl={playbackUrl} cue={cue} neighbor={neighbor}/> : null}
           <time>{playerClock(previewTime??0)}</time>
         </div>
       </div>
       <div className={styles.row}>
-        {!touchUI ? <><button type="button" className={styles.button} aria-label={playing ? labels.pause : labels.play} title={`${playing ? labels.pause : labels.play} (k)}`} onClick={toggle}>{playing ? <Pause size={22} fill="currentColor"/> : <Play size={22} fill="currentColor"/>}</button>
+        {!touchUI ? <><button type="button" className={styles.button} aria-label={ended?labels.replay??'Replay':playing ? labels.pause : labels.play} title={`${playing ? labels.pause : labels.play} (k)}`} onClick={toggle}>{playing ? <Pause size={22} fill="currentColor"/> : <Play size={22} fill="currentColor"/>}</button>
         {previousHref && labels.previousVideo || nextHref && labels.nextVideo ? <div className={styles.skipGroup}>
           {previousHref && labels.previousVideo ? <Link href={previousHref} className={styles.button} aria-label={labels.previousVideo}><SkipBack size={20} fill="currentColor"/></Link> : null}
           {nextHref && labels.nextVideo ? <Link href={nextHref} className={styles.button} aria-label={labels.nextVideo}><SkipForward size={20} fill="currentColor"/></Link> : null}
@@ -283,7 +310,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
         <input type="range" className={styles.volume} aria-label={labels.volume} min={0} max={1} step={0.05} value={muted ? 0 : volume} onChange={event => { if (videoRef.current) { videoRef.current.volume = Number(event.target.value); videoRef.current.muted = false; } }}/></div></> : null}
         {live ? <button type="button" className={`${styles.button} ${styles.liveButton}`} data-live-edge={atLive} disabled={!live.canFollow || !liveRange} aria-label={live.canFollow ? live.backToLive : live.label} title={live.canFollow ? live.backToLive : live.label} onClick={onReturnToLive}><span className={styles.liveDot} aria-hidden="true"/><span className={styles.liveText}>{live.canFollow ? live.liveLabel ?? live.label : live.label}</span></button> : <span className={styles.time} title={`${playerClock(current)} / ${playerClock(duration)}`}>{playerClock(current)} / {playerClock(duration)}</span>}<span className={styles.spacer}/>
         <div className={styles.rightControls}>
-        {!touchUI ? <button ref={settingsButton} type="button" className={styles.button} aria-label={labels.settings} title={labels.settings} aria-expanded={settings} onClick={() => {setSettings(value => !value);showControls();}}><Settings size={22}/></button> : null}
+        {!touchUI ? <button ref={settingsButton} type="button" className={styles.button} aria-label={labels.settings} title={labels.settings} aria-expanded={settings} onClick={openSettings}><Settings size={22}/></button> : null}
         {!touchUI && labels.theaterMode && labels.exitTheaterMode ? <button type="button" className={`${styles.button} ${styles.theaterButton}`} aria-label={theater ? labels.exitTheaterMode : labels.theaterMode} title={`${theater ? labels.exitTheaterMode : labels.theaterMode} (t)}`} aria-pressed={theater} onClick={()=>setTheater(value=>!value)}><RectangleHorizontal size={22}/></button> : null}
         <button type="button" className={styles.button} aria-label={fullscreen ? labels.exitFullscreen : labels.fullscreen} title={`${fullscreen ? labels.exitFullscreen : labels.fullscreen} (f)}`} onClick={() => void toggleFullscreen()}>{fullscreen ? <Minimize size={22}/> : <Maximize size={22}/>}</button>
         </div>
