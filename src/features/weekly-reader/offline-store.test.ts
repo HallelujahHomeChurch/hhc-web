@@ -43,6 +43,35 @@ it('retains Traditional and Simplified offline editions independently with verif
   expect((await readOfflineSave(route,now))?.status).toBe('available');
 });
 
+it.each([undefined,'v3','v4','v5','v6'] as const)('retains both language editions with renderer %s and unchanged seven-day expiry',async rendererVersion=>{
+  const epoch=await activateOfflineAccount(route.accountId);
+  for(const contentLocale of ['zh-Hant','zh-Hans'] as const){
+    const value=readerFixture(contentLocale,rendererVersion),selector={...route,contentLocale};
+    await commitOfflineSave(await stageOfflineSave(value,selector,fetchAsset,now),epoch,now);
+    const saved=await readOfflineSave(selector,now);
+    expect(saved?.status).toBe('available');
+    expect(saved?.save.value.document.content.layoutManifest.rendererVersion).toBe(rendererVersion??(contentLocale==='zh-Hans'?'v2':'v1'));
+    expect((await readOfflineSave(selector,Date.parse(value.access.offlineValidUntil)-1))?.status).toBe('available');
+    expect((await readOfflineSave(selector,Date.parse(value.access.offlineValidUntil)))?.status).toBe('expired');
+    expect(await readOfflineSave({...selector,accountId:'another-account'},now)).toBeNull();
+  }
+  expect(await listOfflineSaves(route.accountId)).toHaveLength(2);
+});
+
+it.each(['digest','asset'] as const)('rejects an altered V6 %s without replacing the previous saved revision',async reason=>{
+  const epoch=await activateOfflineAccount(route.accountId);
+  await commitOfflineSave(await stageOfflineSave(readerFixture(),route,fetchAsset,now),epoch,now);
+  const changed=readerFixture('zh-Hant','v6');
+  changed.document.revision=changed.access.revision=changed.access.currentRevision=2;
+  if(reason==='digest')changed.document.content.layoutManifest.rendererArtifactSha256='0'.repeat(64);
+  else changed.document.content.layoutManifest.assets[0].sha256='0'.repeat(64);
+  await expect(stageOfflineSave(changed,route,fetchAsset,now)).rejects.toThrow('update_required');
+  const saved=await readOfflineSave(route,now);
+  expect(saved?.status).toBe('available');
+  expect(saved?.save.value.access.revision).toBe(1);
+  expect(saved?.save.value.document.content.layoutManifest.rendererVersion).toBe('v1');
+});
+
 it('does not retain partial resources or replace a saved revision when resource staging fails', async () => {
   const epoch = await activateOfflineAccount('account-a');
   await commitOfflineSave(await stageOfflineSave(readerFixture(), route, fetchAsset, now), epoch, now);

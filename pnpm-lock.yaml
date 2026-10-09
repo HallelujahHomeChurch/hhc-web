@@ -18,8 +18,8 @@ importers:
         specifier: 1.0.45
         version: 1.0.45
       '@hallelujahhomechurch/hhc-web-client':
-        specifier: 1.0.47
-        version: 1.0.47
+        specifier: 1.0.48
+        version: 1.0.48
       '@hallelujahhomechurch/operations-client':
         specifier: 1.0.37
         version: 1.0.37
@@ -27,8 +27,8 @@ importers:
         specifier: 1.0.47
         version: 1.0.47
       '@hallelujahhomechurch/ui':
-        specifier: 1.0.44
-        version: 1.0.44(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: 1.0.48
+        version: 1.0.48(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@sentry/nextjs':
         specifier: 10.69.0
         version: 10.69.0(@opentelemetry/core@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.11.0(@opentelemetry/api@1.9.1))(next@16.3.8(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@types/node@24.13.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(webpack@5.111.0)
@@ -341,8 +341,8 @@ packages:
   '@hallelujahhomechurch/account-client@1.0.45':
     resolution: {integrity: sha512-lj++E1V3VLfO8mucO8piw68e+0t3vUox0rFk09kC41E7x4HJ8pn47lwyvjZgGxdyO/n19qyNb0uS+VYgpKnpRw==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/account-client/1.0.45/5ebf6c660dc1bb1c43b65ce4b54dd25f566a6580}
 
-  '@hallelujahhomechurch/hhc-web-client@1.0.47':
-    resolution: {integrity: sha512-0Dinud13lYssC4zQz2qhGavgi/ByBZP1/OXRxXkQpx0LBG9bpu09AXW9SbAEXxw1Cm/xoym2anhyi87uwF/+AQ==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/hhc-web-client/1.0.47/23804ecfcb24c2382b5d2b61b1c9583d6a6292c7}
+  '@hallelujahhomechurch/hhc-web-client@1.0.48':
+    resolution: {integrity: sha512-Z6q2ILtEOv8kduMfr4UlmV+Jjv5intbOtNOmySFYRYIUwfTjCofRbUEkSDO8aVABumMrW9GeJDpdwOlDNAHSew==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/hhc-web-client/1.0.48/7f7a27f4b7d9f3c1755963c9ce497e7b27a813da}
 
   '@hallelujahhomechurch/operations-client@1.0.37':
     resolution: {integrity: sha512-TBW7tzdjTm3jlWao+vwVqiAaiwTzdjyrVs6ZH7Lm9WHItK1pdqWP4XQeVne7+5Y2UE3EDNC8xNbhnSjRdciJZg==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/operations-client/1.0.37/447748ad7bc64f5a84638c0ceee2532e8ca67191}
@@ -350,8 +350,8 @@ packages:
   '@hallelujahhomechurch/preferences@1.0.47':
     resolution: {integrity: sha512-J2Pa5+gk3A3ww/O5nNj9/UAIpmS1eJod47ixeP32fPUOob1sXw9OLks/hPxhrGUryGzpUc78WECQP2CRe5LL+g==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/preferences/1.0.47/69a13e5cf0cca0c51738180b194a1cbfb5d59884}
 
-  '@hallelujahhomechurch/ui@1.0.44':
-    resolution: {integrity: sha512-sh6q7tKrq6DB760XSMppaHGMkeaw9GQDix86uK8x/eh9CEmYoDuVoN/h7cWovSfALDlS4K4rJR2mHx9Hp4sNbw==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/ui/1.0.44/e6714948d76ffa7c54badcbd7aeeaf35a6b0e8cc}
+  '@hallelujahhomechurch/ui@1.0.48':
+    resolution: {integrity: sha512-vviGHVnS9vEsFo8WohwBAZK7XgrvAllZ1DUD2GjH7szmvTekT7YH/dNUFHlzboAbFkatQQw59oMSm/y+n45zjA==, tarball: https://npm.pkg.github.com/download/@hallelujahhomechurch/ui/1.0.48/bb486f89054e13f1b186c537bea9bfaff79bf82e}
     peerDependencies:
       react: ^19.0.0
       react-dom: ^19.0.0
@@ -4137,7 +4137,7 @@ snapshots:
 
   '@hallelujahhomechurch/account-client@1.0.45': {}
 
-  '@hallelujahhomechurch/hhc-web-client@1.0.47':
+  '@hallelujahhomechurch/hhc-web-client@1.0.48':
     dependencies:
       openapi-fetch: 0.15.2
 
@@ -4148,7 +4148,7 @@ snapshots:
 
   '@hallelujahhomechurch/preferences@1.0.47': {}
 
-  '@hallelujahhomechurch/ui@1.0.44(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@hallelujahhomechurch/ui@1.0.48(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@internationalized/date': 3.12.3
       input-otp: 1.4.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
