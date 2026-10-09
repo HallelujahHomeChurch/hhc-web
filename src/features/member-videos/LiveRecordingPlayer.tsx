@@ -1,6 +1,6 @@
 'use client';
 
-import {useCallback, useEffect, useRef, useState,type ReactNode} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import type {MemberLiveRecording} from '@hallelujahhomechurch/hhc-web-client';
 import type {createMemberVideoApi} from './api';
 import zoneStyles from './MemberVideoZone.module.css';
@@ -15,8 +15,8 @@ export const englishLiveLabels:LiveLabels={liveNow:'Live',starting:'Preparing li
 
 export function liveViewerLabel(state:MemberLiveRecording['liveState'],labels:LiveLabels){return state==='live'||state==='recovering'?labels.liveNow??labels.live:labels[state];}
 
-type Props={api:ReturnType<typeof createMemberVideoApi>;recording:MemberLiveRecording;labels:PlayerLabels&{retry:string;playError:string;loading:string;description:string};liveLabels:LiveLabels;locale:string;backToSearch?:ReactNode;onVod?:(bookmark:PlayerBookmark|undefined)=>Promise<boolean>};
-export function LiveRecordingPlayer({api,recording,labels,liveLabels,locale,backToSearch,onVod}:Props){
+type Props={api:ReturnType<typeof createMemberVideoApi>;recording:MemberLiveRecording;labels:PlayerLabels&{retry:string;playError:string;loading:string;description:string};liveLabels:LiveLabels;locale:string;onVod?:(bookmark:PlayerBookmark|undefined)=>Promise<boolean>};
+export function LiveRecordingPlayer({api,recording,labels,liveLabels,locale,onVod}:Props){
  const awaitingMedia=recording.liveState==='starting'&&recording.progress.lastSequence<2;
  const session=useLivePlayback(api,recording.id,recording.captureId,awaitingMedia),video=useRef<HTMLVideoElement>(null);
  const [mediaError,setMediaError]=useState(false),[playerRevision,setPlayerRevision]=useState(0),[switching,setSwitching]=useState(false);
@@ -35,7 +35,6 @@ export function LiveRecordingPlayer({api,recording,labels,liveLabels,locale,back
   <h2 className="text-2xl font-semibold text-ink">{recording.title}</h2>
   {session.closed||state!=='recovering'?<p role="status" className="text-sm text-muted">{session.closed?liveLabels.expired:liveLabels[state]}</p>:null}
   {grant?.replayUntil?<p className="text-sm text-muted">{liveLabels.replayUntil.replace('{time}',new Intl.DateTimeFormat(locale,{dateStyle:'short',timeStyle:'short'}).format(new Date(grant.replayUntil)))}</p>:null}
-  {backToSearch}
   {recording.description?<details className="rounded-[14px] bg-panel p-5 text-ink"><summary className="min-h-11 cursor-pointer font-semibold focus-visible:outline-2 focus-visible:outline-primary">{labels.description}</summary><p className="whitespace-pre-wrap break-words">{recording.description}</p></details>:null}
   {onVod?<button type="button" disabled={switching} className="min-h-11 justify-self-start rounded-full border border-panel-border px-5 text-ink disabled:opacity-50" onClick={async()=>{setSwitching(true);try{if(!await onVod(session.bookmark.current))setMediaError(true);}finally{setSwitching(false);}}}>{liveLabels.watchRecording}</button>:null}
   {(session.error||mediaError)&&!session.closed?<p role="alert" className="text-sm text-primary">{labels.playError} <button type="button" className="min-h-11 underline" disabled={session.pending} onClick={()=>void retry()}>{labels.retry}</button></p>:null}

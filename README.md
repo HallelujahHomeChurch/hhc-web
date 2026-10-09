@@ -117,8 +117,8 @@ Mobile browse uses a compact hero. In portrait, the same watch player stays visi
 through descriptions and recommendations, using measured top chrome and its
 existing hide/search state. Short available viewports and landscape use normal
 flow. The touch timeline has a separate 44px hit row; cancelled or lost-capture
-scrubs do not commit. Search return follows stable watch metadata rather than
-adding a row above the player.
+scrubs do not commit. Watch links omit the source search query; searching again uses the header search
+field. Search depth and scroll position are not cached for returning to results.
 
 Live playback retains the available DVR timeline and replaces the numeric time
 display with a live indicator/button. It is red at the current verified live edge

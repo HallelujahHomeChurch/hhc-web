@@ -233,7 +233,6 @@
         "results": "Results for “{query}”",
         "empty": "No videos match “{query}”",
         "clear": "Clear search",
-        "back": "Back to search results",
         "tooLong": "Search accepts one query of up to 100 characters."
       }
     }
