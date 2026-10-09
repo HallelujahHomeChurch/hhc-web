@@ -52,3 +52,17 @@ it('revokes an expired capture image even without another list render',async()=>
   expect(screen.queryByRole('img',{name:recording.title})).toBeNull();expect(revoke).toHaveBeenCalledWith('blob:expiring');
  }finally{vi.useRealTimers()}
 });
+
+it('does not download a live card cover before it approaches the viewport',async()=>{
+ let notify!:(entries:Partial<IntersectionObserverEntry>[])=>void;
+ vi.stubGlobal('IntersectionObserver',class {constructor(callback:typeof notify){notify=callback} observe(){} disconnect(){}});
+ vi.spyOn(URL,'createObjectURL').mockReturnValue('blob:visible');
+ vi.spyOn(URL,'revokeObjectURL').mockImplementation(()=>{});
+ const liveCover=vi.fn().mockResolvedValue(new Blob(['jpeg']));
+ render(<LiveRecordingCover api={{liveCover} as unknown as ReturnType<typeof createMemberVideoApi>} recording={recording}/>);
+ expect(liveCover).not.toHaveBeenCalled();
+ await act(async()=>notify([{isIntersecting:true}]));
+ await screen.findByRole('img',{name:recording.title});
+ expect(liveCover).toHaveBeenCalledOnce();
+ vi.unstubAllGlobals();
+});

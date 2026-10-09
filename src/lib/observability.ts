@@ -70,16 +70,16 @@ export function errorTags(error: unknown) {
   const value = error as { status?: unknown; code?: unknown }
   return {
     ...(typeof value.status === 'number' ? { status: value.status } : {}),
-    ...(typeof value.code === 'string' ? { code: value.code } : {}),
+    ...(typeof value.code === 'string' && /^[a-zA-Z0-9_.-]{1,64}$/.test(value.code) ? { code: value.code } : {}),
   }
 }
 
 export function captureHandledError(error: unknown, { operation, level = 'error', tags = {} }: ErrorContext) {
-  if (isReportedAccountError(error)) return
+  if (isReportedAccountError(error) || ((error instanceof Error || error instanceof DOMException) && error.name === 'AbortError')) return
   return Sentry.withScope((scope) => {
     scope.setLevel(level)
     scope.setTag('operation', operation)
-    for (const [key, value] of Object.entries(tags)) {
+    for (const [key, value] of Object.entries({...errorTags(error), ...tags})) {
       if (value !== undefined && value !== null) scope.setTag(key.slice(0, 64), String(value).slice(0, 200))
     }
     return Sentry.captureException(error instanceof Error ? error : new Error(String(error)))

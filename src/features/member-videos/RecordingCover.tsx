@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useRef,useState,type RefObject} from 'react';
 import type {MemberLiveRecording} from '@hallelujahhomechurch/hhc-web-client';
 import {Play} from 'lucide-react';
 import type {createMemberVideoApi} from './api';
@@ -34,8 +34,8 @@ export function useLiveRecordingCover(api:CoverApi,recording:MemberLiveRecording
   return enabled&&value?.api===api&&value.id===id&&value.captureId===captureId?value.url:undefined;
 }
 
-export function LiveCoverSurface({url,title}:{url?:string;title:string}){
-  return <div className="grid aspect-video place-items-center overflow-hidden rounded-lg bg-panel text-muted">
+export function LiveCoverSurface({url,title,containerRef}:{url?:string;title:string;containerRef?:RefObject<HTMLDivElement|null>}){
+  return <div ref={containerRef} className="grid aspect-video place-items-center overflow-hidden rounded-lg bg-panel text-muted">
     {/* Private object URLs bypass the public optimizer. The fallback is public HHC branding. */}
     {/* eslint-disable-next-line @next/next/no-img-element */}
     {url?<img src={url} alt={title} width={1280} height={720} loading="lazy" className="h-full w-full object-cover"/>:<div className="flex items-center gap-3" aria-label="HHC">
@@ -45,16 +45,17 @@ export function LiveCoverSurface({url,title}:{url?:string;title:string}){
   </div>;
 }
 export function LiveRecordingCover({api,recording}:{api:CoverApi;recording:MemberLiveRecording}){
-  const url=useLiveRecordingCover(api,recording);
-  return <LiveCoverSurface url={url} title={recording.title}/>;
+  const {container,nearViewport}=useCoverVisibility();
+  const url=useLiveRecordingCover(api,recording,nearViewport);
+  return <LiveCoverSurface containerRef={container} url={url} title={recording.title}/>;
 }
 
 // Keep private bytes local to this mounted viewer; never use the public image
 // optimizer, persistent storage, or playback grants for a cover.
-export function useRecordingCover(api:CoverApi,id:string|undefined,expiresAt?:string|null,revision?:string) {
+export function useRecordingCover(api:CoverApi,id:string|undefined,expiresAt?:string|null,revision?:string,enabled=true) {
   const [value,setValue]=useState<{api:CoverApi;id:string;url:string;revision?:string}|null>(null);
   useEffect(()=>{
-    if(!id) return;
+    if(!id||!enabled) return;
     const controller=new AbortController();
     let url='';
     const release=()=>{
@@ -72,13 +73,28 @@ export function useRecordingCover(api:CoverApi,id:string|undefined,expiresAt?:st
       if(expired()) {release();setValue(null);window.clearInterval(timer);}
     },60_000);
     return ()=>{release();window.clearInterval(timer);};
-  },[api,id,expiresAt,revision]);
+  },[api,id,expiresAt,revision,enabled]);
   return value?.api===api&&value.id===id&&value.revision===revision ? value.url:undefined;
 }
 
+function useCoverVisibility() {
+  const container=useRef<HTMLDivElement>(null);
+  const [nearViewport,setNearViewport]=useState(()=>typeof IntersectionObserver==='undefined');
+  useEffect(()=>{
+    if(nearViewport||!container.current)return;
+    const observer=new IntersectionObserver(entries=>{
+      if(entries.some(entry=>entry.isIntersecting)){setNearViewport(true);observer.disconnect();}
+    },{rootMargin:'200px'});
+    observer.observe(container.current);
+    return()=>observer.disconnect();
+  },[nearViewport]);
+  return {container,nearViewport};
+}
+
 export function RecordingCover({api,id,title,expiresAt,revision}:{api:CoverApi;id:string;title:string;expiresAt?:string|null;revision?:string}) {
-  const url=useRecordingCover(api,id,expiresAt,revision);
-  return <div className="grid aspect-video place-items-center overflow-hidden rounded-lg bg-neutral-950 text-white">
+  const {container,nearViewport}=useCoverVisibility();
+  const url=useRecordingCover(api,id,expiresAt,revision,nearViewport);
+  return <div ref={container} className="grid aspect-video place-items-center overflow-hidden rounded-lg bg-neutral-950 text-white">
     {/* Authenticated object URLs must not pass through Next's public optimizer. */}
     {/* eslint-disable-next-line @next/next/no-img-element */}
     {url ? <img src={url} alt={title} width={1280} height={720} loading="lazy" className="h-full w-full object-cover"/>:<Play size={28} aria-hidden="true"/>}

@@ -1,6 +1,7 @@
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, describe, expect, it, vi} from 'vitest';
+import {createNavigationPresentation} from '@hallelujahhomechurch/account-client';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
 import {AccountControl, AccountControlProvider, AccountControlView, BulletinAccessGate, useBulletinAccess, webOAuthConfigForBrowser, webPassiveSsoAttemptKey} from './AccountControl';
 
@@ -230,3 +231,18 @@ function sessionClient(permissions: string[], permissionAvailability: {status: '
     logoutAll
   };
 }
+
+it('orders account, organizations, admin before sign-out and hides the current website',async()=>{
+ vi.stubGlobal('fetch',vi.fn().mockResolvedValue(Response.json(managedAccessSnapshot)));
+ render(<AccountControl client={sessionClient(['*'])} labels={labels} accountSiteUrl="https://account.alive.org.tw"/>);
+ await userEvent.click(await screen.findByRole('button',{name:'Account menu'}));
+ expect((await screen.findAllByRole('menuitem')).map(item=>item.textContent)).toEqual(['Projection system','Manage account','Small group management','Admin console','Sign out']);
+});
+
+it('hides cached Admin access when current permissions are unavailable', async () => {
+  const cached = createNavigationPresentation({key: 'hhc:navigation:www-web', allowedIds: ['admin', 'literature', 'member-videos']});
+  cached.identify('u1'); cached.capture('u1')('account', ['admin']);
+  render(<AccountControl client={sessionClient(['*'], {status: 'unavailable', code: 'permission_unavailable'})} labels={labels} />);
+  await userEvent.click(await screen.findByRole('button', {name: 'Account menu'}));
+  expect(screen.queryByRole('menuitem', {name: 'Admin console'})).not.toBeInTheDocument();
+});

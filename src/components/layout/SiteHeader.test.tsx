@@ -80,6 +80,12 @@ afterEach(() => {
 });
 
 describe('SiteHeader', () => {
+  it.each(['zh-Hant', 'en', 'ja', 'ko'])('clears video search via the %s library brand', (locale) => {
+    const messages = { 'zh-Hant': zhHant, en, ja, ko }[locale]!;
+    render(<NextIntlClientProvider locale={locale} messages={messages}><SiteHeader layout={layout} locale={locale as 'en'} pathname={`/${locale}/member-videos`} searchQuery="主日" sessionClient={anonymousSessionClient} /></NextIntlClientProvider>);
+    expect(screen.getAllByRole('link')[0]).toHaveAttribute('href', `/${locale}/member-videos`);
+  });
+
   it.each([
     ['/zh-Hant/member-videos','/zh-Hant','首頁'],
     ['/zh-Hant/member-videos/','/zh-Hant','首頁'],

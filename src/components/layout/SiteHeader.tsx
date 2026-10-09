@@ -70,7 +70,7 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
     navItems.find(item => item.key === 'member-videos') ?? navItems.find(item => item.key === 'about')
   ].filter((item): item is typeof navItems[number] => Boolean(item));
   const videoRoot = `/${locale}/member-videos`;
-  const videoWatchPage = pathname.startsWith(`${videoRoot}/`) && pathname !== `${videoRoot}/`;
+  const videoWatchPage = (pathname.startsWith(`${videoRoot}/`) && pathname !== `${videoRoot}/`) || ((pathname === videoRoot || pathname === `${videoRoot}/`) && Boolean(searchQuery.trim()));
   const videoSearchEnabled = pathname === videoRoot || pathname.startsWith(`${videoRoot}/`);
   const searchKey = `${pathname}:${searchQuery}`;
   const [searchState, setSearchState] = useState({pathname:searchKey, open: false});

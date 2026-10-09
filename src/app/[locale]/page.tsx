@@ -71,7 +71,7 @@ export default async function HomePage({params}: HomePageProps) {
       <main data-cms-fallback={page.source === 'migration-fallback' ? 'home' : undefined}>
         <HomeHero locale={locale} title={content.heroTitle} subtitle={content.heroSubtitle} imageUrl={page.template === 'home.v2' ? page.content.bannerImageUrl : undefined} />
         <div className="relative z-[3] bg-[image:var(--hhc-page-gradient)] py-8 pb-11">
-          <SectionCard className="shell grid min-h-[408px] grid-cols-1 gap-8 p-7 [&:has(>[data-weekly-card])]:min-h-0 [&:has(>[data-weekly-card])]:grid-cols-[minmax(0,1.45fr)_minmax(300px,.9fr)] max-[900px]:min-h-[774px] max-[900px]:[&:has(>[data-weekly-card])]:grid-cols-1 max-[620px]:min-h-[758px] max-[620px]:p-5" ariaLabel={content.newsTitle}>
+          <SectionCard className="shell grid grid-cols-1 gap-8 p-7 [&:has(>[data-weekly-card])]:min-h-0 [&:has(>[data-weekly-card])]:grid-cols-[minmax(0,1.45fr)_minmax(300px,.9fr)] max-[900px]:[&:has(>[data-weekly-card])]:grid-cols-1 max-[620px]:p-5" ariaLabel={content.newsTitle}>
             <NewsSection fillSpace title={content.newsTitle} moreHref={`/${locale}/news`} moreLabel={`${content.moreNews} →`} items={home.news} errorMessage={home.newsFailed ? messages.home.newsLoadError : undefined} />
             <WeeklyCard
               locale={locale}
