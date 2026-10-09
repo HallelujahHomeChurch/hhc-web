@@ -65,7 +65,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
     const video = videoRef.current;
     if (!video) return;
     const updatePlay = () => {setEnded(!live&&video.ended);if(!video.paused)setPlayBlocked(false); setPlaying(!video.paused && !video.ended); playingCallback.current?.(!video.paused && !video.ended); };
-    const updateTime = () => setTime(video.currentTime);
+    const updateTime = () => {setTime(video.currentTime);setEnded(!live&&video.ended);};
     const updateDuration = () => {const range=live ? liveWindow(video.seekable,live.verifiedEnd):null;setLiveRange(range);setDuration(live ? range?.end??0 : Number.isFinite(video.duration) ? video.duration : 0);};
     const updateVolume = () => { setMuted(video.muted); setVolume(video.volume); };
     const updateRate = () => setRate(video.playbackRate);
@@ -75,7 +75,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
       setBuffered(end);
     };
     const startWait = () => setWaiting(true), endWait = () => setWaiting(false);
-    const events: [string, () => void][] = [['play', updatePlay], ['pause', updatePlay], ['ended', updatePlay], ['timeupdate', updateTime], ['durationchange', updateDuration], ['loadedmetadata',updateDuration], ['volumechange', updateVolume], ['ratechange', updateRate], ['progress', updateBuffer], ['progress', updateDuration], ['canplay',updateDuration], ['loadstart', startWait], ['seeking', startWait], ['waiting', startWait], ['playing', endWait], ['canplay', endWait], ['seeked', endWait], ['pause', endWait], ['ended', endWait], ['error', endWait]];
+    const events: [string, () => void][] = [['play', updatePlay], ['pause', updatePlay], ['ended', updatePlay], ['timeupdate', updateTime], ['seeked',updatePlay], ['durationchange', updateDuration], ['loadedmetadata',updateDuration], ['volumechange', updateVolume], ['ratechange', updateRate], ['progress', updateBuffer], ['progress', updateDuration], ['canplay',updateDuration], ['loadstart', startWait], ['seeking', startWait], ['waiting', startWait], ['playing', endWait], ['canplay', endWait], ['seeked', endWait], ['pause', endWait], ['ended', endWait], ['error', endWait]];
     for (const [event, handler] of events) video.addEventListener(event, handler);
     updatePlay(); updateTime(); updateDuration(); updateVolume(); updateRate();
     return () => { for (const [event, handler] of events) video.removeEventListener(event, handler); };
@@ -134,7 +134,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
   const toggle = () => {
     const video = videoRef.current;
     if (!video) return;
-    if(ended&&!live){video.currentTime=0;setTime(0);setEnded(false);onPlaybackChange?.({time:0,paused:false});void video.play().catch(()=>setPlayBlocked(true));showControls();return;}
+    if(ended&&video.ended&&!live){video.currentTime=0;setTime(0);setEnded(false);onPlaybackChange?.({time:0,paused:false});void video.play().catch(()=>setPlayBlocked(true));showControls();return;}
     const kind = video.paused ? 'play' : 'pause';
     onPlaybackChange?.({paused:!video.paused});
     if (video.paused) void video.play().catch(() => setPlayBlocked(true)); else {onDvr?.();video.pause();}
@@ -147,7 +147,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
   };
   const toggleFullscreen = fullscreenState.toggle;
   const seekStart = liveRange?.start ?? 0;
-  const seek = (value: number) => { if (videoRef.current && duration > seekStart) { onDvr?.();videoRef.current.currentTime = Math.min(duration, Math.max(seekStart, value)); setTime(videoRef.current.currentTime);onPlaybackChange?.({time:videoRef.current.currentTime}); } };
+  const seek = (value: number) => { if (videoRef.current && duration > seekStart) { onDvr?.();videoRef.current.currentTime = Math.min(duration, Math.max(seekStart, value)); setTime(videoRef.current.currentTime);if(!live)setEnded(false);onPlaybackChange?.({time:videoRef.current.currentTime}); } };
   const seekBy = (seconds:number) => {
     if (!videoRef.current || duration <= seekStart) return;
     seek(videoRef.current.currentTime + seconds);
@@ -259,7 +259,7 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
   const atLive = Boolean(live?.canFollow && liveRange && playing && current >= liveRange.edge - 2);
   const percentage = (value: number) => duration > seekStart ? `${Math.min(100, Math.max(0, (value - seekStart) / (duration - seekStart) * 100))}%` : '0%';
   return <>
-    <button type="button" className={styles.surface} aria-label={labels.togglePlayback} tabIndex={-1} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={cancelGesture} onLostPointerCapture={cancelGesture} onContextMenu={event=>{if(touchUI)event.preventDefault();}} onClick={event=>{if(event.detail===0){toggle();return;}if(touchUI)return;container.current?.focus({preventScroll:true});window.clearTimeout(clickTimer.current);if(event.detail===1)clickTimer.current=window.setTimeout(toggle,300);}} onDoubleClick={()=>{if(!touchUI){window.clearTimeout(clickTimer.current);void toggleFullscreen();}}} />
+    <button type="button" className={styles.surface} aria-label={labels.togglePlayback} tabIndex={-1} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={cancelGesture} onLostPointerCapture={cancelGesture} onContextMenu={event=>{if(touchUI)event.preventDefault();}} onClick={event=>{if(event.detail===0){toggle();return;}if(touchUI)return;container.current?.focus({preventScroll:true});window.clearTimeout(clickTimer.current);if(event.detail===1)clickTimer.current=window.setTimeout(toggle,500);}} onDoubleClick={()=>{if(!touchUI){window.clearTimeout(clickTimer.current);void toggleFullscreen();}}} />
     <RecordingWatermark container={container} videoRef={videoRef} code={watermark}/>
     {fullscreenState.error ? <div className={styles.fullscreenError} role="alert">{labels.fullscreenError}</div> : null}
     {holding ? <div className={styles.speedFeedback} aria-hidden="true">2×</div> : null}

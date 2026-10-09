@@ -58,7 +58,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
     if(failed.current)return;
     const video=videoRef.current;
     const position=qualityPosition.current??{time:video?.currentTime??0,paused:pausedIntent.current,rate:video?.playbackRate??1};
-    const bookmark={...position,quality:qualityRef.current,intent:intent.current};
+    const bookmark=positioned.current||qualityPosition.current?{...position,quality:qualityRef.current,intent:intent.current}:initialBookmark.current;
     failed.current=true;qualitySwitch.current?.abort();setMode('error');onError(bookmark);
   },[onError,videoRef]);
 

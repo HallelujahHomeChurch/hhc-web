@@ -539,3 +539,8 @@ it('retries VOD at the frozen pre-error position with the same rate, quality and
  await waitFor(()=>expect(videoApi.grant).toHaveBeenCalledTimes(2));fireEvent.loadedMetadata(resumed);
  expect(resumed.currentTime).toBe(2820);expect(resumed.playbackRate).toBe(1.5);expect(resumed.play).toHaveBeenCalled();
 });
+
+it('attempts playback again after an initial media failure without an invented pause',async()=>{
+ state.auth='authenticated';state.access='available';list.mockResolvedValue([{id:'r1',title:'Initial failure',packageId}]);vi.spyOn(HTMLMediaElement.prototype,'canPlayType').mockReturnValue('probably');videoApi.grant.mockResolvedValue({packageId,expiresAt:new Date(Date.now()+3600000).toISOString(),watermarkCode:'TRACE',renditions:[]});videoApi.exchange.mockResolvedValue(playbackUrl);
+ render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);const video=await screen.findByLabelText('Initial failure',{selector:'video'});await waitFor(()=>expect(video.src).toBe(playbackUrl));fireEvent.error(video);fireEvent.click(screen.getByRole('button',{name:'Retry'}));await waitFor(()=>expect(videoApi.grant).toHaveBeenCalledTimes(2));await waitFor(()=>expect(screen.getByLabelText('Initial failure',{selector:'video'})).not.toBe(video));const resumed=screen.getByLabelText('Initial failure',{selector:'video'}) as HTMLVideoElement;await waitFor(()=>expect(resumed.src).toBe(playbackUrl));vi.mocked(resumed.play).mockClear();fireEvent.loadedMetadata(resumed);expect(resumed.play).toHaveBeenCalledOnce();
+});

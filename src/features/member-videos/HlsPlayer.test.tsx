@@ -667,3 +667,14 @@ it('offers a neutral Play fallback if Replay is rejected without muting',async()
  const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));const video=p.videoRef.current!;fireEvent.canPlay(video);Object.defineProperty(video,'ended',{value:true,configurable:true});fireEvent.ended(video);vi.mocked(video.play).mockRejectedValueOnce(new DOMException('Blocked','NotAllowedError'));
  await act(async()=>fireEvent.click(screen.getAllByRole('button',{name:'Replay'})[0]));expect(screen.getByRole('status')).toHaveTextContent('Tap to start playback');expect(video.muted).toBe(false);expect(screen.getAllByRole('button',{name:'Play'}).length).toBeGreaterThan(0);
 });
+
+it('does not fabricate a paused retry bookmark before initial positioning',async()=>{
+ engine.manifestReady=false;const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));act(()=>engine.instances[0].listeners.error('error',{fatal:true}));expect(p.onError).toHaveBeenCalledWith(undefined);
+});
+it('allows seeking away from ended VOD without Replay resetting the selected position',async()=>{
+ const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));const video=p.videoRef.current!;Object.defineProperty(video,'duration',{value:120,configurable:true});Object.defineProperty(video,'ended',{value:true,configurable:true});video.currentTime=120;fireEvent.durationChange(video);fireEvent.ended(video);
+ fireEvent.change(screen.getByRole('slider',{name:'Playback position'}),{target:{value:'60'}});Object.defineProperty(video,'ended',{value:false,configurable:true});fireEvent.seeked(video);expect(screen.queryByRole('button',{name:'Replay'})).not.toBeInTheDocument();fireEvent.click(screen.getByRole('button',{name:'Play'}));expect(video.currentTime).toBe(60);
+});
+it('waits for a slower native desktop double click before issuing live pause commands',async()=>{
+ const p=props();render(<HlsPlayer {...p} playbackMode="live" live={{verifiedEnd:100,canFollow:true,label:'Live',backToLive:'Back to live'}}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));const surface=screen.getByRole('button',{name:'Play or pause'}),video=p.videoRef.current!;Object.defineProperty(video,'paused',{value:false,configurable:true});fireEvent.play(video);vi.mocked(video.pause).mockClear();vi.useFakeTimers();fireEvent.click(surface,{detail:1});await act(()=>vi.advanceTimersByTimeAsync(350));fireEvent.click(surface,{detail:2});fireEvent.doubleClick(surface);await act(()=>vi.advanceTimersByTimeAsync(300));expect(video.pause).not.toHaveBeenCalled();
+});
