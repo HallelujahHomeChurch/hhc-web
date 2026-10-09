@@ -417,6 +417,8 @@
   "memberVideos": {
     "theaterMode": "영화관 모드",
     "exitTheaterMode": "영화관 모드 종료",
+    "settingsBack": "뒤로",
+    "replay": "다시 재생",
     "tapToPlay": "탭하여 재생",
     "previousVideo": "이전 동영상",
     "nextVideo": "다음 동영상",

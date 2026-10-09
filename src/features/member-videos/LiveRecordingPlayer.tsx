@@ -20,11 +20,12 @@ export function LiveRecordingPlayer({api,recording,labels,liveLabels,locale,back
  const awaitingMedia=recording.liveState==='starting'&&recording.progress.lastSequence<2;
  const session=useLivePlayback(api,recording.id,recording.captureId,awaitingMedia),video=useRef<HTMLVideoElement>(null);
  const [mediaError,setMediaError]=useState(false),[playerRevision,setPlayerRevision]=useState(0),[switching,setSwitching]=useState(false);
- const onError=useCallback((bookmark?:PlayerBookmark)=>{if(bookmark)session.remember(bookmark);setMediaError(true);},[session.remember]);
+ const {remember,start:prepareLive,playback:livePlayback}=session;
+ const onError=useCallback((bookmark?:PlayerBookmark)=>{if(bookmark)remember(bookmark);setMediaError(true);},[remember]);
  const grant=session.playback?.grant;
  const state=grant&&['ending','ended'].includes(grant.liveState)?grant.liveState:recording.liveState;
  const playable=!session.closed&&!['failed','expired','aborted'].includes(state);
- useEffect(()=>{if(playable&&!session.playback)void session.start();},[api,recording.id,recording.captureId,playable,awaitingMedia,session.playback,session.start]);
+ useEffect(()=>{if(playable&&!livePlayback)void prepareLive();},[api,recording.id,recording.captureId,playable,awaitingMedia,livePlayback,prepareLive]);
  const verifiedEnd=Math.max(recording.progress.mediaEndSeconds,grant?.progress.mediaEndSeconds??0);
  const retry=async()=>{const rebuild=mediaError;setMediaError(false);await session.start();if(rebuild)setPlayerRevision(value=>value+1);};
  return <div className={`${zoneStyles.video} grid min-w-0 gap-4`}>

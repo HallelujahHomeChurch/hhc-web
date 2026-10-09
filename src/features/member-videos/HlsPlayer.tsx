@@ -11,7 +11,7 @@ export type PlayerLabels = {
   quality:string; auto:string; play:string; pause:string; mute:string; unmute:string;
   seek:string; volume:string; fullscreen:string; exitFullscreen:string; fullscreenError:string; playbackSpeed:string;
   previousVideo?:string; nextVideo?:string; theaterMode?:string; exitTheaterMode?:string; tapToPlay?:string;
-  settings:string; togglePlayback:string; privateCopy:string; buffering:string;
+  settingsBack?:string; replay?:string; settings:string; togglePlayback:string; privateCopy:string; buffering:string;
 };
 type Props = {
   playbackMode?: 'vod' | 'live'; live?: LivePlayerState; resume?: PlayerBookmark; onBookmark?: (value: PlayerBookmark) => void;

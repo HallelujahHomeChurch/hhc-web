@@ -408,6 +408,8 @@
   "memberVideos": {
     "theaterMode": "Theater mode",
     "exitTheaterMode": "Exit theater mode",
+    "settingsBack": "Back",
+    "replay": "Replay",
     "tapToPlay": "Tap to start playback",
     "previousVideo": "Previous video",
     "nextVideo": "Next video",

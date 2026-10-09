@@ -24,12 +24,20 @@ vi.mock('hls.js',()=>({default:class {
 const labels={quality:'Quality',auto:'Auto',play:'Play',pause:'Pause',mute:'Mute',unmute:'Unmute',seek:'Playback position',volume:'Volume',fullscreen:'Fullscreen',exitFullscreen:'Exit fullscreen',fullscreenError:'Could not exit fullscreen. Retry.',playbackSpeed:'Speed',theaterMode:'Theater mode',exitTheaterMode:'Exit theater mode',tapToPlay:'Tap to start playback',settings:'Settings',togglePlayback:'Play or pause',privateCopy:'HHC members only',buffering:'Loading video'};
 const props=()=>({playbackUrl:url,availableQualities:['720p','1080p'] as ('720p'|'1080p')[],watermark:'TRACE123',title:'Sunday',labels,videoRef:createRef<HTMLVideoElement>(),onPlayingChange:vi.fn(),onError:vi.fn()});
 
+function openSubmenu(name:string){
+ if(screen.getByRole('button',{name:'Settings'}).getAttribute('aria-expanded')!=='true')fireEvent.click(screen.getByRole('button',{name:'Settings'}));
+ const back=screen.queryByRole('menuitem',{name:'Back'});if(back)fireEvent.click(back);
+ fireEvent.click(screen.getByRole('menuitem',{name}));
+}
+function chooseQuality(value:string){openSubmenu('Quality');fireEvent.click(screen.getByRole('menuitemradio',{name:value==='auto'?/^Auto/:value}));}
+function chooseSpeed(value:string){openSubmenu('Speed');fireEvent.click(screen.getByRole('menuitemradio',{name:`${value}×`}));}
+
 it('exposes 480p only when provided and keeps its requests inside the authenticated session',async()=>{
   const p=props();render(<HlsPlayer {...p} availableQualities={['480p','720p','1080p']}/>);
   await waitFor(()=>expect(engine.instances).toHaveLength(1));
   fireEvent.click(screen.getByRole('button',{name:'Settings'}));
-  expect(screen.getByRole('option',{name:'480p'})).toBeInTheDocument();
-  fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'480p'}});
+  openSubmenu('Quality');expect(screen.getByRole('menuitemradio',{name:'480p'})).toBeInTheDocument();
+  chooseQuality('480p');
   expect(engine.instances[0].loadLevel).toBe(2);
   expect(engine.instances[0].recoverMediaError).toHaveBeenCalledOnce();
   const xhr=new XMLHttpRequest();
@@ -91,11 +99,11 @@ it('rebuilds MSE buffers for manual quality and auto without reloading the manif
   await waitFor(()=>expect(engine.instances).toHaveLength(1));
   const video=p.videoRef.current!;video.currentTime=97;
   fireEvent.click(screen.getByRole('button',{name:'Settings'}));
-  fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'1080p'}});
+  chooseQuality('1080p');
   expect(engine.instances[0].loadLevel).toBe(1);expect(video.currentTime).toBe(97);
   expect(engine.instances[0].recoverMediaError).toHaveBeenCalledOnce();
   fireEvent.loadedMetadata(video);
-  fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'auto'}});
+  chooseQuality('auto');
   expect(engine.instances[0].loadLevel).toBe(-1);
   expect(engine.instances[0].recoverMediaError).toHaveBeenCalledTimes(2);
   expect(engine.instances[0].loadSource).toHaveBeenCalledTimes(1);
@@ -111,7 +119,7 @@ it.each([true,false])('restores MSE quality position, rate and paused=%s after r
   fireEvent.click(screen.getByRole('button',{name:'Settings'}));
   engine.instances[0].recoverMediaError.mockImplementation(()=>{video.currentTime=0;video.playbackRate=1;fireEvent.timeUpdate(video);});
   onBookmark.mockClear();vi.mocked(video.play).mockClear();vi.mocked(video.pause).mockClear();
-  fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'1080p'}});
+  chooseQuality('1080p');
   expect(engine.instances[0].loadLevel).toBe(1);
   expect(engine.instances[0].recoverMediaError).toHaveBeenCalledOnce();
   expect(onBookmark).not.toHaveBeenCalled();
@@ -123,8 +131,8 @@ it.each([true,false])('restores MSE quality position, rate and paused=%s after r
 it('keeps explicit speed, seek and play commands made while MSE quality is reattaching',async()=>{
  const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));
  const video=p.videoRef.current!;Object.defineProperty(video,'duration',{configurable:true,value:600});fireEvent.durationChange(video);video.currentTime=100;
- fireEvent.click(screen.getByRole('button',{name:'Settings'}));fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'1080p'}});
- fireEvent.change(screen.getByRole('combobox',{name:'Speed'}),{target:{value:'2'}});
+ fireEvent.click(screen.getByRole('button',{name:'Settings'}));chooseQuality('1080p');
+ chooseSpeed('2');
  fireEvent.change(screen.getByRole('slider',{name:'Playback position'}),{target:{value:'180'}});
  fireEvent.click(screen.getByRole('button',{name:'Play'}));vi.mocked(video.play).mockClear();
  fireEvent.loadedMetadata(video);
@@ -158,7 +166,7 @@ it('repositions the same watermark overlay for resize and portrait media without
 it('omits unavailable quality and sends only media cookies on canonical package requests',async()=>{
   const p=props();render(<HlsPlayer {...p} availableQualities={['720p']}/>);
   await waitFor(()=>expect(engine.instances).toHaveLength(1));
-  expect(screen.queryByRole('option',{name:'1080p'})).not.toBeInTheDocument();
+  expect(screen.queryByRole('menuitemradio',{name:'1080p'})).not.toBeInTheDocument();
   const xhr={withCredentials:false} as XMLHttpRequest;
   engine.instances[0].config.xhrSetup(xhr,url.replace('master.m3u8','720p/seg-000000.m4s'));
   expect(xhr.withCredentials).toBe(true);
@@ -172,12 +180,12 @@ it('preserves native playback position and paused state across rendition and Aut
   await waitFor(()=>expect(video.src).toBe(url));
   video.currentTime=81;
   fireEvent.click(screen.getByRole('button',{name:'Settings'}));
-  fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'720p'}});
+  chooseQuality('720p');
   expect(video.src).toBe(url.replace('master.m3u8','720p/index.m3u8'));
   fireEvent.loadedMetadata(video);
   expect(video.currentTime).toBe(81);
   const calls=vi.mocked(video.play).mock.calls.length;
-  fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'auto'}});
+  chooseQuality('auto');
   fireEvent.loadedMetadata(video);
   expect(video.src).toBe(url);expect(video.currentTime).toBe(81);
   expect(video.play).toHaveBeenCalledTimes(calls);
@@ -196,7 +204,7 @@ it('toggles with Space and the video surface without hijacking form controls', a
   fireEvent.click(screen.getByRole('button',{name:'Play or pause'}));
   expect(video.pause).toHaveBeenCalledOnce();
   fireEvent.click(screen.getByRole('button',{name:'Settings'}));
-  fireEvent.keyDown(screen.getByRole('combobox',{name:'Speed'}),{key:' '});
+  fireEvent.keyDown(screen.getByRole('menuitem',{name:'Speed'}),{key:' '});
   fireEvent.keyDown(screen.getByRole('slider',{name:'Playback position'}),{key:' '});
   expect(video.pause).toHaveBeenCalledTimes(2);
   fireEvent.keyDown(region,{key:' ',repeat:true});
@@ -311,8 +319,8 @@ it('resynchronizes a native exit on foreground and does not steal settings Escap
   Object.assign(video,{webkitSupportsFullscreen:false});
   await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Fullscreen'})));
   fireEvent.click(screen.getByRole('button',{name:'Settings'}));
-  fireEvent.keyDown(screen.getByRole('combobox',{name:'Speed'}),{key:'Escape'});
-  expect(screen.queryByRole('combobox',{name:'Speed'})).not.toBeInTheDocument();
+  fireEvent.keyDown(screen.getByRole('menuitem',{name:'Speed'}),{key:'Escape'});
+  expect(screen.queryByRole('menuitem',{name:'Speed'})).not.toBeInTheDocument();
   expect(screen.getByRole('region')).toHaveAttribute('data-fullscreen','viewport');
   fireEvent.keyDown(screen.getByRole('region'),{key:'Escape'});
   expect(screen.getByRole('region')).toHaveAttribute('data-fullscreen','inline');
@@ -390,7 +398,7 @@ it('native live quality switching retains a paused DVR position and intent',asyn
  await waitFor(()=>expect(p.videoRef.current?.src).toBe(url));
  const video=p.videoRef.current!;Object.defineProperty(video,'seekable',{configurable:true,value:{length:1,start:()=>0,end:()=>5400}});fireEvent.loadedMetadata(video);
  fireEvent.change(screen.getByRole('slider',{name:'Playback position'}),{target:{value:'60'}});fireEvent.pause(video);video.playbackRate=1.5;
- fireEvent.click(screen.getByRole('button',{name:'Settings'}));fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'1080p'}});
+ fireEvent.click(screen.getByRole('button',{name:'Settings'}));chooseQuality('1080p');
  fireEvent.loadedMetadata(video);fireEvent.progress(video);fireEvent(window,new Event('online'));
  expect(video.currentTime).toBe(60);expect(video.playbackRate).toBe(1.5);expect(remembered).toHaveBeenLastCalledWith(expect.objectContaining({intent:'dvr',quality:'1080p'}));
 });
@@ -402,11 +410,11 @@ it.each([false,true])('native=%s live quality switching waits for later seekable
  Object.defineProperty(video,'seekable',{configurable:true,get:()=>({length:end?1:0,start:()=>0,end:()=>end})});
  await act(async()=>{fireEvent.loadedMetadata(video);});
  fireEvent.change(screen.getByRole('slider',{name:'Playback position'}),{target:{value:'60'}});fireEvent.pause(video);video.playbackRate=1.5;
- fireEvent.click(screen.getByRole('button',{name:'Settings'}));fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'1080p'}});
+ fireEvent.click(screen.getByRole('button',{name:'Settings'}));chooseQuality('1080p');
  end=0;video.currentTime=0;fireEvent.loadedMetadata(video);
  expect(video.currentTime).toBe(0);
  // Another quality selection before seekable arrives must keep the original bookmark.
- fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'720p'}});
+ chooseQuality('720p');
  end=5400;fireEvent.progress(video);
  expect(video.currentTime).toBe(60);expect(video.playbackRate).toBe(1.5);expect(video.play).toHaveBeenCalledTimes(1);
  fireEvent(window,new Event('online'));
@@ -599,8 +607,8 @@ it('freezes latest in-flight quality commands before a fatal error can erase pla
  const p=props(),onBookmark=vi.fn();render(<HlsPlayer {...p} onBookmark={onBookmark}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));
  const video=p.videoRef.current!;Object.defineProperty(video,'duration',{configurable:true,value:7200});fireEvent.loadedMetadata(video);fireEvent.durationChange(video);
  video.currentTime=2820;video.playbackRate=1.5;Object.defineProperty(video,'paused',{configurable:true,value:false});fireEvent.play(video);fireEvent.timeUpdate(video);
- fireEvent.click(screen.getByRole('button',{name:'Settings'}));fireEvent.change(screen.getByRole('combobox',{name:'Quality'}),{target:{value:'1080p'}});
- fireEvent.change(screen.getByRole('combobox',{name:'Speed'}),{target:{value:'2'}});fireEvent.change(screen.getByRole('slider',{name:'Playback position'}),{target:{value:'3000'}});
+ fireEvent.click(screen.getByRole('button',{name:'Settings'}));chooseQuality('1080p');
+ chooseSpeed('2');fireEvent.change(screen.getByRole('slider',{name:'Playback position'}),{target:{value:'3000'}});
  act(()=>{video.currentTime=0;Object.defineProperty(video,'paused',{configurable:true,value:true});engine.instances[0].listeners.error('error',{fatal:true});});
  expect(p.onError).toHaveBeenCalledWith({time:3000,paused:false,rate:2,quality:'1080p',intent:'dvr'});
  const calls=onBookmark.mock.calls.length;fireEvent.pause(video);fireEvent.timeUpdate(video);fireEvent.loadedMetadata(video);
@@ -627,9 +635,35 @@ it('arbitrates desktop double click without changing live playback intent',async
 it('reports Auto only from a rendered HLS level without rebuilding the session',async()=>{
  const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));
  fireEvent.click(screen.getByRole('button',{name:'Settings'}));
- expect(screen.getByRole('option',{name:'Auto'})).toBeInTheDocument();
+ openSubmenu('Quality');expect(screen.getByRole('menuitemradio',{name:'Auto'})).toBeInTheDocument();
  act(()=>engine.instances[0].listeners.levelSwitched('levelSwitched',{level:0}));
- expect(screen.getByRole('option',{name:'Auto (720p)'})).toBeInTheDocument();
+ expect(screen.getByRole('menuitemradio',{name:'Auto (720p)'})).toBeInTheDocument();
  act(()=>engine.instances[0].listeners.levelSwitched('levelSwitched',{level:1}));
- expect(screen.getByRole('option',{name:'Auto (1080p)'})).toBeInTheDocument();expect(engine.instances).toHaveLength(1);expect(engine.instances[0].recoverMediaError).not.toHaveBeenCalled();
+ expect(screen.getByRole('menuitemradio',{name:'Auto (1080p)'})).toBeInTheDocument();expect(engine.instances).toHaveLength(1);expect(engine.instances[0].recoverMediaError).not.toHaveBeenCalled();
+});
+
+it('navigates settings submenus by keyboard and returns focus on Escape',async()=>{
+ const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));
+ const settings=screen.getByRole('button',{name:'Settings'});fireEvent.click(settings);
+ const speed=screen.getByRole('menuitem',{name:'Speed'});speed.focus();fireEvent.keyDown(speed,{key:'ArrowDown'});
+ expect(screen.getByRole('menuitem',{name:'Quality'})).toHaveFocus();
+ fireEvent.click(speed);expect(screen.getByRole('menuitemradio',{name:'1×'})).toHaveAttribute('aria-checked','true');
+ fireEvent.keyDown(document.activeElement!,{key:'ArrowLeft'});expect(screen.getByRole('menuitem',{name:'Speed'})).toHaveFocus();
+ fireEvent.keyDown(document.activeElement!,{key:'Escape'});expect(settings).toHaveFocus();expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+});
+
+it('keeps VOD Replay discoverable after idle and restarts the same video with its settings',async()=>{
+ const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));
+ const video=p.videoRef.current!;Object.defineProperty(video,'duration',{value:120,configurable:true});video.currentTime=120;video.playbackRate=1.5;Object.defineProperty(video,'ended',{value:true,configurable:true});fireEvent.durationChange(video);fireEvent.ended(video);
+ vi.useFakeTimers();fireEvent.pointerLeave(screen.getByRole('region'));await act(()=>vi.advanceTimersByTimeAsync(2600));
+ const replay=screen.getAllByRole('button',{name:'Replay'})[0];expect(replay).toBeVisible();vi.mocked(video.play).mockClear();fireEvent.click(replay);
+ expect(p.videoRef.current).toBe(video);expect(video.currentTime).toBe(0);expect(video.playbackRate).toBe(1.5);expect(video.play).toHaveBeenCalledOnce();expect(engine.instances).toHaveLength(1);
+});
+it('keeps live ENDLIST as DVR without a VOD replay overlay',async()=>{
+ const p=props();render(<HlsPlayer {...p} playbackMode="live" live={{verifiedEnd:100,canFollow:false,label:'Live ended',backToLive:'Back to live'}}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));Object.defineProperty(p.videoRef.current!,'ended',{value:true,configurable:true});fireEvent.ended(p.videoRef.current!);expect(screen.queryByRole('button',{name:'Replay'})).not.toBeInTheDocument();
+});
+
+it('offers a neutral Play fallback if Replay is rejected without muting',async()=>{
+ const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));const video=p.videoRef.current!;fireEvent.canPlay(video);Object.defineProperty(video,'ended',{value:true,configurable:true});fireEvent.ended(video);vi.mocked(video.play).mockRejectedValueOnce(new DOMException('Blocked','NotAllowedError'));
+ await act(async()=>fireEvent.click(screen.getAllByRole('button',{name:'Replay'})[0]));expect(screen.getByRole('status')).toHaveTextContent('Tap to start playback');expect(video.muted).toBe(false);expect(screen.getAllByRole('button',{name:'Play'}).length).toBeGreaterThan(0);
 });
