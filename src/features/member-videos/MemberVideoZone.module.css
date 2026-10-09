@@ -44,3 +44,10 @@
 .summary {font-size:14px;line-height:1.5;color:var(--color-muted);overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow-wrap:anywhere;}
 .back {font-size:14px;min-height:44px;display:inline-flex;align-items:center;color:var(--color-primary);}
 @media(max-width:639px){.searchList .card {grid-template-columns:minmax(0,1fr);gap:10px;}.searchList .title {font-size:16px;}}
+
+@media(max-width:767px) and (orientation:portrait) {
+  /* The whole watch section contains the sticky player, including recommendations. */
+  .watch .video {display:contents;}
+  .watch .video > :first-child:not(:fullscreen):not([data-fullscreen="viewport"]) {position:sticky;top:var(--site-watch-offset,0px);z-index:1;margin-inline:0;transition:top 220ms cubic-bezier(.22,1,.36,1);}
+}
+@media(prefers-reduced-motion:reduce) {.watch .video > :first-child {transition:none;}}

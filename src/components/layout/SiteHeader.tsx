@@ -102,6 +102,13 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
   const mobileIndicatorIndex = mobileSelection.pathname === pathname ? mobileNavItems.findIndex(item => item.href === mobileSelection.href) : mobileActiveIndex;
   const delayedMobileHref = useRef<string | null>(null);
   const mobileNavigationFrame = useRef(0);
+  const chromeRef=useRef<HTMLDivElement>(null);
+  useLayoutEffect(()=>{
+    const chrome=chromeRef.current;if(!chrome)return;
+    const measure=()=>document.documentElement.style.setProperty('--site-top-chrome-height',`${chrome.getBoundingClientRect().height}px`);
+    measure();const observer=typeof ResizeObserver==='function'?new ResizeObserver(measure):null;observer?.observe(chrome);
+    return()=>{observer?.disconnect();document.documentElement.style.removeProperty('--site-top-chrome-height');};
+  },[]);
   const {visible: mobileChromeVisible} = useScrollChrome({resetKey: pathname, blocked: searchOpen});
   const iphoneStandalone = useSyncExternalStore(
     subscribeToStandaloneMode,
@@ -131,7 +138,7 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
 
   return (
     <>
-      <div className="site-top-chrome sticky top-0 z-10" data-mobile-hidden={!mobileChromeVisible}>
+      <div ref={chromeRef} className="site-top-chrome sticky top-0 z-10" data-mobile-hidden={!mobileChromeVisible}>
         <header data-search-open={searchOpen} data-search-replaces-nav={searchLayout.replaceNav} className="site-header border-b border-line/70 backdrop-blur-xl" data-iphone-standalone={iphoneStandalone || undefined}>
           <div ref={rowRef} style={{'--site-search-start': `${searchLayout.start}px`, '--site-search-end': `${searchLayout.end}px`} as CSSProperties} className="site-header-row relative flex min-h-[76px] w-full items-center gap-6 px-6 max-[767px]:min-h-[68px] max-[767px]:px-4">
             <Link ref={brandRef} href={homeHref} aria-label={`${t('nav.home')} · ${layout.siteName}`} className="site-header-brand inline-flex min-h-11 min-w-max items-center gap-2.5 max-[767px]:min-w-0 max-[767px]:flex-1">
