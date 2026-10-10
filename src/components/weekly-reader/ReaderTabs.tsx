@@ -1,4 +1,4 @@
-import {useEffect, useState, type ReactNode} from 'react';
+import {useEffect, useLayoutEffect, useRef, useState, type ReactNode} from 'react';
 import {ReaderIconButton as IconButton} from './ReaderIconButton';
 import {Home, X} from 'lucide-react';
 import {addTab, closeTab, readTabs, writeTabs, tabHref, tabKey, type ReaderTab} from '@/features/weekly-reader/workspace';
@@ -8,14 +8,31 @@ import type {ReaderMessages} from './ReaderToolbar';
 export function ReaderTabs({accountId, locale, current, title, messages: m, beforeNavigate, search}: {accountId: string; locale: Locale; current: ReaderTab; title?: string; messages: ReaderMessages; beforeNavigate?: () => Promise<boolean>; search?: ReactNode}) {
   const [tabs, setTabs] = useState<ReaderTab[]>([current]);
   const [busy, setBusy] = useState(false);
+  const tabList = useRef<HTMLElement>(null);
+  const pendingReveal = useRef(true);
   const key = tabKey(current);
   const {issueNumber, series, contentLocale} = current;
   useEffect(() => {
     const next = addTab(readTabs(accountId), {issueNumber, series, contentLocale, title});
     writeTabs(accountId, next);
-    const frame = requestAnimationFrame(() => setTabs(next));
+    const frame = requestAnimationFrame(() => {pendingReveal.current = true; setTabs(next);});
     return () => cancelAnimationFrame(frame);
   }, [accountId, issueNumber, series, contentLocale, title]);
+  useLayoutEffect(() => {
+    const nav = tabList.current;
+    const revealActive = () => {
+      const active = nav?.querySelector<HTMLElement>('.reader-tab[data-active]');
+      if (!nav || !active) return;
+      const bounds = nav.getBoundingClientRect(), tab = active.getBoundingClientRect();
+      if (!bounds.width) return;
+      // Scroll only the tab strip; scrollIntoView can move the reading viewport too.
+      if (tab.left < bounds.left || tab.width > bounds.width) nav.scrollLeft += tab.left - bounds.left;
+      else if (tab.right > bounds.right) nav.scrollLeft += tab.right - bounds.right;
+    };
+    if (pendingReveal.current) {revealActive(); pendingReveal.current = false;}
+    window.addEventListener('resize', revealActive);
+    return () => window.removeEventListener('resize', revealActive);
+  }, [tabs, key]);
   async function navigate(href: string, next?: ReaderTab[]) {
     if (busy) return;
     setBusy(true);
@@ -28,7 +45,7 @@ export function ReaderTabs({accountId, locale, current, title, messages: m, befo
   const home = `/${locale}/literature-ministry`;
   return <header className="reader-tabbar">
     <IconButton variant="ghost" icon={<Home size={21} aria-hidden="true"/>} aria-label={m.home} title={m.home} isDisabled={busy} onPress={() => void navigate(home)}/>
-    <nav className="reader-tabs" aria-label={m.openBulletins}>
+    <nav ref={tabList} className="reader-tabs" aria-label={m.openBulletins}>
       {tabs.map(tab => {
         const id = tabKey(tab), active = id === key;
         const label = `${tab.issueNumber} · ${tab.series === 'children' ? m.childrenEdition : m.generalEdition} · ${tab.contentLocale}`;

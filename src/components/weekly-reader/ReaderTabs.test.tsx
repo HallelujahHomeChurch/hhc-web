@@ -10,7 +10,7 @@ beforeEach(() => {
   sessionStorage.clear();
   vi.useFakeTimers({toFake: ['requestAnimationFrame', 'cancelAnimationFrame']});
 });
-afterEach(() => vi.useRealTimers());
+afterEach(() => {vi.useRealTimers(); vi.restoreAllMocks();});
 function renderTabs(overrides: Partial<Parameters<typeof ReaderTabs>[0]> = {}) {
   render(<ReaderTabs {...props} {...overrides}/>);
   act(() => vi.advanceTimersToNextFrame());
@@ -45,4 +45,38 @@ it('closes an inactive tab without invoking the dirty-note guard', async () => {
   fireEvent.click(await screen.findByRole('button', {name: /Close.*1739/}));
   expect(readTabs('a')).toEqual([second]);
   expect(guard).not.toHaveBeenCalled();
+});
+
+it.each([
+  {left: 876, right: 1070, initial: 0, expected: 730},
+  {left: -150, right: 44, initial: 700, expected: 506},
+  {left: 100, right: 294, initial: 180, expected: 180},
+])('keeps the active tab visible without scrolling the document ($left to $right)', ({left, right, initial, expected}) => {
+  writeTabs('a', [first]);
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function(this: HTMLElement) {
+    if (this.classList.contains('reader-tabs')) return new DOMRect(44, 0, 296, 52);
+    if (this.matches('.reader-tab[data-active]')) return new DOMRect(left, 6, right - left, 46);
+    return new DOMRect();
+  });
+  render(<ReaderTabs {...props}/>);
+  const nav = screen.getByRole('navigation', {name: props.messages.openBulletins});
+  nav.scrollLeft = initial;
+  act(() => vi.advanceTimersToNextFrame());
+  expect(nav.scrollLeft).toBe(expected);
+  expect(window.scrollY).toBe(0);
+  expect(document.activeElement).toBe(document.body);
+});
+
+it('preserves manual tab browsing when an inactive tab is closed', () => {
+  writeTabs('a', [first]);
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function(this: HTMLElement) {
+    if (this.classList.contains('reader-tabs')) return new DOMRect(44, 0, 296, 52);
+    if (this.matches('.reader-tab[data-active]')) return new DOMRect(876, 6, 194, 46);
+    return new DOMRect();
+  });
+  renderTabs();
+  const nav = screen.getByRole('navigation', {name: props.messages.openBulletins});
+  nav.scrollLeft = 180;
+  fireEvent.click(screen.getByRole('button', {name: /Close.*1739/}));
+  expect(nav.scrollLeft).toBe(180);
 });
