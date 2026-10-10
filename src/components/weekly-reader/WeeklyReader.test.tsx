@@ -161,7 +161,7 @@ describe('protected weekly reader', () => {
     expect(document.documentElement).toHaveAttribute('data-theme', 'light');
     localStorage.removeItem('hhc-reader-theme');
   });
-  it.each(['chapter', 'next', 'page', 'search', 'resume', 'resume-cover', 'pull', 'pull-selection', 'pull-pinch'])('switches mobile chapters via %s while preserving source anchors', async route => {
+  it.each(['chapter', 'chapter-reordered', 'next', 'page', 'search', 'resume', 'resume-cover', 'pull', 'pull-selection', 'pull-pinch'])('switches mobile chapters via %s while preserving source anchors', async route => {
     Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect(0, 500, 300, 30)});
     vi.spyOn(window, 'scrollBy').mockImplementation(() => {});
     vi.stubGlobal('matchMedia', vi.fn(() => ({matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn()})));
@@ -177,6 +177,7 @@ describe('protected weekly reader', () => {
     if (body.type === 'bodySection') body.bodySection.header = {lectureDate: {...blocks[1], id: 'credit', sentences: [{id: 'credit-sentence', spans: [{text: 'Production date', fontRole: 'body'}]}]}, contributors: []};
     const slot = fixture.document.content.layoutManifest.pages[1].slots[0];
     fixture.document.content.layoutManifest.pages[1].slots.unshift({...slot, id: 'credit-slot', blockId: 'credit', fragments: [{sentenceId: 'credit-sentence', start: 0, end: 15}]});
+    if (route === 'chapter-reordered') fixture.document.content.layoutManifest.pages.reverse();
     state.open.mockResolvedValue(fixture);
     if (route === 'resume' || route === 'resume-cover') {
       const cloud = (await state.privateState()).state;
@@ -190,7 +191,7 @@ describe('protected weekly reader', () => {
       expect(container.querySelector('[data-chapter="cover"] [data-sentence-id="s0"]')).toBeInTheDocument();
       expect(container.querySelector('[data-chapter="cover"] [data-sentence-id="s1"]')).toBeNull();
     }
-    if (route === 'chapter' || route === 'resume-cover') {
+    if (route.startsWith('chapter') || route === 'resume-cover') {
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       expect(screen.queryByRole('button', {name: props.messages.productionDetails})).not.toBeInTheDocument();
       expect(container.querySelector('.reader-chapter-title')).toBeNull();
@@ -233,6 +234,7 @@ describe('protected weekly reader', () => {
       fireEvent.click(screen.getByRole('button', {name: /內容[12]/}));
     }
     await waitFor(() => expect(container.querySelector('[data-chapter="body"] [data-sentence-id="s1"]')).toBeInTheDocument());
+    if (route.startsWith('chapter')) expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p1');
     expect(container.querySelector('[data-sentence-id="credit-sentence"]')).toBeNull();
     expect(container.querySelector('[data-chapter="cover"]')).toBeNull();
     expect(container.querySelector('[data-chapter="worship"]')).toBeNull();

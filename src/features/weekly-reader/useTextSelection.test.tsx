@@ -98,3 +98,22 @@ it('keeps captured text when pressing annotation controls', () => {
   fireEvent.click(screen.getByText('Annotate'));
   expect(screen.getByText('Annotate')).toBeInTheDocument();
 });
+
+it.each(['pointer', 'touch'])('preserves repeated same-range drag selections including their final click via %s', kind => {
+  vi.useFakeTimers(); render(<Harness/>);
+  const text = screen.getByText('abcdefgh');
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (kind === 'pointer') fireEvent(text, new MouseEvent('pointerdown', {bubbles: true, clientX: 10, clientY: 10}));
+    else fireEvent.touchStart(text, {touches: [{identifier: 1, clientX: 10, clientY: 10}]});
+    select(3);
+    if (kind === 'pointer') fireEvent(text, new MouseEvent('pointerup', {bubbles: true, clientX: 50, clientY: 10}));
+    else {
+      fireEvent.touchMove(text, {touches: [{identifier: 1, clientX: 50, clientY: 10}]});
+      fireEvent.touchEnd(text, {touches: [], changedTouches: [{identifier: 1, clientX: 50, clientY: 10}]});
+    }
+    fireEvent.click(text, {clientX: 50, clientY: 10});
+    act(() => vi.advanceTimersByTime(200));
+    expect(window.getSelection()?.toString()).toBe('abc');
+    expect(screen.getByText('Annotate')).toBeInTheDocument();
+  }
+});

@@ -487,7 +487,8 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   function onChapter(index: number) {
     const target = chapters[index];
     if (!target || !allowAction() || suspended || notes && !closeNotes()) return;
-    const page = document.layoutManifest.pages.findIndex(layout => layout.slots.some(slot => slot.componentId === target.componentIds[0]));
+    const layout = document.layoutManifest.pages.find(layout => layout.slots.some(slot => slot.componentId === target.componentIds[0]));
+    const page = document.pages.findIndex(page => page.id === layout?.pageId);
     if (page < 0 || !onPage(page)) return;
     setSourceJump(null); pendingAnchor.current = null;
     chapterStart.current = true; setChapter(target.id);
