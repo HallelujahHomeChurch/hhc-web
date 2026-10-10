@@ -36,7 +36,6 @@ import {PaperViewport, type ReadingDirection} from './PaperViewport';
 import {usePaperGestures} from '@/features/weekly-reader/usePaperGestures';
 import {readPaperView, writePaperView} from '@/features/weekly-reader/workspace';
 import {SectionNavigator} from './SectionNavigator';
-import {ChapterPull} from './ChapterPull';
 import {ReaderSearch} from './ReaderSearch';
 import {OfflineControl} from './OfflineControl';
 import {SelectionToolbar} from './SelectionToolbar';
@@ -214,7 +213,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const panelTrigger = useRef<HTMLElement | null>(null);
   const [sourceJump, setSourceJump] = useState<{page: number; focus: boolean} | null>(null);
   const previousMobile = useRef(mobile);
-  const chapterEdge = useRef<'top' | 'bottom' | null>(null);
+  const chapterStart = useRef(false);
   function openPanel(next: Exclude<typeof panel, null>, trigger: Element) {
     if (notes && !closeNotes()) return;
     revealChrome(); clearSelection(); panelTrigger.current = trigger instanceof HTMLElement ? trigger : null; setPanel(current => current === next ? null : next);
@@ -240,7 +239,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const viewportRef = useRef<HTMLDivElement>(null);
   const [typography, setTypography] = useState(readTypography);
   const iphoneStandalone = useSyncExternalStore(subscribeStandalone, iphoneStandaloneSnapshot, serverStandaloneSnapshot);
-  const {visible: chromeVisible, reveal: revealChrome} = useScrollChrome({root: viewportRef, blocked: !mobile || !!panel || !!notes || selecting || selected.length > 0 || suspended});
+  const {visible: chromeVisible, reveal: revealChrome} = useScrollChrome({root: viewportRef, blocked: !mobile || !!panel || !!notes || selected.length > 0 || suspended});
   const readingInset = useCallback(() => Math.max(viewportRef.current?.getBoundingClientRect().top ?? 0, mobile && chromeVisible ? chromeRef.current?.querySelector('.reader-tabbar')?.getBoundingClientRect().bottom ?? 0 : 0) + 8, [mobile, chromeVisible]);
   function changeTypography(next: Typography) {
     const root = viewportRef.current;
@@ -346,10 +345,10 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     const viewport = viewportRef.current;
     if (!viewport || !fontsReady || !resumeResolved) return;
     if (mobile) {
-      if (chapterEdge.current) {
+      if (chapterStart.current) {
         // Imperative scrolling of a DOM element, not a React state mutation.
-        viewport.scrollTop = chapterEdge.current === 'bottom' ? viewport.scrollHeight : 0;
-        chapterEdge.current = null; pendingAnchor.current = null;
+        viewport.scrollTop = 0;
+        chapterStart.current = false; pendingAnchor.current = null;
         chapterHeading.current?.focus({preventScroll: true});
         return;
       }
@@ -485,11 +484,13 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       Array.from(viewportRef.current?.querySelectorAll<HTMLElement>(`[${attribute}]`) ?? []).find(element => element.getAttribute(attribute) === anchor.id)?.scrollIntoView({block: 'start'});
     }
   }
-  function onChapter(index: number, restore = false) {
+  function onChapter(index: number) {
     const target = chapters[index];
     if (!target || !allowAction() || suspended || notes && !closeNotes()) return;
-    onAnchor({kind: 'component', id: target.componentIds[0]});
-    chapterEdge.current = restore ? 'bottom' : 'top';
+    const page = document.layoutManifest.pages.findIndex(layout => layout.slots.some(slot => slot.componentId === target.componentIds[0]));
+    if (page < 0 || !onPage(page)) return;
+    setSourceJump(null); pendingAnchor.current = null;
+    chapterStart.current = true; setChapter(target.id);
   }
   const restorePosition = useEffectEvent(() => {
     // Restore once, without rewriting progress or letting late sync undo navigation.
@@ -576,7 +577,9 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     }).catch(() => setNotice(m.actionFailed));
     }}>{m.confirmRetry}</button></> : null}
     <div className="reader-stage" inert={!!panel}>
-    <div ref={viewportRef} className="reader-viewport" data-mobile={mobile || undefined} data-direction={mobile ? undefined : direction} data-active-page={active.id} style={{touchAction: mobile || notes || nativeZoomed ? 'auto' : direction === 'horizontal' && !zoomed ? 'pan-y' : 'pan-x pan-y'}} tabIndex={0} onPointerDown={event => {
+    <div ref={viewportRef} className="reader-viewport" data-mobile={mobile || undefined} data-direction={mobile ? undefined : direction} data-active-page={active.id} style={{touchAction: mobile || notes || nativeZoomed ? 'auto' : direction === 'horizontal' && !zoomed ? 'pan-y' : 'pan-x pan-y'}} tabIndex={0} onContextMenu={event => {if (!(event.target instanceof Element && event.target.closest('input,textarea,select,[contenteditable="true"]'))) event.preventDefault();}} onClick={event => {
+      if (mobile && !(event.target instanceof Element && event.target.closest('button,a,input,textarea,select,[contenteditable]'))) revealChrome();
+    }} onPointerDown={event => {
       if (event.pointerType !== 'touch' || notes || mobile || suspended) return;
       pointers.current.add(event.pointerId);
       if (!gesture.current) gesture.current = {x: event.clientX, y: event.clientY, multiplePointers: false};
@@ -589,7 +592,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       const delta = swipeDirection({...start, dx: event.clientX - start.x, dy: event.clientY - start.y, zoomed: zoomed || (window.visualViewport?.scale ?? 1) > 1, hasSelection: !!window.getSelection()?.toString()});
       if (!mobile && direction === 'horizontal' && delta) onPage(page + delta);
     }}>
-      {mobile && chapterIndex > 0 ? <div className="reader-chapter-boundary"><IconButton variant="ghost" aria-label={m.previous} isDisabled={suspended} onPress={() => onChapter(chapterIndex - 1, true)} icon={<ArrowUp size={20} aria-hidden="true"/>}/></div> : null}
+      {mobile && chapterIndex > 0 ? <div className="reader-chapter-boundary"><IconButton variant="ghost" aria-label={m.previous} isDisabled={suspended} onPress={() => onChapter(chapterIndex - 1)} icon={<ArrowUp size={20} aria-hidden="true"/>}/></div> : null}
       {!fontsReady ? <p role="status">{m.loading}</p> : null}
       <div ref={paperRef} className="reader-paper-with-notes" data-has-notes={hasNotes || undefined} aria-hidden={!fontsReady || undefined} style={{visibility: fontsReady ? 'visible' : 'hidden', width: mobile ? undefined : Math.max(...document.pages.map(entry => entry.width * 4 / 3 * pageScale(zoom, {width: entry.width * 4 / 3, height: entry.height * 4 / 3}, viewport))) + (hasNotes ? 44 : 0)}}>
       {mobile ? <div ref={chapterHeading} tabIndex={-1} role="group" aria-label={chapterLabels[chapter]} className="reader-watermarked" style={{"--reader-font-size": `${typography.size}px`, "--reader-line-height": typography.line} as React.CSSProperties}><BulletinEbook document={document} chapter={chapter} canonicalMetadata={value.document.canonicalMetadata} sentenceState={sentenceState}/><ReaderWatermark traceCode={value.access.traceCode} tone={theme}/></div> :
@@ -598,8 +601,6 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       <RangeHighlights root={paperRef} highlights={savedHighlights} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}:${typography.size}:${typography.line}:${direction}:${chapter}`} onSelect={selectExisting}/>
       </div>
       {mobile && chapterIndex < chapters.length - 1 ? <div className="reader-chapter-boundary"><IconButton variant="ghost" aria-label={m.next} isDisabled={suspended} onPress={() => onChapter(chapterIndex + 1)} icon={<ArrowDown size={20} aria-hidden="true"/>}/></div> : null}
-      {/* An ordinary touch also sets selecting; only captured/native text selection blocks chapter pulls. */}
-      {mobile ? <ChapterPull key={chapter} root={viewportRef} blocked={!!panel || selected.length > 0 || !!notes || suspended || nativeZoomed} onPrevious={chapterIndex > 0 ? () => onChapter(chapterIndex - 1, true) : undefined} onNext={chapterIndex < chapters.length - 1 ? () => onChapter(chapterIndex + 1) : undefined}/> : null}
     </div>
     </div>
     {!mobile && direction === 'horizontal' ? <div className="reader-page-controls" role="group" aria-label={m.originalPages}>

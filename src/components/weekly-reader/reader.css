@@ -62,6 +62,8 @@
 @media (hover: none) { .reader-edge { display: none; } }
 /* Paper clipping containers must share the reader's pan/pinch arbitration. */
 .reader-viewport :where(*) { touch-action: inherit; }
+/* shortcut: mobile OS text-action menus may ignore this; retain native text selection. */
+.reader-paper-with-notes { -webkit-touch-callout: none; }
 .reader-scaled-page { position: relative; margin-inline: auto; box-shadow: 0 3px 18px #0002; }
 .reader-watermarked { position: relative; }
 .weekly-reader .hhc-bulletin-v1[data-bulletin-mode='paper'] [data-body-canonical-art] [data-sentence-id] { text-shadow: none; }
@@ -246,7 +248,7 @@ body:has(.weekly-reader) {padding-bottom: 0;}
 .reader-type-grid .reader-icon-control, .reader-type-grid button {width: 100%;}
 .reader-type-grid button {min-height: 48px; border-radius: 999px;}
 .reader-type-grid output {grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; gap: 8px; color: var(--hhc-text-muted);}
-.reader-chapter-boundary {display: flex; justify-content: center; padding: 12px 0; background: var(--hhc-surface);}
+.reader-chapter-boundary {display: flex; align-items: center; justify-content: center; padding: 8px 0; background: var(--hhc-surface);}
 .weekly-reader .reader-chapter-boundary button {width: 48px; height: 44px; border: 0; border-radius: 0; background: transparent; box-shadow: none;}
 .weekly-reader[data-theme='dark'] .reader-chapter-boundary {background: #141B21;}
 .reader-document[data-mobile] .hhc-bulletin-ebook {font-size: var(--reader-font-size, 18px); line-height: var(--reader-line-height, 1.8);}
