@@ -35,6 +35,13 @@ export function createMemberVideoApi(authorization: Authorization, fetcher: Fetc
     await fetcher(cookie,{method:'DELETE',credentials:'include',cache:'no-store',redirect:'error',referrerPolicy:'no-referrer'});
   }
   return {
+    watch:(id:string,signal?:AbortSignal)=>client.resolveRecordingWatch(id,signal),
+    upcoming:(options:{cursor?:string;limit?:number;signal?:AbortSignal}={})=>client.listMemberBroadcasts(options),
+    async broadcastCover(id:string,signal?:AbortSignal) {
+      const blob=await client.getMemberBroadcastCover(id,signal);
+      if(blob.type!=='image/jpeg'||blob.size<1||blob.size>(1<<20))throw new Error('Invalid broadcast cover');
+      return blob;
+    },
     async cover(id:string,signal?:AbortSignal) {
       const blob=await client.getMemberRecordingCover(id,signal);
       if(blob.type!=='image/jpeg'||blob.size>(1<<20)) throw new Error('Invalid recording cover');

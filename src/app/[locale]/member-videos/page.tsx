@@ -9,7 +9,7 @@ import {isLocale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import {getAlternates, getLocalizedPath} from '@/lib/seo';
 
-type PageProps = {params: Promise<{locale: string}>; searchParams:Promise<{q?:string|string[]}>};
+type PageProps = {params: Promise<{locale: string}>; searchParams:Promise<{q?:string|string[];upcoming?:string}>};
 
 export async function generateMetadata({params}: PageProps): Promise<Metadata> {
   const {locale} = await params;
@@ -29,12 +29,13 @@ export default async function MemberVideosPage({params,searchParams}: PageProps)
   setRequestLocale(locale);
   const allMessages = getMessages(locale);
   const messages = {...allMessages.memberVideos,search:allMessages.site.search.video};
-  const {query,invalid}=parseVideoQuery((await searchParams).q);
+  const search=await searchParams;
+  const {query,invalid}=parseVideoQuery(search.q);
   const pathname = `/${locale}/member-videos`;
   return (
     <>
       <SiteHeaderServer locale={locale} pathname={pathname} searchQuery={query} />
-      <MemberVideoZone view="list" query={query} invalidQuery={invalid} locale={locale} messages={messages} hero={<h1 className="sr-only">{messages.heroTitle}</h1>} />
+      <MemberVideoZone upcomingOnly={search.upcoming==='1'} view="list" query={query} invalidQuery={invalid} locale={locale} messages={messages} hero={<h1 className="sr-only">{messages.heroTitle}</h1>} />
       <SiteFooterServer locale={locale} pathname={pathname} />
     </>
   );
