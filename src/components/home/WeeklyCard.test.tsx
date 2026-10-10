@@ -30,7 +30,7 @@ describe('WeeklyCard', () => {
 
     render(<WeeklyCard locale="en" ctaLabel="Download weekly" messages={messages} />);
 
-    expect(await screen.findByRole('button', {name: 'Download weekly: 繁中'})).toBeInTheDocument();
+    expect(await screen.findByRole('button', {name: 'Download PDF: 繁中'})).toHaveTextContent('Download PDF · 繁中');
     expect(screen.queryByRole('button', {name: /English/})).not.toBeInTheDocument();
     const request = fetcher.mock.calls[0]?.[0] as Request;
     expect(request.url).toContain('/api/member/bulletins/online?series=general&offset=0&limit=1&locales=zh-Hant');
@@ -60,7 +60,7 @@ describe('WeeklyCard', () => {
     expect(await screen.findByText('Unavailable')).toBeInTheDocument();
     expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'weekly.latest', tags: {locale: 'en', series: 'general'}});
     await userEvent.click(screen.getByRole('button', {name: 'Retry'}));
-    expect(await screen.findByRole('button', {name: 'Download: 繁中'})).toBeInTheDocument();
+    expect(await screen.findByRole('button', {name: 'Download PDF: 繁中'})).toBeInTheDocument();
   });
 
   it('aborts the protected request on unmount', async () => {
@@ -97,10 +97,10 @@ describe('WeeklyCard', () => {
     vi.stubGlobal('fetch',vi.fn().mockResolvedValue(discoveryResponse([bulletin,{...bulletin,locale:'zh-Hans'},{...bulletin,locale:'en'}],true)));
     render(<WeeklyCard locale="en" ctaLabel="Download" messages={messages}/>);
     expect(await screen.findByRole('link',{name:'Read online'})).toHaveAttribute('href','/en/literature-ministry/1737/read/general/en');
-    expect(screen.getAllByRole('button',{name:/Download:/})).toHaveLength(1);
-    expect(screen.getByRole('button',{name:'Download: English'})).toBeInTheDocument();
+    expect(screen.getAllByRole('button',{name:/Download PDF:/})).toHaveLength(1);
+    expect(screen.getByRole('button',{name:'Download PDF: English'})).toBeInTheDocument();
     expect(screen.getByText('English')).toBeVisible();
-    expect(screen.getByRole('link', {name: 'Read online'}).compareDocumentPosition(screen.getByRole('button', {name: 'Download: English'})) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole('link', {name: 'Read online'}).compareDocumentPosition(screen.getByRole('button', {name: 'Download PDF: English'})) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 

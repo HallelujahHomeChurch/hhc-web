@@ -1,6 +1,7 @@
 'use client';
 
 import {useEffect, useMemo, useState} from 'react';
+import {BookOpen, FileText} from 'lucide-react';
 import {DownloadButton} from '@/components/ui/DownloadButton';
 import {Button} from '@/components/ui/Button';
 import {getMessages} from '@/i18n/messages';
@@ -38,6 +39,7 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
   const issueLabel = formatIssueNumber(locale, weekly?.issueNumber);
   const resolved = weekly && activeSeries ? resolveEdition({uiLocale: locale, series: activeSeries, authorizedEditions: editions, publishedEditions: weekly.versions}) : null;
   const copy = resolved?.version;
+  const downloadLabel = getMessages(locale).literatureMinistry.downloadPdf;
 
   useEffect(() => {
     if (!canRead) return;
@@ -81,15 +83,15 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
           <p className="mb-3 text-sm text-muted"><time dateTime={weekly.date}>{weekly.date.slice(0, 10)}</time> · <span lang={resolved.contentLocale}>{weeklyEditionLabels[resolved.contentLocale]}</span></p>
           {copy ? <h3 id="weekly-title" lang={copy.locale} className="text-xl font-semibold leading-snug text-ink">{copy.title}</h3> : <h3 id="weekly-title" className="sr-only">{ctaLabel}</h3>}
           {copy?.subtitle ? <p lang={copy.locale} className="mt-1 text-sm leading-relaxed text-muted">{copy.subtitle}</p> : null}
-          <div className="mt-5 flex flex-wrap justify-center gap-2.5">
-            {resolved.readUrl ? <Button href={resolved.readUrl}>{messages.readOnline}{resolved.readVersion?.locale!==resolved.contentLocale?` · ${weeklyEditionLabels[resolved.readVersion!.locale]}`:''}</Button> : null}
+          <div className="mt-5 grid gap-3">
+            {resolved.readUrl ? <Button href={resolved.readUrl} className="gap-2"><BookOpen size={18} aria-hidden="true"/>{messages.readOnline}{resolved.readVersion?.locale!==resolved.contentLocale?` · ${weeklyEditionLabels[resolved.readVersion!.locale]}`:''}</Button> : null}
             {resolved.downloadVersion ? (
               <DownloadButton
                 bulletin={resolved.downloadVersion}
                 workflow={api}
-                label={resolved.downloadVersion.locale!==locale?`${ctaLabel} · ${weeklyEditionLabels[resolved.downloadVersion.locale]}`:ctaLabel}
+                label={resolved.downloadVersion.locale!==locale?`${downloadLabel} · ${weeklyEditionLabels[resolved.downloadVersion.locale]}`:downloadLabel}
                 variant={resolved.readUrl ? 'outline' : 'primary'}
-                ariaLabel={`${ctaLabel}: ${weeklyEditionLabels[resolved.downloadVersion.locale]}`}
+                ariaLabel={`${downloadLabel}: ${weeklyEditionLabels[resolved.downloadVersion.locale]}`}
                 className="px-3 text-sm"
                 preparingLabel={messages.downloading}
                 readyLabel={messages.downloadReady}
@@ -118,5 +120,5 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
 }
 
 function BulletinMark() {
-  return <div className="mx-auto mb-6 grid size-28 place-items-center rounded-full bg-[var(--hhc-badge-rose)] text-5xl text-primary-hover" aria-hidden="true">▤</div>;
+  return <div className="mx-auto mb-6 grid size-28 place-items-center rounded-full bg-[var(--hhc-badge-rose)] text-primary-hover" aria-hidden="true"><FileText size={44} strokeWidth={1.5}/></div>;
 }

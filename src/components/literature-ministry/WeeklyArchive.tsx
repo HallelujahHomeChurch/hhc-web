@@ -1,12 +1,14 @@
 'use client';
 
 import {useEffect, useMemo, useState} from 'react';
-import {useSearchParams} from 'next/navigation';
+import {useRouter, useSearchParams} from 'next/navigation';
+import {Tabs} from '@hallelujahhomechurch/ui';
 import {Button} from '@/components/ui/Button';
 import {DownloadButton} from '@/components/ui/DownloadButton';
 import {createWeeklyBulletinApi, type WeeklyBulletinApi} from '@/features/weekly/api';
 import {formatIssueNumber, resolveWeeklyCopy} from '@/features/weekly/format';
 import {readerUrl, resolveEdition} from '@/features/weekly/resolve-edition';
+import {isWeeklyReaderEnabled} from '@/features/weekly-reader/enabled';
 import {getMessages} from '@/i18n/messages';
 import {weeklyEditionLabels, type WeeklyIssue, type WeeklyIssuePage} from '@/features/weekly/types';
 import type {Locale} from '@/i18n/locales';
@@ -38,15 +40,17 @@ type WeeklyArchiveMessages = {
 };
 
 type WeeklyArchiveProps = {locale: Locale; messages: WeeklyArchiveMessages};
+type EntryMode = 'online' | 'pdf';
 
 function getPageValue(value: string | null) {
   const page = Number(value);
   return Number.isFinite(page) ? Math.max(1, Math.floor(page)) : 1;
 }
 
-function getPageHref(locale: Locale, series: BulletinSeries, page: number) {
+function getPageHref(locale: Locale, series: BulletinSeries, page: number, mode: EntryMode) {
   const params = new URLSearchParams({series});
   if (page > 1) params.set('page', String(page));
+  if (mode === 'pdf') params.set('mode', mode);
   return `/${locale}/literature-ministry?${params}`;
 }
 
@@ -58,6 +62,9 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
   const editions = bulletinAccess.editions;
   const canRead = bulletinAccess.status === 'available' && editions.length > 0;
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const readerEnabled = isWeeklyReaderEnabled();
+  const mode: EntryMode = readerEnabled && searchParams.get('mode') !== 'pdf' ? 'online' : 'pdf';
   const availableSeries = useMemo(() => (['general', 'children'] as const).filter((value) => editions.some((edition) => edition.series === value)), [editions]);
   const requestedSeries = searchParams.get('series');
   const series = availableSeries.includes(requestedSeries as BulletinSeries) ? requestedSeries as BulletinSeries : availableSeries[0];
@@ -120,23 +127,16 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
   const latestIssueLabel = formatIssueNumber(locale, latestIssue?.issueNumber);
   const latestCopy = latestIssue ? resolveEdition({uiLocale: locale, series, authorizedEditions: editions, publishedEditions: latestIssue.versions})?.version ?? resolveWeeklyCopy(latestIssue, locale) : null;
 
-  return (
-    <section className="shell grid gap-7" aria-labelledby="weekly-archive-title">
-      <div className="grid grid-cols-[minmax(0,1fr)_minmax(260px,360px)] gap-5 rounded-2xl border border-line/80 bg-paper/90 p-[clamp(22px,4vw,38px)] shadow-warm max-[820px]:grid-cols-1">
-        <div>
-          <span className="text-base font-black uppercase tracking-[0.12em] text-rose">{messages.eyebrow}</span>
-          <h2 id="weekly-archive-title" className="mt-3 max-w-[720px] text-[clamp(34px,5vw,58px)] font-semibold leading-tight text-ink">{messages.archiveTitle}</h2>
-          <p className="mt-4 max-w-[620px] text-lg leading-[1.85] text-muted">{messages.archiveIntro}</p>
-          {availableSeries.length > 1 ? <nav aria-label={messages.eyebrow} className="mt-6 inline-flex rounded-full border border-panel-border bg-panel p-1">{availableSeries.map((value) => <a key={value} aria-current={series === value ? 'page' : undefined} className={`rounded-full px-4 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${series === value ? 'bg-primary text-primary-foreground' : 'text-muted hover:text-ink'}`} href={getPageHref(locale, value, 1)}>{value === 'general' ? messages.general : messages.children}</a>)}</nav> : null}
-        </div>
-        <aside className="min-h-[220px] rounded-[14px] border border-panel-border bg-[image:var(--hhc-panel-gradient)] p-5 shadow-[inset_0_1px_0_var(--hhc-inset-highlight)]" aria-labelledby="latest-weekly-title">
-          <span id="latest-weekly-title" className="text-sm font-black uppercase tracking-[0.12em] text-teal">{messages.latestLabel}</span>
+  const content = (entryMode: EntryMode) => (
+    <div className="grid gap-6">
+        <aside className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-5 rounded-[14px] border border-panel-border bg-panel p-6 max-[860px]:grid-cols-1" aria-labelledby="latest-weekly-title">
+          <div className="min-w-0">
+          <h3 id="latest-weekly-title" className="text-sm font-semibold text-muted">{messages.latestLabel}</h3>
           {latestState === 'ready' && latestIssue?.versions.length ? (
             <>
               {latestIssueLabel ? <p className="mt-3 text-[21px] font-semibold text-[var(--hhc-brand-strong)]">{latestIssueLabel}</p> : null}
               {latestCopy ? <h3 lang={latestCopy.locale} className="mt-2 text-lg font-semibold leading-snug text-ink">{latestCopy.title}</h3> : null}
               {latestCopy?.subtitle ? <p lang={latestCopy.locale} className="mt-1 text-sm leading-relaxed text-muted">{latestCopy.subtitle}</p> : null}
-              <VersionLinks locale={locale} readOnlineLabel={messages.readOnline} issue={latestIssue} workflow={api} preparingLabel={messages.downloading} readyLabel={messages.downloadReady} errorLabel={messages.downloadError} className="mt-5" />
             </>
           ) : latestState === 'error' ? (
             <div className="mt-4 grid justify-items-start gap-4">
@@ -146,10 +146,11 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
           ) : (
               <h3 className="mt-4 text-[18px] font-semibold text-muted" aria-live="polite">{latestState === 'ready' ? messages.empty : messages.loading}</h3>
           )}
+          </div>
+          {latestState === 'ready' && latestIssue?.versions.length ? <VersionLinks mode={entryMode} locale={locale} readOnlineLabel={messages.readOnline} issue={latestIssue} workflow={api} preparingLabel={messages.downloading} readyLabel={messages.downloadReady} errorLabel={messages.downloadError} /> : null}
         </aside>
-      </div>
 
-      <div className="rounded-2xl border border-line/80 bg-paper/90 p-[clamp(18px,3vw,28px)] shadow-warm">
+      <div>
         <div className="mb-5 flex items-end justify-between gap-4 max-[620px]:grid">
           <h3 className="text-2xl font-semibold text-ink">{messages.allIssuesTitle}</h3>
           <p className="text-sm font-semibold text-muted">{messages.paginationNote}</p>
@@ -165,46 +166,60 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
                   {copy ? <h4 lang={copy.locale} className="text-lg font-semibold leading-snug text-ink">{copy.title}</h4> : null}
                   {copy?.subtitle ? <p lang={copy.locale} className="mt-1 text-sm leading-relaxed text-muted">{copy.subtitle}</p> : null}
                 </div>
-                <VersionLinks locale={locale} readOnlineLabel={messages.readOnline} issue={issue} workflow={api} preparingLabel={messages.downloading} readyLabel={messages.downloadReady} errorLabel={messages.downloadError} />
+                <VersionLinks mode={entryMode} locale={locale} readOnlineLabel={messages.readOnline} issue={issue} workflow={api} preparingLabel={messages.downloading} readyLabel={messages.downloadReady} errorLabel={messages.downloadError} />
               </article>
             ) : null;
           }) : archiveState === 'ready' ? <p className="text-muted">{messages.empty}</p> : archiveState === 'error' ? <div><p role="alert" className="text-muted">{messages.loadError}</p><button type="button" className="mt-3 min-h-11 rounded-full border border-panel-border px-5" onClick={() => setRetryKey(value => value + 1)}>{messages.retry}</button></div> : <p role="status" className="text-muted">{messages.loading}</p>}
         </div>
         {archive && archive.totalPages > 1 ? (
           <nav className="mt-6 flex flex-wrap items-center justify-end gap-2" aria-label={messages.paginationLabel}>
-            {archive.page > 1 ? <Button href={getPageHref(locale, series, archive.page - 1)} variant="outline">{messages.previousPage}</Button> : null}
+            {archive.page > 1 ? <Button href={getPageHref(locale, series, archive.page - 1, entryMode)} variant="outline">{messages.previousPage}</Button> : null}
             {Array.from({length: archive.totalPages}, (_, index) => index + 1).map((pageNumber) => (
-              <Button key={pageNumber} href={getPageHref(locale, series, pageNumber)} variant={pageNumber === archive.page ? 'primary' : 'outline'} ariaLabel={`${messages.pageLabel} ${pageNumber}`}>{pageNumber}</Button>
+              <Button key={pageNumber} href={getPageHref(locale, series, pageNumber, entryMode)} variant={pageNumber === archive.page ? 'primary' : 'outline'} ariaLabel={`${messages.pageLabel} ${pageNumber}`}>{pageNumber}</Button>
             ))}
-            {archive.page < archive.totalPages ? <Button href={getPageHref(locale, series, archive.page + 1)} variant="outline">{messages.nextPage}</Button> : null}
+            {archive.page < archive.totalPages ? <Button href={getPageHref(locale, series, archive.page + 1, entryMode)} variant="outline">{messages.nextPage}</Button> : null}
           </nav>
         ) : null}
       </div>
+    </div>
+  );
+
+  return (
+    <section className="shell grid gap-6" aria-labelledby="weekly-archive-title">
+      <header>
+        <h2 id="weekly-archive-title" className="text-[clamp(28px,4vw,40px)] font-semibold leading-tight text-ink">{messages.archiveTitle}</h2>
+        <p className="mt-3 max-w-[620px] text-base leading-relaxed text-muted">{messages.archiveIntro}</p>
+        {availableSeries.length > 1 ? <nav aria-label={messages.eyebrow} className="mt-5 inline-flex rounded-full border border-panel-border bg-panel p-1">{availableSeries.map((value) => <a key={value} aria-current={series === value ? 'page' : undefined} className={`inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${series === value ? 'bg-primary text-primary-foreground' : 'text-muted hover:text-ink'}`} href={getPageHref(locale, value, 1, mode)}>{value === 'general' ? messages.general : messages.children}</a>)}</nav> : null}
+      </header>
+      <Tabs label={messages.archiveTitle} selectedKey={mode} onSelectionChange={(key) => router.replace(getPageHref(locale, series, page, key === 'pdf' ? 'pdf' : 'online'), {scroll: false})} items={[
+        ...(readerEnabled ? [{id: 'online', label: messages.readOnline, content: content('online')}] : []),
+        {id: 'pdf', label: getMessages(locale).literatureMinistry.downloadPdf, content: content('pdf')}
+      ]}/>
     </section>
   );
 }
 
-function VersionLinks({locale, readOnlineLabel, issue, workflow, preparingLabel, readyLabel, errorLabel, className = ''}: {locale: Locale; readOnlineLabel: string; issue: WeeklyIssue; workflow: WeeklyBulletinApi; preparingLabel: string; readyLabel: string; errorLabel: string; className?: string}) {
+function VersionLinks({mode, locale, readOnlineLabel, issue, workflow, preparingLabel, readyLabel, errorLabel}: {mode: EntryMode; locale: Locale; readOnlineLabel: string; issue: WeeklyIssue; workflow: WeeklyBulletinApi; preparingLabel: string; readyLabel: string; errorLabel: string}) {
   const {editions} = useBulletinAccess();
   const m = getMessages(locale).literatureMinistry;
-  const versions = issue.versions.filter(version => editions.some(edition => edition.series === version.series && edition.locale === version.locale));
+  const versions = issue.versions.filter(version => editions.some(edition => edition.series === version.series && edition.locale === version.locale)
+    && (mode === 'pdf' ? version.pdfPublished !== false : Boolean(readerUrl(locale, version))));
   const selected = versions[0] ? resolveEdition({uiLocale: locale, series: versions[0].series, authorizedEditions: editions, publishedEditions: versions})?.version : undefined;
   const primary = selected ?? versions[0];
   const others = versions.filter(version => version !== primary);
   const actions = (version: WeeklyIssue['versions'][number]) => {
     const href = readerUrl(locale, version);
     const label = weeklyEditionLabels[version.locale];
-    return <div key={`${version.series}/${version.locale}`} className="grid min-w-0 content-start gap-2">
-      {version.pdfPublished !== false ? <DownloadButton bulletin={version} workflow={workflow} className="whitespace-nowrap max-[860px]:min-w-0 max-[860px]:px-3" label={label} ariaLabel={`${m.downloadPdf}: ${label}`} variant="outline" preparingLabel={preparingLabel} readyLabel={readyLabel} errorLabel={errorLabel}/> : null}
-      {href ? <Button href={href} variant="outline" className="min-w-0 px-3" ariaLabel={`${readOnlineLabel}: ${label}`}>{version.pdfPublished === false ? `${label} · ${readOnlineLabel}` : readOnlineLabel}</Button> : null}
-      {!href && version.pdfPublished === false ? <span className="text-sm text-muted">{m.empty}</span> : null}
-    </div>;
+    return mode === 'pdf'
+      ? <DownloadButton key={`${version.series}/${version.locale}`} bulletin={version} workflow={workflow} className="whitespace-nowrap px-4 text-sm" label={label} ariaLabel={`${m.downloadPdf}: ${label}`} variant="outline" preparingLabel={preparingLabel} readyLabel={readyLabel} errorLabel={errorLabel}/>
+      : href ? <Button key={`${version.series}/${version.locale}`} href={href} variant="outline" className="px-4 text-sm" ariaLabel={`${readOnlineLabel}: ${label}`}>{label}</Button> : null;
   };
   return (
-    <div className={`grid gap-2.5 ${className}`}>
-      <div className="flex justify-end gap-2.5 max-[860px]:grid max-[860px]:grid-flow-col max-[860px]:auto-cols-fr">
+    <div className="grid gap-2.5">
+      <div className="flex flex-wrap justify-end gap-2 max-[860px]:justify-start">
         {primary ? actions(primary) : null}
         {others.map(actions)}
+        {!versions.length ? <p className="text-sm text-muted">{mode === 'online' ? m.onlineUnavailable : m.pdfUnavailable}</p> : null}
       </div>
       {issue.pdfFallback ? <p role="status" className="text-sm text-muted">{m.pdfFallback}</p> : null}
     </div>
