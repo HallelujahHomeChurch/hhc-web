@@ -31,8 +31,16 @@ export function useTextSelection(root: RefObject<HTMLElement | null>, sentences:
     const pointers = new Set<number>();
     let keyboardSelecting = false;
     let touching = false;
+    let tappedSelection: ReaderSelection | null = null;
+    let startPoint: {clientX: number; clientY: number} | null = null;
+    let moved = false;
     let settleTimer: ReturnType<typeof setTimeout> | undefined;
     const cancelSettle = () => clearTimeout(settleTimer);
+    const resetGesture = () => {pointers.clear(); keyboardSelecting = false; touching = false; newGesture = false; tappedSelection = null; startPoint = null; moved = false; cancelSettle();};
+    const movement = (point: {clientX: number; clientY: number} | undefined) => {
+      if (point && startPoint && Math.hypot(point.clientX - startPoint.clientX, point.clientY - startPoint.clientY) > 4) moved = true;
+    };
+    const dismiss = () => {resetGesture(); clear();};
     const settleNative = () => {
       cancelSettle();
       // OS selection handles may emit selectionchange without DOM pointer events.
@@ -56,12 +64,24 @@ export function useTextSelection(root: RefObject<HTMLElement | null>, sentences:
     const pointer = (event: Event) => {
       if (!(event.target instanceof Element)) return;
       if (root.current?.contains(event.target)) {
-        if (event.type === 'pointerdown') {newGesture = true; preserveSnapshot.current = false; pointers.add((event as PointerEvent).pointerId); cancelSettle(); setSelecting(true);}
+        const pointer = event as PointerEvent;
+        if (pointer.button !== undefined && pointer.button !== 0) return;
+        tappedSelection = current.current;
+        startPoint = {clientX: pointer.clientX, clientY: pointer.clientY}; moved = false;
+        newGesture = true; preserveSnapshot.current = false; pointers.add(pointer.pointerId); cancelSettle(); setSelecting(true);
       } else if (event.target.closest('.reader-selection-tools, [data-reader-selection-tools]')) preserveSnapshot.current = true;
-      else clear();
+      else dismiss();
     };
+    const clicked = (event: Event) => {
+      if (!(event.target instanceof Element)) return;
+      if (event.target.closest('.reader-selection-tools, [data-reader-selection-tools]')) return;
+      movement(event as MouseEvent);
+      if (!root.current?.contains(event.target) || !moved && tappedSelection && JSON.stringify(tappedSelection.ranges) === JSON.stringify(current.current.ranges)) dismiss();
+      tappedSelection = null;
+    };
+    const pointerMoved = (event: PointerEvent) => {if (pointers.has(event.pointerId)) movement(event);};
     const keyboard = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') clear();
+      if (event.key === 'Escape') dismiss();
       if (root.current?.contains(event.target as Node) || root.current?.contains(owner.getSelection()?.anchorNode ?? null)) {
         preserveSnapshot.current = false;
         if (event.shiftKey || (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') {keyboardSelecting = true; cancelSettle(); setSelecting(true);}
@@ -69,6 +89,7 @@ export function useTextSelection(root: RefObject<HTMLElement | null>, sentences:
     };
     const released = (event: PointerEvent) => {
       if (!pointers.delete(event.pointerId)) return;
+      movement(event);
       changed();
       if (!pointers.size && !touching) {
         cancelSettle();
@@ -79,31 +100,38 @@ export function useTextSelection(root: RefObject<HTMLElement | null>, sentences:
     const keyReleased = () => {if (keyboardSelecting) {keyboardSelecting = false; changed(); cancelSettle(); setSelecting(false);}};
     const touchStarted = (event: TouchEvent) => {
       if (!root.current?.contains(event.target as Node)) return;
+      if (!pointers.size) {tappedSelection = current.current; startPoint = event.touches[0] ?? null; moved = false; newGesture = true; preserveSnapshot.current = false;}
       touching = true; cancelSettle(); setSelecting(true);
     };
+    const touchMoved = (event: TouchEvent) => {if (touching) movement(event.touches[0]);};
     const touchEnded = (event: TouchEvent) => {
+      if (event.type === 'touchcancel') {resetGesture(); changed(); settleNative(); return;}
       if (!touching || event.touches.length) return;
+      movement(event.changedTouches[0]);
       touching = false; changed(); cancelSettle();
       if (!pointers.size) setSelecting(false);
     };
-    const blurred = () => {pointers.clear(); keyboardSelecting = false; touching = false; cancelSettle(); clear();};
+    const blurred = () => dismiss();
     owner.addEventListener('selectionchange', changed);
     owner.addEventListener('pointerdown', pointer);
-    owner.addEventListener('click', pointer);
+    owner.addEventListener('pointermove', pointerMoved);
+    owner.addEventListener('click', clicked);
     owner.addEventListener('keydown', keyboard);
     owner.addEventListener('keyup', keyReleased);
     owner.addEventListener('pointerup', released);
     owner.addEventListener('pointercancel', released);
     owner.addEventListener('touchstart', touchStarted, {passive: true});
+    owner.addEventListener('touchmove', touchMoved, {passive: true});
     owner.addEventListener('touchend', touchEnded);
     owner.addEventListener('touchcancel', touchEnded);
     owner.defaultView?.addEventListener('blur', blurred);
     return () => {
       cancelSettle();
       owner.removeEventListener('selectionchange', changed); owner.removeEventListener('pointerdown', pointer);
-      owner.removeEventListener('click', pointer); owner.removeEventListener('keydown', keyboard);
+      owner.removeEventListener('pointermove', pointerMoved);
+      owner.removeEventListener('click', clicked); owner.removeEventListener('keydown', keyboard);
       owner.removeEventListener('keyup', keyReleased); owner.removeEventListener('pointerup', released); owner.removeEventListener('pointercancel', released);
-      owner.removeEventListener('touchstart', touchStarted); owner.removeEventListener('touchend', touchEnded); owner.removeEventListener('touchcancel', touchEnded);
+      owner.removeEventListener('touchstart', touchStarted); owner.removeEventListener('touchmove', touchMoved); owner.removeEventListener('touchend', touchEnded); owner.removeEventListener('touchcancel', touchEnded);
       owner.defaultView?.removeEventListener('blur', blurred);
     };
   }, [root, sentences, locked, clear, setSelection]);

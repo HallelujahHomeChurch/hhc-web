@@ -161,7 +161,7 @@ describe('protected weekly reader', () => {
     expect(document.documentElement).toHaveAttribute('data-theme', 'light');
     localStorage.removeItem('hhc-reader-theme');
   });
-  it.each(['chapter', 'page', 'search', 'resume', 'resume-cover', 'pull', 'pull-selection', 'pull-pinch'])('switches mobile chapters via %s while preserving source anchors', async route => {
+  it.each(['chapter', 'chapter-reordered', 'next', 'page', 'search', 'resume', 'resume-cover', 'pull', 'pull-selection', 'pull-pinch'])('switches mobile chapters via %s while preserving source anchors', async route => {
     Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect(0, 500, 300, 30)});
     vi.spyOn(window, 'scrollBy').mockImplementation(() => {});
     vi.stubGlobal('matchMedia', vi.fn(() => ({matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn()})));
@@ -177,6 +177,7 @@ describe('protected weekly reader', () => {
     if (body.type === 'bodySection') body.bodySection.header = {lectureDate: {...blocks[1], id: 'credit', sentences: [{id: 'credit-sentence', spans: [{text: 'Production date', fontRole: 'body'}]}]}, contributors: []};
     const slot = fixture.document.content.layoutManifest.pages[1].slots[0];
     fixture.document.content.layoutManifest.pages[1].slots.unshift({...slot, id: 'credit-slot', blockId: 'credit', fragments: [{sentenceId: 'credit-sentence', start: 0, end: 15}]});
+    if (route === 'chapter-reordered') fixture.document.content.layoutManifest.pages.reverse();
     state.open.mockResolvedValue(fixture);
     if (route === 'resume' || route === 'resume-cover') {
       const cloud = (await state.privateState()).state;
@@ -190,7 +191,7 @@ describe('protected weekly reader', () => {
       expect(container.querySelector('[data-chapter="cover"] [data-sentence-id="s0"]')).toBeInTheDocument();
       expect(container.querySelector('[data-chapter="cover"] [data-sentence-id="s1"]')).toBeNull();
     }
-    if (route === 'chapter' || route === 'resume-cover') {
+    if (route.startsWith('chapter') || route === 'resume-cover') {
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       expect(screen.queryByRole('button', {name: props.messages.productionDetails})).not.toBeInTheDocument();
       expect(container.querySelector('.reader-chapter-title')).toBeNull();
@@ -198,6 +199,10 @@ describe('protected weekly reader', () => {
       fireEvent.click(within(screen.getByRole('navigation', {name: props.messages.chapters})).getByRole('button', {name: 'Articles'}));
     }
     if (route === 'page') choosePage(2);
+    if (route === 'next') {
+      container.querySelector('.reader-viewport')!.scrollTop = 600;
+      fireEvent.click(screen.getByRole('button', {name: props.messages.next}));
+    }
     if (route.startsWith('pull')) {
       const viewport = container.querySelector('.reader-viewport')!;
       Object.defineProperties(viewport, {scrollHeight: {value: 1000}, clientHeight: {value: 400}, scrollTop: {value: 600, writable: true}});
@@ -215,7 +220,7 @@ describe('protected weekly reader', () => {
       fireEvent.touchMove(text, {touches: [touch(100)]});
       fireEvent.touchEnd(text, {touches: [], changedTouches: [touch(100)]});
       fireEvent.pointerUp(text, {pointerType: 'touch', pointerId: 1});
-      if (route !== 'pull') {
+      {
         expect(container.querySelector('[data-chapter="cover"]')).toBeInTheDocument();
         expect(container.querySelector('[data-chapter="body"]')).toBeNull();
         fireEvent.keyDown(document, {key: 'Escape'});
@@ -229,19 +234,18 @@ describe('protected weekly reader', () => {
       fireEvent.click(screen.getByRole('button', {name: /內容[12]/}));
     }
     await waitFor(() => expect(container.querySelector('[data-chapter="body"] [data-sentence-id="s1"]')).toBeInTheDocument());
+    if (route.startsWith('chapter')) expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p1');
     expect(container.querySelector('[data-sentence-id="credit-sentence"]')).toBeNull();
     expect(container.querySelector('[data-chapter="cover"]')).toBeNull();
     expect(container.querySelector('[data-chapter="worship"]')).toBeNull();
-    if (route === 'pull') {
+    if (route === 'next') {
       const viewport = container.querySelector('.reader-viewport')!;
-      viewport.scrollTop = 0;
-      const text = container.querySelector('[data-sentence-id="s1"]')!;
-      const touch = (y: number) => ({identifier: 1, clientX: 100, clientY: y});
-      fireEvent.pointerDown(text, {pointerType: 'touch', pointerId: 1});
-      fireEvent.touchStart(text, {touches: [touch(100)]});
-      fireEvent.touchMove(text, {touches: [touch(200)]});
-      fireEvent.touchEnd(text, {touches: [], changedTouches: [touch(200)]});
+      Object.defineProperties(viewport, {scrollHeight: {value: 1000}, clientHeight: {value: 400}});
+      await waitFor(() => expect(viewport.scrollTop).toBe(0));
+      viewport.scrollTop = 900;
+      fireEvent.click(screen.getByRole('button', {name: props.messages.previous}));
       expect(container.querySelector('[data-chapter="cover"]')).toBeInTheDocument();
+      await waitFor(() => expect(viewport.scrollTop).toBe(0));
       fireEvent.click(screen.getByRole('button', {name: props.messages.next}));
     }
     fireEvent.click(screen.getByRole('button', {name: props.messages.next}));
@@ -252,6 +256,34 @@ describe('protected weekly reader', () => {
     fireEvent.click(screen.getByRole('button', {name: props.messages.contents}));
     fireEvent.click(within(screen.getByRole('navigation', {name: props.messages.chapters})).getByRole('button', {name: 'Worship'}));
     expect(container.querySelector('[data-chapter="worship"]')).toBeInTheDocument();
+  });
+  it('reveals mobile chrome on a settled tap and keeps it visible until another scroll gesture', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn()})));
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    await waitFor(() => expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled());
+    const root = container.querySelector('.reader-viewport')!, shell = container.querySelector('.reader-document')!;
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    fireEvent.wheel(root); root.scrollTop = 400; fireEvent.scroll(root);
+    await waitFor(() => expect(shell).toHaveAttribute('data-mobile-hidden', 'true'));
+    fireEvent.pointerDown(root); fireEvent.pointerUp(root); fireEvent.click(root);
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    expect(shell).toHaveAttribute('data-mobile-hidden', 'false');
+    root.scrollTop = 420; fireEvent.scroll(root);
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    expect(shell).toHaveAttribute('data-mobile-hidden', 'false');
+    fireEvent.touchMove(root); root.scrollTop = 450; fireEvent.scroll(root);
+    await waitFor(() => expect(shell).toHaveAttribute('data-mobile-hidden', 'true'));
+  });
+  it('suppresses the native context menu on reader paper, not on note inputs', async () => {
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    await waitFor(() => expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled());
+    const text = container.querySelector('[data-sentence-id="s0"]')!;
+    expect(fireEvent.contextMenu(text)).toBe(false);
+    fireEvent.click(screen.getByRole('button', {name: props.messages.myNotes}));
+    await screen.findByRole('dialog', {name: props.messages.myNotes});
+    expect(fireEvent.contextMenu(screen.getByRole('dialog', {name: props.messages.myNotes}))).toBe(true);
   });
   it.each(['blue', 'clear'])('allows keyboard users to %s an existing exact highlight range', async operation => {
     const cloud = (await state.privateState()).state;
