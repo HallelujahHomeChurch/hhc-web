@@ -37,6 +37,15 @@ describe('single-line paper fields', () => {
     expect(issue.style.left).toBe('40%');
     expect(date.style.width).toBe('20%');
   });
+  it.each(['v8', 'v9'])('preserves the composer-owned date and issue gap for %s', renderer => {
+    const root = document.createElement('div');
+    root.innerHTML = `<div data-reader-renderer="${renderer}"><div data-bulletin-mode="paper"><section data-bulletin-page="cover"><p data-fixed-element="date" style="left:10%;top:28%;width:20%">Sep.27.2026</p><p data-fixed-element="issueNumber" style="left:31%;top:28%;width:15%">第1740期</p></section></div></div>`;
+    const before = root.innerHTML;
+    const restore = fitPaperLines(root, new Set());
+    expect(root.innerHTML).toBe(before);
+    restore();
+    expect(root.innerHTML).toBe(before);
+  });
   it('omits the production band and moves only the same page body up without changing text or widths', () => {
     const root = document.createElement('div');
     root.innerHTML = '<div data-bulletin-mode="paper"><section data-bulletin-page="p1"><p data-block-id="date" style="top:28%;width:15%">Date</p><p data-block-id="credit" style="top:30%">Credit</p><p data-fixed-element="bodyIssueSummary" style="top:28%">Issue</p><p data-fixed-element="topRule" style="top:35%"></p><p data-block-id="body" style="top:36%;width:80%">First page only</p><p data-fixed-element="speakerSeparator" style="top:36%">～</p></section><section data-bulletin-page="p2"><p data-block-id="next" style="top:10%">Next page only</p></section></div>';

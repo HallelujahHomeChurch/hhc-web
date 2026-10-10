@@ -34,7 +34,7 @@ export function fitPaperLines(root: HTMLElement, headerBlockIds: ReadonlySet<str
     }
     const date = page.querySelector<HTMLElement>('[data-fixed-element="date"]');
     const issue = page.querySelector<HTMLElement>('[data-fixed-element="issueNumber"]');
-    if (date && issue) {
+    if (date && issue && !page.closest('[data-reader-renderer="v8"], [data-reader-renderer="v9"]')) {
       remember(date); remember(issue);
       date.style.width = 'max-content';
       date.style.whiteSpace = 'nowrap';

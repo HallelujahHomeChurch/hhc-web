@@ -53,7 +53,7 @@ beforeEach(() => {Object.defineProperty(Range.prototype, 'getBoundingClientRect'
 describe('protected weekly reader', () => {
   it.each(([
     ['zh-Hant',1440],['zh-Hans',1440],['zh-Hant',1024],['zh-Hans',1024],['zh-Hant',390],['zh-Hans',390],
-  ] as const).flatMap(([locale,width])=>(['v6','v7','v8'] as const).map(version=>[locale,width,version] as const)))('reads historical %s at width %i with %s, unchanged source anchors and independent theme',async(contentLocale,width,rendererVersion)=>{
+  ] as const).flatMap(([locale,width])=>(['v6','v7','v8','v9'] as const).map(version=>[locale,width,version] as const)))('reads %s at width %i with %s, unchanged source anchors and independent theme',async(contentLocale,width,rendererVersion)=>{
     const mobile=width<768;
     vi.stubGlobal('matchMedia',vi.fn(query=>({matches:query==='(max-width: 767px)'&&mobile,addEventListener:vi.fn(),removeEventListener:vi.fn()})));
     vi.stubGlobal('ResizeObserver',class{
@@ -74,7 +74,11 @@ describe('protected weekly reader', () => {
     const credit={...paragraph,id:'credit',sentences:[{id:'credit-sentence',spans:[{text:'Production credit',fontRole:'body' as const}]}]};
     fixture.document.content.components[0]={id:'c0',type:'cover',cover:{welcome:[welcome],worship:[],work:[],wordQuestions:[],weeklyVerses:[]}};
     fixture.document.content.components[1]={id:'c1',type:'bodySection',bodySection:{kind:'sermon',title:{...paragraph,id:'article-title',sentences:[{id:'article-heading',spans:[{text:'Article',fontRole:'body'}]}]},header:{lectureDate:credit,contributors:[]},blocks:[paragraph]}};
-    const rows=contentLocale==='zh-Hans'?[
+    const rows=rendererVersion==='v9'?(contentLocale==='zh-Hans'?[
+      ['visionMission','异象使命：遍地华人兴起、福音传到地极'],['visionFellowship','团契行动：共同生活、爱与成全、恩膏传承'],['visionCommitment','坚持理想：宣教主导、灵恩神学、团队事奉、门徒训练'],
+    ] as const:[
+      ['visionMission','異象使命：遍地華人興起、福音傳到地極'],['visionFellowship','團契行動：共同生活、愛與成全、恩膏傳承'],['visionCommitment','堅持理想：宣教主導、靈恩神學、團隊事奉、門徒訓練'],
+    ] as const):contentLocale==='zh-Hans'?[
       ['historicalVision','一个异象：合一与宣教'],['historicalGospelGoals','两个目标：福音为华人、华人为福音'],['historicalActions','三个行动：共同生活、爱与成全、恩膏传承'],['historicalCommitment','四个坚持：宣教主导、灵恩神学、团队事奉、门徒训练'],
     ] as const:[
       ['historicalVision','一個異象：合一與宣教'],['historicalGoals','兩個目標：宣教為中國、中國為宣教'],['historicalActions','三個行動：共同生活、愛與成全、恩膏傳承'],['historicalCommitment','四個堅持：宣教主導、靈恩神學、團隊事奉、門徒訓練'],
@@ -101,7 +105,7 @@ describe('protected weekly reader', () => {
       await waitFor(()=>expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page','p1'));
       const anchor=paper.querySelector('[data-sentence-id="s1"]');
       expect(anchor).toHaveTextContent('內容1。');expect(anchor).toHaveAttribute('data-fragment-start','0');expect(anchor).toHaveAttribute('data-fragment-end','4');
-      if(rendererVersion==='v7'||rendererVersion==='v8'){
+      if(rendererVersion==='v7'||rendererVersion==='v8'||rendererVersion==='v9'){
         const emphasis=anchor!.querySelector<HTMLElement>('[data-font-role="emphasis"]')!;
         expect(emphasis.style.fontFamily).toContain('HHC Weekly Serif');
         expect(emphasis.style.fontFamily).not.toContain('Kai');
