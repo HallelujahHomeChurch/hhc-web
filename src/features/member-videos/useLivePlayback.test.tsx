@@ -59,3 +59,17 @@ it('renews a thirty-second grant once at 24 seconds without a one-second loop',a
  await act(()=>vi.advanceTimersByTimeAsync(1000));expect(api.liveGrant).toHaveBeenCalledTimes(2);
  await act(()=>vi.advanceTimersByTimeAsync(1000));expect(api.liveGrant).toHaveBeenCalledTimes(2);
 });
+
+it('does not label an authorization rejection as replay expiry',async()=>{
+ const {api,result}=setup();await act(()=>result.current.start());
+ api.liveGrant.mockRejectedValue(new HhcWebApiError(404,'capture_not_found','Unavailable'));
+ await act(()=>vi.advanceTimersByTimeAsync(240000));
+ expect(result.current.closed).toBe(true);expect(result.current.expired).toBe(false);
+});
+it('closes as expired at the server replay deadline without a wake event',async()=>{
+ const {api,result}=setup();const original=api.liveGrant.getMockImplementation()!;
+ api.liveGrant.mockImplementation(async(...args)=>{const grant=await original(...args);const deadline=new Date(Date.parse(grant.serverNow)+30000).toISOString();return {...grant,expiresAt:deadline,replayUntil:deadline};});
+ await act(()=>result.current.start());await act(()=>vi.advanceTimersByTimeAsync(30000));
+ expect(result.current.closed).toBe(true);expect(result.current.expired).toBe(true);expect(result.current.playback).toBeNull();
+ expect(api.liveGrant).toHaveBeenCalledTimes(1);
+});

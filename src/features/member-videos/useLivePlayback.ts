@@ -9,7 +9,7 @@ type LiveApi=Pick<ReturnType<typeof createMemberVideoApi>,'liveGrant'|'exchangeL
 type Playback={grant:MemberLivePlayback;url:string};
 
 export function useLivePlayback(api:LiveApi,recordingId:string,captureId:string,awaitingMedia=false){
- const [playback,setPlayback]=useState<Playback|null>(null),[pending,setPending]=useState(false),[error,setError]=useState(false),[closed,setClosed]=useState(false);
+ const [playback,setPlayback]=useState<Playback|null>(null),[pending,setPending]=useState(false),[error,setError]=useState(false),[closed,setClosed]=useState(false),[expired,setExpired]=useState(false);
  const bookmark=useRef<PlayerBookmark|undefined>(undefined),scope=useRef<string|null>(null);
  const readiness=useRef(awaitingMedia);
  useEffect(()=>{readiness.current=awaitingMedia;},[awaitingMedia]);
@@ -31,11 +31,11 @@ export function useLivePlayback(api:LiveApi,recordingId:string,captureId:string,
    const url=active.url;if(activePlayback.current===active)activePlayback.current=null;active=null;setPlayback(null);
    clearCookie(url);
   };
-  const stop=()=>{terminal=true;clear();window.clearTimeout(renewTimer);window.clearTimeout(expiryTimer);setClosed(true);setError(true);};
+  const stop=(isExpired=false)=>{setExpired(isExpired);terminal=true;clear();window.clearTimeout(renewTimer);window.clearTimeout(expiryTimer);setClosed(true);setError(true);};
   const expire=()=>{clear();window.clearTimeout(renewTimer);setError(true);};
   const run=async()=>{
    if(inFlight||terminal||controller.signal.aborted)return;
-   if(Date.now()>=hardEnd){stop();return;}
+   if(Date.now()>=hardEnd){stop(true);return;}
    if(expiry&&Date.now()>=expiry)expire();
    inFlight=true;setPending(true);window.clearTimeout(renewTimer);
    const requestedAt=Date.now();
@@ -47,7 +47,7 @@ export function useLivePlayback(api:LiveApi,recordingId:string,captureId:string,
     const ttl=ends-issued,remaining=ends-server;
     const limit=Math.min(Date.parse(grant.captureExpiresAt),grant.replayUntil?Date.parse(grant.replayUntil):Infinity);
     if(grant.recordingId!==recordingId||grant.captureId!==captureId||grant.playbackScopeId!==scope.current||!Number.isFinite(ttl)||ttl<=0||ttl>300000||!Number.isFinite(remaining)||remaining<=0||remaining>300000||!Number.isFinite(limit)||ends>limit||['failed','expired','aborted'].includes(grant.liveState)){
-     stop();return;
+     stop(grant.liveState==='expired');return;
     }
     // Anchor server deltas before the request: network time never extends authorization.
     const nextExpiry=requestedAt+remaining,nextHardEnd=requestedAt+limit-server;
@@ -60,7 +60,7 @@ export function useLivePlayback(api:LiveApi,recordingId:string,captureId:string,
      active={grant,url};activePlayback.current=active;expiry=nextExpiry;hardEnd=nextHardEnd;renewAt=expiry-Math.min(60000,ttl*.2);failures=0;
      setPlayback(active);setError(false);
      window.clearTimeout(expiryTimer);
-     expiryTimer=window.setTimeout(expire,Math.max(0,expiry-Date.now()));
+     expiryTimer=window.setTimeout(()=>Date.now()>=hardEnd?stop(true):expire(),Math.max(0,expiry-Date.now()));
      if(expiry<hardEnd)renewTimer=window.setTimeout(()=>void run(),Math.max(1000,renewAt-Date.now()));
     });
     cookieOperations.current=exchange.catch(()=>{});
@@ -86,5 +86,5 @@ export function useLivePlayback(api:LiveApi,recordingId:string,captureId:string,
    if(active){const url=active.url;if(activePlayback.current===active)activePlayback.current=null;active=null;clearCookie(url);}
   };
  },[api,recordingId,captureId]);
- return {playback,pending,error,closed,bookmark,remember,start};
+ return {playback,pending,error,closed,expired,bookmark,remember,start};
 }
