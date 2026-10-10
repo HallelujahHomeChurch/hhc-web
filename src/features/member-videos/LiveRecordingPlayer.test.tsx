@@ -2,10 +2,10 @@ import {act,cleanup,fireEvent,render,screen} from '@testing-library/react';
 import {afterEach,expect,it,vi} from 'vitest';
 import type {ComponentProps,RefObject} from 'react';
 import {LiveRecordingPlayer,englishLiveLabels} from './LiveRecordingPlayer';
-const session=vi.hoisted(()=>({playback:{url:'same-live-url',grant:{liveState:'ended',serverNow:'2026-10-09T05:30:00Z',stopAcceptedAt:null as string|null,watermarkCode:'trace',replayUntil:'2026-10-07T12:00:00Z',progress:{mediaEndSeconds:5400}}},pending:false,error:false,closed:false,bookmark:{current:{time:60,paused:true,rate:1.5,quality:'720p',intent:'dvr'}},remember:vi.fn(),start:vi.fn().mockResolvedValue(undefined)}));
+const session=vi.hoisted(()=>({playback:{url:'same-live-url',grant:{liveState:'ended',serverNow:'2026-10-09T05:30:00Z',stopAcceptedAt:null as string|null,watermarkCode:'trace',replayUntil:'2026-10-07T12:00:00Z',progress:{mediaEndSeconds:5400}}},pending:false,error:false,closed:false,expired:false,bookmark:{current:{time:60,paused:true,rate:1.5,quality:'720p',intent:'dvr'}},remember:vi.fn(),start:vi.fn().mockResolvedValue(undefined)}));
 vi.mock('./useLivePlayback',()=>({useLivePlayback:()=>session}));
 vi.mock('./HlsPlayer',()=>({HlsPlayer:({live,onBookmark,videoRef}:{live:{label:string;canFollow:boolean};onBookmark:(value:unknown)=>void;videoRef:RefObject<HTMLVideoElement|null>})=><div data-testid="player" data-can-follow={String(live.canFollow)}>{live.label}<video ref={videoRef}/><button onClick={()=>onBookmark({time:1430,paused:false,rate:1,quality:'auto',intent:'followLive'})}>Advance playback</button></div>}));
-afterEach(()=>{cleanup();session.playback.grant.liveState='ended';session.error=false;vi.useRealTimers();vi.restoreAllMocks();});
+afterEach(()=>{cleanup();session.playback.grant.liveState='ended';session.error=false;session.closed=false;session.expired=false;vi.useRealTimers();vi.restoreAllMocks();});
 it('keeps an ended event mounted until an explicit VOD handoff with the same bookmark',async()=>{
  const props={api:{},recording:{id:'r',captureId:'a'.repeat(32),title:'Gathering',liveState:'live',progress:{mediaEndSeconds:5400}},labels:{play:'Play',retry:'Retry',playError:'Error',loading:'Loading'},liveLabels:englishLiveLabels,locale:'en',onVod:vi.fn().mockResolvedValue(true)} as unknown as ComponentProps<typeof LiveRecordingPlayer>;
  render(<LiveRecordingPlayer {...props}/>);
@@ -71,4 +71,14 @@ it('uses the public media origin for position delay and bookmarks',()=>{
  expect(screen.getByTestId('player')).toHaveAttribute('data-can-follow','true');
  session.playback.grant.liveState='ended';view.rerender(<LiveRecordingPlayer {...props}/>);
  expect(screen.getByTestId('player')).toHaveAttribute('data-can-follow','false');
+});
+
+it('only calls a closed session expired when its authoritative deadline was reached',()=>{
+ session.closed=true;
+ const props={api:{},recording:{id:'r',captureId:'a'.repeat(32),title:'Gathering',liveState:'live',progress:{mediaEndSeconds:5400}},labels:{play:'Play',retry:'Retry',playError:'Error',loading:'Loading'},liveLabels:englishLiveLabels,locale:'en'} as unknown as ComponentProps<typeof LiveRecordingPlayer>;
+ const view=render(<LiveRecordingPlayer {...props}/>);
+ expect(screen.queryAllByText(englishLiveLabels.expired)).toHaveLength(0);
+ expect(screen.getAllByText(englishLiveLabels.failed)).toHaveLength(2);
+ session.expired=true;view.rerender(<LiveRecordingPlayer {...props}/>);
+ expect(screen.getAllByText(englishLiveLabels.expired)).toHaveLength(2);
 });
