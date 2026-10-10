@@ -2,7 +2,7 @@ import type {OnlineBulletinAccess} from '@hallelujahhomechurch/hhc-web-client';
 import {BULLETIN_RENDERER_V1_DIGEST,BULLETIN_RENDERER_V2_DIGEST,BULLETIN_RENDERER_V2_ASSETS,BULLETIN_RENDERER_V3_DIGEST,BULLETIN_RENDERER_V4_DIGEST,BULLETIN_RENDERER_V5_DIGEST} from '@hallelujahhomechurch/ui';
 import assets from '../../../public/assets/weekly/v1/manifest.json';
 
-export function readerFixture(locale:'zh-Hant'|'zh-Hans'='zh-Hant', rendererVersion?: 'v3'|'v4'|'v5'|'v6'|'v7'|'v8'): OnlineBulletinAccess {
+export function readerFixture(locale:'zh-Hant'|'zh-Hans'='zh-Hant', rendererVersion?: 'v3'|'v4'|'v5'|'v6'|'v7'|'v8'|'v9'): OnlineBulletinAccess {
   const issueId = '00000000-0000-4000-8000-000000000001';
   const documentId = '00000000-0000-4000-8000-000000000002';
   const value:OnlineBulletinAccess = {
@@ -20,13 +20,14 @@ export function readerFixture(locale:'zh-Hant'|'zh-Hans'='zh-Hant', rendererVers
     Object.assign(value.document.content.layoutManifest,{templateVersion:'v2',rendererVersion:'v2',rendererArtifactSha256:BULLETIN_RENDERER_V2_DIGEST,assets:BULLETIN_RENDERER_V2_ASSETS.map(asset=>({url:asset.url,sha256:asset.sha256,kind:asset.kind}))});
   }
   if(rendererVersion){
-    const digests={v3:BULLETIN_RENDERER_V3_DIGEST,v4:BULLETIN_RENDERER_V4_DIGEST,v5:BULLETIN_RENDERER_V5_DIGEST,v6:'142cdc601bfb33e2715b46efea7823bac8ee89b1b9620f5186599e34a4363d27',v7:'cc55a5bd97412c64f90205f1cf8d9c27530d9fb2fedf2cd5b2e23a2435152c85',v8:'646c849b47e87cc3607abccd3e92ad60a432bc55d8b1835f97c5b34ca2793c66'};
+    const digests={v3:BULLETIN_RENDERER_V3_DIGEST,v4:BULLETIN_RENDERER_V4_DIGEST,v5:BULLETIN_RENDERER_V5_DIGEST,v6:'142cdc601bfb33e2715b46efea7823bac8ee89b1b9620f5186599e34a4363d27',v7:'cc55a5bd97412c64f90205f1cf8d9c27530d9fb2fedf2cd5b2e23a2435152c85',v8:'646c849b47e87cc3607abccd3e92ad60a432bc55d8b1835f97c5b34ca2793c66',v9:'e38c5bb6fea134ffdf56cbc542f5c20a9a82c8e03b7a5653ebf0eabfd7bb0997'};
     Object.assign(value.document.content.layoutManifest,{rendererVersion,rendererArtifactSha256:digests[rendererVersion]});
   }
-  if(rendererVersion==='v7'||rendererVersion==='v8'){
+  if(rendererVersion==='v7'||rendererVersion==='v8'||rendererVersion==='v9'){
     const bold={url:'/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2',sha256:'49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f',kind:'font' as const};
     const traditional=assets.assets.filter(asset=>asset.kind!=='license'&&!asset.roles?.includes('emphasis')).map(asset=>({url:asset.url,sha256:asset.sha256,kind:asset.kind as 'font'|'decoration'}));
     value.document.content.layoutManifest.assets=locale==='zh-Hant'?[...traditional,bold]:[...value.document.content.layoutManifest.assets,...traditional.filter(asset=>asset.url.includes('/body-')),bold];
   }
+  if(rendererVersion==='v9')value.document.content.templateSnapshot=locale==='zh-Hant'?{version:7,visionMission:'遍地華人興起、福音傳到地極',visionFellowship:'共同生活、愛與成全、恩膏傳承',visionCommitment:'宣教主導、靈恩神學、團隊事奉、門徒訓練'}:{version:7,visionMission:'遍地华人兴起、福音传到地极',visionFellowship:'共同生活、爱与成全、恩膏传承',visionCommitment:'宣教主导、灵恩神学、团队事奉、门徒训练'};
   return value;
 }

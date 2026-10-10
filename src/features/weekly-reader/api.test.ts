@@ -10,6 +10,26 @@ const auth = {getAccessToken: async () => 'token', refreshAfterUnauthorized: asy
 beforeEach(() => {vi.clearAllMocks(); client.listOnlineBulletinDiscovery.mockResolvedValue({items: [{issueId: readerFixture().document.issueId, issueNumber: 1739, series: 'general', contentLocale: 'zh-Hant', onlineRevision: 1}]}); client.openOnlineBulletin.mockResolvedValue(readerFixture());});
 
 describe('member reader access', () => {
+  it.each(['zh-Hant','zh-Hans'] as const)('accepts immutable V9 %s snapshots without current-setting lookups',contentLocale=>{
+    const value=readerFixture(contentLocale,'v9');
+    expect(verifyReaderAccess(value,{...selector,contentLocale}).templateSnapshot).toEqual(value.document.content.templateSnapshot);
+  });
+  it.each(['missing','null','unsafe','extra','control','empty'] as const)('rejects V9 %s snapshots before exposing private content',reason=>{
+    const value=readerFixture('zh-Hant','v9');
+    const snapshot=value.document.content.templateSnapshot!;
+    if(reason==='missing')delete value.document.content.templateSnapshot;
+    else if(reason==='null')Reflect.set(value.document.content,'templateSnapshot',null);
+    else if(reason==='unsafe')snapshot.version=9007199254740992;
+    else if(reason==='extra')Reflect.set(snapshot,'privateEvidence','not renderable');
+    else if(reason==='control')snapshot.visionMission='Hidden\u202econtent';
+    else snapshot.visionMission='';
+    expect(()=>verifyReaderAccess(value,selector)).toThrow('invalid_template_snapshot');
+  });
+  it('rejects a snapshot attached to a legacy renderer',()=>{
+    const value=readerFixture();
+    value.document.content.templateSnapshot=readerFixture('zh-Hant','v9').document.content.templateSnapshot;
+    expect(()=>verifyReaderAccess(value,selector)).toThrow('update_required');
+  });
   it.each(['zh-Hant','zh-Hans'] as const)('accepts V3–V8 with the existing %s template while retaining receipt verification',contentLocale=>{
     for (const rendererVersion of ['v3','v4','v5','v6','v7','v8'] as const) {
     const value=readerFixture(contentLocale,rendererVersion);
