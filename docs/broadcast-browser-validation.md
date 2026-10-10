@@ -52,3 +52,31 @@ The decoded browser observations above exercised the underlying follow mechanism
 before this one-line caller fix. They are not a new decoded recovering-state run
 or proof of the production shared-load gate; Windows must repeat the actual
 scenario after deployment.
+
+## Quality-switch frame continuity — 2026-10-10 follow-up
+
+Manual rendition/Auto changes still rebuild MSE to preserve the earlier ended-VOD
+quality and duration fix. The player now holds the last decoded frame in an
+in-memory canvas through reattachment/native source reload, revealing the video
+only after position restoration and a ready, non-seeking frame. The canvas stays
+below the watermark and controls, exports no image and clears on error/source
+change/unmount. Browsers unable to capture a frame retain the prior fallback.
+
+Local Chromium, actual HLS.js 1.7.3 and a generated 12.012-second 29.97 fps fixture:
+
+- Paused Auto/1080p → 480p: `emptied`/readyState 0 and metadata/readyState 1 kept
+  the 1920px held frame; `seeked` revealed decoded 854×480 at 5s, paused, 1.5×.
+- Paused 480p → 1080p: the 854px held frame persisted through reload (sampled
+  opaque canvas pixel `[255,133,20,255]`); decoded 1920×1080 returned at 5s,
+  paused, 1.5×, with four decoded frames reported.
+- Playing 1080p → Auto: reattachment retained the held frame, then resumed
+  decoded 480p at the switch position (~6.52s), unpaused at 1.5×; duration stayed
+  12.011999s and no video error was reported. Auto remains adaptive.
+
+These are decoded-media/event/canvas observations, not a Windows or Safari pass.
+Whole-page screenshot capture timed out during the follow-up; no compositor-level
+no-flash claim is made. Regression tests cover native/MSE, rapid reselection,
+position/rate/pause preservation, capture failure and source/error cleanup. The
+temporary fixture route and public media link were removed before commit. Repeat
+real Windows and Safari quality switches, including 480p natural end → seek back
+→ 1080p → Auto, after deployment. No wire, encoder or validation changes.
