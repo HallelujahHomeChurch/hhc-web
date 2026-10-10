@@ -36,3 +36,19 @@ upload backlog. It does not pass or replace Windows capture807adeb7faa8f073c4e62
 its five-minute outage/ten-minute recovery test, or normal service-load acceptance.
 Safari native HLS, physical mobile, production grants/CSP and real worker latency
 remain deployment/device checks. CLI/C1 wire/media validation are unchanged.
+
+## Recovering-state follow-up
+
+Windows shared-load evidence (`hhc-obs-plugin@1b736b5`, capture
+`85a97e39455d279eb9cc23deb4b44fc3`) exposed a caller gate: LiveRecordingPlayer
+only enabled HlsPlayer following in `live`, although `recovering` already had a
+verified playable edge. The added regression failed before enabling following
+for both live and recovering. The HlsPlayer seekable/verified intersection,
+30-second margin, followLive intent, unpaused check and 60-second jump threshold
+are unchanged; ending/ended remain ineligible. All 77 player tests passed after
+this change, plus lint/build/static budgets.
+
+The decoded browser observations above exercised the underlying follow mechanism
+before this one-line caller fix. They are not a new decoded recovering-state run
+or proof of the production shared-load gate; Windows must repeat the actual
+scenario after deployment.
