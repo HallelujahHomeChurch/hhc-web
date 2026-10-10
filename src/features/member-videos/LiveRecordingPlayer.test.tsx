@@ -54,3 +54,12 @@ it('keeps delay current while playback is paused or stalled',()=>{
  vi.mocked(performance.now).mockReturnValue(61000);act(()=>vi.advanceTimersByTime(1000));
  expect(screen.getByRole('status')).toHaveTextContent('430 seconds');
 });
+
+it('uses the public media origin for position delay and bookmarks',()=>{
+ session.playback.grant.liveState='live';vi.spyOn(performance,'now').mockReturnValue(1000);
+ const props={mediaOriginSeconds:240,api:{},recording:{id:'r',captureId:'a'.repeat(32),createdAt:'2026-10-09T05:00:00Z',title:'Gathering',liveState:'live',progress:{mediaEndSeconds:1680}},labels:{play:'Play',retry:'Retry',playError:'Error',loading:'Loading'},liveLabels:englishLiveLabels,locale:'en'} as unknown as ComponentProps<typeof LiveRecordingPlayer>;
+ render(<LiveRecordingPlayer {...props}/>);
+ fireEvent.click(screen.getByRole('button',{name:'Advance playback'}));
+ expect(screen.getByRole('status')).toHaveTextContent('130 seconds');
+ expect(session.remember).toHaveBeenLastCalledWith(expect.objectContaining({time:1430,mediaOriginSeconds:240}));
+});

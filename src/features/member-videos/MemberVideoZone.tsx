@@ -19,6 +19,10 @@ import {playerClock} from './PlayerChrome';
 import {LiveRecordingCover,RecordingCover,useRecordingCover} from './RecordingCover';
 import {LiveRecordingPlayer,liveViewerLabel,englishLiveLabels,type LiveLabels} from './LiveRecordingPlayer';
 import type {PlayerBookmark} from './live-player';
+import {useBroadcastWatch} from './useBroadcastWatch';
+import {BroadcastWaitingPanel} from './BroadcastWaitingPanel';
+import {mapBroadcastBookmark} from './broadcast';
+import {UpcomingBroadcasts} from './UpcomingBroadcasts';
 
 export type Messages = {
   live?: LiveLabels;
@@ -31,7 +35,7 @@ export type Messages = {
 } & PlayerLabels;
 type ActivePlayback = {recordingId: string; scopeId: string; grant: MemberRecordingPlayback; url: string};
 const pageSize = 12;
-type ZoneProps = {locale: Locale; messages: Messages; hero: ReactNode; view?: 'list' | 'watch'; recordingId?: string;query?: string;invalidQuery?: boolean};
+type ZoneProps = {upcomingOnly?:boolean;locale: Locale; messages: Messages; hero: ReactNode; view?: 'list' | 'watch'; recordingId?: string;query?: string;invalidQuery?: boolean};
 
 function newestFirst(items: MemberRecording[]) {
   return [...items].sort((a, b) => (b.uploadedAt ?? '').localeCompare(a.uploadedAt ?? '') || b.id.localeCompare(a.id));
@@ -42,7 +46,7 @@ function formatDate(value: string | null, locale: Locale) {
   return new Intl.DateTimeFormat(locale, {timeZone: 'Asia/Taipei', year: 'numeric', month: 'long', day: 'numeric'}).format(new Date(value));
 }
 
-export function MemberVideoZone({locale, messages, hero, view = 'watch', recordingId, query = '', invalidQuery = false}: ZoneProps) {
+export function MemberVideoZone({locale, messages, hero, view = 'watch', recordingId, query = '', invalidQuery = false, upcomingOnly=false}: ZoneProps) {
   const router = useRouter();
   const auth = useAccountAuth();
   const identity=useAccountIdentity();
@@ -50,13 +54,13 @@ export function MemberVideoZone({locale, messages, hero, view = 'watch', recordi
   useEffect(() => {
     if (auth.status === 'anonymous' || access === 'denied') router.replace(`/${locale}`);
   }, [access, auth.status, locale, router]);
-  if (access === 'available') return <AuthorizedVideoZone key={`${identity}:${recordingId ?? view}:${view==='list'?`${query}:${invalidQuery}`:''}`} locale={locale} messages={messages} hero={hero} view={view} recordingId={recordingId} query={query} invalidQuery={invalidQuery} />;
+  if (access === 'available') return <AuthorizedVideoZone upcomingOnly={upcomingOnly} key={`${identity}:${upcomingOnly}:${recordingId ?? view}:${view==='list'?`${query}:${invalidQuery}`:''}`} locale={locale} messages={messages} hero={hero} view={view} recordingId={recordingId} query={query} invalidQuery={invalidQuery} />;
   if (auth.status === 'anonymous' || access === 'denied') return null;
   const unavailable = auth.status === 'unavailable' || access === 'unavailable';
   return <main className="bg-[image:var(--hhc-page-gradient)] py-16"><section className="shell rounded-[14px] border border-panel-border bg-panel p-8 text-center text-ink" role={unavailable ? 'alert' : 'status'}>{unavailable ? messages.loadError : messages.loading}{unavailable ? <button type="button" className="ml-4 min-h-11 rounded-full border border-[var(--hhc-control-border)] px-5 font-semibold" onClick={() => window.location.reload()}>{messages.retry}</button> : null}</section></main>;
 }
 
-function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query = '', invalidQuery = false}: ZoneProps) {
+function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query = '', invalidQuery = false, upcomingOnly=false}: ZoneProps) {
   const router = useRouter();
   const authorization = useBulletinAuthorization();
   const identity = useAccountIdentity();
@@ -64,15 +68,20 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
   const previousLiveIDs = useRef(new Set<string>());
   const listGeneration = useRef(0);
   const api = useMemo(() => createMemberVideoApi(authorization), [authorization]);
+  const [upcomingPresent,setUpcomingPresent]=useState<boolean|null>(null);
   const [recordings, setRecordings] = useState<MemberRecording[] | null>(null);
   const [livestreams,setLivestreams]=useState<MemberLiveRecording[]>([]);
-  const vodChosen=useRef(false);
+  const [vodChosen,setVodChosen]=useState(false);
   const [vodResume,setVodResume]=useState<PlayerBookmark|undefined>(undefined);
-  const [selectedLive,setSelectedLive]=useState<MemberLiveRecording|null>(null);
-  const [liveLoading,setLiveLoading]=useState(true);
+  const [legacySelectedLive,setSelectedLive]=useState<MemberLiveRecording|null>(null);
+  const [retry, setRetry] = useState(0);
+  const resolver=useBroadcastWatch(api,recordingId,retry);
+  const watch=resolver.watch;
+  const mediaOrigin=watch?.mediaStartSeconds??null,mediaDuration=watch?.durationSeconds??null;
+  const selectedLive=resolver.denied||vodChosen||recordingId&&!watch?null:watch?watch.live??(['processing','vod'].includes(watch.view)?resolver.lastLive:null):legacySelectedLive;
+  const waitingWatch=watch&&!['live','vod'].includes(watch.view)?watch:null;
   const [liveError,setLiveError]=useState(false);
   const [loadError, setLoadError] = useState(false);
-  const [retry, setRetry] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [nextCursor,setNextCursor]=useState<string|null>(null);
   const [moreLoading,setMoreLoading]=useState(false),[moreError,setMoreError]=useState(false);
@@ -81,7 +90,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
   const playbackRef = useRef<ActivePlayback | null>(null);
   const mediaFailureReported = useRef(false);
   const vodBookmark=useRef<PlayerBookmark|undefined>(undefined), bookmarkFrozen=useRef(false);
-  const rememberVod=useCallback((value:PlayerBookmark)=>{if(!bookmarkFrozen.current)vodBookmark.current=value;},[]);
+  const rememberVod=useCallback((value:PlayerBookmark)=>{if(!bookmarkFrozen.current)vodBookmark.current={...value,mediaOriginSeconds:mediaOrigin??0};},[mediaOrigin]);
   const [preparing, setPreparing] = useState(false);
   const [playError, setPlayError] = useState('');
   const attempt = useRef<AbortController | null>(null);
@@ -184,7 +193,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
         }
         const current=items.find(item=>item.id===recordingId);
         // Keep a stopped event mounted for its already registered viewer scope.
-        if(current&&!vodChosen.current)setSelectedLive(previous=>previous&&previous.captureId!==current.captureId?previous:current);
+        if(current&&!vodChosen)setSelectedLive(previous=>previous&&previous.captureId!==current.captureId?previous:current);
         if(recordingId){
           const recordings=await api.list(controller.signal);
           if(controller.signal.aborted)return;
@@ -192,10 +201,10 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
           setSelectedId(recordings.some(item=>item.id===recordingId)?recordingId:null);
         }
       }catch{if(!controller.signal.aborted)setLiveError(true);}
-      finally{if(!controller.signal.aborted){setLiveLoading(false);timer=window.setTimeout(()=>void load(),30000);}}
+      finally{if(!controller.signal.aborted){timer=window.setTimeout(()=>void load(),30000);}}
     };
     void load();return()=>{controller.abort();window.clearTimeout(timer);};
-  },[api,recordingId,retry,view,query,invalidQuery]);
+  },[api,recordingId,retry,view,query,invalidQuery,vodChosen]);
 
   useEffect(() => {playbackRef.current = playback;}, [playback]);
   useEffect(() => () => {
@@ -204,7 +213,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
     if (playbackRef.current) void api.clear(playbackRef.current.url).catch(() => {});
   }, [api]);
 
-  const selected = recordings?.find((recording) => recording.id === selectedId);
+  const selected = resolver.denied ? undefined : recordingId ? watch?.recording??undefined : recordings?.find((recording) => recording.id === selectedId);
   useEffect(()=>{vodBookmark.current=undefined;bookmarkFrozen.current=false;},[identity,selected?.id,selected?.packageId]);
   const poster=useRecordingCover(api,selected?.id,selected?.expiresAt,selected?.selectedCoverId);
   const select = (id: string) => {
@@ -243,7 +252,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
       const scopeId = crypto.randomUUID();
       const grant = await api.grant(selected.id, scopeId, selected.packageId, controller.signal);
       const url = await api.exchange(grant, controller.signal);
-      if (!controller.signal.aborted) {bookmarkFrozen.current=false;setVodResume(resume);setPlayback({recordingId: selected.id, scopeId, grant, url});return true;}
+      if (!controller.signal.aborted) {bookmarkFrozen.current=false;setVodResume(mapBroadcastBookmark(resume,mediaOrigin,mediaDuration));setPlayback({recordingId: selected.id, scopeId, grant, url});return true;}
     } catch (error) {
       if (!controller.signal.aborted) {
         if (error instanceof HhcWebApiError && error.status === 401) {router.replace(`/${locale}`); return;}
@@ -256,12 +265,12 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
     } finally {
       if (!controller.signal.aborted) setPreparing(false);
     }
-  }, [selected, preparing, api, locale, router, resolveMissing, messages.playError]);
+  }, [selected, preparing, api, locale, router, resolveMissing, messages.playError,mediaOrigin,mediaDuration]);
 
   useEffect(() => {
-    if (!recordingId || !selected || liveLoading || selectedLive || automaticAttempt.current === selected.id) return;
+    if (!recordingId || !selected || selectedLive || waitingWatch || resolver.denied || automaticAttempt.current === selected.id) return;
     void start();
-  }, [recordingId, selected, liveLoading, selectedLive, start]);
+  }, [recordingId, selected, selectedLive, waitingWatch, resolver.denied, start]);
 
   const renew = useCallback(async (current: ActivePlayback, signal: AbortSignal) => {
     const grant = await api.grant(current.recordingId, current.scopeId, current.grant.packageId, signal);
@@ -330,14 +339,14 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
   }, [api, locale, messages.playError, messages.expired, playback, recordings, renew, resolveMissing, router]);
 
   const mediaError = useCallback((bookmark?:PlayerBookmark) => {
-    if(!bookmarkFrozen.current){if(bookmark)vodBookmark.current=bookmark;bookmarkFrozen.current=true;}
+    if(!bookmarkFrozen.current){if(bookmark)vodBookmark.current={...bookmark,mediaOriginSeconds:mediaOrigin??0};bookmarkFrozen.current=true;}
     video.current?.pause();
     setPlayError(messages.playError);
     if (!mediaFailureReported.current) {
       mediaFailureReported.current = true;
       captureHandledError(new Error('Member video media playback failed'), {operation: 'member-videos.media'});
     }
-  }, [messages.playError]);
+  }, [messages.playError,mediaOrigin]);
 
   const selectedIndex = recordings?.findIndex(item => item.id === selectedId) ?? -1;
   const previousRecording = selectedIndex > 0 ? recordings?.[selectedIndex - 1] : undefined;
@@ -358,15 +367,16 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
         <section className={`${zoneStyles.zone} ${recordingId ? zoneStyles.watch : searchMode ? zoneStyles.search : zoneStyles.library}`} aria-label={messages.listTitle}>
           {searchMode ? <h1 className={zoneStyles.searchHeading}>{searchLabels.results.replace('{query}',query)}</h1>:null}
           {invalidQuery&&view==='list' ? <div role="alert" className="text-ink">{searchLabels.tooLong} <Link href={videoSearchHref(locale,'')} className="underline">{searchLabels.clear}</Link></div>:null}
-          {!loadError && recordings && recordingId && !selected && !selectedLive && !liveLoading ? <p role="alert" className="text-ink">{messages.unavailable ?? messages.expired}</p> : null}
-          {loadError ? <div role="alert" className="rounded-[14px] border border-panel-border bg-panel p-7 text-center text-ink">{messages.loadError}<button type="button" className="ml-4 min-h-11 rounded-full border border-[var(--hhc-control-border)] px-5 font-semibold" onClick={() => setRetry((value) => value + 1)}>{messages.retry}</button></div> : null}
-          {!invalidQuery && !loadError && !recordings ? <p role="status" className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{messages.loading}</p> : null}
-          {!loadError && recordings?.length === 0 && nextCursor===null && !livestreams.length && !selectedLive ? <p className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{searchMode ? <>{searchLabels.empty.replace('{query}',query)} <Link href={videoSearchHref(locale,'')} className="underline">{searchLabels.clear}</Link></> : messages.empty}</p> : null}
-          {liveError?<p role="status" className="text-sm text-muted">{messages.loadError}</p>:null}
-          {recordingId&&selectedLive?<LiveRecordingPlayer key={selectedLive.captureId} api={api} recording={selectedLive} labels={messages} liveLabels={messages.live??englishLiveLabels} locale={locale} onVod={selected?.packageId===selectedLive.captureId?async bookmark=>{
-            if(await start(bookmark)){vodChosen.current=true;setSelectedLive(null);return true;}return false;
+          {recordingId && resolver.denied ? <p role="alert" className="text-ink">{messages.unavailable ?? messages.expired}</p> : null}
+          {(loadError || recordingId && resolver.error && !resolver.denied) && !watch ? <div role="alert" className="rounded-[14px] border border-panel-border bg-panel p-7 text-center text-ink">{messages.loadError}<button type="button" className="ml-4 min-h-11 rounded-full border border-[var(--hhc-control-border)] px-5 font-semibold" onClick={() => setRetry((value) => value + 1)}>{messages.retry}</button></div> : null}
+          {!invalidQuery && !loadError && !resolver.error && (recordingId ? !watch : !recordings) ? <p role="status" className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{messages.loading}</p> : null}
+          {!loadError && recordings?.length === 0 && nextCursor===null && !livestreams.length && !selectedLive && !watch && !upcomingOnly && (view!=='list'||Boolean(query)||upcomingPresent===false) ? <p className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{searchMode ? <>{searchLabels.empty.replace('{query}',query)} <Link href={videoSearchHref(locale,'')} className="underline">{searchLabels.clear}</Link></> : messages.empty}</p> : null}
+          {liveError&&!watch?<p role="status" className="text-sm text-muted">{messages.loadError}</p>:null}
+          {waitingWatch&&!selectedLive?<BroadcastWaitingPanel watch={waitingWatch} locale={locale} api={api}/>:null}
+          {recordingId&&selectedLive&&!resolver.denied?<LiveRecordingPlayer key={selectedLive.captureId} api={api} recording={selectedLive} labels={messages} liveLabels={messages.live??englishLiveLabels} locale={locale} mediaOriginSeconds={mediaOrigin??0} onVod={selected?.packageId===selectedLive.captureId?async bookmark=>{
+            if(await start(bookmark)){setVodChosen(true);setSelectedLive(null);return true;}return false;
           }:undefined}/>:null}
-          {selected && !selectedLive ? <div ref={playerSection} className={`${zoneStyles.video} grid min-w-0 scroll-mt-28 gap-4`}>
+          {selected && !selectedLive && !waitingWatch && !resolver.denied ? <div ref={playerSection} className={`${zoneStyles.video} grid min-w-0 scroll-mt-28 gap-4`}>
             {playback?.recordingId === selected.id ? <HlsPlayer key={playback.url} resume={vodResume} poster={poster} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} previousHref={previousRecording ? cardLink(previousRecording.id) : undefined} nextHref={nextRecording ? cardLink(nextRecording.id) : undefined} onError={mediaError} onBookmark={rememberVod}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {poster?<img src={poster} alt={selected.title} width={1280} height={720} className="absolute inset-0 h-full w-full object-contain"/>:null}
@@ -377,17 +387,18 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
             {selected.description?<details className="rounded-xl bg-panel p-4 text-ink"><summary className="min-h-11 cursor-pointer font-semibold focus-visible:outline-2 focus-visible:outline-primary">{messages.description}</summary><p className="whitespace-pre-wrap break-words">{selected.description}</p></details>:null}
             {playError ? <p role="alert" className="text-sm text-primary">{playError} <button type="button" className="underline" onClick={() => void start(vodBookmark.current)}>{messages.retry}</button></p> : null}
           </div> : null}
-          {liveItems.length>0||visibleItems.length>0 ? <div className={zoneStyles.results}>
+          {liveItems.length>0||visibleItems.length>0||view==='list'&&!searchMode ? <div className={zoneStyles.results}>
             {recordingId ? <h2 className="sr-only">{messages.otherVideos??messages.listTitle}</h2>:null}
             <div className={recordingId ? zoneStyles.recommendations : searchMode ? zoneStyles.searchList : zoneStyles.grid}>
-              {liveItems.map(item=><article id={`recording-${item.id}`} key={item.captureId} className={zoneStyles.card}>
+              {!upcomingOnly&&liveItems.map(item=><article id={`recording-${item.id}`} key={item.captureId} className={zoneStyles.card}>
                 <Link href={cardLink(item.id)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
                   <LiveRecordingCover api={api} recording={item}/>
                   <span className={`${zoneStyles.badge} ${item.liveState==='live'?zoneStyles.liveBadge:zoneStyles.stateBadge}`}>{liveBadge(item)}</span>
                 </Link>
                 <div className={zoneStyles.info}><h3 className={zoneStyles.title}><Link href={cardLink(item.id)} aria-label={`${item.title} — ${liveBadge(item)}`}>{item.title}</Link></h3><p className={zoneStyles.date}>{(messages.liveStartedDate??'{date}').replace('{date}',formatDate(item.createdAt,locale))}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}</div>
               </article>)}
-              {visibleItems.map(item=><article id={`recording-${item.id}`} key={item.id} className={zoneStyles.card}>
+              {view==='list'&&!searchMode?<UpcomingBroadcasts api={api} locale={locale} onPresenceChange={setUpcomingPresent} full={upcomingOnly} loadMoreLabel={messages.loadMore??'Load more'} loading={messages.loading} retry={messages.retry}/>:null}
+              {!upcomingOnly&&visibleItems.map(item=><article id={`recording-${item.id}`} key={item.id} className={zoneStyles.card}>
                 <Link href={cardLink(item.id)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
                   <RecordingCover api={api} id={item.id} title={item.title} expiresAt={item.expiresAt} revision={item.selectedCoverId}/>
                   {item.durationSeconds ? <span className={zoneStyles.duration}>{playerClock(item.durationSeconds)}</span>:null}
@@ -397,7 +408,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
                 </div>
               </article>)}
             </div>
-            {view==='list' ? <LoadMoreTrigger hasMore={nextCursor!==null} loading={moreLoading} error={moreError} onLoadMore={loadMore} labels={{loadMore:messages.loadMore??'Load more',loading:messages.loading,retry:messages.retry}}/>:null}
+            {view==='list'&&!upcomingOnly ? <LoadMoreTrigger hasMore={nextCursor!==null} loading={moreLoading} error={moreError} onLoadMore={loadMore} labels={{loadMore:messages.loadMore??'Load more',loading:messages.loading,retry:messages.retry}}/>:null}
           </div>:view==='list'&&nextCursor!==null ? <LoadMoreTrigger hasMore loading={moreLoading} error={moreError} onLoadMore={loadMore} labels={{loadMore:messages.loadMore??'Load more',loading:messages.loading,retry:messages.retry}}/>:null}
         </section>
       </div>

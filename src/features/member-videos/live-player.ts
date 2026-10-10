@@ -1,5 +1,5 @@
 export type PlaybackIntent = 'followLive' | 'dvr';
-export type PlayerBookmark = {time: number; paused: boolean; rate: number; quality: 'auto' | '480p' | '720p' | '1080p'; intent: PlaybackIntent};
+export type PlayerBookmark = {mediaOriginSeconds?: number; time: number; paused: boolean; rate: number; quality: 'auto' | '480p' | '720p' | '1080p'; intent: PlaybackIntent};
 export type LivePlayerState = {verifiedEnd: number; canFollow: boolean; label: string; backToLive: string; liveLabel?: string};
 
 export function estimatedLiveDelay(createdAt:string,serverNow:string,elapsedSeconds:number,position:number,stoppedAt?:string|null) {
