@@ -1,5 +1,5 @@
 import {createHhcWebClient, type OnlineBulletinAccess, type BulletinReaderMutation} from '@hallelujahhomechurch/hhc-web-client';
-import {requireBulletinRenderer, BULLETIN_RENDERER_V2_ASSETS, BULLETIN_RENDERER_V7_ASSETS, type BulletinRenderableDocument} from '@hallelujahhomechurch/ui';
+import {requireBulletinRenderer, readBulletinTemplateSnapshot, BULLETIN_RENDERER_V2_ASSETS, BULLETIN_RENDERER_V7_ASSETS, type BulletinRenderableDocument} from '@hallelujahhomechurch/ui';
 import type {BulletinLocale, BulletinSeries} from '@hallelujahhomechurch/preferences';
 import {createProtectedFetch} from '@/features/weekly/api';
 import assets from '../../../public/assets/weekly/v1/manifest.json';
@@ -19,12 +19,14 @@ export function verifyReaderAccess(value: OnlineBulletinAccess, expected: Reader
       !access.receiptId || !access.traceCode || !Number.isFinite(Date.parse(access.validatedAt)) ||
       Date.parse(access.offlineValidUntil) - Date.parse(access.validatedAt) !== 604800000) throw new Error('invalid_reader_binding');
   requireBulletinRenderer(content.layoutManifest);
+  if(content.layoutManifest.rendererVersion==='v9')readBulletinTemplateSnapshot(content.templateSnapshot);
+  else if(content.templateSnapshot!==undefined)throw new Error('update_required');
   const templateVersion=document.contentLocale==='zh-Hant'?'v1':document.contentLocale==='zh-Hans'?'v2':null;
   if (document.series !== 'general' || !templateVersion || content.schemaVersion !== '1' || content.templateVersion !== templateVersion ||
       !hash.test(content.layoutManifest.contentHash ?? '') || !hash.test(content.layoutManifest.layoutValidationHash ?? '') ||
       !Number.isInteger(content.printedBodyPageCount) || content.printedBodyPageCount < 2 || content.printedBodyPageCount > 38 ||
       !content.pages.length || content.pages.length > 80 || content.layoutManifest.pages.length !== content.pages.length) throw new Error('update_required');
-  const v7Fonts = content.layoutManifest.rendererVersion === 'v7' || content.layoutManifest.rendererVersion === 'v8';
+  const v7Fonts = ['v7','v8','v9'].includes(content.layoutManifest.rendererVersion);
   const knownAssets = templateVersion === 'v2'
     ? [...BULLETIN_RENDERER_V2_ASSETS, ...(v7Fonts ? BULLETIN_RENDERER_V7_ASSETS.filter(asset => asset.kind === 'font' && (asset.roles?.includes('body') || asset.roles?.includes('emphasis'))) : [])]
     : v7Fonts ? BULLETIN_RENDERER_V7_ASSETS : assets.assets;

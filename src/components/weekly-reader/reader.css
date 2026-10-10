@@ -67,7 +67,7 @@
 .weekly-reader .hhc-bulletin-v1[data-bulletin-mode='paper'] [data-body-canonical-art] [data-sentence-id] { text-shadow: none; }
 .weekly-reader .hhc-bulletin-v1[data-bulletin-mode='paper'] [data-fixed-element='masthead'] { text-shadow: none; }
 .weekly-reader .hhc-bulletin-v1[data-bulletin-mode='paper'] :is([data-fixed-element='announcementsFrame'], [data-fixed-element='prayersFrame']) {border-width: 1pt; border-style: solid; outline: none; box-sizing: border-box;}
-.weekly-reader [data-reader-renderer]:not([data-reader-renderer='v8']) .hhc-bulletin-v1[data-bulletin-mode='paper'] [data-fixed-element='issueNumber']::before { content: '\00a0'; }
+.weekly-reader [data-reader-renderer]:not([data-reader-renderer='v8']):not([data-reader-renderer='v9']) .hhc-bulletin-v1[data-bulletin-mode='paper'] [data-fixed-element='issueNumber']::before { content: '\00a0'; }
 .reader-paper-with-notes { position: relative; margin-inline: auto; }
 .reader-range-layer { position: absolute; inset: 0; pointer-events: none; z-index: 1; mix-blend-mode: multiply; }
 .reader-range-layer span { position: absolute; border-radius: 2px; }
