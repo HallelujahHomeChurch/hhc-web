@@ -30,6 +30,12 @@ function verifyMediaRequest(master:string,target:string) {
 export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels,videoRef,onPlayingChange,onError,poster,previousHref,nextHref,playbackMode='vod',live,resume,onBookmark}:Props) {
   const container=useRef<HTMLDivElement>(null), engine=useRef<Hls|null>(null);
   const qualitySwitch=useRef<AbortController|null>(null);
+  const heldFrame=useRef<HTMLCanvasElement|null>(null);
+  const [holdingFrame,setHoldingFrame]=useState(false);
+  const clearHeldFrame=useCallback(()=>{
+    const canvas=heldFrame.current;if(canvas){canvas.width=0;canvas.height=0;}
+    setHoldingFrame(false);
+  },[]);
   const qualityPosition=useRef<Pick<PlayerBookmark,'time'|'paused'|'rate'>|null>(null);
   const [autoplayBlocked,setAutoplayBlocked]=useState(false);
   const [mode,setMode]=useState<'loading'|'mse'|'native'|'error'>('loading');
@@ -59,8 +65,8 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
     const video=videoRef.current;
     const position=qualityPosition.current??{time:video?.currentTime??0,paused:pausedIntent.current,rate:video?.playbackRate??1};
     const bookmark=positioned.current||qualityPosition.current?{...position,quality:qualityRef.current,intent:intent.current}:initialBookmark.current;
-    failed.current=true;qualitySwitch.current?.abort();setMode('error');onError(bookmark);
-  },[onError,videoRef]);
+    failed.current=true;qualitySwitch.current?.abort();clearHeldFrame();setMode('error');onError(bookmark);
+  },[onError,videoRef,clearHeldFrame]);
 
   useEffect(()=>{
     const video=videoRef.current;
@@ -99,10 +105,10 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
       } else handleError();
     }).catch(()=>{if(!cancelled)handleError();});
     return ()=>{
-      cancelled=true;closing.current=true;qualitySwitch.current?.abort();qualityPosition.current=null;video.removeEventListener('loadedmetadata',autoplay);
+      cancelled=true;closing.current=true;qualitySwitch.current?.abort();qualityPosition.current=null;clearHeldFrame();video.removeEventListener('loadedmetadata',autoplay);
       engine.current?.destroy();engine.current=null;video.pause();video.removeAttribute('src');video.load();
     };
-  },[playbackUrl,videoRef,handleError,playbackMode]);
+  },[playbackUrl,videoRef,handleError,playbackMode,clearHeldFrame]);
 
   useEffect(()=>{
     const video=videoRef.current;if(!video)return;
@@ -125,21 +131,32 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
       }
     };
     const seeking=()=>{if(!positioned.current||closing.current||qualityPosition.current||automaticSeek.current!==null)return;dvr();};
-    const seeked=()=>{automaticSeek.current=null;};
+    const revealFrame=()=>{
+      if(!qualityPosition.current&&!video.seeking&&video.readyState>=2)clearHeldFrame();
+    };
+    const seeked=()=>{automaticSeek.current=null;revealFrame();};
     const resolution=()=>{if(!engine.current)setActiveHeight(video.videoHeight>0?video.videoHeight:null);};
     const paused=()=>{if(!closing.current&&!failed.current&&!video.error&&positioned.current&&!qualityPosition.current){pausedIntent.current=true;dvr();}};
     const online=()=>position();
-    const events:[string,()=>void][]=[['loadedmetadata',position],['progress',position],['durationchange',position],['canplay',position],['seeking',seeking],['seeked',seeked],['pause',paused],['timeupdate',position],['timeupdate',remember],['ratechange',remember],['play',remember],['loadedmetadata',resolution],['resize',resolution]];
+    const events:[string,()=>void][]=[['loadedmetadata',position],['progress',position],['durationchange',position],['canplay',position],['seeking',seeking],['seeked',seeked],['loadeddata',revealFrame],['canplay',revealFrame],['playing',revealFrame],['pause',paused],['timeupdate',position],['timeupdate',remember],['ratechange',remember],['play',remember],['loadedmetadata',resolution],['resize',resolution]];
     for(const [event,handler] of events)video.addEventListener(event,handler);
     window.addEventListener('online',online);
     if(playbackMode==='live')position();
     return()=>{for(const [event,handler] of events)video.removeEventListener(event,handler);window.removeEventListener('online',online);};
-  },[playbackUrl,playbackMode,videoRef,remember,dvr,live?.verifiedEnd,live?.canFollow]);
+  },[playbackUrl,playbackMode,videoRef,remember,dvr,live?.verifiedEnd,live?.canFollow,clearHeldFrame]);
 
   const changeQuality=(next:Quality)=>{
     const video=videoRef.current;
     if(!video || (next!=='auto'&&!qualities.includes(next)))return;
     const preservePosition=()=>{
+      // Keep pixels in memory while the rendition reload would expose the poster.
+      const canvas=heldFrame.current;
+      if(canvas&&!holdingFrame&&video.readyState>=2&&video.videoWidth&&video.videoHeight){
+        try{
+          const context=canvas.getContext('2d');
+          if(context){canvas.width=video.videoWidth;canvas.height=video.videoHeight;context.drawImage(video,0,0,canvas.width,canvas.height);setHoldingFrame(true);}
+        }catch{clearHeldFrame();}
+      }
       qualitySwitch.current?.abort();
       const controller=new AbortController();qualitySwitch.current=controller;
       const previous=qualityPosition.current ?? {time:video.currentTime,paused:video.paused,rate:video.playbackRate};
@@ -173,6 +190,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
   return <div ref={container} tabIndex={0} role="region" aria-label={`${title} — ${labels.togglePlayback}`} className={styles.player}>
     <video ref={videoRef} poster={poster} playsInline preload="metadata" controlsList="nodownload noremoteplayback" disablePictureInPicture disableRemotePlayback crossOrigin="use-credentials" aria-label={title} className="h-full w-full object-contain"
       onPlay={()=>{pausedIntent.current=false;setAutoplayBlocked(false);}} onError={handleError}/>
+    <canvas ref={heldFrame} hidden={!holdingFrame} aria-hidden="true" className={styles.heldFrame}/>
     <PlayerChrome container={container} videoRef={videoRef} playbackUrl={playbackUrl} watermark={watermark} labels={labels} quality={quality} activeHeight={activeHeight} qualities={qualities} previousHref={previousHref} nextHref={nextHref} autoplayBlocked={autoplayBlocked} loading={mode==='loading'} failed={mode==='error'} onQualityChange={changeQuality} onPlaybackChange={value=>{if(value.paused!==undefined)pausedIntent.current=value.paused;if(qualityPosition.current)Object.assign(qualityPosition.current,value);}} onPlayingChange={onPlayingChange} live={playbackMode==='live'?live:undefined} onDvr={dvr} onReturnToLive={returnToLive}/>
   </div>;
 }

@@ -750,3 +750,42 @@ it('disables quality choices if media fails while the submenu is open',async()=>
 it('cancels a pending desktop surface click when its pointer is cancelled',async()=>{
  const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));const video=p.videoRef.current!,surface=screen.getByRole('button',{name:'Play or pause'});vi.mocked(video.play).mockClear();vi.useFakeTimers();fireEvent.click(surface,{detail:1});fireEvent.pointerCancel(surface);await act(()=>vi.advanceTimersByTimeAsync(550));expect(video.play).not.toHaveBeenCalled();
 });
+
+it.each([false,true])('holds the decoded frame through quality reload until the restored frame is ready (native=%s)',async(native)=>{
+ engine.supported=!native;
+ if(native)vi.spyOn(HTMLMediaElement.prototype,'canPlayType').mockReturnValue('probably');
+ const drawImage=vi.fn();vi.spyOn(HTMLCanvasElement.prototype,'getContext').mockReturnValue({drawImage} as unknown as CanvasRenderingContext2D);
+ const ready=vi.spyOn(HTMLMediaElement.prototype,'readyState','get').mockReturnValue(2);
+ const p=props(),view=render(<HlsPlayer {...p} poster="blob:cover"/>);
+ if(native)await waitFor(()=>expect(p.videoRef.current!.src).toBe(url));else await waitFor(()=>expect(engine.instances).toHaveLength(1));
+ const video=p.videoRef.current!;video.currentTime=81;video.playbackRate=1.5;
+ chooseQuality('1080p');
+ const frame=view.container.querySelector('canvas')!;
+ expect(frame).toBeVisible();expect(drawImage).toHaveBeenCalledWith(video,0,0,1920,1080);
+ ready.mockReturnValue(1);fireEvent.loadedMetadata(video);
+ expect(video.currentTime).toBe(81);expect(video.playbackRate).toBe(1.5);expect(frame).toBeVisible();
+ ready.mockReturnValue(2);fireEvent.seeked(video);
+ expect(frame).not.toBeVisible();expect(frame.width).toBe(0);
+});
+it('keeps the same held frame during rapid quality changes, but clears it on failure',async()=>{
+ const drawImage=vi.fn();vi.spyOn(HTMLCanvasElement.prototype,'getContext').mockReturnValue({drawImage} as unknown as CanvasRenderingContext2D);
+ const ready=vi.spyOn(HTMLMediaElement.prototype,'readyState','get').mockReturnValue(2);
+ const p=props(),view=render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));
+ chooseQuality('1080p');ready.mockReturnValue(0);chooseQuality('720p');
+ const frame=view.container.querySelector('canvas')!;expect(frame).toBeVisible();expect(drawImage).toHaveBeenCalledOnce();
+ act(()=>engine.instances[0].listeners.error('error',{fatal:true}));expect(frame).not.toBeVisible();expect(frame.width).toBe(0);
+});
+it('still switches quality if the browser cannot capture a frame',async()=>{
+ vi.spyOn(HTMLMediaElement.prototype,'readyState','get').mockReturnValue(2);
+ vi.spyOn(HTMLCanvasElement.prototype,'getContext').mockImplementation(()=>{throw new Error('Unavailable')});
+ const p=props(),view=render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));
+ chooseQuality('1080p');expect(engine.instances[0].recoverMediaError).toHaveBeenCalledOnce();expect(view.container.querySelector('canvas')).not.toBeVisible();expect(p.onError).not.toHaveBeenCalled();
+});
+it('discards the held frame when the media source changes',async()=>{
+ vi.spyOn(HTMLMediaElement.prototype,'readyState','get').mockReturnValue(2);
+ vi.spyOn(HTMLCanvasElement.prototype,'getContext').mockReturnValue({drawImage:vi.fn()} as unknown as CanvasRenderingContext2D);
+ const p=props(),view=render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));
+ chooseQuality('1080p');expect(view.container.querySelector('canvas')).toBeVisible();
+ view.rerender(<HlsPlayer {...p} playbackUrl={url.replace('/sessions/s/','/sessions/next/')}/>);
+ expect(view.container.querySelector('canvas')).not.toBeVisible();expect(view.container.querySelector('canvas')!.width).toBe(0);
+});
