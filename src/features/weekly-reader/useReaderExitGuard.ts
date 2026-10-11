@@ -17,7 +17,8 @@ export function useReaderExitGuard({hasUnsavedNote, beforeLeave, messages: m}: {
     if (active.current) setPrompt(null);
   }, []);
   const confirmLeave = useCallback((kind: Kind) => {
-    if (pending.current) return pending.current.promise;
+    // Only the first caller owns navigation; a second source must not also leave.
+    if (pending.current) return Promise.resolve(false);
     let resolve!: (allowed: boolean) => void;
     const promise = new Promise<boolean>(finish => {resolve = finish;});
     pending.current = {promise, resolve, confirmed: false};

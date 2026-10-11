@@ -22,7 +22,7 @@ export function NoteIndicators({root, notes, layoutKey, label, onOpen, mobile = 
           const range = note.ranges?.find(range => range.sentenceId === anchor.dataset.sentenceId);
           if (range && (Number(anchor.dataset.fragmentStart) >= range.end || Number(anchor.dataset.fragmentEnd) <= range.start)) continue;
           const block = anchor.closest<HTMLElement>('[data-block-id]');
-          const boundary = (block?.matches('p,h2,h3,li,blockquote') ? block : block?.closest<HTMLElement>('p,h2,h3,li,blockquote')) ?? anchor.closest<HTMLElement>('p,h2,h3,li,blockquote') ?? anchor.closest<HTMLElement>('[data-component-id]');
+          const boundary = anchor.closest<HTMLElement>('.hhc-ebook-body-heading,.hhc-ebook-song-heading') ?? (block?.matches('p,h2,h3,li,blockquote') ? block : block?.closest<HTMLElement>('p,h2,h3,li,blockquote')) ?? anchor.closest<HTMLElement>('p,h2,h3,li,blockquote') ?? anchor.closest<HTMLElement>('section[data-component-id],div[data-component-id]');
           if (!boundary || !element.contains(boundary) || boundary.parentElement?.closest('[data-sentence-id]')) continue;
           const ids = groups.get(boundary) ?? new Set<string>(); ids.add(note.id); groups.set(boundary, ids);
         }

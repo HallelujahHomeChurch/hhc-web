@@ -110,7 +110,7 @@ function AuthorizedReader(props: Props & {accountId: string; readerTheme: Return
 function ReaderExitDialog({exit, theme}: {exit: ReturnType<typeof useReaderExitGuard>; theme: 'light' | 'dark'}) {
   return <AlertDialog {...exit.dialogProps} description={<span ref={node => {
     const overlay = node?.closest<HTMLElement>('.hhc-modal-overlay');
-    if (overlay) {overlay.dataset.theme = theme; overlay.style.colorScheme = theme;}
+    if (overlay) {overlay.dataset.readerExit = ''; overlay.dataset.theme = theme; overlay.style.colorScheme = theme;}
   }}>{exit.dialogProps.description}</span>}/>;
 }
 

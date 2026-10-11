@@ -23,9 +23,21 @@ it('cancel never calls cleanup or flush and concurrent exit requests share one d
   const {result} = renderHook(() => useReaderExitGuard({hasUnsavedNote: () => true, beforeLeave, messages}));
   let first!: Promise<boolean>, second!: Promise<boolean>;
   act(() => {first = result.current.confirmLeave('home'); second = result.current.confirmLeave('back');});
-  expect(second).toBe(first); expect(result.current.dialogProps.description).toContain(messages.noteDiscardConfirm);
+  expect(result.current.dialogProps.description).toContain(messages.noteDiscardConfirm);
   act(() => result.current.dialogProps.onOpenChange?.(false));
-  expect(await first).toBe(false); expect(beforeLeave).not.toHaveBeenCalled();
+  expect(await first).toBe(false); expect(await second).toBe(false); expect(beforeLeave).not.toHaveBeenCalled();
+});
+it('home owns its confirmation when browser back arrives before confirm', async () => {
+  const model = historyModel(); const beforeLeave = vi.fn().mockResolvedValue(true);
+  const {result} = renderHook(() => useReaderExitGuard({hasUnsavedNote: () => false, beforeLeave, messages}));
+  let home!: Promise<boolean>;
+  act(() => {home = result.current.confirmLeave('home');});
+  await act(async () => model.back());
+  await act(async () => result.current.dialogProps.onConfirm());
+  expect(await home).toBe(true);
+  expect(beforeLeave).toHaveBeenCalledOnce();
+  expect(model.go.mock.calls.filter(([delta]) => delta === -2)).toHaveLength(0);
+  expect(model.current().__hhcReaderExit).toMatchObject({position: 'guard'});
 });
 it('confirmed back leaves once to original destination, cancel restores the same entry without pushes', async () => {
   const model = historyModel(); const beforeLeave = vi.fn().mockResolvedValue(true);

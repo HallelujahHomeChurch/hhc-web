@@ -6,6 +6,17 @@ import {NoteIndicators} from './NoteIndicators';
 import {renderedTextRanges} from '@/features/weekly-reader/text-range';
 
 afterEach(cleanup);
+it('mobile heading notes stay after the whole flex heading, not between title and speaker', async () => {
+  const root = createRef<HTMLDivElement>();
+  const notes = [{id: 'heading', sentenceIds: ['title', 'speaker', 'song'], deleted: false}] as BulletinReaderNote[];
+  const {container} = render(<div ref={root}><section data-component-id="c"><div className="hhc-ebook-body-heading" style={{display: 'flex'}}><h2 data-block-id="title"><span data-sentence-id="title">Title</span></h2><span data-component-id="speaker"><span data-sentence-id="speaker">～ Speaker</span></span></div><div className="hhc-ebook-song-heading" style={{display: 'flex'}}><h3><span data-sentence-id="song">Song</span></h3><span>Source</span></div></section><NoteIndicators root={root} notes={notes} layoutKey="mobile" label="Notes" onOpen={() => {}} mobile/></div>);
+  await waitFor(() => expect(screen.getAllByRole('button')).toHaveLength(2));
+  for (const group of container.querySelectorAll('.hhc-ebook-body-heading,.hhc-ebook-song-heading')) {
+    expect(group.querySelector('.reader-note-row')).toBeNull();
+    expect(group.nextElementSibling).toHaveClass('reader-note-row');
+  }
+  expect(container.querySelector('[data-sentence-id="speaker"]')).toHaveTextContent('～ Speaker');
+});
 it('mobile notes share a paragraph row without changing sentence text or exact ranges', async () => {
   const root = createRef<HTMLDivElement>(), onOpen = vi.fn();
   const notes = [{id: 'a', sentenceIds: ['s1'], ranges: [{sentenceId: 's1', start: 1, end: 3}], deleted: false}, {id: 'b', sentenceIds: ['s2'], deleted: false}] as BulletinReaderNote[];
