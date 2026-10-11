@@ -6,7 +6,7 @@ import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
 
 const state = vi.hoisted(() => ({access: 'loading', auth: 'checking'}));
 const list = vi.hoisted(() => vi.fn());
-const videoApi = vi.hoisted(() => ({watch:vi.fn(),upcoming:vi.fn(),broadcastCover:vi.fn(),listPage:vi.fn(),liveList:vi.fn().mockResolvedValue([]),cover:vi.fn(),list: vi.fn(), grant: vi.fn(), exchange: vi.fn(), clear: vi.fn().mockResolvedValue(undefined)}));
+const videoApi = vi.hoisted(() => ({watch:vi.fn(),upcoming:vi.fn(),broadcastCover:vi.fn(),liveCover:vi.fn(),listPage:vi.fn(),liveList:vi.fn().mockResolvedValue([]),cover:vi.fn(),list: vi.fn(), grant: vi.fn(), exchange: vi.fn(), clear: vi.fn().mockResolvedValue(undefined)}));
 const liveSession = vi.hoisted(()=>({playback:null,closed:false,pending:false,error:false,start:vi.fn(),remember:vi.fn(),bookmark:{current:undefined}}));
 vi.mock('./useLivePlayback',()=>({useLivePlayback:()=>liveSession}));
 const router = vi.hoisted(() => ({replace: vi.fn(),push:vi.fn()}));
@@ -55,6 +55,7 @@ beforeEach(() => {
   });
   videoApi.upcoming.mockReset().mockResolvedValue({items:[],nextCursor:null});
   videoApi.broadcastCover.mockReset().mockRejectedValue(new Error('No cover'));
+  videoApi.liveCover.mockReset().mockRejectedValue(new Error('No cover'));
   videoApi.grant.mockReset().mockImplementation(()=>new Promise(()=>{})); videoApi.exchange.mockReset();
   videoApi.cover.mockReset().mockRejectedValue(new Error('No cover'));
   HTMLElement.prototype.scrollIntoView = vi.fn();
@@ -207,6 +208,19 @@ describe('member video gate', () => {
     expect(await screen.findByRole('link',{name:'Recovering stream — Live'})).toBeVisible();
     expect(screen.queryByText('Catching up')).not.toBeInTheDocument();
   });
+  it.each(['list','search','recommendation','poster'] as const)('renders authenticated live JPEG on the %s surface',async(surface)=>{
+    state.auth='authenticated';state.access='available';
+    vi.spyOn(URL,'createObjectURL').mockReturnValue('blob:live-jpeg');
+    vi.spyOn(URL,'revokeObjectURL').mockImplementation(()=>{});
+    const live={id:'live',captureId:packageId,title:'Live gathering',liveState:'live',createdAt:new Date().toISOString(),coverRevision:'frame-one',progress:{mediaEndSeconds:120}};
+    videoApi.liveList.mockResolvedValue([live]);
+    videoApi.liveCover.mockResolvedValue(new Blob(['private jpeg'],{type:'image/jpeg'}));
+    list.mockResolvedValue(surface==='recommendation'?[{id:'vod',title:'Previous gathering',packageId}]:[]);
+    render(<MemberVideoZone locale="en" messages={messages} hero={null} view="list" query={surface==='search'?'gathering':''} recordingId={surface==='recommendation'?'vod':surface==='poster'?'live':undefined}/>);
+    expect(await screen.findByAltText('Live gathering')).toHaveAttribute('src','blob:live-jpeg');
+    expect(videoApi.liveCover).toHaveBeenCalledWith('live',packageId,expect.any(AbortSignal));
+    expect(videoApi.broadcastCover).not.toHaveBeenCalled();
+  });
   it('puts livestreams in the same grid before recordings and removes duplicate VOD cards',async()=>{
     state.auth='authenticated';state.access='available';
     const live={id:'r1',captureId:'a'.repeat(32),title:'Sunday live',liveState:'live',createdAt:'2026-10-07T00:00:00Z',stopAcceptedAt:null,progress:{revision:1,firstSequence:0,lastSequence:3,mediaEndSeconds:120,lastAdvancedAt:'2026-10-07T00:02:00Z',endedAt:null,ended:false}};
@@ -281,11 +295,12 @@ describe('member video gate', () => {
     render(<MemberVideoZone locale="en" messages={messages} hero={null}/>);
     fireEvent.click(await screen.findByRole('button',{name:'Play'}));
     const video=await screen.findByLabelText('Sunday');
-    fireEvent.error(video); fireEvent.error(video);
+    Object.defineProperty(video,'error',{configurable:true,value:{code:3,message:'Decode failed'}});fireEvent.error(video); fireEvent.error(video);
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
     expect(captureHandledError).toHaveBeenCalledExactlyOnceWith(new Error('Member video media playback failed'), {operation:'member-videos.media'});
     fireEvent.click(screen.getByRole('button',{name:'Retry'}));
-    fireEvent.error(await screen.findByLabelText('Sunday'));
+    const retried=await screen.findByLabelText('Sunday');
+    Object.defineProperty(retried,'error',{configurable:true,value:{code:3,message:'Decode failed'}});fireEvent.error(retried);
     expect(captureHandledError).toHaveBeenCalledTimes(2);
   });
   it('allows another play after changing selection during a pending grant', async () => {
@@ -515,7 +530,7 @@ it.each([0,240])('retries VOD at its frozen position with media origin %s',async
  render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);
  const video=await screen.findByLabelText('Meeting') as HTMLVideoElement;await waitFor(()=>expect(video).toHaveAttribute('src',playbackUrl));
  Object.defineProperty(video,'duration',{configurable:true,value:7200});fireEvent.loadedMetadata(video);video.currentTime=2820;video.playbackRate=1.5;Object.defineProperty(video,'paused',{configurable:true,value:false});fireEvent.play(video);fireEvent.timeUpdate(video);
- fireEvent.error(video);video.currentTime=0;fireEvent.pause(video);fireEvent.timeUpdate(video);vi.mocked(video.play).mockClear();
+ Object.defineProperty(video,'error',{configurable:true,value:{code:3,message:'Decode failed'}});fireEvent.error(video);video.currentTime=0;fireEvent.pause(video);fireEvent.timeUpdate(video);vi.mocked(video.play).mockClear();
  fireEvent.click(screen.getByRole('button',{name:'Retry'}));const resumed=await screen.findByLabelText('Meeting') as HTMLVideoElement;
  await waitFor(()=>expect(videoApi.grant).toHaveBeenCalledTimes(2));fireEvent.loadedMetadata(resumed);
  expect(resumed.currentTime).toBe(2820);expect(resumed.playbackRate).toBe(1.5);expect(resumed.play).toHaveBeenCalled();
@@ -523,7 +538,7 @@ it.each([0,240])('retries VOD at its frozen position with media origin %s',async
 
 it('attempts playback again after an initial media failure without an invented pause',async()=>{
  state.auth='authenticated';state.access='available';list.mockResolvedValue([{id:'r1',title:'Initial failure',packageId}]);vi.spyOn(HTMLMediaElement.prototype,'canPlayType').mockReturnValue('probably');videoApi.grant.mockResolvedValue({packageId,expiresAt:new Date(Date.now()+3600000).toISOString(),watermarkCode:'TRACE',renditions:[]});videoApi.exchange.mockResolvedValue(playbackUrl);
- render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);const video=await screen.findByLabelText('Initial failure',{selector:'video'}) as HTMLVideoElement;await waitFor(()=>expect(video.src).toBe(playbackUrl));fireEvent.error(video);fireEvent.click(screen.getByRole('button',{name:'Retry'}));await waitFor(()=>expect(videoApi.grant).toHaveBeenCalledTimes(2));await waitFor(()=>expect(screen.getByLabelText('Initial failure',{selector:'video'})).not.toBe(video));const resumed=screen.getByLabelText('Initial failure',{selector:'video'}) as HTMLVideoElement;await waitFor(()=>expect(resumed.src).toBe(playbackUrl));vi.mocked(resumed.play).mockClear();fireEvent.loadedMetadata(resumed);expect(resumed.play).toHaveBeenCalledOnce();
+ render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);const video=await screen.findByLabelText('Initial failure',{selector:'video'}) as HTMLVideoElement;await waitFor(()=>expect(video.src).toBe(playbackUrl));Object.defineProperty(video,'error',{configurable:true,value:{code:3,message:'Decode failed'}});fireEvent.error(video);fireEvent.click(screen.getByRole('button',{name:'Retry'}));await waitFor(()=>expect(videoApi.grant).toHaveBeenCalledTimes(2));await waitFor(()=>expect(screen.getByLabelText('Initial failure',{selector:'video'})).not.toBe(video));const resumed=screen.getByLabelText('Initial failure',{selector:'video'}) as HTMLVideoElement;await waitFor(()=>expect(resumed.src).toBe(playbackUrl));vi.mocked(resumed.play).mockClear();fireEvent.loadedMetadata(resumed);expect(resumed.play).toHaveBeenCalledOnce();
 });
 
 it('starts a fresh search page after opening a result without restoring list depth or scroll',async()=>{
@@ -580,4 +595,31 @@ it('plays an authoritative direct VOD while unrelated indexes never respond',asy
  videoApi.grant.mockResolvedValue({packageId,watermarkCode:'trace',expiresAt:new Date(Date.now()+3600000).toISOString()});videoApi.exchange.mockResolvedValue(playbackUrl);
  render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);
  expect(await screen.findByLabelText('Direct VOD')).toHaveAttribute('src',playbackUrl);
+});
+
+it('retains a paused non-1x DVR origin through pending End projection and VOD handoff',async()=>{
+ state.auth='authenticated';state.access='available';
+ const live={id:'r1',captureId:packageId,title:'End DVR',liveState:'live',createdAt:'2026-10-10T00:00:00Z',progress:{mediaEndSeconds:1800}};
+ const base={recordingId:'r1',title:'Broadcast',scheduledAt:null,serverNow:'2026-10-10T02:00:00Z',stateRevision:1,mediaStartSeconds:300,durationSeconds:1500};
+ videoApi.watch.mockResolvedValue({...base,view:'live',live,recording:null});
+ Object.assign(liveSession,{playback:{url:playbackUrl,grant:{liveState:'live',serverNow:base.serverNow,watermarkCode:'trace',progress:live.progress}}});
+ liveSession.remember.mockImplementation(value=>Object.assign(liveSession.bookmark,{current:value}));
+ videoApi.grant.mockResolvedValue({packageId,watermarkCode:'trace',expiresAt:new Date(Date.now()+3600000).toISOString()});videoApi.exchange.mockResolvedValue(playbackUrl);
+ try {
+  render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);
+  const video=await screen.findByLabelText('End DVR',{selector:'video'}) as HTMLVideoElement;
+  await waitFor(()=>expect(video.src).toBe(playbackUrl));
+  Object.defineProperty(video,'seekable',{configurable:true,value:{length:1,start:()=>0,end:()=>1500}});
+  fireEvent.loadedMetadata(video);fireEvent.seeked(video);
+  act(()=>{video.currentTime=1000;video.playbackRate=1.5;fireEvent.pause(video);fireEvent.timeUpdate(video);});
+  videoApi.watch.mockResolvedValue({...base,view:'processing',mediaStartSeconds:null,durationSeconds:null,live:null,recording:null});
+  await act(async()=>fireEvent(document,new Event('visibilitychange')));
+  fireEvent.timeUpdate(video);
+  videoApi.watch.mockResolvedValue({...base,view:'vod',live:null,recording:{id:'r1',title:'Final recording',packageId}});
+  await act(async()=>fireEvent(document,new Event('visibilitychange')));
+  fireEvent.click(await screen.findByRole('button',{name:'Continue with the published recording'}));
+  const vod=await screen.findByLabelText('Final recording',{selector:'video'}) as HTMLVideoElement;
+  await waitFor(()=>expect(vod.src).toBe(playbackUrl));fireEvent.loadedMetadata(vod);
+  expect(vod.currentTime).toBe(1000);expect(vod.playbackRate).toBe(1.5);expect(vod.paused).toBe(true);
+ } finally {liveSession.playback=null;liveSession.remember.mockReset();}
 });

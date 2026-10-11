@@ -373,7 +373,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
           {!loadError && recordings?.length === 0 && nextCursor===null && !livestreams.length && !selectedLive && !watch && !upcomingOnly && (view!=='list'||Boolean(query)||upcomingPresent===false) ? <p className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{searchMode ? <>{searchLabels.empty.replace('{query}',query)} <Link href={videoSearchHref(locale,'')} className="underline">{searchLabels.clear}</Link></> : messages.empty}</p> : null}
           {liveError&&!watch?<p role="status" className="text-sm text-muted">{messages.loadError}</p>:null}
           {waitingWatch&&!selectedLive?<BroadcastWaitingPanel watch={waitingWatch} locale={locale} api={api}/>:null}
-          {recordingId&&selectedLive&&!resolver.denied?<LiveRecordingPlayer key={selectedLive.captureId} api={api} recording={selectedLive} labels={messages} liveLabels={messages.live??englishLiveLabels} locale={locale} mediaOriginSeconds={mediaOrigin??0} onVod={selected?.packageId===selectedLive.captureId?async bookmark=>{
+          {recordingId&&selectedLive&&!resolver.denied?<LiveRecordingPlayer key={selectedLive.captureId} api={api} recording={selectedLive} labels={messages} liveLabels={messages.live??englishLiveLabels} locale={locale} mediaOriginSeconds={mediaOrigin} onVod={selected?.packageId===selectedLive.captureId?async bookmark=>{
             if(await start(bookmark)){setVodChosen(true);setSelectedLive(null);return true;}return false;
           }:undefined}/>:null}
           {selected && !selectedLive && !waitingWatch && !resolver.denied ? <div ref={playerSection} className={`${zoneStyles.video} grid min-w-0 scroll-mt-28 gap-4`}>
