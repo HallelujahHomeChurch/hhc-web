@@ -15,6 +15,7 @@
 .reader-tab > a { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: .75rem; font-size: .875rem; }
 .reader-tab h1 { display: inline; font-size: inherit; font-weight: 600; }
 .reader-tabbar .hhc-icon-button { flex: none; width: 44px; min-height: 44px; padding: .5rem; border: 0; background: transparent; }
+.hhc-modal-overlay[data-reader-exit] button { min-width: 44px; min-height: 44px; }
 .reader-icon-control { display: inline-flex; flex: none; }
 .reader-topbar .reader-zoom-controls { flex-wrap: nowrap; gap: 0; }
 .reader-zoom-controls output { min-width: 3.5rem; text-align: center; font-size: .8rem; font-variant-numeric: tabular-nums; }
