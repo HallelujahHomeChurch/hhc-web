@@ -82,3 +82,15 @@ it('only calls a closed session expired when its authoritative deadline was reac
  session.expired=true;view.rerender(<LiveRecordingPlayer {...props}/>);
  expect(screen.getAllByText(englishLiveLabels.expired)).toHaveLength(2);
 });
+
+it.each(['pending','zero','capture','recording','remount'] as const)('scopes the last known projection origin across %s',change=>{
+ const props={mediaOriginSeconds:300,api:{},recording:{id:'r',captureId:'a'.repeat(32),title:'Gathering',liveState:'ended',progress:{mediaEndSeconds:1800}},labels:{play:'Play',retry:'Retry',playError:'Error',loading:'Loading'},liveLabels:englishLiveLabels,locale:'en'} as unknown as ComponentProps<typeof LiveRecordingPlayer>;
+ const view=render(<LiveRecordingPlayer {...props}/>);
+ fireEvent.click(screen.getByRole('button',{name:'Advance playback'}));
+ if(change==='zero')view.rerender(<LiveRecordingPlayer {...props} mediaOriginSeconds={0}/>);
+ const recording={...props.recording,...(change==='capture'?{captureId:'b'.repeat(32)}:change==='recording'?{id:'other'}:{})};
+ if(change==='remount'){view.unmount();render(<LiveRecordingPlayer {...props} mediaOriginSeconds={null}/>);}
+ else view.rerender(<LiveRecordingPlayer {...props} recording={recording} mediaOriginSeconds={null}/>);
+ fireEvent.click(screen.getByRole('button',{name:'Advance playback'}));
+ expect(session.remember).toHaveBeenLastCalledWith(expect.objectContaining({mediaOriginSeconds:change==='pending'?300:0}));
+});

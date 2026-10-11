@@ -16,8 +16,13 @@ export const englishLiveLabels:LiveLabels={liveNow:'Live',starting:'Preparing li
 
 export function liveViewerLabel(state:MemberLiveRecording['liveState'],labels:LiveLabels){return state==='live'||state==='recovering'?labels.liveNow??labels.live:labels[state];}
 
-type Props={mediaOriginSeconds?:number;api:ReturnType<typeof createMemberVideoApi>;recording:MemberLiveRecording;labels:PlayerLabels&{retry:string;playError:string;loading:string;description:string};liveLabels:LiveLabels;locale:string;onVod?:(bookmark:PlayerBookmark|undefined)=>Promise<boolean>};
-export function LiveRecordingPlayer({api,recording,labels,liveLabels,locale,onVod,mediaOriginSeconds=0}:Props){
+type Props={mediaOriginSeconds?:number|null;api:ReturnType<typeof createMemberVideoApi>;recording:MemberLiveRecording;labels:PlayerLabels&{retry:string;playError:string;loading:string;description:string};liveLabels:LiveLabels;locale:string;onVod?:(bookmark:PlayerBookmark|undefined)=>Promise<boolean>};
+export function LiveRecordingPlayer({api,recording,labels,liveLabels,locale,onVod,mediaOriginSeconds:projectionOrigin=0}:Props){
+ const [origin,setOrigin]=useState({recordingId:recording.id,captureId:recording.captureId,seconds:projectionOrigin??0});
+ const sameCapture=origin.recordingId===recording.id&&origin.captureId===recording.captureId;
+ const mediaOriginSeconds=projectionOrigin??(sameCapture?origin.seconds:0);
+ // Pending End projections omit the origin; the mounted capture keeps its coordinates.
+ if(!sameCapture||origin.seconds!==mediaOriginSeconds)setOrigin({recordingId:recording.id,captureId:recording.captureId,seconds:mediaOriginSeconds});
  const awaitingMedia=recording.liveState==='starting'&&recording.progress.lastSequence<2;
  const session=useLivePlayback(api,recording.id,recording.captureId,awaitingMedia),video=useRef<HTMLVideoElement>(null);
  const [mediaError,setMediaError]=useState(false),[playerRevision,setPlayerRevision]=useState(0),[switching,setSwitching]=useState(false);

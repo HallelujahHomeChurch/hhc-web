@@ -596,3 +596,30 @@ it('plays an authoritative direct VOD while unrelated indexes never respond',asy
  render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);
  expect(await screen.findByLabelText('Direct VOD')).toHaveAttribute('src',playbackUrl);
 });
+
+it('retains a paused non-1x DVR origin through pending End projection and VOD handoff',async()=>{
+ state.auth='authenticated';state.access='available';
+ const live={id:'r1',captureId:packageId,title:'End DVR',liveState:'live',createdAt:'2026-10-10T00:00:00Z',progress:{mediaEndSeconds:1800}};
+ const base={recordingId:'r1',title:'Broadcast',scheduledAt:null,serverNow:'2026-10-10T02:00:00Z',stateRevision:1,mediaStartSeconds:300,durationSeconds:1500};
+ videoApi.watch.mockResolvedValue({...base,view:'live',live,recording:null});
+ Object.assign(liveSession,{playback:{url:playbackUrl,grant:{liveState:'live',serverNow:base.serverNow,watermarkCode:'trace',progress:live.progress}}});
+ liveSession.remember.mockImplementation(value=>Object.assign(liveSession.bookmark,{current:value}));
+ videoApi.grant.mockResolvedValue({packageId,watermarkCode:'trace',expiresAt:new Date(Date.now()+3600000).toISOString()});videoApi.exchange.mockResolvedValue(playbackUrl);
+ try {
+  render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);
+  const video=await screen.findByLabelText('End DVR',{selector:'video'}) as HTMLVideoElement;
+  await waitFor(()=>expect(video.src).toBe(playbackUrl));
+  Object.defineProperty(video,'seekable',{configurable:true,value:{length:1,start:()=>0,end:()=>1500}});
+  fireEvent.loadedMetadata(video);fireEvent.seeked(video);
+  act(()=>{video.currentTime=1000;video.playbackRate=1.5;fireEvent.pause(video);fireEvent.timeUpdate(video);});
+  videoApi.watch.mockResolvedValue({...base,view:'processing',mediaStartSeconds:null,durationSeconds:null,live:null,recording:null});
+  await act(async()=>fireEvent(document,new Event('visibilitychange')));
+  fireEvent.timeUpdate(video);
+  videoApi.watch.mockResolvedValue({...base,view:'vod',live:null,recording:{id:'r1',title:'Final recording',packageId}});
+  await act(async()=>fireEvent(document,new Event('visibilitychange')));
+  fireEvent.click(await screen.findByRole('button',{name:'Continue with the published recording'}));
+  const vod=await screen.findByLabelText('Final recording',{selector:'video'}) as HTMLVideoElement;
+  await waitFor(()=>expect(vod.src).toBe(playbackUrl));fireEvent.loadedMetadata(vod);
+  expect(vod.currentTime).toBe(1000);expect(vod.playbackRate).toBe(1.5);expect(vod.paused).toBe(true);
+ } finally {liveSession.playback=null;liveSession.remember.mockReset();}
+});
