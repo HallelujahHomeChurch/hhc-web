@@ -79,7 +79,10 @@
 .reader-recovery-text[data-sentence-selection] { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .reader-document[data-mobile] .hhc-bulletin-ebook [data-selected],
 .reader-recovery-text[data-sentence-selection] [data-selected] { outline: none; background: #4bb4ff40; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
-.reader-paper-with-notes[data-has-notes] { padding-inline-end: 44px; }
+.reader-document:not([data-mobile]) .reader-paper-with-notes[data-has-notes] { padding-inline-end: 44px; }
+.reader-note-row {display: flex; justify-content: end; margin-block: 4px 8px;}
+.reader-note-row-icon {display: inline-flex; align-items: center; gap: 4px;}
+.weekly-reader .reader-note-row button {width: 44px; height: 44px; padding: 8px; border: 0; color: var(--hhc-text-muted); background: transparent;}
 .reader-note-indicator { position: absolute; inset-inline-end: 0; width: 44px; min-height: 44px; color: var(--hhc-text); background: var(--hhc-surface-raised); border-radius: .5rem; }
 .reader-sync-status { max-width: 75rem; margin: .5rem auto; font-size: .8rem; color: var(--hhc-text-muted); }
 .reader-document[data-notes-panel] { display: grid; grid-template-columns: minmax(640px, 1fr) 360px; column-gap: 24px; align-items: start; }
