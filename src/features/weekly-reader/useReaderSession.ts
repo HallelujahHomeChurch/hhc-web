@@ -28,12 +28,15 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
     receipt.current = value.access.receiptId;
   }, []);
   const blocked = useRef(false);
+  const validationPending = useRef(false);
   const retry = useCallback(() => setAttempt(value => value + 1), []);
   useEffect(() => {
     const controller = new AbortController();
+    validationPending.current = true;
     const bound = {accountId, issueNumber, series, contentLocale};
     const refresh = () => {
-      if (document.visibilityState === 'hidden' || blocked.current) return;
+      if (document.visibilityState === 'hidden' || blocked.current || validationPending.current) return;
+      validationPending.current = true;
       requestId.current = null;
       setState(previous => ({...previous, validating: true, error: null})); retry();
     };
@@ -88,8 +91,10 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
           setState({value: retained.save.value, offline: true, error: null});
         } else setState({value: null, offline: false, error: failure instanceof Error && failure.message === 'update_required' ? 'updateRequired' : 'unavailable'});
       }
-    })().catch(() => {if (!controller.signal.aborted) setState({value: null, offline: false, error: 'unavailable'});});
+    })().catch(() => {if (!controller.signal.aborted) setState({value: null, offline: false, error: 'unavailable'});})
+      .finally(() => {if (!controller.signal.aborted) validationPending.current = false;});
     return () => {
+      validationPending.current = false;
       controller.abort(); stop(); stopEdition(); window.removeEventListener('online', refresh); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh);
     };
   }, [api, accountId, issueNumber, series, contentLocale, attempt, retry, observeValidation]);

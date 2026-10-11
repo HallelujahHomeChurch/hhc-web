@@ -1,9 +1,17 @@
 import {act, renderHook} from '@testing-library/react';
 import {afterEach, expect, it, vi} from 'vitest';
 import {readerFixture} from './test-fixture';
-import {useReaderProgress} from './progress';
+import {flushReaderProgressBeforeExit, useReaderProgress} from './progress';
 
 afterEach(() => vi.useRealTimers());
+it('confirmed exit stops waiting after two seconds and late flush completion never navigates again', async () => {
+  vi.useFakeTimers(); let finish!: () => void;
+  const flush = vi.fn(() => new Promise<void>(resolve => {finish = resolve;})), navigate = vi.fn();
+  const request = flushReaderProgressBeforeExit(flush).then(navigate);
+  await vi.advanceTimersByTimeAsync(1999); expect(navigate).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(1); await request; expect(navigate).toHaveBeenCalledOnce();
+  finish(); await vi.advanceTimersByTimeAsync(0); expect(navigate).toHaveBeenCalledOnce(); expect(flush).toHaveBeenCalledOnce();
+});
 it('records settled navigation once, flushes on hiding, and does not overwrite progress merely by opening the cover', async () => {
   vi.useFakeTimers();
   const commit = vi.fn().mockResolvedValue(undefined);

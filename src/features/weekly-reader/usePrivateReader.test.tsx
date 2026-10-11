@@ -13,7 +13,7 @@ const mutation: BulletinReaderMutation = {mutationId: 'id', documentRevision: 1,
 const api = {privateState: vi.fn(), mutate: vi.fn(), renew: vi.fn()};
 const onFailure = vi.fn();
 beforeEach(() => {vi.resetAllMocks(); sessionStorage.clear(); api.privateState.mockResolvedValue({state});});
-it('shows highlights optimistically, rolls back failed writes, and reuses the original mutation for retry', async () => {
+it.each(['network', 'reader_request_timeout'])('shows highlights optimistically, rolls back %s writes, and reuses the original mutation for retry', async failure => {
   let reject!: (error: unknown) => void;
   api.mutate.mockImplementationOnce(() => new Promise((_resolve, fail) => {reject = fail;}));
   const {result} = renderHook(() => usePrivateReader({api, selector, value, offline: false, allowAction: () => true, onFailure}));
@@ -21,7 +21,7 @@ it('shows highlights optimistically, rolls back failed writes, and reuses the or
   let request!: Promise<unknown>;
   act(() => {request = result.current.mutate(mutation);});
   await waitFor(() => expect(result.current.state?.highlights[0].color).toBe('yellow'));
-  await act(async () => {reject(new TypeError('network')); await request.catch(() => {});});
+  await act(async () => {reject(new TypeError(failure)); await request.catch(() => {});});
   expect(result.current.state?.highlights).toEqual([]);
   api.mutate.mockResolvedValue({state, results: [{mutationId: 'id', status: 'applied', revision: 1}]});
   await act(async () => {await result.current.mutate({...mutation, mutationId: 'new-attempt'});});

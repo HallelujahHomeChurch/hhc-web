@@ -6,7 +6,7 @@ import {useScrollChrome} from '@/components/layout/useScrollChrome';
 import {isIPhoneDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 import {ReaderTypography, readTypography, type Typography} from './ReaderTypography';
 import {useReaderTheme} from './useReaderTheme';
-import {BulletinEbook, bulletinChapters, bulletinChapterForAnchor, bulletinMobileDetails, Button, ReaderWatermark} from '@hallelujahhomechurch/ui';
+import {AlertDialog, BulletinEbook, bulletinChapters, bulletinChapterForAnchor, bulletinMobileDetails, Button, ReaderWatermark} from '@hallelujahhomechurch/ui';
 import {ReaderIconButton as IconButton} from './ReaderIconButton';
 import type {OnlineBulletinAccess, BulletinReaderMutation, BulletinReaderNote} from '@hallelujahhomechurch/hhc-web-client';
 import type {BulletinLocale, BulletinSeries} from '@hallelujahhomechurch/preferences';
@@ -18,6 +18,7 @@ import {isWeeklyReaderEnabled} from '@/features/weekly-reader/enabled';
 import {getOfflineIdentity, supportsOfflineReader} from '@/features/weekly-reader/offline-store';
 import {watchOfflineAccount} from '@/features/weekly-reader/offline-session';
 import {useReaderSession} from '@/features/weekly-reader/useReaderSession';
+import {useReaderSearchNavigation} from '@/features/weekly-reader/useReaderSearchNavigation';
 import {usePrivateReader} from '@/features/weekly-reader/usePrivateReader';
 import {readerSentences} from '@/features/weekly-reader/selection';
 import {rangeQuote, renderedTextRanges, type ReaderTextRange} from '@/features/weekly-reader/text-range';
@@ -25,7 +26,8 @@ import {selectedHighlight} from '@/features/weekly-reader/highlight-selection';
 import {useReaderSelection} from '@/features/weekly-reader/useReaderSelection';
 import {copySentences, copyTextRanges} from '@/features/weekly-reader/copy';
 import {RangeHighlights} from './RangeHighlights';
-import {useReaderProgress} from '@/features/weekly-reader/progress';
+import {flushReaderProgressBeforeExit, useReaderProgress} from '@/features/weekly-reader/progress';
+import {useReaderExitGuard} from '@/features/weekly-reader/useReaderExitGuard';
 import {NoteIndicators} from './NoteIndicators';
 import {readReaderReturn, saveReaderReturn} from '@/features/weekly-reader/return-state';
 import type {Locale} from '@/i18n/locales';
@@ -37,6 +39,7 @@ import {usePaperGestures} from '@/features/weekly-reader/usePaperGestures';
 import {readPaperView, writePaperView} from '@/features/weekly-reader/workspace';
 import {SectionNavigator} from './SectionNavigator';
 import {ReaderSearch} from './ReaderSearch';
+import {ReaderLoading} from './ReaderLoading';
 import {OfflineControl} from './OfflineControl';
 import {SelectionToolbar} from './SelectionToolbar';
 import {NoteEditor, type NoteSave, type NoteEditorState} from './NoteEditor';
@@ -78,7 +81,7 @@ export function WeeklyReader(props: Props) {
   return <main className="weekly-reader" data-theme={readerTheme.theme} style={{colorScheme: readerTheme.theme}}>
     {!permitted && !(savedAccount && offlineAccount === savedAccount) ? <a className="reader-back" href={`/${props.locale}/literature-ministry`}>{m.back}</a> : null}
     {permitted || savedAccount && offlineAccount === savedAccount ? <AuthorizedReader key={`${savedAccount}:${props.issueNumber}:${props.series}:${props.contentLocale}`} {...props} accountId={savedAccount!} readerTheme={readerTheme}/> :
-      <section className="reader-status" role="status"><h1>{m.title}</h1><p>{!enabled ? m.unavailable : auth.status === 'anonymous' ? m.signInRequired : auth.status === 'checking' || access.status === 'loading' ? m.loading : m.unavailable}</p>{enabled && auth.status === 'anonymous' ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}</section>}
+      enabled && (auth.status === 'checking' || access.status === 'loading') ? <ReaderLoading label={m.loading}/> : <section className="reader-status" role="status"><h1>{m.title}</h1><p>{!enabled ? m.unavailable : auth.status === 'anonymous' ? m.signInRequired : m.unavailable}</p>{enabled && auth.status === 'anonymous' ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}</section>}
   </main>;
 }
 
@@ -90,15 +93,31 @@ function AuthorizedReader(props: Props & {accountId: string; readerTheme: Return
   const {accountId, issueNumber, series, contentLocale} = props;
   const selector = {accountId, issueNumber, series, contentLocale};
   const session = useReaderSession(api, selector);
-  const guard = (event: React.SyntheticEvent) => {if (!session.allowAction()) {event.preventDefault(); event.stopPropagation();}};
+  const guard = (event: React.SyntheticEvent) => {
+    if (event.target instanceof Element && event.target.closest('[data-reader-exit]')) return;
+    if (!session.allowAction()) {event.preventDefault(); event.stopPropagation();}
+  };
   if (session.value) return <>
-    {session.validating ? <p role="status">{m.loading}</p> : null}
-    <div hidden={session.validating} inert={session.validating} onClickCapture={guard} onKeyDownCapture={guard} onPointerDownCapture={guard} onCopyCapture={guard}>
+    {session.validating ? <ReaderLoading label={m.loading} overlay/> : null}
+    <div aria-hidden={session.validating || undefined} inert={session.validating} onClickCapture={guard} onKeyDownCapture={guard} onPointerDownCapture={guard} onCopyCapture={guard}>
     {session.offline ? <p role="status">{m.offlineNotice}</p> : null}
     {session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}
     <ReaderDocument readerTheme={props.readerTheme} key={`${session.value.document.documentId}:${session.value.document.revision}`} value={session.value} selector={selector} messages={m} api={api} offline={session.offline} allowAction={session.allowAction} onFailure={session.privateFailure} onUpdated={session.acceptSaved} suspended={!!session.validating} backHref={`/${props.locale}/literature-ministry`} offlineControl={<OfflineControl api={api} value={session.value} selector={selector} locale={props.locale} messages={m} onSaved={session.acceptSaved} onFailure={session.privateFailure}/>}/>
   </div></>;
-  return <><ReaderTabs accountId={accountId} locale={props.locale} current={props} messages={m}/><section className="reader-status" role={session.error ? 'alert' : 'status'}><h1>{m.title}</h1><p>{session.error ? m[session.error] : m.loading}</p>{session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}{session.error ? <button type="button" onClick={session.retry}>{m.retry}</button> : null}</section></>;
+  return <ReaderSessionStatus props={props} session={session} signIn={signIn}/>;
+}
+
+function ReaderExitDialog({exit, theme}: {exit: ReturnType<typeof useReaderExitGuard>; theme: 'light' | 'dark'}) {
+  return <AlertDialog {...exit.dialogProps} description={<span ref={node => {
+    const overlay = node?.closest<HTMLElement>('.hhc-modal-overlay');
+    if (overlay) {overlay.dataset.readerExit = ''; overlay.dataset.theme = theme; overlay.style.colorScheme = theme;}
+  }}>{exit.dialogProps.description}</span>}/>;
+}
+
+function ReaderSessionStatus({props, session, signIn}: {props: Props & {accountId: string; readerTheme: ReturnType<typeof useReaderTheme>}; session: ReturnType<typeof useReaderSession>; signIn: ReturnType<typeof useAccountSignIn>}) {
+  const m = props.messages;
+  const exit = useReaderExitGuard({hasUnsavedNote: () => false, beforeLeave: async () => true, messages: m});
+  return <><ReaderTabs accountId={props.accountId} locale={props.locale} current={props} messages={m} beforeLeave={() => exit.confirmLeave('home')}/>{session.error ? <section className="reader-status" role="alert"><h1>{m.title}</h1><p>{m[session.error]}</p>{session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}<button type="button" onClick={session.retry}>{m.retry}</button></section> : <ReaderLoading label={m.loading}/>}<ReaderExitDialog exit={exit} theme={props.readerTheme.theme}/></>;
 }
 
 function ReaderDocument({value, selector, messages: m, api, offline, allowAction, onFailure, onUpdated, suspended, backHref, offlineControl, readerTheme}: {readerTheme: ReturnType<typeof useReaderTheme>; value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages; api: ReturnType<typeof createReaderApi>; offline: boolean; allowAction: () => boolean; onFailure: (error: unknown) => void; onUpdated: (value: OnlineBulletinAccess) => void; suspended: boolean; backHref: string; offlineControl: ReactNode}) {
@@ -139,11 +158,12 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const editingNote = typeof notes === 'object' && notes ? notes : notes === 'restore' ? privateReader.state?.notes.find(note => note.id === returned?.draft?.noteId) : undefined;
   const noteAnchors = editingNote ? editingNote.sentenceIds : selected;
   const noteQuote = editingNote ? editingNote.quote : selection.ranges ? rangeQuote(selection.ranges, sentences) : sentences.filter(sentence => selected.includes(sentence.id)).map(sentence => sentence.text).join('\n');
+  function hasUnsavedNote() {return !!(notes && notes !== 'list' && noteEditorState && noteEditorState.draft.text !== (editingNote?.text ?? ''));}
+  function cleanupNotes() {setNotes(null); setDeletion(null); setReanchor(null); setNoteEditorState(undefined);}
   function closeNotes() {
     if (privateReader.busy) return false;
-    const original = editingNote?.text ?? '';
-    if (notes && notes !== 'list' && noteEditorState && noteEditorState.draft.text !== original && !window.confirm(m.noteDiscardConfirm)) return false;
-    setNotes(null); setDeletion(null); setReanchor(null); setNoteEditorState(undefined);
+    if (hasUnsavedNote() && !window.confirm(m.noteDiscardConfirm)) return false;
+    cleanupNotes();
     requestAnimationFrame(() => (noteButton.current ?? notesButton.current)?.focus());
     return true;
   }
@@ -222,6 +242,9 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     setPanel(null);
     if (restoreFocus) requestAnimationFrame(() => panelTrigger.current?.focus({preventScroll: true}));
   }
+  const jumpFromSearch = useReaderSearchNavigation({root: chromeRef, open: panel === 'search', suspended, offline,
+    binding: `${selector.accountId}:${value.document.documentId}:${value.document.revision}`,
+    allowAction, onJump: id => {onAnchor({kind: 'sentence', id}); closePanel(false);}});
   useEffect(() => {
     if (!panel) return;
     chromeRef.current?.querySelector<HTMLElement>(panel === 'search' ? '.reader-search input' : '.reader-navigation-panel:not([hidden]) > header button')?.focus({preventScroll: true});
@@ -235,6 +258,8 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const chapterHeading = useRef<HTMLDivElement>(null);
   const [nativeZoomed, setNativeZoomed] = useState(false);
   const [fontsReady, setFontsReady] = useState(() => !globalThis.document?.fonts);
+  const [fontsFailed, setFontsFailed] = useState(false);
+  const [fontAttempt, setFontAttempt] = useState(0);
   const [viewport, setViewport] = useState({width: 900, height: 700});
   const viewportRef = useRef<HTMLDivElement>(null);
   const [typography, setTypography] = useState(readTypography);
@@ -294,10 +319,14 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     return true;
   };
   useEffect(() => {
+    if (!globalThis.document.fonts) return;
     let active = true;
-    void globalThis.document.fonts?.ready.then(() => {if (active) setFontsReady(true);});
-    return () => {active = false;};
-  }, []);
+    const timer = setTimeout(() => {active = false; setFontsFailed(true);}, 20000);
+    void globalThis.document.fonts.ready.then(() => {
+      if (active) {clearTimeout(timer); setFontsReady(true);}
+    }, () => {if (active) {active = false; clearTimeout(timer); setFontsFailed(true);}});
+    return () => {active = false; clearTimeout(timer);};
+  }, [fontAttempt]);
   useEffect(() => {
     const root = documentRef.current;
     if (!root || typeof ResizeObserver === 'undefined') return;
@@ -307,9 +336,13 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   }, []);
   useEffect(() => {
     const visual = window.visualViewport;
-    const changed = () => setNativeZoomed((visual?.scale ?? 1) > 1);
-    changed(); visual?.addEventListener('resize', changed);
-    return () => visual?.removeEventListener('resize', changed);
+    const changed = () => {
+      setNativeZoomed((visual?.scale ?? 1) > 1);
+      chromeRef.current?.style.setProperty('--reader-panel-height', `${visual?.height ?? window.innerHeight}px`);
+      chromeRef.current?.style.setProperty('--reader-panel-top', `${visual?.offsetTop ?? 0}px`);
+    };
+    changed(); visual?.addEventListener('resize', changed); visual?.addEventListener('scroll', changed); window.addEventListener('resize', changed);
+    return () => {visual?.removeEventListener('resize', changed); visual?.removeEventListener('scroll', changed); window.removeEventListener('resize', changed);};
   }, []);
   useEffect(() => {
     const query = window.matchMedia('(max-width: 767px)');
@@ -409,6 +442,20 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     if (next !== page) setPage(next);
     recordProgress(document.pages[next].id, id);
   }
+  const exit = useReaderExitGuard({hasUnsavedNote, messages: m, beforeLeave: async () => {
+    const dirty = hasUnsavedNote();
+    if (allowAction()) {
+      recordVisiblePaper();
+      let visiblePage = active.id;
+      try {visiblePage = sessionStorage.getItem(storageKey) ?? active.id;} catch { /* Optional local progress. */ }
+      saveReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}, {revision: value.document.revision, pageId: visiblePage});
+      if (!privateReader.busy) await flushReaderProgressBeforeExit(flushProgress);
+    }
+    if (!documentRef.current) return false;
+    if (dirty && allowAction()) saveReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}, {draft: undefined});
+    cleanupNotes();
+    return true;
+  }});
   const observePaperPage = useEffectEvent(recordVisiblePaper);
   useEffect(() => {
     const root = viewportRef.current;
@@ -526,9 +573,10 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     const delta = keyboardPageDelta(event, !!window.getSelection()?.toString());
     if (!mobile && direction === 'horizontal' && delta) {event.preventDefault(); onPage(page + delta);}
   }}>
+    <ReaderExitDialog exit={exit} theme={theme}/>
     <div ref={chromeRef} className="reader-chrome">
       <div className="reader-chrome-controls" inert={!!panel}>
-      <ReaderTabs accountId={selector.accountId} locale={backHref.split('/')[1] as Locale} current={selector} title={value.document.canonicalMetadata.title} messages={m} beforeNavigate={async () => {
+      <ReaderTabs accountId={selector.accountId} locale={backHref.split('/')[1] as Locale} current={selector} title={value.document.canonicalMetadata.title} messages={m} beforeLeave={() => exit.confirmLeave('home')} beforeNavigate={async () => {
         if (!allowAction() || privateReader.busy || notes && !closeNotes()) return false;
         recordVisiblePaper();
         await flushProgress();
@@ -557,8 +605,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
         {panel === 'type' ? <ReaderTypography value={typography} onChange={changeTypography} messages={m}/> : null}
       </aside>
       <aside className="reader-navigation-panel reader-search-panel" role="dialog" aria-modal="true" data-panel="search" hidden={panel !== 'search'} aria-label={m.search}>
-        <header><IconButton variant="ghost" aria-label={m.close} onPress={() => closePanel()} icon={<ChevronLeft size={22} aria-hidden="true"/>}/></header>
-        <ReaderSearch document={value.document} mobile={mobile} onJump={id => {onAnchor({kind: 'sentence', id}); closePanel(false);}} messages={m}/>
+        <ReaderSearch document={value.document} mobile={mobile} onJump={jumpFromSearch} messages={m} closeControl={<IconButton variant="ghost" aria-label={m.close} onPress={() => closePanel()} icon={<ChevronLeft size={22} aria-hidden="true"/>}/>}/>
       </aside>
     </div>
     {value.document.metadataSyncPending ? <p role="status">{m.metadataPending}</p> : null}
@@ -592,13 +639,13 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       gesture.current = null;
       const delta = swipeDirection({...start, dx: event.clientX - start.x, dy: event.clientY - start.y, zoomed: zoomed || (window.visualViewport?.scale ?? 1) > 1, hasSelection: !!window.getSelection()?.toString()});
       if (!mobile && direction === 'horizontal' && delta) onPage(page + delta);
-    }}>
+  }}>
       {mobile && chapterIndex > 0 ? <div className="reader-chapter-boundary"><IconButton variant="ghost" aria-label={m.previous} isDisabled={suspended} onPress={() => onChapter(chapterIndex - 1)} icon={<ArrowUp size={20} aria-hidden="true"/>}/></div> : null}
-      {!fontsReady ? <p role="status">{m.loading}</p> : null}
-      <div ref={paperRef} className="reader-paper-with-notes" data-has-notes={hasNotes || undefined} aria-hidden={!fontsReady || undefined} style={{visibility: fontsReady ? 'visible' : 'hidden', width: mobile ? undefined : Math.max(...document.pages.map(entry => entry.width * 4 / 3 * pageScale(zoom, {width: entry.width * 4 / 3, height: entry.height * 4 / 3}, viewport))) + (hasNotes ? 44 : 0)}}>
+      {!fontsReady ? fontsFailed ? <div className="reader-font-error" role="alert"><p>{m.unavailable}</p><Button variant="secondary" onPress={() => {setFontsFailed(false); setFontAttempt(attempt => attempt + 1);}}>{m.retry}</Button></div> : <ReaderLoading label={m.loading} overlay/> : null}
+      <div ref={paperRef} className="reader-paper-with-notes" data-has-notes={hasNotes || undefined} inert={!fontsReady} aria-hidden={!fontsReady || undefined} style={{visibility: fontsReady ? 'visible' : 'hidden', width: mobile ? undefined : Math.max(...document.pages.map(entry => entry.width * 4 / 3 * pageScale(zoom, {width: entry.width * 4 / 3, height: entry.height * 4 / 3}, viewport))) + (hasNotes ? 44 : 0)}}>
       {mobile ? <div ref={chapterHeading} tabIndex={-1} role="group" aria-label={chapterLabels[chapter]} className="reader-watermarked" style={{"--reader-font-size": `${typography.size}px`, "--reader-line-height": typography.line} as React.CSSProperties}><BulletinEbook document={document} chapter={chapter} canonicalMetadata={value.document.canonicalMetadata} sentenceState={sentenceState} selectable={!notes && !suspended}/><ReaderWatermark traceCode={value.access.traceCode} tone={theme}/></div> :
         <PaperViewport document={document} metadata={value.document.canonicalMetadata} sentenceState={sentenceState} traceCode={value.access.traceCode} theme={theme} page={page} direction={direction} zoom={zoom} viewport={viewport}/>}
-      <NoteIndicators root={paperRef} notes={privateReader.state?.notes ?? []} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}:${typography.size}:${typography.line}:${direction}:${chapter}`} label={m.myNotes} onOpen={openNotesList}/>
+      <NoteIndicators root={paperRef} notes={privateReader.state?.notes ?? []} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}:${typography.size}:${typography.line}:${direction}:${chapter}`} label={m.myNotes} onOpen={openNotesList} mobile={mobile}/>
       <RangeHighlights root={paperRef} highlights={savedHighlights} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}:${typography.size}:${typography.line}:${direction}:${chapter}`} onSelect={mobile ? undefined : selectExisting}/>
       </div>
       {mobile && chapterIndex < chapters.length - 1 ? <div className="reader-chapter-boundary"><IconButton variant="ghost" aria-label={m.next} isDisabled={suspended} onPress={() => onChapter(chapterIndex + 1)} icon={<ArrowDown size={20} aria-hidden="true"/>}/></div> : null}

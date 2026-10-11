@@ -9,6 +9,25 @@ export type ReaderSelector = {accountId: string; issueNumber: number; series: Bu
 type Authorization = Parameters<typeof createProtectedFetch>[0];
 const hash = /^[0-9a-f]{64}$/;
 
+function withReaderDeadline<T>(operation: (signal: AbortSignal) => Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (signal?.aborted) return Promise.reject(signal.reason);
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout>;
+  let cancel!: () => void;
+  const interrupted = new Promise<never>((_resolve, reject) => {
+    cancel = () => {controller.abort(signal?.reason); reject(signal?.reason);};
+    signal?.addEventListener('abort', cancel, {once: true});
+    timer = setTimeout(() => {
+      const failure = new TypeError('reader_request_timeout');
+      controller.abort(failure); reject(failure);
+    }, 20000);
+  });
+  return Promise.race([interrupted, Promise.resolve().then(() => {
+    controller.signal.throwIfAborted();
+    return operation(controller.signal);
+  })]).finally(() => {clearTimeout(timer); signal?.removeEventListener('abort', cancel);});
+}
+
 export function verifyReaderAccess(value: OnlineBulletinAccess, expected: ReaderSelector): BulletinRenderableDocument {
   const {document, access} = value;
   const content = document.content;
@@ -48,29 +67,36 @@ export function createReaderApi(authorization: Authorization, fetcher = globalTh
   const client = createHhcWebClient({baseUrl: '/api', getAccessToken: () => null, fetcher: createProtectedFetch(authorization, fetcher)});
   return {
     async current(selector: ReaderSelector, previous: OnlineBulletinAccess, clientRequestId: string, signal?: AbortSignal) {
+      return withReaderDeadline(async signal => {
       verifyReaderAccess(previous, selector);
       const value = await client.openOnlineBulletin({issueId: previous.document.issueId, series: selector.series, locale: selector.contentLocale, clientRequestId, signal});
       signal?.throwIfAborted();
       verifyReaderAccess(value, selector);
       if (value.document.issueId !== previous.document.issueId || value.document.documentId !== previous.document.documentId || value.access.currentRevision !== value.access.revision || value.access.revision < previous.access.revision) throw new Error('invalid_reader_binding');
       return value;
+      }, signal);
     },
     async privateState(selector: ReaderSelector, value: OnlineBulletinAccess, signal?: AbortSignal) {
+      return withReaderDeadline(async signal => {
       verifyReaderAccess(value, selector);
       const response = await client.getReaderState({issueId: value.document.issueId, series: selector.series, locale: selector.contentLocale, fromRevision: value.document.revision, signal});
       signal?.throwIfAborted();
       verifyPrivateState(response.state, selector.accountId, value.document.documentId, value.document.revision);
       return response;
+      }, signal);
     },
     async mutate(selector: ReaderSelector, value: OnlineBulletinAccess, mutations: BulletinReaderMutation[], signal?: AbortSignal) {
+      return withReaderDeadline(async signal => {
       verifyReaderAccess(value, selector);
       const response = await client.applyReaderMutations({issueId: value.document.issueId, series: selector.series, locale: selector.contentLocale, mutations, signal});
       signal?.throwIfAborted();
       verifyPrivateState(response.state, selector.accountId, value.document.documentId, value.document.revision);
       if (response.results.length !== mutations.length || response.results.some((result, index) => result.mutationId !== mutations[index].mutationId)) throw new Error('invalid_reader_binding');
       return response;
+      }, signal);
     },
     async renew(selector: ReaderSelector, saved: OnlineBulletinAccess, clientRequestId: string, signal?: AbortSignal) {
+      return withReaderDeadline(async signal => {
       verifyReaderAccess(saved, selector);
       const value = await client.openOnlineBulletin({issueId: saved.document.issueId, series: selector.series, locale: selector.contentLocale,
         revision: saved.access.revision, receiptId: saved.access.receiptId, clientRequestId, signal});
@@ -78,8 +104,10 @@ export function createReaderApi(authorization: Authorization, fetcher = globalTh
       if (value.document.issueId !== saved.document.issueId || value.document.documentId !== saved.document.documentId || value.access.revision !== saved.access.revision) throw new Error('invalid_reader_binding');
       verifyReaderAccess(value, selector);
       return value;
+      }, signal);
     },
     async open(selector: ReaderSelector, request: {clientRequestId: string; revision?: number; receiptId?: string}, signal?: AbortSignal) {
+      return withReaderDeadline(async signal => {
       const found = await client.listOnlineBulletinDiscovery({series: selector.series, locale: selector.contentLocale, offset: 0, limit: 1, issueNumber: selector.issueNumber, signal});
       signal?.throwIfAborted();
       const edition = found.items.find(item => item.issueNumber === selector.issueNumber && item.series === selector.series && item.contentLocale === selector.contentLocale && item.onlineRevision);
@@ -89,6 +117,7 @@ export function createReaderApi(authorization: Authorization, fetcher = globalTh
       if (value.document.issueId !== edition.issueId) throw new Error('invalid_reader_binding');
       verifyReaderAccess(value, selector);
       return value;
+      }, signal);
     }
   };
 }
