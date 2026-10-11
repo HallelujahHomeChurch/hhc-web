@@ -50,7 +50,7 @@ function getPageValue(value: string | null) {
 function getPageHref(locale: Locale, series: BulletinSeries, page: number, mode: EntryMode) {
   const params = new URLSearchParams({series});
   if (page > 1) params.set('page', String(page));
-  if (mode === 'pdf') params.set('mode', mode);
+  if (mode === 'online') params.set('mode', mode);
   return `/${locale}/literature-ministry?${params}`;
 }
 
@@ -64,7 +64,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const readerEnabled = isWeeklyReaderEnabled();
-  const mode: EntryMode = readerEnabled && searchParams.get('mode') !== 'pdf' ? 'online' : 'pdf';
+  const mode: EntryMode = readerEnabled && searchParams.get('mode') === 'online' ? 'online' : 'pdf';
   const availableSeries = useMemo(() => (['general', 'children'] as const).filter((value) => editions.some((edition) => edition.series === value)), [editions]);
   const requestedSeries = searchParams.get('series');
   const series = availableSeries.includes(requestedSeries as BulletinSeries) ? requestedSeries as BulletinSeries : availableSeries[0];
@@ -192,8 +192,8 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
         {availableSeries.length > 1 ? <nav aria-label={messages.eyebrow} className="mt-5 inline-flex rounded-full border border-panel-border bg-panel p-1">{availableSeries.map((value) => <a key={value} aria-current={series === value ? 'page' : undefined} className={`inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${series === value ? 'bg-primary text-primary-foreground' : 'text-muted hover:text-ink'}`} href={getPageHref(locale, value, 1, mode)}>{value === 'general' ? messages.general : messages.children}</a>)}</nav> : null}
       </header>
       <Tabs label={messages.archiveTitle} selectedKey={mode} onSelectionChange={(key) => router.replace(getPageHref(locale, series, page, key === 'pdf' ? 'pdf' : 'online'), {scroll: false})} items={[
-        ...(readerEnabled ? [{id: 'online', label: messages.readOnline, content: content('online')}] : []),
-        {id: 'pdf', label: getMessages(locale).literatureMinistry.downloadPdf, content: content('pdf')}
+        {id: 'pdf', label: getMessages(locale).literatureMinistry.downloadPdf, content: content('pdf')},
+        ...(readerEnabled ? [{id: 'online', label: messages.readOnline, content: content('online')}] : [])
       ]}/>
     </section>
   );

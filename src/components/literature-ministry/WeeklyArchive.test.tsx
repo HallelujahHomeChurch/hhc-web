@@ -2,6 +2,7 @@ import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {WeeklyArchive} from './WeeklyArchive';
+import {getMessages} from '@/i18n/messages';
 
 const captureHandledError = vi.hoisted(() => vi.fn());
 const authorization = vi.hoisted(() => ({getAccessToken: vi.fn().mockResolvedValue('token'), refreshAfterUnauthorized: vi.fn()}));
@@ -34,7 +35,49 @@ afterEach(() => {
 beforeEach(() => vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'));
 
 describe('WeeklyArchive', () => {
+  it('defaults to PDF on the left and preserves explicit online selection without refetching', async () => {
+    bulletinAccess.editions = [{series: 'general', locale: 'zh-Hant'}, {series: 'children', locale: 'zh-Hant'}];
+    const fetcher = vi.fn(async () => {
+      const payload = await discoveryResponse(bulletin, 36).json();
+      payload.data.items[0].onlineRevision = 1;
+      return Response.json(payload);
+    });
+    vi.stubGlobal('fetch', fetcher);
+    const view = render(<WeeklyArchive locale="en" messages={messages}/>);
+    expect(await screen.findAllByRole('button', {name: 'Download PDF: 繁中'})).toHaveLength(2);
+    expect(screen.getAllByRole('tab').map(tab => tab.textContent)).toEqual(['Download PDF', 'Read online']);
+    expect(screen.getByRole('tab', {name: 'Download PDF'})).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByRole('link', {name: /Read online:/})).not.toBeInTheDocument();
+    const requestCount = fetcher.mock.calls.length;
+    await userEvent.click(screen.getByRole('tab', {name: 'Read online'}));
+    expect(replace).toHaveBeenCalledWith('/en/literature-ministry?series=general&mode=online', {scroll: false});
+    search.value = 'series=general&mode=online';
+    view.rerender(<WeeklyArchive locale="en" messages={messages}/>);
+    expect(screen.getByRole('tab', {name: 'Read online'})).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getAllByRole('link', {name: 'Read online: 繁中'})).toHaveLength(2);
+    expect(screen.getByRole('link', {name: "Children's bulletin"})).toHaveAttribute('href', '/en/literature-ministry?series=children&mode=online');
+    expect(screen.getByRole('link', {name: 'Next'})).toHaveAttribute('href', '/en/literature-ministry?series=general&page=2&mode=online');
+    await userEvent.click(screen.getByRole('tab', {name: 'Download PDF'}));
+    expect(replace).toHaveBeenCalledWith('/en/literature-ministry?series=general', {scroll: false});
+    search.value = 'series=general';
+    view.rerender(<WeeklyArchive locale="en" messages={messages}/>);
+    expect(screen.getByRole('tab', {name: 'Download PDF'})).toHaveAttribute('aria-selected', 'true');
+    expect(fetcher).toHaveBeenCalledTimes(requestCount);
+  });
+
+  it('shows entitled children PDFs under the children series tab with PDF selected by default', async () => {
+    bulletinAccess.editions = [{series: 'general', locale: 'zh-Hant'}, {series: 'children', locale: 'zh-Hant'}];
+    search.value = 'series=children';
+    vi.stubGlobal('fetch', vi.fn(async () => discoveryResponse({...bulletin, series: 'children', issueNumber: 1300})));
+    render(<WeeklyArchive locale="zh-Hant" messages={getMessages('zh-Hant').literatureMinistry}/>);
+    expect(await screen.findAllByRole('button', {name: '下載 PDF: 繁中'})).toHaveLength(2);
+    expect(screen.getByRole('link', {name: '一般週報'})).toHaveAttribute('href', '/zh-Hant/literature-ministry?series=general');
+    expect(screen.getByRole('link', {name: '兒童週報'})).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('tab', {name: '下載 PDF'})).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('separates online reading from PDF actions without hiding authorized languages', async () => {
+    search.value = 'mode=online';
     bulletinAccess.editions = [{series: 'general', locale: 'zh-Hant'}, {series: 'general', locale: 'en'}];
     vi.stubGlobal('fetch', vi.fn(async () => {
       const payload = await discoveryResponse(bulletin).json();
@@ -48,7 +91,7 @@ describe('WeeklyArchive', () => {
     expect(await screen.findAllByRole('link', {name: 'Read online: English'})).toHaveLength(2);
     expect(screen.queryByRole('button', {name: /Download PDF:/})).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('tab', {name: 'Download PDF'}));
-    expect(replace).toHaveBeenCalledWith('/en/literature-ministry?series=general&mode=pdf', {scroll: false});
+    expect(replace).toHaveBeenCalledWith('/en/literature-ministry?series=general', {scroll: false});
     search.value = 'series=general&mode=pdf';
     view.rerender(<WeeklyArchive locale="en" messages={messages}/>);
     expect(screen.getByRole('tab', {name: 'Download PDF'})).toHaveAttribute('aria-selected', 'true');
@@ -107,8 +150,8 @@ describe('WeeklyArchive', () => {
       expect.stringContaining('series=children&offset=0&limit=1&locales=zh-Hant'),
       expect.stringContaining('series=children&offset=12&limit=12&locales=zh-Hant')
     ]));
-    expect(screen.getByRole('link', {name: 'General bulletin'})).toHaveAttribute('href', '/en/literature-ministry?series=general&mode=pdf');
-    expect(screen.getByRole('link', {name: 'Next'})).toHaveAttribute('href', '/en/literature-ministry?series=children&page=3&mode=pdf');
+    expect(screen.getByRole('link', {name: 'General bulletin'})).toHaveAttribute('href', '/en/literature-ministry?series=general');
+    expect(screen.getByRole('link', {name: 'Next'})).toHaveAttribute('href', '/en/literature-ministry?series=children&page=3');
 
     search.value = 'series=children&page=3&mode=pdf';
     view.rerender(<WeeklyArchive locale="en" messages={messages} />);
@@ -118,6 +161,7 @@ describe('WeeklyArchive', () => {
   });
 
   it('keeps Online-only readable without a Download button',async()=>{
+    search.value = 'mode=online';
     vi.stubGlobal('fetch',vi.fn().mockImplementation(async()=>discoveryResponse(bulletin,1,false)));
     render(<WeeklyArchive locale="en" messages={messages}/>);
     expect((await screen.findAllByRole('link',{name:'Read online: 繁中'})).length).toBe(2);
@@ -125,6 +169,7 @@ describe('WeeklyArchive', () => {
   });
 
   it('keeps PDF-only history reachable while showing its unpublished online state', async () => {
+    search.value = 'mode=online';
     vi.stubGlobal('fetch', vi.fn(async () => discoveryResponse(bulletin)));
     const view = render(<WeeklyArchive locale="en" messages={messages}/>);
     expect(await screen.findAllByText('Online reading is not available for this issue.')).toHaveLength(2);
@@ -143,6 +188,7 @@ describe('WeeklyArchive', () => {
   });
 
   it('keeps the PDF entry available when online reading is disabled', async () => {
+    search.value = 'mode=online';
     vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'false');
     vi.stubGlobal('fetch', vi.fn(async () => discoveryResponse(bulletin)));
     render(<WeeklyArchive locale="en" messages={messages}/>);
@@ -151,6 +197,7 @@ describe('WeeklyArchive', () => {
   });
 
   it('keeps a Hans-only grant readable on a Traditional Chinese interface', async () => {
+    search.value = 'mode=online';
     bulletinAccess.editions = [{series: 'general', locale: 'zh-Hans'}];
     vi.stubGlobal('fetch', vi.fn(async () => discoveryResponse({...bulletin, locale: 'zh-Hans'}, 1, false)));
     render(<WeeklyArchive locale="zh-Hant" messages={messages}/>);
