@@ -71,6 +71,8 @@ describe('protected weekly reader', () => {
     fireEvent(window, new Event('focus'));
     await waitFor(() => expect(state.open).toHaveBeenCalledTimes(2));
     expect(container.querySelector('.reader-document')!.closest('[hidden]')).toBeNull();
+    expect(container.querySelector('.reader-document')!.closest('[inert]')).toHaveAttribute('aria-hidden', 'true');
+    expect(container.querySelector('.reader-loading')).toHaveAttribute('aria-busy', 'true');
     pointer('pointerup');
     fireEvent.click(result);
     await act(async () => finish(readerFixture()));
@@ -955,6 +957,21 @@ describe('protected weekly reader', () => {
     expect(screen.getByText('Loading bulletin…')).toHaveAttribute('role', 'status');
     await act(async () => ready());
     expect(screen.queryByText('Loading bulletin…')).not.toBeInTheDocument();
+  });
+  it('font loading becomes a retryable error and ignores late completion', async () => {
+    let ready!: () => void;
+    Object.defineProperty(document, 'fonts', {configurable: true, value: {ready: new Promise<void>(resolve => {ready = resolve;})}});
+    render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    vi.useFakeTimers();
+    // Re-mount to put the font deadline on the fake clock.
+    cleanup(); render(<WeeklyReader {...props}/>); await act(async () => {});
+    await act(async () => vi.advanceTimersByTimeAsync(20000));
+    expect(screen.getByRole('alert')).toHaveTextContent(props.messages.unavailable);
+    await act(async () => ready());
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: props.messages.retry})); await act(async () => {});
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
   it('shows only a login shell when anonymous', () => {
     state.accountId = null; state.status = 'anonymous';

@@ -287,4 +287,12 @@ body:has(.weekly-reader) {padding-bottom: 0;}
 @media (prefers-reduced-motion: reduce) {
   .reader-document .reader-tabbar, .reader-document .reader-topbar {transition: none;}
 }
-.reader-revalidation-layer {position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: var(--surface); color: var(--foreground);}
+.reader-loading {min-height: calc(100dvh - 108px); display: grid; place-items: center; background: var(--hhc-canvas); color: var(--hhc-text-muted);}
+.reader-loading[data-overlay], .reader-font-error {position: absolute; inset: 0; z-index: 100; min-height: 0; display: grid; place-content: center; background: var(--hhc-canvas);}
+.weekly-reader > .reader-loading[data-overlay] {position: fixed;}
+.reader-loading > div {display: grid; justify-items: center; gap: 12px;}
+.reader-loading p {margin: 0;}
+.reader-loading-icon-placeholder {width: 28px; height: 28px;}
+.reader-loading-icon {animation: reader-loading-spin 1s linear infinite;}
+@keyframes reader-loading-spin {to {transform: rotate(360deg);}}
+@media (prefers-reduced-motion: reduce) {.reader-loading-icon {animation: none;}}

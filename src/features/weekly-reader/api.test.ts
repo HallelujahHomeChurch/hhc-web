@@ -1,4 +1,4 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {readerFixture} from './test-fixture';
 import {createReaderApi, verifyReaderAccess} from './api';
 import {BULLETIN_RENDERER_V2_DIGEST,BULLETIN_RENDERER_V2_ASSETS} from '@hallelujahhomechurch/ui';
@@ -8,6 +8,43 @@ vi.mock('@hallelujahhomechurch/hhc-web-client', async original => ({...await ori
 const selector = {accountId: 'account-a', issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const};
 const auth = {getAccessToken: async () => 'token', refreshAfterUnauthorized: async () => null};
 beforeEach(() => {vi.clearAllMocks(); client.listOnlineBulletinDiscovery.mockResolvedValue({items: [{issueId: readerFixture().document.issueId, issueNumber: 1739, series: 'general', contentLocale: 'zh-Hant', onlineRevision: 1}]}); client.openOnlineBulletin.mockResolvedValue(readerFixture());});
+afterEach(() => vi.useRealTimers());
+
+it.each(['open', 'renew', 'current', 'privateState', 'mutate'] as const)('reader %s request times out after 20 seconds even when abort is ignored', async method => {
+  vi.useFakeTimers();
+  const target = method === 'privateState' ? client.getReaderState : method === 'mutate' ? client.applyReaderMutations : client.openOnlineBulletin;
+  target.mockImplementationOnce(() => new Promise(() => {}));
+  const api = createReaderApi(auth), value = readerFixture();
+  const request = method === 'open' ? api.open(selector, {clientRequestId: 'deadline'}) : method === 'privateState' ? api.privateState(selector, value) : method === 'mutate' ? api.mutate(selector, value, []) : api[method](selector, value, 'deadline');
+  const rejected = expect(request).rejects.toThrow('reader_request_timeout');
+  await vi.advanceTimersByTimeAsync(19999);
+  const signal = target.mock.calls.at(-1)![0].signal as AbortSignal;
+  expect(signal.aborted).toBe(false);
+  await vi.advanceTimersByTimeAsync(1); await rejected;
+  expect(signal.aborted).toBe(true); expect(vi.getTimerCount()).toBe(0);
+});
+it('discovery and document access share one deadline and late responses cannot replace the timeout', async () => {
+  vi.useFakeTimers();
+  let discovery!: (value: unknown) => void, late!: (value: unknown) => void;
+  client.listOnlineBulletinDiscovery.mockImplementationOnce(() => new Promise(resolve => {discovery = resolve;}));
+  client.openOnlineBulletin.mockImplementationOnce(() => new Promise(resolve => {late = resolve;}));
+  const request = createReaderApi(auth).open(selector, {clientRequestId: 'deadline'});
+  const resolved = vi.fn(); void request.then(resolved, () => {});
+  const rejected = expect(request).rejects.toThrow('reader_request_timeout');
+  await vi.advanceTimersByTimeAsync(15000);
+  discovery({items: [{issueId: readerFixture().document.issueId, issueNumber: 1739, series: 'general', contentLocale: 'zh-Hant', onlineRevision: 1}]});
+  await vi.advanceTimersByTimeAsync(5000); await rejected;
+  late(readerFixture()); await vi.advanceTimersByTimeAsync(0);
+  expect(resolved).not.toHaveBeenCalled(); expect(vi.getTimerCount()).toBe(0);
+});
+it('caller abort cancels a hanging operation without being classified as a timeout', async () => {
+  vi.useFakeTimers(); const controller = new AbortController();
+  client.listOnlineBulletinDiscovery.mockImplementationOnce(() => new Promise(() => {}));
+  const request = createReaderApi(auth).open(selector, {clientRequestId: 'cancel'}, controller.signal);
+  const rejected = expect(request).rejects.toMatchObject({name: 'AbortError'});
+  await vi.advanceTimersByTimeAsync(0); controller.abort(); await rejected;
+  expect(vi.getTimerCount()).toBe(0);
+});
 
 describe('member reader access', () => {
   it.each((['zh-Hant','zh-Hans'] as const).flatMap(locale=>(['v9','v10'] as const).map(version=>[locale,version] as const)))('accepts immutable %s %s snapshots without current-setting lookups',(contentLocale,version)=>{
@@ -80,7 +117,7 @@ describe('member reader access', () => {
     const api = createReaderApi(auth);
     expect(await api.current(selector, saved, 'update-request')).toEqual(newer);
     expect(client.listOnlineBulletinDiscovery).not.toHaveBeenCalled();
-    expect(client.openOnlineBulletin).toHaveBeenCalledWith({issueId: saved.document.issueId, series: 'general', locale: 'zh-Hant', clientRequestId: 'update-request', signal: undefined});
+    expect(client.openOnlineBulletin).toHaveBeenCalledWith({issueId: saved.document.issueId, series: 'general', locale: 'zh-Hant', clientRequestId: 'update-request', signal: expect.any(AbortSignal)});
   });
   it('rejects private responses from a different account and verifies before returning a mutation acknowledgement', async () => {
     const value = readerFixture();
@@ -99,7 +136,7 @@ describe('member reader access', () => {
     saved.document.canonicalMetadata.issueNumber = 1738;
     await createReaderApi(auth).renew(selector, saved, 'renew-request');
     expect(client.listOnlineBulletinDiscovery).not.toHaveBeenCalled();
-    expect(client.openOnlineBulletin).toHaveBeenCalledWith({issueId: saved.document.issueId, series: 'general', locale: 'zh-Hant', revision: 1, receiptId: 'receipt-a', clientRequestId: 'renew-request', signal: undefined});
+    expect(client.openOnlineBulletin).toHaveBeenCalledWith({issueId: saved.document.issueId, series: 'general', locale: 'zh-Hant', revision: 1, receiptId: 'receipt-a', clientRequestId: 'renew-request', signal: expect.any(AbortSignal)});
   });
   it('rejects a renewal response bound to a different issue or pinned revision', async () => {
     const saved = readerFixture();
@@ -116,8 +153,10 @@ describe('member reader access', () => {
     const signal = new AbortController().signal;
     await api.open(selector, {clientRequestId: 'same-request'}, signal);
     await api.open(selector, {clientRequestId: 'same-request'}, signal);
-    expect(client.listOnlineBulletinDiscovery).toHaveBeenCalledWith({series: 'general', locale: 'zh-Hant', offset: 0, limit: 1, issueNumber: 1739, signal});
-    expect(client.openOnlineBulletin).toHaveBeenLastCalledWith({issueId: readerFixture().document.issueId, series: 'general', locale: 'zh-Hant', clientRequestId: 'same-request', signal});
+    expect(client.listOnlineBulletinDiscovery).toHaveBeenCalledWith({series: 'general', locale: 'zh-Hant', offset: 0, limit: 1, issueNumber: 1739, signal: expect.any(AbortSignal)});
+    expect(client.openOnlineBulletin).toHaveBeenLastCalledWith({issueId: readerFixture().document.issueId, series: 'general', locale: 'zh-Hant', clientRequestId: 'same-request', signal: expect.any(AbortSignal)});
+    expect(client.listOnlineBulletinDiscovery.mock.calls[1][0].signal).toBe(client.openOnlineBulletin.mock.calls[1][0].signal);
+    expect(client.openOnlineBulletin.mock.calls[1][0].signal.aborted).toBe(false);
   });
   it('does not issue access for a PDF-only or mismatched discovery edition', async () => {
     client.listOnlineBulletinDiscovery.mockResolvedValueOnce({items: [{...readerFixture().document, onlineRevision: null}]}).mockResolvedValueOnce({items: [{...readerFixture().document, issueNumber: 1739, contentLocale: 'en', onlineRevision: 1}]});
