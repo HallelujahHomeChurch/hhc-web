@@ -46,18 +46,18 @@ export function useTextSelection(root: RefObject<HTMLElement | null>, sentences:
       // OS selection handles may emit selectionchange without DOM pointer events.
       if (!pointers.size && !keyboardSelecting && !touching) settleTimer = setTimeout(() => setSelecting(false), 180);
     };
-    const changed = () => {
+    const changed = (event?: Event) => {
       const native = owner.getSelection();
       if (!root.current) return;
       const ranges = readTextSelection(root.current, native, sentences);
       if (ranges.length) {
-        if (newGesture || JSON.stringify(ranges) !== JSON.stringify(current.current.ranges)) {
+        if (event?.type === 'selectionchange' && newGesture || JSON.stringify(ranges) !== JSON.stringify(current.current.ranges)) {
           const next = {ids: ranges.map(range => range.sentenceId), ranges};
           current.current = next; update(next);
           setSelecting(true);
-          settleNative();
         }
-        newGesture = false;
+        settleNative();
+        if (event?.type === 'selectionchange') newGesture = false;
       }
       else if (!preserveSnapshot.current) setSelection({ids: []});
     };
@@ -99,7 +99,12 @@ export function useTextSelection(root: RefObject<HTMLElement | null>, sentences:
     };
     const keyReleased = () => {if (keyboardSelecting) {keyboardSelecting = false; changed(); cancelSettle(); setSelecting(false);}};
     const touchStarted = (event: TouchEvent) => {
-      if (!root.current?.contains(event.target as Node)) return;
+      if (!(event.target instanceof Element)) return;
+      if (!root.current?.contains(event.target)) {
+        if (event.target.closest('.reader-selection-tools, [data-reader-selection-tools]')) preserveSnapshot.current = true;
+        else dismiss();
+        return;
+      }
       if (!pointers.size) {tappedSelection = current.current; startPoint = event.touches[0] ?? null; moved = false; newGesture = true; preserveSnapshot.current = false;}
       touching = true; cancelSettle(); setSelecting(true);
     };
@@ -108,30 +113,32 @@ export function useTextSelection(root: RefObject<HTMLElement | null>, sentences:
       if (event.type === 'touchcancel') {resetGesture(); changed(); settleNative(); return;}
       if (!touching || event.touches.length) return;
       movement(event.changedTouches[0]);
+      // Safari can consume the compatibility click while its selection menu is open.
+      if (!moved && newGesture && tappedSelection?.ids.length && JSON.stringify(tappedSelection.ranges) === JSON.stringify(current.current.ranges)) {dismiss(); return;}
       touching = false; changed(); cancelSettle();
       if (!pointers.size) setSelecting(false);
     };
     const blurred = () => dismiss();
     owner.addEventListener('selectionchange', changed);
-    owner.addEventListener('pointerdown', pointer);
+    owner.addEventListener('pointerdown', pointer, true);
     owner.addEventListener('pointermove', pointerMoved);
     owner.addEventListener('click', clicked);
     owner.addEventListener('keydown', keyboard);
     owner.addEventListener('keyup', keyReleased);
     owner.addEventListener('pointerup', released);
     owner.addEventListener('pointercancel', released);
-    owner.addEventListener('touchstart', touchStarted, {passive: true});
+    owner.addEventListener('touchstart', touchStarted, {passive: true, capture: true});
     owner.addEventListener('touchmove', touchMoved, {passive: true});
-    owner.addEventListener('touchend', touchEnded);
-    owner.addEventListener('touchcancel', touchEnded);
+    owner.addEventListener('touchend', touchEnded, true);
+    owner.addEventListener('touchcancel', touchEnded, true);
     owner.defaultView?.addEventListener('blur', blurred);
     return () => {
       cancelSettle();
-      owner.removeEventListener('selectionchange', changed); owner.removeEventListener('pointerdown', pointer);
+      owner.removeEventListener('selectionchange', changed); owner.removeEventListener('pointerdown', pointer, true);
       owner.removeEventListener('pointermove', pointerMoved);
       owner.removeEventListener('click', clicked); owner.removeEventListener('keydown', keyboard);
       owner.removeEventListener('keyup', keyReleased); owner.removeEventListener('pointerup', released); owner.removeEventListener('pointercancel', released);
-      owner.removeEventListener('touchstart', touchStarted); owner.removeEventListener('touchmove', touchMoved); owner.removeEventListener('touchend', touchEnded); owner.removeEventListener('touchcancel', touchEnded);
+      owner.removeEventListener('touchstart', touchStarted, true); owner.removeEventListener('touchmove', touchMoved); owner.removeEventListener('touchend', touchEnded, true); owner.removeEventListener('touchcancel', touchEnded, true);
       owner.defaultView?.removeEventListener('blur', blurred);
     };
   }, [root, sentences, locked, clear, setSelection]);

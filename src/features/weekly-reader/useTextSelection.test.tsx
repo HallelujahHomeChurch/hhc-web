@@ -4,10 +4,10 @@ import {afterEach, expect, it, vi} from 'vitest';
 import {useTextSelection} from './useTextSelection';
 
 const sentences = [{id: 's', componentId: 'c', text: 'abcdefgh'}];
-function Harness() {
+function Harness({protectedRoot=false}: {protectedRoot?: boolean} = {}) {
   const root = useRef<HTMLDivElement>(null);
   const {selection, selecting} = useTextSelection(root, sentences, {ids: []}, false);
-  return <><div ref={root} tabIndex={0}><span data-sentence-id="s" data-fragment-start="0" data-fragment-end="8">abcdefgh</span><div>Paper margin</div></div><div>Outside paper</div>{selection.ids.length && !selecting ? <button className="reader-selection-tools">Annotate</button> : null}</>;
+  return <><div data-reader-selection-tools={protectedRoot || undefined}><div ref={root} tabIndex={0}><span data-sentence-id="s" data-fragment-start="0" data-fragment-end="8">abcdefgh</span><div>Paper margin</div></div></div><div>Outside paper</div>{selection.ids.length && !selecting ? <button className="reader-selection-tools">Annotate</button> : null}</>;
 }
 function select(end: number) {
   const element = screen.getByText('abcdefgh');
@@ -97,6 +97,54 @@ it('keeps captured text when pressing annotation controls', () => {
   window.getSelection()?.removeAllRanges(); fireEvent(document, new Event('selectionchange'));
   fireEvent.click(screen.getByText('Annotate'));
   expect(screen.getByText('Annotate')).toBeInTheDocument();
+});
+
+it('dismisses a distant touch without waiting for an OS-suppressed click or pointer event', () => {
+  vi.useFakeTimers(); render(<Harness/>); select(3);
+  act(() => vi.advanceTimersByTime(200));
+  const outside = screen.getByText('Outside paper');
+  outside.addEventListener('touchstart', event => event.stopPropagation());
+  fireEvent.touchStart(outside, {touches: [{identifier: 2}]});
+  expect(window.getSelection()?.toString()).toBe('');
+  expect(screen.queryByText('Annotate')).not.toBeInTheDocument();
+  select(3); act(() => vi.advanceTimersByTime(200));
+  expect(screen.getByText('Annotate')).toBeInTheDocument();
+});
+
+it('dismisses a touch-only tap on the paper margin even when Safari emits no click', () => {
+  vi.useFakeTimers(); render(<Harness/>); select(3);
+  act(() => vi.advanceTimersByTime(200));
+  const margin = screen.getByText('Paper margin');
+  fireEvent.touchStart(margin, {touches: [{identifier: 2, clientX: 20, clientY: 20}]});
+  fireEvent.touchEnd(margin, {touches: [], changedTouches: [{identifier: 2, clientX: 20, clientY: 20}]});
+  expect(window.getSelection()?.toString()).toBe('');
+  expect(screen.queryByText('Annotate')).not.toBeInTheDocument();
+  select(3); act(() => vi.advanceTimersByTime(200));
+  expect(screen.getByText('Annotate')).toBeInTheDocument();
+});
+
+it('dismisses a paper-margin tap with both pointer and touch release but no click', () => {
+  vi.useFakeTimers(); render(<Harness/>); select(3);
+  act(() => vi.advanceTimersByTime(200));
+  const margin = screen.getByText('Paper margin');
+  fireEvent.pointerDown(margin, {pointerId: 2, clientX: 20, clientY: 20});
+  fireEvent.touchStart(margin, {touches: [{identifier: 2, clientX: 20, clientY: 20}]});
+  fireEvent.pointerUp(margin, {pointerId: 2, clientX: 20, clientY: 20});
+  fireEvent.touchEnd(margin, {touches: [], changedTouches: [{identifier: 2, clientX: 20, clientY: 20}]});
+  expect(window.getSelection()?.toString()).toBe('');
+  expect(screen.queryByText('Annotate')).not.toBeInTheDocument();
+  select(3); act(() => vi.advanceTimersByTime(200));
+  expect(screen.getByText('Annotate')).toBeInTheDocument();
+});
+
+it('does not preserve stale ranges inside a note reanchor tool wrapper', () => {
+  vi.useFakeTimers(); render(<Harness protectedRoot/>); select(3);
+  act(() => vi.advanceTimersByTime(200));
+  const text = screen.getByText('abcdefgh');
+  fireEvent.touchStart(text, {touches: [{identifier: 2, clientX: 20, clientY: 20}]});
+  window.getSelection()?.removeAllRanges(); fireEvent(document, new Event('selectionchange'));
+  fireEvent.touchEnd(text, {touches: [], changedTouches: [{identifier: 2, clientX: 20, clientY: 20}]});
+  expect(screen.queryByText('Annotate')).not.toBeInTheDocument();
 });
 
 it.each(['pointer', 'touch'])('preserves repeated same-range drag selections including their final click via %s', kind => {
