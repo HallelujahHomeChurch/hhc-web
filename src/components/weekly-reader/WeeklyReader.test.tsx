@@ -51,6 +51,27 @@ afterEach(() => {cleanup(); Reflect.deleteProperty(document, 'fonts'); Reflect.d
 beforeEach(() => {Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect(0, 100, 300, 20)});});
 
 describe('protected weekly reader', () => {
+  it('home cancel preserves position and dirty draft in one combined dialog without native confirm', async () => {
+    const value = readerFixture();
+    saveReaderReturn({accountId: 'account-a', documentId: value.document.documentId}, {revision: 1, pageId: 'p2', draft: {text: 'Keep my unsaved draft'}});
+    const nativeConfirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(private callback: ResizeObserverCallback) {}
+      observe(element: HTMLElement) {if (element.classList.contains('reader-document')) this.callback([{contentRect: {width: 1200}} as ResizeObserverEntry], this as unknown as ResizeObserver);}
+      disconnect() {}
+    });
+    const {container} = render(<WeeklyReader {...props}/>);
+    const textbox = await screen.findByRole('textbox', {name: props.messages.noteText});
+    const pageBefore = container.querySelector('[data-active-page]')?.getAttribute('data-active-page');
+    fireEvent.click(screen.getByRole('button', {name: props.messages.home}));
+    const dialog = await screen.findByRole('alertdialog');
+    expect(dialog).toHaveTextContent(props.messages.noteDiscardConfirm);
+    expect(nativeConfirm).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole('button', {name: props.messages.keepReading}));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    expect(textbox).toHaveValue('Keep my unsaved draft');
+    expect(container.querySelector('[data-active-page]')?.getAttribute('data-active-page')).toBe(pageBefore);
+  });
   it('search jump survives validation between pointerdown and click without a second tap', async () => {
     vi.stubGlobal('matchMedia', vi.fn(query => ({matches: query === '(max-width: 767px)', addEventListener: vi.fn(), removeEventListener: vi.fn()})));
     const {container} = render(<WeeklyReader {...props}/>);
@@ -482,7 +503,10 @@ describe('protected weekly reader', () => {
     if (exit === 'hide') {
       vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
       fireEvent(document, new Event('visibilitychange'));
-    } else fireEvent.click(screen.getByRole('button', {name: 'Bulletin library'}));
+    } else {
+      fireEvent.click(screen.getByRole('button', {name: 'Bulletin library'}));
+      fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', {name: props.messages.exitHome}));
+    }
     await waitFor(() => expect(state.mutate).toHaveBeenCalled(), {timeout: 150});
     expect(state.mutate.mock.calls[0][2][0]).toMatchObject({kind: 'setProgress', payload: {pageId: 'p2'}});
     expect(sessionStorage.getItem(`${key}:anchor`)).toBeNull();
@@ -524,9 +548,16 @@ describe('protected weekly reader', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Note'}));
     fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'Unsaved draft'}});
     fireEvent.click(screen.getByRole('button', {name: 'Bulletin library'}));
-    await waitFor(() => expect(confirm).toHaveBeenCalledTimes(1));
+    const homeDialog = await screen.findByRole('alertdialog');
+    expect(homeDialog).toHaveTextContent(props.messages.noteDiscardConfirm);
+    fireEvent.click(within(homeDialog).getByRole('button', {name: props.messages.keepReading}));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', {name: /Close bulletin/}));
-    await waitFor(() => expect(confirm).toHaveBeenCalledTimes(2));
+    const closeDialog = await screen.findByRole('alertdialog');
+    expect(closeDialog).toHaveTextContent(props.messages.noteDiscardConfirm);
+    fireEvent.click(within(closeDialog).getByRole('button', {name: props.messages.keepReading}));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    expect(confirm).not.toHaveBeenCalled();
     expect(screen.getByRole('textbox', {name: props.messages.noteText})).toHaveValue('Unsaved draft');
   });
   it('selects partial native text instead of activating an entire sentence on click', async () => {

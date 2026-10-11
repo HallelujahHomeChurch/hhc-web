@@ -2,9 +2,10 @@ import {useEffect, useEffectEvent, useRef, type RefObject} from 'react';
 
 type Activation = {id: string; pointer: number; x: number; y: number; rect: DOMRect; binding: string};
 
-export function useReaderSearchNavigation({root, open, suspended, binding, allowAction, onJump}: {
+export function useReaderSearchNavigation({root, open, suspended, binding, allowAction, onJump, offline = false}: {
   root: RefObject<HTMLElement | null>; open: boolean; suspended: boolean; binding: string;
   allowAction: () => boolean; onJump: (id: string) => void;
+  offline?: boolean;
 }) {
   const activation = useRef<Activation | null>(null);
   const pending = useRef<{id: string; binding: string} | null>(null);
@@ -36,11 +37,11 @@ export function useReaderSearchNavigation({root, open, suspended, binding, allow
     const intent = pending.current;
     if (!intent || suspended) return;
     pending.current = null;
-    if (!open || intent.binding !== binding || !allowAction()) return;
+    if (!open || offline || intent.binding !== binding || !allowAction()) return;
     const target = Array.from(root.current?.querySelectorAll<HTMLElement>('[data-reader-search-target]') ?? []).find(element => element.dataset.readerSearchTarget === intent.id);
     if (target) {root.current?.querySelector<HTMLInputElement>('.reader-search input')?.blur(); onJump(intent.id);}
   });
-  useEffect(() => {resume();}, [suspended, open, binding]);
+  useEffect(() => {resume();}, [suspended, open, binding, offline]);
   useEffect(() => {
     const cancel = () => {activation.current = null; pending.current = null;};
     const listener = (event: PointerEvent) => capture(event);

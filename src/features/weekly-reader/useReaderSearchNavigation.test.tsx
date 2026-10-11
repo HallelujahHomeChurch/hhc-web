@@ -9,7 +9,7 @@ function setup() {
   const root = document.createElement('div'); root.append(button); document.body.append(root);
   vi.spyOn(button, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 100));
   const onJump = vi.fn(), allowAction = vi.fn(() => true);
-  const options = {root: {current: root}, open: true, suspended: false, binding: 'account:doc:1', allowAction, onJump};
+  const options = {root: {current: root}, open: true, suspended: false, offline: false, binding: 'account:doc:1', allowAction, onJump};
   const hook = renderHook(props => useReaderSearchNavigation(props), {initialProps: options});
   const pointer = (type: string, x = 10, id = 1) => {
     const event = new MouseEvent(type, {bubbles: true, clientX: x, clientY: 10, button: 0});
@@ -40,11 +40,11 @@ it('does not start new activation during validation', () => {
   hook.rerender({...options, suspended: true}); pointer('pointerdown'); pointer('pointerup'); hook.rerender(options);
   expect(onJump).not.toHaveBeenCalled();
 });
-it.each(['binding', 'closed', 'revoked'])('pending search jump is cancelled on %s change', reason => {
+it.each(['binding', 'closed', 'revoked', 'offline-fallback'])('pending search jump is cancelled on %s change', reason => {
   const {options, hook, pointer, onJump, allowAction} = setup();
   pointer('pointerdown'); hook.rerender({...options, suspended: true}); pointer('pointerup');
   if (reason === 'revoked') allowAction.mockReturnValue(false);
-  hook.rerender({...options, binding: reason === 'binding' ? 'account:doc:2' : options.binding, open: reason !== 'closed'});
+  hook.rerender({...options, binding: reason === 'binding' ? 'account:doc:2' : options.binding, open: reason !== 'closed', offline: reason === 'offline-fallback'});
   expect(onJump).not.toHaveBeenCalled();
 });
 it('keyboard activation navigates once without pointer inference', () => {

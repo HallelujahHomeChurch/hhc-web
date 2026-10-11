@@ -6,7 +6,7 @@ import {useScrollChrome} from '@/components/layout/useScrollChrome';
 import {isIPhoneDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 import {ReaderTypography, readTypography, type Typography} from './ReaderTypography';
 import {useReaderTheme} from './useReaderTheme';
-import {BulletinEbook, bulletinChapters, bulletinChapterForAnchor, bulletinMobileDetails, Button, ReaderWatermark} from '@hallelujahhomechurch/ui';
+import {AlertDialog, BulletinEbook, bulletinChapters, bulletinChapterForAnchor, bulletinMobileDetails, Button, ReaderWatermark} from '@hallelujahhomechurch/ui';
 import {ReaderIconButton as IconButton} from './ReaderIconButton';
 import type {OnlineBulletinAccess, BulletinReaderMutation, BulletinReaderNote} from '@hallelujahhomechurch/hhc-web-client';
 import type {BulletinLocale, BulletinSeries} from '@hallelujahhomechurch/preferences';
@@ -26,7 +26,8 @@ import {selectedHighlight} from '@/features/weekly-reader/highlight-selection';
 import {useReaderSelection} from '@/features/weekly-reader/useReaderSelection';
 import {copySentences, copyTextRanges} from '@/features/weekly-reader/copy';
 import {RangeHighlights} from './RangeHighlights';
-import {useReaderProgress} from '@/features/weekly-reader/progress';
+import {flushReaderProgressBeforeExit, useReaderProgress} from '@/features/weekly-reader/progress';
+import {useReaderExitGuard} from '@/features/weekly-reader/useReaderExitGuard';
 import {NoteIndicators} from './NoteIndicators';
 import {readReaderReturn, saveReaderReturn} from '@/features/weekly-reader/return-state';
 import type {Locale} from '@/i18n/locales';
@@ -92,7 +93,10 @@ function AuthorizedReader(props: Props & {accountId: string; readerTheme: Return
   const {accountId, issueNumber, series, contentLocale} = props;
   const selector = {accountId, issueNumber, series, contentLocale};
   const session = useReaderSession(api, selector);
-  const guard = (event: React.SyntheticEvent) => {if (!session.allowAction()) {event.preventDefault(); event.stopPropagation();}};
+  const guard = (event: React.SyntheticEvent) => {
+    if (event.target instanceof Element && event.target.closest('[data-reader-exit]')) return;
+    if (!session.allowAction()) {event.preventDefault(); event.stopPropagation();}
+  };
   if (session.value) return <>
     {session.validating ? <ReaderLoading label={m.loading} overlay/> : null}
     <div aria-hidden={session.validating || undefined} inert={session.validating} onClickCapture={guard} onKeyDownCapture={guard} onPointerDownCapture={guard} onCopyCapture={guard}>
@@ -100,7 +104,20 @@ function AuthorizedReader(props: Props & {accountId: string; readerTheme: Return
     {session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}
     <ReaderDocument readerTheme={props.readerTheme} key={`${session.value.document.documentId}:${session.value.document.revision}`} value={session.value} selector={selector} messages={m} api={api} offline={session.offline} allowAction={session.allowAction} onFailure={session.privateFailure} onUpdated={session.acceptSaved} suspended={!!session.validating} backHref={`/${props.locale}/literature-ministry`} offlineControl={<OfflineControl api={api} value={session.value} selector={selector} locale={props.locale} messages={m} onSaved={session.acceptSaved} onFailure={session.privateFailure}/>}/>
   </div></>;
-  return <><ReaderTabs accountId={accountId} locale={props.locale} current={props} messages={m}/>{session.error ? <section className="reader-status" role="alert"><h1>{m.title}</h1><p>{m[session.error]}</p>{session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}<button type="button" onClick={session.retry}>{m.retry}</button></section> : <ReaderLoading label={m.loading}/>}</>;
+  return <ReaderSessionStatus props={props} session={session} signIn={signIn}/>;
+}
+
+function ReaderExitDialog({exit, theme}: {exit: ReturnType<typeof useReaderExitGuard>; theme: 'light' | 'dark'}) {
+  return <AlertDialog {...exit.dialogProps} description={<span ref={node => {
+    const overlay = node?.closest<HTMLElement>('.hhc-modal-overlay');
+    if (overlay) {overlay.dataset.theme = theme; overlay.style.colorScheme = theme;}
+  }}>{exit.dialogProps.description}</span>}/>;
+}
+
+function ReaderSessionStatus({props, session, signIn}: {props: Props & {accountId: string; readerTheme: ReturnType<typeof useReaderTheme>}; session: ReturnType<typeof useReaderSession>; signIn: ReturnType<typeof useAccountSignIn>}) {
+  const m = props.messages;
+  const exit = useReaderExitGuard({hasUnsavedNote: () => false, beforeLeave: async () => true, messages: m});
+  return <><ReaderTabs accountId={props.accountId} locale={props.locale} current={props} messages={m} beforeLeave={() => exit.confirmLeave('home')}/>{session.error ? <section className="reader-status" role="alert"><h1>{m.title}</h1><p>{m[session.error]}</p>{session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}<button type="button" onClick={session.retry}>{m.retry}</button></section> : <ReaderLoading label={m.loading}/>}<ReaderExitDialog exit={exit} theme={props.readerTheme.theme}/></>;
 }
 
 function ReaderDocument({value, selector, messages: m, api, offline, allowAction, onFailure, onUpdated, suspended, backHref, offlineControl, readerTheme}: {readerTheme: ReturnType<typeof useReaderTheme>; value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages; api: ReturnType<typeof createReaderApi>; offline: boolean; allowAction: () => boolean; onFailure: (error: unknown) => void; onUpdated: (value: OnlineBulletinAccess) => void; suspended: boolean; backHref: string; offlineControl: ReactNode}) {
@@ -141,11 +158,12 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const editingNote = typeof notes === 'object' && notes ? notes : notes === 'restore' ? privateReader.state?.notes.find(note => note.id === returned?.draft?.noteId) : undefined;
   const noteAnchors = editingNote ? editingNote.sentenceIds : selected;
   const noteQuote = editingNote ? editingNote.quote : selection.ranges ? rangeQuote(selection.ranges, sentences) : sentences.filter(sentence => selected.includes(sentence.id)).map(sentence => sentence.text).join('\n');
+  function hasUnsavedNote() {return !!(notes && notes !== 'list' && noteEditorState && noteEditorState.draft.text !== (editingNote?.text ?? ''));}
+  function cleanupNotes() {setNotes(null); setDeletion(null); setReanchor(null); setNoteEditorState(undefined);}
   function closeNotes() {
     if (privateReader.busy) return false;
-    const original = editingNote?.text ?? '';
-    if (notes && notes !== 'list' && noteEditorState && noteEditorState.draft.text !== original && !window.confirm(m.noteDiscardConfirm)) return false;
-    setNotes(null); setDeletion(null); setReanchor(null); setNoteEditorState(undefined);
+    if (hasUnsavedNote() && !window.confirm(m.noteDiscardConfirm)) return false;
+    cleanupNotes();
     requestAnimationFrame(() => (noteButton.current ?? notesButton.current)?.focus());
     return true;
   }
@@ -224,7 +242,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     setPanel(null);
     if (restoreFocus) requestAnimationFrame(() => panelTrigger.current?.focus({preventScroll: true}));
   }
-  const jumpFromSearch = useReaderSearchNavigation({root: chromeRef, open: panel === 'search', suspended,
+  const jumpFromSearch = useReaderSearchNavigation({root: chromeRef, open: panel === 'search', suspended, offline,
     binding: `${selector.accountId}:${value.document.documentId}:${value.document.revision}`,
     allowAction, onJump: id => {onAnchor({kind: 'sentence', id}); closePanel(false);}});
   useEffect(() => {
@@ -424,6 +442,20 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     if (next !== page) setPage(next);
     recordProgress(document.pages[next].id, id);
   }
+  const exit = useReaderExitGuard({hasUnsavedNote, messages: m, beforeLeave: async () => {
+    const dirty = hasUnsavedNote();
+    if (allowAction()) {
+      recordVisiblePaper();
+      let visiblePage = active.id;
+      try {visiblePage = sessionStorage.getItem(storageKey) ?? active.id;} catch { /* Optional local progress. */ }
+      saveReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}, {revision: value.document.revision, pageId: visiblePage});
+      if (!privateReader.busy) await flushReaderProgressBeforeExit(flushProgress);
+    }
+    if (!documentRef.current) return false;
+    if (dirty && allowAction()) saveReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}, {draft: undefined});
+    cleanupNotes();
+    return true;
+  }});
   const observePaperPage = useEffectEvent(recordVisiblePaper);
   useEffect(() => {
     const root = viewportRef.current;
@@ -541,9 +573,10 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     const delta = keyboardPageDelta(event, !!window.getSelection()?.toString());
     if (!mobile && direction === 'horizontal' && delta) {event.preventDefault(); onPage(page + delta);}
   }}>
+    <ReaderExitDialog exit={exit} theme={theme}/>
     <div ref={chromeRef} className="reader-chrome">
       <div className="reader-chrome-controls" inert={!!panel}>
-      <ReaderTabs accountId={selector.accountId} locale={backHref.split('/')[1] as Locale} current={selector} title={value.document.canonicalMetadata.title} messages={m} beforeNavigate={async () => {
+      <ReaderTabs accountId={selector.accountId} locale={backHref.split('/')[1] as Locale} current={selector} title={value.document.canonicalMetadata.title} messages={m} beforeLeave={() => exit.confirmLeave('home')} beforeNavigate={async () => {
         if (!allowAction() || privateReader.busy || notes && !closeNotes()) return false;
         recordVisiblePaper();
         await flushProgress();
@@ -606,7 +639,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       gesture.current = null;
       const delta = swipeDirection({...start, dx: event.clientX - start.x, dy: event.clientY - start.y, zoomed: zoomed || (window.visualViewport?.scale ?? 1) > 1, hasSelection: !!window.getSelection()?.toString()});
       if (!mobile && direction === 'horizontal' && delta) onPage(page + delta);
-    }}>
+  }}>
       {mobile && chapterIndex > 0 ? <div className="reader-chapter-boundary"><IconButton variant="ghost" aria-label={m.previous} isDisabled={suspended} onPress={() => onChapter(chapterIndex - 1)} icon={<ArrowUp size={20} aria-hidden="true"/>}/></div> : null}
       {!fontsReady ? fontsFailed ? <div className="reader-font-error" role="alert"><p>{m.unavailable}</p><Button variant="secondary" onPress={() => {setFontsFailed(false); setFontAttempt(attempt => attempt + 1);}}>{m.retry}</Button></div> : <ReaderLoading label={m.loading} overlay/> : null}
       <div ref={paperRef} className="reader-paper-with-notes" data-has-notes={hasNotes || undefined} inert={!fontsReady} aria-hidden={!fontsReady || undefined} style={{visibility: fontsReady ? 'visible' : 'hidden', width: mobile ? undefined : Math.max(...document.pages.map(entry => entry.width * 4 / 3 * pageScale(zoom, {width: entry.width * 4 / 3, height: entry.height * 4 / 3}, viewport))) + (hasNotes ? 44 : 0)}}>

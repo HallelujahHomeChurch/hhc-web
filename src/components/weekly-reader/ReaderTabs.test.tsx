@@ -15,6 +15,14 @@ function renderTabs(overrides: Partial<Parameters<typeof ReaderTabs>[0]> = {}) {
   render(<ReaderTabs {...props} {...overrides}/>);
   act(() => vi.advanceTimersToNextFrame());
 }
+it.each(['home', 'last-tab'])('uses the leave confirmation before %s without clearing tabs on cancel', async kind => {
+  const beforeLeave = vi.fn().mockResolvedValue(false), beforeNavigate = vi.fn();
+  renderTabs({beforeLeave, beforeNavigate});
+  fireEvent.click(screen.getByRole('button', {name: kind === 'home' ? props.messages.home : /Close.*1740/}));
+  await waitFor(() => expect(beforeLeave).toHaveBeenCalledOnce());
+  expect(beforeNavigate).not.toHaveBeenCalled();
+  expect(readTabs('a')).toEqual([second]);
+});
 it('does not show background sync controls in the tabs', async () => {
   writeTabs('a', [first]);
   renderTabs();

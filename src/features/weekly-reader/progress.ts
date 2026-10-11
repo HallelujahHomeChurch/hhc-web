@@ -2,6 +2,13 @@ import {useCallback, useEffect, useRef} from 'react';
 import type {BulletinReaderMutation, MemberOnlineDocument} from '@hallelujahhomechurch/hhc-web-client';
 import {readerSentences} from './selection';
 
+export async function flushReaderProgressBeforeExit(flush: () => Promise<void>) {
+  let timer: ReturnType<typeof setTimeout>;
+  try {
+    await Promise.race([Promise.resolve().then(flush).catch(() => {}), new Promise<void>(resolve => {timer = setTimeout(resolve, 2000);})]);
+  } finally {clearTimeout(timer!);}
+}
+
 export function useReaderProgress(document: MemberOnlineDocument, commit: (mutation: BulletinReaderMutation) => Promise<unknown>) {
   const pending = useRef<BulletinReaderMutation | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
