@@ -51,9 +51,30 @@ afterEach(() => {cleanup(); Reflect.deleteProperty(document, 'fonts'); Reflect.d
 beforeEach(() => {Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect(0, 100, 300, 20)});});
 
 describe('protected weekly reader', () => {
+  it('toggles mobile sentences, dismisses from distant blank space and persists non-contiguous whole-sentence highlights', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(query => ({matches: query === '(max-width: 767px)', addEventListener: vi.fn(), removeEventListener: vi.fn()})));
+    const cloud = (await state.privateState()).state;
+    state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: cloud, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]}));
+    const {container} = render(<WeeklyReader {...props}/>);
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).toBeEnabled());
+    const first = container.querySelector('[data-sentence-id="s0"]')!;
+    const last = container.querySelector('[data-sentence-id="s3"]')!;
+    expect(first).toHaveAttribute('role', 'button');
+    fireEvent.click(first);
+    expect(first).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(first);
+    expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
+    fireEvent.click(first);
+    fireEvent.click(container.querySelector('.reader-viewport')!);
+    expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
+    fireEvent.click(last); fireEvent.click(first);
+    fireEvent.click(screen.getByRole('button', {name: 'Blue highlight'}));
+    await waitFor(() => expect(state.mutate).toHaveBeenCalled());
+    expect(state.mutate.mock.calls[0][2][0].payload).toEqual({sentenceIds: ['s0', 's3'], color: 'blue'});
+  });
   it.each(([
     ['zh-Hant',1440],['zh-Hans',1440],['zh-Hant',1024],['zh-Hans',1024],['zh-Hant',390],['zh-Hans',390],
-  ] as const).flatMap(([locale,width])=>(['v6','v7','v8','v9'] as const).map(version=>[locale,width,version] as const)))('reads %s at width %i with %s, unchanged source anchors and independent theme',async(contentLocale,width,rendererVersion)=>{
+  ] as const).flatMap(([locale,width])=>(['v6','v7','v8','v9','v10'] as const).map(version=>[locale,width,version] as const)))('reads %s at width %i with %s, unchanged source anchors and independent theme',async(contentLocale,width,rendererVersion)=>{
     const mobile=width<768;
     vi.stubGlobal('matchMedia',vi.fn(query=>({matches:query==='(max-width: 767px)'&&mobile,addEventListener:vi.fn(),removeEventListener:vi.fn()})));
     vi.stubGlobal('ResizeObserver',class{
@@ -74,7 +95,7 @@ describe('protected weekly reader', () => {
     const credit={...paragraph,id:'credit',sentences:[{id:'credit-sentence',spans:[{text:'Production credit',fontRole:'body' as const}]}]};
     fixture.document.content.components[0]={id:'c0',type:'cover',cover:{welcome:[welcome],worship:[],work:[],wordQuestions:[],weeklyVerses:[]}};
     fixture.document.content.components[1]={id:'c1',type:'bodySection',bodySection:{kind:'sermon',title:{...paragraph,id:'article-title',sentences:[{id:'article-heading',spans:[{text:'Article',fontRole:'body'}]}]},header:{lectureDate:credit,contributors:[]},blocks:[paragraph]}};
-    const rows=rendererVersion==='v9'?(contentLocale==='zh-Hans'?[
+    const rows=['v9','v10'].includes(rendererVersion)?(contentLocale==='zh-Hans'?[
       ['visionMission','异象使命：遍地华人兴起、福音传到地极'],['visionFellowship','团契行动：共同生活、爱与成全、恩膏传承'],['visionCommitment','坚持理想：宣教主导、灵恩神学、团队事奉、门徒训练'],
     ] as const:[
       ['visionMission','異象使命：遍地華人興起、福音傳到地極'],['visionFellowship','團契行動：共同生活、愛與成全、恩膏傳承'],['visionCommitment','堅持理想：宣教主導、靈恩神學、團隊事奉、門徒訓練'],
@@ -105,7 +126,7 @@ describe('protected weekly reader', () => {
       await waitFor(()=>expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page','p1'));
       const anchor=paper.querySelector('[data-sentence-id="s1"]');
       expect(anchor).toHaveTextContent('內容1。');expect(anchor).toHaveAttribute('data-fragment-start','0');expect(anchor).toHaveAttribute('data-fragment-end','4');
-      if(rendererVersion==='v7'||rendererVersion==='v8'||rendererVersion==='v9'){
+      if(['v7','v8','v9','v10'].includes(rendererVersion)){
         const emphasis=anchor!.querySelector<HTMLElement>('[data-font-role="emphasis"]')!;
         expect(emphasis.style.fontFamily).toContain('HHC Weekly Serif');
         expect(emphasis.style.fontFamily).not.toContain('Kai');
@@ -231,7 +252,7 @@ describe('protected weekly reader', () => {
       fireEvent.click(screen.getByRole('button', {name: props.messages.search}));
       fireEvent.change(screen.getByRole('searchbox'), {target: {value: '內容1'}});
       fireEvent.submit(screen.getByRole('search'));
-      fireEvent.click(screen.getByRole('button', {name: /內容[12]/}));
+      fireEvent.click(within(screen.getByRole('dialog', {name: props.messages.search})).getByRole('button', {name: /內容[12]/}));
     }
     await waitFor(() => expect(container.querySelector('[data-chapter="body"] [data-sentence-id="s1"]')).toBeInTheDocument());
     if (route.startsWith('chapter')) expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p1');
@@ -349,8 +370,8 @@ describe('protected weekly reader', () => {
       fireEvent.click(screen.getByRole('button', {name: props.messages.search}));
       fireEvent.change(screen.getByRole('searchbox'), {target: {value: '內容2'}});
       fireEvent.submit(screen.getByRole('search'));
-      fireEvent.click(screen.getByRole('button', {name: /內容[12]/}));
-      expect(screen.queryByRole('complementary', {name: props.messages.search})).not.toBeInTheDocument();
+      fireEvent.click(within(screen.getByRole('dialog', {name: props.messages.search})).getByRole('button', {name: /內容[12]/}));
+      expect(screen.queryByRole('dialog', {name: props.messages.search})).not.toBeInTheDocument();
     }
     await waitFor(() => expect(container.querySelector('.reader-viewport')!.scrollTop).toBeGreaterThanOrEqual(364));
     expect(scroll).not.toHaveBeenCalled();
@@ -483,6 +504,25 @@ describe('protected weekly reader', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Blue highlight'}));
     await waitFor(() => expect(state.mutate).toHaveBeenCalled());
     expect(state.mutate.mock.calls[0][2][0].payload).toEqual({sentenceIds: ['s0'], ranges: [{sentenceId: 's0', start: 1, end: 3}], color: 'blue'});
+  });
+  it('keeps a new note exact anchor when the viewport crosses the mobile breakpoint', async () => {
+    const listeners = new Map<string, (event: {matches: boolean}) => void>();
+    const queries = new Map<string, {matches: boolean}>();
+    vi.stubGlobal('matchMedia', vi.fn(query => {
+      const media = {matches: false, addEventListener: (_event: string, listener: (event: {matches: boolean}) => void) => listeners.set(query, listener), removeEventListener: vi.fn()};
+      queries.set(query, media); return media;
+    }));
+    const cloud = (await state.privateState()).state;
+    state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: cloud, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]}));
+    const {container} = render(<WeeklyReader {...props}/>);
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).toBeEnabled());
+    selectText(container.querySelector('[data-sentence-id="s0"]')!, 1, 3);
+    fireEvent.click(screen.getByRole('button', {name: 'Note'}));
+    fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'Keep exact anchor'}});
+    act(() => {const query = queries.get('(max-width: 767px)')!; query.matches = true; listeners.get('(max-width: 767px)')!(query);});
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}));
+    await waitFor(() => expect(state.mutate).toHaveBeenCalled());
+    expect(state.mutate.mock.calls[0][2][0].payload).toMatchObject({text: 'Keep exact anchor', sentenceIds: ['s0'], ranges: [{sentenceId: 's0', start: 1, end: 3}]});
   });
   it('dismisses transient selection outside the reader without removing a saved highlight', async () => {
     const cloud = (await state.privateState()).state;

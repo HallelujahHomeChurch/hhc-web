@@ -3,11 +3,11 @@ import {Button} from '@hallelujahhomechurch/ui';
 import type {BulletinReaderHighlightColor, BulletinReaderMutation, BulletinReaderState, MemberOnlineDocument} from '@hallelujahhomechurch/hhc-web-client';
 import {readerSentences} from '@/features/weekly-reader/selection';
 import {rangeQuote} from '@/features/weekly-reader/text-range';
-import {useTextSelection} from '@/features/weekly-reader/useTextSelection';
+import {useReaderSelection} from '@/features/weekly-reader/useReaderSelection';
 import type {ReaderMessages} from './ReaderToolbar';
 
-export function HighlightHistory({history = [], document, messages: m, busy, onSave}: {
-  history?: BulletinReaderState['highlightHistory']; document: MemberOnlineDocument; messages: ReaderMessages; busy: boolean;
+export function HighlightHistory({history = [], document, messages: m, busy, onSave, mobile = false}: {
+  history?: BulletinReaderState['highlightHistory']; document: MemberOnlineDocument; messages: ReaderMessages; busy: boolean; mobile?: boolean;
   onSave: (mutation: BulletinReaderMutation) => Promise<void>;
 }) {
   const [editing, setEditing] = useState<string | null>(null), [error, setError] = useState(false);
@@ -15,14 +15,17 @@ export function HighlightHistory({history = [], document, messages: m, busy, onS
   const [saving, setSaving] = useState(false);
   const pending = useRef(false), root = useRef<HTMLDivElement>(null);
   const sentences = useMemo(() => readerSentences(document), [document]);
-  const {selection, clear} = useTextSelection(root, sentences, {ids: []}, busy || saving || !editing);
+  const {selection, clear} = useReaderSelection(root, sentences, {ids: []}, busy || saving || !editing, mobile ? 'sentence' : 'text');
+  const ranges = selection.ranges ?? sentences.filter(sentence=>selection.ids.includes(sentence.id)).map(sentence=>({sentenceId:sentence.id,start:0,end:[...sentence.text].length}));
+  let quote = '';
+  try {if (ranges.length) quote=rangeQuote(ranges,sentences);} catch { /* History restoration needs a contiguous passage. */ }
   const entries = history.filter(entry => entry.highlight);
   async function save(id: string, restore: boolean) {
-    if (pending.current || busy || restore && !selection.ranges?.length) return;
+    if (pending.current || busy || restore && !quote) return;
     pending.current = true; setSaving(true); setError(false);
     try {
       const common = {mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: document.revision};
-      await onSave(restore ? {...common, kind: 'restoreHighlight', payload: {historyId: id, sentenceIds: selection.ids, ranges: selection.ranges!, color}} : {...common, kind: 'discardHighlightHistory', payload: {historyId: id}});
+      await onSave(restore ? {...common, kind: 'restoreHighlight', payload: {historyId: id, sentenceIds: selection.ids, ranges, color}} : {...common, kind: 'discardHighlightHistory', payload: {historyId: id}});
       setEditing(null); clear();
     } catch {setError(true);}
     finally {pending.current = false; setSaving(false);}
@@ -35,11 +38,11 @@ export function HighlightHistory({history = [], document, messages: m, busy, onS
       <blockquote>{entry.highlight!.segments?.length ? entry.highlight!.segments.map(part => [...entry.highlight!.quote].slice(part.start, part.end).join('')).join(' … ') : entry.highlight!.quote}</blockquote>
       {editing === entry.id ? <>
         <fieldset disabled={busy || saving}><legend>{m.recoveryRange}</legend>
-          <div ref={root} tabIndex={0} className="reader-recovery-anchors reader-recovery-text">{sentences.map(sentence => <p key={sentence.id}><span data-sentence-id={sentence.id} data-fragment-start="0" data-fragment-end={[...sentence.text].length}>{sentence.text}</span></p>)}</div>
-          {selection.ranges?.length ? <blockquote>{rangeQuote(selection.ranges, sentences)}</blockquote> : null}
+          <div ref={root} tabIndex={0} data-sentence-selection={mobile || undefined} className="reader-recovery-anchors reader-recovery-text">{sentences.map(sentence => <p key={sentence.id}><span role={mobile?'button':undefined} tabIndex={mobile?0:undefined} aria-pressed={mobile?selection.ids.includes(sentence.id):undefined} data-selected={mobile&&selection.ids.includes(sentence.id)||undefined} data-sentence-id={sentence.id} data-fragment-start="0" data-fragment-end={[...sentence.text].length}>{sentence.text}</span></p>)}</div>
+          {quote ? <blockquote>{quote}</blockquote> : null}
         </fieldset>
         <div className="reader-note-actions" role="group" aria-label={m.highlightColors}>{(['yellow', 'red', 'blue'] as const).map(value => <Button key={value} variant="ghost" className="reader-color" aria-label={m[`${value}Highlight`]} aria-pressed={value === color} isDisabled={busy || saving} onPress={() => setColor(value)}><span aria-hidden="true" data-color={value}/></Button>)}</div>
-        <div className="reader-note-actions"><Button variant="ghost" isDisabled={busy || saving} onPress={() => {setEditing(null); clear();}}>{m.noteCancel}</Button><Button variant="secondary" isDisabled={busy || saving || !selection.ranges?.length} onPress={() => {void save(entry.id, true);}}>{m.noteSave}</Button></div>
+        <div className="reader-note-actions"><Button variant="ghost" isDisabled={busy || saving} onPress={() => {setEditing(null); clear();}}>{m.noteCancel}</Button><Button variant="secondary" isDisabled={busy || saving || !quote} onPress={() => {void save(entry.id, true);}}>{m.noteSave}</Button></div>
       </> : <div className="reader-note-actions"><Button variant="secondary" isDisabled={busy || saving} onPress={() => {clear(); setError(false); setColor(entry.highlight!.color); setEditing(entry.id);}}>{m.highlightRestore}</Button><Button variant="ghost" isDisabled={busy || saving} onPress={() => {if (window.confirm(m.highlightHistoryDelete)) void save(entry.id, false);}}>{m.clearHighlight}</Button></div>}
     </article>)}
   </section>;

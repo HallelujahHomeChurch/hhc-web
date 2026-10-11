@@ -10,12 +10,12 @@ const auth = {getAccessToken: async () => 'token', refreshAfterUnauthorized: asy
 beforeEach(() => {vi.clearAllMocks(); client.listOnlineBulletinDiscovery.mockResolvedValue({items: [{issueId: readerFixture().document.issueId, issueNumber: 1739, series: 'general', contentLocale: 'zh-Hant', onlineRevision: 1}]}); client.openOnlineBulletin.mockResolvedValue(readerFixture());});
 
 describe('member reader access', () => {
-  it.each(['zh-Hant','zh-Hans'] as const)('accepts immutable V9 %s snapshots without current-setting lookups',contentLocale=>{
-    const value=readerFixture(contentLocale,'v9');
+  it.each((['zh-Hant','zh-Hans'] as const).flatMap(locale=>(['v9','v10'] as const).map(version=>[locale,version] as const)))('accepts immutable %s %s snapshots without current-setting lookups',(contentLocale,version)=>{
+    const value=readerFixture(contentLocale,version);
     expect(verifyReaderAccess(value,{...selector,contentLocale}).templateSnapshot).toEqual(value.document.content.templateSnapshot);
   });
-  it.each(['missing','null','unsafe','extra','control','empty'] as const)('rejects V9 %s snapshots before exposing private content',reason=>{
-    const value=readerFixture('zh-Hant','v9');
+  it.each((['missing','null','unsafe','extra','control','empty'] as const).flatMap(reason=>(['v9','v10'] as const).map(version=>[reason,version] as const)))('rejects %s %s snapshots before exposing private content',(reason,version)=>{
+    const value=readerFixture('zh-Hant',version);
     const snapshot=value.document.content.templateSnapshot!;
     if(reason==='missing')delete value.document.content.templateSnapshot;
     else if(reason==='null')Reflect.set(value.document.content,'templateSnapshot',null);

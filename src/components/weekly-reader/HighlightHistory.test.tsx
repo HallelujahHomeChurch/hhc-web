@@ -6,6 +6,13 @@ import {HighlightHistory} from './HighlightHistory';
 
 const messages = getMessages('en').weeklyReader;
 const history = [{id: 'old', highlight: {sentenceId: 'gone', quote: '甲😀乙', color: 'red' as const, active: false, version: 1, updatedAt: '', segments: [{start: 1, end: 2, color: 'red' as const}]}}, {id: 'consumed'}];
+it('restores history with explicitly tapped mobile sentences, not native selection', async () => {
+  const onSave=vi.fn().mockResolvedValue(undefined);
+  render(<HighlightHistory history={history} document={readerFixture().document} messages={messages} busy={false} mobile onSave={onSave}/>);
+  fireEvent.click(screen.getByRole('button',{name:messages.highlightRestore}));
+  fireEvent.click(screen.getByText('內容1。'));fireEvent.click(screen.getByRole('button',{name:'Save'}));
+  await waitFor(()=>expect(onSave).toHaveBeenCalledWith(expect.objectContaining({kind:'restoreHighlight',payload:{historyId:'old',sentenceIds:['s1'],ranges:[{sentenceId:'s1',start:0,end:4}],color:'red'}})));
+});
 it('renders only retained history and requires confirmation before discarding it', async () => {
   const onSave = vi.fn().mockResolvedValue(undefined);
   const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);

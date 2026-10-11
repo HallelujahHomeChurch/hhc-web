@@ -69,13 +69,17 @@
 .weekly-reader .hhc-bulletin-v1[data-bulletin-mode='paper'] [data-body-canonical-art] [data-sentence-id] { text-shadow: none; }
 .weekly-reader .hhc-bulletin-v1[data-bulletin-mode='paper'] [data-fixed-element='masthead'] { text-shadow: none; }
 .weekly-reader .hhc-bulletin-v1[data-bulletin-mode='paper'] :is([data-fixed-element='announcementsFrame'], [data-fixed-element='prayersFrame']) {border-width: 1pt; border-style: solid; outline: none; box-sizing: border-box;}
-.weekly-reader [data-reader-renderer]:not([data-reader-renderer='v8']):not([data-reader-renderer='v9']) .hhc-bulletin-v1[data-bulletin-mode='paper'] [data-fixed-element='issueNumber']::before { content: '\00a0'; }
+.weekly-reader [data-reader-renderer]:not([data-reader-renderer='v8']):not([data-reader-renderer='v9']):not([data-reader-renderer='v10']) .hhc-bulletin-v1[data-bulletin-mode='paper'] [data-fixed-element='issueNumber']::before { content: '\00a0'; }
 .reader-paper-with-notes { position: relative; margin-inline: auto; }
 .reader-range-layer { position: absolute; inset: 0; pointer-events: none; z-index: 1; mix-blend-mode: multiply; }
 .reader-range-layer span { position: absolute; border-radius: 2px; }
 .reader-range-layer [data-reader-highlight='yellow'] { background: #ffe12380; }
 .reader-range-layer [data-reader-highlight='red'] { background: #ff738270; }
 .reader-range-layer [data-reader-highlight='blue'] { background: #4bb4ff70; }
+.reader-document[data-mobile] .reader-paper-with-notes,
+.reader-recovery-text[data-sentence-selection] { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.reader-document[data-mobile] .hhc-bulletin-ebook [data-selected],
+.reader-recovery-text[data-sentence-selection] [data-selected] { outline: none; background: #4bb4ff40; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 .reader-paper-with-notes[data-has-notes] { padding-inline-end: 44px; }
 .reader-note-indicator { position: absolute; inset-inline-end: 0; width: 44px; min-height: 44px; color: var(--hhc-text); background: var(--hhc-surface-raised); border-radius: .5rem; }
 .reader-sync-status { max-width: 75rem; margin: .5rem auto; font-size: .8rem; color: var(--hhc-text-muted); }
