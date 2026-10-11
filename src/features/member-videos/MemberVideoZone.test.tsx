@@ -295,11 +295,12 @@ describe('member video gate', () => {
     render(<MemberVideoZone locale="en" messages={messages} hero={null}/>);
     fireEvent.click(await screen.findByRole('button',{name:'Play'}));
     const video=await screen.findByLabelText('Sunday');
-    fireEvent.error(video); fireEvent.error(video);
+    Object.defineProperty(video,'error',{configurable:true,value:{code:3,message:'Decode failed'}});fireEvent.error(video); fireEvent.error(video);
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
     expect(captureHandledError).toHaveBeenCalledExactlyOnceWith(new Error('Member video media playback failed'), {operation:'member-videos.media'});
     fireEvent.click(screen.getByRole('button',{name:'Retry'}));
-    fireEvent.error(await screen.findByLabelText('Sunday'));
+    const retried=await screen.findByLabelText('Sunday');
+    Object.defineProperty(retried,'error',{configurable:true,value:{code:3,message:'Decode failed'}});fireEvent.error(retried);
     expect(captureHandledError).toHaveBeenCalledTimes(2);
   });
   it('allows another play after changing selection during a pending grant', async () => {
@@ -529,7 +530,7 @@ it.each([0,240])('retries VOD at its frozen position with media origin %s',async
  render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);
  const video=await screen.findByLabelText('Meeting') as HTMLVideoElement;await waitFor(()=>expect(video).toHaveAttribute('src',playbackUrl));
  Object.defineProperty(video,'duration',{configurable:true,value:7200});fireEvent.loadedMetadata(video);video.currentTime=2820;video.playbackRate=1.5;Object.defineProperty(video,'paused',{configurable:true,value:false});fireEvent.play(video);fireEvent.timeUpdate(video);
- fireEvent.error(video);video.currentTime=0;fireEvent.pause(video);fireEvent.timeUpdate(video);vi.mocked(video.play).mockClear();
+ Object.defineProperty(video,'error',{configurable:true,value:{code:3,message:'Decode failed'}});fireEvent.error(video);video.currentTime=0;fireEvent.pause(video);fireEvent.timeUpdate(video);vi.mocked(video.play).mockClear();
  fireEvent.click(screen.getByRole('button',{name:'Retry'}));const resumed=await screen.findByLabelText('Meeting') as HTMLVideoElement;
  await waitFor(()=>expect(videoApi.grant).toHaveBeenCalledTimes(2));fireEvent.loadedMetadata(resumed);
  expect(resumed.currentTime).toBe(2820);expect(resumed.playbackRate).toBe(1.5);expect(resumed.play).toHaveBeenCalled();
@@ -537,7 +538,7 @@ it.each([0,240])('retries VOD at its frozen position with media origin %s',async
 
 it('attempts playback again after an initial media failure without an invented pause',async()=>{
  state.auth='authenticated';state.access='available';list.mockResolvedValue([{id:'r1',title:'Initial failure',packageId}]);vi.spyOn(HTMLMediaElement.prototype,'canPlayType').mockReturnValue('probably');videoApi.grant.mockResolvedValue({packageId,expiresAt:new Date(Date.now()+3600000).toISOString(),watermarkCode:'TRACE',renditions:[]});videoApi.exchange.mockResolvedValue(playbackUrl);
- render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);const video=await screen.findByLabelText('Initial failure',{selector:'video'}) as HTMLVideoElement;await waitFor(()=>expect(video.src).toBe(playbackUrl));fireEvent.error(video);fireEvent.click(screen.getByRole('button',{name:'Retry'}));await waitFor(()=>expect(videoApi.grant).toHaveBeenCalledTimes(2));await waitFor(()=>expect(screen.getByLabelText('Initial failure',{selector:'video'})).not.toBe(video));const resumed=screen.getByLabelText('Initial failure',{selector:'video'}) as HTMLVideoElement;await waitFor(()=>expect(resumed.src).toBe(playbackUrl));vi.mocked(resumed.play).mockClear();fireEvent.loadedMetadata(resumed);expect(resumed.play).toHaveBeenCalledOnce();
+ render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);const video=await screen.findByLabelText('Initial failure',{selector:'video'}) as HTMLVideoElement;await waitFor(()=>expect(video.src).toBe(playbackUrl));Object.defineProperty(video,'error',{configurable:true,value:{code:3,message:'Decode failed'}});fireEvent.error(video);fireEvent.click(screen.getByRole('button',{name:'Retry'}));await waitFor(()=>expect(videoApi.grant).toHaveBeenCalledTimes(2));await waitFor(()=>expect(screen.getByLabelText('Initial failure',{selector:'video'})).not.toBe(video));const resumed=screen.getByLabelText('Initial failure',{selector:'video'}) as HTMLVideoElement;await waitFor(()=>expect(resumed.src).toBe(playbackUrl));vi.mocked(resumed.play).mockClear();fireEvent.loadedMetadata(resumed);expect(resumed.play).toHaveBeenCalledOnce();
 });
 
 it('starts a fresh search page after opening a result without restoring list depth or scroll',async()=>{
