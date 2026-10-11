@@ -18,6 +18,26 @@ beforeEach(() => {
   api.open.mockResolvedValue(readerFixture()); api.renew.mockResolvedValue(readerFixture());
 });
 afterEach(() => {vi.useRealTimers(); vi.restoreAllMocks();});
+it('coalesces focus, visibility and online notifications while validation is in flight', async () => {
+  const {result} = renderHook(() => useReaderSession(api, selector));
+  await waitFor(() => expect(result.current.value).not.toBeNull());
+  let finish!: (value: ReturnType<typeof readerFixture>) => void;
+  api.open.mockImplementationOnce(() => new Promise(resolve => {finish = resolve;}));
+  act(() => window.dispatchEvent(new Event('focus')));
+  await waitFor(() => expect(api.open).toHaveBeenCalledTimes(2));
+  const signal = api.open.mock.calls[1][2];
+  act(() => {
+    document.dispatchEvent(new Event('visibilitychange'));
+    window.dispatchEvent(new Event('online'));
+    window.dispatchEvent(new Event('focus'));
+  });
+  expect(api.open).toHaveBeenCalledTimes(2);
+  expect(signal.aborted).toBe(false);
+  await act(async () => finish(readerFixture()));
+  expect(result.current.allowAction()).toBe(true);
+  act(() => window.dispatchEvent(new Event('online')));
+  await waitFor(() => expect(api.open).toHaveBeenCalledTimes(3));
+});
 it('allows a stable local clock behind the server, but still locks a local rollback', async () => {
   vi.useFakeTimers();
   const local = Date.parse(readerFixture().access.validatedAt) - 30000;

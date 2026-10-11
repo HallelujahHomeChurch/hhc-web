@@ -287,3 +287,4 @@ body:has(.weekly-reader) {padding-bottom: 0;}
 @media (prefers-reduced-motion: reduce) {
   .reader-document .reader-tabbar, .reader-document .reader-topbar {transition: none;}
 }
+.reader-revalidation-layer {position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: var(--surface); color: var(--foreground);}

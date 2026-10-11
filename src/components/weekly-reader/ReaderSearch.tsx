@@ -23,7 +23,7 @@ export function ReaderSearch({document, onJump, messages: m, mobile = false}: {d
       <p role="status" aria-label={m.searchResults}>{results.length ? m.searchCount.replace('{count}', String(results.length)) : m.noResults}</p>
       <ul className="reader-search-list">{results.map(result => {
         const page = document.content.layoutManifest.pages.findIndex(page => page.slots.some(slot => slot.fragments.some(fragment => fragment.sentenceId === result.sentenceId)) || page.fixedSlots?.some(slot => `canonical-${slot.element}` === result.sentenceId));
-        return <li key={result.sentenceId}><button type="button" onClick={() => onJump(result.sentenceId)}>
+        return <li key={result.sentenceId}><button type="button" data-reader-search-target={result.sentenceId} onClick={() => onJump(result.sentenceId)}>
           <span lang={document.contentLocale}><SearchExcerpt text={result.text} query={submitted}/></span>
           {page >= 0 ? <small>{m.page} {page + 1}</small> : null}
         </button></li>;

@@ -18,6 +18,7 @@ import {isWeeklyReaderEnabled} from '@/features/weekly-reader/enabled';
 import {getOfflineIdentity, supportsOfflineReader} from '@/features/weekly-reader/offline-store';
 import {watchOfflineAccount} from '@/features/weekly-reader/offline-session';
 import {useReaderSession} from '@/features/weekly-reader/useReaderSession';
+import {useReaderSearchNavigation} from '@/features/weekly-reader/useReaderSearchNavigation';
 import {usePrivateReader} from '@/features/weekly-reader/usePrivateReader';
 import {readerSentences} from '@/features/weekly-reader/selection';
 import {rangeQuote, renderedTextRanges, type ReaderTextRange} from '@/features/weekly-reader/text-range';
@@ -92,8 +93,8 @@ function AuthorizedReader(props: Props & {accountId: string; readerTheme: Return
   const session = useReaderSession(api, selector);
   const guard = (event: React.SyntheticEvent) => {if (!session.allowAction()) {event.preventDefault(); event.stopPropagation();}};
   if (session.value) return <>
-    {session.validating ? <p role="status">{m.loading}</p> : null}
-    <div hidden={session.validating} inert={session.validating} onClickCapture={guard} onKeyDownCapture={guard} onPointerDownCapture={guard} onCopyCapture={guard}>
+    {session.validating ? <div className="reader-revalidation-layer" role="status">{m.loading}</div> : null}
+    <div aria-hidden={session.validating || undefined} inert={session.validating} onClickCapture={guard} onKeyDownCapture={guard} onPointerDownCapture={guard} onCopyCapture={guard}>
     {session.offline ? <p role="status">{m.offlineNotice}</p> : null}
     {session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}
     <ReaderDocument readerTheme={props.readerTheme} key={`${session.value.document.documentId}:${session.value.document.revision}`} value={session.value} selector={selector} messages={m} api={api} offline={session.offline} allowAction={session.allowAction} onFailure={session.privateFailure} onUpdated={session.acceptSaved} suspended={!!session.validating} backHref={`/${props.locale}/literature-ministry`} offlineControl={<OfflineControl api={api} value={session.value} selector={selector} locale={props.locale} messages={m} onSaved={session.acceptSaved} onFailure={session.privateFailure}/>}/>
@@ -222,6 +223,9 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     setPanel(null);
     if (restoreFocus) requestAnimationFrame(() => panelTrigger.current?.focus({preventScroll: true}));
   }
+  const jumpFromSearch = useReaderSearchNavigation({root: chromeRef, open: panel === 'search', suspended,
+    binding: `${selector.accountId}:${value.document.documentId}:${value.document.revision}`,
+    allowAction, onJump: id => {onAnchor({kind: 'sentence', id}); closePanel(false);}});
   useEffect(() => {
     if (!panel) return;
     chromeRef.current?.querySelector<HTMLElement>(panel === 'search' ? '.reader-search input' : '.reader-navigation-panel:not([hidden]) > header button')?.focus({preventScroll: true});
@@ -558,7 +562,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       </aside>
       <aside className="reader-navigation-panel reader-search-panel" role="dialog" aria-modal="true" data-panel="search" hidden={panel !== 'search'} aria-label={m.search}>
         <header><IconButton variant="ghost" aria-label={m.close} onPress={() => closePanel()} icon={<ChevronLeft size={22} aria-hidden="true"/>}/></header>
-        <ReaderSearch document={value.document} mobile={mobile} onJump={id => {onAnchor({kind: 'sentence', id}); closePanel(false);}} messages={m}/>
+        <ReaderSearch document={value.document} mobile={mobile} onJump={jumpFromSearch} messages={m}/>
       </aside>
     </div>
     {value.document.metadataSyncPending ? <p role="status">{m.metadataPending}</p> : null}

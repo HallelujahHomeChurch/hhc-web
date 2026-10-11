@@ -51,6 +51,43 @@ afterEach(() => {cleanup(); Reflect.deleteProperty(document, 'fonts'); Reflect.d
 beforeEach(() => {Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect(0, 100, 300, 20)});});
 
 describe('protected weekly reader', () => {
+  it('search jump survives validation between pointerdown and click without a second tap', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(query => ({matches: query === '(max-width: 767px)', addEventListener: vi.fn(), removeEventListener: vi.fn()})));
+    const {container} = render(<WeeklyReader {...props}/>);
+    await waitFor(() => expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', {name: props.messages.search}));
+    fireEvent.change(screen.getByRole('searchbox'), {target: {value: '內容2'}});
+    fireEvent.submit(screen.getByRole('search'));
+    const result = within(screen.getByRole('list')).getAllByRole('button')[0];
+    vi.spyOn(result, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 300, 100));
+    const pointer = (type: string) => {
+      const event = new MouseEvent(type, {bubbles: true, clientX: 40, clientY: 40, button: 0});
+      Object.defineProperties(event, {pointerId: {value: 1}, isPrimary: {value: true}, pointerType: {value: 'touch'}});
+      fireEvent(result, event);
+    };
+    pointer('pointerdown');
+    let finish!: (value: ReturnType<typeof readerFixture>) => void;
+    state.open.mockImplementationOnce(() => new Promise(resolve => {finish = resolve;}));
+    fireEvent(window, new Event('focus'));
+    await waitFor(() => expect(state.open).toHaveBeenCalledTimes(2));
+    expect(container.querySelector('.reader-document')!.closest('[hidden]')).toBeNull();
+    pointer('pointerup');
+    fireEvent.click(result);
+    await act(async () => finish(readerFixture()));
+    await waitFor(() => expect(screen.queryByRole('dialog', {name: props.messages.search})).not.toBeInTheDocument());
+    expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p2');
+    expect(state.open).toHaveBeenCalledTimes(2);
+  });
+  it('ordinary search jump does not request a receipt', async () => {
+    render(<WeeklyReader {...props}/>);
+    await waitFor(() => expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', {name: props.messages.search}));
+    fireEvent.change(screen.getByRole('searchbox'), {target: {value: '內容2'}});
+    fireEvent.submit(screen.getByRole('search'));
+    fireEvent.click(screen.getByRole('button', {name: /內容2/}));
+    expect(screen.queryByRole('dialog', {name: props.messages.search})).not.toBeInTheDocument();
+    expect(state.open).toHaveBeenCalledOnce();
+  });
   it('toggles mobile sentences, dismisses from distant blank space and persists non-contiguous whole-sentence highlights', async () => {
     vi.stubGlobal('matchMedia', vi.fn(query => ({matches: query === '(max-width: 767px)', addEventListener: vi.fn(), removeEventListener: vi.fn()})));
     const cloud = (await state.privateState()).state;
