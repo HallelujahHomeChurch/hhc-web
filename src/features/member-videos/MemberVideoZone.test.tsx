@@ -6,7 +6,7 @@ import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
 
 const state = vi.hoisted(() => ({access: 'loading', auth: 'checking'}));
 const list = vi.hoisted(() => vi.fn());
-const videoApi = vi.hoisted(() => ({watch:vi.fn(),upcoming:vi.fn(),broadcastCover:vi.fn(),listPage:vi.fn(),liveList:vi.fn().mockResolvedValue([]),cover:vi.fn(),list: vi.fn(), grant: vi.fn(), exchange: vi.fn(), clear: vi.fn().mockResolvedValue(undefined)}));
+const videoApi = vi.hoisted(() => ({watch:vi.fn(),upcoming:vi.fn(),broadcastCover:vi.fn(),liveCover:vi.fn(),listPage:vi.fn(),liveList:vi.fn().mockResolvedValue([]),cover:vi.fn(),list: vi.fn(), grant: vi.fn(), exchange: vi.fn(), clear: vi.fn().mockResolvedValue(undefined)}));
 const liveSession = vi.hoisted(()=>({playback:null,closed:false,pending:false,error:false,start:vi.fn(),remember:vi.fn(),bookmark:{current:undefined}}));
 vi.mock('./useLivePlayback',()=>({useLivePlayback:()=>liveSession}));
 const router = vi.hoisted(() => ({replace: vi.fn(),push:vi.fn()}));
@@ -55,6 +55,7 @@ beforeEach(() => {
   });
   videoApi.upcoming.mockReset().mockResolvedValue({items:[],nextCursor:null});
   videoApi.broadcastCover.mockReset().mockRejectedValue(new Error('No cover'));
+  videoApi.liveCover.mockReset().mockRejectedValue(new Error('No cover'));
   videoApi.grant.mockReset().mockImplementation(()=>new Promise(()=>{})); videoApi.exchange.mockReset();
   videoApi.cover.mockReset().mockRejectedValue(new Error('No cover'));
   HTMLElement.prototype.scrollIntoView = vi.fn();
@@ -206,6 +207,19 @@ describe('member video gate', () => {
     render(<MemberVideoZone locale="en" messages={messages} hero={null} view="list"/>);
     expect(await screen.findByRole('link',{name:'Recovering stream — Live'})).toBeVisible();
     expect(screen.queryByText('Catching up')).not.toBeInTheDocument();
+  });
+  it.each(['list','search','recommendation','poster'] as const)('renders authenticated live JPEG on the %s surface',async(surface)=>{
+    state.auth='authenticated';state.access='available';
+    vi.spyOn(URL,'createObjectURL').mockReturnValue('blob:live-jpeg');
+    vi.spyOn(URL,'revokeObjectURL').mockImplementation(()=>{});
+    const live={id:'live',captureId:packageId,title:'Live gathering',liveState:'live',createdAt:new Date().toISOString(),coverRevision:'frame-one',progress:{mediaEndSeconds:120}};
+    videoApi.liveList.mockResolvedValue([live]);
+    videoApi.liveCover.mockResolvedValue(new Blob(['private jpeg'],{type:'image/jpeg'}));
+    list.mockResolvedValue(surface==='recommendation'?[{id:'vod',title:'Previous gathering',packageId}]:[]);
+    render(<MemberVideoZone locale="en" messages={messages} hero={null} view="list" query={surface==='search'?'gathering':''} recordingId={surface==='recommendation'?'vod':surface==='poster'?'live':undefined}/>);
+    expect(await screen.findByAltText('Live gathering')).toHaveAttribute('src','blob:live-jpeg');
+    expect(videoApi.liveCover).toHaveBeenCalledWith('live',packageId,expect.any(AbortSignal));
+    expect(videoApi.broadcastCover).not.toHaveBeenCalled();
   });
   it('puts livestreams in the same grid before recordings and removes duplicate VOD cards',async()=>{
     state.auth='authenticated';state.access='available';
