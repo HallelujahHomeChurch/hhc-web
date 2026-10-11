@@ -37,7 +37,7 @@ describe('single-line paper fields', () => {
     expect(issue.style.left).toBe('40%');
     expect(date.style.width).toBe('20%');
   });
-  it.each(['v8', 'v9'])('preserves the composer-owned date and issue gap for %s', renderer => {
+  it.each(['v8', 'v9', 'v10'])('preserves the composer-owned date and issue gap for %s', renderer => {
     const root = document.createElement('div');
     root.innerHTML = `<div data-reader-renderer="${renderer}"><div data-bulletin-mode="paper"><section data-bulletin-page="cover"><p data-fixed-element="date" style="left:10%;top:28%;width:20%">Sep.27.2026</p><p data-fixed-element="issueNumber" style="left:31%;top:28%;width:15%">第1740期</p></section></div></div>`;
     const before = root.innerHTML;

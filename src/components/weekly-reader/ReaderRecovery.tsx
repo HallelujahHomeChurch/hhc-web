@@ -7,13 +7,14 @@ import {finishReaderUpgrade, prepareReaderUpgrade, type ReaderUpgrade} from '@/f
 import {manualReaderRecovery} from '@/features/weekly-reader/rebase';
 import {readerSentences} from '@/features/weekly-reader/selection';
 import {rangeQuote} from '@/features/weekly-reader/text-range';
-import {useTextSelection} from '@/features/weekly-reader/useTextSelection';
+import {useReaderSelection} from '@/features/weekly-reader/useReaderSelection';
 import type {ReaderMessages} from './ReaderToolbar';
 
-export function ReaderRecovery({api, value, selector, messages: m, onUpdated, onFailure, suspended = false, pendingMutation = null, onPendingChange}: {
+export function ReaderRecovery({api, value, selector, messages: m, onUpdated, onFailure, suspended = false, pendingMutation = null, onPendingChange, mobile = false}: {
   api: ReturnType<typeof createReaderApi>; value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages;
   onUpdated: (value: OnlineBulletinAccess) => void; onFailure: (error: unknown) => void; suspended?: boolean;
   pendingMutation?: BulletinReaderMutation | null; onPendingChange?: (mutation: BulletinReaderMutation | null) => void;
+  mobile?: boolean;
 }) {
   const [open, setOpen] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState(false);
   const [prepared, setPrepared] = useState<ReaderUpgrade | null>(null);
@@ -100,7 +101,7 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
           if (partialConflict && !window.confirm(m.recoveryPartialColor)) return;
           void run(signal => choose(null, {mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: prepared.value.document.revision, kind: 'resolveHighlightMigrationConflict', payload: {conflictId: conflict.id, chosenColor: color, currentRevision: prepared.value.document.revision}}, signal));
         }}><span data-color={color}/></button>)}</div></section> :
-        recovery && entry && prepared ? <RecoveryChoice key={`${recovery.mutationId}:${entry.resolution?.mutation?.mutationId ?? ''}:${prepared.state.notes.map(note => note.version).join(',')}`} prepared={prepared} previous={value} original={entry.resolution?.mutation ?? entry.mutation} reason={recovery.reason} messages={m} busy={busy} onChoose={mutation => void run(signal => choose(entry.mutation.mutationId, mutation, signal))}/> :
+        recovery && entry && prepared ? <RecoveryChoice key={`${recovery.mutationId}:${entry.resolution?.mutation?.mutationId ?? ''}:${prepared.state.notes.map(note => note.version).join(',')}`} prepared={prepared} previous={value} original={entry.resolution?.mutation ?? entry.mutation} reason={recovery.reason} messages={m} busy={busy} mobile={mobile} onChoose={mutation => void run(signal => choose(entry.mutation.mutationId, mutation, signal))}/> :
         prepared ? <button type="button" disabled={busy} onClick={() => void run(async signal => {
           const current = epoch.current === null ? prepared.value : await finishReaderUpgrade(api, selector, prepared, epoch.current, signal);
           signal.throwIfAborted(); onUpdated(current); setOpen(false);
@@ -111,13 +112,16 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
   </>;
 }
 
-function RecoveryChoice({prepared, previous, original, reason, messages: m, busy, onChoose}: {
-  prepared: ReaderUpgrade; previous: OnlineBulletinAccess; original: BulletinReaderMutation; reason: ReaderUpgrade['recovery'][number]['reason']; messages: ReaderMessages; busy: boolean; onChoose: (mutation: BulletinReaderMutation | null) => void;
+function RecoveryChoice({prepared, previous, original, reason, messages: m, busy, onChoose, mobile}: {
+  prepared: ReaderUpgrade; previous: OnlineBulletinAccess; original: BulletinReaderMutation; reason: ReaderUpgrade['recovery'][number]['reason']; messages: ReaderMessages; busy: boolean; mobile: boolean; onChoose: (mutation: BulletinReaderMutation | null) => void;
 }) {
   const sentences = useMemo(() => readerSentences(prepared.value.document), [prepared.value.document]);
   const rangeRoot = useRef<HTMLDivElement>(null);
   const partial = 'ranges' in original.payload;
-  const {selection} = useTextSelection(rangeRoot, sentences, {ids: []}, !partial || busy);
+  const {selection} = useReaderSelection(rangeRoot, sentences, {ids: []}, !partial || busy, mobile ? 'sentence' : 'text');
+  const ranges = selection.ranges ?? sentences.filter(sentence=>selection.ids.includes(sentence.id)).map(sentence=>({sentenceId:sentence.id,start:0,end:[...sentence.text].length}));
+  let selectedQuote = '';
+  try {if (ranges.length) selectedQuote=rangeQuote(ranges,sentences);} catch { /* Recovery requires an explicit contiguous passage. */ }
   const cloud = original.kind === 'createNote' || original.kind === 'editNote' || original.kind === 'deleteNote' || original.kind === 'reanchorNote' ? prepared.state.notes.find(note => note.id === original.payload.noteId && !note.deleted) : undefined;
   const sourceIds = original.kind === 'setHighlight' || original.kind === 'clearHighlight' || original.kind === 'createNote' ? original.payload.sentenceIds : [];
   const previousSentences = readerSentences(previous.document);
@@ -139,10 +143,10 @@ function RecoveryChoice({prepared, previous, original, reason, messages: m, busy
     {note ? <><label>{m.noteText}<textarea value={text} disabled={busy} onChange={event => setText(event.target.value)}/></label><p>{m.noteCount.replace('{count}', String([...text].length))}</p>{cloud ? <button type="button" disabled={busy} onClick={() => setText(`${cloud.text}\n\n${text}`)}>{m.noteManual}</button> : null}</> : null}
     {original.kind === 'deleteNote' ? <p>{m.noteDeleteConfirm}</p> : null}
     {original.kind === 'setHighlight' || original.kind === 'restoreHighlight' ? <fieldset><legend>{m.highlightColors}</legend>{(['yellow', 'red', 'blue'] as const).map(option => <label key={option}><input type="radio" name="recovery-color" value={option} checked={color === option} onChange={() => setColor(option)} disabled={busy}/>{m[`${option}Highlight`]}</label>)}</fieldset> : null}
-    {anchors && partial ? <fieldset><legend>{m.recoveryRange}</legend><div ref={rangeRoot} className="reader-recovery-anchors reader-recovery-text">{sentences.map(sentence => <p key={sentence.id}><span data-sentence-id={sentence.id} data-fragment-start="0" data-fragment-end={[...sentence.text].length}>{sentence.text}</span></p>)}</div><blockquote>{selection.ranges ? rangeQuote(selection.ranges, sentences) : m.recoveryRange}</blockquote></fieldset> : anchors ? <fieldset><legend>{m.recoveryAnchors}</legend><input type="search" aria-label={m.search} value={search} onChange={event => setSearch(event.target.value)}/><p>{m.recoveryAnchorCount.replace('{count}', String(ids.length))}</p><div className="reader-recovery-anchors">{sentences.filter(sentence => sentence.text.includes(search)).map(sentence => <label key={sentence.id}><input type="checkbox" checked={ids.includes(sentence.id)} disabled={busy || ids.length >= 500 && !ids.includes(sentence.id)} onChange={event => setIds(event.target.checked ? [...ids, sentence.id] : ids.filter(id => id !== sentence.id))}/>{sentence.text}</label>)}</div></fieldset> : null}
+    {anchors && partial ? <fieldset><legend>{m.recoveryRange}</legend><div ref={rangeRoot} data-sentence-selection={mobile || undefined} className="reader-recovery-anchors reader-recovery-text">{sentences.map(sentence => <p key={sentence.id}><span role={mobile?'button':undefined} tabIndex={mobile?0:undefined} aria-pressed={mobile?selection.ids.includes(sentence.id):undefined} data-selected={mobile&&selection.ids.includes(sentence.id)||undefined} data-sentence-id={sentence.id} data-fragment-start="0" data-fragment-end={[...sentence.text].length}>{sentence.text}</span></p>)}</div><blockquote>{selectedQuote || m.recoveryRange}</blockquote></fieldset> : anchors ? <fieldset><legend>{m.recoveryAnchors}</legend><input type="search" aria-label={m.search} value={search} onChange={event => setSearch(event.target.value)}/><p>{m.recoveryAnchorCount.replace('{count}', String(ids.length))}</p><div className="reader-recovery-anchors">{sentences.filter(sentence => sentence.text.includes(search)).map(sentence => <label key={sentence.id}><input type="checkbox" checked={ids.includes(sentence.id)} disabled={busy || ids.length >= 500 && !ids.includes(sentence.id)} onChange={event => setIds(event.target.checked ? [...ids, sentence.id] : ids.filter(id => id !== sentence.id))}/>{sentence.text}</label>)}</div></fieldset> : null}
     {error ? <p role="alert">{m.actionFailed}</p> : null}
-    <div className="reader-note-actions" data-reader-selection-tools><button type="button" disabled={busy} onClick={() => onChoose(null)}>{m.noteCloud}</button><button type="button" disabled={busy || note && (!text.trim() || [...text].length > 10000) || anchors && !(partial ? selection.ids : ids).length || original.kind === 'deleteNote' && !cloud} onClick={() => {
-      try {onChoose(manualReaderRecovery(original, prepared.state, prepared.value.document, {sentenceIds: partial ? selection.ids : ids, text, color, ...(partial ? {ranges: selection.ranges} : {})}));}
+    <div className="reader-note-actions" data-reader-selection-tools><button type="button" disabled={busy} onClick={() => onChoose(null)}>{m.noteCloud}</button><button type="button" disabled={busy || note && (!text.trim() || [...text].length > 10000) || anchors && !(partial ? selectedQuote : ids.length) || original.kind === 'deleteNote' && !cloud} onClick={() => {
+      try {onChoose(manualReaderRecovery(original, prepared.state, prepared.value.document, {sentenceIds: partial ? selection.ids : ids, text, color, ...(partial ? {ranges} : {})}));}
       catch {setError(true);}
     }}>{m.noteLocal}</button></div>
   </section>;

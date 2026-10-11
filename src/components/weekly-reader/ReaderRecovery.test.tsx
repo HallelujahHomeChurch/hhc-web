@@ -46,6 +46,22 @@ it('requires a new native range after revision change and retains only its exact
   await waitFor(() => expect(mocks.choose).toHaveBeenCalled());
   expect(mocks.choose.mock.calls[0][2]).toMatchObject({documentRevision: 2, payload: {sentenceIds: ['s0'], ranges: [{sentenceId: 's0', start: 0, end: 2}]}});
 });
+it('requires explicit mobile sentence reselection without silently enlarging a historical partial range', async () => {
+  const mutation = {mutationId: 'partial-mobile', documentRevision: 1, createdAt: '', kind: 'setHighlight', payload: {sentenceIds: ['s0'], color: 'yellow', ranges: [{sentenceId: 's0', start: 1, end: 3}]}};
+  const current = {...value, document: {...value.document, revision: 2}};
+  mocks.prepare.mockResolvedValue({value: current, state: cloud, queue: [{mutation, sent: true}], mutations: [], recovery: [{mutationId: mutation.mutationId, reason: 'mapping_unavailable'}], previousRevision: 1});
+  const {container} = render(<ReaderRecovery {...props} mobile/>);
+  fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
+  const keep = await screen.findByRole('button', {name: 'Keep local'});
+  await waitFor(() => expect(screen.queryByText(props.messages.syncSyncing)).not.toBeInTheDocument());
+  expect(keep).toBeDisabled();
+  expect(mocks.choose).not.toHaveBeenCalled();
+  fireEvent.click(container.ownerDocument.querySelector('[data-sentence-id="s1"]')!);
+  expect(keep).toBeEnabled();
+  fireEvent.click(keep);
+  await waitFor(() => expect(mocks.choose).toHaveBeenCalled());
+  expect(mocks.choose.mock.calls[0][2]).toMatchObject({documentRevision: 2, payload: {sentenceIds: ['s1'], ranges: [{sentenceId: 's1', start: 0, end: 4}]}});
+});
 it('requires explicit acceptance before switching and retains the reader on cancellation or failure', async () => {
   render(<ReaderRecovery {...props}/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));

@@ -2,7 +2,7 @@ import {useEffect, useState, type RefObject} from 'react';
 import type {BulletinReaderState} from '@hallelujahhomechurch/hhc-web-client';
 import {renderedTextRanges, type ReaderTextRange} from '@/features/weekly-reader/text-range';
 
-type Props = {root: RefObject<HTMLDivElement | null>; highlights: BulletinReaderState['highlights']; layoutKey: string; onSelect: (range: ReaderTextRange) => void};
+type Props = {root: RefObject<HTMLDivElement | null>; highlights: BulletinReaderState['highlights']; layoutKey: string; onSelect?: (range: ReaderTextRange) => void};
 export function RangeHighlights({root, highlights, layoutKey, onSelect}: Props) {
   const [boxes, setBoxes] = useState<{left: number; top: number; width: number; height: number; color: string}[]>([]);
   useEffect(() => {
@@ -36,13 +36,13 @@ export function RangeHighlights({root, highlights, layoutKey, onSelect}: Props) 
       // Client rectangles change on scroll even when relative painted boxes don't.
       measure();
       const hit = targets.find(({rect}) => event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom);
-      if (hit) onSelect(hit.range);
+      if (hit) onSelect?.(hit.range);
     };
     const frame = requestAnimationFrame(measure);
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
     observer?.observe(element);
     window.addEventListener('resize', measure);
-    element.addEventListener('click', click);
+    if (onSelect) element.addEventListener('click', click);
     return () => {cancelAnimationFrame(frame); observer?.disconnect(); window.removeEventListener('resize', measure); element.removeEventListener('click', click);};
   }, [root, highlights, layoutKey, onSelect]);
   return <div className="reader-range-layer" aria-hidden="true">{boxes.map((box, index) => <span key={index} data-reader-highlight={box.color} style={{left: box.left, top: box.top, width: box.width, height: box.height}}/>)}</div>;
