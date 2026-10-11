@@ -318,9 +318,13 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   }, []);
   useEffect(() => {
     const visual = window.visualViewport;
-    const changed = () => setNativeZoomed((visual?.scale ?? 1) > 1);
-    changed(); visual?.addEventListener('resize', changed);
-    return () => visual?.removeEventListener('resize', changed);
+    const changed = () => {
+      setNativeZoomed((visual?.scale ?? 1) > 1);
+      chromeRef.current?.style.setProperty('--reader-panel-height', `${visual?.height ?? window.innerHeight}px`);
+      chromeRef.current?.style.setProperty('--reader-panel-top', `${visual?.offsetTop ?? 0}px`);
+    };
+    changed(); visual?.addEventListener('resize', changed); visual?.addEventListener('scroll', changed); window.addEventListener('resize', changed);
+    return () => {visual?.removeEventListener('resize', changed); visual?.removeEventListener('scroll', changed); window.removeEventListener('resize', changed);};
   }, []);
   useEffect(() => {
     const query = window.matchMedia('(max-width: 767px)');
@@ -568,8 +572,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
         {panel === 'type' ? <ReaderTypography value={typography} onChange={changeTypography} messages={m}/> : null}
       </aside>
       <aside className="reader-navigation-panel reader-search-panel" role="dialog" aria-modal="true" data-panel="search" hidden={panel !== 'search'} aria-label={m.search}>
-        <header><IconButton variant="ghost" aria-label={m.close} onPress={() => closePanel()} icon={<ChevronLeft size={22} aria-hidden="true"/>}/></header>
-        <ReaderSearch document={value.document} mobile={mobile} onJump={jumpFromSearch} messages={m}/>
+        <ReaderSearch document={value.document} mobile={mobile} onJump={jumpFromSearch} messages={m} closeControl={<IconButton variant="ghost" aria-label={m.close} onPress={() => closePanel()} icon={<ChevronLeft size={22} aria-hidden="true"/>}/>}/>
       </aside>
     </div>
     {value.document.metadataSyncPending ? <p role="status">{m.metadataPending}</p> : null}

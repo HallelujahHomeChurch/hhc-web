@@ -256,7 +256,7 @@ describe('protected weekly reader', () => {
       expect(screen.queryByRole('button', {name: props.messages.productionDetails})).not.toBeInTheDocument();
       expect(container.querySelector('.reader-chapter-title')).toBeNull();
       fireEvent.click(screen.getByRole('button', {name: props.messages.contents}));
-      fireEvent.click(within(screen.getByRole('navigation', {name: props.messages.chapters})).getByRole('button', {name: 'Articles'}));
+      fireEvent.click(within(screen.getByRole('navigation', {name: props.messages.chapters})).getByRole('button', {name: props.messages.chapterBody}));
     }
     if (route === 'page') choosePage(2);
     if (route === 'next') {
@@ -314,7 +314,7 @@ describe('protected weekly reader', () => {
     expect(screen.queryByRole('button', {name: props.messages.next})).not.toBeInTheDocument();
     expect(container.querySelector('.reader-chapter-actions')).toBeNull();
     fireEvent.click(screen.getByRole('button', {name: props.messages.contents}));
-    fireEvent.click(within(screen.getByRole('navigation', {name: props.messages.chapters})).getByRole('button', {name: 'Worship'}));
+    fireEvent.click(within(screen.getByRole('navigation', {name: props.messages.chapters})).getByRole('button', {name: props.messages.chapterWorship}));
     expect(container.querySelector('[data-chapter="worship"]')).toBeInTheDocument();
   });
   it('reveals mobile chrome on a settled tap and keeps it visible until another scroll gesture', async () => {

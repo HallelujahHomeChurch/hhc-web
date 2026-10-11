@@ -33,7 +33,6 @@
 .reader-navigation-panel[hidden] { display: none; }
 .reader-navigation-panel > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .75rem; }
 .reader-navigation-panel > header h2 { font-size: 1rem; font-weight: 600; }
-.reader-navigation-panel .reader-search > summary { display: none; }
 .reader-navigation-panel .reader-thumbnails { display: grid; grid-template-columns: repeat(2, 1fr); max-height: none; }
 .reader-navigation-panel .reader-zoom-controls { margin-bottom: 1rem; }
 .reader-navigation-panel .reader-offline-control { display: grid; margin-top: 1rem; }
@@ -158,9 +157,6 @@
 .reader-offline-control { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; max-width: 75rem; margin: .5rem auto; font-size: .875rem; }
 .reader-offline-list { display: grid; gap: 1rem; max-width: 48rem; margin: 1rem 0; }
 .reader-offline-list li { padding: 1rem; background: var(--hhc-surface-raised); border-radius: .75rem; }
-.reader-search form { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .5rem; }
-.reader-search input { min-width: 0; max-width: 100%; }
-.reader-search p { max-width: 48rem; max-height: 8rem; overflow: auto; padding: .5rem; }
 .reader-thumbnails { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; padding: .25rem; }
 .weekly-reader .reader-thumbnail { display: grid; justify-items: center; gap: .5rem; padding: .5rem .25rem; height: auto; min-width: 0; border-color: transparent; background: transparent; font-variant-numeric: tabular-nums; }
 .weekly-reader .reader-thumbnail[aria-current='page'] { border-color: var(--hhc-control); background: var(--hhc-primary-soft); }
@@ -234,18 +230,21 @@
 /* Full-viewport reader; document type and source-page geometry stay independent. */
 body:has(.weekly-reader) {padding-bottom: 0;}
 .reader-tabbar > .reader-icon-control {flex: 0 0 44px;}
-.reader-search-panel {position: fixed; inset: 0 0 0 auto; width: min(380px, 100vw); height: 100dvh; max-height: none; padding: 12px; z-index: 45; border-left: 1px solid var(--hhc-control-border);}
-.reader-search-panel > header {height: 44px; margin: 0; width: 44px;}
-.reader-search-panel .reader-search form {position: sticky; top: 0; margin: -44px 0 16px 48px; flex-wrap: nowrap; gap: 0; background: var(--hhc-surface-raised); border-radius: 12px;}
-.reader-search input {width: 100%; flex: 1; border: 0; background: transparent; padding-inline: 12px;}
+.reader-search-panel {position: fixed; inset: var(--reader-panel-top, 0px) 0 auto auto; width: min(380px, 100vw); height: var(--reader-panel-height, 100dvh); max-height: none; overflow: hidden; padding: 12px; z-index: 45; border-left: 1px solid var(--hhc-control-border);}
+.reader-search {display: flex; flex-direction: column; height: 100%; min-height: 0;}
+.reader-search-header {display: flex; align-items: center; gap: 4px; flex: none; padding-bottom: 12px;}
+.reader-search-header form {display: flex; flex: 1; min-width: 0; align-items: center; gap: 0; background: var(--hhc-surface-raised); border-radius: 12px;}
+.reader-search-results {min-height: 0; overflow-y: auto; overscroll-behavior: contain; flex: 1;}
+.reader-search-results > p {margin: 8px 4px; color: var(--hhc-text-muted); font-size: .875rem;}
+.reader-search input {width: 100%; min-width: 0; flex: 1; border: 0; background: transparent; padding-inline: 12px;}
 .reader-search input::-webkit-search-cancel-button {appearance: none;}
-.weekly-reader .reader-search input:focus {outline: none; box-shadow: none; border-radius: 12px;}
-.reader-search form:has(input:focus-visible) {box-shadow: inset 0 0 0 1px var(--hhc-control);}
-.reader-search form button {padding: 8px; border: 0; background: transparent; min-width: 40px;}
+.weekly-reader .reader-search input:focus:not(:focus-visible) {outline: none; box-shadow: none;}
+.weekly-reader .reader-search input:focus-visible {outline-offset: -3px;}
+.reader-search form button {padding: 8px; border: 0; background: transparent; min-width: 44px;}
 .reader-search-list {list-style: none; padding: 0; margin: 0;}
 .reader-search-list li + li {border-top: 1px solid var(--hhc-control-border);}
 .weekly-reader .reader-search-list button {display: block; width: 100%; text-align: start; border: 0; border-radius: 0; background: transparent; padding: 20px 4px; line-height: 1.8;}
-.reader-search-list button:hover {background: var(--hhc-surface-raised);}
+@media (hover: hover) and (pointer: fine) {.reader-search-list button:hover {background: var(--hhc-surface-raised);}}
 .reader-search-list small {display: block; text-align: end; color: var(--hhc-text-muted); margin-top: 8px;}
 .reader-search mark {color: inherit; background: #b79b3540;}
 .reader-type-grid {display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;}

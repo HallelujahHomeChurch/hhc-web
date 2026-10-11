@@ -1,4 +1,4 @@
-import {useMemo, useState} from 'react';
+import {useMemo, useState, type ReactNode} from 'react';
 import {Search, X} from 'lucide-react';
 import {bulletinMobileDetails} from '@hallelujahhomechurch/ui';
 import type {MemberOnlineDocument} from '@hallelujahhomechurch/hhc-web-client';
@@ -6,7 +6,7 @@ import {searchSentences} from '@/features/weekly-reader/search';
 import {ReaderIconButton as IconButton} from './ReaderIconButton';
 import type {ReaderMessages} from './ReaderToolbar';
 
-export function ReaderSearch({document, onJump, messages: m, mobile = false}: {document: MemberOnlineDocument; onJump: (sentenceId: string) => void; messages: ReaderMessages; mobile?: boolean}) {
+export function ReaderSearch({document, onJump, messages: m, mobile = false, closeControl}: {document: MemberOnlineDocument; onJump: (sentenceId: string) => void; messages: ReaderMessages; mobile?: boolean; closeControl?: ReactNode}) {
   const [query, setQuery] = useState('');
   const [submitted, setSubmitted] = useState('');
   const results = useMemo(() => {
@@ -14,12 +14,14 @@ export function ReaderSearch({document, onJump, messages: m, mobile = false}: {d
     return searchSentences(document.content, submitted, document.canonicalMetadata).filter(result => !hidden.has(result.sentenceId));
   }, [document, submitted, mobile]);
   return <div className="reader-search">
+    <header className="reader-search-header">{closeControl}
     <form role="search" aria-label={m.search} onSubmit={event => {event.preventDefault(); setSubmitted(query.trim());}}>
       <input type="search" aria-label={m.search} placeholder={m.search} value={query} maxLength={256} enterKeyHint="search" onChange={event => setQuery(event.target.value)}/>
-      {query ? <IconButton variant="ghost" aria-label={m.clearHighlight} onPress={() => {setQuery(''); setSubmitted('');}} icon={<X size={18} aria-hidden="true"/>}/> : null}
+      {query ? <IconButton variant="ghost" aria-label={m.clearSearch} onPress={() => {setQuery(''); setSubmitted('');}} icon={<X size={18} aria-hidden="true"/>}/> : null}
       <button type="submit" aria-label={m.submitSearch}><Search size={20} aria-hidden="true"/></button>
     </form>
-    {submitted ? <>
+    </header>
+    <div className="reader-search-results">{submitted ? <>
       <p role="status" aria-label={m.searchResults}>{results.length ? m.searchCount.replace('{count}', String(results.length)) : m.noResults}</p>
       <ul className="reader-search-list">{results.map(result => {
         const page = document.content.layoutManifest.pages.findIndex(page => page.slots.some(slot => slot.fragments.some(fragment => fragment.sentenceId === result.sentenceId)) || page.fixedSlots?.some(slot => `canonical-${slot.element}` === result.sentenceId));
@@ -28,7 +30,7 @@ export function ReaderSearch({document, onJump, messages: m, mobile = false}: {d
           {page >= 0 ? <small>{m.page} {page + 1}</small> : null}
         </button></li>;
       })}</ul>
-    </> : null}
+    </> : null}</div>
   </div>;
 }
 
