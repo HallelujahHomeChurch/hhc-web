@@ -677,7 +677,7 @@ it('freezes latest in-flight quality commands before a fatal error can erase pla
 it('preserves an explicit pause after the last timeupdate in the fatal snapshot',async()=>{
  const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));
  const video=p.videoRef.current!;video.currentTime=75;fireEvent.loadedMetadata(video);Object.defineProperty(video,'paused',{configurable:true,value:false});fireEvent.play(video);
- fireEvent.click(screen.getByRole('button',{name:'Pause'}));fireEvent.error(video);
+ fireEvent.click(screen.getByRole('button',{name:'Pause'}));Object.defineProperty(video,'error',{configurable:true,value:{code:3,message:'Decode failed'}});fireEvent.error(video);
  expect(p.onError).toHaveBeenCalledWith(expect.objectContaining({time:75,paused:true}));
 });
 
@@ -788,4 +788,46 @@ it('discards the held frame when the media source changes',async()=>{
  chooseQuality('1080p');expect(view.container.querySelector('canvas')).toBeVisible();
  view.rerender(<HlsPlayer {...p} playbackUrl={url.replace('/sessions/s/','/sessions/next/')}/>);
  expect(view.container.querySelector('canvas')).not.toBeVisible();expect(view.container.querySelector('canvas')!.width).toBe(0);
+});
+
+it.each([
+ {name:'active DVR',paused:false,rate:1,intent:'dvr' as const,time:7497.465},
+ {name:'paused DVR',paused:true,rate:1,intent:'dvr' as const,time:6000},
+ {name:'non-1x DVR',paused:false,rate:1.5,intent:'dvr' as const,time:7000},
+ {name:'follower',paused:false,rate:1,intent:'followLive' as const,time:9429.45},
+])('keeps $name across End metadata callback updates',async({paused,rate,intent,time})=>{
+ const p=props(),onBookmark=vi.fn(),live={verifiedEnd:9459.45,canFollow:true,label:'Live',backToLive:'Back to live'};
+ const view=render(<HlsPlayer {...p} playbackMode="live" live={live} onBookmark={onBookmark}/>);
+ await waitFor(()=>expect(engine.instances).toHaveLength(1));
+ const video=p.videoRef.current!;
+ Object.defineProperty(video,'seekable',{configurable:true,value:{length:1,start:()=>0,end:()=>9519.51}});
+ Object.defineProperty(video,'paused',{configurable:true,value:paused});
+ fireEvent.progress(video);fireEvent.seeked(video);
+ if(intent==='dvr')fireEvent.change(screen.getByRole('slider',{name:'Playback position'}),{target:{value:String(time)}});
+ act(()=>{video.playbackRate=rate;fireEvent.timeUpdate(video);});
+ const latestError=vi.fn();
+ // End can temporarily remove the projection origin, changing the parent's error callback.
+ view.rerender(<HlsPlayer {...p} onError={latestError} playbackMode="live" live={{...live,canFollow:false,label:'Ending'}} onBookmark={onBookmark}/>);
+ await act(async()=>{});fireEvent.progress(video);
+ expect(video.currentTime).toBe(time);expect(video.paused).toBe(paused);expect(video.playbackRate).toBe(rate);
+ expect(engine.instances).toHaveLength(1);expect(engine.instances[0].destroy).not.toHaveBeenCalled();
+ expect(onBookmark).toHaveBeenLastCalledWith(expect.objectContaining({time,paused,rate,intent}));
+ act(()=>engine.instances[0].listeners.error('error',{fatal:true}));
+ expect(p.onError).not.toHaveBeenCalled();expect(latestError).toHaveBeenCalledOnce();
+});
+
+it.each([false,true])('ignores a stale native error during quality reconstruction but reports a current failure (native=%s)',async(native)=>{
+ engine.supported=!native;if(native)vi.spyOn(HTMLMediaElement.prototype,'canPlayType').mockReturnValue('probably');
+ vi.spyOn(HTMLMediaElement.prototype,'readyState','get').mockReturnValue(2);
+ vi.spyOn(HTMLCanvasElement.prototype,'getContext').mockReturnValue({drawImage:vi.fn()} as unknown as CanvasRenderingContext2D);
+ const p=props(),view=render(<HlsPlayer {...p}/>);
+ await waitFor(()=>expect(native?p.videoRef.current?.src:engine.instances.length).toBe(native?url:1));
+ const video=p.videoRef.current!;act(()=>{video.currentTime=81;video.playbackRate=1.5;});
+ Object.defineProperty(video,'error',{configurable:true,value:null});
+ chooseQuality('1080p');fireEvent.error(video);
+ expect(video.error).toBeNull();expect(p.onError).not.toHaveBeenCalled();expect(view.container.querySelector('canvas')).toBeVisible();
+ fireEvent.loadedMetadata(video);fireEvent.seeked(video);
+ expect(video.currentTime).toBe(81);expect(video.playbackRate).toBe(1.5);
+ Object.defineProperty(video,'error',{configurable:true,value:{code:3,message:'Decode failed'}});fireEvent.error(video);
+ expect(p.onError).toHaveBeenCalledOnce();
 });

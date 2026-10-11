@@ -44,8 +44,9 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
   const intent=useRef<PlaybackIntent>(resume?.intent ?? 'followLive'), positioned=useRef(false), closing=useRef(false);
   const failed=useRef(false), pausedIntent=useRef(resume?.paused??true);
   const automaticSeek=useRef<number|null>(null);
+  const errorCallback=useRef(onError);
   const currentLive=useRef(live), bookmarkCallback=useRef(onBookmark), qualityRef=useRef(quality), initialBookmark=useRef(resume);
-  useEffect(()=>{currentLive.current=live;bookmarkCallback.current=onBookmark;qualityRef.current=quality;},[live,onBookmark,quality]);
+  useEffect(()=>{currentLive.current=live;bookmarkCallback.current=onBookmark;qualityRef.current=quality;errorCallback.current=onError;},[live,onBookmark,quality,onError]);
   const remember=useCallback(()=>{
     const video=videoRef.current;
     if(video&&!closing.current&&!failed.current&&!qualityPosition.current)bookmarkCallback.current?.({time:video.currentTime,paused:video.paused,rate:video.playbackRate,quality:qualityRef.current,intent:intent.current});
@@ -65,8 +66,8 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
     const video=videoRef.current;
     const position=qualityPosition.current??{time:video?.currentTime??0,paused:pausedIntent.current,rate:video?.playbackRate??1};
     const bookmark=positioned.current||qualityPosition.current?{...position,quality:qualityRef.current,intent:intent.current}:initialBookmark.current;
-    failed.current=true;qualitySwitch.current?.abort();clearHeldFrame();setMode('error');onError(bookmark);
-  },[onError,videoRef,clearHeldFrame]);
+    failed.current=true;qualitySwitch.current?.abort();clearHeldFrame();setMode('error');errorCallback.current(bookmark);
+  },[videoRef,clearHeldFrame]);
 
   useEffect(()=>{
     const video=videoRef.current;
@@ -189,7 +190,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
   };
   return <div ref={container} tabIndex={0} role="region" aria-label={`${title} — ${labels.togglePlayback}`} className={styles.player}>
     <video ref={videoRef} poster={poster} playsInline preload="metadata" controlsList="nodownload noremoteplayback" disablePictureInPicture disableRemotePlayback crossOrigin="use-credentials" aria-label={title} className="h-full w-full object-contain"
-      onPlay={()=>{pausedIntent.current=false;setAutoplayBlocked(false);}} onError={handleError}/>
+      onPlay={()=>{pausedIntent.current=false;setAutoplayBlocked(false);}} onError={event=>{if(event.currentTarget.error)handleError();}}/>
     <canvas ref={heldFrame} hidden={!holdingFrame} aria-hidden="true" className={styles.heldFrame}/>
     <PlayerChrome container={container} videoRef={videoRef} playbackUrl={playbackUrl} watermark={watermark} labels={labels} quality={quality} activeHeight={activeHeight} qualities={qualities} previousHref={previousHref} nextHref={nextHref} autoplayBlocked={autoplayBlocked} loading={mode==='loading'} failed={mode==='error'} onQualityChange={changeQuality} onPlaybackChange={value=>{if(value.paused!==undefined)pausedIntent.current=value.paused;if(qualityPosition.current)Object.assign(qualityPosition.current,value);}} onPlayingChange={onPlayingChange} live={playbackMode==='live'?live:undefined} onDvr={dvr} onReturnToLive={returnToLive}/>
   </div>;
