@@ -72,7 +72,7 @@ export function useReaderExitGuard({hasUnsavedNote, beforeLeave, messages: m}: {
   const dialogProps: AlertDialogProps = {
     title: m.exitTitle, description: prompt?.dirty ? `${m.exitDescription} ${m.noteDiscardConfirm}` : m.exitDescription,
     isOpen: !!prompt, cancelLabel: m.keepReading, closeLabel: m.close,
-    confirmLabel: prompt?.kind === 'back' ? m.exitConfirm : m.exitHome,
+    confirmLabel: m.exitConfirm,
     confirmVariant: 'primary',
     onOpenChange: open => {if (!open && !pending.current?.confirmed) settle(false);},
     onConfirm: async () => {

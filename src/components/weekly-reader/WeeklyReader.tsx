@@ -78,10 +78,11 @@ export function WeeklyReader(props: Props) {
   }, [enabled]);
   const savedAccount = enabled ? accountId ?? offlineAccount : null;
   const permitted = enabled && accountId && access.status === 'available' && access.editions.some(edition => edition.series === props.series && edition.locale === props.contentLocale);
+  const checking = enabled && (auth.status === 'checking' || access.status === 'loading');
   return <main className="weekly-reader" data-theme={readerTheme.theme} style={{colorScheme: readerTheme.theme}}>
-    {!permitted && !(savedAccount && offlineAccount === savedAccount) ? <a className="reader-back" href={`/${props.locale}/literature-ministry`}>{m.back}</a> : null}
+    {!checking && !permitted && !(savedAccount && offlineAccount === savedAccount) ? <a className="reader-back" href={`/${props.locale}/literature-ministry`}>{m.back}</a> : null}
     {permitted || savedAccount && offlineAccount === savedAccount ? <AuthorizedReader key={`${savedAccount}:${props.issueNumber}:${props.series}:${props.contentLocale}`} {...props} accountId={savedAccount!} readerTheme={readerTheme}/> :
-      enabled && (auth.status === 'checking' || access.status === 'loading') ? <ReaderLoading label={m.loading}/> : <section className="reader-status" role="status"><h1>{m.title}</h1><p>{!enabled ? m.unavailable : auth.status === 'anonymous' ? m.signInRequired : m.unavailable}</p>{enabled && auth.status === 'anonymous' ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}</section>}
+      checking ? <ReaderLoading label={m.loading} showHeader/> : <section className="reader-status" role="status"><h1>{m.title}</h1><p>{!enabled ? m.unavailable : auth.status === 'anonymous' ? m.signInRequired : m.unavailable}</p>{enabled && auth.status === 'anonymous' ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}</section>}
   </main>;
 }
 
@@ -98,7 +99,7 @@ function AuthorizedReader(props: Props & {accountId: string; readerTheme: Return
     if (!session.allowAction()) {event.preventDefault(); event.stopPropagation();}
   };
   if (session.value) return <>
-    {session.validating ? <ReaderLoading label={m.loading} overlay/> : null}
+    {session.validating ? <ReaderLoading label={m.loading} overlay showHeader/> : null}
     <div aria-hidden={session.validating || undefined} inert={session.validating} onClickCapture={guard} onKeyDownCapture={guard} onPointerDownCapture={guard} onCopyCapture={guard}>
     {session.offline ? <p role="status">{m.offlineNotice}</p> : null}
     {session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}
@@ -645,8 +646,8 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       <div ref={paperRef} className="reader-paper-with-notes" data-has-notes={hasNotes || undefined} inert={!fontsReady} aria-hidden={!fontsReady || undefined} style={{visibility: fontsReady ? 'visible' : 'hidden', width: mobile ? undefined : Math.max(...document.pages.map(entry => entry.width * 4 / 3 * pageScale(zoom, {width: entry.width * 4 / 3, height: entry.height * 4 / 3}, viewport))) + (hasNotes ? 44 : 0)}}>
       {mobile ? <div ref={chapterHeading} tabIndex={-1} role="group" aria-label={chapterLabels[chapter]} className="reader-watermarked" style={{"--reader-font-size": `${typography.size}px`, "--reader-line-height": typography.line} as React.CSSProperties}><BulletinEbook document={document} chapter={chapter} canonicalMetadata={value.document.canonicalMetadata} sentenceState={sentenceState} selectable={!notes && !suspended}/><ReaderWatermark traceCode={value.access.traceCode} tone={theme}/></div> :
         <PaperViewport document={document} metadata={value.document.canonicalMetadata} sentenceState={sentenceState} traceCode={value.access.traceCode} theme={theme} page={page} direction={direction} zoom={zoom} viewport={viewport}/>}
-      <NoteIndicators root={paperRef} notes={privateReader.state?.notes ?? []} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}:${typography.size}:${typography.line}:${direction}:${chapter}`} label={m.myNotes} onOpen={openNotesList} mobile={mobile}/>
-      <RangeHighlights root={paperRef} highlights={savedHighlights} layoutKey={`${active.id}:${mobile}:${scale}:${fontsReady}:${typography.size}:${typography.line}:${direction}:${chapter}`} onSelect={mobile ? undefined : selectExisting}/>
+      <NoteIndicators root={paperRef} notes={privateReader.state?.notes ?? []} layoutKey={mobile ? `${chapter}:${fontsReady}:${typography.size}:${typography.line}` : `${active.id}:${scale}:${fontsReady}:${direction}`} label={m.myNotes} onOpen={openNotesList} mobile={mobile}/>
+      <RangeHighlights root={paperRef} highlights={savedHighlights} layoutKey={mobile ? `${chapter}:${fontsReady}:${typography.size}:${typography.line}` : `${active.id}:${scale}:${fontsReady}:${direction}`} onSelect={mobile ? undefined : selectExisting}/>
       </div>
       {mobile && chapterIndex < chapters.length - 1 ? <div className="reader-chapter-boundary"><IconButton variant="ghost" aria-label={m.next} isDisabled={suspended} onPress={() => onChapter(chapterIndex + 1)} icon={<ArrowDown size={20} aria-hidden="true"/>}/></div> : null}
     </div>

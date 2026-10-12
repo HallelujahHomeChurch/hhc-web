@@ -6,6 +6,27 @@ import {NoteIndicators} from './NoteIndicators';
 import {renderedTextRanges} from '@/features/weekly-reader/text-range';
 
 afterEach(cleanup);
+it('mobile note targets occupy their row immediately, without a zero-height frame', () => {
+  const root = createRef<HTMLDivElement>();
+  const notes = [{id: 'a', sentenceIds: ['s1'], deleted: false}] as BulletinReaderNote[];
+  render(<div ref={root}><p data-block-id="p"><span data-sentence-id="s1">Text</span></p><NoteIndicators root={root} notes={notes} layoutKey="mobile" label="Notes" onOpen={() => {}} mobile/></div>);
+  expect(screen.getByRole('button', {name: 'Notes (1)'})).toBeInTheDocument();
+});
+it('mobile progress refreshes retain existing rows and focused targets, but deleted notes remove them', async () => {
+  const root = createRef<HTMLDivElement>();
+  const notes = [{id: 'a', sentenceIds: ['s1'], deleted: false}] as BulletinReaderNote[];
+  function Content({items, layoutKey}: {items: BulletinReaderNote[]; layoutKey: string}) {return <div ref={root}><p data-block-id="p"><span data-sentence-id="s1">Text</span></p><NoteIndicators root={root} notes={items} layoutKey={layoutKey} label="Notes" onOpen={() => {}} mobile/></div>;}
+  const {container, rerender} = render(<Content items={notes} layoutKey="p1:scale1"/>);
+  const button = await screen.findByRole('button', {name: 'Notes (1)'});
+  const host = container.querySelector('.reader-note-row'); button.focus();
+  rerender(<Content items={notes.map(note => ({...note}))} layoutKey="p2:scale2"/>);
+  expect(container.querySelector('.reader-note-row')).toBe(host);
+  expect(screen.getByRole('button', {name: 'Notes (1)'})).toBe(button);
+  expect(document.activeElement).toBe(button);
+  rerender(<Content items={notes.map(note => ({...note, deleted: true}))} layoutKey="p2:scale2"/>);
+  expect(container.querySelector('.reader-note-row')).toBeNull();
+  expect(screen.queryByRole('button')).toBeNull();
+});
 it('mobile heading notes stay after the whole flex heading, not between title and speaker', async () => {
   const root = createRef<HTMLDivElement>();
   const notes = [{id: 'heading', sentenceIds: ['title', 'speaker', 'song'], deleted: false}] as BulletinReaderNote[];

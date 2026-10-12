@@ -81,7 +81,7 @@
 .reader-document[data-mobile] .hhc-bulletin-ebook [data-selected],
 .reader-recovery-text[data-sentence-selection] [data-selected] { outline: none; background: #4bb4ff40; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 .reader-document:not([data-mobile]) .reader-paper-with-notes[data-has-notes] { padding-inline-end: 44px; }
-.reader-note-row {display: flex; justify-content: end; margin-block: 4px 8px;}
+.reader-note-row {display: flex; justify-content: end; min-height: 44px; margin-block: 4px 8px;}
 .reader-note-row-icon {display: inline-flex; align-items: center; gap: 4px;}
 .weekly-reader .reader-note-row button {width: 44px; height: 44px; padding: 8px; border: 0; color: var(--hhc-text-muted); background: transparent;}
 .reader-note-indicator { position: absolute; inset-inline-end: 0; width: 44px; min-height: 44px; color: var(--hhc-text); background: var(--hhc-surface-raised); border-radius: .5rem; }
@@ -280,8 +280,17 @@ body:has(.weekly-reader) {padding-bottom: 0;}
   .reader-topbar > .reader-icon-control, .reader-topbar .reader-offline-control > .reader-icon-control {width: 100%;}
   .weekly-reader .reader-topbar button:hover, .weekly-reader .reader-topbar button[aria-pressed='true'] {color: var(--hhc-primary); background: var(--hhc-primary-soft);}
   .reader-topbar .reader-offline-control > [role='alert'] {top: auto; bottom: 100%;}
-  .reader-viewport[data-mobile] {padding-top: calc(52px + env(safe-area-inset-top)); padding-bottom: calc(72px + env(safe-area-inset-bottom)); scroll-padding-top: calc(60px + env(safe-area-inset-top));}
-  .reader-document[data-iphone-standalone] .reader-viewport {padding-bottom: calc(86px + env(safe-area-inset-bottom));}
+  .reader-viewport[data-mobile] {padding-top: calc(52px + env(safe-area-inset-top)); padding-bottom: calc(62px + env(safe-area-inset-bottom)); scroll-padding-top: calc(60px + env(safe-area-inset-top));}
+  .reader-document[data-iphone-standalone] .reader-viewport {padding-bottom: calc(64px + max(10px, env(safe-area-inset-bottom)));}
+  .weekly-reader .hhc-bulletin-ebook[data-bulletin-mode='mobile'] {padding-block: 0;}
+  /* Only the first/last-child chain touches chapter edges; retain spacing between sections and songs. */
+  .hhc-bulletin-ebook > :first-child,
+  .hhc-bulletin-ebook > :first-child > :first-child,
+  .hhc-bulletin-ebook > :first-child > :first-child > :first-child {margin-block-start: 0 !important;}
+  .hhc-bulletin-ebook > :last-child,
+  .hhc-bulletin-ebook > :last-child > :last-child,
+  .hhc-bulletin-ebook > :last-child > :last-child > :last-child,
+  .hhc-bulletin-ebook > :last-child > :last-child > :last-child > :last-child {margin-block-end: 0 !important;}
   .reader-navigation-panel[data-panel='pages'] {position: fixed; inset: 0 auto 0 0; width: min(360px, 100vw); height: 100dvh; max-height: none; padding-top: max(12px, env(safe-area-inset-top)); z-index: 45;}
   .reader-navigation-panel[data-panel='type'] {position: fixed; inset: auto 12px calc(76px + env(safe-area-inset-bottom)); width: auto; border-radius: 16px; z-index: 45;}
   .reader-search-panel {width: 100vw; padding-top: max(12px, env(safe-area-inset-top));}
@@ -293,6 +302,13 @@ body:has(.weekly-reader) {padding-bottom: 0;}
 .reader-loading {min-height: calc(100dvh - 108px); display: grid; place-items: center; background: var(--hhc-canvas); color: var(--hhc-text-muted);}
 .reader-loading[data-overlay], .reader-font-error {position: absolute; inset: 0; z-index: 100; min-height: 0; display: grid; place-content: center; background: var(--hhc-canvas);}
 .weekly-reader > .reader-loading[data-overlay] {position: fixed;}
+.reader-loading-shell {display: flex; flex-direction: column; min-height: 0; background: var(--hhc-canvas);}
+.reader-loading-shell[data-overlay] {position: absolute; inset: 0; z-index: 100;}
+.weekly-reader > .reader-loading-shell[data-overlay] {position: fixed;}
+.reader-loading-shell > .reader-tabbar {flex: none;}
+.reader-loading-shell > .reader-loading {flex: 1; min-height: 0;}
+.reader-loading-home {display: inline-flex; align-items: center; justify-content: center; flex: 0 0 44px; min-height: 44px;}
+.reader-loading-tab {padding: .75rem; font-size: .875rem;}
 .reader-loading > div {display: grid; justify-items: center; gap: 12px;}
 .reader-loading p {margin: 0;}
 .reader-loading-icon-placeholder {width: 28px; height: 28px;}
