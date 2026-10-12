@@ -44,7 +44,6 @@
     "keepReading": "読み続ける",
     "exitTitle": "週報を閉じますか？",
     "exitDescription": "読んでいる週報から移動しますか？",
-    "exitHome": "文書伝道に戻る",
     "exitConfirm": "移動する",
     "recoveryHelp": "変更を確認してください。同期とダウンロードが完了するまで、保存済みの版と未同期の変更は保持されます。",
     "recoveryAnchors": "現在の版の文を選択してください（最大500文）。",

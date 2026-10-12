@@ -51,6 +51,39 @@ afterEach(() => {cleanup(); Reflect.deleteProperty(document, 'fonts'); Reflect.d
 beforeEach(() => {Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect(0, 100, 300, 20)});});
 
 describe('protected weekly reader', () => {
+  it('keeps content-free header chrome during account checking', () => {
+    state.accountId = null; state.status = 'checking';
+    const {container} = render(<WeeklyReader {...props}/>);
+    expect(container.querySelector('.reader-tabbar')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(props.messages.loading);
+    expect(container.querySelector('[data-sentence-id]')).toBeNull();
+    expect(state.open).not.toHaveBeenCalled();
+  });
+  it('authorization validation covers content but retains a content-free header silhouette', async () => {
+    const {container} = render(<WeeklyReader {...props}/>);
+    await screen.findByText('Private weekly');
+    let finish!: (value: ReturnType<typeof readerFixture>) => void;
+    state.open.mockImplementationOnce(() => new Promise(resolve => {finish = resolve;}));
+    fireEvent(window, new Event('focus'));
+    await waitFor(() => expect(state.open).toHaveBeenCalledTimes(2));
+    const mask = container.querySelector('.reader-loading-shell[data-overlay]');
+    expect(mask?.querySelector('.reader-tabbar')).toBeInTheDocument();
+    expect(mask).not.toHaveTextContent('Private weekly');
+    expect(mask?.querySelector('[data-sentence-id]')).toBeNull();
+    expect(container.querySelector('.reader-document')?.closest('[inert]')).toHaveAttribute('aria-hidden', 'true');
+    await act(async () => finish(readerFixture()));
+    expect(container.querySelector('.reader-loading-shell[data-overlay]')).toBeNull();
+  });
+  it('document fetch retains header chrome without exposing bulletin text', async () => {
+    let finish!: (value: ReturnType<typeof readerFixture>) => void;
+    state.open.mockImplementationOnce(() => new Promise(resolve => {finish = resolve;}));
+    const {container} = render(<WeeklyReader {...props}/>);
+    await waitFor(() => expect(state.open).toHaveBeenCalledOnce());
+    expect(container.querySelector('.reader-tabbar')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(props.messages.loading);
+    expect(container.querySelector('[data-sentence-id]')).toBeNull();
+    await act(async () => finish(readerFixture()));
+  });
   it.each(['cancel', 'confirm'])('exit dialog can %s while authorization revalidation is pending', async action => {
     render(<WeeklyReader {...props}/>);
     await waitFor(() => expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled());
@@ -60,7 +93,7 @@ describe('protected weekly reader', () => {
     fireEvent(window, new Event('focus'));
     await waitFor(() => expect(state.open).toHaveBeenCalledTimes(2));
     const dialog = await screen.findByRole('alertdialog');
-    fireEvent.click(within(dialog).getByRole('button', {name: action === 'cancel' ? props.messages.keepReading : props.messages.exitHome}));
+    fireEvent.click(within(dialog).getByRole('button', {name: action === 'cancel' ? props.messages.keepReading : props.messages.exitConfirm}));
     await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
     await act(async () => finish(readerFixture()));
   });
@@ -518,7 +551,7 @@ describe('protected weekly reader', () => {
       fireEvent(document, new Event('visibilitychange'));
     } else {
       fireEvent.click(screen.getByRole('button', {name: 'Bulletin library'}));
-      fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', {name: props.messages.exitHome}));
+      fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', {name: props.messages.exitConfirm}));
     }
     await waitFor(() => expect(state.mutate).toHaveBeenCalled(), {timeout: 150});
     expect(state.mutate.mock.calls[0][2][0]).toMatchObject({kind: 'setProgress', payload: {pageId: 'p2'}});

@@ -2,6 +2,16 @@ import {act, cleanup, render, screen} from '@testing-library/react';
 import {afterEach, expect, it, vi} from 'vitest';
 import {ReaderLoading} from './ReaderLoading';
 afterEach(() => {cleanup(); vi.useRealTimers();});
+it('root loading keeps a non-interactive header without cached titles or member content', () => {
+  const {container} = render(<ReaderLoading label="Loading bulletin…" overlay showHeader/>);
+  const shell = container.firstChild;
+  expect(shell).toHaveAttribute('aria-busy', 'true');
+  expect(shell).toHaveAttribute('data-overlay', 'true');
+  expect(container.querySelector('.reader-tabbar')).toHaveAttribute('aria-hidden', 'true');
+  expect(screen.getByRole('status')).toHaveTextContent('Loading bulletin…');
+  expect(screen.queryByRole('button')).toBeNull();
+  expect(container.querySelector('[data-sentence-id]')).toBeNull();
+});
 it('locks the loading surface immediately and delays only the icon', () => {
   vi.useFakeTimers(); const {container} = render(<ReaderLoading label="Loading bulletin…" overlay/>);
   expect(container.firstChild).toHaveAttribute('aria-busy', 'true');

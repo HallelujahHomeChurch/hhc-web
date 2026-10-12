@@ -44,7 +44,6 @@
     "keepReading": "繼續閱讀",
     "exitTitle": "離開週報閱讀？",
     "exitDescription": "確定要離開目前的週報嗎？",
-    "exitHome": "返回文字事工",
     "exitConfirm": "離開",
     "recoveryHelp": "請先確認變更。同步與下載都成功後才會切換版本；在此之前保留目前下載與待同步內容。",
     "recoveryAnchors": "選擇目前版本的句子（最多 500 句）。",

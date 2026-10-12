@@ -1,4 +1,4 @@
-import {useEffect, useState, type RefObject} from 'react';
+import {useEffect, useLayoutEffect, useRef, useState, type RefObject} from 'react';
 import {createPortal} from 'react-dom';
 import {NotebookPen} from 'lucide-react';
 import {ReaderIconButton} from './ReaderIconButton';
@@ -11,6 +11,11 @@ export function NoteIndicators({root, notes, layoutKey, label, onOpen, mobile = 
 }) {
   const [markers, setMarkers] = useState<{top: number; ids: string[]}[]>([]);
   const [rows, setRows] = useState<{host: HTMLDivElement; ids: string[]}[]>([]);
+  const hosts = useRef(new Map<HTMLElement, HTMLDivElement>());
+  useLayoutEffect(() => {
+    const current = hosts.current;
+    return () => {for (const host of current.values()) host.remove(); current.clear();};
+  }, [root, mobile]);
   useEffect(() => {
     const element = root.current;
     if (!element) return;
@@ -27,13 +32,20 @@ export function NoteIndicators({root, notes, layoutKey, label, onOpen, mobile = 
           const ids = groups.get(boundary) ?? new Set<string>(); ids.add(note.id); groups.set(boundary, ids);
         }
       }
+      for (const [boundary, host] of hosts.current) {
+        if (!groups.has(boundary)) {host.remove(); hosts.current.delete(boundary);}
+      }
       const next = Array.from(groups, ([boundary, ids]) => {
-        const host = document.createElement('div'); host.className = 'reader-note-row';
-        boundary.insertAdjacentElement('afterend', host);
+        let host = hosts.current.get(boundary);
+        if (!host) {
+          host = document.createElement('div'); host.className = 'reader-note-row';
+          boundary.insertAdjacentElement('afterend', host); hosts.current.set(boundary, host);
+        }
         return {host, ids: [...ids]};
       });
-      const frame = requestAnimationFrame(() => setRows(next));
-      return () => {cancelAnimationFrame(frame); for (const row of next) row.host.remove();};
+      // Retain hosts across progress refreshes; their touch-row height is reserved in CSS.
+      setRows(next);
+      return;
     }
     const measure = () => {
       const origin = element.getBoundingClientRect().top;

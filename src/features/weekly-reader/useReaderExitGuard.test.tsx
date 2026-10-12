@@ -18,6 +18,16 @@ function historyModel(direct = false) {
   return {entries, push, go, back: () => go(-1), current: () => entries[index]};
 }
 const messages = getMessages('en').weeklyReader;
+it.each(['home', 'back'] as const)('%s uses the shared leave action without bypassing cancellation', async kind => {
+  historyModel(true); const beforeLeave = vi.fn().mockResolvedValue(true);
+  const {result} = renderHook(() => useReaderExitGuard({hasUnsavedNote: () => true, beforeLeave, messages: getMessages('zh-Hant').weeklyReader}));
+  let request!: Promise<boolean>;
+  act(() => {request = result.current.confirmLeave(kind);});
+  expect(result.current.dialogProps.confirmLabel).toBe('離開');
+  expect(result.current.dialogProps.description).toContain(getMessages('zh-Hant').weeklyReader.noteDiscardConfirm);
+  act(() => result.current.dialogProps.onOpenChange?.(false));
+  expect(await request).toBe(false); expect(beforeLeave).not.toHaveBeenCalled();
+});
 it('cancel never calls cleanup or flush and concurrent exit requests share one dialog', async () => {
   historyModel(true); const beforeLeave = vi.fn().mockResolvedValue(true);
   const {result} = renderHook(() => useReaderExitGuard({hasUnsavedNote: () => true, beforeLeave, messages}));
