@@ -1,0 +1,37 @@
+{
+  "observedAt": "2026-10-13T16:17:13.686288+00:00",
+  "commit": "bd98ef18c786a3428366e686851c52916189dcf8",
+  "run": "38428099079",
+  "readOnly": true,
+  "commands": {
+    "runtime": {
+      "exitCode": 0
+    },
+    "ready-revision": {
+      "exitCode": 0
+    },
+    "image-tag": {
+      "exitCode": 0
+    },
+    "workflow": {
+      "exitCode": 0
+    },
+    "reader-feature-variable": {
+      "exitCode": 0
+    },
+    "video-feature-variable": {
+      "exitCode": 0
+    }
+  },
+  "checks": {
+    "commandsSucceeded": true,
+    "exactWorkflowSuccess": true,
+    "readyLatestEqual": true,
+    "healthyRunning": true,
+    "imageMatchesExactTag": true,
+    "resourcesPreserved": true,
+    "scalePreserved": true,
+    "singleMode": true,
+    "featureValuesPreserved": true
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "checkedAt": "2026-10-13T16:17:29.870Z",
+  "readOnly": true,
+  "keyboardTabSwitch": true,
+  "url": "https://www.alive.org.tw/zh-Hant/literature-ministry?series=general&mode=online",
+  "title": "文字事工 | 哈利路亞家教會",
+  "onlineLinks": [
+    {
+      "label": "線上閱讀: 繁中",
+      "path": "/zh-Hant/literature-ministry/1742/read/general/zh-Hant"
+    },
+    {
+      "label": "線上閱讀: 简中",
+      "path": "/zh-Hant/literature-ministry/1742/read/general/zh-Hans"
+    },
+    {
+      "label": "線上閱讀: 繁中",
+      "path": "/zh-Hant/literature-ministry/1742/read/general/zh-Hant"
+    },
+    {
+      "label": "線上閱讀: 简中",
+      "path": "/zh-Hant/literature-ministry/1742/read/general/zh-Hans"
+    },
+    {
+      "label": "線上閱讀: 繁中",
+      "path": "/zh-Hant/literature-ministry/1741/read/general/zh-Hant"
+    },
+    {
+      "label": "線上閱讀: 简中",
+      "path": "/zh-Hant/literature-ministry/1741/read/general/zh-Hans"
+    },
+    {
+      "label": "線上閱讀: 繁中",
+      "path": "/zh-Hant/literature-ministry/1740/read/general/zh-Hant"
+    },
+    {
+      "label": "線上閱讀: 简中",
+      "path": "/zh-Hant/literature-ministry/1740/read/general/zh-Hans"
+    },
+    {
+      "label": "線上閱讀: 繁中",
+      "path": "/zh-Hant/literature-ministry/1739/read/general/zh-Hant"
+    },
+    {
+      "label": "線上閱讀: 简中",
+      "path": "/zh-Hant/literature-ministry/1739/read/general/zh-Hans"
+    }
+  ],
+  "scripts": [
+    "https://www.alive.org.tw/_next/static/chunks/0hm9povsyfue8.js",
+    "https://www.alive.org.tw/_next/static/chunks/3jh9vj4y1p09m.js",
+    "https://www.alive.org.tw/_next/static/chunks/3lwxka5o8ev72.js",
+    "https://www.alive.org.tw/_next/static/chunks/2p01vtvw2dheg.js",
+    "https://www.alive.org.tw/_next/static/chunks/turbopack-0pfg356mbts75.js",
+    "https://www.alive.org.tw/_next/static/chunks/0e0kek91_5ju0.js",
+    "https://www.alive.org.tw/_next/static/chunks/2kofkb3apr6tg.js",
+    "https://www.alive.org.tw/_next/static/chunks/03mddmaos5lgs.js",
+    "https://www.alive.org.tw/_next/static/chunks/15wfcq5nm9qdw.js",
+    "https://www.alive.org.tw/_next/static/chunks/0pliekf-qqfx6.js",
+    "https://www.alive.org.tw/_next/static/chunks/3x_k7h1vrvmjc.js",
+    "https://www.alive.org.tw/_next/static/chunks/3s0c26l263jdo.js",
+    "https://www.alive.org.tw/_next/static/chunks/2p5h8f_cnhech.js",
+    "https://www.alive.org.tw/_next/static/chunks/1w7uia9b80ior.js",
+    "https://www.alive.org.tw/_next/static/chunks/2wdgasjze_9t3.js",
+    "https://www.alive.org.tw/_next/static/chunks/1eldszwzdtwqf.js",
+    "https://www.alive.org.tw/_next/static/chunks/23-6kt9hv7a0z.js",
+    "https://www.alive.org.tw/_next/static/chunks/0cz1d0mv5g_q7.js",
+    "https://www.alive.org.tw/_next/static/chunks/3fu5ygh2xha_n.js",
+    "https://www.alive.org.tw/_next/static/chunks/0q0sk-gdjawnv.js",
+    "https://www.alive.org.tw/_next/static/chunks/0gdfrkqvc0kzw.js"
+  ],
+  "errors": [],
+  "failedResourceCount": 0,
+  "selectedTabs": [
+    "線上閱讀"
+  ]
+}

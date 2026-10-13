@@ -1,0 +1,287 @@
+{
+  "conclusion": "success",
+  "event": "push",
+  "headSha": "bd98ef18c786a3428366e686851c52916189dcf8",
+  "jobs": [
+    {
+      "completedAt": "2026-10-13T16:12:26Z",
+      "conclusion": "success",
+      "databaseId": 115402735740,
+      "name": "verify",
+      "startedAt": "2026-10-13T16:09:00Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-10-13T16:09:01Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-10-13T16:09:00Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:09:08Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "number": 2,
+          "startedAt": "2026-10-13T16:09:01Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:09:09Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-node@820762786026740c76f36085b0efc47a31fe5020",
+          "number": 3,
+          "startedAt": "2026-10-13T16:09:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:09:09Z",
+          "conclusion": "success",
+          "name": "Run corepack enable",
+          "number": 4,
+          "startedAt": "2026-10-13T16:09:09Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:09:30Z",
+          "conclusion": "success",
+          "name": "Scan dependencies",
+          "number": 5,
+          "startedAt": "2026-10-13T16:09:09Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:09:38Z",
+          "conclusion": "success",
+          "name": "Run corepack pnpm install --frozen-lockfile",
+          "number": 6,
+          "startedAt": "2026-10-13T16:09:30Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:09:41Z",
+          "conclusion": "success",
+          "name": "Install existing font subset inspection tools",
+          "number": 7,
+          "startedAt": "2026-10-13T16:09:38Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:11:29Z",
+          "conclusion": "success",
+          "name": "Run corepack pnpm test:run",
+          "number": 8,
+          "startedAt": "2026-10-13T16:09:41Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:12:20Z",
+          "conclusion": "success",
+          "name": "Build image",
+          "number": 9,
+          "startedAt": "2026-10-13T16:11:29Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:12:23Z",
+          "conclusion": "success",
+          "name": "Scan image",
+          "number": 10,
+          "startedAt": "2026-10-13T16:12:20Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:12:23Z",
+          "conclusion": "success",
+          "name": "Post Run actions/setup-node@820762786026740c76f36085b0efc47a31fe5020",
+          "number": 19,
+          "startedAt": "2026-10-13T16:12:23Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:12:24Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "number": 20,
+          "startedAt": "2026-10-13T16:12:23Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:12:24Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 21,
+          "startedAt": "2026-10-13T16:12:24Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/HallelujahHomeChurch/hhc-web/actions/runs/38428099079/job/115402735740"
+    },
+    {
+      "completedAt": "2026-10-13T16:16:28Z",
+      "conclusion": "success",
+      "databaseId": 115404418528,
+      "name": "deploy",
+      "startedAt": "2026-10-13T16:12:29Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-10-13T16:12:31Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-10-13T16:12:30Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:12:33Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "number": 2,
+          "startedAt": "2026-10-13T16:12:31Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:12:33Z",
+          "conclusion": "success",
+          "name": "Validate release configuration",
+          "number": 3,
+          "startedAt": "2026-10-13T16:12:33Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:12:33Z",
+          "conclusion": "success",
+          "name": "Set image tag",
+          "number": 4,
+          "startedAt": "2026-10-13T16:12:33Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:12:38Z",
+          "conclusion": "success",
+          "name": "Sign in to Azure with OIDC",
+          "number": 5,
+          "startedAt": "2026-10-13T16:12:33Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:12:47Z",
+          "conclusion": "success",
+          "name": "Run az extension add --name containerapp --upgrade --yes",
+          "number": 6,
+          "startedAt": "2026-10-13T16:12:38Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:12:53Z",
+          "conclusion": "success",
+          "name": "Verify runtime prerequisites",
+          "number": 7,
+          "startedAt": "2026-10-13T16:12:47Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:12:58Z",
+          "conclusion": "success",
+          "name": "Capture current state",
+          "number": 8,
+          "startedAt": "2026-10-13T16:12:53Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:14:21Z",
+          "conclusion": "success",
+          "name": "Build and push image",
+          "number": 9,
+          "startedAt": "2026-10-13T16:12:58Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:14:26Z",
+          "conclusion": "success",
+          "name": "Resolve immutable image",
+          "number": 10,
+          "startedAt": "2026-10-13T16:14:21Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:14:45Z",
+          "conclusion": "success",
+          "name": "Scan immutable image",
+          "number": 11,
+          "startedAt": "2026-10-13T16:14:26Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:15:09Z",
+          "conclusion": "success",
+          "name": "Preview infrastructure change",
+          "number": 12,
+          "startedAt": "2026-10-13T16:14:45Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:15:43Z",
+          "conclusion": "success",
+          "name": "Deploy",
+          "number": 13,
+          "startedAt": "2026-10-13T16:15:09Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:16:11Z",
+          "conclusion": "success",
+          "name": "Wait for revision",
+          "number": 14,
+          "startedAt": "2026-10-13T16:15:43Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:16:25Z",
+          "conclusion": "success",
+          "name": "Verify through gateway Dapr",
+          "number": 15,
+          "startedAt": "2026-10-13T16:16:11Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:16:25Z",
+          "conclusion": "skipped",
+          "name": "Roll back failed update",
+          "number": 16,
+          "startedAt": "2026-10-13T16:16:25Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:16:26Z",
+          "conclusion": "success",
+          "name": "Post Sign in to Azure with OIDC",
+          "number": 31,
+          "startedAt": "2026-10-13T16:16:25Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:16:26Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "number": 32,
+          "startedAt": "2026-10-13T16:16:26Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T16:16:26Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 33,
+          "startedAt": "2026-10-13T16:16:26Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/HallelujahHomeChurch/hhc-web/actions/runs/38428099079/job/115404418528"
+    }
+  ],
+  "status": "completed",
+  "url": "https://github.com/HallelujahHomeChurch/hhc-web/actions/runs/38428099079"
+}
