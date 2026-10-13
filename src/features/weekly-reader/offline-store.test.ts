@@ -59,13 +59,14 @@ it.each([undefined,'v3','v4','v5','v6','v7','v8','v9','v10'] as const)('retains 
   expect(await listOfflineSaves(route.accountId)).toHaveLength(2);
 });
 
-it.each(['digest','asset','snapshot'] as const)('rejects altered resources or snapshot %s without replacing the previous saved revision',async reason=>{
+it.each(['digest','asset','snapshot','renderer'] as const)('rejects altered resources or snapshot %s without replacing the previous saved revision',async reason=>{
   const epoch=await activateOfflineAccount(route.accountId);
   await commitOfflineSave(await stageOfflineSave(readerFixture(),route,fetchAsset,now),epoch,now);
   const changed=readerFixture('zh-Hant',reason==='snapshot'?'v9':'v6');
   changed.document.revision=changed.access.revision=changed.access.currentRevision=2;
   if(reason==='digest')changed.document.content.layoutManifest.rendererArtifactSha256='0'.repeat(64);
   else if(reason==='asset')changed.document.content.layoutManifest.assets[0].sha256='0'.repeat(64);
+  else if(reason==='renderer')Reflect.set(changed.document.content.layoutManifest,'rendererVersion','v999');
   else changed.document.content.templateSnapshot!.visionMission='';
   await expect(stageOfflineSave(changed,route,fetchAsset,now)).rejects.toThrow(reason==='snapshot'?'invalid_template_snapshot':'update_required');
   const saved=await readOfflineSave(route,now);
@@ -74,7 +75,7 @@ it.each(['digest','asset','snapshot'] as const)('rejects altered resources or sn
   expect(saved?.save.value.document.content.layoutManifest.rendererVersion).toBe('v1');
 });
 
-it.each([['zh-Hant', 'v7', 32], ['zh-Hans', 'v7', 40], ['zh-Hant', 'v8', 32], ['zh-Hans', 'v8', 40], ['zh-Hant','v9',32],['zh-Hans','v9',40],['zh-Hant','v10',32],['zh-Hans','v10',40],['zh-Hans', 'v6', 32]] as const)('bounds %s %s offline streaming at %s MiB without replacing saved content', async (contentLocale, version, limit) => {
+it.each((['zh-Hant', 'zh-Hans'] as const).flatMap(locale => ([undefined, 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9', 'v10'] as const).map(version => [locale, version, locale === 'zh-Hans' && ['v7', 'v8', 'v9', 'v10'].includes(version ?? '') ? 40 : 32] as const)))('bounds %s %s offline streaming at %s MiB without replacing saved content', async (contentLocale, version, limit) => {
   const selector = {...route, contentLocale};
   const epoch = await activateOfflineAccount(route.accountId);
   await commitOfflineSave(await stageOfflineSave(readerFixture(contentLocale), selector, fetchAsset, now), epoch, now);

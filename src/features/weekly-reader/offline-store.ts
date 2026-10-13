@@ -1,3 +1,4 @@
+import {getBulletinRendererCapabilities} from '@hallelujahhomechurch/ui';
 import type {OnlineBulletinAccess, BulletinReaderMutation, BulletinReaderMutationResponse, BulletinReaderState} from '@hallelujahhomechurch/hhc-web-client';
 import {verifyReaderAccess, type ReaderSelector} from './api';
 import {evaluateOfflineAccess, localAccessDeadline} from './offline-access';
@@ -130,7 +131,7 @@ export async function stageOfflineSave(value: OnlineBulletinAccess, selector: Re
   const resources: OfflineSave['resources'] = [];
   let size = new TextEncoder().encode(JSON.stringify(value)).byteLength;
   // V7/V8 Hans add 8.1 MB of pinned TC fallback fonts; retain the previous content headroom.
-  const maxSize = (value.document.contentLocale === 'zh-Hans' && ['v7', 'v8', 'v9', 'v10'].includes(value.document.content.layoutManifest.rendererVersion) ? 40 : 32) * 1024 * 1024;
+  const maxSize = (value.document.contentLocale === 'zh-Hans' && getBulletinRendererCapabilities(value.document.content.layoutManifest.rendererVersion).fontFamily === 'v7' ? 40 : 32) * 1024 * 1024;
   for (const asset of value.document.content.layoutManifest.assets) {
     signal?.throwIfAborted();
     // verifyReaderAccess restricts these to exact code-owned public URLs/digests.

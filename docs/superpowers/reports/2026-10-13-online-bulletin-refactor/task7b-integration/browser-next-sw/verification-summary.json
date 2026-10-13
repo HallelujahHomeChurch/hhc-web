@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "phases": [
+    "final-previous209",
+    "final-combined210-old-cached209",
+    "final-combined210-prepared",
+    "final-rollback-old-cached210",
+    "final-rollback-prepared209"
+  ],
+  "versionsEach": 10,
+  "listRowsEach": 20,
+  "guarantees": [
+    "original resources/documents/pointers/checks/expiry/epoch unchanged",
+    "availability and actual list exact parity",
+    "original queued IDs/payloads/timestamps retained",
+    "candidate-native createNote retained and readable after baseline rollback",
+    "dirty note return state retained",
+    "cached old shell distinguished from prepared new shell",
+    "baseline compiled JS identities restored after rollback",
+    "all original cache entries retained",
+    "no member API or personalized shell in cache"
+  ],
+  "gaps": [
+    "no live backend or real member authorization",
+    "online replay/CAS recovery not exercised by this Next harness",
+    "physical/mobile device lifecycle not yet accepted"
+  ],
+  "shellNote": "Final rollback prepared shell bytes and compiled script URLs exactly return to previous209. Old-cache phases retain the preceding exact shell bytes."
+}

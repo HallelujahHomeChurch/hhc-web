@@ -81,7 +81,7 @@ describe('member reader access', () => {
     else value.document.content.layoutManifest.assets[0].sha256='0'.repeat(64);
     expect(()=>verifyReaderAccess(value,selector)).toThrow('update_required');
   });
-  it.each((['zh-Hant', 'zh-Hans'] as const).flatMap(locale => (['v7', 'v8'] as const).map(version => [locale, version] as const)))('rejects altered %s %s assets and digest', (contentLocale, version) => {
+  it.each((['zh-Hant', 'zh-Hans'] as const).flatMap(locale => ([undefined, 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9', 'v10'] as const).map(version => [locale, version] as const)))('rejects altered %s %s assets and digest', (contentLocale, version) => {
     for (const field of ['digest', 'sha256', 'url', 'kind'] as const) {
       const value = readerFixture(contentLocale, version);
       const manifest = value.document.content.layoutManifest;

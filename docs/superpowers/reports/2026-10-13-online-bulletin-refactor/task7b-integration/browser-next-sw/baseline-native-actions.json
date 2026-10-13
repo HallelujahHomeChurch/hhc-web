@@ -1,0 +1,2925 @@
+{
+  "actions": [
+    "nativeRange selection",
+    "yellow highlight",
+    "clear highlight",
+    "blue highlight",
+    "create offline note",
+    "dirty exit cancel",
+    "reload retains dirty draft"
+  ],
+  "store": {
+    "identity": [
+      {
+        "key": "active",
+        "value": {
+          "accountId": "local-fixture-account",
+          "epoch": 1
+        }
+      }
+    ],
+    "documents": [
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-0",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1739,
+            "series": "general",
+            "contentLocale": "zh-Hant"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 24886884,
+          "documentSha256": "f51c10b1051c7b1c3381e2459859b8450bfb9e902dee21bd1a180b6e8433c380",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-0",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2",
+              "bytes": 5389056,
+              "sha256": "9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-1",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1740,
+            "series": "general",
+            "contentLocale": "zh-Hans"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 27157838,
+          "documentSha256": "b98a67f8326641b2b0fe4c4f4939bc369ec065388b67905f3c8143fb5a1eed43",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-1",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+              "bytes": 5732508,
+              "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+              "bytes": 5926216,
+              "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-10",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1749,
+            "series": "general",
+            "contentLocale": "zh-Hant"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 24886887,
+          "documentSha256": "3c4b2d8e5cc0bc58f2d472e51ceee2800fd8771d6db27e2717ef8d5ae15f347c",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-10",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2",
+              "bytes": 5389056,
+              "sha256": "9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-11",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1750,
+            "series": "general",
+            "contentLocale": "zh-Hans"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790208000000,
+          "localValidUntil": 1790812800000,
+          "size": 27157841,
+          "documentSha256": "07651ce0dd0bbbbb1425ac48323fb4bfb8f924d0394be820be396e5199498e58",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-11",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-09-24T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-01T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+              "bytes": 5732508,
+              "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+              "bytes": 5926216,
+              "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-12",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1751,
+            "series": "general",
+            "contentLocale": "zh-Hant"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 24886887,
+          "documentSha256": "50eabba2f85f014155fd79d6aac173ac8f6e59fa96f70117d82a89e7e304c603",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-12",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2",
+              "bytes": 5389056,
+              "sha256": "9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-13",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1752,
+            "series": "general",
+            "contentLocale": "zh-Hans"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790208000000,
+          "localValidUntil": 1790812800000,
+          "size": 27157841,
+          "documentSha256": "02ee3d50f1001fb634be064df3c28d077389bcbbdb21ba65d984f50aaf4e3191",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-13",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-09-24T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-01T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+              "bytes": 5732508,
+              "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+              "bytes": 5926216,
+              "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-14",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1753,
+            "series": "general",
+            "contentLocale": "zh-Hant"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 24886887,
+          "documentSha256": "73edd2839c677b89564bf0ac2e73aeb0bc3aa72b6be9b204c871cd097027e18a",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-14",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2",
+              "bytes": 5389056,
+              "sha256": "9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-15",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1754,
+            "series": "general",
+            "contentLocale": "zh-Hans"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790208000000,
+          "localValidUntil": 1790812800000,
+          "size": 27157841,
+          "documentSha256": "09b0e81dcaed0d2db908b6d0ff56ffa5c6950edc8bff739070dc68a1c0055b8e",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-15",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-09-24T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-01T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+              "bytes": 5732508,
+              "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+              "bytes": 5926216,
+              "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-16",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1755,
+            "series": "general",
+            "contentLocale": "zh-Hant"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 23638196,
+          "documentSha256": "9a93e21ac747a8066493af0a51a4443aca03b03dcbc133f9ad1afbe4ef72fb9b",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-16",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            },
+            {
+              "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+              "bytes": 4140364,
+              "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-17",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1756,
+            "series": "general",
+            "contentLocale": "zh-Hans"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790208000000,
+          "localValidUntil": 1790812800000,
+          "size": 35297322,
+          "documentSha256": "b5556ee2aa901fe6e173e851b802e4565bb55118ed5764f9f46b050f8f2ea28f",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-17",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-09-24T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-01T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+              "bytes": 5732508,
+              "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+              "bytes": 5926216,
+              "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            },
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+              "bytes": 4140364,
+              "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-18",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1757,
+            "series": "general",
+            "contentLocale": "zh-Hant"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 23638430,
+          "documentSha256": "ce9a608dc86b53795c9d742224a5437d48ece1bc62070916740518a48a94eded",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-18",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            },
+            {
+              "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+              "bytes": 4140364,
+              "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-19",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1758,
+            "series": "general",
+            "contentLocale": "zh-Hans"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790208000000,
+          "localValidUntil": 1790812800000,
+          "size": 35297557,
+          "documentSha256": "11a128736665aa04fe5689d87a717d66136e4154596a3e9c6a0b99429e3068e0",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-19",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-09-24T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-01T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+              "bytes": 5732508,
+              "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+              "bytes": 5926216,
+              "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            },
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+              "bytes": 4140364,
+              "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-2",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1741,
+            "series": "general",
+            "contentLocale": "zh-Hant"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 24886884,
+          "documentSha256": "81561f4dbc626f0d90f9b050d064862e15d3d0499e32ab24cb9ddd12bfec35e9",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-2",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2",
+              "bytes": 5389056,
+              "sha256": "9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-3",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1742,
+            "series": "general",
+            "contentLocale": "zh-Hans"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 27157838,
+          "documentSha256": "f05f0014643fcfc4fa165c8f9515f6ed1d5900d4b99c57b8682598a790a20989",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-3",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+              "bytes": 5732508,
+              "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+              "bytes": 5926216,
+              "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-4",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1743,
+            "series": "general",
+            "contentLocale": "zh-Hant"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 24886884,
+          "documentSha256": "3065a43a2c581a494a9d02074a86bd3c658f9aa2d650d518bbe93fab887dc71b",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-4",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2",
+              "bytes": 5389056,
+              "sha256": "9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-5",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1744,
+            "series": "general",
+            "contentLocale": "zh-Hans"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 27157838,
+          "documentSha256": "8f1426b17c559e042c62e4c7b871c999f9f291c9546e946f4c66135f6343f633",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-5",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+              "bytes": 5732508,
+              "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+              "bytes": 5926216,
+              "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-6",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1745,
+            "series": "general",
+            "contentLocale": "zh-Hant"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 23638193,
+          "documentSha256": "43d81e853e4ad0862009e132ebd99f20640dc516cdaefc292b81b13f52763200",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-6",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            },
+            {
+              "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+              "bytes": 4140364,
+              "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-7",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1746,
+            "series": "general",
+            "contentLocale": "zh-Hans"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 35297319,
+          "documentSha256": "b64ebd33db8d337f35e33477bb8c3579b0e57a5407a367b46bb2e580af8cf89a",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-7",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+              "bytes": 5732508,
+              "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+              "bytes": 5926216,
+              "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            },
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+              "bytes": 4140364,
+              "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-8",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1747,
+            "series": "general",
+            "contentLocale": "zh-Hant"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 23638427,
+          "documentSha256": "2d5407104c311e9be753e09bc241c796fa52f1c28819bebcd1926201b3c62064",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-8",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            },
+            {
+              "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+              "bytes": 4140364,
+              "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-9",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1748,
+            "series": "general",
+            "contentLocale": "zh-Hans"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 35297554,
+          "documentSha256": "b50180d824c95ced99557b7371708b9a6ee5049b3d924af9848de6313c935429",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-9",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+              "bytes": 5732508,
+              "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+              "bytes": 5926216,
+              "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            },
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+              "bytes": 4140364,
+              "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+            }
+          ]
+        }
+      }
+    ],
+    "pointers": [
+      {
+        "key": [
+          "local-fixture-account",
+          1739,
+          "general",
+          "zh-Hant"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-0",
+          "general",
+          "zh-Hant",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1740,
+          "general",
+          "zh-Hans"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-1",
+          "general",
+          "zh-Hans",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1741,
+          "general",
+          "zh-Hant"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-2",
+          "general",
+          "zh-Hant",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1742,
+          "general",
+          "zh-Hans"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-3",
+          "general",
+          "zh-Hans",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1743,
+          "general",
+          "zh-Hant"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-4",
+          "general",
+          "zh-Hant",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1744,
+          "general",
+          "zh-Hans"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-5",
+          "general",
+          "zh-Hans",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1745,
+          "general",
+          "zh-Hant"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-6",
+          "general",
+          "zh-Hant",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1746,
+          "general",
+          "zh-Hans"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-7",
+          "general",
+          "zh-Hans",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1747,
+          "general",
+          "zh-Hant"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-8",
+          "general",
+          "zh-Hant",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1748,
+          "general",
+          "zh-Hans"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-9",
+          "general",
+          "zh-Hans",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1749,
+          "general",
+          "zh-Hant"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-10",
+          "general",
+          "zh-Hant",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1750,
+          "general",
+          "zh-Hans"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-11",
+          "general",
+          "zh-Hans",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1751,
+          "general",
+          "zh-Hant"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-12",
+          "general",
+          "zh-Hant",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1752,
+          "general",
+          "zh-Hans"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-13",
+          "general",
+          "zh-Hans",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1753,
+          "general",
+          "zh-Hant"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-14",
+          "general",
+          "zh-Hant",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1754,
+          "general",
+          "zh-Hans"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-15",
+          "general",
+          "zh-Hans",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1755,
+          "general",
+          "zh-Hant"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-16",
+          "general",
+          "zh-Hant",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1756,
+          "general",
+          "zh-Hans"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-17",
+          "general",
+          "zh-Hans",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1757,
+          "general",
+          "zh-Hant"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-18",
+          "general",
+          "zh-Hant",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1758,
+          "general",
+          "zh-Hans"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-19",
+          "general",
+          "zh-Hans",
+          1
+        ]
+      }
+    ],
+    "checks": [
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-0",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-0",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-1",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-1",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-10",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-10",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": true
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-11",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-11",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-09-24T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-01T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1790812800000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-12",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-12",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": true
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-13",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-13",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-09-24T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-01T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1790812800000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-14",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-14",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": true
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-15",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-15",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-09-24T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-01T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1790812800000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-16",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-16",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": true
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-17",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-17",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-09-24T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-01T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1790812800000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-18",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-18",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": true
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-19",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-19",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-09-24T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-01T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1790812800000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-2",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-2",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-3",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-3",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-4",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-4",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-5",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-5",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-6",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-6",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-7",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-7",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-8",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-8",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-9",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-9",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": false
+        }
+      }
+    ],
+    "private": [
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-0",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "state": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-0",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [
+              {
+                "sentenceId": "s0",
+                "color": "blue",
+                "segments": [
+                  {
+                    "start": 0,
+                    "end": 4,
+                    "color": "blue"
+                  }
+                ],
+                "quote": "內容0。",
+                "active": true,
+                "version": 1,
+                "updatedAt": "2026-10-02T00:00:00.000Z"
+              }
+            ],
+            "notes": [
+              {
+                "id": "9d41cfba-2af1-4863-b821-709cc71f445c",
+                "text": "Turbo baseline queued note😀",
+                "sentenceIds": [
+                  "s1"
+                ],
+                "ranges": [
+                  {
+                    "sentenceId": "s1",
+                    "start": 0,
+                    "end": 4,
+                    "quote": "內容1。"
+                  }
+                ],
+                "inactiveAnchors": [],
+                "quote": "內容1。",
+                "version": 1,
+                "deleted": false,
+                "reanchorRequired": false,
+                "createdAt": "2026-10-02T00:00:00.000Z",
+                "updatedAt": "2026-10-02T00:00:00.000Z"
+              }
+            ],
+            "conflicts": [],
+            "progress": null
+          },
+          "confirmed": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-0",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "queue": [
+            {
+              "mutation": {
+                "mutationId": "7246b089-96bc-4ccf-b64c-b22c787b862d",
+                "createdAt": "2026-10-02T00:00:00.000Z",
+                "documentRevision": 1,
+                "kind": "setHighlight",
+                "payload": {
+                  "sentenceIds": [
+                    "s0"
+                  ],
+                  "color": "yellow",
+                  "ranges": [
+                    {
+                      "sentenceId": "s0",
+                      "start": 0,
+                      "end": 4
+                    }
+                  ]
+                }
+              },
+              "sent": false
+            },
+            {
+              "mutation": {
+                "mutationId": "d48c0e50-779e-4761-b06a-5a83f76e80a3",
+                "createdAt": "2026-10-02T00:00:00.000Z",
+                "documentRevision": 1,
+                "kind": "clearHighlight",
+                "payload": {
+                  "sentenceIds": [
+                    "s0"
+                  ],
+                  "ranges": [
+                    {
+                      "sentenceId": "s0",
+                      "start": 0,
+                      "end": 4
+                    }
+                  ]
+                }
+              },
+              "sent": false
+            },
+            {
+              "mutation": {
+                "mutationId": "1e571550-9a30-403c-91fd-94813676d728",
+                "createdAt": "2026-10-02T00:00:00.000Z",
+                "documentRevision": 1,
+                "kind": "setHighlight",
+                "payload": {
+                  "sentenceIds": [
+                    "s0"
+                  ],
+                  "color": "blue",
+                  "ranges": [
+                    {
+                      "sentenceId": "s0",
+                      "start": 0,
+                      "end": 4
+                    }
+                  ]
+                }
+              },
+              "sent": false
+            },
+            {
+              "mutation": {
+                "mutationId": "4e37eb68-3bc2-4f82-8abb-ea2457e2ac49",
+                "createdAt": "2026-10-02T00:00:00.000Z",
+                "documentRevision": 1,
+                "kind": "createNote",
+                "payload": {
+                  "noteId": "9d41cfba-2af1-4863-b821-709cc71f445c",
+                  "sentenceIds": [
+                    "s1"
+                  ],
+                  "text": "Turbo baseline queued note😀",
+                  "ranges": [
+                    {
+                      "sentenceId": "s1",
+                      "start": 0,
+                      "end": 4
+                    }
+                  ]
+                }
+              },
+              "sent": false
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-1",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "state": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-1",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "confirmed": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-1",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "queue": []
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-2",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "state": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-2",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "confirmed": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-2",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "queue": []
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-3",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "state": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-3",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "confirmed": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-3",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "queue": []
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-4",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "state": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-4",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "confirmed": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-4",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "queue": []
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-5",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "state": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-5",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "confirmed": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-5",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "queue": []
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-6",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "state": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-6",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "confirmed": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-6",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "queue": []
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-7",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "state": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-7",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "confirmed": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-7",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "queue": []
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-8",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "state": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-8",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "confirmed": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-8",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "queue": []
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-9",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "state": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-9",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "confirmed": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-9",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "queue": []
+        }
+      }
+    ],
+    "returns": {}
+  },
+  "returns": {
+    "weekly-reader-return:local-fixture-account:fixture-document-0": {
+      "revision": 1,
+      "selected": [
+        "s2"
+      ],
+      "pageId": "p0",
+      "action": null,
+      "edition": {
+        "issueNumber": 1739,
+        "series": "general",
+        "contentLocale": "zh-Hant"
+      },
+      "savedAt": 1790899200000,
+      "selectedRanges": [
+        {
+          "sentenceId": "s2",
+          "start": 0,
+          "end": 4
+        }
+      ],
+      "draft": {
+        "text": "Turbo baseline dirty draft😀"
+      }
+    }
+  }
+}

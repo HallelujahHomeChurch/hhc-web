@@ -1,0 +1,17 @@
+import {createRequire} from 'node:module';
+import {spawn} from 'node:child_process';
+import {once} from 'node:events';
+import assert from 'node:assert/strict';
+const req=createRequire('/Users/rayselfs/Projects/hhc/website/.worktrees/online-bulletin-refactor-20261013/frontend-platform/package.json');
+const {chromium}=req('playwright');
+const server=spawn(process.execPath,['/tmp/bulletin-task7b-browser/rollback-server.mjs','/tmp/bulletin-web-baseline-20261013'],{cwd:'/Users/rayselfs/Projects/hhc/website/.worktrees/online-bulletin-refactor-20261013/hhc-web-capabilities',stdio:['ignore','pipe','pipe']});
+let log='';server.stdout.on('data',b=>log+=b);server.stderr.on('data',b=>log+=b);
+let browser;
+try {
+ for(let i=0;!log.includes('"origin"');i++){if(i>200||server.exitCode!==null)throw Error(log);await new Promise(r=>setTimeout(r,100));}
+ browser=await chromium.launch({headless:true});const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(String(e)));
+ await page.goto('http://127.0.0.1:7144');await page.waitForFunction(()=>!!window.rollbackFixture);
+ const result=await page.evaluate(()=>({version:window.rollbackFixture.uiVersion,hasCapabilities:window.rollbackFixture.hasCapabilities,spacing:[null,...Array.from({length:10},(_,i)=>'v'+(i+1))].map(v=>window.rollbackFixture.fitCheck(v))}));
+ assert.equal(result.version,'1.0.61');assert.equal(result.hasCapabilities,false);assert(result.spacing.every(x=>x.restored));assert.deepEqual(errors,[]);
+ console.log(JSON.stringify({preflightOnly:true,version:result.version,hasCapabilities:result.hasCapabilities,spacingCases:result.spacing.length,errors},null,2));
+}finally{await browser?.close();server.kill('SIGTERM');await once(server,'exit');}

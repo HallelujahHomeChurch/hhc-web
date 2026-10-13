@@ -1,3 +1,5 @@
+import {getBulletinRendererCapabilities} from '@hallelujahhomechurch/ui';
+
 /** Fit semantic one-line fields in their existing paper boxes; never rewrite text nodes. */
 export function fitPaperLines(root: HTMLElement, headerBlockIds: ReadonlySet<string>, coverRows?: {worship: string[]; work: string[]}) {
   const restore: (() => void)[] = [];
@@ -6,6 +8,8 @@ export function fitPaperLines(root: HTMLElement, headerBlockIds: ReadonlySet<str
     restore.push(() => {if (original === null) element.removeAttribute('style'); else element.setAttribute('style', original);});
   };
   for (const page of root.querySelectorAll<HTMLElement>('[data-bulletin-mode="paper"] [data-bulletin-page]')) {
+    const version = page.closest<HTMLElement>('[data-reader-renderer]')?.dataset.readerRenderer;
+    const composerOwnsCoverSpacing = version !== undefined && getBulletinRendererCapabilities(version).composerOwnsCoverSpacing;
     const row = (ids: string[]) => ids.flatMap(id => Array.from(page.querySelectorAll<HTMLElement>('[data-block-id]')).filter(element => element.dataset.blockId === id));
     const songs = row(coverRows?.worship ?? []);
     if (songs.length > 1) {
@@ -34,7 +38,7 @@ export function fitPaperLines(root: HTMLElement, headerBlockIds: ReadonlySet<str
     }
     const date = page.querySelector<HTMLElement>('[data-fixed-element="date"]');
     const issue = page.querySelector<HTMLElement>('[data-fixed-element="issueNumber"]');
-    if (date && issue && !page.closest('[data-reader-renderer="v8"], [data-reader-renderer="v9"], [data-reader-renderer="v10"]')) {
+    if (date && issue && !composerOwnsCoverSpacing) {
       remember(date); remember(issue);
       date.style.width = 'max-content';
       date.style.whiteSpace = 'nowrap';

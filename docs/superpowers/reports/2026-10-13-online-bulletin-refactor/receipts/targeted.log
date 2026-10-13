@@ -1,0 +1,9 @@
+ WARN  Issue while reading "/Users/rayselfs/Projects/hhc/website/.worktrees/online-bulletin-refactor-20261013/hhc-web-capabilities/.npmrc". Failed to replace env in config: ${NODE_AUTH_TOKEN}
+
+ RUN  v4.1.10 /Users/rayselfs/Projects/hhc/website/.worktrees/online-bulletin-refactor-20261013/hhc-web-capabilities
+
+
+ Test Files  3 passed (3)
+      Tests  121 passed (121)
+   Start at  19:49:29
+   Duration  5.99s (transform 246ms, setup 267ms, import 2.22s, tests 4.07s, environment 1.79s)

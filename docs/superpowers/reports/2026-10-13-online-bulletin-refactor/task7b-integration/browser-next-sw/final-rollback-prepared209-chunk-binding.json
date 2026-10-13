@@ -1,0 +1,118 @@
+{
+  "phase": "final-rollback-prepared209",
+  "url": "http://127.0.0.1:7190/en/literature-ministry/1748/read/general/zh-Hans",
+  "source": "/tmp/bulletin-next-final-previous209",
+  "buildId": "McnMdJ0R0LIitMY52_Xn3",
+  "installedUi": {
+    "name": "@hallelujahhomechurch/ui",
+    "version": "1.0.61"
+  },
+  "scripts": [
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/30ixm__jk4eg1.js",
+      "sha256": "3335cd7727263162f687c4b3a3250a7893b3d351c4476003890fbf6847e33a90",
+      "bytes": 32133
+    },
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/2f5cg0lfhu1r1.js",
+      "sha256": "67f05e6781da5ac2440fdc63515a3d6059052e41f163bb4ac1bd21281f34cbb5",
+      "bytes": 155989
+    },
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/419yw19oql7uw.js",
+      "sha256": "058cafebd78af3abb555c2bdf6f650c320eff150dd2044a05a48a0f9452f05eb",
+      "bytes": 426846
+    },
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/091z36yqafo_a.js",
+      "sha256": "b84d27f51fe6b4b86b04d3cfa60e386b3306b35cb157b69ce1b51078f9d68bb2",
+      "bytes": 55161
+    },
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/turbopack-28b2di3iz_y50.js",
+      "sha256": "42b41d2c26c997d7385b423a4a351024de804bede7b7a1d1b0b754762e24eb86",
+      "bytes": 10980
+    },
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/0d_4fjoyi696w.js",
+      "sha256": "d3c5c681dce32d745be45b1bf2a2ca04a9677cb0760e76253d1292f9343fd775",
+      "bytes": 3044
+    },
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/0ek6pw8ntturj.js",
+      "sha256": "6791d675f2126248ab08bc1650abf0d9427d777a9a63fdc9073bf6f0ba083f15",
+      "bytes": 13978
+    },
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/0rrbm0uqqko9u.js",
+      "sha256": "9b481601da0c763d9f6f03dc15216c018e41685037b459651713bf06d3bf2c49",
+      "bytes": 844
+    },
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/1xf4ygt9e048_.js",
+      "sha256": "e8f535ecf67628f674a2b6c4a3ee4fd39de431a5f2ed7ef61d46569180b58ba9",
+      "bytes": 8755
+    },
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/38w3enlmlmxft.js",
+      "sha256": "344d54038b047dedbf74b99ec6d0999b65f444c881101611887298f89dfedf68",
+      "bytes": 45208
+    },
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/32n885asht4ek.js",
+      "sha256": "0d9b224708c4c58c2da1646d2944fbd3e9343b3cddf17437abb00828469d7ed4",
+      "bytes": 51434
+    },
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/25v-8ojn0u953.js",
+      "sha256": "ab642c26f520c1fa52e55693be0d70c5cbfa4e55b790784f65a3f83033ae1c23",
+      "bytes": 293421
+    },
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/2vst6sk01ffpc.js",
+      "sha256": "d22e3e515fce89411f370d80b134d7cfcba41a76be5809400c8cca1262f54465",
+      "bytes": 11071
+    },
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/0zjl9rls2uge7.js",
+      "sha256": "2b82a6ec07c6ac7d4a0ac3f32b319bf40397b06fa1fbbe56fb7aad4b2bf5254c",
+      "bytes": 98229
+    },
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/1oj1z2iuliks1.js",
+      "sha256": "c830e8f1247b456961f70456bacc96f2f296a2ae9c41a7c2ceec30628d0322b4",
+      "bytes": 119919
+    },
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/16i4f2qoyadcl.js",
+      "sha256": "96941f1ffb180b1eb06a85cdf4fbaeb6471c2bd1fb1a4ec4a38ce85973a87567",
+      "bytes": 167827
+    },
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/37_m1r-1ak2w3.js",
+      "sha256": "a9261500f8cfc836e94eba57a359037a327023733cce037b570aab82cf29b2fb",
+      "bytes": 17049
+    },
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/09di35ofo_93m.js",
+      "sha256": "f45ac7182a9df2945d6a59b661f2f4f7009b4c1445fbb270bc5cc9000ef19054",
+      "bytes": 31688
+    },
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/0cz1d0mv5g_q7.js",
+      "sha256": "0973c1d64c88adc8e3c950410cb58b288f72118d5965b78049438deb8f2f9683",
+      "bytes": 112594
+    },
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/22mjgadyjxm_3.js",
+      "sha256": "a23c651365fd221fe14ac4732f03ed5d6127bee80fb5db681041ecfc8f23f90d",
+      "bytes": 5496
+    },
+    {
+      "url": "http://127.0.0.1:7190/_next/static/chunks/0z1aes4s3_vl9.js",
+      "sha256": "bb7059828ab4a71e5c9cda911e764cfcde758589f9578fb65179f2eb30068116",
+      "bytes": 17365
+    }
+  ],
+  "allCachedLoadedScriptBytesMatchBuild": true
+}

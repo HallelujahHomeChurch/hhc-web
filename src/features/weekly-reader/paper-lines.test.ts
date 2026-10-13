@@ -21,9 +21,10 @@ describe('single-line paper fields', () => {
     restore();
     expect(elements[4].style.left).toBe('');
   });
-  it('places the issue immediately after the date regardless of the original column gap', () => {
+  it.each([undefined, 'v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7'])('places the issue immediately after the date for legacy renderer %s', renderer => {
     const root = document.createElement('div');
     root.innerHTML = '<div data-bulletin-mode="paper"><section data-bulletin-page="cover"><p data-fixed-element="date" style="left:10%;top:28%;width:20%">Sep.27.2026</p><p data-fixed-element="issueNumber" style="left:40%;top:29%;width:15%">第1740期</p></section></div>';
+    if (renderer) root.dataset.readerRenderer = renderer;
     const date = root.querySelector<HTMLElement>('[data-fixed-element="date"]')!;
     const issue = root.querySelector<HTMLElement>('[data-fixed-element="issueNumber"]')!;
     Object.defineProperty(date, 'offsetLeft', {value: 60});
@@ -44,6 +45,13 @@ describe('single-line paper fields', () => {
     const restore = fitPaperLines(root, new Set());
     expect(root.innerHTML).toBe(before);
     restore();
+    expect(root.innerHTML).toBe(before);
+  });
+  it('rejects an explicit unknown renderer without changing the date or issue', () => {
+    const root = document.createElement('div');
+    root.innerHTML = '<div data-reader-renderer="v999"><div data-bulletin-mode="paper"><section data-bulletin-page="cover"><p data-fixed-element="date">Date</p><p data-fixed-element="issueNumber">Issue</p></section></div></div>';
+    const before = root.innerHTML;
+    expect(() => fitPaperLines(root, new Set())).toThrow('update_required');
     expect(root.innerHTML).toBe(before);
   });
   it('omits the production band and moves only the same page body up without changing text or widths', () => {

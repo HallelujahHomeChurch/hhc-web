@@ -1,0 +1,19 @@
+{
+  "note": "Hashes captured after passing browser run; no product source or package/lock changes occurred between run and capture. Only locales.test expected pin was corrected during tests.",
+  "files": {
+    "baseline": {
+      "package.json": "f5cc4e400ff3b34cafda0912e05652ee139e06436f4ae9fa71f209740338265f",
+      "pnpm-lock.yaml": "4426e4e4ba5cd744cd2d3000ab6bda74162c050a8ecb586e9dabde6ad0050c76",
+      "src/features/weekly-reader/api.ts": "98425d7af5894f221f6ecbd525d8686af40269d05a83879731101b5c3a7d2e40",
+      "src/features/weekly-reader/offline-store.ts": "8443a46ad8edc92623af212fe390ea675f694ab2f9642f5708384813e32daec5",
+      "src/features/weekly-reader/paper-lines.ts": "6907c94d6f05e0f56688ee28f7480bfbc6f4526cc1f677c3180ec84a89e41d77"
+    },
+    "candidate": {
+      "package.json": "2464355885e812417915794994fbb6b38e93f93499a136810fef4872fdfa1bd3",
+      "pnpm-lock.yaml": "1032ceed33db4733e584e12c49b7cd785d941e77e8dd5de88e7f83b0da4bb0f0",
+      "src/features/weekly-reader/api.ts": "3108e98b9bde1ef5a7b4bb9ef4aa28683b592a827ac0e361f0eed489fb9ad717",
+      "src/features/weekly-reader/offline-store.ts": "b99b32acad786021992d5e3735a17fd2afe2e9d52685ca254aae4d46eb2c5a67",
+      "src/features/weekly-reader/paper-lines.ts": "307caccd7bd1b9f545ae5d6b6d1de0c2df136ca7ef84921ff24910fef3768762"
+    }
+  }
+}

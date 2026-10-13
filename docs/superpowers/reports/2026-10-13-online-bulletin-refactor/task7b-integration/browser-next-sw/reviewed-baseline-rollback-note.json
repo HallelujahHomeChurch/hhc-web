@@ -1,0 +1,51 @@
+{
+  "url": "http://127.0.0.1:7190/en/literature-ministry/1741/read/general/zh-Hant",
+  "nativeNotesPanelText": "Reading a saved copy. Reconnect to validate access and synchronize.\n\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nLoading bulletin…\nLoading bulletin…\nLoading bulletin…\nLoading bulletin…\nLoading bulletin…\nLoading bulletin…\nLoading bulletin…\nLoading bulletin…\nLoading bulletin…\nLoading bulletin…\n100%\n\n內容0。\n\n內容1。\n\n內容2。\n\n內容3。\n\n✎\nMy notes\nHighlights\n\nNo highlights yet.\n\n內容0。\n\nCombined210 native action review receipt😀\n\nGo to source\nEdit\nDelete",
+  "originalEntry": {
+    "mutation": {
+      "mutationId": "26d66125-6154-40d5-a62b-14f11a49ff30",
+      "createdAt": "2026-10-02T00:00:00.000Z",
+      "documentRevision": 1,
+      "kind": "createNote",
+      "payload": {
+        "noteId": "e04d0043-e8d9-41d2-b3c6-0cd90553ba16",
+        "sentenceIds": [
+          "s0"
+        ],
+        "text": "Combined210 native action review receipt😀",
+        "ranges": [
+          {
+            "sentenceId": "s0",
+            "start": 0,
+            "end": 4
+          }
+        ]
+      }
+    },
+    "sent": false
+  },
+  "actualEntry": {
+    "mutation": {
+      "mutationId": "26d66125-6154-40d5-a62b-14f11a49ff30",
+      "createdAt": "2026-10-02T00:00:00.000Z",
+      "documentRevision": 1,
+      "kind": "createNote",
+      "payload": {
+        "noteId": "e04d0043-e8d9-41d2-b3c6-0cd90553ba16",
+        "sentenceIds": [
+          "s0"
+        ],
+        "text": "Combined210 native action review receipt😀",
+        "ranges": [
+          {
+            "sentenceId": "s0",
+            "start": 0,
+            "end": 4
+          }
+        ]
+      }
+    },
+    "sent": false
+  },
+  "passed": true
+}

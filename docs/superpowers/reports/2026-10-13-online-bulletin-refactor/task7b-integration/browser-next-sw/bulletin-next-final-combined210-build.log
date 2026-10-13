@@ -1,0 +1,75 @@
+
+> @hallelujahhomechurch/hhc-web@0.1.0 build /private/tmp/bulletin-next-final-combined210
+> next build
+
+▲ Next.js 16.3.8 (Turbopack)
+✓ Running next.config.ts took 1795ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 6.9s
+  Running TypeScript ...
+  Finished TypeScript in 3.7s ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/70) ...
+  Generating static pages using 9 workers (17/70)
+  Generating static pages using 9 workers (34/70)
+  Generating static pages using 9 workers (52/70)
+✓ Generating static pages using 9 workers (70/70) in 1260ms
+  Finalizing page optimization ...
+
+Route (app)                                                                    Revalidate  Expire
+┌ ƒ /
+├ ○ /_not-found                                                                        1m      1y
+├ ƒ /[locale]
+├   /[locale]/about
+│ ├ ● /zh-Hant/about                                                                   1m      1y
+│ ├ ● /zh-Hans/about                                                                   1m      1y
+│ ├ ● /en/about                                                                        1m      1y
+│ └ ● [+2 more paths]
+├   /[locale]/help/account
+│ ├ ● /zh-Hant/help/account                                                            1m      1y
+│ ├ ● /zh-Hans/help/account                                                            1m      1y
+│ ├ ● /en/help/account                                                                 1m      1y
+│ └ ● [+2 more paths]
+├   /[locale]/literature-ministry
+│ ├ ● /zh-Hant/literature-ministry                                                     1m      1y
+│ ├ ● /zh-Hans/literature-ministry                                                     1m      1y
+│ ├ ● /en/literature-ministry                                                          1m      1y
+│ └ ● [+2 more paths]
+├ ƒ /[locale]/literature-ministry/[issueNumber]/read/[series]/[contentLocale]
+├   /[locale]/literature-ministry/offline
+│ ├ ● /zh-Hant/literature-ministry/offline                                             1m      1y
+│ ├ ● /zh-Hans/literature-ministry/offline                                             1m      1y
+│ ├ ● /en/literature-ministry/offline                                                  1m      1y
+│ └ ● [+2 more paths]
+├   /[locale]/literature-ministry/offline/reader-shell
+│ ├ ● /zh-Hant/literature-ministry/offline/reader-shell                                1m      1y
+│ ├ ● /zh-Hans/literature-ministry/offline/reader-shell                                1m      1y
+│ ├ ● /en/literature-ministry/offline/reader-shell                                     1m      1y
+│ └ ● [+2 more paths]
+├   /[locale]/maintenance
+│ ├ ● /zh-Hant/maintenance                                                             1m      1y
+│ ├ ● /zh-Hans/maintenance                                                             1m      1y
+│ ├ ● /en/maintenance                                                                  1m      1y
+│ └ ● [+2 more paths]
+├ ƒ /[locale]/member-videos
+├ ƒ /[locale]/member-videos/[id]
+├ ƒ /[locale]/news
+├ ƒ /[locale]/news/[slug]
+├ ƒ /[locale]/newsletter/unsubscribe
+├ ƒ /[locale]/privacy-policy
+├ ƒ /[locale]/statements/[slug]
+├ ƒ /[locale]/terms-of-use
+├ ○ /apple-icon.png
+├ ƒ /csp-report
+├ ƒ /health
+├ ○ /manifest.webmanifest
+├ ○ /oauth/callback                                                                    1m      1y
+├ ○ /opengraph-image
+├ ○ /robots.txt
+└ ƒ /sitemap.xml
+
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand

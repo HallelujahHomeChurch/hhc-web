@@ -1,0 +1,672 @@
+[
+  {
+    "text": "內容0。內容1。內容2。內容3。信息摘要內容0。信息摘要內容1。信息摘要內容2。信息摘要內容3。",
+    "anchors": [
+      {
+        "id": "s0",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s1",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s2",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s3",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s0",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s1",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s2",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s3",
+        "start": "0",
+        "end": "4"
+      }
+    ],
+    "sentences": [
+      {
+        "id": "s0",
+        "componentId": "c0",
+        "text": "內容0。"
+      },
+      {
+        "id": "s1",
+        "componentId": "c1",
+        "text": "內容1。"
+      },
+      {
+        "id": "s2",
+        "componentId": "c2",
+        "text": "內容2。"
+      },
+      {
+        "id": "s3",
+        "componentId": "c3",
+        "text": "內容3。"
+      }
+    ]
+  },
+  {
+    "text": "內容0。內容1。內容2。內容3。信息摘要內容0。信息摘要內容1。信息摘要內容2。信息摘要內容3。",
+    "anchors": [
+      {
+        "id": "s0",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s1",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s2",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s3",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s0",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s1",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s2",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s3",
+        "start": "0",
+        "end": "4"
+      }
+    ],
+    "sentences": [
+      {
+        "id": "s0",
+        "componentId": "c0",
+        "text": "內容0。"
+      },
+      {
+        "id": "s1",
+        "componentId": "c1",
+        "text": "內容1。"
+      },
+      {
+        "id": "s2",
+        "componentId": "c2",
+        "text": "內容2。"
+      },
+      {
+        "id": "s3",
+        "componentId": "c3",
+        "text": "內容3。"
+      }
+    ]
+  },
+  {
+    "text": "內容0。內容1。內容2。內容3。信息摘要內容0。信息摘要內容1。信息摘要內容2。信息摘要內容3。",
+    "anchors": [
+      {
+        "id": "s0",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s1",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s2",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s3",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s0",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s1",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s2",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s3",
+        "start": "0",
+        "end": "4"
+      }
+    ],
+    "sentences": [
+      {
+        "id": "s0",
+        "componentId": "c0",
+        "text": "內容0。"
+      },
+      {
+        "id": "s1",
+        "componentId": "c1",
+        "text": "內容1。"
+      },
+      {
+        "id": "s2",
+        "componentId": "c2",
+        "text": "內容2。"
+      },
+      {
+        "id": "s3",
+        "componentId": "c3",
+        "text": "內容3。"
+      }
+    ]
+  },
+  {
+    "text": "內容0。內容1。內容2。內容3。信息摘要內容0。信息摘要內容1。信息摘要內容2。信息摘要內容3。",
+    "anchors": [
+      {
+        "id": "s0",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s1",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s2",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s3",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s0",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s1",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s2",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s3",
+        "start": "0",
+        "end": "4"
+      }
+    ],
+    "sentences": [
+      {
+        "id": "s0",
+        "componentId": "c0",
+        "text": "內容0。"
+      },
+      {
+        "id": "s1",
+        "componentId": "c1",
+        "text": "內容1。"
+      },
+      {
+        "id": "s2",
+        "componentId": "c2",
+        "text": "內容2。"
+      },
+      {
+        "id": "s3",
+        "componentId": "c3",
+        "text": "內容3。"
+      }
+    ]
+  },
+  {
+    "text": "內容0。內容1。內容2。內容3。信息摘要內容0。信息摘要內容1。信息摘要內容2。信息摘要內容3。",
+    "anchors": [
+      {
+        "id": "s0",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s1",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s2",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s3",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s0",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s1",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s2",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s3",
+        "start": "0",
+        "end": "4"
+      }
+    ],
+    "sentences": [
+      {
+        "id": "s0",
+        "componentId": "c0",
+        "text": "內容0。"
+      },
+      {
+        "id": "s1",
+        "componentId": "c1",
+        "text": "內容1。"
+      },
+      {
+        "id": "s2",
+        "componentId": "c2",
+        "text": "內容2。"
+      },
+      {
+        "id": "s3",
+        "componentId": "c3",
+        "text": "內容3。"
+      }
+    ]
+  },
+  {
+    "text": "內容0。內容1。內容2。內容3。信息摘要內容0。信息摘要內容1。信息摘要內容2。信息摘要內容3。",
+    "anchors": [
+      {
+        "id": "s0",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s1",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s2",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s3",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s0",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s1",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s2",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s3",
+        "start": "0",
+        "end": "4"
+      }
+    ],
+    "sentences": [
+      {
+        "id": "s0",
+        "componentId": "c0",
+        "text": "內容0。"
+      },
+      {
+        "id": "s1",
+        "componentId": "c1",
+        "text": "內容1。"
+      },
+      {
+        "id": "s2",
+        "componentId": "c2",
+        "text": "內容2。"
+      },
+      {
+        "id": "s3",
+        "componentId": "c3",
+        "text": "內容3。"
+      }
+    ]
+  },
+  {
+    "text": "內容0。內容1。內容2。內容3。信息摘要內容0。信息摘要內容1。信息摘要內容2。信息摘要內容3。",
+    "anchors": [
+      {
+        "id": "s0",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s1",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s2",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s3",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s0",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s1",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s2",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s3",
+        "start": "0",
+        "end": "4"
+      }
+    ],
+    "sentences": [
+      {
+        "id": "s0",
+        "componentId": "c0",
+        "text": "內容0。"
+      },
+      {
+        "id": "s1",
+        "componentId": "c1",
+        "text": "內容1。"
+      },
+      {
+        "id": "s2",
+        "componentId": "c2",
+        "text": "內容2。"
+      },
+      {
+        "id": "s3",
+        "componentId": "c3",
+        "text": "內容3。"
+      }
+    ]
+  },
+  {
+    "text": "內容0。內容1。內容2。內容3。信息摘要內容0。信息摘要內容1。信息摘要內容2。信息摘要內容3。",
+    "anchors": [
+      {
+        "id": "s0",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s1",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s2",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s3",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s0",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s1",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s2",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s3",
+        "start": "0",
+        "end": "4"
+      }
+    ],
+    "sentences": [
+      {
+        "id": "s0",
+        "componentId": "c0",
+        "text": "內容0。"
+      },
+      {
+        "id": "s1",
+        "componentId": "c1",
+        "text": "內容1。"
+      },
+      {
+        "id": "s2",
+        "componentId": "c2",
+        "text": "內容2。"
+      },
+      {
+        "id": "s3",
+        "componentId": "c3",
+        "text": "內容3。"
+      }
+    ]
+  },
+  {
+    "text": "內容0。內容1。內容2。內容3。信息摘要內容0。信息摘要內容1。信息摘要內容2。信息摘要內容3。",
+    "anchors": [
+      {
+        "id": "s0",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s1",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s2",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s3",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s0",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s1",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s2",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s3",
+        "start": "0",
+        "end": "4"
+      }
+    ],
+    "sentences": [
+      {
+        "id": "s0",
+        "componentId": "c0",
+        "text": "內容0。"
+      },
+      {
+        "id": "s1",
+        "componentId": "c1",
+        "text": "內容1。"
+      },
+      {
+        "id": "s2",
+        "componentId": "c2",
+        "text": "內容2。"
+      },
+      {
+        "id": "s3",
+        "componentId": "c3",
+        "text": "內容3。"
+      }
+    ]
+  },
+  {
+    "text": "內容0。內容1。內容2。內容3。信息摘要內容0。信息摘要內容1。信息摘要內容2。信息摘要內容3。",
+    "anchors": [
+      {
+        "id": "s0",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s1",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s2",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s3",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s0",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s1",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s2",
+        "start": "0",
+        "end": "4"
+      },
+      {
+        "id": "s3",
+        "start": "0",
+        "end": "4"
+      }
+    ],
+    "sentences": [
+      {
+        "id": "s0",
+        "componentId": "c0",
+        "text": "內容0。"
+      },
+      {
+        "id": "s1",
+        "componentId": "c1",
+        "text": "內容1。"
+      },
+      {
+        "id": "s2",
+        "componentId": "c2",
+        "text": "內容2。"
+      },
+      {
+        "id": "s3",
+        "componentId": "c3",
+        "text": "內容3。"
+      }
+    ]
+  }
+]

@@ -1,0 +1,10 @@
+ WARN  Issue while reading "/Users/rayselfs/Projects/hhc/website/.worktrees/online-bulletin-refactor-20261013/hhc-web-capabilities/.npmrc". Failed to replace env in config: ${NODE_AUTH_TOKEN}
+
+> @hallelujahhomechurch/hhc-web@0.1.0 lint /Users/rayselfs/Projects/hhc/website/.worktrees/online-bulletin-refactor-20261013/hhc-web-capabilities
+> eslint
+
+
+/Users/rayselfs/Projects/hhc/website/.worktrees/online-bulletin-refactor-20261013/hhc-web-capabilities/src/components/legal/LegalRequiredNavigation.tsx
+  17:7  warning  Do not use `window.location.assign()` to navigate to internal Next.js pages. Use `redirect()` in the render phase, or `useRouter().push()` in Client Components' event handlers instead. See: https://nextjs.org/docs/messages/no-location-assign-relative-destination  @next/next/no-location-assign-relative-destination
+
+✖ 1 problem (0 errors, 1 warning)

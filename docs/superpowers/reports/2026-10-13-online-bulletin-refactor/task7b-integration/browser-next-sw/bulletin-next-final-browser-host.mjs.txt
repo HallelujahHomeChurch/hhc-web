@@ -1,0 +1,8 @@
+import {createRequire} from 'node:module';
+const req=createRequire('/Users/rayselfs/Projects/hhc/website/.worktrees/online-bulletin-refactor-20261013/frontend-platform/package.json');
+const {chromium}=req('playwright');
+const context=await chromium.launchPersistentContext('/tmp/bulletin-next-final-profile',{headless:true,viewport:{width:1280,height:800},args:['--remote-debugging-port=7198']});
+if(context.browser().version()!=='153.0.8010.12')throw Error('wrong browser');
+await context.addInitScript(()=>{const NativeDate=Date;const T=NativeDate.parse('2026-10-02T00:00:00Z');globalThis.Date=class extends NativeDate{constructor(...args){super(...(args.length?args:[T]));}static now(){return T;}}});
+await context.route('**/*',route=>new URL(route.request().url()).hostname==='127.0.0.1'?route.continue():route.abort());
+console.log(context.browser().version());setInterval(()=>{},30000);
