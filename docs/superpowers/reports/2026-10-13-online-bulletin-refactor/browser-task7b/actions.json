@@ -1,0 +1,703 @@
+[
+  {
+    "label": "baseline server-applied response deliberately not acknowledged",
+    "mutation": {
+      "mutationId": "00000000-0000-4000-8000-000000000010",
+      "createdAt": "2026-10-02T00:00:00.000Z",
+      "documentRevision": 1,
+      "kind": "setHighlight",
+      "payload": {
+        "sentenceIds": [
+          "s0"
+        ],
+        "ranges": [
+          {
+            "sentenceId": "s0",
+            "start": 1,
+            "end": 3
+          }
+        ],
+        "color": "yellow"
+      }
+    },
+    "before": {
+      "accountId": "local-fixture-account",
+      "documentId": "fixture-document-0",
+      "appliedRevision": 1,
+      "currentRevision": 1,
+      "highlights": [],
+      "notes": [],
+      "conflicts": [],
+      "progress": null
+    },
+    "response": {
+      "state": {
+        "accountId": "local-fixture-account",
+        "documentId": "fixture-document-0",
+        "appliedRevision": 1,
+        "currentRevision": 1,
+        "highlights": [
+          {
+            "sentenceId": "s0",
+            "color": "yellow",
+            "segments": [
+              {
+                "start": 1,
+                "end": 3,
+                "color": "yellow"
+              }
+            ],
+            "quote": "內容0。",
+            "active": true,
+            "version": 1,
+            "updatedAt": "2026-10-02T00:00:00.000Z"
+          }
+        ],
+        "notes": [],
+        "conflicts": [],
+        "progress": null
+      },
+      "results": [
+        {
+          "mutationId": "00000000-0000-4000-8000-000000000010",
+          "status": "applied",
+          "revision": 1
+        }
+      ]
+    }
+  },
+  {
+    "label": "seed cloud note",
+    "mutation": {
+      "mutationId": "00000000-0000-4000-8000-000000000030",
+      "createdAt": "2026-10-02T00:00:00.000Z",
+      "documentRevision": 1,
+      "kind": "createNote",
+      "payload": {
+        "noteId": "00000000-0000-4000-8000-000000000031",
+        "sentenceIds": [
+          "s0"
+        ],
+        "text": "Original synthetic note"
+      }
+    },
+    "before": {
+      "accountId": "local-fixture-account",
+      "documentId": "fixture-document-3",
+      "appliedRevision": 1,
+      "currentRevision": 1,
+      "highlights": [],
+      "notes": [],
+      "conflicts": [],
+      "progress": null
+    },
+    "response": {
+      "state": {
+        "accountId": "local-fixture-account",
+        "documentId": "fixture-document-3",
+        "appliedRevision": 1,
+        "currentRevision": 1,
+        "highlights": [],
+        "notes": [
+          {
+            "id": "00000000-0000-4000-8000-000000000031",
+            "text": "Original synthetic note",
+            "sentenceIds": [
+              "s0"
+            ],
+            "inactiveAnchors": [],
+            "quote": "內容0。",
+            "version": 1,
+            "deleted": false,
+            "reanchorRequired": false,
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "updatedAt": "2026-10-02T00:00:00.000Z"
+          }
+        ],
+        "conflicts": [],
+        "progress": null
+      },
+      "results": [
+        {
+          "mutationId": "00000000-0000-4000-8000-000000000030",
+          "status": "applied",
+          "revision": 1,
+          "note": {
+            "id": "00000000-0000-4000-8000-000000000031",
+            "text": "Original synthetic note",
+            "sentenceIds": [
+              "s0"
+            ],
+            "inactiveAnchors": [],
+            "quote": "內容0。",
+            "version": 1,
+            "deleted": false,
+            "reanchorRequired": false,
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "updatedAt": "2026-10-02T00:00:00.000Z"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "label": "concurrent synthetic cloud edit",
+    "mutation": {
+      "mutationId": "00000000-0000-4000-8000-000000000033",
+      "createdAt": "2026-10-02T00:00:00.000Z",
+      "documentRevision": 1,
+      "kind": "editNote",
+      "baseVersion": 1,
+      "payload": {
+        "noteId": "00000000-0000-4000-8000-000000000031",
+        "text": "Concurrent synthetic cloud edit"
+      }
+    },
+    "before": {
+      "accountId": "local-fixture-account",
+      "documentId": "fixture-document-3",
+      "appliedRevision": 1,
+      "currentRevision": 1,
+      "highlights": [],
+      "notes": [
+        {
+          "id": "00000000-0000-4000-8000-000000000031",
+          "text": "Original synthetic note",
+          "sentenceIds": [
+            "s0"
+          ],
+          "inactiveAnchors": [],
+          "quote": "內容0。",
+          "version": 1,
+          "deleted": false,
+          "reanchorRequired": false,
+          "createdAt": "2026-10-02T00:00:00.000Z",
+          "updatedAt": "2026-10-02T00:00:00.000Z"
+        }
+      ],
+      "conflicts": [],
+      "progress": null
+    },
+    "response": {
+      "state": {
+        "accountId": "local-fixture-account",
+        "documentId": "fixture-document-3",
+        "appliedRevision": 1,
+        "currentRevision": 1,
+        "highlights": [],
+        "notes": [
+          {
+            "id": "00000000-0000-4000-8000-000000000031",
+            "text": "Concurrent synthetic cloud edit",
+            "sentenceIds": [
+              "s0"
+            ],
+            "inactiveAnchors": [],
+            "quote": "內容0。",
+            "version": 2,
+            "deleted": false,
+            "reanchorRequired": false,
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "updatedAt": "2026-10-02T00:00:00.000Z"
+          }
+        ],
+        "conflicts": [],
+        "progress": null
+      },
+      "results": [
+        {
+          "mutationId": "00000000-0000-4000-8000-000000000033",
+          "status": "applied",
+          "revision": 1,
+          "note": {
+            "id": "00000000-0000-4000-8000-000000000031",
+            "text": "Concurrent synthetic cloud edit",
+            "sentenceIds": [
+              "s0"
+            ],
+            "inactiveAnchors": [],
+            "quote": "內容0。",
+            "version": 2,
+            "deleted": false,
+            "reanchorRequired": false,
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "updatedAt": "2026-10-02T00:00:00.000Z"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "label": "synthetic note conflict",
+    "mutation": {
+      "mutationId": "00000000-0000-4000-8000-000000000032",
+      "createdAt": "2026-10-02T00:00:00.000Z",
+      "documentRevision": 1,
+      "kind": "editNote",
+      "baseVersion": 1,
+      "payload": {
+        "noteId": "00000000-0000-4000-8000-000000000031",
+        "text": "Unresolved local synthetic edit"
+      }
+    },
+    "before": {
+      "accountId": "local-fixture-account",
+      "documentId": "fixture-document-3",
+      "appliedRevision": 1,
+      "currentRevision": 1,
+      "highlights": [],
+      "notes": [
+        {
+          "id": "00000000-0000-4000-8000-000000000031",
+          "text": "Concurrent synthetic cloud edit",
+          "sentenceIds": [
+            "s0"
+          ],
+          "inactiveAnchors": [],
+          "quote": "內容0。",
+          "version": 2,
+          "deleted": false,
+          "reanchorRequired": false,
+          "createdAt": "2026-10-02T00:00:00.000Z",
+          "updatedAt": "2026-10-02T00:00:00.000Z"
+        }
+      ],
+      "conflicts": [],
+      "progress": null
+    },
+    "response": {
+      "state": {
+        "accountId": "local-fixture-account",
+        "documentId": "fixture-document-3",
+        "appliedRevision": 1,
+        "currentRevision": 1,
+        "highlights": [],
+        "notes": [
+          {
+            "id": "00000000-0000-4000-8000-000000000031",
+            "text": "Concurrent synthetic cloud edit",
+            "sentenceIds": [
+              "s0"
+            ],
+            "inactiveAnchors": [],
+            "quote": "內容0。",
+            "version": 2,
+            "deleted": false,
+            "reanchorRequired": false,
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "updatedAt": "2026-10-02T00:00:00.000Z"
+          }
+        ],
+        "conflicts": [],
+        "progress": null
+      },
+      "results": [
+        {
+          "mutationId": "00000000-0000-4000-8000-000000000032",
+          "status": "note_conflict",
+          "revision": 1,
+          "note": {
+            "id": "00000000-0000-4000-8000-000000000031",
+            "text": "Concurrent synthetic cloud edit",
+            "sentenceIds": [
+              "s0"
+            ],
+            "inactiveAnchors": [],
+            "quote": "內容0。",
+            "version": 2,
+            "deleted": false,
+            "reanchorRequired": false,
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "updatedAt": "2026-10-02T00:00:00.000Z"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "label": "candidate retries original response-lost ID",
+    "mutation": {
+      "mutationId": "00000000-0000-4000-8000-000000000010",
+      "createdAt": "2026-10-02T00:00:00.000Z",
+      "documentRevision": 1,
+      "kind": "setHighlight",
+      "payload": {
+        "sentenceIds": [
+          "s0"
+        ],
+        "ranges": [
+          {
+            "sentenceId": "s0",
+            "start": 1,
+            "end": 3
+          }
+        ],
+        "color": "yellow"
+      }
+    },
+    "before": {
+      "accountId": "local-fixture-account",
+      "documentId": "fixture-document-0",
+      "appliedRevision": 1,
+      "currentRevision": 1,
+      "highlights": [
+        {
+          "sentenceId": "s0",
+          "color": "yellow",
+          "segments": [
+            {
+              "start": 1,
+              "end": 3,
+              "color": "yellow"
+            }
+          ],
+          "quote": "內容0。",
+          "active": true,
+          "version": 1,
+          "updatedAt": "2026-10-02T00:00:00.000Z"
+        }
+      ],
+      "notes": [],
+      "conflicts": [],
+      "progress": null
+    },
+    "response": {
+      "state": {
+        "accountId": "local-fixture-account",
+        "documentId": "fixture-document-0",
+        "appliedRevision": 1,
+        "currentRevision": 1,
+        "highlights": [
+          {
+            "sentenceId": "s0",
+            "color": "yellow",
+            "segments": [
+              {
+                "start": 1,
+                "end": 3,
+                "color": "yellow"
+              }
+            ],
+            "quote": "內容0。",
+            "active": true,
+            "version": 1,
+            "updatedAt": "2026-10-02T00:00:00.000Z"
+          }
+        ],
+        "notes": [],
+        "conflicts": [],
+        "progress": null
+      },
+      "results": [
+        {
+          "mutationId": "00000000-0000-4000-8000-000000000010",
+          "status": "applied",
+          "revision": 1
+        }
+      ]
+    }
+  },
+  {
+    "label": "candidate sends baseline unsent note",
+    "mutation": {
+      "mutationId": "00000000-0000-4000-8000-000000000011",
+      "createdAt": "2026-10-02T00:00:00.000Z",
+      "documentRevision": 1,
+      "kind": "createNote",
+      "payload": {
+        "noteId": "00000000-0000-4000-8000-000000000021",
+        "sentenceIds": [
+          "s1"
+        ],
+        "ranges": [
+          {
+            "sentenceId": "s1",
+            "start": 1,
+            "end": 3
+          }
+        ],
+        "text": "Synthetic unsent 筆記😀"
+      }
+    },
+    "before": {
+      "accountId": "local-fixture-account",
+      "documentId": "fixture-document-0",
+      "appliedRevision": 1,
+      "currentRevision": 1,
+      "highlights": [
+        {
+          "sentenceId": "s0",
+          "color": "yellow",
+          "segments": [
+            {
+              "start": 1,
+              "end": 3,
+              "color": "yellow"
+            }
+          ],
+          "quote": "內容0。",
+          "active": true,
+          "version": 1,
+          "updatedAt": "2026-10-02T00:00:00.000Z"
+        }
+      ],
+      "notes": [],
+      "conflicts": [],
+      "progress": null
+    },
+    "response": {
+      "state": {
+        "accountId": "local-fixture-account",
+        "documentId": "fixture-document-0",
+        "appliedRevision": 1,
+        "currentRevision": 1,
+        "highlights": [
+          {
+            "sentenceId": "s0",
+            "color": "yellow",
+            "segments": [
+              {
+                "start": 1,
+                "end": 3,
+                "color": "yellow"
+              }
+            ],
+            "quote": "內容0。",
+            "active": true,
+            "version": 1,
+            "updatedAt": "2026-10-02T00:00:00.000Z"
+          }
+        ],
+        "notes": [
+          {
+            "id": "00000000-0000-4000-8000-000000000021",
+            "text": "Synthetic unsent 筆記😀",
+            "sentenceIds": [
+              "s1"
+            ],
+            "ranges": [
+              {
+                "sentenceId": "s1",
+                "start": 1,
+                "end": 3,
+                "quote": "內容1。"
+              }
+            ],
+            "inactiveAnchors": [],
+            "quote": "容1",
+            "version": 1,
+            "deleted": false,
+            "reanchorRequired": false,
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "updatedAt": "2026-10-02T00:00:00.000Z"
+          }
+        ],
+        "conflicts": [],
+        "progress": null
+      },
+      "results": [
+        {
+          "mutationId": "00000000-0000-4000-8000-000000000011",
+          "status": "applied",
+          "revision": 1,
+          "note": {
+            "id": "00000000-0000-4000-8000-000000000021",
+            "text": "Synthetic unsent 筆記😀",
+            "sentenceIds": [
+              "s1"
+            ],
+            "ranges": [
+              {
+                "sentenceId": "s1",
+                "start": 1,
+                "end": 3,
+                "quote": "內容1。"
+              }
+            ],
+            "inactiveAnchors": [],
+            "quote": "容1",
+            "version": 1,
+            "deleted": false,
+            "reanchorRequired": false,
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "updatedAt": "2026-10-02T00:00:00.000Z"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "label": "rolled-back baseline sends candidate-created original ID",
+    "mutation": {
+      "mutationId": "00000000-0000-4000-8000-000000000040",
+      "createdAt": "2026-10-02T00:00:00.000Z",
+      "documentRevision": 1,
+      "kind": "createNote",
+      "payload": {
+        "noteId": "00000000-0000-4000-8000-000000000041",
+        "sentenceIds": [
+          "s2"
+        ],
+        "ranges": [
+          {
+            "sentenceId": "s2",
+            "start": 0,
+            "end": 2
+          }
+        ],
+        "text": "Candidate-created queued note😀"
+      }
+    },
+    "before": {
+      "accountId": "local-fixture-account",
+      "documentId": "fixture-document-0",
+      "appliedRevision": 1,
+      "currentRevision": 1,
+      "highlights": [
+        {
+          "sentenceId": "s0",
+          "color": "yellow",
+          "segments": [
+            {
+              "start": 1,
+              "end": 3,
+              "color": "yellow"
+            }
+          ],
+          "quote": "內容0。",
+          "active": true,
+          "version": 1,
+          "updatedAt": "2026-10-02T00:00:00.000Z"
+        }
+      ],
+      "notes": [
+        {
+          "id": "00000000-0000-4000-8000-000000000021",
+          "text": "Synthetic unsent 筆記😀",
+          "sentenceIds": [
+            "s1"
+          ],
+          "ranges": [
+            {
+              "sentenceId": "s1",
+              "start": 1,
+              "end": 3,
+              "quote": "內容1。"
+            }
+          ],
+          "inactiveAnchors": [],
+          "quote": "容1",
+          "version": 1,
+          "deleted": false,
+          "reanchorRequired": false,
+          "createdAt": "2026-10-02T00:00:00.000Z",
+          "updatedAt": "2026-10-02T00:00:00.000Z"
+        }
+      ],
+      "conflicts": [],
+      "progress": null
+    },
+    "response": {
+      "state": {
+        "accountId": "local-fixture-account",
+        "documentId": "fixture-document-0",
+        "appliedRevision": 1,
+        "currentRevision": 1,
+        "highlights": [
+          {
+            "sentenceId": "s0",
+            "color": "yellow",
+            "segments": [
+              {
+                "start": 1,
+                "end": 3,
+                "color": "yellow"
+              }
+            ],
+            "quote": "內容0。",
+            "active": true,
+            "version": 1,
+            "updatedAt": "2026-10-02T00:00:00.000Z"
+          }
+        ],
+        "notes": [
+          {
+            "id": "00000000-0000-4000-8000-000000000021",
+            "text": "Synthetic unsent 筆記😀",
+            "sentenceIds": [
+              "s1"
+            ],
+            "ranges": [
+              {
+                "sentenceId": "s1",
+                "start": 1,
+                "end": 3,
+                "quote": "內容1。"
+              }
+            ],
+            "inactiveAnchors": [],
+            "quote": "容1",
+            "version": 1,
+            "deleted": false,
+            "reanchorRequired": false,
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "updatedAt": "2026-10-02T00:00:00.000Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000041",
+            "text": "Candidate-created queued note😀",
+            "sentenceIds": [
+              "s2"
+            ],
+            "ranges": [
+              {
+                "sentenceId": "s2",
+                "start": 0,
+                "end": 2,
+                "quote": "內容2。"
+              }
+            ],
+            "inactiveAnchors": [],
+            "quote": "內容",
+            "version": 1,
+            "deleted": false,
+            "reanchorRequired": false,
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "updatedAt": "2026-10-02T00:00:00.000Z"
+          }
+        ],
+        "conflicts": [],
+        "progress": null
+      },
+      "results": [
+        {
+          "mutationId": "00000000-0000-4000-8000-000000000040",
+          "status": "applied",
+          "revision": 1,
+          "note": {
+            "id": "00000000-0000-4000-8000-000000000041",
+            "text": "Candidate-created queued note😀",
+            "sentenceIds": [
+              "s2"
+            ],
+            "ranges": [
+              {
+                "sentenceId": "s2",
+                "start": 0,
+                "end": 2,
+                "quote": "內容2。"
+              }
+            ],
+            "inactiveAnchors": [],
+            "quote": "內容",
+            "version": 1,
+            "deleted": false,
+            "reanchorRequired": false,
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "updatedAt": "2026-10-02T00:00:00.000Z"
+          }
+        }
+      ]
+    }
+  }
+]
