@@ -1,0 +1,11 @@
+[
+  {
+    "selector": {
+      "accountId": "account-a",
+      "issueNumber": 1739,
+      "series": "general",
+      "contentLocale": "zh-Hant"
+    },
+    "status": "available"
+  }
+]

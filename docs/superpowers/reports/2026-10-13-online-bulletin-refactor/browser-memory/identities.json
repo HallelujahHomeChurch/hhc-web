@@ -1,0 +1,17 @@
+{
+  "origin": "http://127.0.0.1:7144",
+  "scope": "Task4 synthetic OfflineContentPage component, no Next app/SW/member/queue claims",
+  "baselineCommit": "b4cf65093fa3cc039e8595a1796b7b1973fe1721",
+  "candidateHead": "89114f2788b1fd5dde52042fb403281fc7a065d5",
+  "candidateDiffSha256": "f96db6f6bb6061bd316e7c34609a4d0849b2e0f274fc725ed7179fbfe685446a",
+  "platformHead": "92f731a87e892f74902647da1c4394e5175c1a3d",
+  "lockSha256": "4426e4e4ba5cd744cd2d3000ab6bda74162c050a8ecb586e9dabde6ad0050c76",
+  "playwright": "1.63.0",
+  "serverSha256": "48723159405296ca3602f87900dcac966741c837748db0e8e14e2f0576b492ab",
+  "fixtureBaselineSha256": "b7345e9ac1881771a4efd74f5f5937c284bfb8b44f5638eaebcccc52d8b810ed",
+  "fixtureCandidateSha256": "b7345e9ac1881771a4efd74f5f5937c284bfb8b44f5638eaebcccc52d8b810ed",
+  "sources": {
+    "baseline": "/tmp/bulletin-web-baseline-20261013",
+    "candidate": "/Users/rayselfs/Projects/hhc/website/.worktrees/online-bulletin-refactor-20261013/hhc-web"
+  }
+}

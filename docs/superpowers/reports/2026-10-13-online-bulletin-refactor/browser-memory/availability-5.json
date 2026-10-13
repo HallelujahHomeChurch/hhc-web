@@ -1,0 +1,47 @@
+[
+  {
+    "selector": {
+      "accountId": "account-a",
+      "issueNumber": 1739,
+      "series": "general",
+      "contentLocale": "zh-Hant"
+    },
+    "status": "available"
+  },
+  {
+    "selector": {
+      "accountId": "account-a",
+      "issueNumber": 1740,
+      "series": "general",
+      "contentLocale": "zh-Hans"
+    },
+    "status": "expired"
+  },
+  {
+    "selector": {
+      "accountId": "account-a",
+      "issueNumber": 1741,
+      "series": "general",
+      "contentLocale": "zh-Hant"
+    },
+    "status": "revalidation_required"
+  },
+  {
+    "selector": {
+      "accountId": "account-a",
+      "issueNumber": 1742,
+      "series": "general",
+      "contentLocale": "zh-Hans"
+    },
+    "status": "available"
+  },
+  {
+    "selector": {
+      "accountId": "account-a",
+      "issueNumber": 1743,
+      "series": "general",
+      "contentLocale": "zh-Hant"
+    },
+    "status": "expired"
+  }
+]

@@ -28,3 +28,15 @@ Task 7b formal dependency pin and releasable consumer change wait for a real pro
 Regression red receipt: candidate tests against original implementation: 40 passed / 1 failed, new exact summary assertion rejects full document/resources. First green trial exposed test fixture ordering (IDB locale key order); expected order corrected without changing production sorting.
 
 Default multi-repo test fanout saturated host and caused timeouts. Those incomplete runs are not acceptance evidence; reruns use bounded workers. Final command results will be recorded separately.
+
+## Implementation progress after independent reviews
+
+- Tasks1/3: Admin PR https://github.com/HallelujahHomeChurch/admin-fe/pull/230, final head00ffb7e; independent C/I=0 and full required CI green (1196 tests).
+- Tasks2/6/7a: Platform producer PR https://github.com/HallelujahHomeChurch/frontend-platform/pull/121. Frozen package205-file byte parity, every-version tamper/removal, producer schema equality, generator8 and capability46 focused tests, complete platform443 tests + packed Vite/Next consumers passed. Final Linux container CI tracked on that PR; publication not authorized.
+- Task5: API PR https://github.com/HallelujahHomeChurch/hhc-web-api/pull/214; ten identical serializer sites,41 literal golden byte/hash pairs, independent C/I=0. PostgreSQL and metadata/no-op candidate tests pass; all final-head required CI green, including isolated extractor/container/load gate (run38372923757).
+- Tasks4/8: Web PR https://github.com/HallelujahHomeChurch/hhc-web/pull/209; independent batch and whole-branch C/I=0. Candidate45+49 focused tests; Task9-related140 integration tests; required CI on89114f2 green. Task4 full scoped browser profiling passed18trials/216snapshots; recovery browser6cases pass; bounded same-profile storage rollback and verified-input V1–V10 shared-renderer parity pass. See verification.md for exact claims and failed/retried local run disclosure.
+- Task9: concrete pre-code table/types reviewed. **No extraction** approved; original source retained to avoid merely moving coupled state/effects/callbacks. No new hook exists or is claimed.
+- Task7b: **deferred by authorization/release dependency**, not implemented and no dependency pin changed. It needs an actual producer package release before a releasable consumer PR.
+- Task10: authorized PR/review/local/CI/browser subset in progress/completed as receipts indicate. No merge, release, deployment, production mutation or physical/live acceptance. Full normal-app/SW rollback and real private-recovery acceptance remain explicit release gates.
+
+All task worktrees remain in `.worktrees/online-bulletin-refactor-20261013/`; unmerged work is retained. Reports here are versioned in the owning Web branch; no claim that central workspace files were committed.

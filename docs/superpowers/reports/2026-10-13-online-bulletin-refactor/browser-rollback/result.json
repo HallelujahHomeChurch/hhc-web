@@ -1,0 +1,109 @@
+{
+  "passed": true,
+  "origin": "http://127.0.0.1:7144",
+  "profile": "/tmp/bulletin-task4-browser/rollback/profile-D2zr46",
+  "browser": "153.0.8010.12",
+  "playwright": "1.63.0",
+  "clock": 1790899200000,
+  "newDate": "2026-10-02T00:00:00.000Z",
+  "appSourceSequence": [
+    "/tmp/bulletin-web-baseline-20261013",
+    "/Users/rayselfs/Projects/hhc/website/.worktrees/online-bulletin-refactor-20261013/hhc-web",
+    "/tmp/bulletin-web-baseline-20261013"
+  ],
+  "swController": null,
+  "mutations": {
+    "responseLostOriginal": {
+      "mutationId": "00000000-0000-4000-8000-000000000010",
+      "createdAt": "2026-10-02T00:00:00.000Z",
+      "documentRevision": 1,
+      "kind": "setHighlight",
+      "payload": {
+        "sentenceIds": [
+          "s0"
+        ],
+        "ranges": [
+          {
+            "sentenceId": "s0",
+            "start": 1,
+            "end": 3
+          }
+        ],
+        "color": "yellow"
+      }
+    },
+    "unsentOriginal": {
+      "mutationId": "00000000-0000-4000-8000-000000000011",
+      "createdAt": "2026-10-02T00:00:00.000Z",
+      "documentRevision": 1,
+      "kind": "createNote",
+      "payload": {
+        "noteId": "00000000-0000-4000-8000-000000000021",
+        "sentenceIds": [
+          "s1"
+        ],
+        "ranges": [
+          {
+            "sentenceId": "s1",
+            "start": 1,
+            "end": 3
+          }
+        ],
+        "text": "Synthetic unsent 筆記😀"
+      }
+    },
+    "unresolvedConflictOriginal": {
+      "mutationId": "00000000-0000-4000-8000-000000000032",
+      "createdAt": "2026-10-02T00:00:00.000Z",
+      "documentRevision": 1,
+      "kind": "editNote",
+      "baseVersion": 1,
+      "payload": {
+        "noteId": "00000000-0000-4000-8000-000000000031",
+        "text": "Unresolved local synthetic edit"
+      }
+    },
+    "candidateCreatedOriginal": {
+      "mutationId": "00000000-0000-4000-8000-000000000040",
+      "createdAt": "2026-10-02T00:00:00.000Z",
+      "documentRevision": 1,
+      "kind": "createNote",
+      "payload": {
+        "noteId": "00000000-0000-4000-8000-000000000041",
+        "sentenceIds": [
+          "s2"
+        ],
+        "ranges": [
+          {
+            "sentenceId": "s2",
+            "start": 0,
+            "end": 2
+          }
+        ],
+        "text": "Candidate-created queued note😀"
+      }
+    }
+  },
+  "guarantees": [
+    "same profile, same tab, same origin; no storage clearing",
+    "documents/pointers/checks/epoch/deadlines identical",
+    "exact mutation IDs/payloads/timestamps/baseVersion survive source switches",
+    "actual enqueue/claim/ack and CAS recovery retention",
+    "response-lost retry deduped once by existing preview store",
+    "candidate-created queued note acknowledged by old source",
+    "dirty return states and unresolved conflict unchanged",
+    "V1-V10 shared renderer semantic DOM equal across three phases"
+  ],
+  "limitations": [
+    "synthetic store simulation; no real backend",
+    "no full Next app or SW update",
+    "no ReaderRecovery UI choice/resolve flow",
+    "no full WeeklyReader restoration/device/authorization acceptance"
+  ],
+  "sourceHashes": {
+    "baselineStore": "8443a46ad8edc92623af212fe390ea675f694ab2f9642f5708384813e32daec5",
+    "candidateStore": "e2f396a9536dafb933685272d47f2ca6ad35bf6f4c881e7ba3de8b8ce6caee98",
+    "previewStore": "4cabdd32bbf74ddaf9269b8212ee10a5de2cce9584c4ae45610acd8ba988b898",
+    "harness": "6971d3eb8a391a5647a8fbf9690496b171e240681cdfb23106a0ba1550cd2122"
+  }
+}

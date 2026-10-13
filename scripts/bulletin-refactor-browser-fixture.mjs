@@ -60,9 +60,9 @@ window.bulletinFixture = {
     if(root) throw Error('already_mounted');
     root=createRoot(document.getElementById('root'));
     window.fixtureActions=[];
-    const messages=getMessages('en').weeklyReader, document=readerFixture().document;
+    const messages=getMessages('en').weeklyReader, bulletin=readerFixture().document;
     const note={id:'fixture-note',text:'Synthetic note',quote:'Original quote',sentenceIds:[],inactiveAnchors:[],version:1,deleted:false,reanchorRequired:true,createdAt:'',updatedAt:''};
-    const content=kind==='note'?<NoteReanchor note={note} document={document} messages={messages} mobile={mobile} onSave={async (note,ranges)=>{window.fixtureActions.push({note,ranges});return {status:'applied'};}} onComplete={()=>{}} onCancel={()=>{}}/>:<HighlightHistory history={[{id:'fixture-history',highlight:{sentenceId:'gone',quote:'Old quote',color:'red',active:false,version:1,updatedAt:''}}]} document={document} messages={messages} mobile={mobile} busy={false} onSave={async mutation=>{window.fixtureActions.push(mutation);}}/>;
+    const content=kind==='note'?<NoteReanchor note={note} document={bulletin} messages={messages} mobile={mobile} onSave={async (note,ranges)=>{window.fixtureActions.push({note,ranges});return {status:'applied'};}} onComplete={()=>{}} onCancel={()=>{}}/>:<HighlightHistory history={[{id:'fixture-history',highlight:{sentenceId:'gone',quote:'Old quote',color:'red',active:false,version:1,updatedAt:''}}]} document={bulletin} messages={messages} mobile={mobile} busy={false} onSave={async mutation=>{window.fixtureActions.push(mutation);}}/>;
     flushSync(()=>root.render(content));
   },
   unmount() { if(root) flushSync(()=>root.unmount()); root=undefined; },
