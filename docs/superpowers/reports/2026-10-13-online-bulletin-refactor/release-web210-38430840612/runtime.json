@@ -1,0 +1,19 @@
+{
+  "image": "alive.azurecr.io/alive/hhc-web@sha256:0f4166f7202e339d295e4c2e9199d8045f0e0d7bc2e2d0624f91fa6e7b80e748",
+  "latest": "hhc-web--0000206",
+  "mode": "Single",
+  "ready": "hhc-web--0000206",
+  "resources": {
+    "cpu": 0.5,
+    "ephemeralStorage": "2Gi",
+    "memory": "1Gi"
+  },
+  "scale": {
+    "cooldownPeriod": 300,
+    "maxReplicas": 3,
+    "minReplicas": 1,
+    "pollingInterval": 30,
+    "rules": null
+  },
+  "traffic": null
+}

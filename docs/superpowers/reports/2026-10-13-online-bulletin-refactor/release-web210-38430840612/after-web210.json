@@ -1,0 +1,91 @@
+{
+  "checkedAt": "2026-10-13T16:39:10.030Z",
+  "authentication": "anonymous; no credentials",
+  "readOnly": true,
+  "results": [
+    {
+      "url": "https://www.alive.org.tw/zh-Hant/literature-ministry",
+      "status": 200,
+      "headers": {
+        "content-type": "text/html; charset=utf-8",
+        "cache-control": "s-maxage=60, stale-while-revalidate=31535940",
+        "etag": "\"10whebyxcngoyj\"",
+        "x-hhc-availability": null
+      },
+      "bytes": 36639,
+      "sha256": "938d4841ed3a12c0cde14feb778f5f9a91628b33756d1c5b2f7a6f5e4e649ad7"
+    },
+    {
+      "url": "https://www.alive.org.tw/api/member/bulletins/online?series=general&locale=zh-Hant",
+      "status": 401,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "private, no-store",
+        "etag": null,
+        "x-hhc-availability": null
+      },
+      "bytes": 95,
+      "sha256": "970ffcdaef34e581bdcb889c5f7287f2fa60377900b02281a5a4355ee0fe7bfe"
+    },
+    {
+      "url": "https://www.alive.org.tw/api/member/bulletins?series=general&locale=zh-Hant",
+      "status": 401,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "private, no-store",
+        "etag": null,
+        "x-hhc-availability": null
+      },
+      "bytes": 95,
+      "sha256": "970ffcdaef34e581bdcb889c5f7287f2fa60377900b02281a5a4355ee0fe7bfe"
+    },
+    {
+      "url": "https://www.alive.org.tw/api/member/bulletins/latest?series=general&locale=zh-Hant",
+      "status": 401,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "private, no-store",
+        "etag": null,
+        "x-hhc-availability": null
+      },
+      "bytes": 95,
+      "sha256": "970ffcdaef34e581bdcb889c5f7287f2fa60377900b02281a5a4355ee0fe7bfe"
+    },
+    {
+      "url": "https://admin.alive.org.tw/",
+      "status": 200,
+      "headers": {
+        "content-type": "text/html",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "etag": null,
+        "x-hhc-availability": null
+      },
+      "bytes": 1055,
+      "sha256": "0db9338b68001c76a8a1b89cade9cd4c5b735defc0da588472e7969a2f2b0b42"
+    },
+    {
+      "url": "https://admin.alive.org.tw/content/bulletins",
+      "status": 200,
+      "headers": {
+        "content-type": "text/html",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "etag": null,
+        "x-hhc-availability": null
+      },
+      "bytes": 1055,
+      "sha256": "0db9338b68001c76a8a1b89cade9cd4c5b735defc0da588472e7969a2f2b0b42"
+    },
+    {
+      "url": "https://admin.alive.org.tw/api/admin/bulletins",
+      "status": 401,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "private, no-store",
+        "etag": null,
+        "x-hhc-availability": null
+      },
+      "bytes": 95,
+      "sha256": "970ffcdaef34e581bdcb889c5f7287f2fa60377900b02281a5a4355ee0fe7bfe"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+import subprocess,json,pathlib,sys,datetime
+merge,runid,outdir=sys.argv[1:4]
+if len(merge)!=40 or any(c not in '0123456789abcdef' for c in merge) or not runid.isdecimal():raise ValueError('exact commit/run required')
+out=pathlib.Path(outdir);out.mkdir(parents=True,exist_ok=True)
+receipt={'observedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'commit':merge,'run':runid,'readOnly':True,'commands':{}}
+def read(name,args,raw=False):
+ p=subprocess.run(args,capture_output=True,text=True)
+ receipt['commands'][name]={'exitCode':p.returncode}
+ if p.returncode:
+  receipt['commands'][name]['error']=p.stderr[:1200];return None
+ value=p.stdout.strip() if raw else json.loads(p.stdout)
+ (out/(name+'.json')).write_text(json.dumps(value,indent=2)+'\n');return value
+runtime=read('runtime',['az','containerapp','show','-g','alive','-n','hhc-web','--query','{latest:properties.latestRevisionName,ready:properties.latestReadyRevisionName,mode:properties.configuration.activeRevisionsMode,traffic:properties.configuration.ingress.traffic,image:properties.template.containers[0].image,resources:properties.template.containers[0].resources,scale:properties.template.scale}','-o','json','--only-show-errors'])
+rev=None
+if runtime and runtime['ready'] and runtime['ready'].startswith('hhc-web--'):
+ rev=read('ready-revision',['az','containerapp','revision','show','-g','alive','-n','hhc-web','--revision',runtime['ready'],'--query','{image:properties.template.containers[0].image,health:properties.healthState,running:properties.runningState,resources:properties.template.containers[0].resources,scale:properties.template.scale}','-o','json','--only-show-errors'])
+tag=read('image-tag',['az','acr','repository','show','-n','alive','--image','alive/hhc-web:main-'+merge[:7],'--query','{digest:digest,name:name}','-o','json','--only-show-errors'])
+workflow=read('workflow',['gh','run','view',runid,'--repo','HallelujahHomeChurch/hhc-web','--json','headSha,event,status,conclusion,url,jobs'])
+reader=read('reader-feature-variable',['gh','variable','get','WEEKLY_READER_ENABLED','--repo','HallelujahHomeChurch/hhc-web'],True)
+video=read('video-feature-variable',['gh','variable','get','MEMBER_VIDEO_NAV_ENABLED','--env','production','--repo','HallelujahHomeChurch/hhc-web'],True)
+checks={'commandsSucceeded':all(v['exitCode']==0 for v in receipt['commands'].values())}
+if runtime and rev and tag and workflow:
+ checks.update({'exactWorkflowSuccess':workflow['headSha']==merge and workflow['conclusion']=='success','readyLatestEqual':runtime['latest']==runtime['ready'],'healthyRunning':rev['health']=='Healthy' and rev['running']=='Running','imageMatchesExactTag':runtime['image']==rev['image']=='alive.azurecr.io/alive/hhc-web@'+tag['digest'],'resourcesPreserved':rev['resources']['cpu']==0.5 and rev['resources']['memory']=='1Gi','scalePreserved':rev['scale']['minReplicas']==1 and rev['scale']['maxReplicas']==3,'singleMode':runtime['mode']=='Single'})
+checks['featureValuesPreserved']=reader=='true' and video=='true'
+receipt['checks']=checks
+(out/'validation.json').write_text(json.dumps(receipt,indent=2)+'\n')
+print(json.dumps(receipt,indent=2))
+if not all(checks.values()):sys.exit(1)

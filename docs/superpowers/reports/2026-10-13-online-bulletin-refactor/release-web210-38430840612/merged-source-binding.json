@@ -1,0 +1,32 @@
+{
+  "merge": "b2b2d1c73fb0511b25a908f3ce1bd0eecf7fa9f1",
+  "testedHead": "c954d5fb498670ca5f4c403af90bc587a3f7663a",
+  "uiVersion": "1.0.63",
+  "files": [
+    {
+      "path": "package.json",
+      "sha256": "2464355885e812417915794994fbb6b38e93f93499a136810fef4872fdfa1bd3",
+      "matchesTestedHead": true
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "1032ceed33db4733e584e12c49b7cd785d941e77e8dd5de88e7f83b0da4bb0f0",
+      "matchesTestedHead": true
+    },
+    {
+      "path": "src/features/weekly-reader/api.ts",
+      "sha256": "3108e98b9bde1ef5a7b4bb9ef4aa28683b592a827ac0e361f0eed489fb9ad717",
+      "matchesTestedHead": true
+    },
+    {
+      "path": "src/features/weekly-reader/offline-store.ts",
+      "sha256": "8698e6c0c5e82b45c396e5a1a0ffd5669c99f8905da86e997b5ec5d2f752bea5",
+      "matchesTestedHead": true
+    },
+    {
+      "path": "src/features/weekly-reader/paper-lines.ts",
+      "sha256": "307caccd7bd1b9f545ae5d6b6d1de0c2df136ca7ef84921ff24910fef3768762",
+      "matchesTestedHead": true
+    }
+  ]
+}

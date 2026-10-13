@@ -1,0 +1,16 @@
+{
+  "health": "Healthy",
+  "image": "alive.azurecr.io/alive/hhc-web@sha256:0f4166f7202e339d295e4c2e9199d8045f0e0d7bc2e2d0624f91fa6e7b80e748",
+  "resources": {
+    "cpu": 0.5,
+    "memory": "1Gi"
+  },
+  "running": "Running",
+  "scale": {
+    "cooldownPeriod": null,
+    "maxReplicas": 3,
+    "minReplicas": 1,
+    "pollingInterval": null,
+    "rules": null
+  }
+}
