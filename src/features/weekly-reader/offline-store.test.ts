@@ -196,3 +196,67 @@ it('rolls back the new document if the pointer write fails from storage quota', 
   fail.mockRestore();
   expect((await readOfflineSave(route, now))?.save.value.access.revision).toBe(1);
 });
+
+
+it('lists metadata without content or resource buffers and retains locked and expired editions', async () => {
+  const epoch = await activateOfflineAccount(route.accountId);
+  const values = [readerFixture(), readerFixture('zh-Hans')];
+  const stages = [];
+  for (const value of values) {
+    const selector = {...route, contentLocale: value.access.contentLocale};
+    const staged = await stageOfflineSave(value, selector, fetchAsset, now);
+    stages.push(staged);
+    await commitOfflineSave(staged, epoch, now);
+  }
+  await lockOfflineSave(route);
+  await readOfflineSave(stages[1].selector, Date.parse(values[1].access.offlineValidUntil));
+  expect(await listOfflineSaves(route.accountId)).toEqual([...stages].reverse().map(save => ({
+    selector: save.selector, documentId: save.value.access.documentId,
+    revision: save.value.access.revision, size: save.size,
+    offlineValidUntil: save.value.access.offlineValidUntil
+  })));
+  expect(await listOfflineSaves('account-b')).toEqual([]);
+  await activateOfflineAccount('account-b');
+  expect(await listOfflineSaves(route.accountId)).toEqual([]);
+});
+
+it.each(['missing-document', 'selector', 'document-id', 'revision', 'check-account', 'check-revision', 'pointer-account'] as const)(
+  'listing preserves full read availability validation for %s', async corruption => {
+    const epoch = await activateOfflineAccount(route.accountId);
+    const staged = await stageOfflineSave(readerFixture(), route, fetchAsset, now);
+    await commitOfflineSave(staged, epoch, now);
+    await new Promise<void>((resolve, reject) => {
+      const opening = indexedDB.open('hhc-weekly-reader', 2);
+      opening.onerror = () => reject(opening.error);
+      opening.onsuccess = () => {
+        const db = opening.result;
+        const tx = db.transaction(['documents', 'checks', 'pointers'], 'readwrite');
+        const key = [route.accountId, staged.value.access.documentId, route.series, route.contentLocale, staged.value.access.revision];
+        if (corruption === 'missing-document') tx.objectStore('documents').delete(key);
+        else if (corruption === 'pointer-account') tx.objectStore('pointers').put(['account-b', ...key.slice(1)], [route.accountId, route.issueNumber, route.series, route.contentLocale]);
+        else if (corruption.startsWith('check-')) {
+          const read = tx.objectStore('checks').get(key);
+          read.onsuccess = () => {
+            const check = read.result;
+            if (corruption === 'check-account') check.access.accountId = 'account-b';
+            else check.access.revision++;
+            tx.objectStore('checks').put(check, key);
+          };
+        } else {
+          const broken = structuredClone({...staged, epoch});
+          if (corruption === 'selector') broken.selector.issueNumber++;
+          else if (corruption === 'document-id') broken.value.access.documentId = 'other-document';
+          else broken.value.access.revision++;
+          tx.objectStore('documents').put(broken, key);
+        }
+        tx.oncomplete = () => {db.close(); resolve();};
+        tx.onabort = () => {db.close(); reject(tx.error);};
+      };
+    });
+    const listed = await listOfflineSaves(route.accountId);
+    expect(listed).toHaveLength(['missing-document', 'pointer-account'].includes(corruption) ? 0 : 1);
+    if (corruption === 'document-id') expect(listed[0].documentId).toBe(staged.value.document.documentId);
+    expect(await readOfflineSave(route, now)).toBeNull();
+    for (const save of listed) expect((await readOfflineSave(save.selector, now))?.status === 'available').toBe(false);
+  }
+);

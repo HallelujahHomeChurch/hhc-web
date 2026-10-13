@@ -1,0 +1,1222 @@
+[
+  {
+    "selector": {
+      "accountId": "local-fixture-account",
+      "issueNumber": 1739,
+      "series": "general",
+      "contentLocale": "zh-Hant"
+    },
+    "documentId": "fixture-document-0",
+    "revision": 1,
+    "epoch": 1,
+    "status": "current",
+    "size": 24886884,
+    "documentSha256": "f51c10b1051c7b1c3381e2459859b8450bfb9e902dee21bd1a180b6e8433c380",
+    "accessSha256": "e17f4cfc4d112d3a7f4f2b89c1fe0da891152f5c0befcf9b68b34c7d00341705",
+    "validatedAt": "2026-10-01T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-08T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+        "byteLength": 3998724,
+        "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2",
+        "byteLength": 5389056,
+        "sha256": "9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      }
+    ]
+  },
+  {
+    "selector": {
+      "accountId": "local-fixture-account",
+      "issueNumber": 1740,
+      "series": "general",
+      "contentLocale": "zh-Hans"
+    },
+    "documentId": "fixture-document-1",
+    "revision": 1,
+    "epoch": 1,
+    "status": "current",
+    "size": 27157838,
+    "documentSha256": "b98a67f8326641b2b0fe4c4f4939bc369ec065388b67905f3c8143fb5a1eed43",
+    "accessSha256": "b8d7d40e50a1c053d8227c95638b86f2a55b504db5b2a2de9d60a60fe7b5417b",
+    "validatedAt": "2026-10-01T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-08T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+        "byteLength": 5732508,
+        "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+        "byteLength": 5926216,
+        "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      }
+    ]
+  },
+  {
+    "selector": {
+      "accountId": "local-fixture-account",
+      "issueNumber": 1741,
+      "series": "general",
+      "contentLocale": "zh-Hant"
+    },
+    "documentId": "fixture-document-2",
+    "revision": 1,
+    "epoch": 1,
+    "status": "current",
+    "size": 24886884,
+    "documentSha256": "81561f4dbc626f0d90f9b050d064862e15d3d0499e32ab24cb9ddd12bfec35e9",
+    "accessSha256": "6457f591984e87e16ba1e66e465b0aee2a039630314f9acbc00387206a7626c1",
+    "validatedAt": "2026-10-01T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-08T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+        "byteLength": 3998724,
+        "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2",
+        "byteLength": 5389056,
+        "sha256": "9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      }
+    ]
+  },
+  {
+    "selector": {
+      "accountId": "local-fixture-account",
+      "issueNumber": 1742,
+      "series": "general",
+      "contentLocale": "zh-Hans"
+    },
+    "documentId": "fixture-document-3",
+    "revision": 1,
+    "epoch": 1,
+    "status": "current",
+    "size": 27157838,
+    "documentSha256": "f05f0014643fcfc4fa165c8f9515f6ed1d5900d4b99c57b8682598a790a20989",
+    "accessSha256": "4b6541da3a088adcadbdcdbf4920f41f63ab9e5e5d57313e7a20f6961d1074cd",
+    "validatedAt": "2026-10-01T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-08T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+        "byteLength": 5732508,
+        "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+        "byteLength": 5926216,
+        "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      }
+    ]
+  },
+  {
+    "selector": {
+      "accountId": "local-fixture-account",
+      "issueNumber": 1743,
+      "series": "general",
+      "contentLocale": "zh-Hant"
+    },
+    "documentId": "fixture-document-4",
+    "revision": 1,
+    "epoch": 1,
+    "status": "current",
+    "size": 24886884,
+    "documentSha256": "3065a43a2c581a494a9d02074a86bd3c658f9aa2d650d518bbe93fab887dc71b",
+    "accessSha256": "ea348682961d8b207cf7cee7eb0d439eef42a51348cc1be2d22a7e71b7e5ac27",
+    "validatedAt": "2026-10-01T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-08T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+        "byteLength": 3998724,
+        "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2",
+        "byteLength": 5389056,
+        "sha256": "9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      }
+    ]
+  },
+  {
+    "selector": {
+      "accountId": "local-fixture-account",
+      "issueNumber": 1744,
+      "series": "general",
+      "contentLocale": "zh-Hans"
+    },
+    "documentId": "fixture-document-5",
+    "revision": 1,
+    "epoch": 1,
+    "status": "current",
+    "size": 27157838,
+    "documentSha256": "8f1426b17c559e042c62e4c7b871c999f9f291c9546e946f4c66135f6343f633",
+    "accessSha256": "a77fbf7b3bc5a780ae1880d1766a45bd94757145ffee80be87236559f5ba46e3",
+    "validatedAt": "2026-10-01T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-08T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+        "byteLength": 5732508,
+        "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+        "byteLength": 5926216,
+        "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      }
+    ]
+  },
+  {
+    "selector": {
+      "accountId": "local-fixture-account",
+      "issueNumber": 1745,
+      "series": "general",
+      "contentLocale": "zh-Hant"
+    },
+    "documentId": "fixture-document-6",
+    "revision": 1,
+    "epoch": 1,
+    "status": "current",
+    "size": 23638193,
+    "documentSha256": "43d81e853e4ad0862009e132ebd99f20640dc516cdaefc292b81b13f52763200",
+    "accessSha256": "40ceb358cfa295130f83610f3476014a33a3f10d350cefe04a2eeb4e4c9fb5ad",
+    "validatedAt": "2026-10-01T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-08T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+        "byteLength": 3998724,
+        "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      },
+      {
+        "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+        "byteLength": 4140364,
+        "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+      }
+    ]
+  },
+  {
+    "selector": {
+      "accountId": "local-fixture-account",
+      "issueNumber": 1746,
+      "series": "general",
+      "contentLocale": "zh-Hans"
+    },
+    "documentId": "fixture-document-7",
+    "revision": 1,
+    "epoch": 1,
+    "status": "current",
+    "size": 35297319,
+    "documentSha256": "b64ebd33db8d337f35e33477bb8c3579b0e57a5407a367b46bb2e580af8cf89a",
+    "accessSha256": "c9c0da639c49a8847728898ebae4aa21a61e36a26260981a15d3e963cd601b09",
+    "validatedAt": "2026-10-01T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-08T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+        "byteLength": 5732508,
+        "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+        "byteLength": 5926216,
+        "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      },
+      {
+        "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+        "byteLength": 3998724,
+        "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+      },
+      {
+        "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+        "byteLength": 4140364,
+        "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+      }
+    ]
+  },
+  {
+    "selector": {
+      "accountId": "local-fixture-account",
+      "issueNumber": 1747,
+      "series": "general",
+      "contentLocale": "zh-Hant"
+    },
+    "documentId": "fixture-document-8",
+    "revision": 1,
+    "epoch": 1,
+    "status": "current",
+    "size": 23638427,
+    "documentSha256": "2d5407104c311e9be753e09bc241c796fa52f1c28819bebcd1926201b3c62064",
+    "accessSha256": "e105d3035bd84420ac75d7b11dc96ebd1e603255a15c6e9cf5f2c5048fcdea07",
+    "validatedAt": "2026-10-01T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-08T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+        "byteLength": 3998724,
+        "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      },
+      {
+        "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+        "byteLength": 4140364,
+        "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+      }
+    ]
+  },
+  {
+    "selector": {
+      "accountId": "local-fixture-account",
+      "issueNumber": 1748,
+      "series": "general",
+      "contentLocale": "zh-Hans"
+    },
+    "documentId": "fixture-document-9",
+    "revision": 1,
+    "epoch": 1,
+    "status": "current",
+    "size": 35297554,
+    "documentSha256": "b50180d824c95ced99557b7371708b9a6ee5049b3d924af9848de6313c935429",
+    "accessSha256": "e4f4db1c3c4681d6b933f7ae102bfe1d4b9dc8bb1fcbde1c2c9e2178a1991f39",
+    "validatedAt": "2026-10-01T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-08T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+        "byteLength": 5732508,
+        "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+        "byteLength": 5926216,
+        "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      },
+      {
+        "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+        "byteLength": 3998724,
+        "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+      },
+      {
+        "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+        "byteLength": 4140364,
+        "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+      }
+    ]
+  },
+  {
+    "selector": {
+      "accountId": "local-fixture-account",
+      "issueNumber": 1749,
+      "series": "general",
+      "contentLocale": "zh-Hant"
+    },
+    "documentId": "fixture-document-10",
+    "revision": 1,
+    "epoch": 1,
+    "status": "locked",
+    "size": 24886887,
+    "documentSha256": "3c4b2d8e5cc0bc58f2d472e51ceee2800fd8771d6db27e2717ef8d5ae15f347c",
+    "accessSha256": "5491c1649d14384ce511c5aaf69142949e3fd449b646e67ad176259019fd7e14",
+    "validatedAt": "2026-10-01T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-08T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+        "byteLength": 3998724,
+        "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2",
+        "byteLength": 5389056,
+        "sha256": "9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      }
+    ]
+  },
+  {
+    "selector": {
+      "accountId": "local-fixture-account",
+      "issueNumber": 1750,
+      "series": "general",
+      "contentLocale": "zh-Hans"
+    },
+    "documentId": "fixture-document-11",
+    "revision": 1,
+    "epoch": 1,
+    "status": "expired",
+    "size": 27157841,
+    "documentSha256": "07651ce0dd0bbbbb1425ac48323fb4bfb8f924d0394be820be396e5199498e58",
+    "accessSha256": "6b853b0dcbbcd200bfe36eca61ab1a244c3117ce74033bf15df63b1e10abab31",
+    "validatedAt": "2026-09-24T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-01T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+        "byteLength": 5732508,
+        "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+        "byteLength": 5926216,
+        "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      }
+    ]
+  },
+  {
+    "selector": {
+      "accountId": "local-fixture-account",
+      "issueNumber": 1751,
+      "series": "general",
+      "contentLocale": "zh-Hant"
+    },
+    "documentId": "fixture-document-12",
+    "revision": 1,
+    "epoch": 1,
+    "status": "locked",
+    "size": 24886887,
+    "documentSha256": "50eabba2f85f014155fd79d6aac173ac8f6e59fa96f70117d82a89e7e304c603",
+    "accessSha256": "1254c6acd735722fb47d2d29e7f2f1d51784d3f9c6a5307825fffed66b47be1c",
+    "validatedAt": "2026-10-01T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-08T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+        "byteLength": 3998724,
+        "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2",
+        "byteLength": 5389056,
+        "sha256": "9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      }
+    ]
+  },
+  {
+    "selector": {
+      "accountId": "local-fixture-account",
+      "issueNumber": 1752,
+      "series": "general",
+      "contentLocale": "zh-Hans"
+    },
+    "documentId": "fixture-document-13",
+    "revision": 1,
+    "epoch": 1,
+    "status": "expired",
+    "size": 27157841,
+    "documentSha256": "02ee3d50f1001fb634be064df3c28d077389bcbbdb21ba65d984f50aaf4e3191",
+    "accessSha256": "cfadc2cbd5bd69e68b33d23ddbc42ad36e4c0d9225dbae460b0a33b02c114533",
+    "validatedAt": "2026-09-24T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-01T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+        "byteLength": 5732508,
+        "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+        "byteLength": 5926216,
+        "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      }
+    ]
+  },
+  {
+    "selector": {
+      "accountId": "local-fixture-account",
+      "issueNumber": 1753,
+      "series": "general",
+      "contentLocale": "zh-Hant"
+    },
+    "documentId": "fixture-document-14",
+    "revision": 1,
+    "epoch": 1,
+    "status": "locked",
+    "size": 24886887,
+    "documentSha256": "73edd2839c677b89564bf0ac2e73aeb0bc3aa72b6be9b204c871cd097027e18a",
+    "accessSha256": "f1ddf33d90849db58f5464f10ab01bd5aba4db86ecb09d16be33d053c3b50dea",
+    "validatedAt": "2026-10-01T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-08T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+        "byteLength": 3998724,
+        "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2",
+        "byteLength": 5389056,
+        "sha256": "9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      }
+    ]
+  },
+  {
+    "selector": {
+      "accountId": "local-fixture-account",
+      "issueNumber": 1754,
+      "series": "general",
+      "contentLocale": "zh-Hans"
+    },
+    "documentId": "fixture-document-15",
+    "revision": 1,
+    "epoch": 1,
+    "status": "expired",
+    "size": 27157841,
+    "documentSha256": "09b0e81dcaed0d2db908b6d0ff56ffa5c6950edc8bff739070dc68a1c0055b8e",
+    "accessSha256": "2e25c599ed8eaa0f264a2e9dc0383a2e40d3fa18b0281fc8c52504f94fbf06c3",
+    "validatedAt": "2026-09-24T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-01T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+        "byteLength": 5732508,
+        "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+        "byteLength": 5926216,
+        "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      }
+    ]
+  },
+  {
+    "selector": {
+      "accountId": "local-fixture-account",
+      "issueNumber": 1755,
+      "series": "general",
+      "contentLocale": "zh-Hant"
+    },
+    "documentId": "fixture-document-16",
+    "revision": 1,
+    "epoch": 1,
+    "status": "locked",
+    "size": 23638196,
+    "documentSha256": "9a93e21ac747a8066493af0a51a4443aca03b03dcbc133f9ad1afbe4ef72fb9b",
+    "accessSha256": "1199703483acb1b083c3bbfe5b72674e84527a37b65540d93349d410711149e9",
+    "validatedAt": "2026-10-01T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-08T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+        "byteLength": 3998724,
+        "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      },
+      {
+        "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+        "byteLength": 4140364,
+        "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+      }
+    ]
+  },
+  {
+    "selector": {
+      "accountId": "local-fixture-account",
+      "issueNumber": 1756,
+      "series": "general",
+      "contentLocale": "zh-Hans"
+    },
+    "documentId": "fixture-document-17",
+    "revision": 1,
+    "epoch": 1,
+    "status": "expired",
+    "size": 35297322,
+    "documentSha256": "b5556ee2aa901fe6e173e851b802e4565bb55118ed5764f9f46b050f8f2ea28f",
+    "accessSha256": "a905941aaf68ba7d936253598de25bbf65dc5a7f120b327c24d00c3d0c5ded03",
+    "validatedAt": "2026-09-24T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-01T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+        "byteLength": 5732508,
+        "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+        "byteLength": 5926216,
+        "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      },
+      {
+        "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+        "byteLength": 3998724,
+        "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+      },
+      {
+        "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+        "byteLength": 4140364,
+        "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+      }
+    ]
+  },
+  {
+    "selector": {
+      "accountId": "local-fixture-account",
+      "issueNumber": 1757,
+      "series": "general",
+      "contentLocale": "zh-Hant"
+    },
+    "documentId": "fixture-document-18",
+    "revision": 1,
+    "epoch": 1,
+    "status": "locked",
+    "size": 23638430,
+    "documentSha256": "ce9a608dc86b53795c9d742224a5437d48ece1bc62070916740518a48a94eded",
+    "accessSha256": "0c6b62ad6663e4a814a4989768f26d45f4a373c769f32a9aecfedbb568f2ee81",
+    "validatedAt": "2026-10-01T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-08T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+        "byteLength": 3998724,
+        "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      },
+      {
+        "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+        "byteLength": 4140364,
+        "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+      }
+    ]
+  },
+  {
+    "selector": {
+      "accountId": "local-fixture-account",
+      "issueNumber": 1758,
+      "series": "general",
+      "contentLocale": "zh-Hans"
+    },
+    "documentId": "fixture-document-19",
+    "revision": 1,
+    "epoch": 1,
+    "status": "expired",
+    "size": 35297557,
+    "documentSha256": "11a128736665aa04fe5689d87a717d66136e4154596a3e9c6a0b99429e3068e0",
+    "accessSha256": "40971779b70c1e1dc91fa722f44127200a09321967ffefe2116f96ad19e5b1f3",
+    "validatedAt": "2026-09-24T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-01T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+        "byteLength": 5732508,
+        "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+        "byteLength": 5926216,
+        "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      },
+      {
+        "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+        "byteLength": 3998724,
+        "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+      },
+      {
+        "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+        "byteLength": 4140364,
+        "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+      }
+    ]
+  }
+]

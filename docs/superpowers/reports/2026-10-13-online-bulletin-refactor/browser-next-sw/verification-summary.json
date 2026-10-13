@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "phases": [
+    "turbo-baseline",
+    "turbo-candidate209-old-cached-shell",
+    "turbo-candidate209-new-prepared-shell",
+    "turbo-rollback-old-candidate-shell",
+    "turbo-rollback-new-baseline-shell"
+  ],
+  "versionsEach": 10,
+  "listRowsEach": 20,
+  "guarantees": [
+    "original resources/documents/pointers/checks/expiry/epoch unchanged",
+    "availability and actual list exact parity",
+    "original queued IDs/payloads/timestamps retained",
+    "candidate-native createNote retained and readable after baseline rollback",
+    "dirty note return state retained",
+    "cached old shell distinguished from prepared new shell",
+    "baseline compiled JS identities restored after rollback",
+    "all original cache entries retained",
+    "no member API or personalized shell in cache"
+  ],
+  "gaps": [
+    "no live backend or real member authorization",
+    "online replay/CAS recovery not exercised by this Next harness",
+    "physical/mobile device lifecycle not yet accepted"
+  ],
+  "shellNote": "Raw newly prepared baseline HTML hash differs on re-fetch due to Next streaming metadata; exact compiled script URLs return to baseline. Old-cache phases retain exact original raw shell hash."
+}

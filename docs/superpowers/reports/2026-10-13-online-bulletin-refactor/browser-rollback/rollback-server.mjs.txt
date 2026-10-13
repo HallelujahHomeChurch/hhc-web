@@ -1,0 +1,95 @@
+// Test-only loopback entry. Never import this into the application or deploy it.
+import {createRequire} from 'node:module';
+import {mkdtemp, writeFile, symlink} from 'node:fs/promises';
+import {resolve, join} from 'node:path';
+import {tmpdir} from 'node:os';
+import assert from 'node:assert/strict';
+
+const source = resolve(process.argv[2] ?? '.');
+const require = createRequire('/Users/rayselfs/Projects/hhc/website/.worktrees/online-bulletin-refactor-20261013/hhc-web/scripts/bulletin-refactor-browser-fixture.mjs');
+const viteRequire = createRequire(require.resolve('vitest/package.json'));
+const {createServer} = await import(viteRequire.resolve('vite'));
+const root = await mkdtemp(join(tmpdir(), 'bulletin-browser-entry-'));
+await symlink(resolve('node_modules'), join(root, 'node_modules'));
+await writeFile(join(root, 'index.html'), '<!doctype html><html><head><meta charset="UTF-8"></head><body><div id="root"></div><script type="module" src="/entry.tsx"></script></body></html>');
+await writeFile(join(root, 'entry.tsx'), `
+import React from 'react';
+import {createRoot} from 'react-dom/client';
+import {flushSync} from 'react-dom';
+import {OfflineContentPage} from '${source}/src/components/weekly-reader/OfflineContentPage';
+import {getMessages} from '${source}/src/i18n/messages';
+import {readerFixture} from '${source}/src/features/weekly-reader/test-fixture';
+import * as store from '${source}/src/features/weekly-reader/offline-store';
+import * as returns from '${source}/src/features/weekly-reader/return-state';
+import {readerSentences} from '${source}/src/features/weekly-reader/selection';
+import {verifyReaderAccess} from '${source}/src/features/weekly-reader/api';
+import {BulletinDocumentRenderer,BulletinEbook} from '@hallelujahhomechurch/ui';
+const T = Date.parse('2026-10-02T00:00:00Z');
+Date.now = () => T;
+let root;
+const selector = (i, locale) => ({accountId:'local-fixture-account', issueNumber:1739+i, series:'general', contentLocale:locale});
+const digest = async value => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(value)))), byte=>byte.toString(16).padStart(2,'0')).join('');
+window.rollbackFixture={source:${JSON.stringify(source)},store,returns,
+  async saved(index) {const version=index%10+1,locale=version===2?'zh-Hans':index%2?'zh-Hans':'zh-Hant'; const route=selector(index,locale); const result=await store.readOfflineSave(route); return {route,...result};},
+  async semantic(index) {const {save,status,route}=await this.saved(index);if(status!=='available')throw Error('not_available');const content=verifyReaderAccess(save.value,route);let renderRoot=createRoot(document.getElementById('root'));flushSync(()=>renderRoot.render(<><BulletinDocumentRenderer document={content}/><BulletinEbook document={content} chapter="back"/></>));const text=document.getElementById('root').textContent,anchors=Array.from(document.querySelectorAll('[data-sentence-id]'),element=>({id:element.getAttribute('data-sentence-id'),start:element.getAttribute('data-fragment-start'),end:element.getAttribute('data-fragment-end')}));flushSync(()=>renderRoot.unmount());return {text,anchors,sentences:readerSentences(save.value.document)};},
+  async dump() {
+    const db=await new Promise((resolve,reject)=>{const req=indexedDB.open('hhc-weekly-reader',2);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});
+    const names=['identity','documents','pointers','checks','private'],tx=db.transaction(names,'readonly');
+    const read=req=>new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});
+    const entries=await Promise.all(names.map(async name=>({name,keys:await read(tx.objectStore(name).getAllKeys()),values:await read(tx.objectStore(name).getAll())})));db.close();
+    const result={};
+    for(const entry of entries)result[entry.name]=await Promise.all(entry.values.map(async(value,i)=>({key:entry.keys[i],value:entry.name==='documents'?{selector:value.selector,epoch:value.epoch,locked:value.locked,lastObservedAt:value.lastObservedAt,localValidUntil:value.localValidUntil,size:value.size,documentSha256:await digest(value.value.document),access:value.value.access,resources:await Promise.all(value.resources.map(async resource=>({url:resource.url,bytes:resource.bytes.byteLength,sha256:Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',resource.bytes)),byte=>byte.toString(16).padStart(2,'0')).join('')})))}:value})));
+    result.returns=Object.fromEntries(Object.keys(sessionStorage).filter(key=>key.startsWith('weekly-reader-return:')).map(key=>[key,JSON.parse(sessionStorage.getItem(key))]));return result;
+  }
+};
+window.bulletinFixture = {
+  source: ${JSON.stringify(source)}, T,
+  async seed(count) {
+    if (![1,5,20].includes(count)) throw Error('invalid_fixture_count');
+    const epoch = await store.activateOfflineAccount('local-fixture-account');
+    const manifest=[];
+    for(let i=0;i<count;i++) {
+      const version = i%10+1, locale = version===2 ? 'zh-Hans' : i%2 ? 'zh-Hans' : 'zh-Hant';
+      const value=readerFixture(locale,version>2?'v'+version:undefined);value.access.accountId='local-fixture-account';
+      value.document.documentId=value.access.documentId='fixture-document-'+i;
+      value.document.issueId='fixture-issue-'+i;
+      value.document.canonicalMetadata.issueNumber=1739+i;
+      const status=i<10?'current':i%2?'expired':'locked';
+      const validatedAt=status==='expired'?T-8*86400000:T-86400000;
+      value.access.validatedAt=new Date(validatedAt).toISOString();
+      value.access.offlineValidUntil=new Date(validatedAt+604800000).toISOString();
+      const route=selector(i,locale);
+      const staged=await store.stageOfflineSave(value,route,fetch,validatedAt);
+      await store.commitOfflineSave(staged,epoch,validatedAt);
+      if(status==='locked') await store.lockOfflineSave(route);
+      manifest.push({selector:route,documentId:value.access.documentId,revision:value.access.revision,epoch,status,size:staged.size,documentSha256:await digest(value.document),accessSha256:await digest(value.access),validatedAt:value.access.validatedAt,offlineValidUntil:value.access.offlineValidUntil,resources:staged.resources.map((resource,index)=>({url:resource.url,byteLength:resource.bytes.byteLength,sha256:value.document.content.layoutManifest.assets[index].sha256}))});
+    }
+    return manifest;
+  },
+  mount() {
+    if(root) throw Error('already_mounted');
+    root=createRoot(document.getElementById('root'));
+    flushSync(()=>root.render(<OfflineContentPage locale="en" messages={getMessages('en').weeklyReader}/>));
+  },
+  unmount() { if(root) flushSync(()=>root.unmount()); root=undefined; },
+  async summaries() {
+    const items=await store.listOfflineSaves('local-fixture-account');
+    return items.map(item=>({keys:Object.keys(item).sort(),selector:item.selector,documentId:item.documentId??item.value.access.documentId,revision:item.revision??item.value.access.revision,size:item.size,offlineValidUntil:item.offlineValidUntil??item.value.access.offlineValidUntil}));
+  },
+  async availability() {
+    const items=await store.listOfflineSaves('local-fixture-account');
+    return Promise.all(items.map(async item=>({selector:item.selector,status:(await store.readOfflineSave(item.selector))?.status??null})));
+  }
+};
+`);
+const server = await createServer({
+  configFile: false, root, publicDir: join(source, 'public'),
+  server: {host: '127.0.0.1', port: 7144, strictPort: true, fs: {allow: [root, source, resolve('.')]}},
+  define: {'process.env.NEXT_PUBLIC_WEEKLY_READER_ENABLED': '"true"'},
+  resolve: {alias: [{find:'@/components/layout/AccountControl',replacement:'virtual:fixture-account'},{find:'@',replacement:join(source,'src')}]},
+  plugins: [{name:'synthetic-account-only',resolveId(id){if(id==='virtual:fixture-account')return id;},load(id){if(id==='virtual:fixture-account')return 'export const useAccountIdentity = () => "account-a";';}}],
+});
+await server.listen();
+assert.equal(server.config.server.host, '127.0.0.1');
+assert.equal(server.config.server.port, 7144);
+console.log(JSON.stringify({origin:'http://127.0.0.1:7144',source,root,synthetic:true,sw:'none: fixture entry does not register a service worker'}));

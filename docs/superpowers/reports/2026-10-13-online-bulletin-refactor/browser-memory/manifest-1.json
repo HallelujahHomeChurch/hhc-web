@@ -1,0 +1,63 @@
+[
+  {
+    "selector": {
+      "accountId": "account-a",
+      "issueNumber": 1739,
+      "series": "general",
+      "contentLocale": "zh-Hant"
+    },
+    "documentId": "fixture-document-0",
+    "revision": 1,
+    "epoch": 1,
+    "status": "current",
+    "size": 24886872,
+    "documentSha256": "f51c10b1051c7b1c3381e2459859b8450bfb9e902dee21bd1a180b6e8433c380",
+    "accessSha256": "b7d9c4f752ffa4afa81d927fef452a2ef5e46de9c91e57b6e8307ea37484d70f",
+    "validatedAt": "2026-10-01T00:00:00.000Z",
+    "offlineValidUntil": "2026-10-08T00:00:00.000Z",
+    "resources": [
+      {
+        "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+        "byteLength": 3998724,
+        "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+      },
+      {
+        "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+        "byteLength": 14982568,
+        "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+      },
+      {
+        "url": "/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2",
+        "byteLength": 5389056,
+        "sha256": "9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962"
+      },
+      {
+        "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+        "byteLength": 96960,
+        "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+        "byteLength": 4061,
+        "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+        "byteLength": 10003,
+        "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+      },
+      {
+        "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+        "byteLength": 4914,
+        "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+      },
+      {
+        "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+        "byteLength": 396064,
+        "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+      }
+    ],
+    "rendererVersion": "v1",
+    "templateVersion": "v1"
+  }
+]

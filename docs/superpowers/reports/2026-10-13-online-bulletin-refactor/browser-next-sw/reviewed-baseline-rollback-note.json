@@ -1,0 +1,51 @@
+{
+  "url": "http://127.0.0.1:7170/en/literature-ministry/1741/read/general/zh-Hant",
+  "nativeNotesPanelText": "Reading a saved copy. Reconnect to validate access and synchronize.\n\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nLoading bulletin…\nLoading bulletin…\n100%\n\n內容0。\n\n內容1。\n\n內容2。\n\n內容3。\n\n✎\nMy notes\nHighlights\n\nNo highlights yet.\n\n內容0。\n\nCandidate209 native action review receipt😀\n\nGo to source\nEdit\nDelete",
+  "originalEntry": {
+    "mutation": {
+      "mutationId": "378dfc07-fab8-4934-954e-4eaa668fce7c",
+      "createdAt": "2026-10-02T00:00:00.000Z",
+      "documentRevision": 1,
+      "kind": "createNote",
+      "payload": {
+        "noteId": "7a4dc505-2413-423f-bcf9-251a291e4908",
+        "sentenceIds": [
+          "s0"
+        ],
+        "text": "Candidate209 native action review receipt😀",
+        "ranges": [
+          {
+            "sentenceId": "s0",
+            "start": 0,
+            "end": 4
+          }
+        ]
+      }
+    },
+    "sent": false
+  },
+  "actualEntry": {
+    "mutation": {
+      "mutationId": "378dfc07-fab8-4934-954e-4eaa668fce7c",
+      "createdAt": "2026-10-02T00:00:00.000Z",
+      "documentRevision": 1,
+      "kind": "createNote",
+      "payload": {
+        "noteId": "7a4dc505-2413-423f-bcf9-251a291e4908",
+        "sentenceIds": [
+          "s0"
+        ],
+        "text": "Candidate209 native action review receipt😀",
+        "ranges": [
+          {
+            "sentenceId": "s0",
+            "start": 0,
+            "end": 4
+          }
+        ]
+      }
+    },
+    "sent": false
+  },
+  "passed": true
+}

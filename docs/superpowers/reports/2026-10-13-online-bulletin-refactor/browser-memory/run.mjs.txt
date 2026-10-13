@@ -1,0 +1,69 @@
+import {createRequire} from 'node:module';
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {createWriteStream} from 'node:fs';
+import {execFileSync,spawn} from 'node:child_process';
+import {createHash} from 'node:crypto';
+import assert from 'node:assert/strict';
+import {once} from 'node:events';
+const out='/tmp/bulletin-task4-browser';
+const workspace='/Users/rayselfs/Projects/hhc/website/.worktrees/online-bulletin-refactor-20261013';
+const web=workspace+'/hhc-web',platform=workspace+'/frontend-platform';
+const require=createRequire(platform+'/package.json');
+const {chromium}=require('playwright');
+const hash=x=>createHash('sha256').update(x).digest('hex');
+const git=(cwd,...args)=>execFileSync('git',args,{cwd,encoding:'utf8'}).trim();
+const identities={origin:'http://127.0.0.1:7144',scope:'Task4 synthetic OfflineContentPage component, no Next app/SW/member/queue claims',baselineCommit:git(web,'rev-parse','origin/main'),candidateHead:git(web,'rev-parse','HEAD'),candidateDiffSha256:hash(execFileSync('git',['diff','HEAD'],{cwd:web})),platformHead:git(platform,'rev-parse','HEAD'),lockSha256:hash(await readFile(web+'/pnpm-lock.yaml')),playwright:require('playwright/package.json').version,serverSha256:hash(await readFile(out+'/server.mjs')),fixtureBaselineSha256:hash(await readFile('/tmp/bulletin-web-baseline-20261013/src/features/weekly-reader/test-fixture.ts')),fixtureCandidateSha256:hash(await readFile(web+'/src/features/weekly-reader/test-fixture.ts')),sources:{baseline:'/tmp/bulletin-web-baseline-20261013',candidate:web}};
+assert.equal(identities.fixtureBaselineSha256,identities.fixtureCandidateSha256);
+assert.equal(identities.lockSha256,hash(await readFile(identities.sources.baseline+'/pnpm-lock.yaml')));
+assert.equal(identities.playwright,'1.63.0');
+await writeFile(out+'/identities.json',JSON.stringify(identities,null,2));
+const results=[];
+let server;
+const stop=async()=>{if(server){server.kill('SIGTERM');await once(server,'exit');server=undefined;}};
+async function start(source){server=spawn(process.execPath,[out+'/server.mjs',source],{cwd:web,stdio:['ignore','pipe','pipe']});let log='';server.stdout.on('data',b=>log+=b);server.stderr.on('data',b=>log+=b);for(let i=0;i<300;i++){if(server.exitCode!==null)throw Error(log);if(log.includes('"origin"'))return;await new Promise(r=>setTimeout(r,100));}throw Error('server startup timeout '+log);}
+async function gc(page,cdp){await cdp.send('HeapProfiler.collectGarbage');await cdp.send('HeapProfiler.collectGarbage');await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));}
+async function snapshot(page,cdp,path){await gc(page,cdp);const usage=await cdp.send('Runtime.getHeapUsage');const stream=createWriteStream(path);const chunk=({chunk})=>stream.write(chunk);cdp.on('HeapProfiler.addHeapSnapshotChunk',chunk);await cdp.send('HeapProfiler.takeHeapSnapshot',{reportProgress:false});cdp.off('HeapProfiler.addHeapSnapshotChunk',chunk);stream.end();await once(stream,'finish');const analysis=JSON.parse(execFileSync(process.execPath,[out+'/analyze.mjs',path],{encoding:'utf8',maxBuffer:20*1024*1024}));return {usage,analysis,snapshot:path};}
+async function mount(page,n){const t=performance.now();await page.evaluate(()=>window.bulletinFixture.mount());await page.waitForFunction(n=>document.querySelectorAll('.reader-offline-list > li').length===n,n);return performance.now()-t;}
+const quick=process.argv.includes('--pilot');
+try{
+for(const variant of ['baseline','candidate']){
+ await start(identities.sources[variant]);
+ for(const n of (quick?[1]:[1,5,20]))for(let trial=0;trial<(quick?1:3);trial++){
+  const dir=out+'/'+(quick?'pilot-':'')+variant+'-'+n+'-'+trial;await mkdir(dir,{recursive:true});
+  const context=await chromium.launchPersistentContext(dir+'/profile',{headless:true,viewport:{width:1280,height:800}});
+  const page=context.pages()[0]??await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(String(e)));
+  const browserVersion=context.browser().version();assert.equal(browserVersion,'153.0.8010.12');
+  const cdp=await context.newCDPSession(page);await cdp.send('HeapProfiler.enable');
+  try{
+   await page.goto(identities.origin);await page.waitForFunction(()=>!!window.bulletinFixture);
+   const manifest=await page.evaluate(n=>window.bulletinFixture.seed(n),n);
+   for(let i=0;i<n;i++){manifest[i].rendererVersion='v'+(i%10+1);manifest[i].templateVersion=manifest[i].selector.contentLocale==='zh-Hans'?'v2':'v1';}
+   const fixturePath=out+'/manifest-'+n+'.json';
+   if(variant==='baseline'&&trial===0)await writeFile(fixturePath,JSON.stringify(manifest,null,2));
+   else assert.deepEqual(manifest,JSON.parse(await readFile(fixturePath,'utf8')),'baseline/candidate manifest mismatch');
+   const availability=await page.evaluate(()=>window.bulletinFixture.availability());
+   const parity=out+'/availability-'+n+'.json';
+   if(variant==='baseline'&&trial===0)await writeFile(parity,JSON.stringify(availability,null,2));
+   else assert.deepEqual(availability,JSON.parse(await readFile(parity,'utf8')),'availability mismatch');
+   const summaries=await page.evaluate(()=>window.bulletinFixture.summaries());
+   if(variant==='candidate')for(const row of summaries)assert.deepEqual(row.keys,['documentId','offlineValidUntil','revision','selector','size']);
+   // Reload removes seed/evaluation temporaries while retaining the actual IDB profile.
+   const navigationStarted=performance.now();await page.reload();await page.waitForFunction(()=>!!window.bulletinFixture);
+   await mount(page,n);const coldMs=performance.now()-navigationStarted;
+   const cold=await snapshot(page,cdp,dir+'/cold.heapsnapshot');
+   await page.screenshot({path:dir+'/mounted.png'});
+   await page.evaluate(()=>window.bulletinFixture.unmount());
+   for(let warmup=0;warmup<3;warmup++){await mount(page,n);await page.evaluate(()=>window.bulletinFixture.unmount());}
+   const warmMs=await mount(page,n);const warm=await snapshot(page,cdp,dir+'/warm.heapsnapshot');await page.evaluate(()=>window.bulletinFixture.unmount());
+   const cycles=[];
+   for(let cycle=1;cycle<=10;cycle++){await mount(page,n);await page.evaluate(()=>window.bulletinFixture.unmount());cycles.push({cycle,...await snapshot(page,cdp,dir+'/unmount-'+cycle+'.heapsnapshot')});}
+   for(const snap of [cold,warm]) { assert.equal(snap.analysis.listSavePaths.length,n,'list path count'); if(variant==='candidate')assert(snap.analysis.listSavePaths.every(p=>!p.hasValue&&!p.hasResources&&!p.hasDocument&&p.resourceBackingStores.length===0)); else assert(snap.analysis.listSavePaths.every(p=>p.hasValue&&p.hasResources&&p.hasDocument&&p.resourceBackingStores.length>0)); }
+   assert(cycles.every(c=>c.analysis.listSavePaths.length===0),'unmounted list retention');
+   const result={variant,n,trial,browserVersion,manifestSha256:hash(JSON.stringify(manifest)),coldMs,warmMs,cold,warm,cycles,errors};
+   assert.equal(errors.length,0);await writeFile(dir+'/receipt.json',JSON.stringify(result,null,2));results.push(result);await writeFile(out+'/'+(quick?'pilot-':'')+'results.json',JSON.stringify(results,null,2));
+   console.log(JSON.stringify({variant,n,trial,coldMs,warmMs,cold:cold.analysis,warm:warm.analysis,lastUnmount:cycles.at(-1).analysis}));
+  }finally{await context.close();}
+ }
+ await stop();
+}
+}finally{await stop();}

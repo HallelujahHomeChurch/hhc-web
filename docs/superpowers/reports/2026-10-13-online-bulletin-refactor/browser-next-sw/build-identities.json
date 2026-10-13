@@ -1,0 +1,22 @@
+[
+  {
+    "phase": "baseline",
+    "path": "/tmp/bulletin-next-turbo-baseline",
+    "buildId": "xY3WaxfgXBdgvCHxVMm8N",
+    "uiVersion": "1.0.61",
+    "offlineStoreSha256": "8443a46ad8edc92623af212fe390ea675f694ab2f9642f5708384813e32daec5",
+    "swSha256": "962aba2dcb581a0963e605eea9cf4b430730f2b8a4505e124c40e4ceeaa99b64",
+    "compiler": "repository default next build (Turbopack)",
+    "flag": "NEXT_PUBLIC_WEEKLY_READER_ENABLED=true, scratch only"
+  },
+  {
+    "phase": "candidate209",
+    "path": "/tmp/bulletin-next-turbo-candidate209",
+    "buildId": "n7hsAb1EUzVqP4QIHBezx",
+    "uiVersion": "1.0.61",
+    "offlineStoreSha256": "e2f396a9536dafb933685272d47f2ca6ad35bf6f4c881e7ba3de8b8ce6caee98",
+    "swSha256": "962aba2dcb581a0963e605eea9cf4b430730f2b8a4505e124c40e4ceeaa99b64",
+    "compiler": "repository default next build (Turbopack)",
+    "flag": "NEXT_PUBLIC_WEEKLY_READER_ENABLED=true, scratch only"
+  }
+]
