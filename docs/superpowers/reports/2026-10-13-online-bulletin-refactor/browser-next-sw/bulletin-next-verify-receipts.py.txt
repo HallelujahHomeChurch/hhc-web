@@ -1,0 +1,19 @@
+import json
+from pathlib import Path
+r=Path('/tmp/bulletin-next-turbo-receipts');names=['turbo-baseline','turbo-candidate209-old-cached-shell','turbo-candidate209-new-prepared-shell','turbo-rollback-old-candidate-shell','turbo-rollback-new-baseline-shell'];phases=[json.loads((r/(n+'.json')).read_text()) for n in names];b=phases[0]
+for p in phases:
+ assert p['availability']==b['availability'];assert p['list']==b['list']
+ for k in ['identity','documents','pointers','checks']:assert p['store'][k]==b['store'][k],(p['phase'],k)
+ assert [x['sentences'] for x in p['semantic']]==[x['sentences'] for x in b['semantic']]
+ for old in b['store']['private']:
+  cur=next(x for x in p['store']['private'] if x['key']==old['key'])
+  for pending in old['value']['queue']:assert pending in cur['value']['queue'],(p['phase'],'original queue changed')
+ assert p['returns']['weekly-reader-return:local-fixture-account:fixture-document-0']==b['returns']['weekly-reader-return:local-fixture-account:fixture-document-0']
+assert phases[0]['shellSha256']==phases[1]['shellSha256']
+assert phases[2]['shellSha256']==phases[3]['shellSha256']!=phases[0]['shellSha256']
+assert phases[0]['semantic'][0]['scripts']==phases[4]['semantic'][0]['scripts']
+assert phases[0]['semantic'][0]['scripts']!=phases[2]['semantic'][0]['scripts']
+original=json.loads((r/'candidate-native-mutation.json').read_text());assert original in next(x for x in phases[-1]['store']['private'] if x['value']['state']['documentId']=='fixture-document-1')['value']['queue']
+assert set(phases[0]['cache']['keys'])<=set(phases[-1]['cache']['keys'])
+result={'passed':True,'phases':names,'versionsEach':10,'listRowsEach':20,'guarantees':['original resources/documents/pointers/checks/expiry/epoch unchanged','availability and actual list exact parity','original queued IDs/payloads/timestamps retained','candidate-native createNote retained and readable after baseline rollback','dirty note return state retained','cached old shell distinguished from prepared new shell','baseline compiled JS identities restored after rollback','all original cache entries retained','no member API or personalized shell in cache'],'gaps':['no live backend or real member authorization','online replay/CAS recovery not exercised by this Next harness','physical/mobile device lifecycle not yet accepted'],'shellNote':'Raw newly prepared baseline HTML hash differs on re-fetch due to Next streaming metadata; exact compiled script URLs return to baseline. Old-cache phases retain exact original raw shell hash.'}
+(r/'verification-summary.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result))

@@ -1,0 +1,230 @@
+[
+  {
+    "path": "/tmp/bulletin-next-sw-acceptance.md",
+    "bytes": 6083,
+    "sha256": "3906f3c43b8c1c3d569ede3fb5f12e67aa60535bcd919afc0f775e4682e9d5fe",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/bulletin-next-sw-acceptance.md"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/archive-source-manifest.json",
+    "bytes": 382601,
+    "sha256": "88cc5282e886fa98d8c20a1fd6021d4238e8b7a1c47feae1a5826ded7a0edc15",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/archive-source-manifest.json"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/baseline-mobile-viewport.png",
+    "bytes": 38646,
+    "sha256": "2dd273a93b3e3e79bb16352ad7e8fd4560575cd0d30b938a3567a704ffdcbae2",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/baseline-mobile-viewport.png"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/baseline-native-actions.json",
+    "bytes": 103760,
+    "sha256": "64687166ea624bc0b16f481c89227b87b3369764e045d822d2c22a0cc46ac629",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/baseline-native-actions.json"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/baseline-reader.html",
+    "bytes": 47859,
+    "sha256": "3024f1decb24de87194ca5fd90d8f3435d9bcdfa4ce8909604a4625db5f17c91",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/baseline-reader.html"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/baseline-reader.png",
+    "bytes": 35553,
+    "sha256": "87b2a41e26913cc6849d12d2e6c1ff708be6817d35d6ced4eb8cfa3b866fb2e8",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/baseline-reader.png"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/blocked-readers.json",
+    "bytes": 585,
+    "sha256": "9325cc331875cb735989a9c0f3164ea020eafbe8525cf6acd00563ddb95803cd",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/blocked-readers.json"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/build-identities.json",
+    "bytes": 923,
+    "sha256": "f3d48a06d00f22971dd3bb42d755f33858320d7f2786b4bca5edf10b4766d968",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/build-identities.json"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/candidate-native-mutation.json",
+    "bytes": 487,
+    "sha256": "7e3ffef5f5b0da6512c014e84a217cdf8dd8bad61a50d08313c2a2bab856854e",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/candidate-native-mutation.json"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/candidate-native-note-editor.png",
+    "bytes": 66630,
+    "sha256": "45c6aead4dc434f53f56b7b0419b892f674fc0c16ecc67d35c0a30aef245ab5a",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/candidate-native-note-editor.png"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/candidate-native-note-reviewed.json",
+    "bytes": 212835,
+    "sha256": "f4f318a84a02a132e662d6ae52390296db6f419abcd7c614fc9609f111f9da50",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/candidate-native-note-reviewed.json"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/manifest.json",
+    "bytes": 53271,
+    "sha256": "937163640d1abce5e3b3f24e2f55b3ac710499db44c57f102262a5129634220e",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/manifest.json"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/mobile-viewport-parity.json",
+    "bytes": 179,
+    "sha256": "ca0e3888e0aaf231fb881b4ae370d181cfb7ec1943d405f7edac14d3ff96feb4",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/mobile-viewport-parity.json"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/reviewed-baseline-rollback-chunk-binding.json",
+    "bytes": 4237,
+    "sha256": "1842722db489f2e254435bacf86d12cf2f790dd91193e05c24ac8ca78910c9ce",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/reviewed-baseline-rollback-chunk-binding.json"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/reviewed-baseline-rollback-note.json",
+    "bytes": 1738,
+    "sha256": "4a8a41b6b78b458a54f035f9e9c581a61e8a2c81aeec2dbbd4ded0bacf3b4cc0",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/reviewed-baseline-rollback-note.json"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/reviewed-baseline-rollback-note.png",
+    "bytes": 65357,
+    "sha256": "d73efa436f08b3f53463fc4bd55c7094d69c9ef625f4ba27f562918e762577b4",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/reviewed-baseline-rollback-note.png"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/reviewed-candidate209-chunk-binding.json",
+    "bytes": 4431,
+    "sha256": "a75f43107366d7ceb872b9b8a6ba574dc0f6846a26ec0d3e9d16eb1734c62a99",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/reviewed-candidate209-chunk-binding.json"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/turbo-baseline.json",
+    "bytes": 177084,
+    "sha256": "1b78dfef589ced2c2880afe3297cb435acfc5e0abccdb62c99177ac87a5c1d16",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/turbo-baseline.json"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/turbo-candidate209-new-prepared-shell.json",
+    "bytes": 178099,
+    "sha256": "aff4886c98d8946178031058e43f73364020f24a8b49b7008fd370df35c628f0",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/turbo-candidate209-new-prepared-shell.json"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/turbo-candidate209-old-cached-shell.json",
+    "bytes": 177825,
+    "sha256": "45717b427829d3b8c5d82787e0b87f96ff75d97993f3e89511d06b7c0b90bb2b",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/turbo-candidate209-old-cached-shell.json"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/turbo-mobile-baseline.json",
+    "bytes": 180004,
+    "sha256": "b21ca8a45ebf0fa528603fbb594c35a3fa7634af9bd0c40d85ed8345182de8de",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/turbo-mobile-baseline.json"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/turbo-mobile-candidate209.json",
+    "bytes": 180060,
+    "sha256": "5854bb200edeb216d41ca16968de1016ee5c6a596ea268a2cd08d8fa0302dda8",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/turbo-mobile-candidate209.json"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/turbo-rollback-new-baseline-shell.json",
+    "bytes": 180023,
+    "sha256": "ffed94cc53f1e2f5535496a1c31fcd4152549917249c236ec553f3d37c2615b9",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/turbo-rollback-new-baseline-shell.json"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/turbo-rollback-old-candidate-shell.json",
+    "bytes": 180062,
+    "sha256": "1736992fdc1013e11b7746fb13dfd0a554043ce30b2804efa4b6d5d77a566a70",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/turbo-rollback-old-candidate-shell.json"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-receipts/verification-summary.json",
+    "bytes": 1223,
+    "sha256": "316fbcfea1caee9a3b30489a513071dc2f1dbe21f0aa3dec8314ac602c52c7e3",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/verification-summary.json"
+  },
+  {
+    "path": "/tmp/bulletin-next-proxy.mjs",
+    "bytes": 883,
+    "sha256": "56242472b2be9ce1a8bf5040a56de2028f77a2b1bcb27678783539035a1649c8",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/bulletin-next-proxy.mjs.txt"
+  },
+  {
+    "path": "/tmp/bulletin-next-seed-server.mjs",
+    "bytes": 9580,
+    "sha256": "c067346c90046ee8646ff692d86f2b8423d76ca40a9e6e8b040819b3060c746a",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/bulletin-next-seed-server.mjs.txt"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-browser-host.mjs",
+    "bytes": 893,
+    "sha256": "a7e65c971f2d170b8199a36e90245720bbda594003384f079828f2a40cdfe117",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/bulletin-next-turbo-browser-host.mjs.txt"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-probe.mjs",
+    "bytes": 1999,
+    "sha256": "994e79aa8ae3c547caf4f4eea1bc4cd794967435a5a54e83387960cfa8c8e727",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/bulletin-next-turbo-probe.mjs.txt"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-actions.mjs",
+    "bytes": 3274,
+    "sha256": "8cd0ae75446141e8e541c6b1e87021018a33438285f869329b0316f262959d50",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/bulletin-next-turbo-actions.mjs.txt"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-matrix.mjs",
+    "bytes": 2971,
+    "sha256": "a399c9243d5d0a20903c1e34b7a5c680c3a99ee2d1c696382da3600eaac0cd13",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/bulletin-next-turbo-matrix.mjs.txt"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-prepare.mjs",
+    "bytes": 656,
+    "sha256": "6a4632c19d96ee0ea7be5a7963bffd65984675ee60c3f4b7308b08b72e646c2b",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/bulletin-next-turbo-prepare.mjs.txt"
+  },
+  {
+    "path": "/tmp/bulletin-next-candidate-native-note.mjs",
+    "bytes": 2246,
+    "sha256": "ecc0642204e1b158c6ef131620c9d01dd00da643811abf028123b04f9f0ea54f",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/bulletin-next-candidate-native-note.mjs.txt"
+  },
+  {
+    "path": "/tmp/bulletin-next-reviewed-rollback.mjs",
+    "bytes": 1609,
+    "sha256": "6d9a2d0058a65dcec41f4f9589585984f704b3969cc501541da4432c1a51bb92",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/bulletin-next-reviewed-rollback.mjs.txt"
+  },
+  {
+    "path": "/tmp/bulletin-next-bind-chunks.mjs",
+    "bytes": 1722,
+    "sha256": "05c151b201e4273fc2d968004388b4e50e28739e2e5f6f8c8f07445326197b0b",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/bulletin-next-bind-chunks.mjs.txt"
+  },
+  {
+    "path": "/tmp/bulletin-next-verify-receipts.py",
+    "bytes": 2639,
+    "sha256": "25ac23be1de1dbea21285e46adbdcade6c08a80bf0385502ab767fe5df0b1f38",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/bulletin-next-verify-receipts.py.txt"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-baseline-build.log",
+    "bytes": 4232,
+    "sha256": "14509b7aaba78c5fca4d7e0437b4e1e17c9e3fe17dccdbe45739ebb36646f9db",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/bulletin-next-turbo-baseline-build.log"
+  },
+  {
+    "path": "/tmp/bulletin-next-turbo-candidate209-build.log",
+    "bytes": 4035,
+    "sha256": "7ff2e5f17529aa03d3bbccbf5b58ac118505f3acd992c51de88c4fb788375361",
+    "repositoryFile": "docs/superpowers/reports/2026-10-13-online-bulletin-refactor/browser-next-sw/bulletin-next-turbo-candidate209-build.log"
+  }
+]

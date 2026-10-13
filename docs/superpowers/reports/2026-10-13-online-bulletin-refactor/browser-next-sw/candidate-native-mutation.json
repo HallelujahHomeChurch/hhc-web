@@ -1,0 +1,23 @@
+{
+  "mutation": {
+    "mutationId": "a09912b6-bd23-4c64-9412-eecd2d1f7eb8",
+    "createdAt": "2026-10-02T00:00:00.000Z",
+    "documentRevision": 1,
+    "kind": "createNote",
+    "payload": {
+      "noteId": "1fa0ade2-3cdb-4f02-b2bd-23f231b45da5",
+      "sentenceIds": [
+        "s0"
+      ],
+      "text": "Turbo candidate-created note😀",
+      "ranges": [
+        {
+          "sentenceId": "s0",
+          "start": 0,
+          "end": 4
+        }
+      ]
+    }
+  },
+  "sent": false
+}
