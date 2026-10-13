@@ -16,6 +16,13 @@ export type OfflineSave = {
   epoch: number;
   locked: boolean;
 };
+export type OfflineSaveSummary = {
+  selector: ReaderSelector;
+  documentId: string;
+  revision: number;
+  size: number;
+  offlineValidUntil: string;
+};
 type OfflineCheck = Pick<OfflineSave, 'lastObservedAt' | 'localValidUntil' | 'epoch' | 'locked'> & {access: OnlineBulletinAccess['access']};
 type MutationResult = BulletinReaderMutationResponse['results'][number];
 export type PendingReaderMutation = {mutation: BulletinReaderMutation; sent: boolean; result?: MutationResult; replay?: BulletinReaderMutation; replayResult?: MutationResult; recoveryReason?: ReaderRecovery['reason']; resolution?: {mutation: BulletinReaderMutation | null; result?: MutationResult}};
@@ -214,16 +221,16 @@ export async function readOfflineSave(selector: ReaderSelector, now = Date.now()
   });
 }
 
-export async function listOfflineSaves(accountId: string): Promise<OfflineSave[]> {
+export async function listOfflineSaves(accountId: string): Promise<OfflineSaveSummary[]> {
   return transaction('readonly', async tx => {
     if ((await identity(tx)).accountId !== accountId) return [];
     const pointers = await result(tx.objectStore('pointers').getAllKeys());
-    const saved: OfflineSave[] = [];
+    const saved: OfflineSaveSummary[] = [];
     for (const key of pointers) {
       if (!Array.isArray(key) || key[0] !== accountId) continue;
       const target = await result(tx.objectStore('pointers').get(key));
-      const save = await result(tx.objectStore('documents').get(target));
-      if (save) saved.push(save);
+      const save: OfflineSave | undefined = await result(tx.objectStore('documents').get(target));
+      if (save) saved.push({selector: save.selector, documentId: save.value.document.documentId, revision: save.value.access.revision, size: save.size, offlineValidUntil: save.value.access.offlineValidUntil});
     }
     return saved;
   });
