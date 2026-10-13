@@ -1,0 +1,19 @@
+# Final integrated Web actual Next/SW acceptance
+
+Source previous209 `bd98ef18c786a3428366e686851c52916189dcf8` (UI1.0.61) → combined210 `6a0f580d0776f30a4ee25f1d8d484ff46210f330` (UI1.0.63) → previous209 rollback. These are fresh git archives, physical frozen-lockfile installs and unmodified default `pnpm build` Turbopack artifacts. 677/706 tracked file blobs match exact commits; full SHA256 manifests and BUILD_IDs included. Local-only reader build flag does not modify production gates.
+
+Pinned Playwright1.63 / Chromium153.0.8010.12, isolated persistent profile, fixed loopback origin7190. Actual unmodified Next pages/WeeklyReader/OfflineReaderShell and public sw.js serve all reading. Separate `/seed` fixture invokes previous209 original offline store APIs to stage/commit20 synthetic documents, resources and retained offline identity. Fixture auth alias belongs only to seed imports, never Next application. `/api/*` returns503/no-store; external network blocked. No production data writes.
+
+## Passed
+
+Five phases: previous209, source210 with old cached209, prepared210, source209 with old cached210, prepared209. Each actual list20, ten available renderersV1–V10, five expired/five locked. Zero page errors. Every phase21 actually loaded cached JS files hash-match exact corresponding build; full source manifest establishes versions. Matrix `ui` field is only phase annotation, not runtime proof; chunk-binding receipts are authoritative (61,61,63,63,61).
+
+Exact document/resource byte hashes, account identity/epochs, revision/access binding, pointer/check records and original expiry preserved. Original queued mutation IDs/payloads/timestamps remain unchanged. Actual native selection controls cover yellow highlight, clear, blue highlight, note creation, dirty leave cancel and reload restoration. DOM Range drives selection; actual caller selection events/buttons handle actions. Primary dirty return state survives five stages. All10 expired/locked reader routes individually deny content. Cache44→49 retains all previous entries; no API cache or personalized shell. Rollback prepared209 shell and loaded JS exactly return to previous bytes.
+
+Actual210 native note original mutation `26d66125-6154-40d5-a62b-14f11a49ff30` is read through actual209 My notes after rollback; full queue entry unchanged. Retained immutable native action and rollback drivers accompany screenshots/receipts. Supplemental candidate controls repeat highlight/clear/note/dirty semantics on a distinct document without resetting original private data. Supplemental rollback209 also restores candidate dirty textarea and the complete highlight/clear/note replica exactly, with both source chunk bindings.
+
+## Reproduction and boundaries
+
+Drivers `/tmp/bulletin-next-final-*.mjs`, assertion verifier `/tmp/bulletin-next-final-verify.py`; receipts `/tmp/bulletin-next-final-receipts/`; archive/build/install logs and SHA256 copy manifest accompany this report. Stateful order is probe → actions → matrix/bind(previous209) → source switch → matrix/bind(old209) → prepare → native-note → matrix/bind(prepared210) → all-blocked → source rollback → matrix/bind(old210) → prepare → matrix/bind(prepared209) → rollback-note → verifier. New supplementary candidate actions occur after the completed five-stage series and are independently recorded.
+
+This proves actual local production-compiled Next/SW upgrade and rollback for synthetic retained identity/data. It does not prove live authorization/backend replay, response-lost CAS recovery UI, physical-device/PWA lifecycle or touch interaction. Existing b4→209 actual Next/SW evidence remains separately retained; repeating b4→final is unnecessary for the actual shipped209→210 transition and would not replace these direct receipts. No repository source or configuration changed during this acceptance.

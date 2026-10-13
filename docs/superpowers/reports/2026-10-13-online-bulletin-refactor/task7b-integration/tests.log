@@ -1,0 +1,37 @@
+ WARN  Issue while reading "/Users/rayselfs/Projects/hhc/website/.worktrees/online-bulletin-refactor-20261013/hhc-web-capabilities/.npmrc". Failed to replace env in config: ${NODE_AUTH_TOKEN}
+
+> @hallelujahhomechurch/hhc-web@0.1.0 test:run /Users/rayselfs/Projects/hhc/website/.worktrees/online-bulletin-refactor-20261013/hhc-web-capabilities
+> node --test scripts/check-static-budgets.node-test.mjs scripts/verify-weekly-template-assets.node-test.mjs && node scripts/verify-weekly-template-assets.mjs --base-ref origin/main && vitest run --maxWorkers\=2
+
+✔ accepts assets within the static budgets (32.896791ms)
+✔ rejects an imported local display font over 250 KiB (28.088ms)
+✔ rejects the original full display font import (25.886666ms)
+✔ rejects a hero source over 200 KiB (26.68175ms)
+✔ rejects eager body-font preloads that affect every locale (26.511917ms)
+✔ rejects globally preloaded local display fonts (27.414875ms)
+✔ rejects generated CSS over 400 KiB after a production build (27.555625ms)
+✔ verifies actual bytes, filename, license and append-only history (10.88875ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 238.388042
+Weekly template v1: 12 assets verified
+
+ RUN  v4.1.10 /Users/rayselfs/Projects/hhc/website/.worktrees/online-bulletin-refactor-20261013/hhc-web-capabilities
+
+Not implemented: navigation to another Document
+Not implemented: navigation to another Document
+Not implemented: navigation to another Document
+Not implemented: navigation to another Document
+Not implemented: navigation to another Document
+Not implemented: navigation to another Document
+Not implemented: navigation to another Document
+
+ Test Files  143 passed (143)
+      Tests  1191 passed (1191)
+   Start at  00:10:16
+   Duration  56.90s (transform 2.01s, setup 4.62s, import 27.79s, tests 28.31s, environment 42.41s)

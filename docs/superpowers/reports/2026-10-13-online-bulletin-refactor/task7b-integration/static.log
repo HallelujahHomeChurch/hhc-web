@@ -1,0 +1,6 @@
+ WARN  Issue while reading "/Users/rayselfs/Projects/hhc/website/.worktrees/online-bulletin-refactor-20261013/hhc-web-capabilities/.npmrc". Failed to replace env in config: ${NODE_AUTH_TOKEN}
+
+> @hallelujahhomechurch/hhc-web@0.1.0 perf:static /Users/rayselfs/Projects/hhc/website/.worktrees/online-bulletin-refactor-20261013/hhc-web-capabilities
+> node scripts/check-static-budgets.mjs
+
+Static budgets passed: 4 local font(s), hero 140091 bytes, CSS 159000 bytes

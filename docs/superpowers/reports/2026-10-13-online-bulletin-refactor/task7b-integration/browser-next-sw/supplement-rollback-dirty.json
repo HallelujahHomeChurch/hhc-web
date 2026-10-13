@@ -1,0 +1,325 @@
+{
+  "passed": true,
+  "url": "http://127.0.0.1:7190/en/literature-ministry/1742/read/general/zh-Hans",
+  "dirtyText": "Combined210 dirty draft😀",
+  "originalReplica": {
+    "key": [
+      "local-fixture-account",
+      "fixture-document-3",
+      "general",
+      "zh-Hans",
+      1
+    ],
+    "value": {
+      "state": {
+        "accountId": "local-fixture-account",
+        "documentId": "fixture-document-3",
+        "appliedRevision": 1,
+        "currentRevision": 1,
+        "highlights": [
+          {
+            "sentenceId": "s0",
+            "color": "blue",
+            "segments": [
+              {
+                "start": 0,
+                "end": 4,
+                "color": "blue"
+              }
+            ],
+            "quote": "內容0。",
+            "active": true,
+            "version": 1,
+            "updatedAt": "2026-10-02T00:00:00.000Z"
+          }
+        ],
+        "notes": [
+          {
+            "id": "81a3639b-0bfb-4067-9cea-4602b72e482d",
+            "text": "Combined210 queued note😀",
+            "sentenceIds": [
+              "s1"
+            ],
+            "ranges": [
+              {
+                "sentenceId": "s1",
+                "start": 0,
+                "end": 4,
+                "quote": "內容1。"
+              }
+            ],
+            "inactiveAnchors": [],
+            "quote": "內容1。",
+            "version": 1,
+            "deleted": false,
+            "reanchorRequired": false,
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "updatedAt": "2026-10-02T00:00:00.000Z"
+          }
+        ],
+        "conflicts": [],
+        "progress": null
+      },
+      "confirmed": {
+        "accountId": "local-fixture-account",
+        "documentId": "fixture-document-3",
+        "appliedRevision": 1,
+        "currentRevision": 1,
+        "highlights": [],
+        "notes": [],
+        "conflicts": [],
+        "progress": null
+      },
+      "queue": [
+        {
+          "mutation": {
+            "mutationId": "270eb344-84bb-4478-a970-41591ce496be",
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "documentRevision": 1,
+            "kind": "setHighlight",
+            "payload": {
+              "sentenceIds": [
+                "s0"
+              ],
+              "color": "yellow",
+              "ranges": [
+                {
+                  "sentenceId": "s0",
+                  "start": 0,
+                  "end": 4
+                }
+              ]
+            }
+          },
+          "sent": false
+        },
+        {
+          "mutation": {
+            "mutationId": "83a9aca4-d043-46ba-be1a-fa3114801014",
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "documentRevision": 1,
+            "kind": "clearHighlight",
+            "payload": {
+              "sentenceIds": [
+                "s0"
+              ],
+              "ranges": [
+                {
+                  "sentenceId": "s0",
+                  "start": 0,
+                  "end": 4
+                }
+              ]
+            }
+          },
+          "sent": false
+        },
+        {
+          "mutation": {
+            "mutationId": "ef65c285-dd8d-43b8-901c-521647d53877",
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "documentRevision": 1,
+            "kind": "setHighlight",
+            "payload": {
+              "sentenceIds": [
+                "s0"
+              ],
+              "color": "blue",
+              "ranges": [
+                {
+                  "sentenceId": "s0",
+                  "start": 0,
+                  "end": 4
+                }
+              ]
+            }
+          },
+          "sent": false
+        },
+        {
+          "mutation": {
+            "mutationId": "ec3e1bd0-4d7d-4a5f-8479-d05ccb8ac3ba",
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "documentRevision": 1,
+            "kind": "createNote",
+            "payload": {
+              "noteId": "81a3639b-0bfb-4067-9cea-4602b72e482d",
+              "sentenceIds": [
+                "s1"
+              ],
+              "text": "Combined210 queued note😀",
+              "ranges": [
+                {
+                  "sentenceId": "s1",
+                  "start": 0,
+                  "end": 4
+                }
+              ]
+            }
+          },
+          "sent": false
+        }
+      ]
+    }
+  },
+  "rollbackReplica": {
+    "key": [
+      "local-fixture-account",
+      "fixture-document-3",
+      "general",
+      "zh-Hans",
+      1
+    ],
+    "value": {
+      "state": {
+        "accountId": "local-fixture-account",
+        "documentId": "fixture-document-3",
+        "appliedRevision": 1,
+        "currentRevision": 1,
+        "highlights": [
+          {
+            "sentenceId": "s0",
+            "color": "blue",
+            "segments": [
+              {
+                "start": 0,
+                "end": 4,
+                "color": "blue"
+              }
+            ],
+            "quote": "內容0。",
+            "active": true,
+            "version": 1,
+            "updatedAt": "2026-10-02T00:00:00.000Z"
+          }
+        ],
+        "notes": [
+          {
+            "id": "81a3639b-0bfb-4067-9cea-4602b72e482d",
+            "text": "Combined210 queued note😀",
+            "sentenceIds": [
+              "s1"
+            ],
+            "ranges": [
+              {
+                "sentenceId": "s1",
+                "start": 0,
+                "end": 4,
+                "quote": "內容1。"
+              }
+            ],
+            "inactiveAnchors": [],
+            "quote": "內容1。",
+            "version": 1,
+            "deleted": false,
+            "reanchorRequired": false,
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "updatedAt": "2026-10-02T00:00:00.000Z"
+          }
+        ],
+        "conflicts": [],
+        "progress": null
+      },
+      "confirmed": {
+        "accountId": "local-fixture-account",
+        "documentId": "fixture-document-3",
+        "appliedRevision": 1,
+        "currentRevision": 1,
+        "highlights": [],
+        "notes": [],
+        "conflicts": [],
+        "progress": null
+      },
+      "queue": [
+        {
+          "mutation": {
+            "mutationId": "270eb344-84bb-4478-a970-41591ce496be",
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "documentRevision": 1,
+            "kind": "setHighlight",
+            "payload": {
+              "sentenceIds": [
+                "s0"
+              ],
+              "color": "yellow",
+              "ranges": [
+                {
+                  "sentenceId": "s0",
+                  "start": 0,
+                  "end": 4
+                }
+              ]
+            }
+          },
+          "sent": false
+        },
+        {
+          "mutation": {
+            "mutationId": "83a9aca4-d043-46ba-be1a-fa3114801014",
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "documentRevision": 1,
+            "kind": "clearHighlight",
+            "payload": {
+              "sentenceIds": [
+                "s0"
+              ],
+              "ranges": [
+                {
+                  "sentenceId": "s0",
+                  "start": 0,
+                  "end": 4
+                }
+              ]
+            }
+          },
+          "sent": false
+        },
+        {
+          "mutation": {
+            "mutationId": "ef65c285-dd8d-43b8-901c-521647d53877",
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "documentRevision": 1,
+            "kind": "setHighlight",
+            "payload": {
+              "sentenceIds": [
+                "s0"
+              ],
+              "color": "blue",
+              "ranges": [
+                {
+                  "sentenceId": "s0",
+                  "start": 0,
+                  "end": 4
+                }
+              ]
+            }
+          },
+          "sent": false
+        },
+        {
+          "mutation": {
+            "mutationId": "ec3e1bd0-4d7d-4a5f-8479-d05ccb8ac3ba",
+            "createdAt": "2026-10-02T00:00:00.000Z",
+            "documentRevision": 1,
+            "kind": "createNote",
+            "payload": {
+              "noteId": "81a3639b-0bfb-4067-9cea-4602b72e482d",
+              "sentenceIds": [
+                "s1"
+              ],
+              "text": "Combined210 queued note😀",
+              "ranges": [
+                {
+                  "sentenceId": "s1",
+                  "start": 0,
+                  "end": 4
+                }
+              ]
+            }
+          },
+          "sent": false
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "sourceHead": "6a0f580d0776f30a4ee25f1d8d484ff46210f330",
+  "main": "bd98ef18c786a3428366e686851c52916189dcf8",
+  "files": [
+    {
+      "path": "package.json",
+      "sha256": "2464355885e812417915794994fbb6b38e93f93499a136810fef4872fdfa1bd3"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "1032ceed33db4733e584e12c49b7cd785d941e77e8dd5de88e7f83b0da4bb0f0"
+    },
+    {
+      "path": "src/features/weekly-reader/api.test.ts",
+      "sha256": "a1c6b432241808d79ee68a4e1c3cf542f15c0640cac8e3a94f6368001512cc43"
+    },
+    {
+      "path": "src/features/weekly-reader/api.ts",
+      "sha256": "3108e98b9bde1ef5a7b4bb9ef4aa28683b592a827ac0e361f0eed489fb9ad717"
+    },
+    {
+      "path": "src/features/weekly-reader/offline-store.test.ts",
+      "sha256": "89d880f356dfe641b92d1686db5bcf21a6ed9d355f1b69e9dd35180c30e5c2f5"
+    },
+    {
+      "path": "src/features/weekly-reader/offline-store.ts",
+      "sha256": "8698e6c0c5e82b45c396e5a1a0ffd5669c99f8905da86e997b5ec5d2f752bea5"
+    },
+    {
+      "path": "src/features/weekly-reader/paper-lines.test.ts",
+      "sha256": "08a9956257df1aebf26591191fb93e20e54ae8f42f26e6cba325affefe2cb0aa"
+    },
+    {
+      "path": "src/features/weekly-reader/paper-lines.ts",
+      "sha256": "307caccd7bd1b9f545ae5d6b6d1de0c2df136ca7ef84921ff24910fef3768762"
+    },
+    {
+      "path": "src/i18n/locales.test.ts",
+      "sha256": "1a305f87c348f2f1fc505bba9d1ef93935c2124527a36fae39b48b0dff8178ae"
+    }
+  ]
+}
