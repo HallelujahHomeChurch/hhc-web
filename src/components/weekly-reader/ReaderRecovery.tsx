@@ -1,3 +1,4 @@
+import {PassageText} from './PassageText';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {Drawer} from '@hallelujahhomechurch/ui';
 import type {BulletinReaderHighlightColor, BulletinReaderMutation, OnlineBulletinAccess} from '@hallelujahhomechurch/hhc-web-client';
@@ -6,7 +7,7 @@ import {chooseReaderRecovery, getOfflineIdentity, readOfflineSave, supportsOffli
 import {finishReaderUpgrade, prepareReaderUpgrade, type ReaderUpgrade} from '@/features/weekly-reader/upgrade';
 import {manualReaderRecovery} from '@/features/weekly-reader/rebase';
 import {readerSentences} from '@/features/weekly-reader/selection';
-import {rangeQuote} from '@/features/weekly-reader/text-range';
+import {rangeQuote, selectionPassage} from '@/features/weekly-reader/text-range';
 import {useReaderSelection} from '@/features/weekly-reader/useReaderSelection';
 import type {ReaderMessages} from './ReaderToolbar';
 
@@ -119,9 +120,7 @@ function RecoveryChoice({prepared, previous, original, reason, messages: m, busy
   const rangeRoot = useRef<HTMLDivElement>(null);
   const partial = 'ranges' in original.payload;
   const {selection} = useReaderSelection(rangeRoot, sentences, {ids: []}, !partial || busy, mobile ? 'sentence' : 'text');
-  const ranges = selection.ranges ?? sentences.filter(sentence=>selection.ids.includes(sentence.id)).map(sentence=>({sentenceId:sentence.id,start:0,end:[...sentence.text].length}));
-  let selectedQuote = '';
-  try {if (ranges.length) selectedQuote=rangeQuote(ranges,sentences);} catch { /* Recovery requires an explicit contiguous passage. */ }
+  const {ranges, quote: selectedQuote} = selectionPassage(selection, sentences);
   const cloud = original.kind === 'createNote' || original.kind === 'editNote' || original.kind === 'deleteNote' || original.kind === 'reanchorNote' ? prepared.state.notes.find(note => note.id === original.payload.noteId && !note.deleted) : undefined;
   const sourceIds = original.kind === 'setHighlight' || original.kind === 'clearHighlight' || original.kind === 'createNote' ? original.payload.sentenceIds : [];
   const previousSentences = readerSentences(previous.document);
@@ -143,7 +142,7 @@ function RecoveryChoice({prepared, previous, original, reason, messages: m, busy
     {note ? <><label>{m.noteText}<textarea value={text} disabled={busy} onChange={event => setText(event.target.value)}/></label><p>{m.noteCount.replace('{count}', String([...text].length))}</p>{cloud ? <button type="button" disabled={busy} onClick={() => setText(`${cloud.text}\n\n${text}`)}>{m.noteManual}</button> : null}</> : null}
     {original.kind === 'deleteNote' ? <p>{m.noteDeleteConfirm}</p> : null}
     {original.kind === 'setHighlight' || original.kind === 'restoreHighlight' ? <fieldset><legend>{m.highlightColors}</legend>{(['yellow', 'red', 'blue'] as const).map(option => <label key={option}><input type="radio" name="recovery-color" value={option} checked={color === option} onChange={() => setColor(option)} disabled={busy}/>{m[`${option}Highlight`]}</label>)}</fieldset> : null}
-    {anchors && partial ? <fieldset><legend>{m.recoveryRange}</legend><div ref={rangeRoot} data-sentence-selection={mobile || undefined} className="reader-recovery-anchors reader-recovery-text">{sentences.map(sentence => <p key={sentence.id}><span role={mobile?'button':undefined} tabIndex={mobile?0:undefined} aria-pressed={mobile?selection.ids.includes(sentence.id):undefined} data-selected={mobile&&selection.ids.includes(sentence.id)||undefined} data-sentence-id={sentence.id} data-fragment-start="0" data-fragment-end={[...sentence.text].length}>{sentence.text}</span></p>)}</div><blockquote>{selectedQuote || m.recoveryRange}</blockquote></fieldset> : anchors ? <fieldset><legend>{m.recoveryAnchors}</legend><input type="search" aria-label={m.search} value={search} onChange={event => setSearch(event.target.value)}/><p>{m.recoveryAnchorCount.replace('{count}', String(ids.length))}</p><div className="reader-recovery-anchors">{sentences.filter(sentence => sentence.text.includes(search)).map(sentence => <label key={sentence.id}><input type="checkbox" checked={ids.includes(sentence.id)} disabled={busy || ids.length >= 500 && !ids.includes(sentence.id)} onChange={event => setIds(event.target.checked ? [...ids, sentence.id] : ids.filter(id => id !== sentence.id))}/>{sentence.text}</label>)}</div></fieldset> : null}
+    {anchors && partial ? <fieldset><legend>{m.recoveryRange}</legend><PassageText root={rangeRoot} sentences={sentences} selection={selection} mobile={mobile}/><blockquote>{selectedQuote || m.recoveryRange}</blockquote></fieldset> : anchors ? <fieldset><legend>{m.recoveryAnchors}</legend><input type="search" aria-label={m.search} value={search} onChange={event => setSearch(event.target.value)}/><p>{m.recoveryAnchorCount.replace('{count}', String(ids.length))}</p><div className="reader-recovery-anchors">{sentences.filter(sentence => sentence.text.includes(search)).map(sentence => <label key={sentence.id}><input type="checkbox" checked={ids.includes(sentence.id)} disabled={busy || ids.length >= 500 && !ids.includes(sentence.id)} onChange={event => setIds(event.target.checked ? [...ids, sentence.id] : ids.filter(id => id !== sentence.id))}/>{sentence.text}</label>)}</div></fieldset> : null}
     {error ? <p role="alert">{m.actionFailed}</p> : null}
     <div className="reader-note-actions" data-reader-selection-tools><button type="button" disabled={busy} onClick={() => onChoose(null)}>{m.noteCloud}</button><button type="button" disabled={busy || note && (!text.trim() || [...text].length > 10000) || anchors && !(partial ? selectedQuote : ids.length) || original.kind === 'deleteNote' && !cloud} onClick={() => {
       try {onChoose(manualReaderRecovery(original, prepared.state, prepared.value.document, {sentenceIds: partial ? selection.ids : ids, text, color, ...(partial ? {ranges} : {})}));}

@@ -43,3 +43,19 @@ it('keeps explicit ranges and color after failure and never restores full senten
   fireEvent.click(save);
   await waitFor(() => expect(screen.queryByRole('button', {name: 'Save'})).not.toBeInTheDocument());
 });
+
+it('clears the caller selection after cancel and after a completed restore', async () => {
+  const onSave = vi.fn().mockResolvedValue(undefined);
+  render(<HighlightHistory history={history} document={readerFixture().document} messages={messages} busy={false} mobile onSave={onSave}/>);
+  fireEvent.click(screen.getByRole('button', {name: messages.highlightRestore}));
+  fireEvent.click(screen.getByText('內容1。'));
+  expect(screen.getByRole('button', {name: 'Save'})).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+  fireEvent.click(screen.getByRole('button', {name: messages.highlightRestore}));
+  expect(screen.getByRole('button', {name: 'Save'})).toBeDisabled();
+  fireEvent.click(screen.getByText('內容1。'));
+  fireEvent.click(screen.getByRole('button', {name: 'Save'}));
+  await waitFor(() => expect(screen.queryByRole('button', {name: 'Save'})).not.toBeInTheDocument());
+  fireEvent.click(screen.getByRole('button', {name: messages.highlightRestore}));
+  expect(screen.getByRole('button', {name: 'Save'})).toBeDisabled();
+});

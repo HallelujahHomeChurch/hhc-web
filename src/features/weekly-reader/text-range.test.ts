@@ -1,5 +1,5 @@
 import {afterEach, describe, expect, it} from 'vitest';
-import {readTextSelection, rangeQuote, renderedTextRanges} from './text-range';
+import {readTextSelection, rangeQuote, renderedTextRanges, selectionPassage} from './text-range';
 import type {ReaderSentence} from './selection';
 
 const sentences: ReaderSentence[] = [
@@ -99,5 +99,24 @@ describe('canonical native text selection', () => {
     expect(() => rangeQuote([{sentenceId: 'a', start: 3, end: 3}], sentences)).toThrow();
     const many = Array.from({length: 501}, (_, i) => ({id: `s${i}`, text: '文', componentId: 'body'}));
     expect(() => rangeQuote(many.map(s => ({sentenceId: s.id, start: 0, end: 1})), many)).toThrow();
+  });
+});
+
+
+describe('selectionPassage', () => {
+  it('derives Unicode scalar ranges from sentence selection without mutating the input', () => {
+    const selection = {ids: ['a', 'b']};
+    expect(selectionPassage(selection, sentences)).toEqual({sentenceIds: ['a', 'b'], ranges: [{sentenceId: 'a', start: 0, end: 5}, {sentenceId: 'b', start: 0, end: 4}], quote: '甲😀乙丙丁第二句。'});
+    expect(selection).toEqual({ids: ['a', 'b']});
+  });
+  it('preserves explicit partial ranges and the original ID order', () => {
+    const selection = {ids: ['a', 'b'], ranges: [{sentenceId: 'a', start: 1, end: 5}, {sentenceId: 'b', start: 0, end: 2}]};
+    const result = selectionPassage(selection, sentences);
+    expect(result.ranges).toBe(selection.ranges);
+    expect(result.sentenceIds).toBe(selection.ids);
+    expect(result.quote).toBe('😀乙丙丁第二');
+  });
+  it.each([{ids: []}, {ids: ['a', 'c']}, {ids: ['a'], ranges: [{sentenceId: 'a', start: 0, end: 99}]}])('keeps invalid or noncontiguous passage quote empty: %j', selection => {
+    expect(selectionPassage(selection, sentences).quote).toBe('');
   });
 });

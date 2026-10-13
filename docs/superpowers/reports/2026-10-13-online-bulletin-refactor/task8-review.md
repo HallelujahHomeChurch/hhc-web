@@ -1,0 +1,17 @@
+# Independent Web Task 8 review
+
+2026-10-13. Reviewer: backend implementation agent, not Web author. Read-only review of current candidate on top of Task 4 commit `1bea9ba`. Scope: actual controlled PassageText, selectionPassage, all three callers, selection hook, connected mutation ownership and tests.
+
+**Critical 0. Important 0. No changes requested.**
+
+- `PassageText` emits the same root/p/span structure, classes, mobile role/tabIndex/aria-pressed/data-selected, sentence IDs and Unicode scalar fragment offsets. It owns no state, effects, refs, handlers, selection or reset policy. Caller refs attach to the same actual root div. NoteReanchor and HighlightHistory retain root tabIndex 0; partial RecoveryChoice retains absence of tabIndex. No hidden accessible focus behavior is added.
+- `selectionPassage` preserves explicit ranges by identity, otherwise derives document-ordered full-sentence Unicode scalar ranges; quote uses unchanged rangeQuote and keeps invalid/noncontiguous quote empty. Selection IDs remain caller-owned and unchanged. Its ReaderSelection dependency is type-only, so no runtime circular hook dependency is introduced.
+- NoteReanchor retains current note, conflict, pending and busy ownership. Conflict Retry still applies the current cloud note, clears conflict, calls the original `clear()`, and requires reselection before Save. Failure keeps the chosen range. Existing regression explicitly asserts Retry cannot immediately save and uses the updated note/version.
+- HighlightHistory retains clear on open, cancel and successful save, but retains range/color on failure. Its new lifecycle regression exercises cancel/reopen and save/reopen. Busy and pending guards and explicit deletion confirmation remain unchanged.
+- RecoveryChoice changes only the `anchors && partial` markup branch. Legacy nonpartial search/checkbox branch, independent IDs, 500-anchor guard and noncontiguous anchor support remain untouched. Key-based reset still uses original mutation ID, resolution ID and current note versions; no additional reset API is introduced.
+- Inspected actual WeeklyReader onSave and usePrivateReader.mutate paths: mutation construction remains in caller, pending retries retain `previous ?? input`, payload/baseVersion equivalence check and account/document-bound return-state persistence remain unchanged. ReaderRecovery.retryPending resends the existing pending mutation; manual recovery preserves the explicit original-ID resolution call, creates a new resolution only after choice, validates document/revision and current note CAS version. New markup/helper never creates IDs, timestamps, revisions or requests.
+- Inspected original and new tests for native partial selection, explicit mobile sentence selection, conflict reselection, original-ID confirmation, private cloud conflicts, Unicode bounds, controlled rerender/ref/focus and invalid passages. `/tmp/bulletin-web-task8.log` records author candidate six files/49 tests passing. This receipt is identified as author execution, not this reviewer's independent rerun.
+
+No initial findings to dispose or code corrections to re-review. This source/caller review permits the next review-gated batch; it does not establish browser/device, persistent-profile upgrade/rollback, live private mutation, full CI, or production acceptance.
+
+Not checked: independent heavy test rerun or physical devices. Host runtime checks were deliberately coordinated by root; all remaining acceptance gates stay explicit.
