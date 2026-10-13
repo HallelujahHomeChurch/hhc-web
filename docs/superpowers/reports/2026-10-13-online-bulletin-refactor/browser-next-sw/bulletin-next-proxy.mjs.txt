@@ -1,0 +1,11 @@
+import http from 'node:http';
+import {readFile,appendFile} from 'node:fs/promises';
+const targetFile='/tmp/bulletin-next-target';
+http.createServer(async(req,res)=>{
+ const path=req.url;
+ if(path.startsWith('/api/')){res.writeHead(503,{'Content-Type':'application/json','Cache-Control':'private, no-store'});res.end(JSON.stringify({data:null,error:{code:'unavailable'},meta:{}}));return;}
+ const seed=path==='/seed'||/^\/(?:@|entry\.tsx|node_modules|src|__vite)/.test(path);
+ const port=seed?7174:Number((await readFile(targetFile,'utf8')).trim());
+ const upstream=http.request({host:'127.0.0.1',port,path:path==='/seed'?'/':path,method:req.method,headers:{...req.headers,host:'127.0.0.1:7170'}},r=>{res.writeHead(r.statusCode,r.headers);r.pipe(res);});
+ upstream.on('error',()=>{res.writeHead(502);res.end('upstream unavailable');});req.pipe(upstream);
+}).listen(7170,'127.0.0.1');

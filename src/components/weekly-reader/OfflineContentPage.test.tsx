@@ -1,4 +1,4 @@
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {beforeEach, expect, it, vi} from 'vitest';
 import {readerFixture} from '@/features/weekly-reader/test-fixture';
 import {getMessages} from '@/i18n/messages';
@@ -9,7 +9,7 @@ vi.mock('@/features/weekly-reader/offline-store', () => store);
 vi.mock('@/features/weekly-reader/offline-session', () => ({watchOfflineAccount: () => () => {}}));
 vi.mock('@/components/layout/AccountControl', () => ({useAccountIdentity: () => identity.accountId}));
 beforeEach(() => {identity.accountId = null;});
-beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); store.getOfflineIdentity.mockResolvedValue({accountId: 'account-a', epoch: 1}); store.listOfflineSaves.mockResolvedValue([{selector: {accountId: 'account-a', issueNumber: 1739, series: 'general', contentLocale: 'zh-Hant'}, value: readerFixture(), size: 1024}]); store.readOfflineSave.mockResolvedValue({status: 'expired'}); store.removeOfflineSave.mockResolvedValue(undefined);});
+beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); store.getOfflineIdentity.mockResolvedValue({accountId: 'account-a', epoch: 1}); store.listOfflineSaves.mockResolvedValue([{selector: {accountId: 'account-a', issueNumber: 1739, series: 'general', contentLocale: 'zh-Hant'}, documentId: readerFixture().access.documentId, revision: 1, offlineValidUntil: readerFixture().access.offlineValidUntil, size: 1024}]); store.readOfflineSave.mockResolvedValue({status: 'expired'}); store.removeOfflineSave.mockResolvedValue(undefined);});
 it('lists only the saved account with expiry and a reconnect state, without rendering private body text', async () => {
   render(<OfflineContentPage locale="en" messages={getMessages('en').weeklyReader}/>);
   const link = await screen.findByRole('link', {name: /1739 · General bulletin/});
@@ -29,4 +29,29 @@ it('hides the previous account downloads as soon as the signed-in account change
   view.rerender(<OfflineContentPage locale="en" messages={getMessages('en').weeklyReader}/>);
   expect(screen.queryByRole('link', {name: /1739 · General bulletin/})).not.toBeInTheDocument();
   expect(screen.queryByRole('button', {name: 'Remove download'})).not.toBeInTheDocument();
+});
+
+
+it('keeps pending-write removal confirmation bound to the summary document', async () => {
+  store.hasPendingReaderWrites.mockResolvedValueOnce(true);
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  store.removeOfflineSave.mockClear();
+  render(<OfflineContentPage locale="en" messages={getMessages('en').weeklyReader}/>);
+  fireEvent.click(await screen.findByRole('button', {name: 'Remove download'}));
+  await waitFor(() => expect(confirm).toHaveBeenCalledWith(getMessages('en').weeklyReader.unsyncedWarning));
+  expect(store.hasPendingReaderWrites).toHaveBeenLastCalledWith('account-a', readerFixture().access.documentId);
+  expect(store.removeOfflineSave).not.toHaveBeenCalled();
+});
+
+it('discards a pending listing when the signed-in account changes', async () => {
+  let finish!: (value: unknown[]) => void;
+  store.listOfflineSaves.mockReturnValueOnce(new Promise(resolve => {finish = resolve;}));
+  identity.accountId = 'account-a';
+  const view = render(<OfflineContentPage locale="en" messages={getMessages('en').weeklyReader}/>);
+  await waitFor(() => expect(finish).toBeDefined());
+  identity.accountId = 'account-b';
+  view.rerender(<OfflineContentPage locale="en" messages={getMessages('en').weeklyReader}/>);
+  await act(async () => finish([{selector: {accountId: 'account-a', issueNumber: 1739, series: 'general', contentLocale: 'zh-Hant'}, documentId: readerFixture().access.documentId, revision: 1, size: 1024, offlineValidUntil: readerFixture().access.offlineValidUntil}]));
+  await waitFor(() => expect(store.readOfflineSave).toHaveBeenCalled());
+  expect(screen.queryByRole('link', {name: /1739 · General bulletin/})).not.toBeInTheDocument();
 });

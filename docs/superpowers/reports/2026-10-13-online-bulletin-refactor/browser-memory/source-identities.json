@@ -1,0 +1,43 @@
+{
+  "fourRepoIdentitiesAtProfiling": "Current fetched baseline refs and candidate heads; Task4 runner imports Web source and installed locked packages, not deployed artifacts.",
+  "repos": {
+    "hhc-web": {
+      "originMain": "b4cf65093fa3cc039e8595a1796b7b1973fe1721",
+      "candidateHead": "89114f2788b1fd5dde52042fb403281fc7a065d5"
+    },
+    "admin-fe": {
+      "originMain": "6abde585c4af5072b4c256be54e0d5950fb476eb",
+      "candidateHead": "00ffb7e54000add568fa7bce84ffa5c4a706111c"
+    },
+    "hhc-web-api": {
+      "originMain": "9c2d75120040a5a68e761ed005545ab314130ea6",
+      "candidateHead": "623f00bd8ce3a8fe8a5945156e3ad233775f5395"
+    },
+    "frontend-platform": {
+      "originMain": "3f8dd7576f3f705e6f1ebcaddd8bf17b0af73109",
+      "candidateHead": "92f731a87e892f74902647da1c4394e5175c1a3d"
+    }
+  },
+  "sourceSha256": {
+    "baseline": {
+      "src/components/weekly-reader/OfflineContentPage.tsx": "cf71ac3737294cb4d7acc5a8f284466938a3d362e40ae6ef255a93d71c396e8c",
+      "src/features/weekly-reader/offline-store.ts": "8443a46ad8edc92623af212fe390ea675f694ab2f9642f5708384813e32daec5",
+      "src/features/weekly-reader/api.ts": "98425d7af5894f221f6ecbd525d8686af40269d05a83879731101b5c3a7d2e40",
+      "src/features/weekly-reader/offline-session.ts": "ccd7f16f25507734257444fd521c4b764dcf39d3cae021697fe3b2e6b21df188",
+      "src/features/weekly-reader/test-fixture.ts": "b7345e9ac1881771a4efd74f5f5937c284bfb8b44f5638eaebcccc52d8b810ed",
+      "src/components/weekly-reader/reader.css": "317876a92bef9ebb24f3ca3c32bf0b92d94e9c7b414f4e1cd2c1eba507cc4bf3",
+      "package.json": "f5cc4e400ff3b34cafda0912e05652ee139e06436f4ae9fa71f209740338265f",
+      "pnpm-lock.yaml": "4426e4e4ba5cd744cd2d3000ab6bda74162c050a8ecb586e9dabde6ad0050c76"
+    },
+    "candidate": {
+      "src/components/weekly-reader/OfflineContentPage.tsx": "6597f2ecd3c6e33116f9b563dc525bd21cab657aad1e1a76a99722084001c05c",
+      "src/features/weekly-reader/offline-store.ts": "e2f396a9536dafb933685272d47f2ca6ad35bf6f4c881e7ba3de8b8ce6caee98",
+      "src/features/weekly-reader/api.ts": "98425d7af5894f221f6ecbd525d8686af40269d05a83879731101b5c3a7d2e40",
+      "src/features/weekly-reader/offline-session.ts": "ccd7f16f25507734257444fd521c4b764dcf39d3cae021697fe3b2e6b21df188",
+      "src/features/weekly-reader/test-fixture.ts": "b7345e9ac1881771a4efd74f5f5937c284bfb8b44f5638eaebcccc52d8b810ed",
+      "src/components/weekly-reader/reader.css": "317876a92bef9ebb24f3ca3c32bf0b92d94e9c7b414f4e1cd2c1eba507cc4bf3",
+      "package.json": "f5cc4e400ff3b34cafda0912e05652ee139e06436f4ae9fa71f209740338265f",
+      "pnpm-lock.yaml": "4426e4e4ba5cd744cd2d3000ab6bda74162c050a8ecb586e9dabde6ad0050c76"
+    }
+  }
+}

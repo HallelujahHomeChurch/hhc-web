@@ -1,4 +1,5 @@
 import type {ReaderSentence} from './selection';
+import type {ReaderSelection} from './useReaderSelection';
 
 export type ReaderTextRange = {sentenceId: string; start: number; end: number};
 
@@ -85,4 +86,13 @@ export function rangeQuote(ranges: readonly ReaderTextRange[], sentences: readon
     previous = {position: entry.position, end: range.end, length: entry.points.length, componentId: entry.sentence.componentId};
     return separator + entry.points.slice(range.start, range.end).join('');
   }).join('');
+}
+
+
+/** Recovery callers retain selection/reset ownership; invalid passages cannot be saved. */
+export function selectionPassage(selection: ReaderSelection, sentences: readonly ReaderSentence[]): {sentenceIds: string[]; ranges: ReaderTextRange[]; quote: string} {
+  const ranges = selection.ranges ?? sentences.filter(sentence => selection.ids.includes(sentence.id)).map(sentence => ({sentenceId: sentence.id, start: 0, end: [...sentence.text].length}));
+  let quote = '';
+  try {if (ranges.length) quote = rangeQuote(ranges, sentences);} catch { /* A recovery passage must be contiguous. */ }
+  return {sentenceIds: selection.ids, ranges, quote};
 }

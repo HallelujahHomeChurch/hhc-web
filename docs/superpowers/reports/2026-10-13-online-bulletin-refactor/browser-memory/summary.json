@@ -1,0 +1,130 @@
+{
+  "scope": "Synthetic loopback Task4 component profiling only. No production/Next SW/member/backend/queue/device acceptance.",
+  "trials": 18,
+  "mountedSnapshots": 36,
+  "unmountedSnapshots": 180,
+  "browser": "153.0.8010.12",
+  "playwright": "1.63.0",
+  "origin": "http://127.0.0.1:7144",
+  "allManifestAndAvailabilityEqual": true,
+  "candidateExactFiveKeys": true,
+  "candidateListOwnedDocumentResourcePaths": 0,
+  "allUnmountedOfflineFibers": 0,
+  "lastFiveCyclesResidualListOwnedBodyBuffers": 0,
+  "rows": [
+    {
+      "variant": "baseline",
+      "n": 1,
+      "coldNavigationToSettledMs": {
+        "median": 184.71,
+        "min": 126.36,
+        "max": 251.85
+      },
+      "warmMountToSettledMs": {
+        "median": 59.13,
+        "min": 47.93,
+        "max": 69.26
+      },
+      "listOwnedResourceBackingBytes": [
+        24882350
+      ],
+      "unmountCyclesWithListOwnedSavePaths": 0,
+      "trials": 3
+    },
+    {
+      "variant": "baseline",
+      "n": 5,
+      "coldNavigationToSettledMs": {
+        "median": 378.89,
+        "min": 288.49,
+        "max": 388.0
+      },
+      "warmMountToSettledMs": {
+        "median": 215.19,
+        "min": 198.6,
+        "max": 228.3
+      },
+      "listOwnedResourceBackingBytes": [
+        128953638
+      ],
+      "unmountCyclesWithListOwnedSavePaths": 0,
+      "trials": 3
+    },
+    {
+      "variant": "baseline",
+      "n": 20,
+      "coldNavigationToSettledMs": {
+        "median": 1002.66,
+        "min": 940.05,
+        "max": 1191.82
+      },
+      "warmMountToSettledMs": {
+        "median": 1012.57,
+        "min": 729.17,
+        "max": 1028.56
+      },
+      "listOwnedResourceBackingBytes": [
+        547918024
+      ],
+      "unmountCyclesWithListOwnedSavePaths": 0,
+      "trials": 3
+    },
+    {
+      "variant": "candidate",
+      "n": 1,
+      "coldNavigationToSettledMs": {
+        "median": 165.72,
+        "min": 109.71,
+        "max": 166.42
+      },
+      "warmMountToSettledMs": {
+        "median": 49.25,
+        "min": 48.14,
+        "max": 65.99
+      },
+      "listOwnedResourceBackingBytes": [
+        0
+      ],
+      "unmountCyclesWithListOwnedSavePaths": 0,
+      "trials": 3
+    },
+    {
+      "variant": "candidate",
+      "n": 5,
+      "coldNavigationToSettledMs": {
+        "median": 396.53,
+        "min": 381.89,
+        "max": 414.23
+      },
+      "warmMountToSettledMs": {
+        "median": 198.57,
+        "min": 163.27,
+        "max": 246.01
+      },
+      "listOwnedResourceBackingBytes": [
+        0
+      ],
+      "unmountCyclesWithListOwnedSavePaths": 0,
+      "trials": 3
+    },
+    {
+      "variant": "candidate",
+      "n": 20,
+      "coldNavigationToSettledMs": {
+        "median": 1004.95,
+        "min": 950.41,
+        "max": 1042.77
+      },
+      "warmMountToSettledMs": {
+        "median": 783.68,
+        "min": 714.3,
+        "max": 797.51
+      },
+      "listOwnedResourceBackingBytes": [
+        0
+      ],
+      "unmountCyclesWithListOwnedSavePaths": 0,
+      "trials": 3
+    }
+  ]
+}

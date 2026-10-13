@@ -1,0 +1,20 @@
+import {readFileSync} from 'node:fs';
+const s=JSON.parse(readFileSync(process.argv[2],'utf8'));
+const nf=s.snapshot.meta.node_fields,ef=s.snapshot.meta.edge_fields,nw=nf.length,ew=ef.length;
+const nt=s.snapshot.meta.node_types[0],et=s.snapshot.meta.edge_types[0];
+const ni=Object.fromEntries(nf.map((x,i)=>[x,i])),ei=Object.fromEntries(ef.map((x,i)=>[x,i]));
+const starts=new Map();let edge=0;for(let p=0;p<s.nodes.length;p+=nw){starts.set(p,edge);edge+=s.nodes[p+ni.edge_count]*ew;}
+const name=p=>s.strings[s.nodes[p+ni.name]],id=p=>s.nodes[p+ni.id];
+function props(p){const result={};for(let e=starts.get(p),end=e+s.nodes[p+ni.edge_count]*ew;e<end;e+=ew){const type=et[s.edges[e+ei.type]];if(type==='property')result[s.strings[s.edges[e+ei.name_or_index]]]=s.edges[e+ei.to_node];}return result;}
+function elements(p){const result=[];for(let e=starts.get(p),end=e+s.nodes[p+ni.edge_count]*ew;e<end;e+=ew){if(et[s.edges[e+ei.type]]==='element')result.push(s.edges[e+ei.to_node]);}return result;}
+const fibers=[],saveNodes=[];
+for(let p=0;p<s.nodes.length;p+=nw){if(nt[s.nodes[p+ni.type]]!=='object')continue;const pr=props(p);if(pr.type!==undefined&&name(pr.type)==='OfflineContentPage')fibers.push(p);if(pr.selector!==undefined&&pr.size!==undefined&&(pr.value!==undefined||pr.documentId!==undefined))saveNodes.push(p);}
+function backing(buffer) {
+ const found=[];
+ for(let e=starts.get(buffer),end=e+s.nodes[buffer+ni.edge_count]*ew;e<end;e+=ew)if(et[s.edges[e+ei.type]]==='internal'&&s.strings[s.edges[e+ei.name_or_index]]==='backing_store') { const target=s.edges[e+ei.to_node]; found.push({bufferId:id(buffer),backingId:id(target),bytes:s.nodes[target+ni.self_size],name:name(target)}); }
+ return found;
+}
+const paths=[];
+for(const f of fibers){let h=props(f).memoizedState;const visited=new Set();for(let i=0;h!==undefined&&!visited.has(h)&&i<30;i++){visited.add(h);const hp=props(h),a=hp.memoizedState;if(a!==undefined)for(const row of elements(a)){const save=props(row).save;if(save!==undefined){const p=props(save),value=p.value!==undefined?props(p.value):{};paths.push({fiberId:id(f),hook:i,arrayId:id(a),rowId:id(row),saveId:id(save),keys:Object.keys(p).filter(x=>x!=='__proto__'),hasValue:p.value!==undefined,hasResources:p.resources!==undefined,hasDocument:value.document!==undefined,resourceBackingStores:p.resources===undefined?[]:elements(p.resources).flatMap(resource=>{const bytes=props(resource).bytes;return bytes===undefined?[]:backing(bytes);}),path:'OfflineContentPage FiberNode.memoizedState'+'.next'.repeat(i)+'.memoizedState[] .save'});}}h=hp.next;}}
+const buffers=[];for(let p=0;p<s.nodes.length;p+=nw){if(name(p)==='system / JSArrayBufferData')buffers.push({id:id(p),bytes:s.nodes[p+ni.self_size]});}
+console.log(JSON.stringify({offlineFibers:fibers.map(id),listSavePaths:paths,allSaveObjectCount:saveNodes.length,backingStoreNodes:buffers.length,backingStoreBytes:buffers.reduce((a,b)=>a+b.bytes,0),hasBackingStoreEvidence:buffers.length>0}));

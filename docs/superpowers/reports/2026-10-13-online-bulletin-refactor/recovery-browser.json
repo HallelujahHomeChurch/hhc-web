@@ -1,0 +1,102 @@
+{
+  "browser": "153.0.8010.12",
+  "scope": "synthetic component checks; touch emulation and programmatic native ranges, not physical devices or full app/SW acceptance",
+  "receipts": [
+    {
+      "kind": "note",
+      "input": "keyboard",
+      "emulation": false,
+      "programmaticRange": false,
+      "ranges": [
+        {
+          "sentenceId": "s1",
+          "start": 0,
+          "end": 4
+        }
+      ],
+      "mutationKind": "caller note callback",
+      "rootTabIndex": 0,
+      "consoleErrors": []
+    },
+    {
+      "kind": "note",
+      "input": "touch",
+      "emulation": true,
+      "programmaticRange": false,
+      "ranges": [
+        {
+          "sentenceId": "s1",
+          "start": 0,
+          "end": 4
+        }
+      ],
+      "mutationKind": "caller note callback",
+      "rootTabIndex": 0,
+      "consoleErrors": []
+    },
+    {
+      "kind": "note",
+      "input": "native-range",
+      "emulation": false,
+      "programmaticRange": true,
+      "ranges": [
+        {
+          "sentenceId": "s1",
+          "start": 1,
+          "end": 3
+        }
+      ],
+      "mutationKind": "caller note callback",
+      "rootTabIndex": 0,
+      "consoleErrors": []
+    },
+    {
+      "kind": "history",
+      "input": "keyboard",
+      "emulation": false,
+      "programmaticRange": false,
+      "ranges": [
+        {
+          "sentenceId": "s1",
+          "start": 0,
+          "end": 4
+        }
+      ],
+      "mutationKind": "restoreHighlight",
+      "rootTabIndex": 0,
+      "consoleErrors": []
+    },
+    {
+      "kind": "history",
+      "input": "touch",
+      "emulation": true,
+      "programmaticRange": false,
+      "ranges": [
+        {
+          "sentenceId": "s1",
+          "start": 0,
+          "end": 4
+        }
+      ],
+      "mutationKind": "restoreHighlight",
+      "rootTabIndex": 0,
+      "consoleErrors": []
+    },
+    {
+      "kind": "history",
+      "input": "native-range",
+      "emulation": false,
+      "programmaticRange": true,
+      "ranges": [
+        {
+          "sentenceId": "s1",
+          "start": 1,
+          "end": 3
+        }
+      ],
+      "mutationKind": "restoreHighlight",
+      "rootTabIndex": 0,
+      "consoleErrors": []
+    }
+  ]
+}

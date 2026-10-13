@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "versions": 10,
+  "rows": 20,
+  "physicalDeviceAcceptance": false,
+  "actualEbookDOMParity": true
+}

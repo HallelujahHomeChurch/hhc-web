@@ -1,0 +1,3796 @@
+{
+  "phase": "turbo-rollback-old-candidate-shell",
+  "browser": "153.0.8010.12",
+  "ui": "1.0.61",
+  "semantic": [
+    {
+      "version": 1,
+      "text": "Reading a saved copy. Reconnect to validate access and synchronize.\n\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nLoading bulletin…\nLoading bulletin…\n100%\n\n內容0。\n\n內容1。\n\n內容2。\n\n內容3。\n\n✎\nMy notes\n內容2。\nNote\n\n27 / 10,000 characters\n\nCancel\nSave",
+      "sentences": [
+        {
+          "id": "s0",
+          "text": "內容0。"
+        },
+        {
+          "id": "s1",
+          "text": "內容1。"
+        },
+        {
+          "id": "s2",
+          "text": "內容2。"
+        },
+        {
+          "id": "s3",
+          "text": "內容3。"
+        }
+      ],
+      "scripts": [
+        "http://127.0.0.1:7170/_next/static/chunks/30ixm__jk4eg1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/2f5cg0lfhu1r1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/419yw19oql7uw.js",
+        "http://127.0.0.1:7170/_next/static/chunks/091z36yqafo_a.js",
+        "http://127.0.0.1:7170/_next/static/chunks/turbopack-28b2di3iz_y50.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0d_4fjoyi696w.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0ek6pw8ntturj.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0rrbm0uqqko9u.js",
+        "http://127.0.0.1:7170/_next/static/chunks/1xf4ygt9e048_.js",
+        "http://127.0.0.1:7170/_next/static/chunks/38w3enlmlmxft.js",
+        "http://127.0.0.1:7170/_next/static/chunks/32n885asht4ek.js",
+        "http://127.0.0.1:7170/_next/static/chunks/25v-8ojn0u953.js",
+        "http://127.0.0.1:7170/_next/static/chunks/2vst6sk01ffpc.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0zjl9rls2uge7.js",
+        "http://127.0.0.1:7170/_next/static/chunks/1oj1z2iuliks1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/16i4f2qoyadcl.js",
+        "http://127.0.0.1:7170/_next/static/chunks/37_m1r-1ak2w3.js",
+        "http://127.0.0.1:7170/_next/static/chunks/09di35ofo_93m.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0cz1d0mv5g_q7.js",
+        "http://127.0.0.1:7170/_next/static/chunks/22mjgadyjxm_3.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0z1aes4s3_vl9.js"
+      ],
+      "controller": "http://127.0.0.1:7170/sw.js"
+    },
+    {
+      "version": 2,
+      "text": "Reading a saved copy. Reconnect to validate access and synchronize.\n\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nLoading bulletin…\nLoading bulletin…\n100%\n\n內容0。\n\n內容1。\n\n內容2。\n\n內容3。",
+      "sentences": [
+        {
+          "id": "s0",
+          "text": "內容0。"
+        },
+        {
+          "id": "s1",
+          "text": "內容1。"
+        },
+        {
+          "id": "s2",
+          "text": "內容2。"
+        },
+        {
+          "id": "s3",
+          "text": "內容3。"
+        }
+      ],
+      "scripts": [
+        "http://127.0.0.1:7170/_next/static/chunks/30ixm__jk4eg1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/2f5cg0lfhu1r1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/419yw19oql7uw.js",
+        "http://127.0.0.1:7170/_next/static/chunks/091z36yqafo_a.js",
+        "http://127.0.0.1:7170/_next/static/chunks/turbopack-28b2di3iz_y50.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0d_4fjoyi696w.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0ek6pw8ntturj.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0rrbm0uqqko9u.js",
+        "http://127.0.0.1:7170/_next/static/chunks/1xf4ygt9e048_.js",
+        "http://127.0.0.1:7170/_next/static/chunks/38w3enlmlmxft.js",
+        "http://127.0.0.1:7170/_next/static/chunks/32n885asht4ek.js",
+        "http://127.0.0.1:7170/_next/static/chunks/25v-8ojn0u953.js",
+        "http://127.0.0.1:7170/_next/static/chunks/2vst6sk01ffpc.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0zjl9rls2uge7.js",
+        "http://127.0.0.1:7170/_next/static/chunks/1oj1z2iuliks1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/16i4f2qoyadcl.js",
+        "http://127.0.0.1:7170/_next/static/chunks/37_m1r-1ak2w3.js",
+        "http://127.0.0.1:7170/_next/static/chunks/09di35ofo_93m.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0cz1d0mv5g_q7.js",
+        "http://127.0.0.1:7170/_next/static/chunks/22mjgadyjxm_3.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0z1aes4s3_vl9.js"
+      ],
+      "controller": "http://127.0.0.1:7170/sw.js"
+    },
+    {
+      "version": 3,
+      "text": "Reading a saved copy. Reconnect to validate access and synchronize.\n\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nLoading bulletin…\nLoading bulletin…\n100%\n\n內容0。\n\n內容1。\n\n內容2。\n\n內容3。",
+      "sentences": [
+        {
+          "id": "s0",
+          "text": "內容0。"
+        },
+        {
+          "id": "s1",
+          "text": "內容1。"
+        },
+        {
+          "id": "s2",
+          "text": "內容2。"
+        },
+        {
+          "id": "s3",
+          "text": "內容3。"
+        }
+      ],
+      "scripts": [
+        "http://127.0.0.1:7170/_next/static/chunks/30ixm__jk4eg1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/2f5cg0lfhu1r1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/419yw19oql7uw.js",
+        "http://127.0.0.1:7170/_next/static/chunks/091z36yqafo_a.js",
+        "http://127.0.0.1:7170/_next/static/chunks/turbopack-28b2di3iz_y50.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0d_4fjoyi696w.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0ek6pw8ntturj.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0rrbm0uqqko9u.js",
+        "http://127.0.0.1:7170/_next/static/chunks/1xf4ygt9e048_.js",
+        "http://127.0.0.1:7170/_next/static/chunks/38w3enlmlmxft.js",
+        "http://127.0.0.1:7170/_next/static/chunks/32n885asht4ek.js",
+        "http://127.0.0.1:7170/_next/static/chunks/25v-8ojn0u953.js",
+        "http://127.0.0.1:7170/_next/static/chunks/2vst6sk01ffpc.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0zjl9rls2uge7.js",
+        "http://127.0.0.1:7170/_next/static/chunks/1oj1z2iuliks1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/16i4f2qoyadcl.js",
+        "http://127.0.0.1:7170/_next/static/chunks/37_m1r-1ak2w3.js",
+        "http://127.0.0.1:7170/_next/static/chunks/09di35ofo_93m.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0cz1d0mv5g_q7.js",
+        "http://127.0.0.1:7170/_next/static/chunks/22mjgadyjxm_3.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0z1aes4s3_vl9.js"
+      ],
+      "controller": "http://127.0.0.1:7170/sw.js"
+    },
+    {
+      "version": 4,
+      "text": "Reading a saved copy. Reconnect to validate access and synchronize.\n\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nLoading bulletin…\nLoading bulletin…\n100%\n\n內容0。\n\n內容1。\n\n內容2。\n\n內容3。",
+      "sentences": [
+        {
+          "id": "s0",
+          "text": "內容0。"
+        },
+        {
+          "id": "s1",
+          "text": "內容1。"
+        },
+        {
+          "id": "s2",
+          "text": "內容2。"
+        },
+        {
+          "id": "s3",
+          "text": "內容3。"
+        }
+      ],
+      "scripts": [
+        "http://127.0.0.1:7170/_next/static/chunks/30ixm__jk4eg1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/2f5cg0lfhu1r1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/419yw19oql7uw.js",
+        "http://127.0.0.1:7170/_next/static/chunks/091z36yqafo_a.js",
+        "http://127.0.0.1:7170/_next/static/chunks/turbopack-28b2di3iz_y50.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0d_4fjoyi696w.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0ek6pw8ntturj.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0rrbm0uqqko9u.js",
+        "http://127.0.0.1:7170/_next/static/chunks/1xf4ygt9e048_.js",
+        "http://127.0.0.1:7170/_next/static/chunks/38w3enlmlmxft.js",
+        "http://127.0.0.1:7170/_next/static/chunks/32n885asht4ek.js",
+        "http://127.0.0.1:7170/_next/static/chunks/25v-8ojn0u953.js",
+        "http://127.0.0.1:7170/_next/static/chunks/2vst6sk01ffpc.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0zjl9rls2uge7.js",
+        "http://127.0.0.1:7170/_next/static/chunks/1oj1z2iuliks1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/16i4f2qoyadcl.js",
+        "http://127.0.0.1:7170/_next/static/chunks/37_m1r-1ak2w3.js",
+        "http://127.0.0.1:7170/_next/static/chunks/09di35ofo_93m.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0cz1d0mv5g_q7.js",
+        "http://127.0.0.1:7170/_next/static/chunks/22mjgadyjxm_3.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0z1aes4s3_vl9.js"
+      ],
+      "controller": "http://127.0.0.1:7170/sw.js"
+    },
+    {
+      "version": 5,
+      "text": "Reading a saved copy. Reconnect to validate access and synchronize.\n\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nLoading bulletin…\nLoading bulletin…\n100%\n\n內容0。\n\n內容1。\n\n內容2。\n\n內容3。",
+      "sentences": [
+        {
+          "id": "s0",
+          "text": "內容0。"
+        },
+        {
+          "id": "s1",
+          "text": "內容1。"
+        },
+        {
+          "id": "s2",
+          "text": "內容2。"
+        },
+        {
+          "id": "s3",
+          "text": "內容3。"
+        }
+      ],
+      "scripts": [
+        "http://127.0.0.1:7170/_next/static/chunks/30ixm__jk4eg1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/2f5cg0lfhu1r1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/419yw19oql7uw.js",
+        "http://127.0.0.1:7170/_next/static/chunks/091z36yqafo_a.js",
+        "http://127.0.0.1:7170/_next/static/chunks/turbopack-28b2di3iz_y50.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0d_4fjoyi696w.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0ek6pw8ntturj.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0rrbm0uqqko9u.js",
+        "http://127.0.0.1:7170/_next/static/chunks/1xf4ygt9e048_.js",
+        "http://127.0.0.1:7170/_next/static/chunks/38w3enlmlmxft.js",
+        "http://127.0.0.1:7170/_next/static/chunks/32n885asht4ek.js",
+        "http://127.0.0.1:7170/_next/static/chunks/25v-8ojn0u953.js",
+        "http://127.0.0.1:7170/_next/static/chunks/2vst6sk01ffpc.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0zjl9rls2uge7.js",
+        "http://127.0.0.1:7170/_next/static/chunks/1oj1z2iuliks1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/16i4f2qoyadcl.js",
+        "http://127.0.0.1:7170/_next/static/chunks/37_m1r-1ak2w3.js",
+        "http://127.0.0.1:7170/_next/static/chunks/09di35ofo_93m.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0cz1d0mv5g_q7.js",
+        "http://127.0.0.1:7170/_next/static/chunks/22mjgadyjxm_3.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0z1aes4s3_vl9.js"
+      ],
+      "controller": "http://127.0.0.1:7170/sw.js"
+    },
+    {
+      "version": 6,
+      "text": "Reading a saved copy. Reconnect to validate access and synchronize.\n\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nLoading bulletin…\nLoading bulletin…\n100%\n\n內容0。\n\n內容1。\n\n內容2。\n\n內容3。",
+      "sentences": [
+        {
+          "id": "s0",
+          "text": "內容0。"
+        },
+        {
+          "id": "s1",
+          "text": "內容1。"
+        },
+        {
+          "id": "s2",
+          "text": "內容2。"
+        },
+        {
+          "id": "s3",
+          "text": "內容3。"
+        }
+      ],
+      "scripts": [
+        "http://127.0.0.1:7170/_next/static/chunks/30ixm__jk4eg1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/2f5cg0lfhu1r1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/419yw19oql7uw.js",
+        "http://127.0.0.1:7170/_next/static/chunks/091z36yqafo_a.js",
+        "http://127.0.0.1:7170/_next/static/chunks/turbopack-28b2di3iz_y50.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0d_4fjoyi696w.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0ek6pw8ntturj.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0rrbm0uqqko9u.js",
+        "http://127.0.0.1:7170/_next/static/chunks/1xf4ygt9e048_.js",
+        "http://127.0.0.1:7170/_next/static/chunks/38w3enlmlmxft.js",
+        "http://127.0.0.1:7170/_next/static/chunks/32n885asht4ek.js",
+        "http://127.0.0.1:7170/_next/static/chunks/25v-8ojn0u953.js",
+        "http://127.0.0.1:7170/_next/static/chunks/2vst6sk01ffpc.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0zjl9rls2uge7.js",
+        "http://127.0.0.1:7170/_next/static/chunks/1oj1z2iuliks1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/16i4f2qoyadcl.js",
+        "http://127.0.0.1:7170/_next/static/chunks/37_m1r-1ak2w3.js",
+        "http://127.0.0.1:7170/_next/static/chunks/09di35ofo_93m.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0cz1d0mv5g_q7.js",
+        "http://127.0.0.1:7170/_next/static/chunks/22mjgadyjxm_3.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0z1aes4s3_vl9.js"
+      ],
+      "controller": "http://127.0.0.1:7170/sw.js"
+    },
+    {
+      "version": 7,
+      "text": "Reading a saved copy. Reconnect to validate access and synchronize.\n\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nLoading bulletin…\nLoading bulletin…\n100%\n\n內容0。\n\n內容1。\n\n內容2。\n\n內容3。",
+      "sentences": [
+        {
+          "id": "s0",
+          "text": "內容0。"
+        },
+        {
+          "id": "s1",
+          "text": "內容1。"
+        },
+        {
+          "id": "s2",
+          "text": "內容2。"
+        },
+        {
+          "id": "s3",
+          "text": "內容3。"
+        }
+      ],
+      "scripts": [
+        "http://127.0.0.1:7170/_next/static/chunks/30ixm__jk4eg1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/2f5cg0lfhu1r1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/419yw19oql7uw.js",
+        "http://127.0.0.1:7170/_next/static/chunks/091z36yqafo_a.js",
+        "http://127.0.0.1:7170/_next/static/chunks/turbopack-28b2di3iz_y50.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0d_4fjoyi696w.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0ek6pw8ntturj.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0rrbm0uqqko9u.js",
+        "http://127.0.0.1:7170/_next/static/chunks/1xf4ygt9e048_.js",
+        "http://127.0.0.1:7170/_next/static/chunks/38w3enlmlmxft.js",
+        "http://127.0.0.1:7170/_next/static/chunks/32n885asht4ek.js",
+        "http://127.0.0.1:7170/_next/static/chunks/25v-8ojn0u953.js",
+        "http://127.0.0.1:7170/_next/static/chunks/2vst6sk01ffpc.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0zjl9rls2uge7.js",
+        "http://127.0.0.1:7170/_next/static/chunks/1oj1z2iuliks1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/16i4f2qoyadcl.js",
+        "http://127.0.0.1:7170/_next/static/chunks/37_m1r-1ak2w3.js",
+        "http://127.0.0.1:7170/_next/static/chunks/09di35ofo_93m.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0cz1d0mv5g_q7.js",
+        "http://127.0.0.1:7170/_next/static/chunks/22mjgadyjxm_3.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0z1aes4s3_vl9.js"
+      ],
+      "controller": "http://127.0.0.1:7170/sw.js"
+    },
+    {
+      "version": 8,
+      "text": "Reading a saved copy. Reconnect to validate access and synchronize.\n\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nLoading bulletin…\nLoading bulletin…\n100%\n\n內容0。\n\n內容1。\n\n內容2。\n\n內容3。",
+      "sentences": [
+        {
+          "id": "s0",
+          "text": "內容0。"
+        },
+        {
+          "id": "s1",
+          "text": "內容1。"
+        },
+        {
+          "id": "s2",
+          "text": "內容2。"
+        },
+        {
+          "id": "s3",
+          "text": "內容3。"
+        }
+      ],
+      "scripts": [
+        "http://127.0.0.1:7170/_next/static/chunks/30ixm__jk4eg1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/2f5cg0lfhu1r1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/419yw19oql7uw.js",
+        "http://127.0.0.1:7170/_next/static/chunks/091z36yqafo_a.js",
+        "http://127.0.0.1:7170/_next/static/chunks/turbopack-28b2di3iz_y50.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0d_4fjoyi696w.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0ek6pw8ntturj.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0rrbm0uqqko9u.js",
+        "http://127.0.0.1:7170/_next/static/chunks/1xf4ygt9e048_.js",
+        "http://127.0.0.1:7170/_next/static/chunks/38w3enlmlmxft.js",
+        "http://127.0.0.1:7170/_next/static/chunks/32n885asht4ek.js",
+        "http://127.0.0.1:7170/_next/static/chunks/25v-8ojn0u953.js",
+        "http://127.0.0.1:7170/_next/static/chunks/2vst6sk01ffpc.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0zjl9rls2uge7.js",
+        "http://127.0.0.1:7170/_next/static/chunks/1oj1z2iuliks1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/16i4f2qoyadcl.js",
+        "http://127.0.0.1:7170/_next/static/chunks/37_m1r-1ak2w3.js",
+        "http://127.0.0.1:7170/_next/static/chunks/09di35ofo_93m.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0cz1d0mv5g_q7.js",
+        "http://127.0.0.1:7170/_next/static/chunks/22mjgadyjxm_3.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0z1aes4s3_vl9.js"
+      ],
+      "controller": "http://127.0.0.1:7170/sw.js"
+    },
+    {
+      "version": 9,
+      "text": "Reading a saved copy. Reconnect to validate access and synchronize.\n\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nLoading bulletin…\nLoading bulletin…\n100%\n\n內容0。\n\n內容1。\n\n內容2。\n\n內容3。",
+      "sentences": [
+        {
+          "id": "s0",
+          "text": "內容0。"
+        },
+        {
+          "id": "s1",
+          "text": "內容1。"
+        },
+        {
+          "id": "s2",
+          "text": "內容2。"
+        },
+        {
+          "id": "s3",
+          "text": "內容3。"
+        }
+      ],
+      "scripts": [
+        "http://127.0.0.1:7170/_next/static/chunks/30ixm__jk4eg1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/2f5cg0lfhu1r1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/419yw19oql7uw.js",
+        "http://127.0.0.1:7170/_next/static/chunks/091z36yqafo_a.js",
+        "http://127.0.0.1:7170/_next/static/chunks/turbopack-28b2di3iz_y50.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0d_4fjoyi696w.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0ek6pw8ntturj.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0rrbm0uqqko9u.js",
+        "http://127.0.0.1:7170/_next/static/chunks/1xf4ygt9e048_.js",
+        "http://127.0.0.1:7170/_next/static/chunks/38w3enlmlmxft.js",
+        "http://127.0.0.1:7170/_next/static/chunks/32n885asht4ek.js",
+        "http://127.0.0.1:7170/_next/static/chunks/25v-8ojn0u953.js",
+        "http://127.0.0.1:7170/_next/static/chunks/2vst6sk01ffpc.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0zjl9rls2uge7.js",
+        "http://127.0.0.1:7170/_next/static/chunks/1oj1z2iuliks1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/16i4f2qoyadcl.js",
+        "http://127.0.0.1:7170/_next/static/chunks/37_m1r-1ak2w3.js",
+        "http://127.0.0.1:7170/_next/static/chunks/09di35ofo_93m.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0cz1d0mv5g_q7.js",
+        "http://127.0.0.1:7170/_next/static/chunks/22mjgadyjxm_3.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0z1aes4s3_vl9.js"
+      ],
+      "controller": "http://127.0.0.1:7170/sw.js"
+    },
+    {
+      "version": 10,
+      "text": "Reading a saved copy. Reconnect to validate access and synchronize.\n\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nPrivate weekly\nLoading bulletin…\nLoading bulletin…\n100%\n\n內容0。\n\n內容1。\n\n內容2。\n\n內容3。",
+      "sentences": [
+        {
+          "id": "s0",
+          "text": "內容0。"
+        },
+        {
+          "id": "s1",
+          "text": "內容1。"
+        },
+        {
+          "id": "s2",
+          "text": "內容2。"
+        },
+        {
+          "id": "s3",
+          "text": "內容3。"
+        }
+      ],
+      "scripts": [
+        "http://127.0.0.1:7170/_next/static/chunks/30ixm__jk4eg1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/2f5cg0lfhu1r1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/419yw19oql7uw.js",
+        "http://127.0.0.1:7170/_next/static/chunks/091z36yqafo_a.js",
+        "http://127.0.0.1:7170/_next/static/chunks/turbopack-28b2di3iz_y50.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0d_4fjoyi696w.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0ek6pw8ntturj.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0rrbm0uqqko9u.js",
+        "http://127.0.0.1:7170/_next/static/chunks/1xf4ygt9e048_.js",
+        "http://127.0.0.1:7170/_next/static/chunks/38w3enlmlmxft.js",
+        "http://127.0.0.1:7170/_next/static/chunks/32n885asht4ek.js",
+        "http://127.0.0.1:7170/_next/static/chunks/25v-8ojn0u953.js",
+        "http://127.0.0.1:7170/_next/static/chunks/2vst6sk01ffpc.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0zjl9rls2uge7.js",
+        "http://127.0.0.1:7170/_next/static/chunks/1oj1z2iuliks1.js",
+        "http://127.0.0.1:7170/_next/static/chunks/16i4f2qoyadcl.js",
+        "http://127.0.0.1:7170/_next/static/chunks/37_m1r-1ak2w3.js",
+        "http://127.0.0.1:7170/_next/static/chunks/09di35ofo_93m.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0cz1d0mv5g_q7.js",
+        "http://127.0.0.1:7170/_next/static/chunks/22mjgadyjxm_3.js",
+        "http://127.0.0.1:7170/_next/static/chunks/0z1aes4s3_vl9.js"
+      ],
+      "controller": "http://127.0.0.1:7170/sw.js"
+    }
+  ],
+  "errors": [],
+  "list": [
+    "1739 · General bulletin · 繁中Revision 1 · Size 24,303.6 KBAvailable until 10/8/26, 8:00 AMRemove download",
+    "1740 · General bulletin · 简中Revision 1 · Size 26,521.3 KBAvailable until 10/8/26, 8:00 AMRemove download",
+    "1741 · General bulletin · 繁中Revision 1 · Size 24,303.6 KBAvailable until 10/8/26, 8:00 AMRemove download",
+    "1742 · General bulletin · 简中Revision 1 · Size 26,521.3 KBAvailable until 10/8/26, 8:00 AMRemove download",
+    "1743 · General bulletin · 繁中Revision 1 · Size 24,303.6 KBAvailable until 10/8/26, 8:00 AMRemove download",
+    "1744 · General bulletin · 简中Revision 1 · Size 26,521.3 KBAvailable until 10/8/26, 8:00 AMRemove download",
+    "1745 · General bulletin · 繁中Revision 1 · Size 23,084.2 KBAvailable until 10/8/26, 8:00 AMRemove download",
+    "1746 · General bulletin · 简中Revision 1 · Size 34,470 KBAvailable until 10/8/26, 8:00 AMRemove download",
+    "1747 · General bulletin · 繁中Revision 1 · Size 23,084.4 KBAvailable until 10/8/26, 8:00 AMRemove download",
+    "1748 · General bulletin · 简中Revision 1 · Size 34,470.3 KBAvailable until 10/8/26, 8:00 AMRemove download",
+    "1749 · General bulletin · 繁中Revision 1 · Size 24,303.6 KBAvailable until 10/8/26, 8:00 AMReconnect to validate this saved bulletin.Remove download",
+    "1750 · General bulletin · 简中Revision 1 · Size 26,521.3 KBAvailable until 10/1/26, 8:00 AMReconnect to validate this saved bulletin.Remove download",
+    "1751 · General bulletin · 繁中Revision 1 · Size 24,303.6 KBAvailable until 10/8/26, 8:00 AMReconnect to validate this saved bulletin.Remove download",
+    "1752 · General bulletin · 简中Revision 1 · Size 26,521.3 KBAvailable until 10/1/26, 8:00 AMReconnect to validate this saved bulletin.Remove download",
+    "1753 · General bulletin · 繁中Revision 1 · Size 24,303.6 KBAvailable until 10/8/26, 8:00 AMReconnect to validate this saved bulletin.Remove download",
+    "1754 · General bulletin · 简中Revision 1 · Size 26,521.3 KBAvailable until 10/1/26, 8:00 AMReconnect to validate this saved bulletin.Remove download",
+    "1755 · General bulletin · 繁中Revision 1 · Size 23,084.2 KBAvailable until 10/8/26, 8:00 AMReconnect to validate this saved bulletin.Remove download",
+    "1756 · General bulletin · 简中Revision 1 · Size 34,470 KBAvailable until 10/1/26, 8:00 AMReconnect to validate this saved bulletin.Remove download",
+    "1757 · General bulletin · 繁中Revision 1 · Size 23,084.4 KBAvailable until 10/8/26, 8:00 AMReconnect to validate this saved bulletin.Remove download",
+    "1758 · General bulletin · 简中Revision 1 · Size 34,470.3 KBAvailable until 10/1/26, 8:00 AMReconnect to validate this saved bulletin.Remove download"
+  ],
+  "availability": [
+    {
+      "selector": {
+        "accountId": "local-fixture-account",
+        "issueNumber": 1739,
+        "series": "general",
+        "contentLocale": "zh-Hant"
+      },
+      "status": "available"
+    },
+    {
+      "selector": {
+        "accountId": "local-fixture-account",
+        "issueNumber": 1740,
+        "series": "general",
+        "contentLocale": "zh-Hans"
+      },
+      "status": "available"
+    },
+    {
+      "selector": {
+        "accountId": "local-fixture-account",
+        "issueNumber": 1741,
+        "series": "general",
+        "contentLocale": "zh-Hant"
+      },
+      "status": "available"
+    },
+    {
+      "selector": {
+        "accountId": "local-fixture-account",
+        "issueNumber": 1742,
+        "series": "general",
+        "contentLocale": "zh-Hans"
+      },
+      "status": "available"
+    },
+    {
+      "selector": {
+        "accountId": "local-fixture-account",
+        "issueNumber": 1743,
+        "series": "general",
+        "contentLocale": "zh-Hant"
+      },
+      "status": "available"
+    },
+    {
+      "selector": {
+        "accountId": "local-fixture-account",
+        "issueNumber": 1744,
+        "series": "general",
+        "contentLocale": "zh-Hans"
+      },
+      "status": "available"
+    },
+    {
+      "selector": {
+        "accountId": "local-fixture-account",
+        "issueNumber": 1745,
+        "series": "general",
+        "contentLocale": "zh-Hant"
+      },
+      "status": "available"
+    },
+    {
+      "selector": {
+        "accountId": "local-fixture-account",
+        "issueNumber": 1746,
+        "series": "general",
+        "contentLocale": "zh-Hans"
+      },
+      "status": "available"
+    },
+    {
+      "selector": {
+        "accountId": "local-fixture-account",
+        "issueNumber": 1747,
+        "series": "general",
+        "contentLocale": "zh-Hant"
+      },
+      "status": "available"
+    },
+    {
+      "selector": {
+        "accountId": "local-fixture-account",
+        "issueNumber": 1748,
+        "series": "general",
+        "contentLocale": "zh-Hans"
+      },
+      "status": "available"
+    },
+    {
+      "selector": {
+        "accountId": "local-fixture-account",
+        "issueNumber": 1749,
+        "series": "general",
+        "contentLocale": "zh-Hant"
+      },
+      "status": "revalidation_required"
+    },
+    {
+      "selector": {
+        "accountId": "local-fixture-account",
+        "issueNumber": 1750,
+        "series": "general",
+        "contentLocale": "zh-Hans"
+      },
+      "status": "expired"
+    },
+    {
+      "selector": {
+        "accountId": "local-fixture-account",
+        "issueNumber": 1751,
+        "series": "general",
+        "contentLocale": "zh-Hant"
+      },
+      "status": "revalidation_required"
+    },
+    {
+      "selector": {
+        "accountId": "local-fixture-account",
+        "issueNumber": 1752,
+        "series": "general",
+        "contentLocale": "zh-Hans"
+      },
+      "status": "expired"
+    },
+    {
+      "selector": {
+        "accountId": "local-fixture-account",
+        "issueNumber": 1753,
+        "series": "general",
+        "contentLocale": "zh-Hant"
+      },
+      "status": "revalidation_required"
+    },
+    {
+      "selector": {
+        "accountId": "local-fixture-account",
+        "issueNumber": 1754,
+        "series": "general",
+        "contentLocale": "zh-Hans"
+      },
+      "status": "expired"
+    },
+    {
+      "selector": {
+        "accountId": "local-fixture-account",
+        "issueNumber": 1755,
+        "series": "general",
+        "contentLocale": "zh-Hant"
+      },
+      "status": "revalidation_required"
+    },
+    {
+      "selector": {
+        "accountId": "local-fixture-account",
+        "issueNumber": 1756,
+        "series": "general",
+        "contentLocale": "zh-Hans"
+      },
+      "status": "expired"
+    },
+    {
+      "selector": {
+        "accountId": "local-fixture-account",
+        "issueNumber": 1757,
+        "series": "general",
+        "contentLocale": "zh-Hant"
+      },
+      "status": "revalidation_required"
+    },
+    {
+      "selector": {
+        "accountId": "local-fixture-account",
+        "issueNumber": 1758,
+        "series": "general",
+        "contentLocale": "zh-Hans"
+      },
+      "status": "expired"
+    }
+  ],
+  "lockedRows": 10,
+  "returns": {
+    "weekly-reader-return:local-fixture-account:fixture-document-7": {
+      "revision": 1,
+      "selected": [],
+      "pageId": "p0",
+      "action": null,
+      "edition": {
+        "issueNumber": 1746,
+        "series": "general",
+        "contentLocale": "zh-Hans"
+      },
+      "savedAt": 1790899200000
+    },
+    "weekly-reader-return:local-fixture-account:fixture-document-8": {
+      "revision": 1,
+      "selected": [],
+      "pageId": "p0",
+      "action": null,
+      "edition": {
+        "issueNumber": 1747,
+        "series": "general",
+        "contentLocale": "zh-Hant"
+      },
+      "savedAt": 1790899200000
+    },
+    "weekly-reader-return:local-fixture-account:fixture-document-9": {
+      "revision": 1,
+      "selected": [],
+      "pageId": "p0",
+      "action": null,
+      "edition": {
+        "issueNumber": 1748,
+        "series": "general",
+        "contentLocale": "zh-Hans"
+      },
+      "savedAt": 1790899200000
+    },
+    "weekly-reader-return:local-fixture-account:fixture-document-2": {
+      "revision": 1,
+      "selected": [],
+      "pageId": "p0",
+      "action": null,
+      "edition": {
+        "issueNumber": 1741,
+        "series": "general",
+        "contentLocale": "zh-Hant"
+      },
+      "savedAt": 1790899200000
+    },
+    "weekly-reader-return:local-fixture-account:fixture-document-5": {
+      "revision": 1,
+      "selected": [],
+      "pageId": "p0",
+      "action": null,
+      "edition": {
+        "issueNumber": 1744,
+        "series": "general",
+        "contentLocale": "zh-Hans"
+      },
+      "savedAt": 1790899200000
+    },
+    "weekly-reader-return:local-fixture-account:fixture-document-4": {
+      "revision": 1,
+      "selected": [],
+      "pageId": "p0",
+      "action": null,
+      "edition": {
+        "issueNumber": 1743,
+        "series": "general",
+        "contentLocale": "zh-Hant"
+      },
+      "savedAt": 1790899200000
+    },
+    "weekly-reader-return:local-fixture-account:fixture-document-1": {
+      "revision": 1,
+      "selected": [],
+      "pageId": "p0",
+      "action": null,
+      "edition": {
+        "issueNumber": 1740,
+        "series": "general",
+        "contentLocale": "zh-Hans"
+      },
+      "savedAt": 1790899200000
+    },
+    "weekly-reader-return:local-fixture-account:fixture-document-3": {
+      "revision": 1,
+      "selected": [],
+      "pageId": "p0",
+      "action": null,
+      "edition": {
+        "issueNumber": 1742,
+        "series": "general",
+        "contentLocale": "zh-Hans"
+      },
+      "savedAt": 1790899200000
+    },
+    "weekly-reader-return:local-fixture-account:fixture-document-0": {
+      "revision": 1,
+      "selected": [
+        "s2"
+      ],
+      "pageId": "p0",
+      "action": null,
+      "edition": {
+        "issueNumber": 1739,
+        "series": "general",
+        "contentLocale": "zh-Hant"
+      },
+      "savedAt": 1790899200000,
+      "selectedRanges": [
+        {
+          "sentenceId": "s2",
+          "start": 0,
+          "end": 4
+        }
+      ],
+      "draft": {
+        "text": "Turbo baseline dirty draft😀"
+      }
+    },
+    "weekly-reader-return:local-fixture-account:fixture-document-6": {
+      "revision": 1,
+      "selected": [],
+      "pageId": "p0",
+      "action": null,
+      "edition": {
+        "issueNumber": 1745,
+        "series": "general",
+        "contentLocale": "zh-Hant"
+      },
+      "savedAt": 1790899200000
+    }
+  },
+  "store": {
+    "identity": [
+      {
+        "key": "active",
+        "value": {
+          "accountId": "local-fixture-account",
+          "epoch": 1
+        }
+      }
+    ],
+    "documents": [
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-0",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1739,
+            "series": "general",
+            "contentLocale": "zh-Hant"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 24886884,
+          "documentSha256": "f51c10b1051c7b1c3381e2459859b8450bfb9e902dee21bd1a180b6e8433c380",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-0",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2",
+              "bytes": 5389056,
+              "sha256": "9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-1",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1740,
+            "series": "general",
+            "contentLocale": "zh-Hans"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 27157838,
+          "documentSha256": "b98a67f8326641b2b0fe4c4f4939bc369ec065388b67905f3c8143fb5a1eed43",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-1",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+              "bytes": 5732508,
+              "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+              "bytes": 5926216,
+              "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-10",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1749,
+            "series": "general",
+            "contentLocale": "zh-Hant"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 24886887,
+          "documentSha256": "3c4b2d8e5cc0bc58f2d472e51ceee2800fd8771d6db27e2717ef8d5ae15f347c",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-10",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2",
+              "bytes": 5389056,
+              "sha256": "9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-11",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1750,
+            "series": "general",
+            "contentLocale": "zh-Hans"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790208000000,
+          "localValidUntil": 1790812800000,
+          "size": 27157841,
+          "documentSha256": "07651ce0dd0bbbbb1425ac48323fb4bfb8f924d0394be820be396e5199498e58",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-11",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-09-24T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-01T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+              "bytes": 5732508,
+              "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+              "bytes": 5926216,
+              "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-12",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1751,
+            "series": "general",
+            "contentLocale": "zh-Hant"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 24886887,
+          "documentSha256": "50eabba2f85f014155fd79d6aac173ac8f6e59fa96f70117d82a89e7e304c603",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-12",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2",
+              "bytes": 5389056,
+              "sha256": "9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-13",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1752,
+            "series": "general",
+            "contentLocale": "zh-Hans"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790208000000,
+          "localValidUntil": 1790812800000,
+          "size": 27157841,
+          "documentSha256": "02ee3d50f1001fb634be064df3c28d077389bcbbdb21ba65d984f50aaf4e3191",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-13",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-09-24T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-01T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+              "bytes": 5732508,
+              "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+              "bytes": 5926216,
+              "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-14",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1753,
+            "series": "general",
+            "contentLocale": "zh-Hant"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 24886887,
+          "documentSha256": "73edd2839c677b89564bf0ac2e73aeb0bc3aa72b6be9b204c871cd097027e18a",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-14",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2",
+              "bytes": 5389056,
+              "sha256": "9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-15",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1754,
+            "series": "general",
+            "contentLocale": "zh-Hans"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790208000000,
+          "localValidUntil": 1790812800000,
+          "size": 27157841,
+          "documentSha256": "09b0e81dcaed0d2db908b6d0ff56ffa5c6950edc8bff739070dc68a1c0055b8e",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-15",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-09-24T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-01T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+              "bytes": 5732508,
+              "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+              "bytes": 5926216,
+              "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-16",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1755,
+            "series": "general",
+            "contentLocale": "zh-Hant"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 23638196,
+          "documentSha256": "9a93e21ac747a8066493af0a51a4443aca03b03dcbc133f9ad1afbe4ef72fb9b",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-16",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            },
+            {
+              "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+              "bytes": 4140364,
+              "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-17",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1756,
+            "series": "general",
+            "contentLocale": "zh-Hans"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790208000000,
+          "localValidUntil": 1790812800000,
+          "size": 35297322,
+          "documentSha256": "b5556ee2aa901fe6e173e851b802e4565bb55118ed5764f9f46b050f8f2ea28f",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-17",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-09-24T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-01T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+              "bytes": 5732508,
+              "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+              "bytes": 5926216,
+              "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            },
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+              "bytes": 4140364,
+              "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-18",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1757,
+            "series": "general",
+            "contentLocale": "zh-Hant"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 23638430,
+          "documentSha256": "ce9a608dc86b53795c9d742224a5437d48ece1bc62070916740518a48a94eded",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-18",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            },
+            {
+              "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+              "bytes": 4140364,
+              "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-19",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1758,
+            "series": "general",
+            "contentLocale": "zh-Hans"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790208000000,
+          "localValidUntil": 1790812800000,
+          "size": 35297557,
+          "documentSha256": "11a128736665aa04fe5689d87a717d66136e4154596a3e9c6a0b99429e3068e0",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-19",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-09-24T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-01T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+              "bytes": 5732508,
+              "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+              "bytes": 5926216,
+              "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            },
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+              "bytes": 4140364,
+              "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-2",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1741,
+            "series": "general",
+            "contentLocale": "zh-Hant"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 24886884,
+          "documentSha256": "81561f4dbc626f0d90f9b050d064862e15d3d0499e32ab24cb9ddd12bfec35e9",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-2",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2",
+              "bytes": 5389056,
+              "sha256": "9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-3",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1742,
+            "series": "general",
+            "contentLocale": "zh-Hans"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 27157838,
+          "documentSha256": "f05f0014643fcfc4fa165c8f9515f6ed1d5900d4b99c57b8682598a790a20989",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-3",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+              "bytes": 5732508,
+              "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+              "bytes": 5926216,
+              "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-4",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1743,
+            "series": "general",
+            "contentLocale": "zh-Hant"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 24886884,
+          "documentSha256": "3065a43a2c581a494a9d02074a86bd3c658f9aa2d650d518bbe93fab887dc71b",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-4",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2",
+              "bytes": 5389056,
+              "sha256": "9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-5",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1744,
+            "series": "general",
+            "contentLocale": "zh-Hans"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 27157838,
+          "documentSha256": "8f1426b17c559e042c62e4c7b871c999f9f291c9546e946f4c66135f6343f633",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-5",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+              "bytes": 5732508,
+              "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+              "bytes": 5926216,
+              "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-6",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1745,
+            "series": "general",
+            "contentLocale": "zh-Hant"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 23638193,
+          "documentSha256": "43d81e853e4ad0862009e132ebd99f20640dc516cdaefc292b81b13f52763200",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-6",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            },
+            {
+              "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+              "bytes": 4140364,
+              "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-7",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1746,
+            "series": "general",
+            "contentLocale": "zh-Hans"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 35297319,
+          "documentSha256": "b64ebd33db8d337f35e33477bb8c3579b0e57a5407a367b46bb2e580af8cf89a",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-7",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+              "bytes": 5732508,
+              "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+              "bytes": 5926216,
+              "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            },
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+              "bytes": 4140364,
+              "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-8",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1747,
+            "series": "general",
+            "contentLocale": "zh-Hant"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 23638427,
+          "documentSha256": "2d5407104c311e9be753e09bc241c796fa52f1c28819bebcd1926201b3c62064",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-8",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            },
+            {
+              "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+              "bytes": 4140364,
+              "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-9",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "selector": {
+            "accountId": "local-fixture-account",
+            "issueNumber": 1748,
+            "series": "general",
+            "contentLocale": "zh-Hans"
+          },
+          "epoch": 1,
+          "locked": false,
+          "lastObservedAt": 1790812800000,
+          "localValidUntil": 1791417600000,
+          "size": 35297554,
+          "documentSha256": "b50180d824c95ced99557b7371708b9a6ee5049b3d924af9848de6313c935429",
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-9",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "resources": [
+            {
+              "url": "/assets/weekly/v2/body-sc-400-0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d.woff2",
+              "bytes": 5732508,
+              "sha256": "0d9a3e4fd55d8e7bcfe5fa7e4f969d6d46519a76e3414c487b1fcf0a1005dd8d"
+            },
+            {
+              "url": "/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+              "bytes": 14982568,
+              "sha256": "b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d"
+            },
+            {
+              "url": "/assets/weekly/v2/body-sc-700-714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4.woff2",
+              "bytes": 5926216,
+              "sha256": "714f0a66d4e38eb4006744fc12126d837b9294eabbe67632b6b12945de3ca1b4"
+            },
+            {
+              "url": "/assets/weekly/v1/logo-5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5.png",
+              "bytes": 96960,
+              "sha256": "5dabd62c4acc8761d650410cb9f2ecf53de967fe8609544d7146b86a592584f5"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-website-fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a.svg",
+              "bytes": 4061,
+              "sha256": "fd963a95c1d3e19834aaf4a814795dddd0fc855d312932626c5c5d0f89f9ea9a"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-youtube-9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3.svg",
+              "bytes": 10003,
+              "sha256": "9a08ce99ca7d33e0a6a21dea961c0e3626ddabfaa7af5f73ecbc3f807673cef3"
+            },
+            {
+              "url": "/assets/weekly/v1/qr-stream-709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb.svg",
+              "bytes": 4914,
+              "sha256": "709ad7995ea45f27898bfbddb62d0bff38f526922e9c3825d561a8195c0974cb"
+            },
+            {
+              "url": "/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+              "bytes": 396064,
+              "sha256": "89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd"
+            },
+            {
+              "url": "/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+              "bytes": 3998724,
+              "sha256": "ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0"
+            },
+            {
+              "url": "/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+              "bytes": 4140364,
+              "sha256": "49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f"
+            }
+          ]
+        }
+      }
+    ],
+    "pointers": [
+      {
+        "key": [
+          "local-fixture-account",
+          1739,
+          "general",
+          "zh-Hant"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-0",
+          "general",
+          "zh-Hant",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1740,
+          "general",
+          "zh-Hans"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-1",
+          "general",
+          "zh-Hans",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1741,
+          "general",
+          "zh-Hant"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-2",
+          "general",
+          "zh-Hant",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1742,
+          "general",
+          "zh-Hans"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-3",
+          "general",
+          "zh-Hans",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1743,
+          "general",
+          "zh-Hant"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-4",
+          "general",
+          "zh-Hant",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1744,
+          "general",
+          "zh-Hans"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-5",
+          "general",
+          "zh-Hans",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1745,
+          "general",
+          "zh-Hant"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-6",
+          "general",
+          "zh-Hant",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1746,
+          "general",
+          "zh-Hans"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-7",
+          "general",
+          "zh-Hans",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1747,
+          "general",
+          "zh-Hant"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-8",
+          "general",
+          "zh-Hant",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1748,
+          "general",
+          "zh-Hans"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-9",
+          "general",
+          "zh-Hans",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1749,
+          "general",
+          "zh-Hant"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-10",
+          "general",
+          "zh-Hant",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1750,
+          "general",
+          "zh-Hans"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-11",
+          "general",
+          "zh-Hans",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1751,
+          "general",
+          "zh-Hant"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-12",
+          "general",
+          "zh-Hant",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1752,
+          "general",
+          "zh-Hans"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-13",
+          "general",
+          "zh-Hans",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1753,
+          "general",
+          "zh-Hant"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-14",
+          "general",
+          "zh-Hant",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1754,
+          "general",
+          "zh-Hans"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-15",
+          "general",
+          "zh-Hans",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1755,
+          "general",
+          "zh-Hant"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-16",
+          "general",
+          "zh-Hant",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1756,
+          "general",
+          "zh-Hans"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-17",
+          "general",
+          "zh-Hans",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1757,
+          "general",
+          "zh-Hant"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-18",
+          "general",
+          "zh-Hant",
+          1
+        ]
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          1758,
+          "general",
+          "zh-Hans"
+        ],
+        "value": [
+          "local-fixture-account",
+          "fixture-document-19",
+          "general",
+          "zh-Hans",
+          1
+        ]
+      }
+    ],
+    "checks": [
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-0",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-0",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-1",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-1",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-10",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-10",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": true
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-11",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-11",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-09-24T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-01T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1790812800000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-12",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-12",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": true
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-13",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-13",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-09-24T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-01T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1790812800000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-14",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-14",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": true
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-15",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-15",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-09-24T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-01T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1790812800000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-16",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-16",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": true
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-17",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-17",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-09-24T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-01T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1790812800000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-18",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-18",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": true
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-19",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-19",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-09-24T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-01T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1790812800000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-2",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-2",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-3",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-3",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-4",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-4",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-5",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-5",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-6",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-6",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-7",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-7",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-8",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-8",
+            "series": "general",
+            "contentLocale": "zh-Hant",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": false
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-9",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "access": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-9",
+            "series": "general",
+            "contentLocale": "zh-Hans",
+            "revision": 1,
+            "currentRevision": 1,
+            "receiptId": "receipt-a",
+            "traceCode": "ABCD-EFGH-JKLM",
+            "validatedAt": "2026-10-01T00:00:00.000Z",
+            "offlineValidUntil": "2026-10-08T00:00:00.000Z"
+          },
+          "lastObservedAt": 1790899200000,
+          "localValidUntil": 1791417600000,
+          "epoch": 1,
+          "locked": false
+        }
+      }
+    ],
+    "private": [
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-0",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "state": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-0",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [
+              {
+                "sentenceId": "s0",
+                "color": "blue",
+                "segments": [
+                  {
+                    "start": 0,
+                    "end": 4,
+                    "color": "blue"
+                  }
+                ],
+                "quote": "內容0。",
+                "active": true,
+                "version": 1,
+                "updatedAt": "2026-10-02T00:00:00.000Z"
+              }
+            ],
+            "notes": [
+              {
+                "id": "6b7e96c5-5270-4481-a4e5-1f9e1ee39732",
+                "text": "Turbo baseline queued note😀",
+                "sentenceIds": [
+                  "s1"
+                ],
+                "ranges": [
+                  {
+                    "sentenceId": "s1",
+                    "start": 0,
+                    "end": 4,
+                    "quote": "內容1。"
+                  }
+                ],
+                "inactiveAnchors": [],
+                "quote": "內容1。",
+                "version": 1,
+                "deleted": false,
+                "reanchorRequired": false,
+                "createdAt": "2026-10-02T00:00:00.000Z",
+                "updatedAt": "2026-10-02T00:00:00.000Z"
+              }
+            ],
+            "conflicts": [],
+            "progress": null
+          },
+          "confirmed": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-0",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "queue": [
+            {
+              "mutation": {
+                "mutationId": "c57997d6-dff1-480d-8fd2-20a624b127fe",
+                "createdAt": "2026-10-02T00:00:00.000Z",
+                "documentRevision": 1,
+                "kind": "setHighlight",
+                "payload": {
+                  "sentenceIds": [
+                    "s0"
+                  ],
+                  "color": "yellow",
+                  "ranges": [
+                    {
+                      "sentenceId": "s0",
+                      "start": 0,
+                      "end": 4
+                    }
+                  ]
+                }
+              },
+              "sent": false
+            },
+            {
+              "mutation": {
+                "mutationId": "559642c3-3974-4c7f-a961-95585a78b296",
+                "createdAt": "2026-10-02T00:00:00.000Z",
+                "documentRevision": 1,
+                "kind": "clearHighlight",
+                "payload": {
+                  "sentenceIds": [
+                    "s0"
+                  ],
+                  "ranges": [
+                    {
+                      "sentenceId": "s0",
+                      "start": 0,
+                      "end": 4
+                    }
+                  ]
+                }
+              },
+              "sent": false
+            },
+            {
+              "mutation": {
+                "mutationId": "6d59ee21-6169-4f6a-965b-f09c5dc98ff6",
+                "createdAt": "2026-10-02T00:00:00.000Z",
+                "documentRevision": 1,
+                "kind": "setHighlight",
+                "payload": {
+                  "sentenceIds": [
+                    "s0"
+                  ],
+                  "color": "blue",
+                  "ranges": [
+                    {
+                      "sentenceId": "s0",
+                      "start": 0,
+                      "end": 4
+                    }
+                  ]
+                }
+              },
+              "sent": false
+            },
+            {
+              "mutation": {
+                "mutationId": "5f8f99d3-b215-4f14-b1d7-7e37e1d9fce0",
+                "createdAt": "2026-10-02T00:00:00.000Z",
+                "documentRevision": 1,
+                "kind": "createNote",
+                "payload": {
+                  "noteId": "6b7e96c5-5270-4481-a4e5-1f9e1ee39732",
+                  "sentenceIds": [
+                    "s1"
+                  ],
+                  "text": "Turbo baseline queued note😀",
+                  "ranges": [
+                    {
+                      "sentenceId": "s1",
+                      "start": 0,
+                      "end": 4
+                    }
+                  ]
+                }
+              },
+              "sent": false
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-1",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "state": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-1",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [
+              {
+                "id": "1fa0ade2-3cdb-4f02-b2bd-23f231b45da5",
+                "text": "Turbo candidate-created note😀",
+                "sentenceIds": [
+                  "s0"
+                ],
+                "ranges": [
+                  {
+                    "sentenceId": "s0",
+                    "start": 0,
+                    "end": 4,
+                    "quote": "內容0。"
+                  }
+                ],
+                "inactiveAnchors": [],
+                "quote": "內容0。",
+                "version": 1,
+                "deleted": false,
+                "reanchorRequired": false,
+                "createdAt": "2026-10-02T00:00:00.000Z",
+                "updatedAt": "2026-10-02T00:00:00.000Z"
+              }
+            ],
+            "conflicts": [],
+            "progress": null
+          },
+          "confirmed": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-1",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "queue": [
+            {
+              "mutation": {
+                "mutationId": "a09912b6-bd23-4c64-9412-eecd2d1f7eb8",
+                "createdAt": "2026-10-02T00:00:00.000Z",
+                "documentRevision": 1,
+                "kind": "createNote",
+                "payload": {
+                  "noteId": "1fa0ade2-3cdb-4f02-b2bd-23f231b45da5",
+                  "sentenceIds": [
+                    "s0"
+                  ],
+                  "text": "Turbo candidate-created note😀",
+                  "ranges": [
+                    {
+                      "sentenceId": "s0",
+                      "start": 0,
+                      "end": 4
+                    }
+                  ]
+                }
+              },
+              "sent": false
+            }
+          ]
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-2",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "state": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-2",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "confirmed": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-2",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "queue": []
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-3",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "state": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-3",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "confirmed": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-3",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "queue": []
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-4",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "state": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-4",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "confirmed": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-4",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "queue": []
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-5",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "state": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-5",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "confirmed": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-5",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "queue": []
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-6",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "state": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-6",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "confirmed": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-6",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "queue": []
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-7",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "state": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-7",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "confirmed": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-7",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "queue": []
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-8",
+          "general",
+          "zh-Hant",
+          1
+        ],
+        "value": {
+          "state": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-8",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "confirmed": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-8",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "queue": []
+        }
+      },
+      {
+        "key": [
+          "local-fixture-account",
+          "fixture-document-9",
+          "general",
+          "zh-Hans",
+          1
+        ],
+        "value": {
+          "state": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-9",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "confirmed": {
+            "accountId": "local-fixture-account",
+            "documentId": "fixture-document-9",
+            "appliedRevision": 1,
+            "currentRevision": 1,
+            "highlights": [],
+            "notes": [],
+            "conflicts": [],
+            "progress": null
+          },
+          "queue": []
+        }
+      }
+    ],
+    "returns": {}
+  },
+  "cache": {
+    "keys": [
+      "http://127.0.0.1:7170/_next/static/chunks/29wcr7-7kl1av.css",
+      "http://127.0.0.1:7170/_next/static/media/2c55a0e60120577a-s.0-dom-5bn10r2.woff2",
+      "http://127.0.0.1:7170/_next/static/media/9c72aa0f40e4eef8-s.1y4-pdgsjb-pw.woff2",
+      "http://127.0.0.1:7170/_next/static/media/ad66f9afd8947f86-s.3lvt2whj97whp.woff2",
+      "http://127.0.0.1:7170/_next/static/media/5476f68d60460930-s.2uwcyprjm3xu3.woff2",
+      "http://127.0.0.1:7170/_next/static/media/2bbe8d2671613f1f-s.0k62hbripvv8p.woff2",
+      "http://127.0.0.1:7170/_next/static/media/1bffadaabf893a1e-s.3-6t-g6q0vh0a.woff2",
+      "http://127.0.0.1:7170/_next/static/media/83afe278b6a6bb3c-s.2bn3s6zvc0dyp.woff2",
+      "http://127.0.0.1:7170/_next/static/media/MaShanZheng_HHC_Banners-s.0x4tdm35d7j1k.woff2",
+      "http://127.0.0.1:7170/_next/static/media/ChenYuluoyan_HHC_Banners-s.1whukfeq4cn2f.woff2",
+      "http://127.0.0.1:7170/_next/static/media/KleeOne_HHC_Banners-s.3asqqrz867t9z.woff2",
+      "http://127.0.0.1:7170/_next/static/media/HHC_Pen_Hangul_Banners-s.3aiv0tw81-tpq.woff2",
+      "http://127.0.0.1:7170/_next/static/chunks/1q6-2aptgn96d.css",
+      "http://127.0.0.1:7170/_next/static/chunks/2yfuqho7e9lbz.css",
+      "http://127.0.0.1:7170/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2",
+      "http://127.0.0.1:7170/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2",
+      "http://127.0.0.1:7170/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2",
+      "http://127.0.0.1:7170/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2",
+      "http://127.0.0.1:7170/assets/weekly/v2/body-bold-49bf74f95fef7d74142848883abe13de0aa8f19e32431abe9fe4cc9d3592448f.woff2",
+      "http://127.0.0.1:7170/_next/static/chunks/43jpj-qd0kogl.css",
+      "http://127.0.0.1:7170/_next/static/chunks/0z1aes4s3_vl9.js",
+      "http://127.0.0.1:7170/_next/static/chunks/30ixm__jk4eg1.js",
+      "http://127.0.0.1:7170/_next/static/chunks/2f5cg0lfhu1r1.js",
+      "http://127.0.0.1:7170/_next/static/chunks/419yw19oql7uw.js",
+      "http://127.0.0.1:7170/_next/static/chunks/091z36yqafo_a.js",
+      "http://127.0.0.1:7170/_next/static/chunks/turbopack-28b2di3iz_y50.js",
+      "http://127.0.0.1:7170/_next/static/chunks/0d_4fjoyi696w.js",
+      "http://127.0.0.1:7170/_next/static/chunks/0ek6pw8ntturj.js",
+      "http://127.0.0.1:7170/_next/static/chunks/0rrbm0uqqko9u.js",
+      "http://127.0.0.1:7170/_next/static/chunks/0nirsl7tuoz07.js",
+      "http://127.0.0.1:7170/_next/static/chunks/38w3enlmlmxft.js",
+      "http://127.0.0.1:7170/_next/static/chunks/32n885asht4ek.js",
+      "http://127.0.0.1:7170/_next/static/chunks/25v-8ojn0u953.js",
+      "http://127.0.0.1:7170/_next/static/chunks/0ga7tgvfaxm6w.js",
+      "http://127.0.0.1:7170/_next/static/chunks/38gobf02-x984.js",
+      "http://127.0.0.1:7170/_next/static/chunks/2ildxj9r46m95.js",
+      "http://127.0.0.1:7170/_next/static/chunks/16i4f2qoyadcl.js",
+      "http://127.0.0.1:7170/_next/static/chunks/37_m1r-1ak2w3.js",
+      "http://127.0.0.1:7170/_next/static/chunks/09di35ofo_93m.js",
+      "http://127.0.0.1:7170/_next/static/chunks/0cz1d0mv5g_q7.js",
+      "http://127.0.0.1:7170/_next/static/chunks/08mhsep5qyc2u.js",
+      "http://127.0.0.1:7170/_next/static/chunks/22mjgadyjxm_3.js",
+      "http://127.0.0.1:7170/_next/static/chunks/115v-mli6ncwa.js",
+      "http://127.0.0.1:7170/_next/static/chunks/1xf4ygt9e048_.js",
+      "http://127.0.0.1:7170/_next/static/chunks/2vst6sk01ffpc.js",
+      "http://127.0.0.1:7170/_next/static/chunks/0zjl9rls2uge7.js",
+      "http://127.0.0.1:7170/_next/static/chunks/1oj1z2iuliks1.js",
+      "http://127.0.0.1:7170/en/literature-ministry/offline/reader-shell"
+    ],
+    "shell": "<!DOCTYPE html><html lang=\"en\"><head><meta charSet=\"utf-8\"/><link rel=\"preconnect\" href=\"/\" crossorigin=\"\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><link rel=\"preload\" as=\"image\" href=\"/assets/brand/logo.png\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/29wcr7-7kl1av.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/1q6-2aptgn96d.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/2yfuqho7e9lbz.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/43jpj-qd0kogl.css\" data-precedence=\"next\"/><link rel=\"preload\" as=\"script\" fetchPriority=\"low\" href=\"/_next/static/chunks/0z1aes4s3_vl9.js\"/><script src=\"/_next/static/chunks/30ixm__jk4eg1.js\" async=\"\"></script><script src=\"/_next/static/chunks/2f5cg0lfhu1r1.js\" async=\"\"></script><script src=\"/_next/static/chunks/419yw19oql7uw.js\" async=\"\"></script><script src=\"/_next/static/chunks/091z36yqafo_a.js\" async=\"\"></script><script src=\"/_next/static/chunks/turbopack-28b2di3iz_y50.js\" async=\"\"></script><script src=\"/_next/static/chunks/0d_4fjoyi696w.js\" async=\"\"></script><script src=\"/_next/static/chunks/0ek6pw8ntturj.js\" async=\"\"></script><script src=\"/_next/static/chunks/0rrbm0uqqko9u.js\" async=\"\"></script><script src=\"/_next/static/chunks/1xf4ygt9e048_.js\" async=\"\"></script><script src=\"/_next/static/chunks/38w3enlmlmxft.js\" async=\"\"></script><script src=\"/_next/static/chunks/32n885asht4ek.js\" async=\"\"></script><script src=\"/_next/static/chunks/25v-8ojn0u953.js\" async=\"\"></script><script src=\"/_next/static/chunks/2vst6sk01ffpc.js\" async=\"\"></script><script src=\"/_next/static/chunks/0zjl9rls2uge7.js\" async=\"\"></script><script src=\"/_next/static/chunks/1oj1z2iuliks1.js\" async=\"\"></script><script src=\"/_next/static/chunks/16i4f2qoyadcl.js\" async=\"\"></script><script src=\"/_next/static/chunks/37_m1r-1ak2w3.js\" async=\"\"></script><script src=\"/_next/static/chunks/09di35ofo_93m.js\" async=\"\"></script><meta name=\"next-size-adjust\" content=\"\"/><title>Bulletin reader</title><meta name=\"description\" content=\"在愛中建造家庭，在真理中成長\"/><link rel=\"manifest\" href=\"/manifest.webmanifest\"/><meta name=\"robots\" content=\"noindex, nofollow\"/><meta property=\"og:title\" content=\"哈利路亞家教會\"/><meta property=\"og:description\" content=\"在愛中建造家庭，在真理中成長\"/><meta property=\"og:url\" content=\"https://www.alive.org.tw\"/><meta property=\"og:site_name\" content=\"哈利路亞家教會\"/><meta property=\"og:image\" content=\"https://www.alive.org.tw/opengraph-image\"/><meta property=\"og:image:width\" content=\"1200\"/><meta property=\"og:image:height\" content=\"630\"/><meta property=\"og:image:alt\" content=\"哈利路亞家教會\"/><meta property=\"og:type\" content=\"website\"/><meta name=\"twitter:card\" content=\"summary_large_image\"/><meta name=\"twitter:title\" content=\"哈利路亞家教會\"/><meta name=\"twitter:description\" content=\"在愛中建造家庭，在真理中成長\"/><meta name=\"twitter:image\" content=\"https://www.alive.org.tw/opengraph-image\"/><link rel=\"icon\" href=\"/favicon.ico?favicon.0rkj0uxook9iz.ico\" sizes=\"256x256\" type=\"image/x-icon\"/><link rel=\"apple-touch-icon\" href=\"/apple-icon.png?apple-icon.2sm1ir0l_vg89.png\" sizes=\"180x180\" type=\"image/png\"/><script>(()=>{const m=document.cookie.match(/(?:^|;\\s*)hhc_theme=(light|dark)(?:;|$)/);const t=m?.[1]??'light';const r=document.documentElement;r.dataset.theme=t;r.classList.toggle('dark',t==='dark');r.style.colorScheme=t})()</script><script src=\"/_next/static/chunks/0cz1d0mv5g_q7.js\" noModule=\"\"></script></head><body class=\"inter_c1507f1d-module__EXvsCW__variable chenyuluoyanbanner_50602637-module__WuDD0W__variable mashanzheng_4136bb36-module__jVa3Rq__variable\"><div hidden=\"\"><!--$--><!--/$--></div><div data-locale=\"en\" lang=\"en\"><section class=\"hhc-toast-region\" aria-label=\"Translation notice\"></section><!--$--><main class=\"weekly-reader\"><div class=\"reader-loading-shell\" aria-busy=\"true\"><header class=\"reader-tabbar\" aria-hidden=\"true\"><span class=\"reader-loading-home\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"21\" height=\"21\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-house\" aria-hidden=\"true\"><path d=\"M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8\"></path><path d=\"M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"></path></svg></span><div class=\"reader-tabs\"><div class=\"reader-tab\" data-active=\"true\"><span class=\"reader-loading-tab\">Loading bulletin…</span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-x\" aria-hidden=\"true\"><path d=\"M18 6 6 18\"></path><path d=\"m6 6 12 12\"></path></svg></div></div></header><div class=\"reader-loading\" aria-busy=\"true\"><div><span class=\"reader-loading-icon-placeholder\" aria-hidden=\"true\"></span><p role=\"status\">Loading bulletin…</p></div></div></div></main><!--$--><!--/$--><!--/$--></div><div class=\"hhc-brand-loading-screen hhc-initial-loading-screen\" role=\"status\" aria-live=\"polite\" aria-busy=\"true\"><span class=\"hhc-brand-loading-screen__mark\" aria-hidden=\"true\"><span class=\"hhc-brand-loading-screen__ring\"></span><img class=\"hhc-brand-loading-screen__logo\" src=\"/assets/brand/logo.png\" alt=\"\"/></span><span class=\"hhc-brand-loading-screen__label\">Loading website</span></div><noscript><style>.hhc-initial-loading-screen{display:none!important}</style></noscript><script src=\"/_next/static/chunks/0z1aes4s3_vl9.js\" id=\"_R_\" async=\"\"></script><script>(self.__next_f=self.__next_f||[]).push([0])</script><script>self.__next_f.push([1,\"1:\\\"$Sreact.fragment\\\"\\n2:I[978080,[\\\"/_next/static/chunks/0d_4fjoyi696w.js\\\"],\\\"LocaleDocument\\\"]\\n3:I[527727,[\\\"/_next/static/chunks/0ek6pw8ntturj.js\\\"],\\\"default\\\"]\\n4:I[602109,[\\\"/_next/static/chunks/0ek6pw8ntturj.js\\\"],\\\"default\\\"]\\n7:I[577550,[\\\"/_next/static/chunks/0ek6pw8ntturj.js\\\"],\\\"OutletBoundary\\\"]\\n8:\\\"$Sreact.suspense\\\"\\nc:I[563491,[\\\"/_next/static/chunks/0d_4fjoyi696w.js\\\",\\\"/_next/static/chunks/0rrbm0uqqko9u.js\\\"],\\\"default\\\"]\\n:HL[\\\"/_next/static/chunks/29wcr7-7kl1av.css\\\",\\\"style\\\"]\\n:HL[\\\"/_next/static/chunks/1q6-2aptgn96d.css\\\",\\\"style\\\"]\\n:HC[\\\"/\\\",\\\"\\\"]\\n:HL[\\\"/_next/static/chunks/2yfuqho7e9lbz.css\\\",\\\"style\\\"]\\n:HL[\\\"/_next/static/chunks/43jpj-qd0kogl.css\\\",\\\"style\\\"]\\na:X\\n0:{\\\"P\\\":null,\\\"c\\\":[\\\"\\\",\\\"en\\\",\\\"literature-ministry\\\",\\\"offline\\\",\\\"reader-shell\\\"],\\\"q\\\":\\\"\\\",\\\"i\\\":false,\\\"f\\\":[[[\\\"\\\",{\\\"children\\\":[[\\\"locale\\\",\\\"en\\\",\\\"d\\\",[\\\"csp-report\\\",\\\"health\\\",\\\"oauth\\\"]],{\\\"children\\\":[\\\"literature-ministry\\\",{\\\"children\\\":[\\\"offline\\\",{\\\"children\\\":[\\\"reader-shell\\\",{\\\"children\\\":[\\\"__PAGE__\\\",{},\\\"$undefined\\\",\\\"$undefined\\\",4608]},\\\"$undefined\\\",\\\"$undefined\\\",4608]},\\\"$undefined\\\",\\\"$undefined\\\",4608]},\\\"$undefined\\\",\\\"$undefined\\\",4608]},\\\"$undefined\\\",\\\"$undefined\\\",4608]},\\\"$undefined\\\",\\\"$undefined\\\",4624],[[\\\"$\\\",\\\"$1\\\",\\\"c\\\",{\\\"children\\\":[[[\\\"$\\\",\\\"link\\\",\\\"0\\\",{\\\"rel\\\":\\\"stylesheet\\\",\\\"href\\\":\\\"/_next/static/chunks/29wcr7-7kl1av.css\\\",\\\"precedence\\\":\\\"next\\\",\\\"crossOrigin\\\":\\\"$undefined\\\",\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"link\\\",\\\"1\\\",{\\\"rel\\\":\\\"stylesheet\\\",\\\"href\\\":\\\"/_next/static/chunks/1q6-2aptgn96d.css\\\",\\\"precedence\\\":\\\"next\\\",\\\"crossOrigin\\\":\\\"$undefined\\\",\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"script\\\",\\\"script-0\\\",{\\\"src\\\":\\\"/_next/static/chunks/0d_4fjoyi696w.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}]],[\\\"$\\\",\\\"$L2\\\",null,{\\\"suppressHydrationWarning\\\":true,\\\"children\\\":[[\\\"$\\\",\\\"head\\\",null,{\\\"children\\\":[\\\"$\\\",\\\"script\\\",null,{\\\"dangerouslySetInnerHTML\\\":{\\\"__html\\\":\\\"(()=\\u003e{const m=document.cookie.match(/(?:^|;\\\\\\\\s*)hhc_theme=(light|dark)(?:;|$)/);const t=m?.[1]??'light';const r=document.documentElement;r.dataset.theme=t;r.classList.toggle('dark',t==='dark');r.style.colorScheme=t})()\\\"}}]}],[\\\"$\\\",\\\"body\\\",null,{\\\"className\\\":\\\"inter_c1507f1d-module__EXvsCW__variable chenyuluoyanbanner_50602637-module__WuDD0W__variable mashanzheng_4136bb36-module__jVa3Rq__variable\\\",\\\"children\\\":[\\\"$\\\",\\\"$L3\\\",null,{\\\"parallelRouterKey\\\":\\\"children\\\",\\\"error\\\":\\\"$undefined\\\",\\\"errorStyles\\\":\\\"$undefined\\\",\\\"errorScripts\\\":\\\"$undefined\\\",\\\"template\\\":[\\\"$\\\",\\\"$L4\\\",null,{}],\\\"templateStyles\\\":\\\"$undefined\\\",\\\"templateScripts\\\":\\\"$undefined\\\",\\\"notFound\\\":[[[\\\"$\\\",\\\"title\\\",null,{\\\"children\\\":\\\"404: This page could not be found.\\\"}],[\\\"$\\\",\\\"div\\\",null,{\\\"style\\\":{\\\"fontFamily\\\":\\\"system-ui,\\\\\\\"Segoe UI\\\\\\\",Roboto,Helvetica,Arial,sans-serif,\\\\\\\"Apple Color Emoji\\\\\\\",\\\\\\\"Segoe UI Emoji\\\\\\\"\\\",\\\"height\\\":\\\"100vh\\\",\\\"textAlign\\\":\\\"center\\\",\\\"display\\\":\\\"flex\\\",\\\"flexDirection\\\":\\\"column\\\",\\\"alignItems\\\":\\\"center\\\",\\\"justifyContent\\\":\\\"center\\\"},\\\"children\\\":[\\\"$\\\",\\\"div\\\",null,{\\\"children\\\":[[\\\"$\\\",\\\"style\\\",null,{\\\"dangerouslySetInnerHTML\\\":{\\\"__html\\\":\\\"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}\\\"}}],[\\\"$\\\",\\\"h1\\\",null,{\\\"className\\\":\\\"next-error-h1\\\",\\\"style\\\":{\\\"display\\\":\\\"inline-block\\\",\\\"margin\\\":\\\"0 20px 0 0\\\",\\\"padding\\\":\\\"0 23px 0 0\\\",\\\"fontSize\\\":24,\\\"fontWeight\\\":500,\\\"verticalAlign\\\":\\\"top\\\",\\\"lineHeight\\\":\\\"49px\\\"},\\\"children\\\":404}],[\\\"$\\\",\\\"div\\\",null,{\\\"style\\\":{\\\"display\\\":\\\"inline-block\\\"},\\\"children\\\":[\\\"$\\\",\\\"h2\\\",null,{\\\"style\\\":{\\\"fontSize\\\":14,\\\"fontWeight\\\":400,\\\"lineHeight\\\":\\\"49px\\\",\\\"margin\\\":0},\\\"children\\\":\\\"This page could not be found.\\\"}]}]]}]}]],[]],\\\"forbidden\\\":\\\"$undefined\\\",\\\"unauthorized\\\":\\\"$undefined\\\"}]}]]}]]}],{\\\"children\\\":[[\\\"$\\\",\\\"$1\\\",\\\"c\\\",{\\\"children\\\":[[[\\\"$\\\",\\\"script\\\",\\\"script-0\\\",{\\\"src\\\":\\\"/_next/static/chunks/1xf4ygt9e048_.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"script\\\",\\\"script-1\\\",{\\\"src\\\":\\\"/_next/static/chunks/38w3enlmlmxft.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"script\\\",\\\"script-2\\\",{\\\"src\\\":\\\"/_next/static/chunks/32n885asht4ek.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"script\\\",\\\"script-3\\\",{\\\"src\\\":\\\"/_next/static/chunks/25v-8ojn0u953.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}]],\\\"$L5\\\"]}],{\\\"children\\\":[[\\\"$\\\",\\\"$1\\\",\\\"c\\\",{\\\"children\\\":[null,[\\\"$\\\",\\\"$L3\\\",null,{\\\"parallelRouterKey\\\":\\\"children\\\",\\\"error\\\":\\\"$undefined\\\",\\\"errorStyles\\\":\\\"$undefined\\\",\\\"errorScripts\\\":\\\"$undefined\\\",\\\"template\\\":[\\\"$\\\",\\\"$L4\\\",null,{}],\\\"templateStyles\\\":\\\"$undefined\\\",\\\"templateScripts\\\":\\\"$undefined\\\",\\\"notFound\\\":\\\"$undefined\\\",\\\"forbidden\\\":\\\"$undefined\\\",\\\"unauthorized\\\":\\\"$undefined\\\"}]]}],{\\\"children\\\":[[\\\"$\\\",\\\"$1\\\",\\\"c\\\",{\\\"children\\\":[null,[\\\"$\\\",\\\"$L3\\\",null,{\\\"parallelRouterKey\\\":\\\"children\\\",\\\"error\\\":\\\"$undefined\\\",\\\"errorStyles\\\":\\\"$undefined\\\",\\\"errorScripts\\\":\\\"$undefined\\\",\\\"template\\\":[\\\"$\\\",\\\"$L4\\\",null,{}],\\\"templateStyles\\\":\\\"$undefined\\\",\\\"templateScripts\\\":\\\"$undefined\\\",\\\"notFound\\\":\\\"$undefined\\\",\\\"forbidden\\\":\\\"$undefined\\\",\\\"unauthorized\\\":\\\"$undefined\\\"}]]}],{\\\"children\\\":[[\\\"$\\\",\\\"$1\\\",\\\"c\\\",{\\\"children\\\":[null,[\\\"$\\\",\\\"$L3\\\",null,{\\\"parallelRouterKey\\\":\\\"children\\\",\\\"error\\\":\\\"$undefined\\\",\\\"errorStyles\\\":\\\"$undefined\\\",\\\"errorScripts\\\":\\\"$undefined\\\",\\\"template\\\":[\\\"$\\\",\\\"$L4\\\",null,{}],\\\"templateStyles\\\":\\\"$undefined\\\",\\\"templateScripts\\\":\\\"$undefined\\\",\\\"notFound\\\":\\\"$undefined\\\",\\\"forbidden\\\":\\\"$undefined\\\",\\\"unauthorized\\\":\\\"$undefined\\\"}]]}],{\\\"children\\\":[[\\\"$\\\",\\\"$1\\\",\\\"c\\\",{\\\"children\\\":[\\\"$L6\\\",[[\\\"$\\\",\\\"link\\\",\\\"0\\\",{\\\"rel\\\":\\\"stylesheet\\\",\\\"href\\\":\\\"/_next/static/chunks/2yfuqho7e9lbz.css\\\",\\\"precedence\\\":\\\"next\\\",\\\"crossOrigin\\\":\\\"$undefined\\\",\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"link\\\",\\\"1\\\",{\\\"rel\\\":\\\"stylesheet\\\",\\\"href\\\":\\\"/_next/static/chunks/43jpj-qd0kogl.css\\\",\\\"precedence\\\":\\\"next\\\",\\\"crossOrigin\\\":\\\"$undefined\\\",\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"script\\\",\\\"script-0\\\",{\\\"src\\\":\\\"/_next/static/chunks/2vst6sk01ffpc.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"script\\\",\\\"script-1\\\",{\\\"src\\\":\\\"/_next/static/chunks/0zjl9rls2uge7.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"script\\\",\\\"script-2\\\",{\\\"src\\\":\\\"/_next/static/chunks/1oj1z2iuliks1.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"script\\\",\\\"script-3\\\",{\\\"src\\\":\\\"/_next/static/chunks/16i4f2qoyadcl.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}]],[\\\"$\\\",\\\"$L7\\\",null,{\\\"children\\\":[\\\"$\\\",\\\"$8\\\",null,{\\\"name\\\":\\\"Next.MetadataOutlet\\\",\\\"children\\\":\\\"$@9\\\"}]}]]}],{},null,false,null]},null,false,\\\"$a\\\"]},null,false,\\\"$a\\\"]},null,false,\\\"$a\\\"]},null,false,null]},null,false,null],\\\"$Lb\\\",false]],\\\"m\\\":\\\"$undefined\\\",\\\"G\\\":[\\\"$c\\\",[\\\"$Ld\\\",\\\"$Le\\\"]],\\\"S\\\":true,\\\"h\\\":null,\\\"r\\\":\\\"$undefined\\\",\\\"s\\\":\\\"$undefined\\\",\\\"a\\\":\\\"$undefined\\\",\\\"l\\\":\\\"$undefined\\\",\\\"p\\\":\\\"$undefined\\\",\\\"d\\\":\\\"$undefined\\\",\\\"b\\\":\\\"n7hsAb1EUzVqP4QIHBezx\\\"}\\nf:I[577550,[\\\"/_next/static/chunks/0ek6pw8ntturj.js\\\"],\\\"ViewportBoundary\\\"]\\n11:I[577550,[\\\"/_next/static/chunks/0ek6pw8ntturj.js\\\"],\\\"MetadataBoundary\\\"]\\na:C\\nb:[\\\"$\\\",\\\"$1\\\",\\\"h\\\",{\\\"children\\\":[null,[\\\"$\\\",\\\"$Lf\\\",null,{\\\"children\\\":\\\"$L10\\\"}],[\\\"$\\\",\\\"div\\\",null,{\\\"hidden\\\":true,\\\"children\\\":[\\\"$\\\",\\\"$L11\\\",null,{\\\"children\\\":[\\\"$\\\",\\\"$8\\\",null,{\\\"name\\\":\\\"Next.Metadata\\\",\\\"children\\\":\\\"$L12\\\"}]}]}],[\\\"$\\\",\\\"meta\\\",null,{\\\"name\\\":\\\"next-size-adjust\\\",\\\"content\\\":\\\"\\\"}]]}]\\nd:[\\\"$\\\",\\\"link\\\",\\\"0\\\",{\\\"rel\\\":\\\"stylesheet\\\",\\\"href\\\":\\\"/_next/static/chunks/29wcr7-7kl1av.css\\\",\\\"precedence\\\":\\\"next\\\",\\\"crossOrigin\\\":\\\"$undefined\\\",\\\"nonce\\\":\\\"$undefined\\\"}]\\ne:[\\\"$\\\",\\\"link\\\",\\\"1\\\",{\\\"rel\\\":\\\"stylesheet\\\",\\\"href\\\":\\\"/_next/static/chunks/1q6-2aptgn96d.css\\\",\\\"precedence\\\":\\\"next\\\",\\\"crossOrigin\\\":\\\"$undefined\\\",\\\"nonce\\\":\\\"$undefined\\\"}]\\n13:I[29284,[\\\"/_next/static/chunks/0d_4fjoyi696w.js\\\",\\\"/_next/static/chunks/1xf4ygt9e048_.js\\\",\\\"/_next/static/chunks/38w3enlmlmxft.js\\\",\\\"/_next/static/chunks/32n885asht4ek.js\\\",\\\"/_next/static/chunks/25v-8ojn0u953.js\\\",\\\"/_next/static/chunks/2vst6sk01ffpc.js\\\",\\\"/_next/static/chunks/0zjl9rls2uge7.js\\\",\\\"/_next/static/chunks/1oj1z2iuliks1.js\\\",\\\"/_next/static/chunks/16i4f2qoyadcl.js\\\"],\\\"OfflineReaderShell\\\"]\\n6:[\\\"$\\\",\\\"$L13\\\",null,{\\\"locale\\\":\\\"en\\\",\\\"messages\\\":{\\\"typography\\\":\\\"Typography\\\",\\\"fontDecrease\\\":\\\"Decrease font size\\\",\\\"fontIncrease\\\":\\\"Increase font size\\\",\\\"lineDecrease\\\":\\\"Decrease line spacing\\\",\\\"lineIncrease\\\":\\\"Increase line spacing\\\",\\\"submitSearch\\\":\\\"Search\\\",\\\"clearSearch\\\":\\\"Clear search\\\",\\\"searchCount\\\":\\\"{count} search results\\\",\\\"savedOffline\\\":\\\"Saved offline\\\",\\\"contents\\\":\\\"Contents\\\",\\\"originalPages\\\":\\\"PDF pages\\\",\\\"noResults\\\":\\\"No matching text.\\\",\\\"darkMode\\\":\\\"Switch to dark mode\\\",\\\"lightMode\\\":\\\"Switch to light mode\\\",\\\"chapterCover\\\":\\\"Cover\\\",\\\"chapterWorship\\\":\\\"Small-group songs\\\",\\\"chapters\\\":\\\"Chapters\\\",\\\"chapterBody\\\":\\\"Message response\\\",\\\"chapterBack\\\":\\\"Back cover\\\",\\\"savedHighlights\\\":\\\"Highlights\\\",\\\"highlightHistory\\\":\\\"Previous-version highlights\\\",\\\"highlightRestore\\\":\\\"Select new location\\\",\\\"highlightHistoryDelete\\\":\\\"Clear this previous-version highlight?\\\",\\\"highlightsEmpty\\\":\\\"No highlights yet.\\\",\\\"home\\\":\\\"Bulletin library\\\",\\\"openBulletins\\\":\\\"Open bulletins\\\",\\\"closeTab\\\":\\\"Close bulletin\\\",\\\"generalEdition\\\":\\\"General\\\",\\\"childrenEdition\\\":\\\"Children\\\",\\\"readingDirection\\\":\\\"Reading direction\\\",\\\"syncStatus\\\":\\\"Sync status\\\",\\\"vertical\\\":\\\"Vertical scrolling\\\",\\\"horizontal\\\":\\\"Horizontal paging\\\",\\\"zoomIn\\\":\\\"Zoom in\\\",\\\"zoomOut\\\":\\\"Zoom out\\\",\\\"printedPage\\\":\\\"Printed page {page}\\\",\\\"sourcePage\\\":\\\"Source page\\\",\\\"confirmRetry\\\":\\\"Confirm and retry\\\",\\\"confirmRetryHelp\\\":\\\"Your action has not been confirmed. Retry the original action after signing in; it will not create a duplicate.\\\",\\\"reviewSync\\\":\\\"Review synchronization\\\",\\\"applyUpdate\\\":\\\"Apply and synchronize\\\",\\\"keepReading\\\":\\\"Keep reading\\\",\\\"exitTitle\\\":\\\"Leave the bulletin?\\\",\\\"exitDescription\\\":\\\"Leave the bulletin you are reading?\\\",\\\"exitConfirm\\\":\\\"Leave\\\",\\\"recoveryHelp\\\":\\\"Review changes before updating. Your saved revision and pending changes remain until synchronization and download both succeed.\\\",\\\"recoveryAnchors\\\":\\\"Choose sentences in the current revision (up to 500).\\\",\\\"recoveryRange\\\":\\\"Select the exact text again in the current revision below. The original range will not be expanded automatically.\\\",\\\"recoveryAnchorCount\\\":\\\"{count} sentences selected\\\",\\\"recoveryLocal\\\":\\\"Local version\\\",\\\"recoveryCloud\\\":\\\"Cloud version\\\",\\\"recoveryRemoved\\\":\\\"The original sentence was removed.\\\",\\\"recoveryLimit\\\":\\\"Too many sentences; choose up to 500.\\\",\\\"recoveryColor\\\":\\\"Choose a color for the merged sentences.\\\",\\\"recoveryPartialColor\\\":\\\"This merge includes partial highlights. Choosing a color and confirming replaces all highlighting across the complete target text below, not just the original partial ranges.\\\",\\\"recoveryCurrentText\\\":\\\"Complete merged text\\\",\\\"recoveryNote\\\":\\\"This note changed in the cloud.\\\",\\\"recoveryMapping\\\":\\\"The original position cannot be mapped. Choose a current sentence.\\\",\\\"recoveryExpired\\\":\\\"This change is over 90 days old. Review before submitting it as a new action.\\\",\\\"myNotes\\\":\\\"My notes\\\",\\\"productionDetails\\\":\\\"Speaker and production details\\\",\\\"noteText\\\":\\\"Note\\\",\\\"noteSave\\\":\\\"Save\\\",\\\"noteCancel\\\":\\\"Cancel\\\",\\\"noteDiscardConfirm\\\":\\\"Discard your unsaved note changes?\\\",\\\"noteClose\\\":\\\"Close\\\",\\\"noteEdit\\\":\\\"Edit\\\",\\\"noteDelete\\\":\\\"Delete\\\",\\\"noteDeleteConfirm\\\":\\\"Delete this note?\\\",\\\"noteEmpty\\\":\\\"Select sentences, then choose Note to add a private note.\\\",\\\"noteRemoved\\\":\\\"Original content removed\\\",\\\"noteConflict\\\":\\\"This note changed elsewhere. Choose which version to keep.\\\",\\\"noteCloud\\\":\\\"Keep cloud\\\",\\\"noteLocal\\\":\\\"Keep local\\\",\\\"noteManual\\\":\\\"Merge manually\\\",\\\"noteDeleted\\\":\\\"The cloud note was deleted.\\\",\\\"noteJump\\\":\\\"Go to source\\\",\\\"noteReanchor\\\":\\\"Relink note\\\",\\\"noteCount\\\":\\\"{count} / 10,000 characters\\\",\\\"syncSynced\\\":\\\"Synced\\\",\\\"syncWaiting\\\":\\\"Waiting for connection\\\",\\\"syncSyncing\\\":\\\"Syncing\\\",\\\"syncAction\\\":\\\"Action required\\\",\\\"syncPaused\\\":\\\"Sync paused until you accept the new revision.\\\",\\\"unsyncedWarning\\\":\\\"Unsynced changes will be removed from this device. Continue?\\\",\\\"reauthWriteConfirm\\\":\\\"Your account is verified again. Apply the pending change?\\\",\\\"selectionActions\\\":\\\"Selected text actions\\\",\\\"selectionCount\\\":\\\"Selected characters: {count}\\\",\\\"highlightColors\\\":\\\"Highlight colors\\\",\\\"yellowHighlight\\\":\\\"Yellow highlight\\\",\\\"redHighlight\\\":\\\"Red highlight\\\",\\\"blueHighlight\\\":\\\"Blue highlight\\\",\\\"clearHighlight\\\":\\\"Clear\\\",\\\"copySelection\\\":\\\"Copy\\\",\\\"addNote\\\":\\\"Note\\\",\\\"selectionLimit\\\":\\\"Select up to 500 sentences at a time.\\\",\\\"copySuccess\\\":\\\"Copied.\\\",\\\"copyFailed\\\":\\\"Unable to copy. Check access and try again.\\\",\\\"actionFailed\\\":\\\"Changes were not saved. Your selection is kept; try again.\\\",\\\"saveOffline\\\":\\\"Save offline\\\",\\\"removeOffline\\\":\\\"Remove download\\\",\\\"offlineContent\\\":\\\"Offline content\\\",\\\"offlineNotice\\\":\\\"Reading a saved copy. Reconnect to validate access and synchronize.\\\",\\\"savingOffline\\\":\\\"Saving verified content…\\\",\\\"offlineError\\\":\\\"Unable to save. Check available storage and reconnect; existing downloads were kept.\\\",\\\"offlineExpiry\\\":\\\"Available until\\\",\\\"offlineSize\\\":\\\"Size\\\",\\\"offlineRevision\\\":\\\"Revision\\\",\\\"offlineUpdate\\\":\\\"A newer revision is available. Keep this saved revision until your changes can be safely migrated.\\\",\\\"offlineRemoveConfirm\\\":\\\"Remove this downloaded bulletin from this device?\\\",\\\"offlineEmpty\\\":\\\"No bulletins saved on this device.\\\",\\\"offlineLocked\\\":\\\"Reconnect to validate this saved bulletin.\\\",\\\"search\\\":\\\"Search this bulletin\\\",\\\"searchResults\\\":\\\"Search results\\\",\\\"previousResult\\\":\\\"Previous result\\\",\\\"nextResult\\\":\\\"Next result\\\",\\\"goToResult\\\":\\\"Go to result\\\",\\\"title\\\":\\\"Bulletin reader\\\",\\\"back\\\":\\\"Back to bulletins\\\",\\\"loading\\\":\\\"Loading bulletin…\\\",\\\"signInRequired\\\":\\\"Sign in to read this bulletin.\\\",\\\"signIn\\\":\\\"Sign in\\\",\\\"unavailable\\\":\\\"This bulletin is unavailable.\\\",\\\"retry\\\":\\\"Retry\\\",\\\"updateRequired\\\":\\\"Update the reader and try again.\\\",\\\"noScript\\\":\\\"Enable JavaScript and sign in to read this bulletin.\\\",\\\"previous\\\":\\\"Previous page\\\",\\\"next\\\":\\\"Next page\\\",\\\"page\\\":\\\"Page\\\",\\\"zoom\\\":\\\"Zoom\\\",\\\"thumbnails\\\":\\\"Thumbnails\\\",\\\"sections\\\":\\\"Sections\\\",\\\"close\\\":\\\"Close\\\",\\\"cover\\\":\\\"Cover\\\",\\\"bodySection\\\":\\\"Message\\\",\\\"hymnLyrics\\\":\\\"Worship\\\",\\\"backSummary\\\":\\\"Summary\\\",\\\"announcements\\\":\\\"Announcements\\\",\\\"victoriesAndPrayers\\\":\\\"Victories and prayers\\\",\\\"metadataPending\\\":\\\"Bulletin details have changed; you are viewing the published edition.\\\"}}]\\n14:I[371903,[\\\"/_next/static/chunks/0d_4fjoyi696w.js\\\",\\\"/_next/static/chunks/1xf4ygt9e048_.js\\\",\\\"/_next/static/chunks/38w3enlmlmxft.js\\\",\\\"/_next/static/chunks/32n885asht4ek.js\\\",\\\"/_next/static/chunks/25v-8ojn0u953.js\\\"],\\\"default\\\"]\\n15:I[566478,[\\\"/_next/static/chunks/0d_4fjoyi696w.js\\\",\\\"/_next/static/chunks/1xf4ygt9e048_.js\\\",\\\"/_next/static/chunks/38w3enlmlmxft.js\\\",\\\"/_next/static/chunks/32n885asht4ek.js\\\",\\\"/_next/static/chunks/25v-8ojn0u953.js\\\"],\\\"ReaderServiceWorker\\\"]\\n16:I[989792,[\\\"/_next/static/chunks/0d_4fjoyi696w.js\\\",\\\"/_next/static/chunks/1xf4ygt9e048_.js\\\",\\\"/_next/static/chunks/38w3enlmlmxft.js\\\",\\\"/_next/static/chunks/32n885asht4ek.js\\\",\\\"/_next/static/chunks/25v-8ojn0u953.js\\\"],\\\"AccountControlProvider\\\"]\\n17:I[551919,[\\\"/_next/static/chunks/0d_4fjoyi696w.js\\\",\\\"/_next/static/chunks/1xf4ygt9e048_.js\\\",\\\"/_next/static/chunks/38w3enlmlmxft.js\\\",\\\"/_next/static/chunks/32n885asht4ek.js\\\",\\\"/_next/static/chunks/25v-8ojn0u953.js\\\"],\\\"LegalRequiredNavigation\\\"]\\n18:I[728835,[\\\"/_next/static/chunks/0d_4fjoyi696w.js\\\",\\\"/_next/static/chunks/1xf4ygt9e048_.js\\\",\\\"/_next/static/chunks/38w3enlmlmxft.js\\\",\\\"/_next/static/chunks/32n885asht4ek.js\\\",\\\"/_next/static/chunks/25v-8ojn0u953.js\\\"],\\\"InitialLoadingBoundary\\\"]\\n19:I[258373,[\\\"/_next/static/chunks/0d_4fjoyi696w.js\\\",\\\"/_next/static/chunks/1xf4ygt9e048_.js\\\",\\\"/_next/static/chunks/38w3enlmlmxft.js\\\",\\\"/_next/static/chunks/32n885asht4ek.js\\\",\\\"/_next/static/chunks/25v-8ojn0u953.js\\\"],\\\"StatementProvider\\\"]\\n1a:I[911411,[\\\"/_next/static/chunks/0d_4fjoyi696w.js\\\",\\\"/_next/static/chunks/1xf4ygt9e048_.js\\\",\\\"/_next/static/chunks/38w3enlmlmxft.js\\\",\\\"/_next/static/chunks/32n885asht4ek.js\\\",\\\"/_next/static/chunks/25v-8ojn0u953.js\\\"],\\\"TranslationNotice\\\"]\\n1b:I[455182,[\\\"/_next/static/chunks/0d_4fjoyi696w.js\\\",\\\"/_next/static/chunks/1xf4ygt9e048_.js\\\",\\\"/_next/static/chunks/38w3enlmlmxft.js\\\",\\\"/_next/static/chunks/32n885asht4ek.js\\\",\\\"/_next/static/chunks/25v-8ojn0u953.js\\\"],\\\"AnalyticsBoundary\\\"]\\n5:[\\\"$\\\",\\\"$L14\\\",null,{\\\"formats\\\":\\\"$undefined\\\",\\\"locale\\\":\\\"en\\\",\\\"messages\\\":{\\\"site\\\":{\\\"name\\\":\\\"Hallelujah Home Church\\\",\\\"englishName\\\":\\\"Hallelujah Home Church\\\",\\\"loading\\\":\\\"Loading website\\\",\\\"nav\\\":{\\\"home\\\":\\\"Home\\\",\\\"primary\\\":\\\"Primary navigation\\\",\\\"about\\\":\\\"About\\\",\\\"news\\\":\\\"Latest News\\\",\\\"literatureMinistry\\\":\\\"Literature Ministry\\\",\\\"memberVideos\\\":\\\"Member Videos\\\",\\\"menu\\\":\\\"Menu\\\",\\\"openMenu\\\":\\\"Open menu\\\",\\\"closeMenu\\\":\\\"Close menu\\\",\\\"my\\\":\\\"My account\\\",\\\"public\\\":\\\"Church information\\\"},\\\"account\\\":{\\\"menu\\\":\\\"Account menu\\\",\\\"projectionSystem\\\":\\\"Projection system\\\",\\\"projectionWindowLabel\\\":\\\"Open in a new window\\\",\\\"projectionPopupBlocked\\\":\\\"Your browser blocked the window. Use the link below to open it.\\\",\\\"organizationManagement\\\":\\\"Small group\\\",\\\"adminManagement\\\":\\\"Admin\\\",\\\"manageAccount\\\":\\\"Account\\\",\\\"signIn\\\":\\\"Sign in\\\",\\\"signOut\\\":\\\"Sign out\\\",\\\"signOutError\\\":\\\"Unable to sign out. Try again.\\\",\\\"unsyncedWarning\\\":\\\"Unsynced changes will be removed from this device. Continue?\\\"},\\\"language\\\":\\\"Language\\\",\\\"translationNotice\\\":\\\"Some content on this website may be machine- or AI-translated.\\\",\\\"translationNoticeDismiss\\\":\\\"Dismiss translation notice\\\",\\\"translationNoticeRegion\\\":\\\"Translation notice\\\",\\\"lineBrowser\\\":{\\\"region\\\":\\\"Browser opening notice\\\",\\\"title\\\":\\\"Browse in your default browser\\\",\\\"description\\\":\\\"You're viewing this page in LINE. Open it in your default browser for a more reliable experience.\\\",\\\"open\\\":\\\"Open in default browser\\\",\\\"later\\\":\\\"Stay here\\\",\\\"close\\\":\\\"Close browser notice and stay on this page\\\",\\\"manual\\\":\\\"If it doesn't open, use LINE's menu to open this page in a browser.\\\"},\\\"privacyPolicy\\\":\\\"Privacy\\\",\\\"termsOfUse\\\":\\\"Terms of Use\\\",\\\"legalNavigation\\\":\\\"Legal information\\\",\\\"pagination\\\":{\\\"navigation\\\":\\\"Content pagination\\\",\\\"previous\\\":\\\"Previous page\\\",\\\"next\\\":\\\"Next page\\\"},\\\"copyrightHolder\\\":\\\"Hallelujah Home Church\\\",\\\"allRightsReserved\\\":\\\"All rights reserved.\\\",\\\"notifications\\\":{\\\"enable\\\":\\\"Enable notifications\\\",\\\"disable\\\":\\\"Disable notifications\\\",\\\"pending\\\":\\\"Updating notifications\\\",\\\"denied\\\":\\\"Notifications are blocked in your browser\\\",\\\"error\\\":\\\"Unable to update notifications. Try again.\\\",\\\"promptTitle\\\":\\\"Stay informed\\\",\\\"promptBody\\\":\\\"Receive important church announcements and updates on this device.\\\",\\\"promptAction\\\":\\\"Enable notifications\\\",\\\"promptLater\\\":\\\"Later\\\",\\\"promptDismiss\\\":\\\"Dismiss notification prompt\\\",\\\"installPrompt\\\":\\\"Add this website to your Home Screen to receive notifications on iPhone.\\\"},\\\"social\\\":{\\\"navigation\\\":\\\"Social media\\\",\\\"youtube\\\":\\\"YouTube\\\",\\\"facebook\\\":\\\"Facebook\\\"},\\\"statement\\\":{\\\"close\\\":\\\"Close\\\",\\\"openImage\\\":\\\"Enlarge image\\\",\\\"closeImage\\\":\\\"Close image\\\",\\\"doNotShowAgain\\\":\\\"Do not show again\\\",\\\"syncError\\\":\\\"Unable to save this preference. Please try again later.\\\",\\\"readFull\\\":\\\"Read full statement\\\",\\\"notice\\\":\\\"Church statement\\\",\\\"date\\\":\\\"Date\\\",\\\"notifications\\\":\\\"Website notifications\\\",\\\"notificationDescription\\\":\\\"Receive weekly bulletins and important website updates.\\\",\\\"email\\\":\\\"Email subscription settings\\\"},\\\"search\\\":{\\\"label\\\":\\\"Search\\\",\\\"submit\\\":\\\"Search\\\",\\\"clear\\\":\\\"Clear search\\\",\\\"close\\\":\\\"Close search\\\",\\\"placeholder\\\":\\\"Search\\\",\\\"unavailable\\\":\\\"Search (not yet available)\\\",\\\"video\\\":{\\\"label\\\":\\\"Search videos\\\",\\\"placeholder\\\":\\\"Search video titles or descriptions\\\",\\\"results\\\":\\\"Results for “{query}”\\\",\\\"empty\\\":\\\"No videos match “{query}”\\\",\\\"clear\\\":\\\"Clear search\\\",\\\"tooLong\\\":\\\"Search accepts one query of up to 100 characters.\\\"}}}},\\\"now\\\":\\\"$undefined\\\",\\\"timeZone\\\":\\\"Asia/Taipei\\\",\\\"children\\\":[[\\\"$\\\",\\\"$L15\\\",null,{}],[\\\"$\\\",\\\"$L16\\\",null,{\\\"labels\\\":\\\"$5:props:messages:site:account\\\",\\\"children\\\":[[\\\"$\\\",\\\"$L17\\\",null,{}],[\\\"$\\\",\\\"$L18\\\",null,{\\\"label\\\":\\\"Loading website\\\",\\\"children\\\":[\\\"$\\\",\\\"$L19\\\",null,{\\\"locale\\\":\\\"en\\\",\\\"labels\\\":\\\"$5:props:messages:site:statement\\\",\\\"children\\\":[\\\"$\\\",\\\"div\\\",null,{\\\"data-locale\\\":\\\"en\\\",\\\"lang\\\":\\\"en\\\",\\\"children\\\":[[\\\"$\\\",\\\"$L1a\\\",null,{\\\"locale\\\":\\\"en\\\",\\\"message\\\":\\\"Some content on this website may be machine- or AI-translated.\\\",\\\"dismissLabel\\\":\\\"Dismiss translation notice\\\",\\\"regionLabel\\\":\\\"Translation notice\\\"}],[\\\"$\\\",\\\"$8\\\",null,{\\\"fallback\\\":null,\\\"children\\\":[\\\"$\\\",\\\"$L1b\\\",null,{\\\"locale\\\":\\\"en\\\",\\\"children\\\":[\\\"$\\\",\\\"$L3\\\",null,{\\\"parallelRouterKey\\\":\\\"children\\\",\\\"error\\\":\\\"$undefined\\\",\\\"errorStyles\\\":\\\"$undefined\\\",\\\"errorScripts\\\":\\\"$undefined\\\",\\\"template\\\":[\\\"$\\\",\\\"$L4\\\",null,{}],\\\"templateStyles\\\":\\\"$undefined\\\",\\\"templateScripts\\\":\\\"$undefined\\\",\\\"notFound\\\":[\\\"$L1c\\\",[]],\\\"forbidden\\\":\\\"$undefined\\\",\\\"unauthorized\\\":\\\"$undefined\\\"}]}]}]]}]}]}]]}]]}]\\n10:[[\\\"$\\\",\\\"meta\\\",\\\"0\\\",{\\\"charSet\\\":\\\"utf-8\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"1\\\",{\\\"name\\\":\\\"viewport\\\",\\\"content\\\":\\\"width=device-width, initial-scale=1\\\"}]]\\n\"])</script><script>self.__next_f.push([1,\"1d:I[250309,[\\\"/_next/static/chunks/0d_4fjoyi696w.js\\\",\\\"/_next/static/chunks/1xf4ygt9e048_.js\\\",\\\"/_next/static/chunks/38w3enlmlmxft.js\\\",\\\"/_next/static/chunks/32n885asht4ek.js\\\",\\\"/_next/static/chunks/25v-8ojn0u953.js\\\",\\\"/_next/static/chunks/37_m1r-1ak2w3.js\\\",\\\"/_next/static/chunks/09di35ofo_93m.js\\\"],\\\"SiteHeader\\\"]\\n1e:I[887245,[\\\"/_next/static/chunks/0d_4fjoyi696w.js\\\",\\\"/_next/static/chunks/1xf4ygt9e048_.js\\\",\\\"/_next/static/chunks/38w3enlmlmxft.js\\\",\\\"/_next/static/chunks/32n885asht4ek.js\\\",\\\"/_next/static/chunks/25v-8ojn0u953.js\\\",\\\"/_next/static/chunks/37_m1r-1ak2w3.js\\\",\\\"/_next/static/chunks/09di35ofo_93m.js\\\"],\\\"\\\"]\\n1f:I[585314,[\\\"/_next/static/chunks/0d_4fjoyi696w.js\\\",\\\"/_next/static/chunks/1xf4ygt9e048_.js\\\",\\\"/_next/static/chunks/38w3enlmlmxft.js\\\",\\\"/_next/static/chunks/32n885asht4ek.js\\\",\\\"/_next/static/chunks/25v-8ojn0u953.js\\\",\\\"/_next/static/chunks/37_m1r-1ak2w3.js\\\",\\\"/_next/static/chunks/09di35ofo_93m.js\\\"],\\\"SiteFooter\\\"]\\n1c:[\\\"$\\\",\\\"div\\\",null,{\\\"className\\\":\\\"legal-page-shell\\\",\\\"children\\\":[[\\\"$\\\",\\\"$L1d\\\",null,{\\\"layout\\\":{\\\"locale\\\":\\\"en\\\",\\\"siteName\\\":\\\"Hallelujah Home Church\\\",\\\"englishName\\\":\\\"Hallelujah Home Church\\\",\\\"copyrightHolder\\\":\\\"Hallelujah Home Church\\\",\\\"allRightsReserved\\\":\\\"All rights reserved.\\\",\\\"seoTitleSuffix\\\":\\\"Hallelujah Home Church\\\",\\\"seoDescriptionFallback\\\":\\\"Building families in love and growing in truth\\\",\\\"header\\\":[{\\\"key\\\":\\\"about\\\",\\\"label\\\":\\\"About\\\",\\\"href\\\":\\\"/en/about\\\",\\\"visible\\\":true},{\\\"key\\\":\\\"news\\\",\\\"label\\\":\\\"Latest News\\\",\\\"href\\\":\\\"/en/news\\\",\\\"visible\\\":true},{\\\"key\\\":\\\"literature-ministry\\\",\\\"label\\\":\\\"Literature Ministry\\\",\\\"href\\\":\\\"/en/literature-ministry\\\",\\\"visible\\\":true}],\\\"legal\\\":[{\\\"key\\\":\\\"privacy-policy\\\",\\\"label\\\":\\\"Privacy\\\",\\\"href\\\":\\\"/en/privacy-policy\\\",\\\"visible\\\":true},{\\\"key\\\":\\\"terms-of-use\\\",\\\"label\\\":\\\"Terms of Use\\\",\\\"href\\\":\\\"/en/terms-of-use\\\",\\\"visible\\\":true}],\\\"links\\\":{\\\"churchYoutube\\\":\\\"https://youtube.com/@hhc33?si=SR2rSIVOTFX2dCmw\\\",\\\"churchFacebook\\\":\\\"https://www.facebook.com/www.alive.org.tw/?locale=zh_TW\\\",\\\"musicYoutube\\\":\\\"https://youtube.com/@gkpmusic777?si=JqJyfjM8FCmWD5MY\\\"},\\\"version\\\":0,\\\"publishedAt\\\":\\\"\\\"},\\\"locale\\\":\\\"en\\\",\\\"pathname\\\":\\\"/en\\\",\\\"showNavigation\\\":false}],[\\\"$\\\",\\\"main\\\",null,{\\\"className\\\":\\\"legal-page-main\\\",\\\"children\\\":[\\\"$\\\",\\\"section\\\",null,{\\\"className\\\":\\\"shell py-16 text-center\\\",\\\"children\\\":[[\\\"$\\\",\\\"h1\\\",null,{\\\"className\\\":\\\"text-4xl font-semibold\\\",\\\"children\\\":\\\"404\\\"}],[\\\"$\\\",\\\"$L1e\\\",null,{\\\"className\\\":\\\"mt-6 inline-flex min-h-11 items-center text-primary\\\",\\\"href\\\":\\\"/en\\\",\\\"children\\\":\\\"Home\\\"}]]}]}],[\\\"$\\\",\\\"$L1f\\\",null,{\\\"layout\\\":\\\"$1c:props:children:0:props:layout\\\",\\\"locale\\\":\\\"en\\\",\\\"pathname\\\":\\\"/en\\\"}]]}]\\n\"])</script><script>self.__next_f.push([1,\"20:I[850981,[\\\"/_next/static/chunks/0ek6pw8ntturj.js\\\"],\\\"IconMark\\\"]\\n9:null\\n12:[[\\\"$\\\",\\\"title\\\",\\\"0\\\",{\\\"children\\\":\\\"Bulletin reader\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"1\\\",{\\\"name\\\":\\\"description\\\",\\\"content\\\":\\\"在愛中建造家庭，在真理中成長\\\"}],[\\\"$\\\",\\\"link\\\",\\\"2\\\",{\\\"rel\\\":\\\"manifest\\\",\\\"href\\\":\\\"/manifest.webmanifest\\\",\\\"crossOrigin\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"3\\\",{\\\"name\\\":\\\"robots\\\",\\\"content\\\":\\\"noindex, nofollow\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"4\\\",{\\\"property\\\":\\\"og:title\\\",\\\"content\\\":\\\"哈利路亞家教會\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"5\\\",{\\\"property\\\":\\\"og:description\\\",\\\"content\\\":\\\"在愛中建造家庭，在真理中成長\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"6\\\",{\\\"property\\\":\\\"og:url\\\",\\\"content\\\":\\\"https://www.alive.org.tw\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"7\\\",{\\\"property\\\":\\\"og:site_name\\\",\\\"content\\\":\\\"哈利路亞家教會\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"8\\\",{\\\"property\\\":\\\"og:image\\\",\\\"content\\\":\\\"https://www.alive.org.tw/opengraph-image\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"9\\\",{\\\"property\\\":\\\"og:image:width\\\",\\\"content\\\":\\\"1200\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"10\\\",{\\\"property\\\":\\\"og:image:height\\\",\\\"content\\\":\\\"630\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"11\\\",{\\\"property\\\":\\\"og:image:alt\\\",\\\"content\\\":\\\"哈利路亞家教會\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"12\\\",{\\\"property\\\":\\\"og:type\\\",\\\"content\\\":\\\"website\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"13\\\",{\\\"name\\\":\\\"twitter:card\\\",\\\"content\\\":\\\"summary_large_image\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"14\\\",{\\\"name\\\":\\\"twitter:title\\\",\\\"content\\\":\\\"哈利路亞家教會\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"15\\\",{\\\"name\\\":\\\"twitter:description\\\",\\\"content\\\":\\\"在愛中建造家庭，在真理中成長\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"16\\\",{\\\"name\\\":\\\"twitter:image\\\",\\\"content\\\":\\\"https://www.alive.org.tw/opengraph-image\\\"}],[\\\"$\\\",\\\"link\\\",\\\"17\\\",{\\\"rel\\\":\\\"icon\\\",\\\"href\\\":\\\"/favicon.ico?favicon.0rkj0uxook9iz.ico\\\",\\\"sizes\\\":\\\"256x256\\\",\\\"type\\\":\\\"image/x-icon\\\"}],[\\\"$\\\",\\\"link\\\",\\\"18\\\",{\\\"rel\\\":\\\"apple-touch-icon\\\",\\\"href\\\":\\\"/apple-icon.png?apple-icon.2sm1ir0l_vg89.png\\\",\\\"sizes\\\":\\\"180x180\\\",\\\"type\\\":\\\"image/png\\\"}],[\\\"$\\\",\\\"$L20\\\",\\\"19\\\",{}]]\\n\"])</script></body></html>"
+  },
+  "shellSha256": "10a129958c1a2a0662638a5b2555cb1beb7d87b27206b16669239bb189a641cb"
+}

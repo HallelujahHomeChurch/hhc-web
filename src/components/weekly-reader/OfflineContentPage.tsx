@@ -2,7 +2,7 @@
 import {useEffect, useState} from 'react';
 import {useAccountIdentity} from '@/components/layout/AccountControl';
 import {isWeeklyReaderEnabled} from '@/features/weekly-reader/enabled';
-import {getOfflineIdentity, hasPendingReaderWrites, listOfflineSaves, readOfflineSave, removeOfflineSave, supportsOfflineReader, type OfflineSave} from '@/features/weekly-reader/offline-store';
+import {getOfflineIdentity, hasPendingReaderWrites, listOfflineSaves, readOfflineSave, removeOfflineSave, supportsOfflineReader, type OfflineSaveSummary} from '@/features/weekly-reader/offline-store';
 import {watchOfflineAccount} from '@/features/weekly-reader/offline-session';
 import type {Locale} from '@/i18n/locales';
 import {localeLabels} from '@/i18n/locales';
@@ -12,7 +12,7 @@ import './reader.css';
 
 export function OfflineContentPage({locale, messages: m}: {locale: Locale; messages: ReaderMessages}) {
   const accountId = useAccountIdentity();
-  const [savedItems, setItems] = useState<{save: OfflineSave; available: boolean}[]>([]);
+  const [savedItems, setItems] = useState<{save: OfflineSaveSummary; available: boolean}[]>([]);
   // Auth can change before the asynchronous offline-account purge completes.
   const items = savedItems.filter(({save}) => !accountId || save.selector.accountId === accountId);
   const [error, setError] = useState(false);
@@ -31,9 +31,9 @@ export function OfflineContentPage({locale, messages: m}: {locale: Locale; messa
     })().catch(() => {if (active) setError(true);});
     return () => {active = false; stop();};
   }, [accountId, enabled, refresh]);
-  async function remove(save: OfflineSave) {
+  async function remove(save: OfflineSaveSummary) {
     try {
-      const pending = await hasPendingReaderWrites(save.selector.accountId, save.value.document.documentId);
+      const pending = await hasPendingReaderWrites(save.selector.accountId, save.documentId);
       if (!window.confirm(pending ? m.unsyncedWarning : m.offlineRemoveConfirm)) return;
       await removeOfflineSave(save.selector); setItems(rows => rows.filter(row => row.save !== save));
     }
@@ -41,10 +41,10 @@ export function OfflineContentPage({locale, messages: m}: {locale: Locale; messa
   }
   return <main className="weekly-reader">
     <a className="reader-back" href={`/${locale}/literature-ministry`}>{m.back}</a><h1>{m.offlineContent}</h1>
-    {!enabled ? <p>{m.unavailable}</p> : !items.length ? <p>{m.offlineEmpty}</p> : <ul className="reader-offline-list">{items.map(({save, available}) => <li key={`${save.value.access.documentId}:${save.value.access.revision}`}>
+    {!enabled ? <p>{m.unavailable}</p> : !items.length ? <p>{m.offlineEmpty}</p> : <ul className="reader-offline-list">{items.map(({save, available}) => <li key={`${save.documentId}:${save.revision}`}>
       <a href={`/${locale}/literature-ministry/${save.selector.issueNumber}/read/${save.selector.series}/${save.selector.contentLocale}`}>{save.selector.issueNumber} · {getMessages(locale).literatureMinistry[save.selector.series]} · {localeLabels[save.selector.contentLocale]}</a>
-      <p>{m.offlineRevision} {save.value.access.revision} · {m.offlineSize} {new Intl.NumberFormat(locale, {maximumFractionDigits: 1}).format(save.size / 1024)} KB</p>
-      <p>{m.offlineExpiry} {new Intl.DateTimeFormat(locale, {dateStyle: 'short', timeStyle: 'short'}).format(new Date(save.value.access.offlineValidUntil))}</p>
+      <p>{m.offlineRevision} {save.revision} · {m.offlineSize} {new Intl.NumberFormat(locale, {maximumFractionDigits: 1}).format(save.size / 1024)} KB</p>
+      <p>{m.offlineExpiry} {new Intl.DateTimeFormat(locale, {dateStyle: 'short', timeStyle: 'short'}).format(new Date(save.offlineValidUntil))}</p>
       {!available ? <p>{m.offlineLocked}</p> : null}
       <button type="button" onClick={() => void remove(save)}>{m.removeOffline}</button>
     </li>)}</ul>}
