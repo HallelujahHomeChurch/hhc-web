@@ -18,7 +18,7 @@ type Props = {
   live?: LivePlayerState; onDvr?:()=>void; onReturnToLive?:()=>void;
   container: RefObject<HTMLDivElement | null>; videoRef: RefObject<HTMLVideoElement | null>;
   playbackUrl: string; watermark: string; labels: PlayerLabels;
-  quality: Quality; activeHeight?:number|null; qualities: Exclude<Quality, 'auto'>[]; autoplayBlocked?:boolean; loading: boolean; failed: boolean;
+  quality: Quality; activeHeight?:number|null; qualities: Exclude<Quality, 'auto'>[]; autoplayBlocked?:boolean; loading: boolean; buffering?:boolean; failed: boolean;
   onPlaybackChange?: (value:Partial<Pick<PlayerBookmark,'time'|'paused'|'rate'>>)=>void;
   onQualityChange: (quality: Quality) => void; onPlayingChange?: (playing: boolean) => void;
 };
@@ -36,7 +36,7 @@ export function playerClock(seconds: number) {
   return total >= 3600 ? `${Math.floor(total / 3600)}:${String(Math.floor(total / 60) % 60).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}` : `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
 }
 
-export function PlayerChrome({container, videoRef, playbackUrl, watermark, labels, quality, activeHeight, qualities, autoplayBlocked=false, loading, failed, onQualityChange, onPlaybackChange,onPlayingChange,live,onDvr,onReturnToLive,previousHref,nextHref}: Props) {
+export function PlayerChrome({container, videoRef, playbackUrl, watermark, labels, quality, activeHeight, qualities, autoplayBlocked=false, loading, buffering=false, failed, onQualityChange, onPlaybackChange,onPlayingChange,live,onDvr,onReturnToLive,previousHref,nextHref}: Props) {
   const router = useRouter();
   const touchUI = useSyncExternalStore(subscribeTouch, touchSnapshot, () => false);
   const fullscreenState = usePlayerFullscreen(container, videoRef, touchUI);
@@ -265,10 +265,10 @@ export function PlayerChrome({container, videoRef, playbackUrl, watermark, label
     {fullscreenState.error ? <div className={styles.fullscreenError} role="alert">{labels.fullscreenError}</div> : null}
     {holding ? <div className={styles.speedFeedback} aria-hidden="true">2×</div> : null}
     {feedback ? <div className={`${styles.feedback} ${feedback.kind==='back'?styles.seekBack:feedback.kind==='forward'?styles.seekForward:styles.playbackFeedback}`} aria-hidden="true"><span key={feedback.id}>{feedback.kind === 'play' ? <Play size={36} fill="currentColor"/> : feedback.kind === 'pause' ? <Pause size={36} fill="currentColor"/> : <><span className={styles.seekArrows}>{touchUI ? <><i/><i/><i/></> : feedback.kind==='back' ? <ChevronLeft/> : <ChevronRight/>}</span><span>{feedback.kind==='back'?'−':'+'}{feedback.seconds}</span><span className="sr-only">{labels.seek}</span></>}</span></div> : null}
-    {(loading || waiting) && !autoplayBlocked && !playBlocked && !failed && !feedback ? <div className={styles.loading} role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{labels.buffering}</span></div> : null}
+    {(loading || buffering || waiting) && !autoplayBlocked && !playBlocked && !failed && !feedback ? <div className={styles.loading} role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{labels.buffering}</span></div> : null}
     {!ended&&(touchUI || (autoplayBlocked||playBlocked) && !failed) ? <div data-controls className={`${styles.centerControls} ${controlsVisible ? '' : styles.hidden}`}>
       {touchUI && previousHref && labels.previousVideo ? <Link href={previousHref} className={styles.skip} aria-label={labels.previousVideo}><SkipBack fill="currentColor"/></Link> : <span/>}
-      {(!loading && !waiting || autoplayBlocked||playBlocked) && !failed ? <button type="button" className={styles.centerPlay} aria-label={playing ? labels.pause : labels.play} onClick={toggle}>{playing ? <Pause fill="currentColor"/> : <Play fill="currentColor"/>}</button> : <span/>}
+      {(!loading && !buffering && !waiting || autoplayBlocked||playBlocked) && !failed ? <button type="button" className={styles.centerPlay} aria-label={playing ? labels.pause : labels.play} onClick={toggle}>{playing ? <Pause fill="currentColor"/> : <Play fill="currentColor"/>}</button> : <span/>}
       {touchUI && nextHref && labels.nextVideo ? <Link href={nextHref} className={styles.skip} aria-label={labels.nextVideo}><SkipForward fill="currentColor"/></Link> : <span/>}
     </div> : null}
     {touchUI ? <div data-controls className={`${styles.topControls} ${controlsVisible ? '' : styles.hidden}`}>

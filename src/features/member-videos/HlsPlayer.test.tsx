@@ -831,3 +831,33 @@ it.each([false,true])('ignores a stale native error during quality reconstructio
  Object.defineProperty(video,'error',{configurable:true,value:{code:3,message:'Decode failed'}});fireEvent.error(video);
  expect(p.onError).toHaveBeenCalledOnce();
 });
+
+it.each(['native','hls'] as const)('keeps ended-live %s reconstruction loading until decoded media returns',async(kind)=>{
+ const ready=vi.spyOn(HTMLMediaElement.prototype,'readyState','get').mockReturnValue(2);
+ const p=props();render(<HlsPlayer {...p} resume={{time:81,paused:true,rate:1.5,quality:'auto',intent:'dvr'}} playbackMode="live" live={{verifiedEnd:210.21,canFollow:false,label:'Ended',backToLive:'Live'}}/>);
+ await waitFor(()=>expect(engine.instances).toHaveLength(1));
+ const video=p.videoRef.current!;
+ Object.defineProperty(video,'seekable',{configurable:true,value:{length:1,start:()=>0,end:()=>210.21}});
+ Object.defineProperty(video,'paused',{configurable:true,value:true});
+ act(()=>{video.currentTime=81;video.playbackRate=1.5;fireEvent.progress(video);});
+ chooseQuality('1080p');ready.mockReturnValue(0);
+ if(kind==='native'){Object.defineProperty(video,'error',{configurable:true,value:{code:3}});fireEvent.error(video);}
+ else act(()=>engine.instances[0].listeners.error('error',{fatal:true,type:'mediaError'}));
+ expect(p.onError).not.toHaveBeenCalled();expect(screen.getByRole('status')).toHaveTextContent('Loading video');
+ Object.defineProperty(video,'error',{configurable:true,value:null});ready.mockReturnValue(2);fireEvent.loadedMetadata(video);fireEvent.canPlay(video);
+ expect(p.onError).not.toHaveBeenCalled();expect(video.currentTime).toBe(81);expect(video.playbackRate).toBe(1.5);expect(video.paused).toBe(true);
+});
+
+it('reports a persistent reconstruction failure after the bounded loading window',async()=>{
+ const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));
+ vi.useFakeTimers();chooseQuality('1080p');
+ act(()=>engine.instances[0].listeners.error('error',{fatal:true,type:'mediaError'}));
+ expect(p.onError).not.toHaveBeenCalled();act(()=>vi.advanceTimersByTime(30000));expect(p.onError).toHaveBeenCalledOnce();
+});
+it('reports fatal network failures immediately during reconstruction',async()=>{
+ const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));chooseQuality('1080p');
+ act(()=>engine.instances[0].listeners.error('error',{fatal:true,type:'networkError'}));expect(p.onError).toHaveBeenCalledOnce();
+});
+it('does not turn slow quality buffering without a decode error into a media failure',async()=>{
+ const p=props();render(<HlsPlayer {...p}/>);await waitFor(()=>expect(engine.instances).toHaveLength(1));vi.useFakeTimers();chooseQuality('1080p');act(()=>vi.advanceTimersByTime(60000));expect(p.onError).not.toHaveBeenCalled();
+});
