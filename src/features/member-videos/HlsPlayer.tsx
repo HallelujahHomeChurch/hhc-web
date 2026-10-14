@@ -30,6 +30,7 @@ function verifyMediaRequest(master:string,target:string) {
 export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels,videoRef,onPlayingChange,onError,poster,previousHref,nextHref,playbackMode='vod',live,resume,onBookmark}:Props) {
   const container=useRef<HTMLDivElement>(null), engine=useRef<Hls|null>(null);
   const qualitySwitch=useRef<AbortController|null>(null);
+  const pendingQuality=useRef<{quality:Quality;run:()=>void}|null>(null);
   const heldFrame=useRef<HTMLCanvasElement|null>(null);
   const [holdingFrame,setHoldingFrame]=useState(false);
   const rebuilding=useRef(false),rebuildTimeout=useRef<number|null>(null);
@@ -56,7 +57,10 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
   useEffect(()=>{currentLive.current=live;bookmarkCallback.current=onBookmark;qualityRef.current=quality;errorCallback.current=onError;},[live,onBookmark,quality,onError]);
   const remember=useCallback(()=>{
     const video=videoRef.current;
-    if(video&&!closing.current&&!failed.current&&!qualityPosition.current)bookmarkCallback.current?.({time:video.currentTime,paused:video.paused,rate:video.playbackRate,quality:qualityRef.current,intent:intent.current});
+    if(video&&!closing.current&&!failed.current){
+      const position=qualityPosition.current??{time:video.currentTime,paused:video.paused,rate:video.playbackRate};
+      bookmarkCallback.current?.({...position,quality:qualityRef.current,intent:intent.current});
+    }
   },[videoRef]);
   const dvr=useCallback(()=>{automaticSeek.current=null;intent.current='dvr';remember();},[remember]);
   const returnToLive=()=>{
@@ -73,7 +77,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
     const video=videoRef.current;
     const position=qualityPosition.current??{time:video?.currentTime??0,paused:pausedIntent.current,rate:video?.playbackRate??1};
     const bookmark=positioned.current||qualityPosition.current?{...position,quality:qualityRef.current,intent:intent.current}:initialBookmark.current;
-    failed.current=true;qualitySwitch.current?.abort();finishRebuild();clearHeldFrame();setMode('error');errorCallback.current(bookmark);
+    failed.current=true;pendingQuality.current=null;qualitySwitch.current?.abort();finishRebuild();clearHeldFrame();setMode('error');errorCallback.current(bookmark);
   },[videoRef,clearHeldFrame,finishRebuild]);
   const handleMediaError=useCallback(()=>{
     if(!rebuilding.current){handleError();return;}
@@ -95,11 +99,16 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
       if(cancelled)return;
       setActiveHeight(null);
       if(Hls.isSupported()) {
+        const LatencyController=Hls.DefaultConfig.latencyController!;
         const hls=new Hls({
           enableWorker:true, debug:false, maxBufferLength:60, maxMaxBufferLength:120,
           // HLS levels are sorted by resolution; start low without disabling ABR.
           startLevel:qualityRef.current==='auto'?0:undefined,
-          ...(playbackMode==='live'?{backBufferLength:120,lowLatencyMode:false,liveSyncDuration:30,liveMaxLatencyDuration:Infinity,maxLiveSyncPlaybackRate:1}:{}),
+          ...(playbackMode==='live'?{
+            backBufferLength:120,lowLatencyMode:false,liveSyncDuration:30,liveMaxLatencyDuration:Infinity,maxLiveSyncPlaybackRate:1,
+            // This player owns positioning; hls.js outside-window sync can rewind an audio-tail overrun.
+            latencyController:class extends LatencyController {override get liveSyncPosition():number|null{return null;}},
+          }:{}),
           xhrSetup:(xhr,url)=>{verifyMediaRequest(playbackUrl,url);xhr.withCredentials=true;},
           fetchSetup:(context,init)=>{verifyMediaRequest(playbackUrl,context.url);return new Request(context.url,{...init,credentials:'include',redirect:'error',referrerPolicy:'no-referrer'});},
         });
@@ -118,7 +127,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
       } else handleError();
     }).catch(()=>{if(!cancelled)handleError();});
     return ()=>{
-      cancelled=true;closing.current=true;finishRebuild();qualitySwitch.current?.abort();qualityPosition.current=null;clearHeldFrame();video.removeEventListener('loadedmetadata',autoplay);
+      cancelled=true;closing.current=true;pendingQuality.current=null;finishRebuild();qualitySwitch.current?.abort();qualityPosition.current=null;clearHeldFrame();video.removeEventListener('loadedmetadata',autoplay);
       engine.current?.destroy();engine.current=null;video.pause();video.removeAttribute('src');video.load();
     };
   },[playbackUrl,videoRef,handleError,handleMediaError,playbackMode,clearHeldFrame,finishRebuild]);
@@ -138,7 +147,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
           video.playbackRate=saved.rate;if(saved.paused)video.pause();
         }else if(window){automaticSeek.current=window.edge;video.currentTime=window.edge;}
         positioned.current=true;remember();
-      }else if(window&&state?.canFollow&&intent.current==='followLive'&&!video.paused&&window.edge-video.currentTime>60){
+      }else if(window&&state?.canFollow&&intent.current==='followLive'&&!video.paused&&video.playbackRate===1&&window.edge-video.currentTime>60){
         // Upstream recovery does not fire the viewer's browser online event.
         automaticSeek.current=window.edge;video.currentTime=window.edge;remember();
       }
@@ -160,7 +169,9 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
 
   const changeQuality=(next:Quality)=>{
     const video=videoRef.current;
-    if(!video || (next!=='auto'&&!qualities.includes(next)))return;
+    if(!video || (next!=='auto'&&!qualities.includes(next)) || (!engine.current&&mode!=='native'))return;
+    qualityRef.current=next;setQuality(next);
+    if(rebuilding.current){pendingQuality.current={quality:next,run:()=>changeQuality(next)};remember();return;}
     const preservePosition=()=>{
       // Keep pixels in memory while the rendition reload would expose the poster.
       const canvas=heldFrame.current;
@@ -175,17 +186,24 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
       const controller=new AbortController();qualitySwitch.current=controller;
       const previous=qualityPosition.current ?? {time:video.currentTime,paused:video.paused,rate:video.playbackRate};
       qualityPosition.current=previous;
+      let appliedTime:number|null=null;
       const restore=()=>{
-        if(engine.current&&video.readyState<1)return;
+        if(controller.signal.aborted||qualitySwitch.current!==controller||closing.current||failed.current||video.readyState<1)return;
         const window=playbackMode==='live'&&currentLive.current?liveWindow(video.seekable,currentLive.current.verifiedEnd):null;
         if(playbackMode==='live'&&!window)return;
-        automaticSeek.current=window?Math.max(window.start,Math.min(previous.time,window.end)):Number.isFinite(video.duration)?Math.min(previous.time,video.duration):previous.time;
-        video.currentTime=automaticSeek.current;
-        video.playbackRate=previous.rate;
-        if(!previous.paused)void video.play().catch(()=>{});else video.pause();
-        qualityPosition.current=null;controller.abort();remember();
+        const time=!positioned.current&&!initialBookmark.current&&window&&intent.current==='followLive'?window.edge:previous.time;
+        const target=window?Math.max(window.start,Math.min(time,window.end)):Number.isFinite(video.duration)?Math.min(previous.time,video.duration):previous.time;
+        if(appliedTime!==target||!video.seeking&&(video.currentTime<target-.1||previous.paused&&Math.abs(video.currentTime-target)>.1)){appliedTime=target;automaticSeek.current=target;video.currentTime=target;}
+        if(video.playbackRate!==previous.rate)video.playbackRate=previous.rate;
+        if(!previous.paused&&video.paused)void video.play().catch(()=>{});else if(previous.paused&&!video.paused)video.pause();
+        // Metadata alone is not a restored frame; retain intent across detach/reset events.
+        if(video.readyState<2||video.seeking||video.error||video.currentTime<target-.1||previous.paused&&Math.abs(video.currentTime-target)>.1)return;
+        controller.abort();qualitySwitch.current=null;
+        const pending=pendingQuality.current;pendingQuality.current=null;
+        if(pending&&pending.quality!==next){finishRebuild();pending.run();return;}
+        positioned.current=true;qualityPosition.current=null;finishRebuild();clearHeldFrame();remember();
       };
-      for(const event of ['loadedmetadata','progress','canplay'])video.addEventListener(event,restore,{signal:controller.signal});
+      for(const event of ['loadedmetadata','progress','canplay','loadeddata','seeked'])video.addEventListener(event,restore,{signal:controller.signal});
     };
     if(engine.current) {
       const target=new URL(`${next}/index.m3u8`,playbackUrl).href;
@@ -199,12 +217,12 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
       preservePosition();
       video.src=next==='auto'?playbackUrl:new URL(`${next}/index.m3u8`,playbackUrl).href;video.load();
     } else return;
-    qualityRef.current=next;setQuality(next);remember();
+    remember();
   };
   return <div ref={container} tabIndex={0} role="region" aria-label={`${title} — ${labels.togglePlayback}`} className={styles.player}>
     <video ref={videoRef} poster={poster} playsInline preload="metadata" controlsList="nodownload noremoteplayback" disablePictureInPicture disableRemotePlayback crossOrigin="use-credentials" aria-label={title} className="h-full w-full object-contain"
       onPlay={()=>{pausedIntent.current=false;setAutoplayBlocked(false);}} onError={event=>{const error=event.currentTarget.error;if(error&&!closing.current){if(error.code===3)handleMediaError();else handleError();}}}/>
     <canvas ref={heldFrame} hidden={!holdingFrame} aria-hidden="true" className={styles.heldFrame}/>
-    <PlayerChrome container={container} videoRef={videoRef} playbackUrl={playbackUrl} watermark={watermark} labels={labels} quality={quality} activeHeight={activeHeight} qualities={qualities} previousHref={previousHref} nextHref={nextHref} autoplayBlocked={autoplayBlocked} loading={mode==='loading'} buffering={qualityLoading} failed={mode==='error'} onQualityChange={changeQuality} onPlaybackChange={value=>{if(value.paused!==undefined)pausedIntent.current=value.paused;if(qualityPosition.current)Object.assign(qualityPosition.current,value);}} onPlayingChange={onPlayingChange} live={playbackMode==='live'?live:undefined} onDvr={dvr} onReturnToLive={returnToLive}/>
+    <PlayerChrome container={container} videoRef={videoRef} playbackUrl={playbackUrl} watermark={watermark} labels={labels} quality={quality} activeHeight={activeHeight} qualities={qualities} previousHref={previousHref} nextHref={nextHref} autoplayBlocked={autoplayBlocked} loading={mode==='loading'} buffering={qualityLoading} failed={mode==='error'} onQualityChange={changeQuality} onPlaybackChange={value=>{if(value.paused!==undefined)pausedIntent.current=value.paused;if(qualityPosition.current)Object.assign(qualityPosition.current,value);remember();}} onPlayingChange={onPlayingChange} live={playbackMode==='live'?live:undefined} onDvr={dvr} onReturnToLive={returnToLive}/>
   </div>;
 }
