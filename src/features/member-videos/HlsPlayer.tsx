@@ -32,6 +32,13 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
   const qualitySwitch=useRef<AbortController|null>(null);
   const heldFrame=useRef<HTMLCanvasElement|null>(null);
   const [holdingFrame,setHoldingFrame]=useState(false);
+  const rebuilding=useRef(false),rebuildTimeout=useRef<number|null>(null);
+  const [qualityLoading,setQualityLoading]=useState(false);
+  const finishRebuild=useCallback(()=>{
+    rebuilding.current=false;setQualityLoading(false);
+    if(rebuildTimeout.current!==null)window.clearTimeout(rebuildTimeout.current);
+    rebuildTimeout.current=null;
+  },[]);
   const clearHeldFrame=useCallback(()=>{
     const canvas=heldFrame.current;if(canvas){canvas.width=0;canvas.height=0;}
     setHoldingFrame(false);
@@ -66,8 +73,13 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
     const video=videoRef.current;
     const position=qualityPosition.current??{time:video?.currentTime??0,paused:pausedIntent.current,rate:video?.playbackRate??1};
     const bookmark=positioned.current||qualityPosition.current?{...position,quality:qualityRef.current,intent:intent.current}:initialBookmark.current;
-    failed.current=true;qualitySwitch.current?.abort();clearHeldFrame();setMode('error');errorCallback.current(bookmark);
-  },[videoRef,clearHeldFrame]);
+    failed.current=true;qualitySwitch.current?.abort();finishRebuild();clearHeldFrame();setMode('error');errorCallback.current(bookmark);
+  },[videoRef,clearHeldFrame,finishRebuild]);
+  const handleMediaError=useCallback(()=>{
+    if(!rebuilding.current){handleError();return;}
+    // Only an observed decode error gets a grace period; slow buffering alone is not failure.
+    rebuildTimeout.current??=window.setTimeout(handleError,30000);
+  },[handleError]);
 
   useEffect(()=>{
     const video=videoRef.current;
@@ -99,17 +111,17 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
           if(selected!=='auto'){const target=new URL(`${selected}/index.m3u8`,playbackUrl).href;hls.nextLevel=hls.levels.findIndex(level=>level.url.includes(target));}
           setMode('mse');autoplay();
         }});
-        hls.on(Hls.Events.ERROR,(_event,data)=>{if(data.fatal&&!cancelled)handleError();});
+        hls.on(Hls.Events.ERROR,(_event,data)=>{if(data.fatal&&!cancelled){if(data.type==='mediaError')handleMediaError();else handleError();}});
         hls.loadSource(playbackUrl);hls.attachMedia(video);
       } else if(video.canPlayType('application/vnd.apple.mpegurl')) {
         setMode('native');video.src=qualityRef.current==='auto'?playbackUrl:new URL(`${qualityRef.current}/index.m3u8`,playbackUrl).href;video.addEventListener('loadedmetadata',autoplay,{once:true});video.load();
       } else handleError();
     }).catch(()=>{if(!cancelled)handleError();});
     return ()=>{
-      cancelled=true;closing.current=true;qualitySwitch.current?.abort();qualityPosition.current=null;clearHeldFrame();video.removeEventListener('loadedmetadata',autoplay);
+      cancelled=true;closing.current=true;finishRebuild();qualitySwitch.current?.abort();qualityPosition.current=null;clearHeldFrame();video.removeEventListener('loadedmetadata',autoplay);
       engine.current?.destroy();engine.current=null;video.pause();video.removeAttribute('src');video.load();
     };
-  },[playbackUrl,videoRef,handleError,playbackMode,clearHeldFrame]);
+  },[playbackUrl,videoRef,handleError,handleMediaError,playbackMode,clearHeldFrame,finishRebuild]);
 
   useEffect(()=>{
     const video=videoRef.current;if(!video)return;
@@ -133,7 +145,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
     };
     const seeking=()=>{if(!positioned.current||closing.current||qualityPosition.current||automaticSeek.current!==null)return;dvr();};
     const revealFrame=()=>{
-      if(!qualityPosition.current&&!video.seeking&&video.readyState>=2)clearHeldFrame();
+      if(!qualityPosition.current&&!video.seeking&&video.readyState>=2&&!video.error){finishRebuild();clearHeldFrame();}
     };
     const seeked=()=>{automaticSeek.current=null;revealFrame();};
     const resolution=()=>{if(!engine.current)setActiveHeight(video.videoHeight>0?video.videoHeight:null);};
@@ -144,7 +156,7 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
     window.addEventListener('online',online);
     if(playbackMode==='live')position();
     return()=>{for(const [event,handler] of events)video.removeEventListener(event,handler);window.removeEventListener('online',online);};
-  },[playbackUrl,playbackMode,videoRef,remember,dvr,live?.verifiedEnd,live?.canFollow,clearHeldFrame]);
+  },[playbackUrl,playbackMode,videoRef,remember,dvr,live?.verifiedEnd,live?.canFollow,clearHeldFrame,finishRebuild]);
 
   const changeQuality=(next:Quality)=>{
     const video=videoRef.current;
@@ -158,7 +170,8 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
           if(context){canvas.width=video.videoWidth;canvas.height=video.videoHeight;context.drawImage(video,0,0,canvas.width,canvas.height);setHoldingFrame(true);}
         }catch{clearHeldFrame();}
       }
-      qualitySwitch.current?.abort();
+      qualitySwitch.current?.abort();finishRebuild();
+      rebuilding.current=true;setQualityLoading(true);
       const controller=new AbortController();qualitySwitch.current=controller;
       const previous=qualityPosition.current ?? {time:video.currentTime,paused:video.paused,rate:video.playbackRate};
       qualityPosition.current=previous;
@@ -190,8 +203,8 @@ export function HlsPlayer({playbackUrl,availableQualities,watermark,title,labels
   };
   return <div ref={container} tabIndex={0} role="region" aria-label={`${title} — ${labels.togglePlayback}`} className={styles.player}>
     <video ref={videoRef} poster={poster} playsInline preload="metadata" controlsList="nodownload noremoteplayback" disablePictureInPicture disableRemotePlayback crossOrigin="use-credentials" aria-label={title} className="h-full w-full object-contain"
-      onPlay={()=>{pausedIntent.current=false;setAutoplayBlocked(false);}} onError={event=>{if(event.currentTarget.error)handleError();}}/>
+      onPlay={()=>{pausedIntent.current=false;setAutoplayBlocked(false);}} onError={event=>{const error=event.currentTarget.error;if(error&&!closing.current){if(error.code===3)handleMediaError();else handleError();}}}/>
     <canvas ref={heldFrame} hidden={!holdingFrame} aria-hidden="true" className={styles.heldFrame}/>
-    <PlayerChrome container={container} videoRef={videoRef} playbackUrl={playbackUrl} watermark={watermark} labels={labels} quality={quality} activeHeight={activeHeight} qualities={qualities} previousHref={previousHref} nextHref={nextHref} autoplayBlocked={autoplayBlocked} loading={mode==='loading'} failed={mode==='error'} onQualityChange={changeQuality} onPlaybackChange={value=>{if(value.paused!==undefined)pausedIntent.current=value.paused;if(qualityPosition.current)Object.assign(qualityPosition.current,value);}} onPlayingChange={onPlayingChange} live={playbackMode==='live'?live:undefined} onDvr={dvr} onReturnToLive={returnToLive}/>
+    <PlayerChrome container={container} videoRef={videoRef} playbackUrl={playbackUrl} watermark={watermark} labels={labels} quality={quality} activeHeight={activeHeight} qualities={qualities} previousHref={previousHref} nextHref={nextHref} autoplayBlocked={autoplayBlocked} loading={mode==='loading'} buffering={qualityLoading} failed={mode==='error'} onQualityChange={changeQuality} onPlaybackChange={value=>{if(value.paused!==undefined)pausedIntent.current=value.paused;if(qualityPosition.current)Object.assign(qualityPosition.current,value);}} onPlayingChange={onPlayingChange} live={playbackMode==='live'?live:undefined} onDvr={dvr} onReturnToLive={returnToLive}/>
   </div>;
 }
