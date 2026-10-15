@@ -1,3 +1,4 @@
+vi.mock('./VideoInteractions',()=>({VideoInteractions:({children}:{children:import('react').ReactNode})=><>{children}</>}));
 import {act,cleanup,fireEvent,render,screen} from '@testing-library/react';
 import {afterEach,expect,it,vi} from 'vitest';
 import type {ComponentProps,RefObject} from 'react';

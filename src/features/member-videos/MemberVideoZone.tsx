@@ -13,6 +13,8 @@ import type {Locale} from '@/i18n/locales';
 import {captureHandledError} from '@/lib/observability';
 import {createMemberVideoApi} from './api';
 import {videoSearchHref,videoSearchRefreshEvent,type VideoSearchLabels} from './search';
+import {VideoInteractions} from './VideoInteractions';
+import {usePlaybackTelemetry} from './usePlaybackTelemetry';
 import {HlsPlayer, type PlayerLabels} from './HlsPlayer';
 import playerStyles from './PlayerChrome.module.css';
 import {playerClock} from './PlayerChrome';
@@ -35,7 +37,7 @@ export type Messages = {
 } & PlayerLabels;
 type ActivePlayback = {recordingId: string; scopeId: string; grant: MemberRecordingPlayback; url: string};
 const pageSize = 12;
-type ZoneProps = {upcomingOnly?:boolean;locale: Locale; messages: Messages; hero: ReactNode; view?: 'list' | 'watch'; recordingId?: string;query?: string;invalidQuery?: boolean};
+type ZoneProps = {startAt?:number;upcomingOnly?:boolean;locale: Locale; messages: Messages; hero: ReactNode; view?: 'list' | 'watch'; recordingId?: string;query?: string;invalidQuery?: boolean};
 
 function newestFirst(items: MemberRecording[]) {
   return [...items].sort((a, b) => (b.uploadedAt ?? '').localeCompare(a.uploadedAt ?? '') || b.id.localeCompare(a.id));
@@ -46,7 +48,7 @@ function formatDate(value: string | null, locale: Locale) {
   return new Intl.DateTimeFormat(locale, {timeZone: 'Asia/Taipei', year: 'numeric', month: 'long', day: 'numeric'}).format(new Date(value));
 }
 
-export function MemberVideoZone({locale, messages, hero, view = 'watch', recordingId, query = '', invalidQuery = false, upcomingOnly=false}: ZoneProps) {
+export function MemberVideoZone({locale, messages, hero, view = 'watch', recordingId, query = '', invalidQuery = false, upcomingOnly=false,startAt}: ZoneProps) {
   const router = useRouter();
   const auth = useAccountAuth();
   const identity=useAccountIdentity();
@@ -54,13 +56,13 @@ export function MemberVideoZone({locale, messages, hero, view = 'watch', recordi
   useEffect(() => {
     if (auth.status === 'anonymous' || access === 'denied') router.replace(`/${locale}`);
   }, [access, auth.status, locale, router]);
-  if (access === 'available') return <AuthorizedVideoZone upcomingOnly={upcomingOnly} key={`${identity}:${upcomingOnly}:${recordingId ?? view}:${view==='list'?`${query}:${invalidQuery}`:''}`} locale={locale} messages={messages} hero={hero} view={view} recordingId={recordingId} query={query} invalidQuery={invalidQuery} />;
+  if (access === 'available') return <AuthorizedVideoZone startAt={startAt} upcomingOnly={upcomingOnly} key={`${identity}:${upcomingOnly}:${recordingId ?? view}:${view==='list'?`${query}:${invalidQuery}`:''}`} locale={locale} messages={messages} hero={hero} view={view} recordingId={recordingId} query={query} invalidQuery={invalidQuery} />;
   if (auth.status === 'anonymous' || access === 'denied') return null;
   const unavailable = auth.status === 'unavailable' || access === 'unavailable';
   return <main className="bg-[image:var(--hhc-page-gradient)] py-16"><section className="shell rounded-[14px] border border-panel-border bg-panel p-8 text-center text-ink" role={unavailable ? 'alert' : 'status'}>{unavailable ? messages.loadError : messages.loading}{unavailable ? <button type="button" className="ml-4 min-h-11 rounded-full border border-[var(--hhc-control-border)] px-5 font-semibold" onClick={() => window.location.reload()}>{messages.retry}</button> : null}</section></main>;
 }
 
-function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query = '', invalidQuery = false, upcomingOnly=false}: ZoneProps) {
+function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query = '', invalidQuery = false, upcomingOnly=false,startAt}: ZoneProps) {
   const router = useRouter();
   const authorization = useBulletinAuthorization();
   const identity = useAccountIdentity();
@@ -252,7 +254,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
       const scopeId = crypto.randomUUID();
       const grant = await api.grant(selected.id, scopeId, selected.packageId, controller.signal);
       const url = await api.exchange(grant, controller.signal);
-      if (!controller.signal.aborted) {bookmarkFrozen.current=false;setVodResume(mapBroadcastBookmark(resume,mediaOrigin,mediaDuration));setPlayback({recordingId: selected.id, scopeId, grant, url});return true;}
+      if (!controller.signal.aborted) {bookmarkFrozen.current=false;setVodResume(resume?mapBroadcastBookmark(resume,mediaOrigin,mediaDuration):startAt!==undefined?{time:Math.min(startAt,selected.durationSeconds??startAt),paused:false,rate:1,quality:'auto',intent:'dvr'}:undefined);setPlayback({recordingId: selected.id, scopeId, grant, url});return true;}
     } catch (error) {
       if (!controller.signal.aborted) {
         if (error instanceof HhcWebApiError && error.status === 401) {router.replace(`/${locale}`); return;}
@@ -265,7 +267,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
     } finally {
       if (!controller.signal.aborted) setPreparing(false);
     }
-  }, [selected, preparing, api, locale, router, resolveMissing, messages.playError,mediaOrigin,mediaDuration]);
+  }, [selected, preparing, api, locale, router, resolveMissing, messages.playError,mediaOrigin,mediaDuration,startAt]);
 
   useEffect(() => {
     if (!recordingId || !selected || selectedLive || waitingWatch || resolver.denied || automaticAttempt.current === selected.id) return;
@@ -357,6 +359,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
   const visibleItems = recordingId ? otherRecordings.slice(0, 10) : otherRecordings;
   const liveLabels=messages.live??englishLiveLabels;
   const cardLink=(id:string)=>`/${locale}/member-videos/${encodeURIComponent(id)}`;
+  usePlaybackTelemetry(api,selected?.id,video,Boolean(playback&&!selectedLive&&!resolver.denied));
   const searchMode=view==='list'&&Boolean(query||invalidQuery);
   const searchLabels=messages.search??{results:'Results for {query}',empty:'No results for {query}',clear:'Clear search',tooLong:'Search accepts one query of up to 100 characters.'};
   const liveBadge=(item:MemberLiveRecording)=>liveViewerLabel(item.liveState,liveLabels);
@@ -384,7 +387,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
             </div>}
             <h2 ref={playerTitle} tabIndex={-1} className="text-2xl font-semibold text-ink outline-none">{selected.title}</h2>
             <p className="text-sm text-muted">{messages.uploadedDate.replace('{date}', formatDate(selected.uploadedAt, locale))}</p>
-            {selected.description?<details className="rounded-xl bg-panel p-4 text-ink"><summary className="min-h-11 cursor-pointer font-semibold focus-visible:outline-2 focus-visible:outline-primary">{messages.description}</summary><p className="whitespace-pre-wrap break-words">{selected.description}</p></details>:null}
+            {recordingId?<VideoInteractions key={selected.id} api={api} id={selected.id} title={selected.title} locale={locale} live={false} currentTime={()=>video.current?.currentTime??0}>{selected.description?<details className="rounded-xl bg-panel p-4 text-ink"><summary className="min-h-11 cursor-pointer font-semibold focus-visible:outline-2 focus-visible:outline-primary">{messages.description}</summary><p className="whitespace-pre-wrap break-words">{selected.description}</p></details>:null}</VideoInteractions>:null}
             {playError ? <p role="alert" className="text-sm text-primary">{playError} <button type="button" className="underline" onClick={() => void start(vodBookmark.current)}>{messages.retry}</button></p> : null}
           </div> : null}
           {liveItems.length>0||visibleItems.length>0||view==='list'&&!searchMode ? <div className={zoneStyles.results}>

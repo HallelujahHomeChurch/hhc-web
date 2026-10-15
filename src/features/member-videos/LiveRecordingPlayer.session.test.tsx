@@ -1,3 +1,4 @@
+vi.mock('./VideoInteractions',()=>({VideoInteractions:({children}:{children:import('react').ReactNode})=><>{children}</>}));
 import {StrictMode,type ComponentProps} from 'react';
 import {act,cleanup,render,screen,waitFor} from '@testing-library/react';
 import {afterEach,expect,it,vi} from 'vitest';
