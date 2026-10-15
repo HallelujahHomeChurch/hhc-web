@@ -1,0 +1,21 @@
+.panel {display:grid;gap:20px;color:var(--color-ink);min-width:0;}
+.panel h3 {font-size:20px;font-weight:600;}
+.actions {display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.count {font-size:14px;color:var(--color-muted);font-variant-numeric:tabular-nums;}
+.buttons {display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.buttons button,.list>button {display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 16px;border-radius:24px;background:var(--color-panel);font-weight:600;}
+.buttons button[aria-pressed=true] {background:var(--color-primary);color:var(--color-primary-foreground);}
+.panel button:disabled {opacity:.5;cursor:not-allowed;}
+.panel button:focus-visible,.panel textarea:focus-visible,.panel select:focus-visible {outline:2px solid var(--color-primary);outline-offset:3px;}
+.composer {display:grid;gap:12px;}
+.composer .buttons {justify-content:flex-end;}
+.composer textarea {width:100%;resize:vertical;min-height:64px;border-bottom:1px solid var(--color-panel-border);padding:12px 0;background:transparent;}
+.list {display:grid;gap:24px;}
+.sort {display:flex;align-items:center;gap:16px;font-size:14px;}
+.sort select {min-height:44px;background:transparent;}
+.comment {display:grid;gap:8px;min-width:0;}
+.comment header {display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;font-size:14px;}
+.comment time {font-size:12px;color:var(--color-muted);}
+.comment .buttons button {background:transparent;font-size:13px;padding:4px 12px;}
+.comment .list {margin:12px 0 0 24px;padding-left:16px;border-left:1px solid var(--color-panel-border);}
+.text {white-space:pre-wrap;overflow-wrap:anywhere;}

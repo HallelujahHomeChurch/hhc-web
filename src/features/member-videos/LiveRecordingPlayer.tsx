@@ -3,6 +3,8 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import type {MemberLiveRecording} from '@hallelujahhomechurch/hhc-web-client';
 import type {createMemberVideoApi} from './api';
+import {VideoInteractions} from './VideoInteractions';
+import {usePlaybackTelemetry} from './usePlaybackTelemetry';
 import zoneStyles from './MemberVideoZone.module.css';
 import {HlsPlayer,type PlayerLabels} from './HlsPlayer';
 import {useLivePlayback} from './useLivePlayback';
@@ -47,6 +49,7 @@ export function LiveRecordingPlayer({api,recording,labels,liveLabels,locale,onVo
  },[livePlayback,state,updateDelay]);
  useEffect(()=>{if(playable&&!livePlayback)void prepareLive();},[api,recording.id,recording.captureId,playable,awaitingMedia,livePlayback,prepareLive]);
  const verifiedEnd=Math.max(0,Math.max(recording.progress.mediaEndSeconds,grant?.progress.mediaEndSeconds??0)-mediaOriginSeconds);
+ usePlaybackTelemetry(api,recording.id,video,Boolean(session.playback&&playable));
  const retry=async()=>{const rebuild=mediaError;setMediaError(false);await session.start();if(rebuild)setPlayerRevision(value=>value+1);};
  return <div className={`${zoneStyles.video} grid min-w-0 gap-4`}>
   {session.playback&&playable?<HlsPlayer key={`${session.playback.url}:${playerRevision}`} playbackMode="live" poster={poster??'/assets/brand/live-placeholder.svg'} playbackUrl={session.playback.url} videoRef={video} title={recording.title} labels={labels} availableQualities={['480p','720p','1080p']} watermark={session.playback.grant.watermarkCode} onError={onError} onBookmark={onBookmark} resume={session.bookmark.current} live={{verifiedEnd,canFollow:state==='live'||state==='recovering',label:liveViewerLabel(state,liveLabels),backToLive:liveLabels.backToLive,liveLabel:liveLabels.liveNow??liveLabels.live}}/>:<div className="relative isolate grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950 text-white"><div className="absolute inset-0 -z-10" aria-hidden="true"><LiveCoverSurface url={poster} title={recording.title}/></div>
@@ -55,7 +58,7 @@ export function LiveRecordingPlayer({api,recording,labels,liveLabels,locale,onVo
   <h2 className="text-2xl font-semibold text-ink">{recording.title}</h2>
   {['live','recovering'].includes(state)&&!session.closed?<p role="status" className="text-sm text-muted">{delay===null?liveLabels.liveNow??'Live':liveLabels.live.replace('{delay}',new Intl.NumberFormat(locale,{style:'unit',unit:'second',unitDisplay:'long'}).format(delay))}</p>:<p role="status" className="text-sm text-muted">{session.closed?(session.expired?liveLabels.expired:liveLabels.failed):liveLabels[state]}</p>}
   {grant?.replayUntil?<p className="text-sm text-muted">{liveLabels.replayUntil.replace('{time}',new Intl.DateTimeFormat(locale,{dateStyle:'short',timeStyle:'short'}).format(new Date(grant.replayUntil)))}</p>:null}
-  {recording.description?<details className="rounded-[14px] bg-panel p-5 text-ink"><summary className="min-h-11 cursor-pointer font-semibold focus-visible:outline-2 focus-visible:outline-primary">{labels.description}</summary><p className="whitespace-pre-wrap break-words">{recording.description}</p></details>:null}
+  <VideoInteractions key={recording.id} api={api} id={recording.id} title={recording.title} locale={locale} live={state==='live'||state==='recovering'}>{recording.description?<details className="rounded-[14px] bg-panel p-5 text-ink"><summary className="min-h-11 cursor-pointer font-semibold focus-visible:outline-2 focus-visible:outline-primary">{labels.description}</summary><p className="whitespace-pre-wrap break-words">{recording.description}</p></details>:null}</VideoInteractions>
   {onVod?<button type="button" disabled={switching} className="min-h-11 justify-self-start rounded-full border border-panel-border px-5 text-ink disabled:opacity-50" onClick={async()=>{setSwitching(true);try{if(!await onVod(session.bookmark.current))setMediaError(true);}finally{setSwitching(false);}}}>{liveLabels.watchRecording}</button>:null}
   {(session.error||mediaError)&&!session.closed?<p role="alert" className="text-sm text-primary">{labels.playError} <button type="button" className="min-h-11 underline" disabled={session.pending} onClick={()=>void retry()}>{labels.retry}</button></p>:null}
  </div>;
