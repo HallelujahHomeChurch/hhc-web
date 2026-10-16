@@ -100,7 +100,8 @@ describe('member video gate', () => {
     videoApi.exchange.mockResolvedValue(playbackUrl);
     render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);
     fireEvent.click(await screen.findByRole('button',{name:'Retry'}));
-    expect(await screen.findByLabelText('Meeting')).toHaveAttribute('src',playbackUrl);
+    const video=await screen.findByLabelText('Meeting');
+    await waitFor(()=>expect(video).toHaveAttribute('src',playbackUrl));
     expect(videoApi.grant).toHaveBeenCalledTimes(2);
     expect(screen.queryByRole('link',{name:'Recent recordings'})).toBeNull();
   });
