@@ -1,5 +1,5 @@
 vi.mock('./VideoInteractions',()=>({VideoInteractions:({children}:{children:import('react').ReactNode})=><>{children}</>}));
-import {act,cleanup,fireEvent,render,screen} from '@testing-library/react';
+import {act,cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
 import {afterEach,expect,it,vi} from 'vitest';
 import type {ComponentProps,RefObject} from 'react';
 import {LiveRecordingPlayer,englishLiveLabels} from './LiveRecordingPlayer';
@@ -13,6 +13,20 @@ it('keeps an ended event mounted until an explicit VOD handoff with the same boo
  expect(screen.getByTestId('player')).toHaveTextContent(englishLiveLabels.ended);expect(screen.getByText(/Replay available until/)).toBeVisible();expect(props.onVod).not.toHaveBeenCalled();
  fireEvent.click(screen.getByRole('button',{name:englishLiveLabels.watchRecording}));
  expect(props.onVod).toHaveBeenCalledWith(session.bookmark.current);
+});
+it('retries a failed VOD handoff without rebuilding the ended replay',async()=>{
+ const onVod=vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+ const props={api:{},recording:{id:'r',captureId:'a'.repeat(32),title:'Gathering',liveState:'ended',progress:{mediaEndSeconds:5400}},labels:{play:'Play',retry:'Retry',playError:'Error',loading:'Loading'},liveLabels:englishLiveLabels,locale:'en',onVod} as unknown as ComponentProps<typeof LiveRecordingPlayer>;
+ session.start.mockClear();
+ render(<LiveRecordingPlayer {...props}/>);
+ const player=screen.getByTestId('player');
+ fireEvent.click(screen.getByRole('button',{name:englishLiveLabels.watchRecording}));
+ fireEvent.click(await screen.findByRole('button',{name:'Retry'}));
+ await waitFor(()=>expect(onVod).toHaveBeenCalledTimes(2));
+ expect(onVod).toHaveBeenLastCalledWith(session.bookmark.current);
+ expect(session.start).not.toHaveBeenCalled();
+ expect(screen.getByTestId('player')).toBe(player);
+ expect(screen.queryByRole('alert')).toBeNull();
 });
 it('expands the live description without replacing the player and omits empty text',()=>{
  const props={api:{},recording:{id:'r',captureId:'a'.repeat(32),title:'Gathering',description:'<b>Plain text</b>\nSecond line',liveState:'live',progress:{mediaEndSeconds:5400}},labels:{description:'Video description',play:'Play',retry:'Retry',playError:'Error',loading:'Loading'},liveLabels:englishLiveLabels,locale:'en'} as unknown as ComponentProps<typeof LiveRecordingPlayer>;
