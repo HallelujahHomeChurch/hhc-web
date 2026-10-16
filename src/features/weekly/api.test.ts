@@ -10,6 +10,19 @@ const discovery = {issueId:bulletin.issueId,issueDate:bulletin.issueDate,issueNu
 const pageEnvelope = {data:{items:[discovery],total:1,offset:0,limit:1},meta:{},error:null};
 
 describe('member weekly API', () => {
+  it('retains the exact issue selector when discovery falls back to the protected PDF list', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValueOnce(Response.json({}, {status: 503})).mockResolvedValueOnce(Response.json({data: [bulletin], meta: {total: 1}, error: null}));
+    const api = createWeeklyBulletinApi({getAccessToken: async () => 'token', refreshAfterUnauthorized: vi.fn()}, fetcher);
+    expect(await api.fetchArchive('general', ['zh-Hant'], {issueNumber: 1737, pageSize: 1})).toMatchObject({items: [{issueNumber: 1737, pdfFallback: true}]});
+    for (const [request] of fetcher.mock.calls) expect(new URL((request as Request).url).searchParams.get('issueNumber')).toBe('1737');
+  });
+
+  it('rejects an unrelated issue returned for an exact target', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(Response.json(pageEnvelope));
+    const api = createWeeklyBulletinApi({getAccessToken: async () => 'token', refreshAfterUnauthorized: vi.fn()}, fetcher);
+    await expect(api.fetchArchive('general', ['zh-Hant'], {issueNumber: 1736, pageSize: 1})).rejects.toMatchObject({code: 'invalid_response'});
+    expect(fetcher).toHaveBeenCalledOnce();
+  });
   it('uses protected routes and retries once after a 401', async () => {
     const fetcher = vi.fn<typeof fetch>()
       .mockResolvedValueOnce(Response.json({}, {status: 401}))
