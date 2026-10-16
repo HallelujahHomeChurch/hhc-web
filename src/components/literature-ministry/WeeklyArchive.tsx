@@ -63,7 +63,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
   const editions = bulletinAccess.editions;
   const canRead = bulletinAccess.status === 'available' && editions.length > 0;
   const searchParams = useSearchParams();
-  const target = weeklyEntryTarget(searchParams);
+  const target = useMemo(() => weeklyEntryTarget(searchParams), [searchParams]);
   const targeted = target !== undefined;
   const targetIssueNumber = target?.issueNumber;
   const targetLocale = target?.locale;
