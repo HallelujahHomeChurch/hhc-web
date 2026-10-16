@@ -5,10 +5,11 @@ import {bulletinEditions} from '@hallelujahhomechurch/preferences';
 import {WeeklyReader} from '@/components/weekly-reader/WeeklyReader';
 import {isLocale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
+import {validIssueNumber} from '@/features/weekly/entry-target';
 
 type Props = {params: Promise<{locale: string; issueNumber: string; series: string; contentLocale: string}>};
 function selectors(params: Awaited<Props['params']>) {
-  if (!isLocale(params.locale) || !/^[1-9]\d{0,8}$/.test(params.issueNumber)) notFound();
+  if (!isLocale(params.locale) || !validIssueNumber(params.issueNumber)) notFound();
   const edition = bulletinEditions.find(edition => edition.series === params.series && edition.locale === params.contentLocale);
   if (!edition) notFound();
   return {locale: params.locale, issueNumber: Number(params.issueNumber), series: edition.series, contentLocale: edition.locale};

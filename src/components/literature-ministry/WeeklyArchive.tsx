@@ -8,6 +8,7 @@ import {DownloadButton} from '@/components/ui/DownloadButton';
 import {createWeeklyBulletinApi, type WeeklyBulletinApi} from '@/features/weekly/api';
 import {formatIssueNumber, resolveWeeklyCopy} from '@/features/weekly/format';
 import {readerUrl, resolveEdition} from '@/features/weekly/resolve-edition';
+import {weeklyEntryTarget, targetQuery, type WeeklyEntryTarget} from '@/features/weekly/entry-target';
 import {isWeeklyReaderEnabled} from '@/features/weekly-reader/enabled';
 import {getMessages} from '@/i18n/messages';
 import {weeklyEditionLabels, type WeeklyIssue, type WeeklyIssuePage} from '@/features/weekly/types';
@@ -47,8 +48,8 @@ function getPageValue(value: string | null) {
   return Number.isFinite(page) ? Math.max(1, Math.floor(page)) : 1;
 }
 
-function getPageHref(locale: Locale, series: BulletinSeries, page: number, mode: EntryMode) {
-  const params = new URLSearchParams({series});
+function getPageHref(locale: Locale, series: BulletinSeries, page: number, mode: EntryMode, target?: WeeklyEntryTarget | null) {
+  const params = target ? targetQuery(target) : new URLSearchParams({series});
   if (page > 1) params.set('page', String(page));
   if (mode === 'online') params.set('mode', mode);
   return `/${locale}/literature-ministry?${params}`;
@@ -62,17 +63,22 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
   const editions = bulletinAccess.editions;
   const canRead = bulletinAccess.status === 'available' && editions.length > 0;
   const searchParams = useSearchParams();
+  const target = useMemo(() => weeklyEntryTarget(searchParams), [searchParams]);
+  const targeted = target !== undefined;
+  const targetIssueNumber = target?.issueNumber;
+  const targetLocale = target?.locale;
+  const targetAvailable = target !== null && (!target || editions.some(edition => edition.series === target.series && edition.locale === target.locale));
   const router = useRouter();
   const readerEnabled = isWeeklyReaderEnabled();
   const mode: EntryMode = readerEnabled && searchParams.get('mode') === 'online' ? 'online' : 'pdf';
   const availableSeries = useMemo(() => (['general', 'children'] as const).filter((value) => editions.some((edition) => edition.series === value)), [editions]);
   const requestedSeries = searchParams.get('series');
-  const series = availableSeries.includes(requestedSeries as BulletinSeries) ? requestedSeries as BulletinSeries : availableSeries[0];
-  const locales = useMemo(() => editions.filter((edition) => edition.series === series).map((edition) => edition.locale), [editions, series]);
-  const page = getPageValue(searchParams.get('page'));
+  const series = target?.series ?? (availableSeries.includes(requestedSeries as BulletinSeries) ? requestedSeries as BulletinSeries : availableSeries[0]);
+  const locales = useMemo(() => editions.filter((edition) => edition.series === series && (!targetLocale || edition.locale === targetLocale)).map((edition) => edition.locale), [editions, series, targetLocale]);
+  const page = target ? 1 : getPageValue(searchParams.get('page'));
   const [retryKey, setRetryKey] = useState(0);
   const latestKey = `${accountId}:${series}:${locales.join(',')}:${retryKey}`;
-  const archiveKey = `${latestKey}:${page}`;
+  const archiveKey = `${latestKey}:${page}:${targeted}:${targetIssueNumber ?? ''}`;
   const [latestResult, setLatestResult] = useState<{
     key: string;
     state: 'ready' | 'error';
@@ -89,7 +95,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
   const archive = archiveResult?.key === archiveKey ? archiveResult.archive : null;
 
   useEffect(() => {
-    if (!canRead || !series) return;
+    if (!canRead || !series || !targetAvailable || targeted) return;
     const controller = new AbortController();
     api.fetchLatest(series, locales, controller.signal)
       .then((value) => {
@@ -103,12 +109,12 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
         }
       });
     return () => controller.abort();
-  }, [api, canRead, latestKey, locale, locales, series]);
+  }, [api, canRead, latestKey, locale, locales, series, targetAvailable, targeted]);
 
   useEffect(() => {
-    if (!canRead || !series) return;
+    if (!canRead || !series || !targetAvailable) return;
     const controller = new AbortController();
-    api.fetchArchive(series, locales, {page, pageSize: 12}, controller.signal)
+    api.fetchArchive(series, locales, {page, pageSize: targeted ? 1 : 12, issueNumber: targetIssueNumber}, controller.signal)
       .then((value) => {
         if (controller.signal.aborted) return;
         setArchiveResult({key: archiveKey, state: 'ready', archive: value});
@@ -120,16 +126,17 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
         }
       });
     return () => controller.abort();
-  }, [api, archiveKey, canRead, locale, locales, page, series]);
+  }, [api, archiveKey, canRead, locale, locales, page, series, targetAvailable, targeted, targetIssueNumber]);
 
   if (!canRead || !series) return null;
+  if (!targetAvailable) return <section className="shell py-6"><p role="status">{messages.empty}</p><Button href={`/${locale}/literature-ministry`} variant="outline">{messages.allIssuesTitle}</Button></section>;
 
   const latestIssueLabel = formatIssueNumber(locale, latestIssue?.issueNumber);
   const latestCopy = latestIssue ? resolveEdition({uiLocale: locale, series, authorizedEditions: editions, publishedEditions: latestIssue.versions})?.version ?? resolveWeeklyCopy(latestIssue, locale) : null;
 
   const content = (entryMode: EntryMode) => (
     <div className="grid gap-6">
-        <aside className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-5 rounded-[14px] border border-panel-border bg-panel p-6 max-[860px]:grid-cols-1" aria-labelledby="latest-weekly-title">
+        {!target ? <aside className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-5 rounded-[14px] border border-panel-border bg-panel p-6 max-[860px]:grid-cols-1" aria-labelledby="latest-weekly-title">
           <div className="min-w-0">
           <h3 id="latest-weekly-title" className="text-sm font-semibold text-muted">{messages.latestLabel}</h3>
           {latestState === 'ready' && latestIssue?.versions.length ? (
@@ -148,12 +155,12 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
           )}
           </div>
           {latestState === 'ready' && latestIssue?.versions.length ? <VersionLinks mode={entryMode} locale={locale} readOnlineLabel={messages.readOnline} issue={latestIssue} workflow={api} preparingLabel={messages.downloading} readyLabel={messages.downloadReady} errorLabel={messages.downloadError} /> : null}
-        </aside>
+        </aside> : null}
 
       <div>
         <div className="mb-5 flex items-end justify-between gap-4 max-[620px]:grid">
-          <h3 className="text-2xl font-semibold text-ink">{messages.allIssuesTitle}</h3>
-          <p className="text-sm font-semibold text-muted">{messages.paginationNote}</p>
+          <h3 className="text-2xl font-semibold text-ink">{target ? formatIssueNumber(locale, target.issueNumber) ?? messages.latestLabel : messages.allIssuesTitle}</h3>
+          {target ? <Button href={getPageHref(locale, series, 1, entryMode)} variant="outline">{messages.allIssuesTitle}</Button> : <p className="text-sm font-semibold text-muted">{messages.paginationNote}</p>}
         </div>
         <div className="grid min-h-24 gap-3">
           {archiveState === 'ready' && archive?.items.length ? archive.items.map((issue) => {
@@ -171,7 +178,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
             ) : null;
           }) : archiveState === 'ready' ? <p className="text-muted">{messages.empty}</p> : archiveState === 'error' ? <div><p role="alert" className="text-muted">{messages.loadError}</p><button type="button" className="mt-3 min-h-11 rounded-full border border-panel-border px-5" onClick={() => setRetryKey(value => value + 1)}>{messages.retry}</button></div> : <p role="status" className="text-muted">{messages.loading}</p>}
         </div>
-        {archive && archive.totalPages > 1 ? (
+        {!target && archive && archive.totalPages > 1 ? (
           <nav className="mt-6 flex flex-wrap items-center justify-end gap-2" aria-label={messages.paginationLabel}>
             {archive.page > 1 ? <Button href={getPageHref(locale, series, archive.page - 1, entryMode)} variant="outline">{messages.previousPage}</Button> : null}
             {Array.from({length: archive.totalPages}, (_, index) => index + 1).map((pageNumber) => (
@@ -191,7 +198,8 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
         <p className="mt-3 max-w-[620px] text-base leading-relaxed text-muted">{messages.archiveIntro}</p>
         {availableSeries.length > 1 ? <nav aria-label={messages.eyebrow} className="mt-5 inline-flex rounded-full border border-panel-border bg-panel p-1">{availableSeries.map((value) => <a key={value} aria-current={series === value ? 'page' : undefined} className={`inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${series === value ? 'bg-primary text-primary-foreground' : 'text-muted hover:text-ink'}`} href={getPageHref(locale, value, 1, mode)}>{value === 'general' ? messages.general : messages.children}</a>)}</nav> : null}
       </header>
-      <Tabs label={messages.archiveTitle} selectedKey={mode} onSelectionChange={(key) => router.replace(getPageHref(locale, series, page, key === 'pdf' ? 'pdf' : 'online'), {scroll: false})} items={[
+      {!readerEnabled && searchParams.get('mode') === 'online' ? <p role="status" className="text-muted">{getMessages(locale).literatureMinistry.onlineUnavailable}</p> : null}
+      <Tabs label={messages.archiveTitle} selectedKey={mode} onSelectionChange={(key) => router.replace(getPageHref(locale, series, page, key === 'pdf' ? 'pdf' : 'online', target), {scroll: false})} items={[
         {id: 'pdf', label: getMessages(locale).literatureMinistry.downloadPdf, content: content('pdf')},
         ...(readerEnabled ? [{id: 'online', label: messages.readOnline, content: content('online')}] : [])
       ]}/>
