@@ -13,7 +13,7 @@ vi.mock('./context', () => ({ useOrganizationApi: vi.fn(), useOrganizationMessag
 
 beforeEach(() => vi.resetAllMocks())
 
-it('renders every server-selected root as one clear management link without email or type columns', async () => {
+it('renders every server-selected root as one clear viewing link without email or type columns', async () => {
   const roots = [{ id: 'unit', parentId: 'unmanaged-church', name: 'Family', kind: 'family', status: 'active', version: 1 }, { id: 'other', name: 'Other', kind: 'fellowship', email: 'other@example.test', status: 'active', version: 1 }]
   vi.mocked(useOrganizationApi).mockReturnValue({ operationsApi: { listManagedRoots: vi.fn().mockResolvedValue(roots) } } as never)
   render(<OrganizationRootsPage />)
@@ -21,13 +21,15 @@ it('renders every server-selected root as one clear management link without emai
   expect(within(list).getAllByRole('listitem')).toHaveLength(2)
   expect(within(list).getAllByRole('link')).toHaveLength(2)
   for (const root of roots) {
-    const link = within(list).getByRole('link', { name: 'Manage ' + root.name })
+    const link = within(list).getByRole('link', { name: 'View ' + root.name })
     expect(link).toHaveAttribute('href', '/en/organizations/' + root.id)
     expect(link).toHaveTextContent(root.name)
   }
   expect(screen.queryByText('other@example.test')).not.toBeInTheDocument()
   expect(screen.queryByRole('table')).not.toBeInTheDocument()
   expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+  expect(screen.getByRole('heading', {name: 'My small groups'})).toBeInTheDocument()
+  expect(screen.queryByText(messages.en.organizations.chooseUnit)).not.toBeInTheDocument()
 })
 
 it('renders authorization state for a direct denied URL', async () => {
@@ -58,5 +60,5 @@ it('retries a failed lookup instead of displaying an empty successful table', as
 it('keeps management links localized for units selected by the server', async () => {
   vi.mocked(useOrganizationApi).mockReturnValue({operationsApi: {listManagedRoots: vi.fn().mockResolvedValue([{id: 'unit', name: 'Family', kind: 'family', status: 'active'}])}} as never)
   render(<OrganizationRootsPage />)
-  expect(await screen.findByRole('link', {name: 'Manage Family'})).toHaveAttribute('href', '/en/organizations/unit')
+  expect(await screen.findByRole('link', {name: 'View Family'})).toHaveAttribute('href', '/en/organizations/unit')
 })

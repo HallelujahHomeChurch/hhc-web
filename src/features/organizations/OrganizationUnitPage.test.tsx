@@ -94,9 +94,9 @@ it.each(['church', 'family', 'small_group', 'fellowship'])('only offers child cr
 })
 
 it('keeps names icon-free and provides a last-column action for units and members', async () => {
-  operationsApi.getManagedUnit.mockResolvedValue({ unit: { id: 'church', kind: 'church', name: 'Church', status: 'active' }, breadcrumb: [], children: [{ id: 'family', kind: 'family', name: 'Family', status: 'active' }], actions: {} })
+  operationsApi.getManagedUnit.mockResolvedValue({ unit: { id: 'church', kind: 'church', name: 'Church', status: 'active' }, breadcrumb: [], children: [{ id: 'family', kind: 'family', name: 'Family', status: 'active' }], actions: {manageMembers: true} })
   mount()
-  const unit = await screen.findByRole('link', { name: 'Open unit Family' })
+  const unit = await screen.findByRole('link', { name: 'View Family' })
   const member = screen.getByRole('link', { name: 'Content access Alice' })
   expect(unit).toHaveAttribute('href', '/en/organizations/family')
   expect(member).toHaveAttribute('href', '/en/organizations/church/members/member')
@@ -198,7 +198,7 @@ it('shows responsible people with existing read access without requesting delega
 })
 
 it.each(['unit', 'member', 'responsibility', 'invalid'])('ignores the retired type filter %s and shows both units and members', async type => {
-  operationsApi.getManagedUnit.mockResolvedValue({ unit: { id: 'church', kind: 'church', name: 'Church', status: 'active' }, breadcrumb: [], children: [{ id: 'family', kind: 'family', name: 'Family', status: 'active' }], actions: {} })
+  operationsApi.getManagedUnit.mockResolvedValue({ unit: { id: 'church', kind: 'church', name: 'Church', status: 'active' }, breadcrumb: [], children: [{ id: 'family', kind: 'family', name: 'Family', status: 'active' }], actions: {manageMembers: true} })
   operationsApi.listManagedMembers.mockResolvedValue({ items: [{ memberId: 'leader', displayName: 'Alice', email: 'alice@example.test', isResponsible: true }], page: 1 })
   mount('/en/organizations/church?type=' + type)
   const table = await screen.findByRole('table')
@@ -225,7 +225,7 @@ it('resets member pagination when the header search changes', async () => {
 })
 
 it.each(['small_group', 'fellowship'])('omits the unit-kind column for terminal unit %s', async kind => {
-  operationsApi.getManagedUnit.mockResolvedValue({ unit: { id: 'church', kind, name: 'Unit', status: 'active' }, breadcrumb: [], children: [], actions: {} })
+  operationsApi.getManagedUnit.mockResolvedValue({ unit: { id: 'church', kind, name: 'Unit', status: 'active' }, breadcrumb: [], children: [], actions: {manageMembers: true} })
   mount()
   const table = await screen.findByRole('table')
   expect(within(table).queryByRole('columnheader', { name: messages.en.organizations.unitKind })).not.toBeInTheDocument()
@@ -248,3 +248,30 @@ it('groups editing with business actions separately from the breadcrumb', async 
  expect(edit.closest('.organization-location')).toBeNull();
  expect(edit.closest('.organization-actions')).not.toBeNull();
 });
+
+it('renders ordinary members as a read-only roster with no management links or action column', async () => {
+ operationsApi.getManagedUnit.mockResolvedValue({unit:{id:'church',kind:'small_group',name:'My group',status:'active'},breadcrumb:[],children:[],actions:{}})
+ mount()
+ const table = await screen.findByRole('table')
+ await within(table).findByText('Alice')
+ expect(within(table).queryByRole('link')).not.toBeInTheDocument()
+ expect(within(table).getAllByRole('columnheader')).toHaveLength(3)
+ for (const name of ['Unit settings','Add member','Create child unit','Notifications']) expect(screen.queryByRole('button',{name})).not.toBeInTheDocument()
+ expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+ expect(screen.getByRole('button',{name:'Next'})).toBeInTheDocument()
+})
+
+ it('unmounts an open management dialog when a refresh returns read-only actions', async () => {
+ const view = mount()
+ await userEvent.click(await screen.findByRole('button',{name:'Add member'}))
+ const input = screen.getByRole('textbox',{name:'Search email'})
+ await userEvent.type(input,'member@example.test')
+ await userEvent.click(screen.getByRole('button',{name:'Search'}))
+ await waitFor(() => expect(operationsApi.searchManagedCandidates).toHaveBeenCalledOnce())
+ operationsApi.getManagedUnit.mockResolvedValue({unit:{id:'church',kind:'small_group',name:'My group',status:'active'},breadcrumb:[],children:[],actions:{}})
+ view.rerender(<OrganizationUnitPage searchQuery="Alice" />)
+ await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+ expect(screen.queryByRole('button',{name:'Add member'})).not.toBeInTheDocument()
+ expect(within(screen.getByRole('table')).queryAllByRole('link')).toHaveLength(0)
+ expect(operationsApi.searchManagedCandidates).toHaveBeenCalledOnce()
+ })
