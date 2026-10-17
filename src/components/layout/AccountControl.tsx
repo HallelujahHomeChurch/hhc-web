@@ -215,6 +215,9 @@ export function AccountControlProvider({
       if (next.status === 'authenticated' && next.session.permissionAvailability.status === 'available') {
         presentation.capture(next.session.user.id)('account', ['account', ...(canAccessAdmin(next.session.permissions) ? ['admin'] : [])]);
       }
+      setManagedProjection(previous => next.status === 'authenticated'
+        && next.session.permissionAvailability.status === 'available'
+        && previous?.subject === next.session.user.id ? previous : null);
       setAuth(next);
     });
     void authRuntime.start();

@@ -33,3 +33,7 @@ Task 3: complete in Account 64f1bd6..937d529; full 552 tests, lint/build/release
 - No deferred review minors: duplicate-heading finding was treated as accessibility Important and fixed.
 - PRs: Account #119 (depends #118), WWW #223 (depends #221), Gateway #175. No merge/release; rollout order remains Gateway → WWW → Account when separately authorized.
 - Physical iPhone/Safari, real notification delivery and authenticated production smoke remain unperformed. New JWT management fixture targets production WWW; test-host isolation uses existing shared server/mapping/CI checks.
+
+### Continuous-owner qualification boundary
+
+The draft-preservation fix is limited to a continuous authorized owner. Additional regression checks reproduced stale qualification after anonymous → same owner, other owner → original owner, and permission unavailable → recovered. The session subscriber now clears that projection at each boundary; same-owner ordinary focus keeps the draft. Three RED cases observed; final access/header/moved-feature/private-cover integration suite passed 168/168. Final CI must run on this change; prior successful checks do not replace it.

@@ -95,6 +95,24 @@ describe('AccountControl', () => {
     } else await waitFor(() => expect(screen.queryByRole('textbox', {name: 'Draft subject'})).not.toBeInTheDocument());
   });
 
+  it.each(['anonymous', 'other-account', 'permissions-unavailable'] as const)('requires fresh qualification after a %s session boundary', async boundary => {
+    const fetcher = vi.fn().mockImplementation(async () => Response.json(managedAccessSnapshot));
+    vi.stubGlobal('fetch', fetcher);
+    const client = sessionClient([]);
+    const original = await client.getSession();
+    function Access() {return <p data-testid="qualification">{useAccountIdentity()}:{useOrganizationsAccess().status}</p>;}
+    render(<AccountControlProvider client={client} labels={labels}><Access /></AccountControlProvider>);
+    await waitFor(() => expect(screen.getByTestId('qualification')).toHaveTextContent('u1:allowed'));
+    fetcher.mockImplementation(() => new Promise<Response>(() => {}));
+    if (boundary === 'anonymous') vi.mocked(client.getSession).mockResolvedValue({authenticated:false});
+    else vi.mocked(client.getSession).mockResolvedValue({...original, user:{...('user' in original ? original.user : {}), id:boundary === 'other-account' ? 'u2' : 'u1'}, permission_availability:boundary === 'permissions-unavailable' ? {status:'unavailable',code:'permission_unavailable'} : {status:'available'}} as never);
+    fireEvent(window, new Event('focus'));
+    await waitFor(() => expect(screen.getByTestId('qualification')).toHaveTextContent(boundary === 'anonymous' ? ':denied' : boundary === 'other-account' ? 'u2:loading' : 'u1:unavailable'));
+    vi.mocked(client.getSession).mockResolvedValue(original);
+    fireEvent(window, new Event('focus'));
+    await waitFor(() => expect(screen.getByTestId('qualification')).toHaveTextContent('u1:loading'));
+  });
+
   it('keeps unsynced notes and the session when the user cancels logout', async () => {
     vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); pending.mockResolvedValueOnce(true);
     const logoutAll = vi.fn(); const before = offline.forgetOfflineAccount.mock.calls.length;
