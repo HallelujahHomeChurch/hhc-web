@@ -39,3 +39,15 @@ Impeccable detector found one existing width-transition warning in untouched Pla
 - Web: 351 feature/reader targeted tests passed before the final review additions; the final five comment tests passed, including both refresh regressions. Production build and static budgets passed with the local candidate client. Lint has only the existing LegalRequiredNavigation warning after removing an unnecessary inline suppression.
 - Full Web run exposed unrelated reader/organization timing failures under host load; no test assertion was weakened or unrelated feature code changed. Final bounded run status must be checked before merge.
 - Registry-clean Web build and Docker image remain blocked on the reviewed client publication; no release or physical-device claim is made.
+
+## Final review and CI status (2026-10-17)
+
+Independent reviewer confirmed all findings closed, including the same-values reaction-refresh case. Final comment regression suite: 5 passed.
+
+- API PR [#248](https://github.com/HallelujahHomeChurch/hhc-web-api/pull/248): all remote CI jobs passed, including Go/race, policy and image checks. Local root race retry passed in 489 seconds; all other packages passed in the full run.
+- Gateway PR [#176](https://github.com/HallelujahHomeChurch/api-gateway/pull/176): full remote CI passed.
+- Client PR [#133](https://github.com/HallelujahHomeChurch/frontend-platform/pull/133): local checks passed; remote renderer measurement CI was still running at this checkpoint.
+- Web PR [#226](https://github.com/HallelujahHomeChurch/hhc-web/pull/226): remote full test suite and lint passed. Registry build failed exactly on missing new client contract fields/methods; this is the documented producer-publication dependency, not a passed build. Local candidate production build passed.
+- Local overloaded Web run finished with worker startup and unrelated reader/layout timing failures. Isolated rerun of the five affected/unstarted reader/organization/cover files passed all 175 tests; the remote full suite passed without weakening assertions.
+
+Do not merge the Web draft until the producer package has actually been published, its exact registry version/lock installed, and clean install/build/image/required CI rerun successfully. No merge/release authority is inferred from these results.
