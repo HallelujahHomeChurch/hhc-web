@@ -37,6 +37,8 @@ export type Messages = {
 } & PlayerLabels;
 type ActivePlayback = {recordingId: string; scopeId: string; grant: MemberRecordingPlayback; url: string};
 const pageSize = 12;
+// Default automatic covers belong to the immutable recording package.
+const coverRevision=(recording:MemberRecording|undefined)=>recording?.selectedCoverId||(recording?.packageId?`auto:${recording.packageId}`:undefined);
 type ZoneProps = {startAt?:number;upcomingOnly?:boolean;locale: Locale; messages: Messages; hero: ReactNode; view?: 'list' | 'watch'; recordingId?: string;query?: string;invalidQuery?: boolean};
 
 function newestFirst(items: MemberRecording[]) {
@@ -217,7 +219,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
 
   const selected = resolver.denied ? undefined : recordingId ? watch?.recording??undefined : recordings?.find((recording) => recording.id === selectedId);
   useEffect(()=>{vodBookmark.current=undefined;bookmarkFrozen.current=false;},[identity,selected?.id,selected?.packageId]);
-  const poster=useRecordingCover(api,selected?.id,selected?.expiresAt,selected?.selectedCoverId);
+  const poster=useRecordingCover(api,selected?.id,selected?.expiresAt,coverRevision(selected));
   const select = (id: string) => {
     if (id === selectedId) return;
     attempt.current?.abort();
@@ -403,7 +405,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
               {view==='list'&&!searchMode?<UpcomingBroadcasts api={api} locale={locale} onPresenceChange={setUpcomingPresent} full={upcomingOnly} loadMoreLabel={messages.loadMore??'Load more'} loading={messages.loading} retry={messages.retry}/>:null}
               {!upcomingOnly&&visibleItems.map(item=><article id={`recording-${item.id}`} key={item.id} className={zoneStyles.card}>
                 <Link href={cardLink(item.id)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
-                  <RecordingCover api={api} id={item.id} title={item.title} expiresAt={item.expiresAt} revision={item.selectedCoverId}/>
+                  <RecordingCover api={api} id={item.id} title={item.title} expiresAt={item.expiresAt} revision={coverRevision(item)}/>
                   {item.durationSeconds ? <span className={zoneStyles.duration}>{playerClock(item.durationSeconds)}</span>:null}
                 </Link>
                 <div className={zoneStyles.info}><h3 className={zoneStyles.title}>{view==='list'||recordingId ? <Link href={cardLink(item.id)}>{item.title}</Link>:item.title}</h3><p className={zoneStyles.date}>{formatDate(item.uploadedAt,locale)}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}
