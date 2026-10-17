@@ -4,6 +4,10 @@ import {act, cleanup, fireEvent, render, screen, waitFor} from '@testing-library
 import {MemberVideoZone} from './MemberVideoZone';
 import {videoSearchRefreshEvent} from './search';
 import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
+import {Blob as NodeBlob} from 'node:buffer';
+import {IDBFactory} from 'fake-indexeddb';
+import {PrivateCoverCache} from '@/lib/private-cover-cache';
+import {PrivateCoverProvider} from '@/lib/use-private-cover';
 
 const state = vi.hoisted(() => ({access: 'loading', auth: 'checking'}));
 const list = vi.hoisted(() => vi.fn());
@@ -69,6 +73,24 @@ beforeEach(() => {
 afterEach(() => {cleanup();vi.useRealTimers();vi.restoreAllMocks();});
 
 describe('member video gate', () => {
+  it.each(['list','watch'] as const)('persists automatic covers without an explicit selection on the %s surface',async view=>{
+    vi.stubGlobal('indexedDB',new IDBFactory());
+    try{
+      state.auth='authenticated';state.access='available';
+      vi.spyOn(URL,'createObjectURL').mockImplementation(()=>`blob:${crypto.randomUUID()}`);
+      vi.spyOn(URL,'revokeObjectURL').mockImplementation(()=>{});
+      const recording={id:'r1',title:'Automatic cover',packageId};
+      list.mockResolvedValue([recording]);
+      videoApi.cover.mockResolvedValue(new NodeBlob(['jpeg'],{type:'image/jpeg'}) as unknown as Blob);
+      const show=()=>render(<PrivateCoverProvider accountId="member" cache={new PrivateCoverCache()}><MemberVideoZone locale="en" messages={messages} hero={null} view={view} recordingId={view==='watch'?'r1':undefined}/></PrivateCoverProvider>);
+      const first=show();await screen.findAllByAltText('Automatic cover');first.unmount();
+      const restored=show();await screen.findAllByAltText('Automatic cover');
+      expect(videoApi.cover).toHaveBeenCalledOnce();restored.unmount();
+      list.mockResolvedValue([{...recording,selectedCoverId:'custom-cover'}]);
+      show();await screen.findAllByAltText('Automatic cover');
+      expect(videoApi.cover).toHaveBeenCalledTimes(2);
+    }finally{cleanup();vi.unstubAllGlobals();}
+  });
   it('does not start twice or discard a bookmark when switching a live watch route to VOD',async()=>{
     state.auth='authenticated';state.access='available';
     list.mockResolvedValue([{id:'r1',title:'Meeting',packageId}]);
@@ -596,7 +618,7 @@ it('plays an authoritative direct VOD while unrelated indexes never respond',asy
  videoApi.watch.mockResolvedValue({recordingId:'r1',view:'vod',recording:{id:'r1',title:'Direct VOD',packageId},live:null,mediaStartSeconds:240,durationSeconds:360});
  videoApi.grant.mockResolvedValue({packageId,watermarkCode:'trace',expiresAt:new Date(Date.now()+3600000).toISOString()});videoApi.exchange.mockResolvedValue(playbackUrl);
  render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);
- expect(await screen.findByLabelText('Direct VOD')).toHaveAttribute('src',playbackUrl);
+ await waitFor(()=>expect(screen.getByLabelText('Direct VOD')).toHaveAttribute('src',playbackUrl));
 });
 
 it('retains a paused non-1x DVR origin through pending End projection and VOD handoff',async()=>{
