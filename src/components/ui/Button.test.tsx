@@ -33,3 +33,10 @@ describe('Button', () => {
     expect(link.className).toContain('size-11');
   });
 });
+
+it('includes native pending decoration only for same-tab root-relative links',()=>{
+ const {container}=render(<><Button href="/en/about">About</Button><Button href="https://example.com">External</Button><Button href="//example.com">Protocol relative</Button><Button href="/en/about" target="_blank">New tab</Button></>);
+ expect(container.querySelectorAll('[data-navigation-pending]')).toHaveLength(1);
+ expect(screen.getByRole('link',{name:'About'}).querySelector('[data-navigation-pending]')).not.toBeNull();
+ for(const name of ['External','Protocol relative','New tab'])expect(screen.getByRole('link',{name}).querySelector('[data-navigation-pending]')).toBeNull();
+});

@@ -46,3 +46,10 @@ describe('NewsSection', () => {
     expect(screen.getByText('2026 / 07 / 13')).toHaveAttribute('lang', 'zh-Hant');
   });
 });
+
+it('decorates internal list and more links without intercepting external news links',()=>{
+ render(<NewsSection title="News" moreHref="/en/news" moreLabel="More" items={[items[0],{...items[1],href:'https://example.com'}]}/>);
+ expect(screen.getByRole('link',{name:'More'}).querySelector('[data-navigation-pending]')).not.toBeNull();
+ expect(screen.getByRole('link',{name:/十年養成計畫/}).querySelector('[data-navigation-pending]')).not.toBeNull();
+ expect(screen.getByRole('link',{name:/消息 2/}).querySelector('[data-navigation-pending]')).toBeNull();
+});

@@ -3,6 +3,7 @@
 import {useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties} from 'react';
 import {useScrollChrome} from './useScrollChrome';
 import Link from 'next/link';
+import {NavigationPendingIndicator} from '@/components/ui/NavigationPendingIndicator';
 import Image from 'next/image';
 import {BookOpenText, Newspaper, PlaySquare, UsersRound} from 'lucide-react';
 import {useTranslations} from 'next-intl';
@@ -127,7 +128,7 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
       <div ref={chromeRef} className="site-top-chrome sticky top-0 z-10" data-mobile-hidden={!mobileChromeVisible}>
         <header data-search-open={searchOpen} data-search-replaces-nav={searchLayout.replaceNav} className="site-header border-b border-line/70 backdrop-blur-xl" data-iphone-standalone={iphoneStandalone || undefined}>
           <div ref={rowRef} style={{'--site-search-start': `${searchLayout.start}px`, '--site-search-end': `${searchLayout.end}px`} as CSSProperties} className="site-header-row relative flex min-h-[76px] w-full items-center gap-6 px-6 max-[767px]:min-h-[68px] max-[767px]:px-4">
-            <Link ref={brandRef} href={videoWatchPage ? videoRoot : homeHref} aria-label={`${t(videoWatchPage ? 'nav.memberVideos' : 'nav.home')} · ${layout.siteName}`} className="site-header-brand inline-flex min-h-11 min-w-max items-center gap-2.5 max-[767px]:min-w-0 max-[767px]:flex-1">
+            <Link ref={brandRef} href={videoWatchPage ? videoRoot : homeHref} aria-label={`${t(videoWatchPage ? 'nav.memberVideos' : 'nav.home')} · ${layout.siteName}`} className="site-header-brand relative inline-flex min-h-11 min-w-max items-center gap-2.5 max-[767px]:min-w-0 max-[767px]:flex-1">
               <span className="grid size-10 shrink-0 place-items-center max-[767px]:size-9" aria-hidden="true">
                 <Image src="/assets/brand/logo.png" alt="" width={40} height={40} className="h-full w-full object-contain" />
               </span>
@@ -139,6 +140,7 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
                   </small>
                 ) : null}
               </span>
+              <NavigationPendingIndicator/>
             </Link>
             {showNavigation ? <nav
               ref={navRef}
@@ -155,6 +157,7 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
                     className="relative inline-flex items-center px-4 font-semibold tracking-[0.02em] after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:origin-left after:scale-x-0 after:bg-primary hover:text-primary hover:after:scale-x-100 data-[active=true]:text-primary data-[active=true]:after:scale-x-100"
                   >
                     {item.label}
+                    {item.href.startsWith('/')&&!item.href.startsWith('//')?<NavigationPendingIndicator/>:null}
                   </Link>
                 ))}
             </nav> : null}
@@ -173,9 +176,10 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
           const Icon = item.icon;
           const active = isActive(item.href);
           return (
-            <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined} data-active={active || undefined} style={{gridColumn: index + 1, gridRow: 1}}>
+            <Link className="relative" key={item.href} href={item.href} aria-current={active ? 'page' : undefined} data-active={active || undefined} style={{gridColumn: index + 1, gridRow: 1}}>
               <Icon aria-hidden="true" />
               <span>{item.label}</span>
+              {item.href.startsWith('/')&&!item.href.startsWith('//')?<NavigationPendingIndicator/>:null}
             </Link>
           );
         })}

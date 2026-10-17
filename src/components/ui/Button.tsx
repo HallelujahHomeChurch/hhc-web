@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import {NavigationPendingIndicator} from './NavigationPendingIndicator';
 
 type ButtonProps = {
   href: string;
@@ -29,9 +30,10 @@ export function Button({ariaLabel, className = '', href, children, target, size 
       aria-label={ariaLabel}
       target={target}
       rel={target === '_blank' ? 'noreferrer' : undefined}
-      className={`inline-flex items-center justify-center rounded-full border font-semibold transition ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`relative inline-flex items-center justify-center rounded-full border font-semibold transition ${variants[variant]} ${sizes[size]} ${className}`}
     >
       {children}
+      {href.startsWith('/')&&!href.startsWith('//')&&target!=='_blank'?<NavigationPendingIndicator/>:null}
     </Link>
   );
 }
