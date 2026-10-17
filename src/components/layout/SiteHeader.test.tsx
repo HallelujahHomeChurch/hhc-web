@@ -10,8 +10,9 @@ import zhHant from '@/i18n/locales/zh-Hant.json';
 import {AccountControlProvider, BulletinAccessGate, useAccountAuth} from './AccountControl';
 import {SiteHeader} from './SiteHeader';
 import {InitialLoadingBoundary} from './InitialLoadingBoundary';
+import {OrganizationsGate} from '@/features/organizations/OrganizationsGate';
 
-const searchRouter = vi.hoisted(() => ({push:vi.fn()}));
+const searchRouter = vi.hoisted(() => ({push:vi.fn(), replace:vi.fn()}));
 vi.mock('next/navigation',()=>({useRouter:()=>searchRouter}));
 
 const statementStripState = vi.hoisted(() => ({active: false, notice: false}));
@@ -132,30 +133,44 @@ describe('SiteHeader', () => {
   });
 
   it('restores both navigation bars before session resolves without opening protected content, then removes revoked access', async () => {
-    const cached = createNavigationPresentation({key: 'hhc:navigation:www-web', allowedIds: ['account', 'admin', 'literature-ministry', 'member-videos']});
+    vi.stubEnv('NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED', 'true');
+    const cached = createNavigationPresentation({key: 'hhc:navigation:www-web', allowedIds: ['account', 'admin', 'literature-ministry', 'member-videos', 'organizations']});
     cached.identify('u1');
     cached.capture('u1')('account', ['account', 'admin']);
-    cached.capture('u1')('operations', ['literature-ministry', 'member-videos']);
+    cached.capture('u1')('operations', ['literature-ministry', 'member-videos', 'organizations']);
     let resolveSession!: (value: Awaited<ReturnType<AccountSessionClient['getSession']>>) => void;
     const client: AccountSessionClient = {...anonymousSessionClient, getSession: vi.fn(() => new Promise<Awaited<ReturnType<AccountSessionClient['getSession']>>>(resolve => {resolveSession = resolve;})), issueAccessToken: vi.fn(async () => ({accessToken: 'token', expiresIn: 900}))};
-    const fetcher = vi.fn(async () => Response.json({memberships: [], orgRoles: [], responsibilities: [], entitlements: [], version: 'revoked'}));
+    let resolveAccess!: (value: Response) => void;
+    const fetcher = vi.fn(() => new Promise<Response>(resolve => {resolveAccess = resolve;}));
     vi.stubGlobal('fetch', fetcher);
     function Status() { return <output>{useAccountAuth().status}</output>; }
     render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
       <AccountControlProvider client={client} labels={accountLabels}>
         <InitialLoadingBoundary label="Restoring"><SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" /></InitialLoadingBoundary>
         <Status /><BulletinAccessGate><span>Private bulletin</span></BulletinAccessGate>
+        <OrganizationsGate locale="zh-Hant"><span>Private management</span></OrganizationsGate>
       </AccountControlProvider>
     </NextIntlClientProvider>);
     expect(screen.getAllByRole('link', {name: '文字事工'})).toHaveLength(2);
+    expect(screen.getAllByRole('link', {name: '影音專區'})).toHaveLength(2);
+    expect(screen.getAllByRole('link', {name: '小家管理'})).toHaveLength(2);
+    expect(within(screen.getByRole('navigation', {name: '選單'})).getAllByRole('link').map(link => link.textContent)).toEqual(['文字事工', '影音專區', '小家管理']);
     expect(screen.queryByText('Restoring')).not.toBeInTheDocument();
     expect(screen.getByText('checking')).toBeInTheDocument();
     expect(screen.queryByText('Private bulletin')).not.toBeInTheDocument();
+    expect(screen.queryByText('Private management')).not.toBeInTheDocument();
     expect(fetcher).not.toHaveBeenCalled();
     expect(client.issueAccessToken).not.toHaveBeenCalled();
     await act(async () => resolveSession({authenticated: true, user: {id: 'u1', email: 'member@example.test', display_name: 'Member', avatar_url: null}, permissions: [], permission_availability: {status: 'available'}}));
+    await waitFor(() => expect(fetcher).toHaveBeenCalledOnce());
+    expect(screen.getAllByRole('link', {name: '小家管理'})).toHaveLength(2);
+    expect(screen.queryByText('Private management')).not.toBeInTheDocument();
+    await act(async () => resolveAccess(Response.json({memberships: [], orgRoles: [], responsibilities: [], churchMembership: null, entitlements: [], version: 'revoked'})));
     await waitFor(() => expect(screen.queryByRole('link', {name: '文字事工'})).not.toBeInTheDocument());
+    expect(screen.queryByRole('link', {name: '影音專區'})).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', {name: '小家管理'})).not.toBeInTheDocument();
     expect(screen.queryByText('Private bulletin')).not.toBeInTheDocument();
+    expect(screen.queryByText('Private management')).not.toBeInTheDocument();
     expect(JSON.parse(localStorage.getItem('hhc:navigation:www-web')!).sources.operations.ids).toEqual([]);
   });
 

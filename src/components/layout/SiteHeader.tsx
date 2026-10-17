@@ -15,7 +15,7 @@ import type {Locale} from '@/i18n/locales';
 import {isIPhoneDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 import {StatementStrip} from '@/components/statements/StatementStrip';
 import {LineBrowserNotice, useLineBrowserNotice} from './LineBrowserNotice';
-import {AccountControlScope, AccountControlView, useNavigationPresentation, useOrganizationsAccess, useAccountIdentity} from './AccountControl';
+import {AccountControlScope, AccountControlView, useNavigationPresentation, useAccountIdentity} from './AccountControl';
 
 export type SiteHeaderProps = {
   layout: SiteLayout;
@@ -60,7 +60,7 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
   const t = useTranslations('site');
   const homeHref = `/${locale}`;
   const navigation = useNavigationPresentation();
-  const canManageOrganizations = useOrganizationsAccess().status === 'allowed';
+  const canManageOrganizations = navigation.sources.operations?.ids.includes('organizations') === true;
   const owner = useAccountIdentity();
   const canReadBulletin = navigation.sources.operations?.ids.includes('literature-ministry') === true;
   const canWatchVideo = navigation.sources.operations?.ids.includes('member-videos') === true;
