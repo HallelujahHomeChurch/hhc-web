@@ -1,6 +1,6 @@
 'use client';
 
-import {useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type MouseEvent} from 'react';
+import {useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties} from 'react';
 import {useScrollChrome} from './useScrollChrome';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -99,11 +99,6 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
   }, [locale, navItems.length]);
 
   const isActive = (href: string) => pathname === href || (href !== homeHref && pathname.startsWith(`${href}/`));
-  const mobileActiveIndex = mobileNavItems.findIndex(({href}) => isActive(href));
-  const [mobileSelection, setMobileSelection] = useState({pathname, href: mobileNavItems[mobileActiveIndex]?.href});
-  const mobileIndicatorIndex = mobileSelection.pathname === pathname ? mobileNavItems.findIndex(item => item.href === mobileSelection.href) : mobileActiveIndex;
-  const delayedMobileHref = useRef<string | null>(null);
-  const mobileNavigationFrame = useRef(0);
   const chromeRef=useRef<HTMLDivElement>(null);
   useLayoutEffect(()=>{
     const chrome=chromeRef.current;if(!chrome)return;
@@ -122,27 +117,6 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
     getIPhoneStandaloneSnapshot,
     getServerStandaloneSnapshot
   );
-  const navigateMobile = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
-    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.currentTarget.target === '_blank') return;
-    if (delayedMobileHref.current === href) {
-      delayedMobileHref.current = null;
-      return;
-    }
-    if (mobileNavigationFrame.current) window.cancelAnimationFrame(mobileNavigationFrame.current);
-    event.preventDefault();
-    setMobileSelection({pathname, href});
-    const link = event.currentTarget;
-    mobileNavigationFrame.current = window.requestAnimationFrame(() => {
-      mobileNavigationFrame.current = window.requestAnimationFrame(() => {
-        mobileNavigationFrame.current = 0;
-        delayedMobileHref.current = href;
-        link.click();
-      });
-    });
-  };
-
-
-
   return (
     <>
       <div ref={chromeRef} className="site-top-chrome sticky top-0 z-10" data-mobile-hidden={!mobileChromeVisible}>
@@ -190,13 +164,11 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
         {lineNotice.visible ? <LineBrowserNotice pathname={pathname} onClose={lineNotice.close} /> : <StatementStrip />}
       </div>
       {showNavigation ? <nav className="site-mobile-tab-bar" style={{gridTemplateColumns: `repeat(${mobileNavItems.length + 1}, minmax(0, 1fr))`}} aria-label={t('nav.menu')} data-mobile-hidden={!mobileChromeVisible} data-iphone-standalone={iphoneStandalone || undefined}>
-        <span aria-hidden="true" className="site-mobile-tab-indicator" data-mobile-nav-indicator data-visible={mobileIndicatorIndex >= 0} style={{transform: `translate3d(${Math.max(0, mobileIndicatorIndex) * 100}%, 0, 0)`}} />
         {mobileNavItems.map((item, index) => {
           const Icon = item.icon;
           const active = isActive(item.href);
-          const visualActive = mobileIndicatorIndex === index;
           return (
-            <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined} data-active={visualActive || undefined} style={{gridColumn: index + 1, gridRow: 1}} onClick={(event) => navigateMobile(event, item.href)}>
+            <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined} data-active={active || undefined} style={{gridColumn: index + 1, gridRow: 1}}>
               <Icon aria-hidden="true" />
               <span>{item.label}</span>
             </Link>
