@@ -1,7 +1,8 @@
 import {fireEvent,render,screen,waitFor} from '@testing-library/react';
-import {expect,it,vi} from 'vitest';
+import {beforeEach,expect,it,vi} from 'vitest';
 import {VideoInteractions} from './VideoInteractions';
 import type {createMemberVideoApi} from './api';
+beforeEach(()=>{Object.defineProperty(window,'matchMedia',{configurable:true,value:vi.fn(()=>({matches:false,addEventListener:vi.fn(),removeEventListener:vi.fn()}))});});
 function api(){return {interactions:vi.fn().mockResolvedValue({liked:false,likes:2,commentsEnabled:true}),metrics:vi.fn().mockResolvedValue({currentViewers:3,totalViews:8}),comments:vi.fn().mockResolvedValue({items:[]}),createComment:vi.fn(),setLike:vi.fn().mockResolvedValue({liked:true,likes:3,commentsEnabled:true})};}
 it('retries an uncertain comment with the same identity and renders markup as plain text',async()=>{
  const client=api();client.createComment.mockRejectedValueOnce(new Error('lost')).mockResolvedValue({});
@@ -35,6 +36,6 @@ it('reconciles a committed edit after its response is lost while preserving the 
  const client=api();const comment={id:'c1',text:'Original',revision:1,mine:true,displayName:'Member',createdAt:'2026-10-15T10:00:00Z',replyCount:0,deleted:false};
  client.comments.mockResolvedValue({items:[comment]});const updateComment=vi.fn().mockImplementation(async()=>{client.comments.mockResolvedValue({items:[{...comment,text:'Changed',revision:2}]});throw Error('Response lost')});
  render(<VideoInteractions api={{...client,updateComment} as unknown as ReturnType<typeof createMemberVideoApi>} id="r1" title="Meeting" locale="en" live/>);
- fireEvent.click(await screen.findByRole('button',{name:'Edit'}));fireEvent.change(screen.getByLabelText('Edit'),{target:{value:'Changed'}});fireEvent.click(screen.getByRole('button',{name:'Save'}));
+ fireEvent.click(await screen.findByLabelText('Comment actions'));fireEvent.click(screen.getByRole('button',{name:'Edit'}));fireEvent.change(screen.getByLabelText('Edit'),{target:{value:'Changed'}});fireEvent.click(screen.getByRole('button',{name:'Save'}));
  await waitFor(()=>expect(screen.queryByRole('button',{name:'Save'})).toBeNull());expect(screen.getByText('Changed')).toBeInTheDocument();expect(updateComment).toHaveBeenCalledOnce();
 });

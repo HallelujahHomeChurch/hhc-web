@@ -19,3 +19,24 @@
 .comment .buttons button {background:transparent;font-size:13px;padding:4px 12px;}
 .comment .list {margin:12px 0 0 24px;padding-left:16px;border-left:1px solid var(--color-panel-border);}
 .text {white-space:pre-wrap;overflow-wrap:anywhere;}
+.panel button:not(:disabled),.shareBody button:not(:disabled) {cursor:pointer;}
+.shareBody {display:grid;gap:24px;min-width:0;max-width:100%;color:var(--color-ink);}
+.platforms {display:flex;gap:16px;overflow-x:auto;padding:4px 2px 12px;}
+.platform {display:flex;flex-direction:column;align-items:center;gap:8px;flex:0 0 auto;font-size:13px;min-width:68px;}
+.platform>span {display:grid;place-items:center;width:56px;height:56px;border-radius:50%;background:var(--color-panel);border:1px solid var(--color-panel-border);}
+.platform[aria-disabled=true] {opacity:.5;cursor:not-allowed;}
+.copyRow {display:flex;gap:8px;min-width:0;padding:8px;border:1px solid var(--color-panel-border);border-radius:12px;}
+.copyRow input {flex:1;min-width:0;background:transparent;font-size:16px;}
+.copyRow button {flex:none;min-height:44px;padding:8px 16px;border-radius:24px;background:var(--color-primary);color:var(--color-primary-foreground);font-weight:600;}
+.timeRow {display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid var(--color-panel-border);padding-top:16px;}
+.timeRow label {display:flex;align-items:center;gap:8px;min-height:44px;}
+.timeRow input[type=checkbox] {width:20px;height:20px;accent-color:var(--color-primary);}
+.timeRow input:not([type=checkbox]) {width:100px;min-height:44px;background:transparent;border-bottom:1px solid var(--color-panel-border);font-size:16px;}
+.shareBody :is(a,button,input):focus-visible {outline:2px solid var(--color-primary);outline-offset:3px;}
+.shareBody p {overflow-wrap:anywhere;}
+.information {min-width:0;padding:16px;border-radius:12px;background:var(--color-panel);color:var(--color-ink);}
+.metadata {display:flex;gap:4px 12px;flex-wrap:wrap;font-size:14px;font-weight:600;overflow-wrap:anywhere;}
+.description,.preview {margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;}
+.preview {display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.information a {color:var(--color-primary);text-decoration:underline;}
+.information button {min-height:44px;font-weight:600;cursor:pointer;}
