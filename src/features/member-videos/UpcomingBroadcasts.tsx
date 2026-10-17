@@ -10,7 +10,7 @@ import {BroadcastCover} from './BroadcastWaitingPanel';
 import {broadcastLabels,broadcastPollDelay} from './broadcast';
 import styles from './MemberVideoZone.module.css';
 
-export function UpcomingBroadcasts({api,locale,query='',excludeIds=[],onPageState,loading,retry,loadMoreLabel='Load more',onPresenceChange}:{api:ReturnType<typeof createMemberVideoApi>;locale:Locale;query?:string;excludeIds?:string[];onPageState?:(state:{ids:string[];complete:boolean})=>void;loading:string;retry:string;loadMoreLabel?:string;onPresenceChange?:(present:boolean)=>void}) {
+export function UpcomingBroadcasts({api,locale,query='',excludeIds=[],onPageState,loading,retry,loadMoreLabel='Load more',onPresenceChange}:{api:ReturnType<typeof createMemberVideoApi>;locale:Locale;query?:string;excludeIds?:string[];onPageState?:(state:{ids:string[];complete:boolean;initialState:'loading'|'ready'|'error'})=>void;loading:string;retry:string;loadMoreLabel?:string;onPresenceChange?:(present:boolean)=>void}) {
  const [items,setItems]=useState<RecordingWatchView[]>([]),[cursor,setCursor]=useState<string|null>(null);
  const [pending,setPending]=useState(false),[loaded,setLoaded]=useState(false),[error,setError]=useState(false),[refresh,setRefresh]=useState(0);
  const more=useRef<AbortController|null>(null),pages=useRef(1),busy=useRef(false);
@@ -54,7 +54,7 @@ export function UpcomingBroadcasts({api,locale,query='',excludeIds=[],onPageStat
   }catch{if(!controller.signal.aborted)setError(true);}
   finally{busy.current=false;if(!controller.signal.aborted)setPending(false);}
  };
- useEffect(()=>{onPageState?.({ids:items.map(item=>item.recordingId),complete:loaded&&cursor===null});},[items,cursor,loaded,error,onPageState]);
+ useEffect(()=>{onPageState?.({ids:items.map(item=>item.recordingId),complete:loaded&&cursor===null,initialState:loaded?'ready':error?'error':'loading'});},[items,cursor,loaded,error,onPageState]);
  return <>
   {items.filter(item=>!excludeIds.includes(item.recordingId)).map(item=><article key={item.recordingId} className={styles.card}>
    <Link href={`/${locale}/member-videos/${item.recordingId}`} className={styles.thumbnail} aria-hidden="true" tabIndex={-1}>

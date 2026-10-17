@@ -307,3 +307,17 @@ it.each([
   await userEvent.click(screen.getByRole('button', { name: label }))
   expect(screen.getByRole('dialog')).toBeInTheDocument()
 })
+
+it('keeps the directory shell and never announces no results while a new search is pending',async()=>{
+ const view=mount();await screen.findByText('Alice');
+ let settle!:(value:unknown)=>void;
+ operationsApi.listManagedMembers.mockImplementationOnce(()=>new Promise(resolve=>{settle=resolve}));
+ view.rerender(<OrganizationUnitPage searchQuery="Nobody"/>);
+ await waitFor(()=>expect(operationsApi.listManagedMembers).toHaveBeenCalledTimes(2));
+ expect(screen.queryByText(messages.en.organizations.noResults)).not.toBeInTheDocument();
+ expect(screen.queryByText('Alice')).not.toBeInTheDocument();
+ expect(view.container.querySelectorAll('tbody tr[aria-hidden="true"]')).toHaveLength(5);
+ expect(screen.getByRole('table')).toHaveAttribute('aria-busy','true');
+ const {act}=await import('@testing-library/react');await act(async()=>settle({items:[],page:1}));
+ expect(await screen.findByText(messages.en.organizations.noResults)).toBeInTheDocument();
+});

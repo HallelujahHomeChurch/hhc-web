@@ -658,3 +658,95 @@ it('shows matching scheduled broadcasts when search has no live or VOD matches',
  expect(videoApi.upcoming).toHaveBeenCalledWith(expect.objectContaining({q:'faith'}));
  expect(screen.queryByText('No recordings')).not.toBeInTheDocument();
 });
+
+it('keeps the same library skeleton through access and independently pending discovery',async()=>{
+ const view=render(<MemberVideoZone view="list" locale="en" messages={messages} hero={null}/>);
+ expect(view.container.querySelector('[data-loading-layout="video-library"]')).not.toBeNull();
+ expect(videoApi.listPage).not.toHaveBeenCalled();
+ state.access='available';state.auth='authenticated';
+ let resolveUpcoming!:(value:unknown)=>void;
+ videoApi.upcoming.mockImplementation(()=>new Promise(resolve=>{resolveUpcoming=resolve}));
+ videoApi.listPage.mockResolvedValue({items:[{id:'vod',title:'Recorded gathering',uploadedAt:'2026-10-01T00:00:00Z'}],nextCursor:null});
+ view.rerender(<MemberVideoZone view="list" locale="en" messages={messages} hero={null}/>);
+ await waitFor(()=>expect(videoApi.upcoming).toHaveBeenCalled());
+ expect(view.container.querySelector('[data-loading-layout="video-library"]')).not.toBeNull();
+ expect(screen.queryByRole('link',{name:'Recorded gathering'})).not.toBeInTheDocument();
+ await act(async()=>resolveUpcoming({items:[],nextCursor:null}));
+ expect(await screen.findByRole('link',{name:'Recorded gathering'})).toBeInTheDocument();
+ expect(view.container.querySelector('[data-loading-layout]')).toBeNull();
+});
+
+it('uses search and watch geometry before their data resolves',async()=>{
+ const view=render(<MemberVideoZone view="list" query="faith" locale="en" messages={messages} hero={null}/>);
+ expect(view.container.querySelector('[data-loading-layout="video-search"]')).not.toBeNull();
+ view.rerender(<MemberVideoZone view="watch" recordingId="pending" locale="en" messages={messages} hero={null}/>);
+ expect(view.container.querySelector('[data-loading-layout="video-watch"]')).not.toBeNull();
+});
+
+it('keeps real recommendations instead of an overlapping recommendation skeleton during watch resolution',async()=>{
+ state.auth='authenticated';state.access='available';
+ list.mockResolvedValue([{id:'other',title:'Another gathering'}]);
+ videoApi.watch.mockImplementation(()=>new Promise(()=>{}));
+ const view=render(<MemberVideoZone view="watch" recordingId="pending" locale="en" messages={messages} hero={null}/>);
+ await screen.findByRole('link',{name:'Another gathering'});
+ expect(view.container.querySelector('[data-loading-layout="video-watch"] > [data-loading-recommendations]')).toBeNull();
+});
+
+it('keeps VOD behind initial live discovery even if upcoming and recordings finish first',async()=>{
+ state.auth='authenticated';state.access='available';
+ let finish!:(items:unknown[])=>void;
+ videoApi.liveList.mockImplementation(()=>new Promise(resolve=>{finish=resolve}));
+ list.mockResolvedValue([{id:'vod',title:'Earlier recording'}]);
+ const view=render(<MemberVideoZone view="list" locale="en" messages={messages} hero={null}/>);
+ await waitFor(()=>expect(videoApi.upcoming).toHaveBeenCalled());
+ await act(async()=>{});
+ expect(view.container.querySelector('[data-loading-layout="video-library"]')).not.toBeNull();
+ expect(screen.queryByRole('link',{name:'Earlier recording'})).not.toBeInTheDocument();
+ await act(async()=>finish([]));
+ expect(await screen.findByRole('link',{name:'Earlier recording'})).toBeInTheDocument();
+ expect(view.container.querySelector('[data-loading-layout]')).toBeNull();
+});
+
+it.each(['', 'faith'])('does not declare %s results empty before live discovery succeeds',async query=>{
+ state.auth='authenticated';state.access='available';
+ let finish!:(items:unknown[])=>void;
+ videoApi.liveList.mockImplementation(()=>new Promise(resolve=>{finish=resolve}));
+ const view=render(<MemberVideoZone view="list" query={query} locale="en" messages={messages} hero={null}/>);
+ await waitFor(()=>expect(videoApi.upcoming).toHaveBeenCalled());
+ await act(async()=>{});
+ const empty=query?'No results for faith':messages.empty;
+ expect(screen.queryByText(empty)).not.toBeInTheDocument();
+ expect(view.container.querySelector('[data-loading-layout]')).not.toBeNull();
+ await act(async()=>finish([]));
+ expect(await screen.findByText(empty)).toBeVisible();
+ expect(view.container.querySelector('[data-loading-layout]')).toBeNull();
+});
+
+it('does not declare empty results after initial live discovery fails',async()=>{
+ state.auth='authenticated';state.access='available';
+ let fail!:(reason:Error)=>void;
+ videoApi.liveList.mockImplementation(()=>new Promise((_,reject)=>{fail=reject}));
+ const view=render(<MemberVideoZone view="list" locale="en" messages={messages} hero={null}/>);
+ await waitFor(()=>expect(videoApi.upcoming).toHaveBeenCalled());
+ await act(async()=>fail(new Error('Live discovery unavailable')));
+ expect(screen.getByText(messages.loadError)).toBeVisible();
+ expect(screen.queryByText(messages.empty)).not.toBeInTheDocument();
+ expect(view.container.querySelector('[data-loading-layout]')).toBeNull();
+});
+
+it.each(['ready','empty','error'] as const)('keeps recommendation loading independent of an already resolved watch: %s',async outcome=>{
+ state.auth='authenticated';state.access='available';
+ let finish!:(items:unknown[])=>void,fail!:(reason:Error)=>void;
+ const recommendations=new Promise((resolve,reject)=>{finish=resolve;fail=reject});
+ list.mockReturnValue(recommendations);
+ videoApi.watch.mockResolvedValue({recordingId:'r1',view:'vod',recording:{id:'r1',title:'Direct watch',packageId},live:null,mediaStartSeconds:0,durationSeconds:360});
+ const view=render(<MemberVideoZone view="watch" recordingId="r1" locale="en" messages={messages} hero={null}/>);
+ await screen.findByRole('heading',{name:'Direct watch'});
+ expect(view.container.querySelector('[data-loading-layout="video-watch"]')).toBeNull();
+ expect(view.container.querySelector('[data-loading-recommendations]')).not.toBeNull();
+ await act(async()=>outcome==='error'?fail(new Error('Index unavailable')):finish(outcome==='ready'?[{id:'other',title:'Another gathering'}]:[]));
+ expect(view.container.querySelector('[data-loading-recommendations]')).toBeNull();
+ expect(screen.getByRole('heading',{name:'Direct watch'})).toBeVisible();
+ if(outcome==='ready')expect(screen.getByRole('link',{name:'Another gathering'})).toBeVisible();
+ if(outcome==='error')expect(screen.getByText(messages.loadError)).toBeVisible();
+});

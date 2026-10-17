@@ -1,6 +1,7 @@
 'use client'
+import {OrganizationDirectorySkeleton, OrganizationRowsSkeleton} from './OrganizationLoading'
 
-import { Button, DataTableFrame, Dialog, Skeleton, Switch } from '@hallelujahhomechurch/ui'
+import { Button, DataTableFrame, Dialog,  Switch } from '@hallelujahhomechurch/ui'
 import { ChevronRight, FolderPlus, Pencil, Send, UserRoundPlus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -32,6 +33,7 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
   const { locale, messages: { organizations: t, site } } = useOrganizationMessages()
   const [folder, setFolder] = useState<ManagedUnitFolder | null>(null)
   const [members, setMembers] = useState<ManagedMemberPage | null>(null)
+  const [memberScope,setMemberScope] = useState('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [revision, setRevision] = useState(0)
@@ -52,6 +54,9 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
   const { mutate, pending, error } = useManagedMutation()
   const refresh = () => setRevision(value => value + 1)
 
+  const requestedMemberScope = `${unitId}:${search}:${page}`
+  const visibleMembers = memberScope === requestedMemberScope ? members : null
+
   useEffect(() => {
     if (query.trim() === search) return
     const timer = window.setTimeout(() => { setSearch(query.trim()); setPage(1) }, 250)
@@ -59,12 +64,12 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
   }, [query, search])
   useEffect(() => {
     const controller = new AbortController()
-    queueMicrotask(() => { if (!controller.signal.aborted) { setLoading(true); setLoadError(null); setMembers(null) } })
+    queueMicrotask(() => { if (!controller.signal.aborted) { setLoading(true); setLoadError(null) } })
     void (async () => {
       try {
         const nextFolder = await operationsApi.getManagedUnit(unitId, controller.signal)
         const nextMembers = nextFolder.unit.status === 'archived' ? { items: [], page: 1 } : await operationsApi.listManagedMembers(unitId, search, page, controller.signal, false)
-        if (!controller.signal.aborted) { setFolder(nextFolder); setMembers(nextMembers) }
+        if (!controller.signal.aborted) { setFolder(nextFolder); setMembers(nextMembers); setMemberScope(requestedMemberScope) }
       } catch (reason) {
         if (!controller.signal.aborted) {
           setFolder(null); setMembers(null)
@@ -73,7 +78,7 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
       } finally { if (!controller.signal.aborted) setLoading(false) }
     })()
     return () => controller.abort()
-  }, [operationsApi, page, search, unitId, revision])
+  }, [operationsApi, page, search, unitId, revision, requestedMemberScope])
 
   useEffect(() => {
     onSearchAvailabilityChange?.({ unitId, available: Boolean(folder && folder.unit.status === 'active' && !loadError) })
@@ -131,11 +136,11 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
 
   const errorText = error === 'forbidden' ? t.forbidden : error === 'conflict' ? t.conflict : t.requestFailed
   const mutationError = error ? <p className="form-error" role="alert">{errorText}</p> : null
-  if (!folder && loading) return <Skeleton className="account-page-skeleton" label={t.loading} />
+  if (!folder && loading) return <OrganizationDirectorySkeleton label={t.loading}/>
   if (!folder) return <section className="organization-document"><p className="form-error" role="alert">{loadError === 'forbidden' ? t.forbidden : t.loadFailed}</p><Button onPress={refresh}>{t.retry}</Button></section>
   const canManageMembers = folder.actions.manageMembers || folder.actions.manageEntitlements
   const unitRows = folder.children.filter(child => !search || child.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()))
-  const memberRows = members?.items ?? []
+  const memberRows = visibleMembers?.items ?? []
   const childKinds = folder.unit.kind === 'church' ? ['family', 'fellowship'] as const : folder.unit.kind === 'family' ? ['small_group'] as const : []
   const close = (open: boolean) => { if (!open && !pending) { setDialog(null); setAdmissionCodes([]) } }
 
@@ -160,11 +165,12 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
     <div className="organization-directory">
         <DataTableFrame footer={<div className="organization-section-heading organization-pagination">
           <span className="muted-copy" role="status">{loading ? t.refreshing : t.members + ' · ' + page}</span>
-          <div className="organization-actions"><Button size="sm" isDisabled={page === 1 || loading || pending} variant="ghost" onPress={() => setPage(value => value - 1)}>{t.previous}</Button><Button size="sm" isDisabled={!members?.nextPage || loading || pending} variant="ghost" onPress={() => setPage(value => value + 1)}>{t.next}</Button></div>
+          <div className="organization-actions"><Button size="sm" isDisabled={page === 1 || loading || pending} variant="ghost" onPress={() => setPage(value => value - 1)}>{t.previous}</Button><Button size="sm" isDisabled={!visibleMembers?.nextPage || loading || pending} variant="ghost" onPress={() => setPage(value => value + 1)}>{t.next}</Button></div>
         </div>}>
           <table className="organization-table" aria-label={t.directory} aria-busy={loading}>
             <thead><tr><th>{t.name}</th><th>{t.email}</th><th className="organization-type-cell">{t.type}</th>{childKinds.length ? <th className="organization-unit-kind-cell">{t.unitKind}</th> : null}{canManageMembers ? <th className="organization-row-action"><span className="sr-only">{t.settings}</span></th> : null}</tr></thead>
             <tbody>
+              {loading&&!visibleMembers?<OrganizationRowsSkeleton columns={3+(childKinds.length?1:0)+(canManageMembers?1:0)}/>:null}
               {unitRows.map(child => <tr className="organization-folder-row" key={child.id}>
                 <td><Link className="organization-row-link" href={organizationHref(locale, '/organizations/' + child.id)}><span>{child.name}</span></Link></td>
                 <td className="organization-email">{child.email || '—'}</td><td className="organization-type-cell">{t.unitButton}</td>{childKinds.length ? <td className="organization-unit-kind-cell">{t[child.kind]}</td> : null}
@@ -174,7 +180,7 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
                 <td>{canManageMembers ? <Link className="organization-row-link" href={organizationHref(locale, '/organizations/' + unitId + '/members/' + member.memberId)}><span>{member.displayName || member.email}</span></Link> : <span>{member.displayName || member.email}</span>}</td><td className="organization-email">{member.email}</td><td className="organization-type-cell">{member.isResponsible === true ? t.responsibility : t.memberButton}</td>{childKinds.length ? <td className="organization-unit-kind-cell" /> : null}
                 {canManageMembers ? <td className="organization-row-action"><Link className="organization-icon-action" aria-label={t.entitlements + ' ' + (member.displayName || member.email)} href={organizationHref(locale, '/organizations/' + unitId + '/members/' + member.memberId)}><Pencil size={16} aria-hidden="true" /></Link></td> : null}
               </tr>)}
-              {!memberRows.length && !unitRows.length ? <tr><td colSpan={3 + (childKinds.length ? 1 : 0) + (canManageMembers ? 1 : 0)} className="organization-empty">{search ? t.noResults : t.noMembers}</td></tr> : null}
+              {!loading && !memberRows.length && !unitRows.length ? <tr><td colSpan={3 + (childKinds.length ? 1 : 0) + (canManageMembers ? 1 : 0)} className="organization-empty">{search ? t.noResults : t.noMembers}</td></tr> : null}
             </tbody>
           </table>
         </DataTableFrame>

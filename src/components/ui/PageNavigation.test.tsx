@@ -17,3 +17,8 @@ describe('PageNavigation', () => {
     expect(container).toBeEmptyDOMElement();
   });
 });
+
+it('provides pending feedback for both adjacent pages without changing their labels',()=>{
+ render(<PageNavigation basePath="/en/news" page={2} totalPages={3} labels={labels}/>);
+ for(const name of ['Previous','Next'])expect(screen.getByRole('link',{name}).querySelector('[data-navigation-pending]')).not.toBeNull();
+});

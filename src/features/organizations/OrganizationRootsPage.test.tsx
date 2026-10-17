@@ -62,3 +62,11 @@ it('keeps management links localized for units selected by the server', async ()
   render(<OrganizationRootsPage />)
   expect(await screen.findByRole('link', {name: 'View Family'})).toHaveAttribute('href', '/en/organizations/unit')
 })
+
+it('shows list-shaped placeholders with one status before roots are known',()=>{
+ vi.mocked(useOrganizationApi).mockReturnValue({operationsApi:{listManagedRoots:()=>new Promise(()=>{})}} as never);
+ const view=render(<OrganizationRootsPage/>);
+ expect(view.container.querySelector('[data-loading-layout="organization-roots"]')).not.toBeNull();
+ expect(screen.getAllByRole('status')).toHaveLength(1);
+ expect(screen.queryByRole('link')).not.toBeInTheDocument();
+});

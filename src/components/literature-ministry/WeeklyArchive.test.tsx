@@ -1,4 +1,4 @@
-import {render, screen, waitFor} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {WeeklyArchive} from './WeeklyArchive';
@@ -215,3 +215,16 @@ const bulletin = {
 function discoveryResponse(item: typeof bulletin,total=1,pdfPublished=true) {
   return Response.json({data:{items:[{issueId:item.issueId,issueDate:item.issueDate,issueNumber:item.issueNumber,series:item.series,contentLocale:item.locale,canonicalMetadata:{title:item.title,subtitle:item.subtitle,date:item.issueDate,issueNumber:item.issueNumber},pdfPublished,onlineRevision:pdfPublished?null:2}],total,offset:0,limit:12},meta:{},error:null});
 }
+
+it('settles the latest issue independently while the archive remains a skeleton',async()=>{
+ let finish!:(value:Response)=>void;
+ vi.stubGlobal('fetch',vi.fn((input:RequestInfo|URL)=>new URL((input as Request).url).searchParams.get('limit')==='1'?Promise.resolve(discoveryResponse(bulletin)):new Promise<Response>(resolve=>{finish=resolve})));
+ const view=render(<WeeklyArchive locale="en" messages={messages}/>);
+ expect(view.container.querySelector('[data-loading-layout="weekly-latest"]')).not.toBeNull();
+ expect(view.container.querySelector('[data-loading-layout="weekly-archive"]')).not.toBeNull();
+ await screen.findByRole('button',{name:'Download PDF: 繁中'});
+ expect(view.container.querySelector('[data-loading-layout="weekly-latest"]')).toBeNull();
+ expect(view.container.querySelector('[data-loading-layout="weekly-archive"]')).not.toBeNull();
+ await act(async()=>finish(discoveryResponse(bulletin)));
+ await waitFor(()=>expect(view.container.querySelector('[data-loading-layout="weekly-archive"]')).toBeNull());
+});

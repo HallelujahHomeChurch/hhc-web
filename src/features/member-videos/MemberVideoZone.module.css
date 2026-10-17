@@ -50,3 +50,13 @@
   .watch .video > :first-child:not(:fullscreen):not([data-fullscreen="viewport"]) {position:var(--site-watch-position,sticky);top:var(--site-watch-offset,0px);z-index:1;margin-inline:0;transition:top 220ms cubic-bezier(.22,1,.36,1);}
 }
 @media(prefers-reduced-motion:reduce) {.watch .video > :first-child {transition:none;}}
+
+.skeletonRegion {grid-column:1 / -1; min-width:0;}
+.skeletonTitle {height:22px; width:85%;}
+.skeletonLine {height:14px; width:55%;}
+.skeletonInformation {height:96px; border-radius:12px;}
+.skeletonWatch {display:contents;}
+.skeletonWatch > .video {display:grid; gap:16px;}
+.skeletonWatch > .recommendations {grid-column:2; grid-row:1 / span 6;}
+@media(max-width:1279px) {.skeletonWatch > .recommendations {grid-column:1; grid-row:auto;}}
+@media(max-width:639px) {.skeletonRegion .skeletonCard:nth-child(n+4) {display:none;}}

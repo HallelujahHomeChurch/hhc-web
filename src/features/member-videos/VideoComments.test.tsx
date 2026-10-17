@@ -50,3 +50,19 @@ it('reconciles a local reaction when a refresh returns the original server value
  fireEvent.click(screen.getByRole('button',{name:'Refresh comments'}));
  await waitFor(()=>expect(screen.getByRole('button',{name:'Like'})).toHaveAttribute('aria-pressed','false'));
 });
+
+it('shows initial and reply skeletons without discarding the composer draft',async()=>{
+ const api=fixture();let roots!:(value:unknown)=>void,replies!:(value:unknown)=>void;
+ api.comments.mockImplementation((_id,options)=>new Promise(resolve=>{if(options.parentId)replies=resolve;else roots=resolve}));
+ const view=render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled count={2} onChanged={()=>{}}/>);
+ expect(view.container.querySelector('[data-loading-layout="video-comments"]')).not.toBeNull();
+ expect(screen.queryByText('No comments yet.')).not.toBeInTheDocument();
+ fireEvent.change(screen.getByPlaceholderText('Add a comment'),{target:{value:'Keep draft'}});
+ await act(async()=>roots({items:[root]}));
+ fireEvent.click(await screen.findByRole('button',{name:'1 Replies'}));
+ expect(view.container.querySelector('[data-loading-layout="video-replies"]')).not.toBeNull();
+ await act(async()=>replies({items:[reply]}));
+ expect(await screen.findByText('Reply text')).toBeInTheDocument();
+ expect(screen.getByPlaceholderText('Add a comment')).toHaveValue('Keep draft');
+ expect(view.container.querySelector('[data-loading-layout]')).toBeNull();
+});

@@ -1,0 +1,30 @@
+[
+  {
+    "route": "/health",
+    "status": 200,
+    "bytes": 20,
+    "previewFixturePresent": false
+  },
+  {
+    "route": "/en/about",
+    "status": 200,
+    "bytes": 67897,
+    "previewFixturePresent": false
+  },
+  {
+    "route": "/en/literature-ministry",
+    "status": 200,
+    "bytes": 47531,
+    "previewFixturePresent": false
+  },
+  {
+    "route": "/en/member-videos",
+    "status": 200,
+    "bytes": 46879,
+    "previewFixturePresent": false
+  },
+  {
+    "route": "/en/loading-preview/unit",
+    "status": 404
+  }
+]
