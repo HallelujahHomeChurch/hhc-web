@@ -27,7 +27,8 @@ import {BroadcastWaitingPanel} from './BroadcastWaitingPanel';
 import {mapBroadcastBookmark} from './broadcast';
 import {liveLibraryItems} from './video-library';
 import {UpcomingBroadcasts} from './UpcomingBroadcasts';
-import {VideoListSkeleton, VideoWatchSkeleton} from './VideoLoading';
+import {VideoListSkeleton, VideoRecommendationsSkeleton, VideoWatchSkeleton} from './VideoLoading';
+import {LoadingStatus} from '@/components/ui/ContentLoading';
 
 export type Messages = {
   live?: LiveLabels;
@@ -365,6 +366,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
   const activeLiveIds = new Set(liveItems.map(item=>item.id));
   const otherRecordings = recordings?.filter(item => item.id !== selectedId && !activeLiveIds.has(item.id)&&!upcomingState.ids.includes(item.id)) ?? [];
   const visibleItems = recordingId ? otherRecordings.slice(0, 10) : otherRecordings;
+  const recommendationsPending = Boolean(recordingId) && !visibleItems.length && !liveItems.length && (recordings === null && !loadError || livePending);
   const liveLabels=messages.live??englishLiveLabels;
   const cardLink=(id:string)=>`/${locale}/member-videos/${encodeURIComponent(id)}`;
   usePlaybackTelemetry(api,selected?.id,video,Boolean(playback&&!selectedLive&&!resolver.denied));
@@ -380,8 +382,8 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
           {invalidQuery&&view==='list' ? <div role="alert" className="text-ink">{searchLabels.tooLong} <Link href={videoSearchHref(locale,'')} className="underline">{searchLabels.clear}</Link></div>:null}
           {recordingId && resolver.denied ? <p role="alert" className="text-ink">{messages.unavailable ?? messages.expired}</p> : null}
           {(loadError || recordingId && resolver.error && !resolver.denied) && !watch ? <div role="alert" className="rounded-[14px] border border-panel-border bg-panel p-7 text-center text-ink">{messages.loadError}<button type="button" className="ml-4 min-h-11 rounded-full border border-[var(--hhc-control-border)] px-5 font-semibold" onClick={() => setRetry((value) => value + 1)}>{messages.retry}</button></div> : null}
-          {recordingId && !loadError && !resolver.error && !resolver.denied && !watch ? <VideoWatchSkeleton label={messages.loading} recommendations={!visibleItems.length&&!liveItems.length}/> : null}
-          {!loadError && recordings?.length === 0 && nextCursor===null && !livestreams.length && !selectedLive && !watch && (view!=='list'||upcomingState.complete&&upcomingPresent===false) ? <p className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{searchMode ? <>{searchLabels.empty.replace('{query}',query)} <Link href={videoSearchHref(locale,'')} className="underline">{searchLabels.clear}</Link></> : messages.empty}</p> : null}
+          {recordingId && !loadError && !resolver.error && !resolver.denied && !watch ? <VideoWatchSkeleton label={messages.loading} recommendations={recommendationsPending}/> : null}
+          {!loadError && !livePending && !liveError && recordings?.length === 0 && nextCursor===null && !livestreams.length && !selectedLive && !watch && (view!=='list'||upcomingState.complete&&upcomingPresent===false) ? <p className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{searchMode ? <>{searchLabels.empty.replace('{query}',query)} <Link href={videoSearchHref(locale,'')} className="underline">{searchLabels.clear}</Link></> : messages.empty}</p> : null}
           {liveError&&!watch?<p role="status" className="text-sm text-muted">{messages.loadError}</p>:null}
           {waitingWatch&&!selectedLive?<BroadcastWaitingPanel watch={waitingWatch} locale={locale} api={api}/>:null}
           {recordingId&&selectedLive&&!resolver.denied?<LiveRecordingPlayer key={selectedLive.captureId} api={api} recording={selectedLive} labels={messages} liveLabels={messages.live??englishLiveLabels} locale={locale} mediaOriginSeconds={mediaOrigin} onVod={selected?.packageId===selectedLive.captureId?async bookmark=>{
@@ -397,9 +399,12 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
             {recordingId?<VideoInteractions key={selected.id} api={api} id={selected.id} title={selected.title} locale={locale} live={false} currentTime={()=>video.current?.currentTime??0} durationSeconds={selected.durationSeconds??undefined} description={selected.description} date={selected.uploadedAt} dateKind="uploaded"/>:<VideoInformation description={selected.description} date={selected.uploadedAt} metrics={null} locale={locale}/>}
             {playError ? <p role="alert" className="text-sm text-primary">{playError} <button type="button" className="underline" onClick={() => void start(vodBookmark.current)}>{messages.retry}</button></p> : null}
           </div> : null}
-          {liveItems.length>0||visibleItems.length>0||view==='list'&&!invalidQuery ? <div className={zoneStyles.results}>
+          {liveItems.length>0||visibleItems.length>0||view==='list'&&!invalidQuery||recordingId&&watch&&!resolver.denied&&(recommendationsPending||loadError||liveError) ? <div className={zoneStyles.results}>
             {recordingId ? <h2 className="sr-only">{messages.otherVideos??messages.listTitle}</h2>:null}
+            {recordingId&&watch&&recommendationsPending?<LoadingStatus label={messages.loading}/>:null}
+            {recordingId&&watch&&!recommendationsPending&&(loadError||liveError)?<p role="status" className="text-sm text-muted">{messages.loadError} <button type="button" className="min-h-11 cursor-pointer text-primary underline" onClick={()=>setRetry(value=>value+1)}>{messages.retry}</button></p>:null}
             <div className={recordingId ? zoneStyles.recommendations : searchMode ? zoneStyles.searchList : zoneStyles.grid}>
+              {recordingId&&watch&&recommendationsPending?<VideoRecommendationsSkeleton/>:null}
               {liveItems.map(item=><article id={`recording-${item.id}`} key={item.captureId} className={zoneStyles.card}>
                 <Link href={cardLink(item.id)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
                   <LiveRecordingCover api={api} recording={item}/>

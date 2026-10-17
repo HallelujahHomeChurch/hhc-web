@@ -17,8 +17,12 @@ export function VideoListSkeleton({label, search = false}: {label: string; searc
 export function VideoWatchSkeleton({label, recommendations = true}: {label: string; recommendations?: boolean}) {
   return <div className={styles.skeletonWatch} data-loading-layout="video-watch">
     <LoadingStatus label={label}/><div aria-busy="true" className={styles.video}><LoadingBlock className={styles.thumbnail}/><LoadingBlock className={styles.skeletonTitle}/><LoadingBlock className={styles.skeletonLine}/><LoadingBlock className={styles.skeletonInformation}/></div>
-    {recommendations ? <div data-loading-recommendations aria-busy="true" className={styles.recommendations}><VideoCards count={3}/></div> : null}
+    {recommendations ? <VideoRecommendationsSkeleton/> : null}
   </div>;
+}
+
+export function VideoRecommendationsSkeleton() {
+  return <div data-loading-recommendations aria-busy="true" className={styles.recommendations}><VideoCards count={3}/></div>;
 }
 
 export function VideoCommentsSkeleton({label, replies = false}: {label: string; replies?: boolean}) {

@@ -5,7 +5,7 @@ Baseline: `009d37c8238fc50024982f9dc396812bd7fb4ef0`. Task branch: `feat/fronten
 ## Local verification
 
 - Frozen install: pnpm 10.12.1, unchanged lockfile, exit 0.
-- Full suite: 170 files / 1,384 tests passed (baseline 165 / 1,350).
+- Full suite: 170 files / 1,390 tests passed after independent review fixes (baseline 165 / 1,350).
 - ESLint: exit 0; existing `LegalRequiredNavigation.tsx:17` no-location-assign warning only.
 - Production build: exit 0, temporary preview routes removed before the final build.
 - Static budgets: 4 fonts, hero 140,091 bytes, CSS 196,401 bytes; passed.
@@ -39,4 +39,6 @@ Ego's animation timeline reported localTime=0 even 350 ms after pending began; a
 
 ## Final independent review and CI
 
-Pending; filled after the fresh whole-branch review and current-head CI.
+One fresh read-only whole-branch reviewer found no Critical issues, two Important issues and no Minor issues. Both Important issues were reproduced by six failing regressions and fixed in one pass; the full suite then passed 1,390/1,390. Details and all rulings are in [independent-review.md](independent-review.md).
+
+Final-source [local smoke](local-smoke.json): health/about/literature/videos returned 200; the removed preview returned 404. PR [#229](https://github.com/HallelujahHomeChurch/hhc-web/pull/229) must pass the current-head verify job, including dependency/image scans and container build. Its [live checks](https://github.com/HallelujahHomeChurch/hhc-web/pull/229/checks) are authoritative; no production release is claimed.

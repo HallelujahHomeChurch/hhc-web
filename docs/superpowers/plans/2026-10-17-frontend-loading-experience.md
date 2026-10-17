@@ -10,7 +10,7 @@
 
 **Spec:** [Frontend loading experience design](../specs/2026-10-17-frontend-loading-experience-design.md)
 
-**Status:** Approved by the user; inline sequential implementation in progress. Baseline `009d37c8238fc50024982f9dc396812bd7fb4ef0`. Review updated origin/main before execution; preserve unrelated changes.
+**Status:** Approved by the user; inline implementation and independent review complete. PR #229 current-head CI is the remaining handoff check. Baseline `009d37c8238fc50024982f9dc396812bd7fb4ef0`. Review updated origin/main before execution; preserve unrelated changes.
 
 ## Global Constraints
 
@@ -152,14 +152,16 @@
 
 **Interfaces:** Consumes all feature exports and real Next navigation; produces reproducible verification results and a reviewable branch/PR, not an automatic production release.
 
-- [ ] Resolve and review any latest-main integration since execution preflight before final checks; rerun checks on the final reviewed head.
-- [ ] Confirm `corepack pnpm install --frozen-lockfile` on the final dependency state, then `corepack pnpm test:run`, `corepack pnpm lint`, `corepack pnpm build`, `corepack pnpm perf:static`, `./scripts/test-release-policy.sh`. Expect all commands exit 0; document existing warnings honestly.
-- [ ] Use a production-build synthetic fixture to hold/reject/reorder each data request without real member writes. Inspect 320/390/768/1024/1440 px, light/dark, reduced-motion, long titles, empty and 12+ results. Validate action columns and no document horizontal overflow; a deliberate table scroll container may remain.
-- [ ] Measure region bounds/scroll/focus/draft through authorization handoff, partial upcoming discovery, archive paging, small-group filtering and reply expansion. Confirm loaded content is retained only within the same valid scope. Record a bounded screenshot batch, fix exposed issues together, and one confirmation batch.
-- [ ] On a production build hold a public Next transition for 2 s: verify the link marker appears after 150 ms with no layout change, old page remains usable, completion/Back/Forward clears it, rapid A→B click leaves only the active transition pending, and a warm/cache-fast transition is immediate. Pagination must use a fixture because the recorded live dataset did not expose controls.
-- [ ] Run Impeccable detector once over changed UI targets; preserve baseline warnings separately. Request one independent whole-branch review and address verified findings. No subagent implementation or extra consultant is implied by this plan.
+- [x] Resolve and review any latest-main integration since execution preflight before final checks; rerun checks on the final reviewed head.
+- [x] Confirm `corepack pnpm install --frozen-lockfile` on the final dependency state, then `corepack pnpm test:run`, `corepack pnpm lint`, `corepack pnpm build`, `corepack pnpm perf:static`, `./scripts/test-release-policy.sh`. Expect all commands exit 0; document existing warnings honestly.
+- [x] Use a production-build synthetic fixture to hold/reject/reorder each data request without real member writes. Inspect 320/390/768/1024/1440 px, light/dark, reduced-motion, long titles, empty and 12+ results. Validate action columns and no document horizontal overflow; a deliberate table scroll container may remain.
+- [x] Measure region bounds/scroll/focus/draft through authorization handoff, partial upcoming discovery, archive paging, small-group filtering and reply expansion. Confirm loaded content is retained only within the same valid scope. Record a bounded screenshot batch, fix exposed issues together, and one confirmation batch.
+- [x] On a production build hold a public Next transition for 2 s: verify the link marker appears after 150 ms with no layout change, old page remains usable, completion/Back/Forward clears it, rapid A→B click leaves only the active transition pending, and a warm/cache-fast transition is immediate. Pagination must use a fixture because the recorded live dataset did not expose controls.
+- [x] Run Impeccable detector once over changed UI targets; preserve baseline warnings separately. Request one independent whole-branch review and address verified findings. No subagent implementation or extra consultant is implied by this plan.
 - [ ] Update evidence with commands/results and actual limits; open a focused hhc-web PR and require all CI/image checks. Ask for the authorized integration/release stage after review if it has not already been explicitly approved for this change. Never infer it from the previous video release.
 - [ ] If later authorized, merge only the reviewed current head after successful CI, let CI/CD publish, verify revision/digest/health and relevant routes, then remove only the clean temporary task worktree and included local branch. Keep it on failure or outstanding work.
+
+Task 7 evidence limits: scope/out-of-order handoffs use deterministic regressions; browser automation proves native pending lifecycle, CSS delay and geometry, but its frozen animation timeline cannot prove exact 150 ms painted onset or cache-fast latency. See acceptance evidence and explicit rulings. Native click/failure runtime coverage is a bounded subset.
 
 ## Explicitly deferred first-load investigation follow-up
 
