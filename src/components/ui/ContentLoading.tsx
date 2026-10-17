@@ -1,3 +1,4 @@
+'use client';
 import {Skeleton} from '@hallelujahhomechurch/ui';
 import styles from './ContentLoading.module.css';
 
