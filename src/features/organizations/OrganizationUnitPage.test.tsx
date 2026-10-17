@@ -275,3 +275,35 @@ it('renders ordinary members as a read-only roster with no management links or a
  expect(within(screen.getByRole('table')).queryAllByRole('link')).toHaveLength(0)
  expect(operationsApi.searchManagedCandidates).toHaveBeenCalledOnce()
  })
+
+it.each([
+  ['manageMembers', 'Add member'],
+  ['editUnit', 'Unit settings'],
+  ['createChild', 'Create child unit'],
+  ['sendNotifications', messages.en.site.notifications],
+] as const)('does not reopen a dialog after %s is revoked and restored', async (permission, label) => {
+  const actions = { editUnit: true, createChild: true, manageMembers: true, sendNotifications: true }
+  const folder = { unit: { id: 'church', kind: 'church', name: 'Church', status: 'active', version: 1 }, breadcrumb: [], children: [], actions }
+  operationsApi.getManagedUnit.mockResolvedValue(folder)
+  vi.mocked(useOrganizationApi).mockReturnValue({ operationsApi, unitNotificationsApi: { list: vi.fn().mockResolvedValue({ items: [], page: 1, perPage: 10, total: 0 }) } } as never)
+  const view = mount()
+  await userEvent.click(await screen.findByRole('button', { name: label }))
+  expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+  // A successful refresh with unchanged permissions must preserve the open dialog.
+  view.rerender(<OrganizationUnitPage searchQuery="Alice" />)
+  await waitFor(() => expect(operationsApi.listManagedMembers).toHaveBeenLastCalledWith('church', 'Alice', 1, expect.any(AbortSignal), false))
+  expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+  operationsApi.getManagedUnit.mockResolvedValue({ ...folder, actions: { ...actions, [permission]: false } })
+  view.rerender(<OrganizationUnitPage searchQuery="Bob" />)
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  expect(screen.queryByRole('button', { name: label })).not.toBeInTheDocument()
+
+  operationsApi.getManagedUnit.mockResolvedValue(folder)
+  view.rerender(<OrganizationUnitPage searchQuery="" />)
+  await waitFor(() => expect(operationsApi.listManagedMembers).toHaveBeenLastCalledWith('church', '', 1, expect.any(AbortSignal), false))
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: label }))
+  expect(screen.getByRole('dialog')).toBeInTheDocument()
+})
