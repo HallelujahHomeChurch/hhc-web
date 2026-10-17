@@ -1,6 +1,7 @@
 'use client'
+import {OrganizationRootsSkeleton} from './OrganizationLoading'
 
-import { Button, Card, Skeleton } from '@hallelujahhomechurch/ui'
+import { Button, Card } from '@hallelujahhomechurch/ui'
 import { ChevronRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -25,7 +26,7 @@ export function OrganizationRootsPage() {
     return () => controller.abort()
   }, [operationsApi, revision])
 
-  if (roots === null) return <Skeleton className="account-page-skeleton" label={t.organizations.loading} />
+  if (roots === null) return <OrganizationRootsSkeleton label={t.organizations.loading}/>
   return <section className="organization-document organization-page organization-roots-page">
     <div className="page-heading"><h2>{t.organizations.roots}</h2></div>
     {status !== 'ok' ? <Card className="panel-card"><Card.Content><p className="form-error" role="alert">{status === 'forbidden' ? t.organizations.forbidden : t.organizations.loadFailed}</p><Button variant="secondary" onPress={() => setRevision(value => value + 1)}>{t.organizations.retry}</Button></Card.Content></Card> : null}

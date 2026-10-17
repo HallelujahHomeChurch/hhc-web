@@ -1,4 +1,6 @@
 'use client'
+import {OrganizationHistorySkeleton} from './OrganizationLoading'
+import {LoadingStatus} from '@/components/ui/ContentLoading'
 
 import { Button, Dialog } from '@hallelujahhomechurch/ui'
 import { useEffect, useState } from 'react'
@@ -15,8 +17,11 @@ export function OrganizationNotificationDialog({ unitId, isOpen, onOpenChange }:
   const [body, setBody] = useState('')
   const [preview, setPreview] = useState<UnitNotificationPreview | null>(null)
   const [previewing, setPreviewing] = useState(false)
-  const [history, setHistory] = useState<UnitNotificationPage | null>(null)
+  const [historyResult,setHistoryResult]=useState<{scope:string;value:UnitNotificationPage}|null>(null)
   const [page, setPage] = useState(1)
+  const historyScope=`${unitId}:${page}`
+  const history=historyResult?.scope===historyScope?historyResult.value:null
+  const [historyLoading,setHistoryLoading]=useState(true)
   const [revision, setRevision] = useState(0)
   const [loadError, setLoadError] = useState(false)
   const [sent, setSent] = useState(false)
@@ -26,12 +31,13 @@ export function OrganizationNotificationDialog({ unitId, isOpen, onOpenChange }:
   useEffect(() => {
     if (!isOpen) return
     const controller = new AbortController()
-    queueMicrotask(() => { if (!controller.signal.aborted) { setLoadError(false); setHistory(null) } })
+    queueMicrotask(() => { if (!controller.signal.aborted) { setLoadError(false); setHistoryLoading(true) } })
     void unitNotificationsApi.list(unitId, page, 10, controller.signal)
-      .then(value => { if (!controller.signal.aborted) setHistory(value) })
+      .then(value => { if (!controller.signal.aborted) setHistoryResult({scope:historyScope,value}) })
       .catch(() => { if (!controller.signal.aborted) setLoadError(true) })
+      .finally(()=>{if(!controller.signal.aborted)setHistoryLoading(false)})
     return () => controller.abort()
-  }, [isOpen, page, revision, unitId, unitNotificationsApi])
+  }, [isOpen, page, revision, unitId, unitNotificationsApi, historyScope])
 
   async function previewAudience() {
     setPreviewing(true); setLoadError(false); setSent(false)
@@ -72,7 +78,8 @@ export function OrganizationNotificationDialog({ unitId, isOpen, onOpenChange }:
       </div>
       <div className="organization-section-heading organization-danger-zone"><h3>{t.history}</h3><Button size="sm" variant="secondary" isDisabled={pending} onPress={() => setRevision(value => value + 1)}>{t.refresh}</Button></div>
       <p className="muted-copy">{t.deliveryHint}</p>
-      {!history && !loadError ? <p role="status">{t.refreshing}</p> : null}
+      {!history && !loadError ? <OrganizationHistorySkeleton label={t.refreshing}/> : null}
+      {history&&historyLoading?<LoadingStatus label={t.refreshing}/>:null}
       {history?.items.length === 0 ? <p className="muted-copy">{t.emptyHistory}</p> : null}
       <ul className="organization-history">{history?.items.map(item => <li key={item.id}>
         <details><summary><strong>{item.subject}</strong><small>{new Date(item.createdAt).toLocaleString(locale)} · {t.audience} {item.audienceAccountCount}</small></summary>

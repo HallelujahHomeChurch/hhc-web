@@ -23,3 +23,18 @@ it('forces one paired send after audience confirmation', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Send' }))
   expect(api.submit).toHaveBeenCalledWith('unit', '主旨', '第一行\n第二行', expect.any(String))
 })
+
+it('shows history placeholders initially and keeps ready history and draft during refresh',async()=>{
+ let finish!:(value:unknown)=>void;
+ api.list.mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve}));
+ const view=render(<OrganizationNotificationDialog isOpen unitId="unit" onOpenChange={vi.fn()}/>);
+ expect(view.baseElement.querySelector('[data-loading-layout="organization-history"]')).not.toBeNull();
+ const {act}=await import('@testing-library/react');
+ await act(async()=>finish({items:[{id:'notice',subject:'Earlier notice',body:'Message',createdAt:'2026-10-17T00:00:00Z',channels:[]}],page:1,perPage:10,total:1}));
+ await screen.findByText('Earlier notice');
+ await userEvent.type(screen.getByRole('textbox',{name:'Subject'}),'Draft subject');
+ api.list.mockImplementationOnce(()=>new Promise(()=>{}));
+ await userEvent.click(screen.getByRole('button',{name:messages.en.organizations.refresh}));
+ expect(screen.getByText('Earlier notice')).toBeInTheDocument();
+ expect(screen.getByRole('textbox',{name:'Subject'})).toHaveValue('Draft subject');
+});

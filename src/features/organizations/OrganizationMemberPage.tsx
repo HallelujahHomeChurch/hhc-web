@@ -1,6 +1,7 @@
 'use client'
+import {OrganizationMemberSkeleton} from './OrganizationLoading'
 
-import { Button, Card, Dialog, Skeleton, Switch } from '@hallelujahhomechurch/ui'
+import { Button, Card, Dialog,  Switch } from '@hallelujahhomechurch/ui'
 import { ChevronRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -66,7 +67,7 @@ function MemberDetail({ unitId, memberId }: { unitId: string; memberId: string }
   const mutationError = error ? <p className="form-error" role="alert">{errorText}</p> : null
   if (!member || !folder) return loadError
     ? <section className="organization-document"><Link href={organizationHref(locale, '/organizations/' + unitId)}>{t.back}</Link><p className="form-error" role="alert">{loadError === 'forbidden' ? t.memberForbidden : t.loadFailed}</p>{loadError !== 'forbidden' ? <Button onPress={() => setRevision(value => value + 1)}>{t.retry}</Button> : null}</section>
-    : <Skeleton className="account-page-skeleton" label={t.loading} />
+    : <OrganizationMemberSkeleton label={t.loading}/>
 
   const currentAffiliation = member.affiliations.find(affiliation => affiliation.orgUnitId === unitId)
   return <section className="organization-document organization-page">
