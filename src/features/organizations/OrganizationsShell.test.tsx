@@ -13,7 +13,7 @@ const layout={bannerImageUrl:'/assets/banners/hero.jpg'} as SiteLayout
 beforeEach(()=>{state.pathname='/zh-Hant/organizations';state.owner='owner'})
 it('uses the approved title and subtitle in the existing entry banner',()=>{
  render(<OrganizationsShell locale="zh-Hant" layout={layout}><p>Managed unit list</p></OrganizationsShell>)
- expect(screen.getByRole('heading',{level:1,name:'小家管理'})).toBeInTheDocument()
+ expect(screen.getByRole('heading',{level:1,name:'小家'})).toBeInTheDocument()
  expect(screen.getByText('陪人走一生的路，乃人生最高的成就。')).toBeInTheDocument()
  expect(screen.getByText('Managed unit list')).toBeInTheDocument()
 })

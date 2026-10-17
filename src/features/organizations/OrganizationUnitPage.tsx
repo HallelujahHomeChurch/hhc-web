@@ -82,13 +82,13 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
   useEffect(() => {
     const controller = new AbortController()
     queueMicrotask(() => { if (!controller.signal.aborted) { setCandidates([]); setCandidateError(false); setCandidateLoading(dialog === 'add' && Boolean(candidateLookup)) } })
-    if (dialog !== 'add' || !candidateLookup) return () => controller.abort()
+    if (dialog !== 'add' || !folder?.actions.manageMembers || !candidateLookup) return () => controller.abort()
     void operationsApi.searchManagedCandidates(unitId, candidateLookup.email, controller.signal)
       .then(value => { if (!controller.signal.aborted) setCandidates(value) })
       .catch(() => { if (!controller.signal.aborted) setCandidateError(true) })
       .finally(() => { if (!controller.signal.aborted) setCandidateLoading(false) })
     return () => controller.abort()
-  }, [candidateLookup, dialog, operationsApi, unitId])
+  }, [candidateLookup, dialog, folder?.actions.manageMembers, operationsApi, unitId])
 
   useEffect(() => {
     if (dialog !== 'settings' || !folder?.actions.manageResponsibilities) return
@@ -126,6 +126,7 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
   const mutationError = error ? <p className="form-error" role="alert">{errorText}</p> : null
   if (!folder && loading) return <Skeleton className="account-page-skeleton" label={t.loading} />
   if (!folder) return <section className="organization-document"><p className="form-error" role="alert">{loadError === 'forbidden' ? t.forbidden : t.loadFailed}</p><Button onPress={refresh}>{t.retry}</Button></section>
+  const canManageMembers = folder.actions.manageMembers || folder.actions.manageEntitlements
   const unitRows = folder.children.filter(child => !search || child.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()))
   const memberRows = members?.items ?? []
   const childKinds = folder.unit.kind === 'church' ? ['family', 'fellowship'] as const : folder.unit.kind === 'family' ? ['small_group'] as const : []
@@ -155,23 +156,23 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
           <div className="organization-actions"><Button size="sm" isDisabled={page === 1 || loading || pending} variant="ghost" onPress={() => setPage(value => value - 1)}>{t.previous}</Button><Button size="sm" isDisabled={!members?.nextPage || loading || pending} variant="ghost" onPress={() => setPage(value => value + 1)}>{t.next}</Button></div>
         </div>}>
           <table className="organization-table" aria-label={t.directory} aria-busy={loading}>
-            <thead><tr><th>{t.name}</th><th>{t.email}</th><th className="organization-type-cell">{t.type}</th>{childKinds.length ? <th className="organization-unit-kind-cell">{t.unitKind}</th> : null}<th className="organization-row-action"><span className="sr-only">{t.settings}</span></th></tr></thead>
+            <thead><tr><th>{t.name}</th><th>{t.email}</th><th className="organization-type-cell">{t.type}</th>{childKinds.length ? <th className="organization-unit-kind-cell">{t.unitKind}</th> : null}{canManageMembers ? <th className="organization-row-action"><span className="sr-only">{t.settings}</span></th> : null}</tr></thead>
             <tbody>
               {unitRows.map(child => <tr className="organization-folder-row" key={child.id}>
                 <td><Link className="organization-row-link" href={organizationHref(locale, '/organizations/' + child.id)}><span>{child.name}</span></Link></td>
                 <td className="organization-email">{child.email || '—'}</td><td className="organization-type-cell">{t.unitButton}</td>{childKinds.length ? <td className="organization-unit-kind-cell">{t[child.kind]}</td> : null}
-                <td className="organization-row-action"><Link className="organization-icon-action" aria-label={t.view + ' ' + child.name} href={organizationHref(locale, '/organizations/' + child.id)}><Pencil size={16} aria-hidden="true" /></Link></td>
+                {canManageMembers ? <td className="organization-row-action"><Link className="organization-icon-action" aria-label={t.view + ' ' + child.name} href={organizationHref(locale, '/organizations/' + child.id)}><Pencil size={16} aria-hidden="true" /></Link></td> : null}
               </tr>)}
               {memberRows.map(member => <tr key={member.memberId}>
-                <td><Link className="organization-row-link" href={organizationHref(locale, '/organizations/' + unitId + '/members/' + member.memberId)}><span>{member.displayName || member.email}</span></Link></td><td className="organization-email">{member.email}</td><td className="organization-type-cell">{member.isResponsible === true ? t.responsibility : t.memberButton}</td>{childKinds.length ? <td className="organization-unit-kind-cell" /> : null}
-                <td className="organization-row-action"><Link className="organization-icon-action" aria-label={t.entitlements + ' ' + (member.displayName || member.email)} href={organizationHref(locale, '/organizations/' + unitId + '/members/' + member.memberId)}><Pencil size={16} aria-hidden="true" /></Link></td>
+                <td>{canManageMembers ? <Link className="organization-row-link" href={organizationHref(locale, '/organizations/' + unitId + '/members/' + member.memberId)}><span>{member.displayName || member.email}</span></Link> : <span>{member.displayName || member.email}</span>}</td><td className="organization-email">{member.email}</td><td className="organization-type-cell">{member.isResponsible === true ? t.responsibility : t.memberButton}</td>{childKinds.length ? <td className="organization-unit-kind-cell" /> : null}
+                {canManageMembers ? <td className="organization-row-action"><Link className="organization-icon-action" aria-label={t.entitlements + ' ' + (member.displayName || member.email)} href={organizationHref(locale, '/organizations/' + unitId + '/members/' + member.memberId)}><Pencil size={16} aria-hidden="true" /></Link></td> : null}
               </tr>)}
-              {!memberRows.length && !unitRows.length ? <tr><td colSpan={childKinds.length ? 5 : 4} className="organization-empty">{search ? t.noResults : t.noMembers}</td></tr> : null}
+              {!memberRows.length && !unitRows.length ? <tr><td colSpan={3 + (childKinds.length ? 1 : 0) + (canManageMembers ? 1 : 0)} className="organization-empty">{search ? t.noResults : t.noMembers}</td></tr> : null}
             </tbody>
           </table>
         </DataTableFrame>
     </div>
-    <Dialog isOpen={dialog === 'add'} onOpenChange={close} title={t.addMember} closeLabel={t.cancel}>
+    {folder.actions.manageMembers ? <Dialog isOpen={dialog === 'add'} onOpenChange={close} title={t.addMember} closeLabel={t.cancel}>
       <div className="organization-dialog-stack">{mutationError}<p className="muted-copy">{t.admissionHint}</p>
         <form className="organization-dialog-stack" onSubmit={event => { event.preventDefault(); setCandidateLookup({ email: candidateQuery.trim() }) }}>
           <label>{t.searchAccounts}<input className="organization-input" type="email" required maxLength={200} aria-describedby="candidate-email-hint" disabled={pending} value={candidateQuery} onChange={event => { setCandidateQuery(event.target.value); setCandidateLookup(null); setCandidates([]) }} /></label>
@@ -189,11 +190,11 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
         </fieldset> : null}
         <ul className="organization-list">{candidates.map(candidate => <li key={candidate.account.accountUserId}><span>{candidate.account.displayName || candidate.account.email}<small>{candidate.account.email}</small></span><Button isDisabled={pending || candidate.state !== 'available'} size="sm" onPress={() => void run(['admit', unitId, candidate.account.accountUserId, [...admissionCodes].sort()], key => operationsApi.admitManagedMember(unitId, candidate.account.accountUserId, key, [...admissionCodes].sort()), () => { setCandidateQuery(''); setDialog(null) })}>{candidate.state === 'available' ? t.addMember : t.alreadyJoined}</Button></li>)}</ul>
       </div>
-    </Dialog>
-    <Dialog isOpen={dialog === 'child'} onOpenChange={close} title={t.createChild} closeLabel={t.cancel}>
+    </Dialog> : null}
+    {folder.actions.createChild ? <Dialog isOpen={dialog === 'child'} onOpenChange={close} title={t.createChild} closeLabel={t.cancel}>
       {mutationError}{dialog === 'child' ? <UnitForm kinds={childKinds} labels={t} pending={pending} onSubmit={(kind, name, email) => void run(['child', kind, name, email], key => operationsApi.createManagedChild(unitId, { kind, name, email: email || undefined }, key), () => setDialog(null))} /> : null}
-    </Dialog>
-    <Dialog isOpen={dialog === 'settings'} onOpenChange={close} title={t.settings} closeLabel={t.cancel}>
+    </Dialog> : null}
+    {folder.actions.editUnit ? <Dialog isOpen={dialog === 'settings'} onOpenChange={close} title={t.settings} closeLabel={t.cancel}>
       <div className="organization-dialog-stack">{mutationError}
         {dialog === 'settings' ? <UnitForm key={folder.unit.version} labels={t} pending={pending} name={folder.unit.name} email={folder.unit.email}
           policy={folder.unit.grantableEntitlementCodes} effectivePolicy={folder.unit.effectiveGrantableEntitlementCodes}
@@ -211,8 +212,8 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
           </ul>
         </section> : null}
       </div>
-    </Dialog>
-    {dialog === 'notification' ? <OrganizationNotificationDialog isOpen unitId={unitId} onOpenChange={open => { if (!open) setDialog(null) }} /> : null}
+    </Dialog> : null}
+    {dialog === 'notification' && folder.actions.sendNotifications ? <OrganizationNotificationDialog isOpen unitId={unitId} onOpenChange={open => { if (!open) setDialog(null) }} /> : null}
   </section>
 }
 

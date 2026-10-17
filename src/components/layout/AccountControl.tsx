@@ -239,8 +239,9 @@ export function AccountControlProvider({
         if (controller.signal.aborted) return;
         const entitlements = new Set(snapshot.entitlements.map(({entitlementCode}) => entitlementCode));
         const editions = bulletinEditions.filter(({series, locale}) => entitlements.has(entitlementByEdition.get(`${series}/${locale}`)!));
-        if (!commitNavigation('operations', [...(editions.length ? ['literature-ministry'] : []), ...(entitlements.has('video.meeting-recordings.access') ? ['member-videos'] : []), ...(snapshot.churchMembership && snapshot.responsibilities.length > 0 ? ['organizations'] : [])])) return;
-        setManagedProjection({subject: auth.session.user.id, status: snapshot.churchMembership && snapshot.responsibilities.length > 0 ? 'allowed' : 'denied'});
+        const canReadOrganizations = Boolean(snapshot.churchMembership && (snapshot.responsibilities.length > 0 || snapshot.memberships.some(({orgUnit}) => orgUnit.kind === 'small_group')));
+        if (!commitNavigation('operations', [...(editions.length ? ['literature-ministry'] : []), ...(entitlements.has('video.meeting-recordings.access') ? ['member-videos'] : []), ...(canReadOrganizations ? ['organizations'] : [])])) return;
+        setManagedProjection({subject: auth.session.user.id, status: canReadOrganizations ? 'allowed' : 'denied'});
         setBulletinProjection({
           subject: auth.session.user.id,
           access: {
