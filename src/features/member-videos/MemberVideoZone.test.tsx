@@ -658,3 +658,36 @@ it('shows matching scheduled broadcasts when search has no live or VOD matches',
  expect(videoApi.upcoming).toHaveBeenCalledWith(expect.objectContaining({q:'faith'}));
  expect(screen.queryByText('No recordings')).not.toBeInTheDocument();
 });
+
+it('keeps the same library skeleton through access and independently pending discovery',async()=>{
+ const view=render(<MemberVideoZone view="list" locale="en" messages={messages} hero={null}/>);
+ expect(view.container.querySelector('[data-loading-layout="video-library"]')).not.toBeNull();
+ expect(videoApi.listPage).not.toHaveBeenCalled();
+ state.access='available';state.auth='authenticated';
+ let resolveUpcoming!:(value:unknown)=>void;
+ videoApi.upcoming.mockImplementation(()=>new Promise(resolve=>{resolveUpcoming=resolve}));
+ videoApi.listPage.mockResolvedValue({items:[{id:'vod',title:'Recorded gathering',uploadedAt:'2026-10-01T00:00:00Z'}],nextCursor:null});
+ view.rerender(<MemberVideoZone view="list" locale="en" messages={messages} hero={null}/>);
+ await waitFor(()=>expect(videoApi.upcoming).toHaveBeenCalled());
+ expect(view.container.querySelector('[data-loading-layout="video-library"]')).not.toBeNull();
+ expect(screen.queryByRole('link',{name:'Recorded gathering'})).not.toBeInTheDocument();
+ await act(async()=>resolveUpcoming({items:[],nextCursor:null}));
+ expect(await screen.findByRole('link',{name:'Recorded gathering'})).toBeInTheDocument();
+ expect(view.container.querySelector('[data-loading-layout]')).toBeNull();
+});
+
+it('uses search and watch geometry before their data resolves',async()=>{
+ const view=render(<MemberVideoZone view="list" query="faith" locale="en" messages={messages} hero={null}/>);
+ expect(view.container.querySelector('[data-loading-layout="video-search"]')).not.toBeNull();
+ view.rerender(<MemberVideoZone view="watch" recordingId="pending" locale="en" messages={messages} hero={null}/>);
+ expect(view.container.querySelector('[data-loading-layout="video-watch"]')).not.toBeNull();
+});
+
+it('keeps real recommendations instead of an overlapping recommendation skeleton during watch resolution',async()=>{
+ state.auth='authenticated';state.access='available';
+ list.mockResolvedValue([{id:'other',title:'Another gathering'}]);
+ videoApi.watch.mockImplementation(()=>new Promise(()=>{}));
+ const view=render(<MemberVideoZone view="watch" recordingId="pending" locale="en" messages={messages} hero={null}/>);
+ await screen.findByRole('link',{name:'Another gathering'});
+ expect(view.container.querySelector('[data-loading-layout="video-watch"] > [data-loading-recommendations]')).toBeNull();
+});

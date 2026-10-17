@@ -1,5 +1,5 @@
 import {afterEach,expect,it,vi} from 'vitest';
-import {cleanup,render,screen,fireEvent,waitFor} from '@testing-library/react';
+import {act,cleanup,render,screen,fireEvent,waitFor} from '@testing-library/react';
 import {UpcomingBroadcasts} from './UpcomingBroadcasts';
 import type {createMemberVideoApi} from './api';
 afterEach(cleanup);
@@ -51,8 +51,19 @@ it('keeps the completed VOD boundary visible when a background refresh fails',as
  const onPageState=vi.fn();
  const api={upcoming} as unknown as ReturnType<typeof createMemberVideoApi>;
  render(<UpcomingBroadcasts api={api} locale="en" loading="Loading" retry="Retry" onPageState={onPageState}/>);
- await waitFor(()=>expect(onPageState).toHaveBeenLastCalledWith({ids:[],complete:true}));
+ await waitFor(()=>expect(onPageState).toHaveBeenLastCalledWith(expect.objectContaining({ids:[],complete:true})));
  fireEvent(document,new Event('visibilitychange'));
  await screen.findByRole('button',{name:'Retry'});
- expect(onPageState).toHaveBeenLastCalledWith({ids:[],complete:true});
+ expect(onPageState).toHaveBeenLastCalledWith(expect.objectContaining({ids:[],complete:true}));
+});
+
+it('distinguishes initial loading from ready scheduled pagination and errors',async()=>{
+ let resolve!:(value:unknown)=>void;
+ const upcoming=vi.fn().mockImplementation(()=>new Promise(done=>{resolve=done}));
+ const onPageState=vi.fn();
+ const api={upcoming,broadcastCover:vi.fn().mockRejectedValue(new Error('none'))} as unknown as ReturnType<typeof createMemberVideoApi>;
+ render(<UpcomingBroadcasts api={api} locale="en" loading="Loading" retry="Retry" onPageState={onPageState}/>);
+ expect(onPageState).toHaveBeenLastCalledWith(expect.objectContaining({initialState:'loading',complete:false}));
+ await act(async()=>resolve({items:[{recordingId:'scheduled',title:'Next service',stateRevision:1,view:'waiting'}],nextCursor:'next'}));
+ expect(onPageState).toHaveBeenLastCalledWith(expect.objectContaining({initialState:'ready',complete:false}));
 });

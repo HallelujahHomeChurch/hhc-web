@@ -1,0 +1,21 @@
+import {LoadingBlock, LoadingStatus} from '@/components/ui/ContentLoading';
+import styles from './MemberVideoZone.module.css';
+
+function VideoCards({count = 6}: {count?: number}) {
+  return Array.from({length: count}, (_, index) => <div key={index} className={`${styles.card} ${styles.skeletonCard}`}>
+    <LoadingBlock className={styles.thumbnail}/><div className={styles.info}><LoadingBlock className={styles.skeletonTitle}/><LoadingBlock className={styles.skeletonLine}/></div>
+  </div>);
+}
+
+export function VideoListSkeleton({label, search = false}: {label: string; search?: boolean}) {
+  return <div className={styles.skeletonRegion} data-loading-layout={search ? 'video-search' : 'video-library'}>
+    <LoadingStatus label={label}/><div aria-busy="true" className={search ? styles.searchList : styles.grid}><VideoCards/></div>
+  </div>;
+}
+
+export function VideoWatchSkeleton({label, recommendations = true}: {label: string; recommendations?: boolean}) {
+  return <div className={styles.skeletonWatch} data-loading-layout="video-watch">
+    <LoadingStatus label={label}/><div aria-busy="true" className={styles.video}><LoadingBlock className={styles.thumbnail}/><LoadingBlock className={styles.skeletonTitle}/><LoadingBlock className={styles.skeletonLine}/><LoadingBlock className={styles.skeletonInformation}/></div>
+    {recommendations ? <div data-loading-recommendations aria-busy="true" className={styles.recommendations}><VideoCards count={3}/></div> : null}
+  </div>;
+}
