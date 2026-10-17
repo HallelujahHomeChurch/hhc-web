@@ -220,9 +220,9 @@ physical OBS acceptance.
 
 Localized `/organizations`, unit and member routes reuse the Account session runtime,
 Operations/notification contracts and management UI. Entry uses the site's banner;
-inner pages retain compact controls and header member search. Navigation and page
-mounting require fresh church membership and delegated responsibility; cached
-navigation hints never authorize access. Private reads are client-only and no-store,
+inner pages retain compact controls and header member search. Navigation display reuses
+the account-scoped presentation cache; page mounting requires fresh church membership
+and delegated responsibility. Cached navigation hints never authorize access. Private reads are client-only and no-store,
 and routes are noindex/nofollow and excluded from sitemap and analytics.
 
 Gateway must release the exact WWW management/notification allowlist before WWW;
