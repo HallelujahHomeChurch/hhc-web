@@ -1,6 +1,6 @@
 # Member video experience — implementation evidence
 
-Scope: four isolated branches at `video-experience-20261017`, no production mutations or deployment. Approved execution is inline, with an independent final reviewer.
+Scope: four isolated branches at `video-experience-20261017`. Implementation was completed inline with an independent final reviewer. The user subsequently authorized merging reviewed PRs with passing CI and releasing through the existing workflows. Historical verification checkpoints below describe their state at the time; release evidence is recorded separately.
 
 ## Functional acceptance
 
@@ -25,7 +25,7 @@ A fresh-context reviewer inspected all four diffs and new files and independentl
 3. Shared client: merge reviewed code, then publish through the existing version/tag workflow.
 4. Web: pin the actually published client version and registry lockfile, rerun clean install/build/CI, then merge/release.
 
-The Web checkout currently tests a copied candidate client in ignored `node_modules`. Its committed manifest still pins the existing registry package. The draft Web PR is deliberately blocked on producer publication; local builds are not proof of a fresh registry installation.
+The initial Web checkpoint used a copied candidate client in ignored `node_modules`; it was removed after publication. The final manifest and lockfile pin the actual registry `@hallelujahhomechurch/hhc-web-client@1.0.75`, installed with the repository-specified pnpm 10.12.1. Frozen-lockfile installation passed.
 
 Screenshots use synthetic local fixtures and a placeholder player, not personal member content. The temporary preview route was removed after inspection. Physical Safari/iOS/Android keyboards, actual media playback and authenticated production writes have not been accepted. Browser emulator viewport checks are not a substitute for those checks.
 
@@ -50,4 +50,12 @@ Independent reviewer confirmed all findings closed, including the same-values re
 - Web PR [#226](https://github.com/HallelujahHomeChurch/hhc-web/pull/226): remote full test suite and lint passed. Registry build failed exactly on missing new client contract fields/methods; this is the documented producer-publication dependency, not a passed build. Local candidate production build passed.
 - Local overloaded Web run finished with worker startup and unrelated reader/layout timing failures. Isolated rerun of the five affected/unstarted reader/organization/cover files passed all 175 tests; the remote full suite passed without weakening assertions.
 
-Do not merge the Web draft until the producer package has actually been published, its exact registry version/lock installed, and clean install/build/image/required CI rerun successfully. No merge/release authority is inferred from these results.
+Do not merge the Web draft until the producer package has actually been published, its exact registry version/lock installed, and clean install/build/image/required CI rerun successfully. These test results alone do not establish release acceptance.
+
+## Integration review
+
+The independent reviewer rechecked the API notification/S10 integration, cached management navigation and coordinated 1.0.75 package version bump. No new blocker was found. Gateway PR #176 merged as `68ec93479d512a06681ac45b325c982d6ff87ba7`; release run 39034589916 passed. Production revision `api-gateway--0000214` matched the immutable release digest and passed public health/readiness, anonymous reaction rejection, method/query restrictions and host-isolation checks.
+
+API PR #248 merged as `f0824489226fa41343466d37f68d0846399cae1a`; release run 39034583788 passed all jobs. Migration execution `hhc-web-migrate-m0u9pst` succeeded. Production revision `hhc-web-api--0000219` was Healthy/Running with 100% traffic and matched the release image digest; public health/readiness and locations returned 200. Client PR #133 passed CI 39032577863 and merged as `a86aaf2fb83431e72bdac6948753fb1419e5e110`; tag `v1.0.75` starts the existing package release workflow.
+
+Client release run 39037002908 passed all steps, including isolated renderer validation, registry publication and immutable renderer publication. Web now resolves the registry 1.0.75 tarball and integrity; no other package version or transitive dependency changed. Final Web tests/build/CI are rerun against this package before merge.
