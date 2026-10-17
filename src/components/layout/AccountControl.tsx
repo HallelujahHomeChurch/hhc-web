@@ -1,5 +1,8 @@
 'use client';
 
+import {PrivateCoverProvider} from '@/lib/use-private-cover';
+import {privateCoverCache} from '@/lib/private-cover-cache';
+
 import {createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode} from 'react';
 import {UserRound} from 'lucide-react';
 import {
@@ -281,6 +284,7 @@ export function AccountControlProvider({
         const offline = await import('@/features/weekly-reader/offline-session');
         await offline.forgetOfflineAccount(readerAccountId);
       }
+      await privateCoverCache.setAccount(null);
       await authRuntime.signOut();
       notifyAccountStateChange('sign-out');
       return true;
@@ -306,7 +310,7 @@ export function AccountControlProvider({
       labels,
       signOut
     }}>
-      {children}
+      <PrivateCoverProvider accountId={auth.status==='anonymous'||videoAccess==='denied'?null:auth.status==='authenticated'&&videoAccess==='available'?auth.session.user.id:undefined}>{children}</PrivateCoverProvider>
       {logoutError ? <div className="fixed right-6 top-20 z-50 max-w-[min(360px,calc(100vw-32px))]"><Toast tone="danger">{logoutError}</Toast></div> : null}
     </AccountControlContext.Provider>
   );

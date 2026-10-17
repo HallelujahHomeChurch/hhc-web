@@ -32,3 +32,16 @@ it('refreshes an expanded list without retaining cancelled tail entries',async()
  fireEvent(document,new Event('visibilitychange'));
  await waitFor(()=>expect(screen.queryByRole('link',{name:'Meeting 2'})).toBeNull());
 });
+it('refreshes a changed cover even when the broadcast state revision is unchanged',async()=>{
+ vi.spyOn(URL,'createObjectURL').mockReturnValueOnce('blob:first-cover').mockReturnValueOnce('blob:updated-cover');
+ vi.spyOn(URL,'revokeObjectURL').mockImplementation(()=>{});
+ const item={recordingId:'r1',title:'Meeting',stateRevision:1,cover:{revision:'first',contentPath:'/api/member/recordings/r1/broadcast-cover'}};
+ const upcoming=vi.fn().mockResolvedValueOnce({items:[item],nextCursor:null}).mockResolvedValue({items:[{...item,cover:{...item.cover,revision:'updated'}}],nextCursor:null});
+ const api={upcoming,broadcastCover:vi.fn().mockResolvedValue(new Blob(['jpeg'],{type:'image/jpeg'}))} as unknown as ReturnType<typeof createMemberVideoApi>;
+ try{
+  render(<UpcomingBroadcasts api={api} locale="en" full loading="Loading" retry="Retry"/>);
+  await waitFor(()=>expect(document.querySelector('img[alt="Meeting"]')).toHaveAttribute('src','blob:first-cover'));
+  fireEvent(document,new Event('visibilitychange'));
+  await waitFor(()=>expect(document.querySelector('img[alt="Meeting"]')).toHaveAttribute('src','blob:updated-cover'));
+ }finally{cleanup();vi.restoreAllMocks();}
+});

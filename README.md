@@ -4,13 +4,20 @@ Next.js public website for `www.alive.org.tw`.
 
 ## Private recording covers
 
-Member recording cards and the playback poster use authenticated, same-origin
-cover reads, independent of playback sessions. Images remain temporary object
-URLs scoped to the mounted account/recording and are revoked on changes,
-unmount or expiry. Covers never pass through the public Next image optimizer.
-Missing or unavailable covers retain the video placeholder without blocking
-playback; only mounted cards and the selected recording are requested. This is
-an in-memory component cache, not a persistent browser image cache.
+Member recording cards, live thumbnails and playback posters use authenticated,
+same-origin cover reads, independent of playback sessions. After current account,
+entitlement and resource checks, private JPEGs reuse an account-bound memory and
+IndexedDB cache keyed by recording/capture and cover revision. Returning to a page
+reuses the image immediately; reopening the browser restores it from IndexedDB
+without downloading unchanged bytes. HTTP responses remain no-store; covers never
+pass through the public Next image optimizer or service-worker response caches.
+
+Reusable entries are bounded to 64 images / 32 MiB and at most seven days, capped
+by recording/capture expiry. Mounted viewers retain their URLs through eviction.
+Logout, account change and authorization denial clear or invalidate the relevant
+private scope, including cross-tab changes and late downloads. Storage failure
+falls back to memory; unavailable images keep the placeholder and never block
+playback. The cache does not provide offline access to recordings or their lists.
 
 ## License
 
@@ -199,13 +206,11 @@ replaces an existing offline revision.
 
 ## Live thumbnails
 
-Live cards, member search/recommendations and the live player poster share an
-authenticated thumbnail keyed by API/account instance, recording, capture and
-immutable cover revision. Each mount keeps a private Blob/object URL; scope changes,
-authorization failures, expiry and unmount abort/revoke it. A temporary refresh
-failure keeps the previous valid image. HHC branding covers the no-image state.
-Images bypass Next public optimization and persistent caches. This does not change
-live-following, DVR, ABR or playback grant semantics.
+Live cards, member search/recommendations and the live player poster share the
+private cover cache described above. Recording, capture and immutable cover
+revision identify each image; capture expiry remains 24 hours after creation.
+A temporary refresh failure keeps the previous valid image. HHC branding covers
+the no-image state. Live-following, DVR, ABR and playback grants are unchanged.
 
 Consumer release requires the reviewed and published shared Website client plus
 CMS/Gateway live-cover producers. Local packed verification is not production or

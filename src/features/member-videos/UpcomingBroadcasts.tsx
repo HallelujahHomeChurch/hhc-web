@@ -57,7 +57,7 @@ export function UpcomingBroadcasts({api,locale,full,loading,retry,loadMoreLabel=
  return <>
   {items.map(item=><article key={item.recordingId} className={styles.card}>
    <Link href={`/${locale}/member-videos/${item.recordingId}`} className={styles.thumbnail} aria-hidden="true" tabIndex={-1}>
-    <BroadcastCover api={api} id={item.recordingId} title={item.title} revision={item.stateRevision}/>
+    <BroadcastCover api={api} id={item.recordingId} title={item.title} revision={item.cover?`cover:${item.cover.revision}`:`state:${item.stateRevision}`}/>
     <span className={`${styles.badge} ${styles.stateBadge}`}>{labels.upcoming}</span>
    </Link>
    <div className={styles.info}><h3 className={styles.title}><Link href={`/${locale}/member-videos/${item.recordingId}`}>{item.title}</Link></h3>
