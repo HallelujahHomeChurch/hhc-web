@@ -55,6 +55,8 @@ fields = (
     ('literatureMinistry', 'heroSubtitle'),
     ('memberVideos', 'heroTitle'),
     ('memberVideos', 'heroSubtitle'),
+    ('organizations', 'heroTitle'),
+    ('organizations', 'heroSubtitle'),
 )
 
 def banner_text(locale):

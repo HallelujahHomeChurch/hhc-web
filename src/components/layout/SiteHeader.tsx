@@ -7,6 +7,7 @@ import Image from 'next/image';
 import {BookOpenText, Newspaper, PlaySquare, UsersRound} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import {VideoSearchField} from '@/features/member-videos/VideoSearchField';
+import {OrganizationsSearch} from '@/features/organizations/OrganizationsSearch';
 import {ExpandableSearchField} from '@hallelujahhomechurch/ui';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
 import type {SiteLayout} from '@/features/site-layout/types';
@@ -14,7 +15,7 @@ import type {Locale} from '@/i18n/locales';
 import {isIPhoneDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 import {StatementStrip} from '@/components/statements/StatementStrip';
 import {LineBrowserNotice, useLineBrowserNotice} from './LineBrowserNotice';
-import {AccountControlScope, AccountControlView, useNavigationPresentation} from './AccountControl';
+import {AccountControlScope, AccountControlView, useNavigationPresentation, useOrganizationsAccess, useAccountIdentity} from './AccountControl';
 
 export type SiteHeaderProps = {
   layout: SiteLayout;
@@ -59,15 +60,19 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
   const t = useTranslations('site');
   const homeHref = `/${locale}`;
   const navigation = useNavigationPresentation();
+  const canManageOrganizations = useOrganizationsAccess().status === 'allowed';
+  const owner = useAccountIdentity();
   const canReadBulletin = navigation.sources.operations?.ids.includes('literature-ministry') === true;
   const canWatchVideo = navigation.sources.operations?.ids.includes('member-videos') === true;
   const navItems = [
     ...layout.header.filter(({key, visible}) => visible && (key !== 'literature-ministry' || canReadBulletin)).map((item) => ({...item, icon: icons[item.key]})),
-    ...(process.env.NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED === 'true' && canWatchVideo ? [{key: 'member-videos', label: t('nav.memberVideos'), href: `/${locale}/member-videos`, visible: true, icon: PlaySquare}] : [])
+    ...(process.env.NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED === 'true' && canWatchVideo ? [{key: 'member-videos', label: t('nav.memberVideos'), href: `/${locale}/member-videos`, visible: true, icon: PlaySquare}] : []),
+    ...(canManageOrganizations ? [{key: 'organizations', label: t('nav.organizations'), href: `/${locale}/organizations`, visible: true, icon: UsersRound}] : [])
   ];
   const mobileNavItems = [
     navItems.find(item => item.key === 'literature-ministry') ?? navItems.find(item => item.key === 'news'),
-    navItems.find(item => item.key === 'member-videos') ?? navItems.find(item => item.key === 'about')
+    navItems.find(item => item.key === 'member-videos') ?? navItems.find(item => item.key === 'about'),
+    navItems.find(item => item.key === 'organizations')
   ].filter((item): item is typeof navItems[number] => Boolean(item));
   const videoRoot = `/${locale}/member-videos`;
   const videoWatchPage = (pathname.startsWith(`${videoRoot}/`) && pathname !== `${videoRoot}/`) || ((pathname === videoRoot || pathname === `${videoRoot}/`) && Boolean(searchQuery.trim()));
@@ -126,7 +131,7 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
               <span className="grid size-10 shrink-0 place-items-center max-[767px]:size-9" aria-hidden="true">
                 <Image src="/assets/brand/logo.png" alt="" width={40} height={40} className="h-full w-full object-contain" />
               </span>
-              <span className="grid min-w-0 gap-0.5 leading-none">
+              <span className="site-header-wordmark grid min-w-0 gap-0.5 leading-none">
                 <strong className="truncate text-[19px] font-medium tracking-[0.02em] text-[var(--hhc-brand-ui)] max-[767px]:text-[17px]">{layout.siteName}</strong>
                 {locale !== 'en' ? (
                   <small className="text-[9px] font-extrabold uppercase tracking-[0.02em] text-[var(--hhc-brand-muted)] max-[767px]:text-[8px]">
@@ -138,7 +143,7 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
             {showNavigation ? <nav
               ref={navRef}
               id="site-navigation"
-              className="absolute left-1/2 top-0 flex h-full -translate-x-1/2 items-stretch max-[767px]:hidden"
+              className="absolute left-1/2 top-0 flex h-full w-max whitespace-nowrap -translate-x-1/2 items-stretch max-[767px]:hidden"
               aria-label={t('nav.primary')}
             >
                 {navItems.map((item) => (
@@ -155,7 +160,7 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
             </nav> : null}
             <div className="site-header-controls ml-auto flex shrink-0 items-center gap-4">
               <div className="site-header-search">
-                {videoSearchEnabled ? <VideoSearchField key={searchKey} locale={locale} query={searchQuery} isLibrary={pathname===videoRoot} label={t('search.video.label')} submitLabel={t('search.submit')} clearLabel={t('search.clear')} closeLabel={t('search.close')} placeholder={t('search.video.placeholder')} onExpandedChange={open=>setSearchState({pathname:searchKey,open})}/> : <ExpandableSearchField label={t('search.unavailable')} submitLabel={t('search.submit')} clearLabel={t('search.clear')} isDisabled/>}
+                {pathname === `/${locale}/organizations` || pathname.startsWith(`/${locale}/organizations/`) ? <OrganizationsSearch key={`${owner}:${searchKey}`} onExpandedChange={open => setSearchState({pathname: searchKey, open})} /> : videoSearchEnabled ? <VideoSearchField key={searchKey} locale={locale} query={searchQuery} isLibrary={pathname===videoRoot} label={t('search.video.label')} submitLabel={t('search.submit')} clearLabel={t('search.clear')} closeLabel={t('search.close')} placeholder={t('search.video.placeholder')} onExpandedChange={open=>setSearchState({pathname:searchKey,open})}/> : <ExpandableSearchField label={t('search.unavailable')} submitLabel={t('search.submit')} clearLabel={t('search.clear')} isDisabled/>}
               </div>
               <div ref={accountRef} className="site-header-account shrink-0" data-mobile-retained={!showNavigation}><AccountControlView /></div>
             </div>

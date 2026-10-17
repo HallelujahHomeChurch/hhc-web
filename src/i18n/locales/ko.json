@@ -155,6 +155,7 @@
       "news": "새소식",
       "literatureMinistry": "문서 사역",
       "memberVideos": "회원 영상",
+      "organizations": "소그룹 관리",
       "menu": "메뉴",
       "openMenu": "메뉴 열기",
       "closeMenu": "메뉴 닫기",
@@ -229,6 +230,7 @@
       "email": "이메일 구독 설정"
     },
     "search": {
+      "members": "회원 검색",
       "label": "검색",
       "submit": "검색",
       "clear": "검색 지우기",
@@ -629,5 +631,9 @@
   "root": {
     "title": "언어 선택",
     "description": "이용할 언어를 선택해 주세요."
+  },
+  "organizations": {
+    "heroTitle": "소그룹 관리",
+    "heroSubtitle": "누군가의 평생 여정을 함께 걷는 것이야말로 인생 최고의 성취입니다."
   }
 }

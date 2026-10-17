@@ -141,7 +141,8 @@ Banner font regeneration includes the member-video strings in all five locales.
 
 ## Header search and mobile navigation
 
-The mobile bar has two content slots and an account slot on the right. The first
+The mobile bar has two content slots, an optional delegated small-group management slot,
+and an account slot on the right. Management follows recordings and precedes My. The first
 slot prefers authorized literature ministry over news; the second prefers enabled,
 authorized recordings over About. Hidden projected items are omitted. The brand
 returns to the video library from watch pages; on the library and other pages it
@@ -149,8 +150,8 @@ returns to the site home. Public news/About
 remain available on the home page and in the footer. Desktop navigation retains
 its existing destinations; simplified legal pages retain header account access.
 
-Search is visible to every visitor and enabled only on member-video library,
-result and watch routes. Other pages show a disabled trigger until their search
+Search is visible to every visitor and enabled on member-video library,
+result and watch routes, and authorized small-group unit directories. Other pages show a disabled trigger until their search
 behavior is implemented. Video submissions update the URL `q` and search literal
 words across published titles and descriptions after membership, entitlement and
 legal checks. Results use fresh cursor batches; watch recommendations stay
@@ -214,3 +215,15 @@ the no-image state. Live-following, DVR, ABR and playback grants are unchanged.
 Consumer release requires the reviewed and published shared Website client plus
 CMS/Gateway live-cover producers. Local packed verification is not production or
 physical OBS acceptance.
+
+## Delegated small-group management
+
+Localized `/organizations`, unit and member routes reuse the Account session runtime,
+Operations/notification contracts and management UI. Entry uses the site's banner;
+inner pages retain compact controls and header member search. Navigation and page
+mounting require fresh church membership and delegated responsibility; cached
+navigation hints never authorize access. Private reads are client-only and no-store,
+and routes are noindex/nofollow and excluded from sitemap and analytics.
+
+Gateway must release the exact WWW management/notification allowlist before WWW;
+Account's compatible API routes remain during rollout. Release the Account management UI removal last. Business APIs and notification click destinations are unchanged.

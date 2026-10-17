@@ -155,6 +155,7 @@
       "news": "お知らせ",
       "literatureMinistry": "文書ミニストリー",
       "memberVideos": "会員向け動画",
+      "organizations": "小グループ管理",
       "menu": "メニュー",
       "openMenu": "メニューを開く",
       "closeMenu": "メニューを閉じる",
@@ -229,6 +230,7 @@
       "email": "メール購読設定"
     },
     "search": {
+      "members": "会員を検索",
       "label": "検索",
       "submit": "検索",
       "clear": "検索をクリア",
@@ -629,5 +631,9 @@
   "root": {
     "title": "言語を選択",
     "description": "閲覧する言語を選択してください。"
+  },
+  "organizations": {
+    "heroTitle": "小グループ管理",
+    "heroSubtitle": "人の一生の道に寄り添うことこそ、人生で最も大きな実り。"
   }
 }
