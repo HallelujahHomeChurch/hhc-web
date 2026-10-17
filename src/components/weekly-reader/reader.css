@@ -260,6 +260,9 @@ body:has(.weekly-reader) {padding-bottom: 0;}
 .weekly-reader .reader-chapter-boundary button {width: 48px; height: 44px; border: 0; border-radius: 0; background: transparent; box-shadow: none;}
 .weekly-reader[data-theme='dark'] .reader-chapter-boundary {background: #141B21;}
 .reader-document[data-mobile] .hhc-bulletin-ebook {font-size: var(--reader-font-size, 18px); line-height: var(--reader-line-height, 1.8);}
+/* Override inline PDF size ratios only in reflow; keep paper source styles intact. */
+.reader-document[data-mobile] .hhc-bulletin-ebook [data-font-role] {font-size: inherit !important;}
+.reader-document[data-mobile] .hhc-bulletin-ebook [data-font-role='scripture'] {font-size: calc(1em + 1px) !important;}
 .reader-document[data-mobile] .hhc-bulletin-ebook h2 {font-size: 1.333em;}
 .reader-document[data-mobile] .hhc-bulletin-ebook h3,
 .reader-document[data-mobile] .hhc-bulletin-ebook .hhc-ebook-body-heading h2 {font-size: 1.167em;}
