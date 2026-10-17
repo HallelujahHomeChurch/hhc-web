@@ -190,7 +190,7 @@ describe('AccountControl', () => {
 
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', {name: 'Account menu'}));
-    expect(screen.getByRole('menuitem', {name: 'Projection system（Open in a new window）'})).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', {name: /Projection system/})).not.toBeInTheDocument();
     expect(screen.queryByRole('menuitem', {name: 'Admin console'})).not.toBeInTheDocument();
   });
 
@@ -291,7 +291,7 @@ it('orders account, organizations, admin before sign-out and hides the current w
  vi.stubGlobal('fetch',vi.fn().mockResolvedValue(Response.json(managedAccessSnapshot)));
  render(<AccountControl client={sessionClient(['*'])} labels={labels} accountSiteUrl="https://account.alive.org.tw"/>);
  await userEvent.click(await screen.findByRole('button',{name:'Account menu'}));
- expect((await screen.findAllByRole('menuitem')).map(item=>item.textContent)).toEqual(['Projection system','Manage account','Admin console','Sign out']);
+ expect((await screen.findAllByRole('menuitem')).map(item=>item.textContent)).toEqual(['Manage account','Admin console','Sign out']);
 });
 
 it('hides cached Admin access when current permissions are unavailable', async () => {
