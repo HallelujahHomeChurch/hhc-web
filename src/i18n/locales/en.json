@@ -167,7 +167,7 @@
       "projectionSystem": "Projection system",
       "projectionWindowLabel": "Open in a new window",
       "projectionPopupBlocked": "Your browser blocked the window. Use the link below to open it.",
-      "organizationManagement": "Small group",
+      "organizationManagement": "Small groups",
       "adminManagement": "Admin",
       "manageAccount": "Account",
       "signIn": "Sign in",
@@ -624,7 +624,7 @@
     "description": "Choose the language version you want to browse."
   },
   "organizations": {
-    "heroTitle": "Small Group Management",
+    "heroTitle": "Small groups",
     "heroSubtitle": "Walking alongside others throughout life is life’s greatest achievement."
   }
 }

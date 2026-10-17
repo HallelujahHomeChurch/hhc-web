@@ -40,7 +40,7 @@ const accountLabels = {
   menu: '帳號選單',
   projectionSystem: '投影系統', projectionWindowLabel: '另開視窗', projectionPopupBlocked: '瀏覽器阻擋開啟視窗。',
   adminManagement: '後台管理',
-  organizationManagement: '小家管理',
+  organizationManagement: '小家',
   manageAccount: '管理帳號',
   signIn: '登入',
   signOut: '登出',
@@ -153,8 +153,8 @@ describe('SiteHeader', () => {
     </NextIntlClientProvider>);
     expect(screen.getAllByRole('link', {name: '文字事工'})).toHaveLength(2);
     expect(screen.getAllByRole('link', {name: '影音專區'})).toHaveLength(2);
-    expect(screen.getAllByRole('link', {name: '小家管理'})).toHaveLength(2);
-    expect(within(screen.getByRole('navigation', {name: '選單'})).getAllByRole('link').map(link => link.textContent)).toEqual(['文字事工', '影音專區', '小家管理']);
+    expect(screen.getAllByRole('link', {name: '小家'})).toHaveLength(2);
+    expect(within(screen.getByRole('navigation', {name: '選單'})).getAllByRole('link').map(link => link.textContent)).toEqual(['文字事工', '影音專區', '小家']);
     expect(screen.queryByText('Restoring')).not.toBeInTheDocument();
     expect(screen.getByText('checking')).toBeInTheDocument();
     expect(screen.queryByText('Private bulletin')).not.toBeInTheDocument();
@@ -163,12 +163,12 @@ describe('SiteHeader', () => {
     expect(client.issueAccessToken).not.toHaveBeenCalled();
     await act(async () => resolveSession({authenticated: true, user: {id: 'u1', email: 'member@example.test', display_name: 'Member', avatar_url: null}, permissions: [], permission_availability: {status: 'available'}}));
     await waitFor(() => expect(fetcher).toHaveBeenCalledOnce());
-    expect(screen.getAllByRole('link', {name: '小家管理'})).toHaveLength(2);
+    expect(screen.getAllByRole('link', {name: '小家'})).toHaveLength(2);
     expect(screen.queryByText('Private management')).not.toBeInTheDocument();
     await act(async () => resolveAccess(Response.json({memberships: [], orgRoles: [], responsibilities: [], churchMembership: null, entitlements: [], version: 'revoked'})));
     await waitFor(() => expect(screen.queryByRole('link', {name: '文字事工'})).not.toBeInTheDocument());
     expect(screen.queryByRole('link', {name: '影音專區'})).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', {name: '小家管理'})).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', {name: '小家'})).not.toBeInTheDocument();
     expect(screen.queryByText('Private bulletin')).not.toBeInTheDocument();
     expect(screen.queryByText('Private management')).not.toBeInTheDocument();
     expect(JSON.parse(localStorage.getItem('hhc:navigation:www-web')!).sources.operations.ids).toEqual([]);
@@ -647,13 +647,13 @@ it.each([true, false])('places delegated management before My, with no managemen
   render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/organizations" sessionClient={client} /></NextIntlClientProvider>);
   const mobile = screen.getByRole('navigation', {name: '選單'});
   await within(mobile).findByRole('button', {name: '我的'});
-  await waitFor(() => expect(within(mobile).getAllByRole('link').map(link => link.textContent)).toEqual(allowed ? ['最新消息', '影音專區', '小家管理'] : ['最新消息', '影音專區']));
+  await waitFor(() => expect(within(mobile).getAllByRole('link').map(link => link.textContent)).toEqual(allowed ? ['最新消息', '影音專區', '小家'] : ['最新消息', '影音專區']));
   if (allowed) {
-    expect(within(mobile).getByRole('link', {name: '小家管理'})).toHaveAttribute('href', '/zh-Hant/organizations');
-    expect(mobile.children[mobile.children.length - 2]).toHaveTextContent('小家管理');
-    expect(within(screen.getByRole('navigation', {name: '主要導覽'})).getByRole('link', {name: '小家管理'})).toHaveAttribute('aria-current', 'page');
+    expect(within(mobile).getByRole('link', {name: '小家'})).toHaveAttribute('href', '/zh-Hant/organizations');
+    expect(mobile.children[mobile.children.length - 2]).toHaveTextContent('小家');
+    expect(within(screen.getByRole('navigation', {name: '主要導覽'})).getByRole('link', {name: '小家'})).toHaveAttribute('aria-current', 'page');
   }
   fireEvent.click(screen.getByRole('button', {name: '帳號選單'}));
   expect(await screen.findByRole('menu')).toBeInTheDocument();
-  expect(screen.queryByRole('menuitem', {name: '小家管理'})).not.toBeInTheDocument();
+  expect(screen.queryByRole('menuitem', {name: '小家'})).not.toBeInTheDocument();
 });

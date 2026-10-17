@@ -155,7 +155,7 @@
       "news": "最新消息",
       "literatureMinistry": "文字事工",
       "memberVideos": "影音专区",
-      "organizations": "小家管理",
+      "organizations": "小家",
       "menu": "选单",
       "openMenu": "开启菜单",
       "closeMenu": "关闭菜单",
@@ -633,7 +633,7 @@
     "description": "请选择要浏览的语言版本。"
   },
   "organizations": {
-    "heroTitle": "小家管理",
+    "heroTitle": "小家",
     "heroSubtitle": "陪人走一生的路，乃人生最高的成就。"
   }
 }

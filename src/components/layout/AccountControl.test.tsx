@@ -301,3 +301,18 @@ it('hides cached Admin access when current permissions are unavailable', async (
   await userEvent.click(await screen.findByRole('button', {name: 'Account menu'}));
   expect(screen.queryByRole('menuitem', {name: 'Admin console'})).not.toBeInTheDocument();
 });
+
+it.each([
+ ['small_group', true, 'allowed'],
+ ['small_group', false, 'denied'],
+ ['family', true, 'denied'],
+ ['fellowship', true, 'denied'],
+])('projects direct %s membership with church=%s as %s', async (kind, church, expected) => {
+ vi.stubGlobal('fetch',vi.fn().mockResolvedValue(Response.json({...managedAccessSnapshot,
+  churchMembership: church ? managedAccessSnapshot.churchMembership : undefined,
+  responsibilities:[], memberships:[{membershipId:'direct',orgUnit:{id:'unit',name:'Unit',kind}}],
+ })))
+ function Access() {return <output>{useOrganizationsAccess().status}</output>}
+ render(<AccountControlProvider client={sessionClient([])} labels={labels}><Access /></AccountControlProvider>)
+ expect(await screen.findByText(expected)).toBeInTheDocument()
+})
