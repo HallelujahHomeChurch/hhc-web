@@ -6,6 +6,7 @@ import {AboutHero} from '@/components/about/AboutHero';
 import {SiteFooterServer} from '@/components/layout/SiteFooterServer';
 import {SiteHeaderServer} from '@/components/layout/SiteHeaderServer';
 import {BulletinAccessGate} from '@/components/layout/AccountControl';
+import {WeeklyLandingSkeleton} from '@/components/literature-ministry/WeeklyLoading';
 import {WeeklyArchive} from '@/components/literature-ministry/WeeklyArchive';
 import {getSiteLayout} from '@/features/site-layout/api';
 import {isLocale, type Locale} from '@/i18n/locales';
@@ -65,16 +66,14 @@ export default async function LiteratureMinistryPage({params}: LiteratureMinistr
   return (
     <>
       <SiteHeaderServer locale={locale} pathname={`/${locale}/literature-ministry`} />
-      <BulletinAccessGate messages={messages.weeklyReader}>
       <main>
         <AboutHero imageUrl={layout.bannerImageUrl} locale={locale} title={messages.literatureMinistry.heroTitle} subtitle={messages.literatureMinistry.heroSubtitle} />
         <div className="bg-[image:var(--hhc-page-gradient)] py-10 pb-14">
-          <Suspense fallback={null}>
+          <BulletinAccessGate messages={messages.weeklyReader} loadingFallback={<WeeklyLandingSkeleton label={messages.literatureMinistry.loading}/>}><Suspense fallback={<WeeklyLandingSkeleton label={messages.literatureMinistry.loading}/>}>
             <WeeklyArchive locale={locale} messages={messages.literatureMinistry} />
-          </Suspense>
+          </Suspense></BulletinAccessGate>
         </div>
       </main>
-      </BulletinAccessGate>
       <SiteFooterServer locale={locale} pathname={`/${locale}/literature-ministry`} />
     </>
   );

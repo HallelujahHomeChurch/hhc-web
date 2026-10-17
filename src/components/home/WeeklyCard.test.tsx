@@ -1,13 +1,15 @@
-import {render, screen, waitFor} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {WeeklyCard} from './WeeklyCard';
 
 const captureHandledError = vi.hoisted(() => vi.fn());
-const access = vi.hoisted((): {status: 'available'; editions: Array<{series: 'general' | 'children'; locale: 'zh-Hant' | 'zh-Hans' | 'en'}>} => ({status: 'available', editions: [{series: 'general', locale: 'zh-Hant'}]}));
+const auth = vi.hoisted(()=>({status:'authenticated',id:'member'}));
+const access = vi.hoisted((): {status: 'available'|'loading'|'unavailable'; editions: Array<{series: 'general' | 'children'; locale: 'zh-Hant' | 'zh-Hans' | 'en'}>} => ({status: 'available', editions: [{series: 'general', locale: 'zh-Hant'}]}));
 const authorization = vi.hoisted(() => ({getAccessToken: vi.fn().mockResolvedValue('token'), refreshAfterUnauthorized: vi.fn()}));
 vi.mock('@/components/layout/AccountControl', () => ({
-  useAccountIdentity: () => null,
+  useAccountIdentity: () => auth.id,
+  useAccountAuth: () => auth,
   useBulletinAccess: () => access,
   useBulletinAuthorization: () => authorization
 }));
@@ -19,6 +21,7 @@ afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   vi.clearAllMocks();
+  access.status='available';auth.status='authenticated';auth.id='member';
   access.editions = [{series: 'general', locale: 'zh-Hant'}];
 });
 beforeEach(() => vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'));
@@ -112,3 +115,26 @@ const bulletin = {
 function discoveryResponse(items: (typeof bulletin)[], online=false) {
   return Response.json({data:{items:items.map(item=>({issueId:item.issueId,issueDate:item.issueDate,issueNumber:item.issueNumber,series:item.series,contentLocale:item.locale,canonicalMetadata:{title:item.title,subtitle:item.subtitle,date:item.issueDate,issueNumber:item.issueNumber},pdfPublished:true,onlineRevision:online?1:null})),total:1,offset:0,limit:1},meta:{},error:null});
 }
+
+it('reserves the homepage slot while checking and removes it for an anonymous visitor',()=>{
+ auth.status='checking';access.editions=[];
+ const fetcher=vi.fn();vi.stubGlobal('fetch',fetcher);
+ const view=render(<WeeklyCard locale="en" ctaLabel="Download" messages={messages}/>);
+ expect(view.container.querySelector('[data-weekly-card] [data-loading-layout="weekly-home"]')).not.toBeNull();
+ expect(fetcher).not.toHaveBeenCalled();
+ auth.status='anonymous';view.rerender(<WeeklyCard locale="en" ctaLabel="Download" messages={messages}/>);
+ expect(view.container.querySelector('[data-weekly-card]')).toBeNull();
+});
+
+it('ignores a rejected request from the previous account after the new account is ready',async()=>{
+ let rejectOld!:(reason:Error)=>void;
+ const fetcher=vi.fn<typeof fetch>().mockImplementationOnce(()=>new Promise((_resolve,reject)=>{rejectOld=reject})).mockImplementation(async()=>discoveryResponse([bulletin]));
+ vi.stubGlobal('fetch',fetcher);
+ const view=render(<WeeklyCard locale="en" ctaLabel="Download" messages={messages}/>);
+ await waitFor(()=>expect(fetcher).toHaveBeenCalledOnce());
+ auth.id='other-member';view.rerender(<WeeklyCard locale="en" ctaLabel="Download" messages={messages}/>);
+ await screen.findByText('週報');
+ await act(async()=>rejectOld(new Error('late old failure')));
+ expect(screen.getByText('週報')).toBeInTheDocument();
+ expect(view.container.querySelector('[data-loading-layout="weekly-home"]')).toBeNull();
+});

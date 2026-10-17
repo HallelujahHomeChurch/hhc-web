@@ -316,3 +316,10 @@ it.each([
  render(<AccountControlProvider client={sessionClient([])} labels={labels}><Access /></AccountControlProvider>)
  expect(await screen.findByText(expected)).toBeInTheDocument()
 })
+
+it('uses a page-provided bulletin loading fallback without mounting private children or a nested main',()=>{
+ const view=render(<main><BulletinAccessGate loadingFallback={<p>Bulletin skeleton</p>} messages={{title:'Bulletins',loading:'Checking',signInRequired:'Sign in',signIn:'Sign in',unavailable:'Unavailable'}}><p>Private issue</p></BulletinAccessGate></main>);
+ expect(screen.getByText('Bulletin skeleton')).toBeInTheDocument();
+ expect(screen.queryByText('Private issue')).not.toBeInTheDocument();
+ expect(view.container.querySelectorAll('main')).toHaveLength(1);
+});
