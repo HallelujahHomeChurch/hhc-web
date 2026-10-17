@@ -131,7 +131,7 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
               <span className="grid size-10 shrink-0 place-items-center max-[767px]:size-9" aria-hidden="true">
                 <Image src="/assets/brand/logo.png" alt="" width={40} height={40} className="h-full w-full object-contain" />
               </span>
-              <span className="grid min-w-0 gap-0.5 leading-none">
+              <span className="site-header-wordmark grid min-w-0 gap-0.5 leading-none">
                 <strong className="truncate text-[19px] font-medium tracking-[0.02em] text-[var(--hhc-brand-ui)] max-[767px]:text-[17px]">{layout.siteName}</strong>
                 {locale !== 'en' ? (
                   <small className="text-[9px] font-extrabold uppercase tracking-[0.02em] text-[var(--hhc-brand-muted)] max-[767px]:text-[8px]">
@@ -143,7 +143,7 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
             {showNavigation ? <nav
               ref={navRef}
               id="site-navigation"
-              className="absolute left-1/2 top-0 flex h-full -translate-x-1/2 items-stretch max-[767px]:hidden"
+              className="absolute left-1/2 top-0 flex h-full w-max whitespace-nowrap -translate-x-1/2 items-stretch max-[767px]:hidden"
               aria-label={t('nav.primary')}
             >
                 {navItems.map((item) => (

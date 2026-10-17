@@ -148,7 +148,6 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
         {folder.actions.sendNotifications ? <Button aria-label={site.notifications} isDisabled={loading} onPress={() => setDialog('notification')}><Send size={17} aria-hidden="true" /><span className="organization-action-label">{site.notifications}</span></Button> : null}
       </div>
     </header>
-    <h1 className="sr-only">{folder.unit.name}</h1>
     {!dialog ? mutationError : null}
     <div className="organization-directory">
         <DataTableFrame footer={<div className="organization-section-heading organization-pagination">

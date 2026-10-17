@@ -1,9 +1,13 @@
+import {Dialog} from '@hallelujahhomechurch/ui';
+import {OrganizationsGate} from '@/features/organizations/OrganizationsGate';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {createNavigationPresentation} from '@hallelujahhomechurch/account-client';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
 import {AccountControl, AccountControlProvider, AccountControlView, BulletinAccessGate, useBulletinAccess, useOrganizationsAccess, useAccountIdentity, webOAuthConfigForBrowser, webPassiveSsoAttemptKey} from './AccountControl';
+
+vi.mock('next/navigation', () => ({useRouter: () => ({replace: vi.fn()})}));
 
 const captureHandledError = vi.hoisted(() => vi.fn());
 const offline = vi.hoisted(() => ({prepareOfflineAccount: vi.fn().mockResolvedValue(1), forgetOfflineAccount: vi.fn().mockResolvedValue(undefined), watchOfflineAccount: vi.fn(() => () => {})}));
@@ -70,6 +74,25 @@ describe('AccountControl', () => {
     await screen.findByText('unavailable');
     await userEvent.click(screen.getByRole('button', {name: 'Retry access'}));
     await screen.findByText('allowed');
+  });
+
+  it.each(['allowed', 'revoked', 'failed'] as const)('preserves a draft during same-owner refresh, then applies %s qualification', async result => {
+    const fetcher = vi.fn().mockImplementation(async () => Response.json(managedAccessSnapshot));
+    vi.stubGlobal('fetch', fetcher);
+    render(<AccountControlProvider client={sessionClient([])} labels={labels}><OrganizationsGate locale="en"><Dialog isOpen onOpenChange={() => {}} title="Draft notification" closeLabel="Close"><label>Draft subject<input defaultValue="" /></label></Dialog></OrganizationsGate></AccountControlProvider>);
+    const input = await screen.findByRole('textbox', {name: 'Draft subject'});
+    await userEvent.type(input, 'Keep my unsent draft');
+    let resolve!: (value: Response) => void;
+    let reject!: (error: Error) => void;
+    fetcher.mockImplementation(() => new Promise<Response>((done, fail) => {resolve = done; reject = fail}));
+    fireEvent(window, new Event('focus'));
+    await waitFor(() => expect(fetcher.mock.calls.length).toBeGreaterThan(1));
+    expect(screen.getByRole('textbox', {name: 'Draft subject'})).toHaveValue('Keep my unsent draft');
+    if (result === 'failed') reject(new Error('offline'));
+    else resolve(Response.json(result === 'allowed' ? managedAccessSnapshot : {...managedAccessSnapshot, responsibilities: []}));
+    if (result === 'allowed') {
+      await waitFor(() => expect(screen.getByRole('textbox', {name: 'Draft subject'})).toHaveValue('Keep my unsent draft'));
+    } else await waitFor(() => expect(screen.queryByRole('textbox', {name: 'Draft subject'})).not.toBeInTheDocument());
   });
 
   it('keeps unsynced notes and the session when the user cancels logout', async () => {

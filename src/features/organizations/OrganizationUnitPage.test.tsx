@@ -26,6 +26,12 @@ beforeEach(() => {
 
 function mount(path = '/en/organizations/church') { routing.params = {unitId: path.split('?')[0].split('/')[3], memberId: ''}; return render(<OrganizationUnitPage />) }
 
+it('has one primary heading for the current unit', async () => {
+ mount()
+ await screen.findByText('Alice')
+ expect(screen.getAllByRole('heading', {level:1, name:'Church'})).toHaveLength(1)
+})
+
 it('shows the current manager read-only and still allows revoking another manager', async () => {
   operationsApi.getManagedUnit.mockResolvedValue({ unit: { id: 'church', kind: 'family', name: 'Family', status: 'active' }, breadcrumb: [], children: [], actions: { editUnit: true, manageResponsibilities: true } })
   operationsApi.listManagedResponsibilities.mockResolvedValue([

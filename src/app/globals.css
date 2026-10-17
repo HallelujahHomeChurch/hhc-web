@@ -517,3 +517,8 @@ body:has(.site-header-account .hhc-account-menu__trigger[aria-expanded="true"], 
 @media (prefers-reduced-motion: reduce) {
   body:has(.site-top-chrome)::after { transition: none; }
 }
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .site-header-wordmark { display: none; }
+  #site-navigation a { padding-inline: 8px; font-size: 14px; }
+}

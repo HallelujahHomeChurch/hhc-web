@@ -168,9 +168,9 @@ export function AccountControlProvider({
   const [auth, setAuth] = useState<AccountAuthState>(authRuntime.getSnapshot());
   const [bulletinProjection, setBulletinProjection] = useState<{subject: string; access: BulletinAccess} | null>(null);
   const [videoProjection, setVideoProjection] = useState<{subject: string; access: VideoAccess} | null>(null);
-  const [managedProjection, setManagedProjection] = useState<{session: AccountAuthState; status: OrganizationsAccess} | null>(null);
+  const [managedProjection, setManagedProjection] = useState<{subject: string; status: OrganizationsAccess} | null>(null);
   const [accessRevision, setAccessRevision] = useState(0);
-  const refreshOperationsAccess = useCallback(() => { setManagedProjection(null); setAccessRevision(value => value + 1); }, []);
+  const refreshOperationsAccess = useCallback(() => { setAccessRevision(value => value + 1); }, []);
   const retryOperationsAccess = useCallback(() => {
     void authRuntime.revalidate().finally(refreshOperationsAccess);
   }, [authRuntime, refreshOperationsAccess]);
@@ -204,7 +204,7 @@ export function AccountControlProvider({
       : videoProjection?.subject === auth.session.user.id ? videoProjection.access : 'loading';
   const organizationsAccess: OrganizationsAccess = auth.status === 'anonymous' ? 'denied'
     : auth.status === 'unavailable' || (auth.status === 'authenticated' && auth.session.permissionAvailability.status === 'unavailable') ? 'unavailable'
-      : auth.status === 'authenticated' && managedProjection?.session === auth ? managedProjection.status : 'loading';
+      : auth.status === 'authenticated' && managedProjection?.subject === auth.session.user.id ? managedProjection.status : 'loading';
 
   useEffect(() => {
     const unsubscribe = authRuntime.subscribe(() => {
@@ -234,7 +234,7 @@ export function AccountControlProvider({
         const entitlements = new Set(snapshot.entitlements.map(({entitlementCode}) => entitlementCode));
         const editions = bulletinEditions.filter(({series, locale}) => entitlements.has(entitlementByEdition.get(`${series}/${locale}`)!));
         if (!commitNavigation('operations', [...(editions.length ? ['literature-ministry'] : []), ...(entitlements.has('video.meeting-recordings.access') ? ['member-videos'] : []), ...(snapshot.churchMembership && snapshot.responsibilities.length > 0 ? ['organizations'] : [])])) return;
-        setManagedProjection({session: auth, status: snapshot.churchMembership && snapshot.responsibilities.length > 0 ? 'allowed' : 'denied'});
+        setManagedProjection({subject: auth.session.user.id, status: snapshot.churchMembership && snapshot.responsibilities.length > 0 ? 'allowed' : 'denied'});
         setBulletinProjection({
           subject: auth.session.user.id,
           access: {
@@ -247,7 +247,7 @@ export function AccountControlProvider({
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
         captureHandledError(error, {operation: 'operations.access'});
-        setManagedProjection({session: auth, status: 'unavailable'});
+        setManagedProjection({subject: auth.session.user.id, status: 'unavailable'});
         setBulletinProjection({subject: auth.session.user.id, access: {status: 'unavailable', editions: []}});
         setVideoProjection({subject: auth.session.user.id, access: 'unavailable'});
       });
