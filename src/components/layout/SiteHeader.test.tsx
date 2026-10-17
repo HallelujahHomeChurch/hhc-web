@@ -67,7 +67,7 @@ const layout: SiteLayout = {
 };
 
 beforeEach(() => {
-  vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
+  vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
 });
 
 afterEach(() => {
@@ -614,4 +614,31 @@ describe('SiteHeader', () => {
 it.each(['/zh-Hant','/zh-Hant/news','/zh-Hant/member-videos-other'])('shows a disabled search on other routes: %s',pathname=>{
  render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname={pathname} sessionClient={anonymousSessionClient}/></NextIntlClientProvider>);
  expect(screen.getByRole('button',{name:'搜尋（尚未開放）'})).toBeDisabled();
+});
+
+
+it.each([true, false])('places delegated management before My, with no management avatar item: %s', async allowed => {
+  vi.stubEnv('NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED', 'true');
+  vi.stubGlobal('fetch', vi.fn(async () => Response.json({
+    memberships: [], orgRoles: [], qualifications: [], version: 'a'.repeat(64),
+    churchMembership: allowed ? {membershipId: 'm', church: {id: 'church', kind: 'church', name: 'Church', status: 'active'}} : null,
+    responsibilities: allowed ? [{responsibilityId: 'r', orgUnit: {id: 'church', kind: 'church', name: 'Church', status: 'active'}}] : [],
+    entitlements: [{assignmentId: 'e', entitlementCode: 'video.meeting-recordings.access', validFrom: '2026-09-17T00:00:00Z'}]
+  })));
+  const client: AccountSessionClient = {...anonymousSessionClient,
+    getSession: async () => ({authenticated: true, user: {id: 'u1', email: 'member@example.test', display_name: 'Member', avatar_url: null}, permissions: [], permission_availability: {status: 'available'}}),
+    issueAccessToken: async () => ({accessToken: 'test-token', expiresIn: 900})
+  };
+  render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/organizations" sessionClient={client} /></NextIntlClientProvider>);
+  const mobile = screen.getByRole('navigation', {name: '選單'});
+  await within(mobile).findByRole('button', {name: '我的'});
+  await waitFor(() => expect(within(mobile).getAllByRole('link').map(link => link.textContent)).toEqual(allowed ? ['最新消息', '影音專區', '小家管理'] : ['最新消息', '影音專區']));
+  if (allowed) {
+    expect(within(mobile).getByRole('link', {name: '小家管理'})).toHaveAttribute('href', '/zh-Hant/organizations');
+    expect(mobile.children[mobile.children.length - 2]).toHaveTextContent('小家管理');
+    expect(within(screen.getByRole('navigation', {name: '主要導覽'})).getByRole('link', {name: '小家管理'})).toHaveAttribute('aria-current', 'page');
+  }
+  fireEvent.click(screen.getByRole('button', {name: '帳號選單'}));
+  expect(await screen.findByRole('menu')).toBeInTheDocument();
+  expect(screen.queryByRole('menuitem', {name: '小家管理'})).not.toBeInTheDocument();
 });

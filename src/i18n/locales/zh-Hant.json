@@ -155,6 +155,7 @@
       "news": "最新消息",
       "literatureMinistry": "文字事工",
       "memberVideos": "影音專區",
+      "organizations": "小家管理",
       "menu": "選單",
       "openMenu": "開啟選單",
       "closeMenu": "關閉選單",
@@ -229,6 +230,7 @@
       "email": "Email 訂閱設定"
     },
     "search": {
+      "members": "搜尋會員",
       "label": "搜尋",
       "submit": "搜尋",
       "clear": "清除搜尋",
@@ -649,5 +651,9 @@
   "root": {
     "title": "選擇語言",
     "description": "請選擇要瀏覽的語言版本。"
+  },
+  "organizations": {
+    "heroTitle": "小家管理",
+    "heroSubtitle": "陪人是一生最高的成就"
   }
 }

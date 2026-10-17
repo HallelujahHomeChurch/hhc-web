@@ -8,7 +8,7 @@
 - Upstream license SHA-256: `e376b0df8e8a2345a9533db6f0a5333a1107975569ad9d1973a7ee557161ca38`
 - Repository OFL SHA-256 (LF/trailing-space normalized): `a9363bf2eeebb1699d0c272f75b2e7a3ac3625c4f9dd53cead0e213ec4e00fb5`
 - License: SIL Open Font License 1.1; see `OFL.txt`.
-- Derived WOFF2 SHA-256: `5f72cca94added1435efea49f0f218d2dabedb37162d93213a8d94c4a7a8e98a`
+- Derived WOFF2 SHA-256: `fa8ad35f67d5b1ee370fa3fba4a0def3dfee232d8fb3fb0b52ed071f388a537c`
 
 `KleeOne-HHC-Banners.woff2` is a modified, source-controlled subset generated
 by `scripts/subset-display-font.sh` from the fixed Japanese banner strings in

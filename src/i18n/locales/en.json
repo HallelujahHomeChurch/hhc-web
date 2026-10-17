@@ -155,6 +155,7 @@
       "news": "Latest News",
       "literatureMinistry": "Literature Ministry",
       "memberVideos": "Member Videos",
+      "organizations": "Small groups",
       "menu": "Menu",
       "openMenu": "Open menu",
       "closeMenu": "Close menu",
@@ -229,6 +230,7 @@
       "email": "Email subscription settings"
     },
     "search": {
+      "members": "Search members",
       "label": "Search",
       "submit": "Search",
       "clear": "Clear search",
@@ -620,5 +622,9 @@
   "root": {
     "title": "Choose language",
     "description": "Choose the language version you want to browse."
+  },
+  "organizations": {
+    "heroTitle": "Small Group Management",
+    "heroSubtitle": "Walking alongside others is life’s greatest achievement."
   }
 }

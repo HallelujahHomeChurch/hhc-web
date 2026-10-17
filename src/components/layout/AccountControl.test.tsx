@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {createNavigationPresentation} from '@hallelujahhomechurch/account-client';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
-import {AccountControl, AccountControlProvider, AccountControlView, BulletinAccessGate, useBulletinAccess, webOAuthConfigForBrowser, webPassiveSsoAttemptKey} from './AccountControl';
+import {AccountControl, AccountControlProvider, AccountControlView, BulletinAccessGate, useBulletinAccess, useOrganizationsAccess, useAccountIdentity, webOAuthConfigForBrowser, webPassiveSsoAttemptKey} from './AccountControl';
 
 const captureHandledError = vi.hoisted(() => vi.fn());
 const offline = vi.hoisted(() => ({prepareOfflineAccount: vi.fn().mockResolvedValue(1), forgetOfflineAccount: vi.fn().mockResolvedValue(undefined), watchOfflineAccount: vi.fn(() => () => {})}));
@@ -28,43 +28,48 @@ const managedAccessSnapshot = {
 afterEach(() => { sessionStorage.clear(); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); captureHandledError.mockClear(); });
 
 describe('AccountControl', () => {
-  it('links a responsible member directly to Account small group management without another access request', async () => {
-    const fetcher = vi.fn().mockResolvedValue(Response.json(managedAccessSnapshot));
-    vi.stubGlobal('fetch', fetcher);
+  it('removes management from the avatar even for a delegated manager', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(managedAccessSnapshot)));
     render(<AccountControl client={sessionClient([])} labels={labels} accountSiteUrl="https://account.alive.org.tw" />);
     await userEvent.click(await screen.findByRole('button', {name: 'Account menu'}));
-    expect(await screen.findByRole('menuitem', {name: 'Small group management'})).toHaveAttribute('href', 'https://account.alive.org.tw/organizations');
-    const items = screen.getAllByRole('menuitem');
-    expect(items.indexOf(screen.getByRole('menuitem', {name: 'Small group management'}))).toBe(items.indexOf(screen.getByRole('menuitem', {name: 'Manage account'})) + 1);
-    expect(fetcher).toHaveBeenCalledOnce();
-    await userEvent.click(screen.getByRole('menuitem', {name: 'Sign out'}));
-    await screen.findByRole('link', {name: 'Sign in'});
+    expect(await screen.findByRole('menuitem', {name: 'Manage account'})).toBeInTheDocument();
     expect(screen.queryByRole('menuitem', {name: 'Small group management'})).not.toBeInTheDocument();
   });
 
-  it.each([
-    {...managedAccessSnapshot, responsibilities: []},
-    {...managedAccessSnapshot, churchMembership: undefined}
-  ])('hides small group management without active membership and responsibility', async (access) => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(access)));
-    render(<AccountControl client={sessionClient([])} labels={labels} />);
-    await userEvent.click(await screen.findByRole('button', {name: 'Account menu'}));
-    expect(screen.queryByRole('menuitem', {name: 'Small group management'})).not.toBeInTheDocument();
-  });
-
-  it.each(['revoked', 'failed', 'switched'] as const)('does not retain the management shortcut when access is %s', async (change) => {
-    const fetcher = vi.fn().mockResolvedValueOnce(Response.json(managedAccessSnapshot));
+  it.each(['revoked', 'failed', 'switched'] as const)('refreshes delegated route access when it is %s', async change => {
+    const fetcher = vi.fn(async () => Response.json(managedAccessSnapshot));
     vi.stubGlobal('fetch', fetcher);
     const client = sessionClient([]);
-    render(<AccountControl client={client} labels={labels} />);
-    await userEvent.click(await screen.findByRole('button', {name: 'Account menu'}));
-    await screen.findByRole('menuitem', {name: 'Small group management'});
-    if (change === 'switched') vi.mocked(client.getSession).mockResolvedValue({authenticated: true, user: {id: 'u2', email: 'other@example.com', display_name: 'Other', avatar_url: null}, permissions: [], permission_availability: {status: 'available'}});
-    if (change === 'failed') fetcher.mockRejectedValueOnce(new Error('unavailable'));
-    else fetcher.mockResolvedValueOnce(Response.json({...managedAccessSnapshot, responsibilities: []}));
+    function Access() { const {status} = useOrganizationsAccess(); return <p data-testid="management-access">{useAccountIdentity()}:{status}</p>; }
+    render(<AccountControlProvider client={client} labels={labels}><Access /></AccountControlProvider>);
+    await waitFor(() => expect(screen.getByTestId('management-access')).toHaveTextContent('u1:allowed'));
+    if (change === 'switched') vi.mocked(client.getSession).mockResolvedValue({authenticated: true, user: {id: 'u2', email: 'other@example.test', display_name: 'Other', avatar_url: null}, permissions: [], permission_availability: {status: 'available'}});
+    if (change === 'failed') fetcher.mockRejectedValue(new Error('unavailable'));
+    else fetcher.mockImplementation(async () => Response.json({...managedAccessSnapshot, responsibilities: []}));
     fireEvent(window, new Event('focus'));
-    await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
-    await waitFor(() => expect(screen.queryByRole('menuitem', {name: 'Small group management'})).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('management-access')).toHaveTextContent(change === 'failed' ? 'u1:unavailable' : `${change === 'switched' ? 'u2' : 'u1'}:denied`));
+  });
+
+  it('retries failed delegated qualification without reloading the page', async () => {
+    const fetcher = vi.fn().mockRejectedValueOnce(new Error('offline')).mockImplementation(async () => Response.json(managedAccessSnapshot));
+    vi.stubGlobal('fetch', fetcher);
+    function Access() {const {status, retry} = useOrganizationsAccess(); return <><p>{status}</p><button onClick={retry}>Retry access</button></>;}
+    render(<AccountControlProvider client={sessionClient([])} labels={labels}><Access /></AccountControlProvider>);
+    await screen.findByText('unavailable');
+    await userEvent.click(screen.getByRole('button', {name: 'Retry access'}));
+    await screen.findByText('allowed');
+  });
+
+  it.each(['session', 'permissions'] as const)('recovers %s transport on explicit delegated retry', async failure => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => Response.json(managedAccessSnapshot)));
+    const client = sessionClient([]);
+    if (failure === 'session') vi.mocked(client.getSession).mockRejectedValueOnce(new Error('offline'));
+    else vi.mocked(client.getSession).mockResolvedValueOnce({authenticated: true, user: {id: 'u1', email: 'user@example.test', display_name: 'User', avatar_url: null}, permissions: [], permission_availability: {status: 'unavailable', code: 'permission_unavailable'}});
+    function Access() {const {status, retry} = useOrganizationsAccess(); return <><p>{status}</p><button onClick={retry}>Retry access</button></>;}
+    render(<AccountControlProvider client={client} labels={labels}><Access /></AccountControlProvider>);
+    await screen.findByText('unavailable');
+    await userEvent.click(screen.getByRole('button', {name: 'Retry access'}));
+    await screen.findByText('allowed');
   });
 
   it('keeps unsynced notes and the session when the user cancels logout', async () => {
@@ -245,7 +250,7 @@ it('orders account, organizations, admin before sign-out and hides the current w
  vi.stubGlobal('fetch',vi.fn().mockResolvedValue(Response.json(managedAccessSnapshot)));
  render(<AccountControl client={sessionClient(['*'])} labels={labels} accountSiteUrl="https://account.alive.org.tw"/>);
  await userEvent.click(await screen.findByRole('button',{name:'Account menu'}));
- expect((await screen.findAllByRole('menuitem')).map(item=>item.textContent)).toEqual(['Projection system','Manage account','Small group management','Admin console','Sign out']);
+ expect((await screen.findAllByRole('menuitem')).map(item=>item.textContent)).toEqual(['Projection system','Manage account','Admin console','Sign out']);
 });
 
 it('hides cached Admin access when current permissions are unavailable', async () => {
