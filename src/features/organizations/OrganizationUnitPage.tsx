@@ -122,6 +122,13 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
   async function run(signature: unknown, execute: (key: string) => Promise<unknown>, done?: () => void) {
     if (await mutate(JSON.stringify(signature), execute)) { done?.(); refresh() }
   }
+  const dialogAllowed = dialog === 'add' ? folder?.actions.manageMembers
+    : dialog === 'child' ? folder?.actions.createChild
+    : dialog === 'settings' ? folder?.actions.editUnit
+    : dialog === 'notification' ? folder?.actions.sendNotifications
+    : true
+  if (dialog && !dialogAllowed) setDialog(null)
+
   const errorText = error === 'forbidden' ? t.forbidden : error === 'conflict' ? t.conflict : t.requestFailed
   const mutationError = error ? <p className="form-error" role="alert">{errorText}</p> : null
   if (!folder && loading) return <Skeleton className="account-page-skeleton" label={t.loading} />
