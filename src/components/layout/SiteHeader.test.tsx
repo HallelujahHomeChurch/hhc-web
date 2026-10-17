@@ -382,41 +382,25 @@ describe('SiteHeader', () => {
     expect(within(mobileNavigation).getByRole('link', {name: '關於我們'})).toHaveAttribute('aria-current', 'page');
   });
 
-  it('starts moving the shared mobile indicator and replays only the latest rapid navigation', async () => {
-    let nextFrame = 0;
-    const frames = new Map<number, FrameRequestCallback>();
-    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
-      const id = ++nextFrame;
-      frames.set(id, callback);
-      return id;
-    });
-    const cancelFrame = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation((id) => { frames.delete(id); });
-    const {container} = render(
-      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
-        <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" sessionClient={anonymousSessionClient} />
-      </NextIntlClientProvider>
-    );
-
+  it('navigates immediately and selects mobile tabs from the current route without a moving indicator', async () => {
+    const frame = vi.spyOn(window, 'requestAnimationFrame');
+    const view = (pathname: string) => <NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname={pathname} sessionClient={anonymousSessionClient}/></NextIntlClientProvider>;
+    const {container, rerender} = render(view('/zh-Hant/news'));
     await screen.findByRole('link', {name: '登入'});
-    const mobileNavigation = within(screen.getByRole('navigation', {name: '選單'}));
-    const newsLink = mobileNavigation.getByRole('link', {name: '最新消息'});
-    const aboutLink = mobileNavigation.getByRole('link', {name: '關於我們'});
-    newsLink.addEventListener('click', (event) => event.preventDefault());
-    aboutLink.addEventListener('click', (event) => event.preventDefault());
-    const aboutClick = vi.spyOn(aboutLink, 'click');
-    fireEvent.click(newsLink);
-
-    expect(container.querySelector('[data-mobile-nav-indicator]')).toHaveStyle({transform: 'translate3d(0%, 0, 0)'});
-    expect(newsLink).toHaveAttribute('data-active', 'true');
-    act(() => frames.get(1)?.(0));
-    fireEvent.click(aboutLink);
-
-    expect(cancelFrame).toHaveBeenCalledWith(2);
-    expect(container.querySelector('[data-mobile-nav-indicator]')).toHaveStyle({transform: 'translate3d(100%, 0, 0)'});
-    act(() => frames.get(3)?.(16));
-    act(() => frames.get(4)?.(32));
-    expect(aboutClick).toHaveBeenCalledOnce();
-    expect(newsLink).not.toHaveAttribute('data-active');
+    const navigation = within(screen.getByRole('navigation', {name: '選單'}));
+    const news = navigation.getByRole('link', {name: '最新消息'});
+    const about = navigation.getByRole('link', {name: '關於我們'});
+    expect(news).toHaveAttribute('data-active', 'true');
+    expect(container.querySelector('[data-mobile-nav-indicator]')).toBeNull();
+    let prevented = false;
+    about.addEventListener('click', event => {prevented = event.defaultPrevented; event.preventDefault();});
+    frame.mockClear();
+    fireEvent.click(about);
+    expect(prevented).toBe(false);
+    expect(frame).not.toHaveBeenCalled();
+    rerender(view('/zh-Hant/about'));
+    expect(about).toHaveAttribute('data-active', 'true');
+    expect(news).not.toHaveAttribute('data-active');
   });
 
   it('lets long localized branding shrink before the fixed account slot at mobile zoom widths', async () => {
