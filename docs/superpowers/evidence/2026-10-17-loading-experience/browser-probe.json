@@ -1,0 +1,470 @@
+{
+  "date": "2026-10-17",
+  "conditions": {
+    "latencyMs": 600,
+    "downloadBytesPerSecond": 192000,
+    "cacheDisabled": true,
+    "serviceWorkerBypass": true,
+    "session": "existing signed-in session; no storage cleared"
+  },
+  "hardAbout": {
+    "probe": {
+      "changes": [
+        {
+          "ms": 659,
+          "path": "/zh-Hant/about",
+          "mask": false,
+          "header": false,
+          "title": "",
+          "mainHeight": 0
+        },
+        {
+          "ms": 1477,
+          "path": "/zh-Hant/about",
+          "mask": true,
+          "header": false,
+          "title": "",
+          "mainHeight": 0
+        },
+        {
+          "ms": 4133,
+          "path": "/zh-Hant/about",
+          "mask": false,
+          "header": true,
+          "title": "關於我們",
+          "mainHeight": 5398
+        }
+      ],
+      "shifts": [],
+      "paint": [
+        {
+          "name": "first-paint",
+          "ms": 1540
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 1540
+        }
+      ]
+    },
+    "elapsed": 4200
+  },
+  "aboutToNews": {
+    "changes": [
+      {
+        "ms": 6103,
+        "path": "/zh-Hant/news",
+        "mask": false,
+        "header": true,
+        "title": "最新消息",
+        "mainHeight": 1388
+      }
+    ],
+    "shifts": [
+      {
+        "ms": 6139,
+        "value": 0.030050224689399947
+      }
+    ],
+    "samples": [
+      {
+        "ms": 0,
+        "path": "/zh-Hant/about",
+        "title": "關於我們",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 102,
+        "path": "/zh-Hant/about",
+        "title": "關於我們",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 204,
+        "path": "/zh-Hant/about",
+        "title": "關於我們",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 305,
+        "path": "/zh-Hant/about",
+        "title": "關於我們",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 407,
+        "path": "/zh-Hant/about",
+        "title": "關於我們",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 508,
+        "path": "/zh-Hant/about",
+        "title": "關於我們",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 609,
+        "path": "/zh-Hant/about",
+        "title": "關於我們",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 710,
+        "path": "/zh-Hant/about",
+        "title": "關於我們",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 811,
+        "path": "/zh-Hant/about",
+        "title": "關於我們",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 912,
+        "path": "/zh-Hant/about",
+        "title": "關於我們",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 1031,
+        "path": "/zh-Hant/about",
+        "title": "關於我們",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 1143,
+        "path": "/zh-Hant/about",
+        "title": "關於我們",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 1244,
+        "path": "/zh-Hant/about",
+        "title": "關於我們",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 1347,
+        "path": "/zh-Hant/about",
+        "title": "關於我們",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 1448,
+        "path": "/zh-Hant/about",
+        "title": "關於我們",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 1549,
+        "path": "/zh-Hant/about",
+        "title": "關於我們",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 1650,
+        "path": "/zh-Hant/about",
+        "title": "關於我們",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 1751,
+        "path": "/zh-Hant/about",
+        "title": "關於我們",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 1852,
+        "path": "/zh-Hant/about",
+        "title": "關於我們",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 1953,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 2054,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 2156,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 2257,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 2358,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 2459,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 2561,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 2663,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 2765,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 2866,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 2968,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 3069,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 3171,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 3278,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 3380,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 3481,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 3583,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 3684,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 3786,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 3888,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 3988,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 4090,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 4192,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 4293,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      },
+      {
+        "ms": 4394,
+        "path": "/zh-Hant/news",
+        "title": "最新消息",
+        "mask": false,
+        "header": true,
+        "busy": 0,
+        "status": true
+      }
+    ],
+    "documentNavigations": 1,
+    "pagination": []
+  }
+}
