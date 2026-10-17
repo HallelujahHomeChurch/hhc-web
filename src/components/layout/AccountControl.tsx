@@ -349,7 +349,6 @@ export function AccountControlView({menuLabel}: {menuLabel?: string} = {}) {
     <AccountMenu
       labels={{menu: menuLabel ?? labels.menu, greeting: displayName ? `Hi ${displayName}` : labels.manageAccount, manageAccount: labels.manageAccount, signOut: labels.signOut}}
       links={[
-        {id: 'projection', label: labels.projectionSystem, href: siteConfig.apps.projection, newWindow: {label: labels.projectionWindowLabel, blockedMessage: labels.projectionPopupBlocked}},
         {id: 'manage', label: labels.manageAccount, href: `${accountSiteUrl}/profile`},
         ...(canOpenAdmin ? [{id: 'admin', label: labels.adminManagement, href: siteConfig.apps.admin}] : [])
       ]}
