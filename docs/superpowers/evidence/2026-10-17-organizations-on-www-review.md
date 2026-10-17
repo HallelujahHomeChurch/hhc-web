@@ -37,3 +37,8 @@ Task 3: complete in Account 64f1bd6..937d529; full 552 tests, lint/build/release
 ### Continuous-owner qualification boundary
 
 The draft-preservation fix is limited to a continuous authorized owner. Additional regression checks reproduced stale qualification after anonymous → same owner, other owner → original owner, and permission unavailable → recovered. The session subscriber now clears that projection at each boundary; same-owner ordinary focus keeps the draft. Three RED cases observed; final access/header/moved-feature/private-cover integration suite passed 168/168. Final CI must run on this change; prior successful checks do not replace it.
+
+
+## Updated approved release scope
+
+User removed the legacy cross-site redirect requirement and changed the exact subtitle to 陪人走一生的路，乃人生最高的成就。. Account uses its ordinary unknown-route fallback; redirect helper, interception and tests are deleted. Five locale copy/font subsets follow the new wording. User authorizes all five reviewed PRs (#118/#119, #221/#223, Gateway #175) to merge and release after required CI, producer-first, followed by live smoke verification. Previous no-merge statements above are historical verification records, not the current delivery constraint.

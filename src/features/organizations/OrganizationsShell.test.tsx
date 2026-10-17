@@ -14,13 +14,13 @@ beforeEach(()=>{state.pathname='/zh-Hant/organizations';state.owner='owner'})
 it('uses the approved title and subtitle in the existing entry banner',()=>{
  render(<OrganizationsShell locale="zh-Hant" layout={layout}><p>Managed unit list</p></OrganizationsShell>)
  expect(screen.getByRole('heading',{level:1,name:'小家管理'})).toBeInTheDocument()
- expect(screen.getByText('陪人是一生最高的成就')).toBeInTheDocument()
+ expect(screen.getByText('陪人走一生的路，乃人生最高的成就。')).toBeInTheDocument()
  expect(screen.getByText('Managed unit list')).toBeInTheDocument()
 })
 it.each(['/zh-Hant/organizations/unit','/zh-Hant/organizations/unit/members/member'])('does not repeat the entry banner on %s',pathname=>{
  state.pathname=pathname
  render(<OrganizationsShell locale="zh-Hant" layout={layout}><p>Management content</p></OrganizationsShell>)
- expect(screen.queryByText('陪人是一生最高的成就')).not.toBeInTheDocument()
+ expect(screen.queryByText('陪人走一生的路，乃人生最高的成就。')).not.toBeInTheDocument()
  expect(screen.getByText('Management content')).toBeInTheDocument()
 })
 

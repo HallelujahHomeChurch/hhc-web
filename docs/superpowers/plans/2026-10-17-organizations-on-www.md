@@ -4,15 +4,15 @@
 
 **Goal:** Move delegated small-group management to WWW with its existing behavior and UI.
 
-**Architecture:** WWW owns the feature and adapts its existing Account runtime to the moved Operations/notification clients. Account keeps only safe legacy redirects. Gateway adds explicit WWW routes; business APIs remain unchanged.
+**Architecture:** WWW owns the feature and adapts its existing Account runtime to the moved Operations/notification clients. Account removes all management UI and legacy cross-site redirect handling. Gateway adds explicit WWW routes; business APIs remain unchanged.
 
 **Tech Stack:** TypeScript, React, Next.js App Router, existing HHC UI/client packages, Nginx, Go policy tests.
 
 **Spec:** ../specs/2026-10-17-organizations-on-www-design.md
 
 ## Global Constraints
-- Title 小家管理; subtitle 陪人是一生最高的成就.
-- Preserve prior unmerged PRs and primary checkouts. No merge/release.
+- Title 小家管理; subtitle 陪人走一生的路，乃人生最高的成就。.
+- Preserve primary checkouts. User now authorizes the five-PR batch to merge/release after fresh review and green CI.
 - No new package or API contract. Preserve server ownership, request validation, idempotency and owner isolation.
 - WWW nav obeys current management permission. Mobile management precedes My.
 - Banner on root only; unit/member pages retain compact management UI.
@@ -20,7 +20,7 @@
 
 ## Review Focus
 - Identity switch, revoked membership and a failing permission lookup must never retain another owner's management data.
-- Invalid legacy URLs must not become open redirects or carry tokens/query data to WWW.
+- Removed Account management routes must not navigate to WWW.
 - Unit/member deep links must preserve locale, route identity and nested authorization.
 - Mobile search and toolbar must retain stable dimensions, debounce/abort and page resets.
 - WWW host must allow only the explicit authenticated management methods, excluding lifecycle/private/admin paths.
@@ -41,10 +41,10 @@
 - [ ] Run focused tests, update only needed five-locale banner font subsets, and verify noindex/cache policy.
 - [ ] Commit shell integration.
 
-### Task 3: Account removal and legacy redirects
-**Files:** src/App.tsx/tests; src/pages/organizations (delete); src/lib/operations-api.ts/tests; src/lib/unit-notifications-api.ts/tests; src/lib/organization-redirect.ts/tests; account-shell.css/index.css; i18n/messages.ts; review fixture/readme.
-**Interfaces:** Consume fixed WWW origin from existing runtime config; redirect recognized /organizations routes only, preserving locale and IDs without query/hash.
-- [ ] Add failing redirect tests and update App expectations: no management links/search results or management data fetches.
+### Task 3: Account removal without legacy redirects
+**Files:** src/App.tsx/tests; src/pages/organizations (delete); src/lib/operations-api.ts/tests; src/lib/unit-notifications-api.ts/tests; account-shell.css/index.css; i18n/messages.ts; review fixture/readme.
+**Interfaces:** No management redirect helper or entry-point interception remains; preserve ordinary Account unknown-route behavior.
+- [ ] Verify removed-route fallback and update App expectations: no management links/search results or management data fetches.
 - [ ] Observe failures; remove moved pages/clients/messages/styles and retire the old review fixture. Retain Operations access/resources needed by member details and reservations.
 - [ ] Run Account full tests/lint/build/release policy and commit removal.
 
@@ -59,4 +59,4 @@
 - [ ] Run full WWW/Account suites, lint, builds, static budgets/release policy and all Gateway required checks appropriate to scope.
 - [ ] Batch browser QA at desktop/mobile, authenticated/ordinary/anonymous states, root/unit/member routes, menu/search, long lists and bottom spacing; verify mocked mutations only.
 - [ ] Obtain one fresh reviewer for all three diffs, fix significant findings with regression tests.
-- [ ] Open and attach three PRs, retain dependency context from #118/#221, confirm required CI. Do not merge or deploy.
+- [ ] Open and attach three PRs, retain dependency context from #118/#221, confirm required CI, then merge/release in dependency order and verify live revisions/routes.

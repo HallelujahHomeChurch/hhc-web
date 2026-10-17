@@ -83,7 +83,7 @@ describe.each([
     'src/assets/fonts/klee-one/OFL.txt',
     'bf4063f030cc2ae6adf0a11424a1888e5c0eb4438f1f6d02f52294af868e9b3a',
     'src/assets/fonts/klee-one/KleeOne-HHC-Banners.woff2',
-    'fa8ad35f67d5b1ee370fa3fba4a0def3dfee232d8fb3fb0b52ed071f388a537c'
+    '38eaae873b9769f4e478c967c3fb30dde39ad6ca79fd2c64c5c541dde1b6e9fb'
   ],
   [
     'HHC Pen Hangul',
@@ -91,7 +91,7 @@ describe.each([
     'src/assets/fonts/hhc-pen-hangul/OFL.txt',
     '6f0d1ab29c7894010dc88831fb7a0a51edb79136e450344183de5b1a8b52bd43',
     'src/assets/fonts/hhc-pen-hangul/HHC-Pen-Hangul-Banners.woff2',
-    '1f02afeff6258cc9844d81ec578385011b272fcfc23d298367824d662d901530'
+    '4d4530723ac01fce10db657eedc5077a5b8d8d04538ecdf569d80199eba3a506'
   ]
 ] as const)('%s source', (_name, sourcePath, licensePath, sourceHash, derivedPath, derivedHash) => {
   it('records the pinned official revision, source hash, copyright, and OFL', () => {

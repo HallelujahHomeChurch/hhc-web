@@ -226,5 +226,4 @@ navigation hints never authorize access. Private reads are client-only and no-st
 and routes are noindex/nofollow and excluded from sitemap and analytics.
 
 Gateway must release the exact WWW management/notification allowlist before WWW;
-Account's compatible API routes remain during rollout. Release the Account legacy
-redirects last. Business APIs and notification click destinations are unchanged.
+Account's compatible API routes remain during rollout. Release the Account management UI removal last. Business APIs and notification click destinations are unchanged.
