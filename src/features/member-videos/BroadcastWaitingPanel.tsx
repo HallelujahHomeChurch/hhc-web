@@ -1,5 +1,6 @@
 'use client';
 
+import {VideoInteractions} from './VideoInteractions';
 import {useCallback,useEffect,useState} from 'react';
 import type {RecordingWatchView} from '@hallelujahhomechurch/hhc-web-client';
 import type {Locale} from '@/i18n/locales';
@@ -27,7 +28,6 @@ export function BroadcastWaitingPanel({watch,locale,api}:{watch:RecordingWatchVi
    <p className="absolute inset-x-3 bottom-3 rounded-lg bg-black/70 px-4 py-2 text-center" role="status" aria-live={seconds>0?'off':'polite'}>{message}</p>
   </div>
   <h1 className="text-2xl font-semibold text-ink">{watch.title}</h1>
-  {watch.scheduledAt?<p className="text-sm text-muted"><time dateTime={watch.scheduledAt}>{new Intl.DateTimeFormat(locale,{dateStyle:'long',timeStyle:'short',timeZone:'Asia/Taipei'}).format(new Date(watch.scheduledAt))}</time></p>:null}
-  {watch.description?<p className="whitespace-pre-wrap break-words rounded-xl bg-panel p-4 text-ink">{watch.description}</p>:null}
+  <VideoInteractions api={api} id={watch.recordingId} title={watch.title} locale={locale} live description={watch.description} date={watch.scheduledAt} dateKind="scheduled"/>
  </div>;
 }

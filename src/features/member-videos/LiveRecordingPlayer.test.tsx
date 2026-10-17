@@ -1,4 +1,4 @@
-vi.mock('./VideoInteractions',()=>({VideoInteractions:({children}:{children:import('react').ReactNode})=><>{children}</>}));
+vi.mock('./VideoInteractions',async()=>{const {VideoInformation}=await import('./VideoInformation');return {VideoInteractions:(props:import('react').ComponentProps<typeof VideoInformation>)=><VideoInformation {...props} metrics={null}/>};});
 import {act,cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
 import {afterEach,expect,it,vi} from 'vitest';
 import type {ComponentProps,RefObject} from 'react';
@@ -31,12 +31,12 @@ it('retries a failed VOD handoff without rebuilding the ended replay',async()=>{
 it('expands the live description without replacing the player and omits empty text',()=>{
  const props={api:{},recording:{id:'r',captureId:'a'.repeat(32),title:'Gathering',description:'<b>Plain text</b>\nSecond line',liveState:'live',progress:{mediaEndSeconds:5400}},labels:{description:'Video description',play:'Play',retry:'Retry',playError:'Error',loading:'Loading'},liveLabels:englishLiveLabels,locale:'en'} as unknown as ComponentProps<typeof LiveRecordingPlayer>;
  const view=render(<LiveRecordingPlayer {...props}/>),player=screen.getByTestId('player');
- const summary=screen.getByText('Video description',{selector:'summary'}),details=summary.closest('details')!;
- expect(details.open).toBe(false);
- fireEvent.click(summary);expect(details.open).toBe(true);
- const text=screen.getByText(/<b>Plain text/);expect(text).toBeVisible();expect(text.textContent).toBe(props.recording.description);expect(text).toHaveClass('whitespace-pre-wrap');expect(view.container.querySelector('b')).toBeNull();
+ const summary=screen.getByRole('button',{name:'Show more'});
+ expect(summary).toHaveAttribute('aria-expanded','false');
+ fireEvent.click(summary);expect(summary).toHaveAttribute('aria-expanded','true');
+ const text=screen.getByText(/<b>Plain text/);expect(text).toBeVisible();expect(text.textContent).toBe(props.recording.description);expect(view.container.querySelector('b')).toBeNull();
  expect(screen.getByTestId('player')).toBe(player);
- fireEvent.click(summary);expect(details.open).toBe(false);expect(screen.getByTestId('player')).toBe(player);
+ fireEvent.click(summary);expect(summary).toHaveAttribute('aria-expanded','false');expect(screen.getByTestId('player')).toBe(player);
  view.rerender(<LiveRecordingPlayer {...props} recording={{...props.recording,description:''}}/>);
  expect(view.container.querySelector('details')).toBeNull();expect(screen.getByTestId('player')).toBe(player);
 });

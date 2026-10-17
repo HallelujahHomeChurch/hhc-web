@@ -1,4 +1,4 @@
-vi.mock('./VideoInteractions',()=>({VideoInteractions:({children}:{children:import('react').ReactNode})=><>{children}</>}));
+vi.mock('./VideoInteractions',async()=>{const {VideoInformation}=await import('./VideoInformation');return {VideoInteractions:(props:import('react').ComponentProps<typeof VideoInformation>)=><VideoInformation {...props} metrics={null}/>};});
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {MemberVideoZone} from './MemberVideoZone';
@@ -146,14 +146,14 @@ describe('member video gate', () => {
     videoApi.exchange.mockResolvedValue(playbackUrl);
     const {container}=render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);
     const video=await screen.findByLabelText('Meeting');
-    const summary=screen.getByText(messages.description,{selector:'summary'}),details=summary.closest('details')!;
+    const summary=screen.getByRole('button',{name:'Show more'});
     const description=screen.getByText(/<script>alert/);
-    expect(details.open).toBe(false);expect(description).not.toBeVisible();
-    fireEvent.click(summary);expect(details.open).toBe(true);expect(description).toBeVisible();
+    expect(summary).toHaveAttribute('aria-expanded','false');expect(description).toBeVisible();
+    fireEvent.click(summary);expect(summary).toHaveAttribute('aria-expanded','true');expect(description).toBeVisible();
     expect(description.textContent).toBe('<script>alert(1)</script>\nSunday gathering');
-    expect(description).toHaveClass('whitespace-pre-wrap');expect(container.querySelector('script')).toBeNull();
+    expect(container.querySelector('script')).toBeNull();
     expect(screen.getByLabelText('Meeting')).toBe(video);
-    fireEvent.click(summary);expect(details.open).toBe(false);expect(screen.getByLabelText('Meeting')).toBe(video);
+    fireEvent.click(summary);expect(summary).toHaveAttribute('aria-expanded','false');expect(screen.getByLabelText('Meeting')).toBe(video);
     expect(videoApi.grant).toHaveBeenCalledTimes(1);
   });
   it('omits absent and empty recording descriptions',async()=>{
@@ -384,7 +384,7 @@ describe('member video gate', () => {
     expect(screen.queryByRole('heading',{level:3,name:'Recording 0'})).not.toBeInTheDocument();
     expect(screen.queryByText(/2 hours 30 minutes/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Available until/)).not.toBeInTheDocument();
-    expect(screen.getByText('Uploaded: September 28, 2026')).toBeInTheDocument();
+    expect(screen.getByText('Uploaded · Sep 28, 2026')).toBeInTheDocument();
     expect(screen.queryByRole('button',{name:'Next'})).toBeNull();
     expect(screen.getByRole('heading',{level:2,name:'Recording 0'})).toBeInTheDocument();
   });
@@ -646,4 +646,15 @@ it('retains a paused non-1x DVR origin through pending End projection and VOD ha
   await waitFor(()=>expect(vod.src).toBe(playbackUrl));fireEvent.loadedMetadata(vod);
   expect(vod.currentTime).toBe(1000);expect(vod.playbackRate).toBe(1.5);expect(vod.paused).toBe(true);
  } finally {liveSession.playback=null;liveSession.remember.mockReset();}
+});
+
+it('shows matching scheduled broadcasts when search has no live or VOD matches',async()=>{
+ state.auth='authenticated';state.access='available';
+ videoApi.listPage.mockResolvedValue({items:[],nextCursor:null});
+ videoApi.liveList.mockResolvedValue([]);
+ videoApi.upcoming.mockResolvedValue({items:[{recordingId:'scheduled',title:'Faith scheduled',view:'waiting',stateRevision:1,scheduledAt:'2026-10-20T00:00:00Z'}],nextCursor:null});
+ render(<MemberVideoZone view="list" query="faith" locale="en" messages={messages} hero={null}/>);
+ expect(await screen.findByRole('link',{name:'Faith scheduled'})).toHaveAttribute('href','/en/member-videos/scheduled');
+ expect(videoApi.upcoming).toHaveBeenCalledWith(expect.objectContaining({q:'faith'}));
+ expect(screen.queryByText('No recordings')).not.toBeInTheDocument();
 });

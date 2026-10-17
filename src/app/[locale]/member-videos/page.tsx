@@ -1,6 +1,6 @@
 import type {Metadata} from 'next';
 import {setRequestLocale} from 'next-intl/server';
-import {notFound} from 'next/navigation';
+import {notFound,redirect} from 'next/navigation';
 import {SiteFooterServer} from '@/components/layout/SiteFooterServer';
 import {SiteHeaderServer} from '@/components/layout/SiteHeaderServer';
 import {parseVideoQuery} from '@/features/member-videos/search';
@@ -31,11 +31,12 @@ export default async function MemberVideosPage({params,searchParams}: PageProps)
   const messages = {...allMessages.memberVideos,search:allMessages.site.search.video};
   const search=await searchParams;
   const {query,invalid}=parseVideoQuery(search.q);
+  if(search.upcoming!==undefined)redirect(`/${locale}/member-videos${query&&!invalid?`?q=${encodeURIComponent(query)}`:""}`);
   const pathname = `/${locale}/member-videos`;
   return (
     <>
       <SiteHeaderServer locale={locale} pathname={pathname} searchQuery={query} />
-      <MemberVideoZone upcomingOnly={search.upcoming==='1'} view="list" query={query} invalidQuery={invalid} locale={locale} messages={messages} hero={<h1 className="sr-only">{messages.heroTitle}</h1>} />
+      <MemberVideoZone view="list" query={query} invalidQuery={invalid} locale={locale} messages={messages} hero={<h1 className="sr-only">{messages.heroTitle}</h1>} />
       <SiteFooterServer locale={locale} pathname={pathname} />
     </>
   );

@@ -15,3 +15,7 @@ it('uses a hidden library heading without a banner while retaining metadata',asy
  expect(markup).toContain('<h1');
  expect((await generateMetadata(props)).title).toBeTruthy();
 });
+
+it('redirects the retired upcoming view to the same locale and preserves valid search',async()=>{
+ await expect(Page({params:Promise.resolve({locale:'zh-Hant'}),searchParams:Promise.resolve({upcoming:'1',q:'faith'})})).rejects.toMatchObject({digest:'NEXT_REDIRECT;replace;/zh-Hant/member-videos?q=faith;307;'});
+});
