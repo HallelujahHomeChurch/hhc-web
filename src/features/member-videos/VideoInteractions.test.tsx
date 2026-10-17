@@ -39,3 +39,38 @@ it('reconciles a committed edit after its response is lost while preserving the 
  fireEvent.click(await screen.findByLabelText('Comment actions'));fireEvent.click(screen.getByRole('button',{name:'Edit'}));fireEvent.change(screen.getByLabelText('Edit'),{target:{value:'Changed'}});fireEvent.click(screen.getByRole('button',{name:'Save'}));
  await waitFor(()=>expect(screen.queryByRole('button',{name:'Save'})).toBeNull());expect(screen.getByText('Changed')).toBeInTheDocument();expect(updateComment).toHaveBeenCalledOnce();
 });
+
+it('settles metrics independently from the comment summary without showing unavailable first',async()=>{
+ const {act}=await import('@testing-library/react');const client=api();
+ let stats!:(value:unknown)=>void,summary!:(value:unknown)=>void;
+ client.metrics.mockImplementation(()=>new Promise(resolve=>{stats=resolve}));
+ client.interactions.mockImplementation(()=>new Promise(resolve=>{summary=resolve}));
+ const view=render(<VideoInteractions api={client as unknown as ReturnType<typeof createMemberVideoApi>} id="r1" title="Meeting" locale="en" live={false}/>);
+ expect(screen.queryByText('Viewing statistics unavailable')).not.toBeInTheDocument();
+ expect(view.container.querySelector('[data-loading-layout="video-interactions"]')).not.toBeNull();
+ await act(async()=>stats({totalViews:0,currentViewers:0}));
+ expect(screen.getByText('0 views')).toBeInTheDocument();
+ expect(view.container.querySelector('[data-loading-layout="video-interactions"]')).not.toBeNull();
+ await act(async()=>summary({liked:false,likes:0,commentCount:0,commentsEnabled:true}));
+ await screen.findByLabelText('Add a comment');
+ expect(view.container.querySelector('[data-loading-layout="video-interactions"]')).toBeNull();
+});
+
+it('keeps the last valid metrics when a later poll fails',async()=>{
+ const {act}=await import('@testing-library/react');const client=api();vi.useFakeTimers();
+ try {
+  render(<VideoInteractions api={client as unknown as ReturnType<typeof createMemberVideoApi>} id="r1" title="Meeting" locale="en" live={false}/>);
+  await act(async()=>{});expect(screen.getByText('8 views')).toBeInTheDocument();
+  client.metrics.mockRejectedValue(new Error('offline'));
+  await act(async()=>{await vi.advanceTimersByTimeAsync(30000)});
+  expect(screen.getByText('8 views')).toBeInTheDocument();
+ }finally{vi.useRealTimers()}
+});
+
+it('replaces first-load metrics placeholders with unavailable after a failed request',async()=>{
+ const client=api();client.metrics.mockRejectedValue(new Error('unavailable'));
+ const view=render(<VideoInteractions api={client as unknown as ReturnType<typeof createMemberVideoApi>} id="r1" title="Meeting" locale="en" live={false}/>);
+ expect(screen.queryByText('Viewing statistics unavailable')).not.toBeInTheDocument();
+ expect(await screen.findByText('Viewing statistics unavailable')).toBeInTheDocument();
+ expect(view.container.querySelector('[data-loading-layout="video-interactions"]')).toBeNull();
+});

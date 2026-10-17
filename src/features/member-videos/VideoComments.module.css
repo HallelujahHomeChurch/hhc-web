@@ -51,3 +51,10 @@
 .toolbar>button {display:grid;place-items:center;min-width:44px;}
 .surface button:disabled {opacity:.5;cursor:not-allowed;}
 .mobileEntry span {display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.skeletonList {display:grid;gap:24px;}
+.skeletonComment {display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px;}
+.skeletonComment>div:last-child {display:grid;gap:12px;align-content:start;padding-top:4px;}
+.skeletonAvatar {height:36px;width:36px;border-radius:50%;overflow:hidden;}
+.skeletonName {height:16px;width:35%;}
+.skeletonText {height:32px;width:85%;}
+.skeletonTail {height:3px;width:100%;}

@@ -40,3 +40,7 @@
 .preview {display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
 .information a {color:var(--color-primary);text-decoration:underline;}
 .information button {min-height:44px;font-weight:600;cursor:pointer;}
+.metricsSkeleton {width:120px; height:18px;}
+.interactionSkeleton {display:grid;gap:12px;min-height:76px;align-content:center;}
+.commentHeading {width:140px;height:24px;}
+.commentPreview {width:65%;height:16px;}
