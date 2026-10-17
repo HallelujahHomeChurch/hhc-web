@@ -90,6 +90,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
   const selectedLive=resolver.denied||vodChosen||recordingId&&!watch?null:watch?watch.live??(['processing','vod'].includes(watch.view)?resolver.lastLive:null):legacySelectedLive;
   const waitingWatch=watch&&!['live','vod'].includes(watch.view)?watch:null;
   const [liveError,setLiveError]=useState(false);
+  const [livePending,setLivePending]=useState(true);
   const [loadError, setLoadError] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [nextCursor,setNextCursor]=useState<string|null>(null);
@@ -210,7 +211,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
           setSelectedId(recordings.some(item=>item.id===recordingId)?recordingId:null);
         }
       }catch{if(!controller.signal.aborted)setLiveError(true);}
-      finally{if(!controller.signal.aborted){timer=window.setTimeout(()=>void load(),30000);}}
+      finally{if(!controller.signal.aborted){setLivePending(false);timer=window.setTimeout(()=>void load(),30000);}}
     };
     void load();return()=>{controller.abort();window.clearTimeout(timer);};
   },[api,recordingId,retry,view,query,invalidQuery,vodChosen]);
@@ -406,9 +407,10 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
                 </Link>
                 <div className={zoneStyles.info}><h3 className={zoneStyles.title}><Link href={cardLink(item.id)} aria-label={`${item.title} — ${liveBadge(item)}`}>{item.title}</Link></h3><p className={zoneStyles.date}>{(messages.liveStartedDate??'{date}').replace('{date}',formatDate(item.startedAt??item.createdAt,locale))}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}</div>
               </article>)}
+              {view==='list'&&!invalidQuery&&!loadError&&livePending?<VideoListSkeleton label={messages.loading} search={searchMode}/>:null}
               {view==='list'&&!invalidQuery?<UpcomingBroadcasts api={api} locale={locale} onPresenceChange={setUpcomingPresent} query={query} excludeIds={liveItems.map(item=>item.id)} onPageState={setUpcomingState} loadMoreLabel={messages.loadMore??'Load more'} loading={messages.loading} retry={messages.retry}/>:null}
-              {view==='list'&&!invalidQuery&&!loadError&&(!recordings||upcomingState.initialState==='loading')?<VideoListSkeleton label={messages.loading} search={searchMode}/>:null}
-              {(view!=='list'||upcomingState.complete?visibleItems:[]).map(item=><article id={`recording-${item.id}`} key={item.id} className={zoneStyles.card}>
+              {view==='list'&&!invalidQuery&&!loadError&&!livePending&&(!recordings||upcomingState.initialState==='loading')?<VideoListSkeleton label={messages.loading} search={searchMode}/>:null}
+              {(view!=='list'||upcomingState.complete&&!livePending?visibleItems:[]).map(item=><article id={`recording-${item.id}`} key={item.id} className={zoneStyles.card}>
                 <Link href={cardLink(item.id)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
                   <RecordingCover api={api} id={item.id} title={item.title} expiresAt={item.expiresAt} revision={coverRevision(item)}/>
                   {item.durationSeconds ? <span className={zoneStyles.duration}>{playerClock(item.durationSeconds)}</span>:null}

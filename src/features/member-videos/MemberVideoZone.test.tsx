@@ -691,3 +691,18 @@ it('keeps real recommendations instead of an overlapping recommendation skeleton
  await screen.findByRole('link',{name:'Another gathering'});
  expect(view.container.querySelector('[data-loading-layout="video-watch"] > [data-loading-recommendations]')).toBeNull();
 });
+
+it('keeps VOD behind initial live discovery even if upcoming and recordings finish first',async()=>{
+ state.auth='authenticated';state.access='available';
+ let finish!:(items:unknown[])=>void;
+ videoApi.liveList.mockImplementation(()=>new Promise(resolve=>{finish=resolve}));
+ list.mockResolvedValue([{id:'vod',title:'Earlier recording'}]);
+ const view=render(<MemberVideoZone view="list" locale="en" messages={messages} hero={null}/>);
+ await waitFor(()=>expect(videoApi.upcoming).toHaveBeenCalled());
+ await act(async()=>{});
+ expect(view.container.querySelector('[data-loading-layout="video-library"]')).not.toBeNull();
+ expect(screen.queryByRole('link',{name:'Earlier recording'})).not.toBeInTheDocument();
+ await act(async()=>finish([]));
+ expect(await screen.findByRole('link',{name:'Earlier recording'})).toBeInTheDocument();
+ expect(view.container.querySelector('[data-loading-layout]')).toBeNull();
+});
