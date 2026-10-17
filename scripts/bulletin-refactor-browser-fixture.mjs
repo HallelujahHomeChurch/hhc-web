@@ -19,6 +19,14 @@ import {flushSync} from 'react-dom';
 import {OfflineContentPage} from '${source}/src/components/weekly-reader/OfflineContentPage';
 import {NoteReanchor} from '${source}/src/components/weekly-reader/NoteReanchor';
 import {HighlightHistory} from '${source}/src/components/weekly-reader/HighlightHistory';
+import {ReaderTypography} from '${source}/src/components/weekly-reader/ReaderTypography';
+import {BulletinEbook, BulletinDocumentRenderer} from '@hallelujahhomechurch/ui';
+import '@hallelujahhomechurch/ui/styles.css';
+import '@hallelujahhomechurch/ui/bulletin-paper.css';
+import '@hallelujahhomechurch/ui/bulletin-paper-v2.css';
+import '@hallelujahhomechurch/ui/bulletin-paper-v7.css';
+import '@hallelujahhomechurch/ui/bulletin-ebook.css';
+import '${source}/src/components/weekly-reader/reader.css';
 import {getMessages} from '${source}/src/i18n/messages';
 import {readerFixture} from '${source}/src/features/weekly-reader/test-fixture';
 import * as store from '${source}/src/features/weekly-reader/offline-store';
@@ -55,6 +63,26 @@ window.bulletinFixture = {
     if(root) throw Error('already_mounted');
     root=createRoot(document.getElementById('root'));
     flushSync(()=>root.render(<OfflineContentPage locale="en" messages={getMessages('en').weeklyReader}/>));
+  },
+  mountTypography(locale = 'zh-Hant') {
+    if(root) throw Error('already_mounted');
+    const document=readerFixture(locale,'v10').document.content;
+    const block=document.components[0].items[0].blocks[0];
+    block.style.fontSize=14;
+    block.sentences[0].spans=[{text:'一般文字',fontRole:'body',fontSize:12},{text:'標楷經文',fontRole:'scripture',fontSize:12},{text:'重點文字',fontRole:'emphasis',fontSize:20}];
+    document.components=[{id:'c0',type:'bodySection',bodySection:{kind:'sermon',title:{...block,id:'title',sentences:[{id:'title-sentence',spans:[{text:'信息標題',fontRole:'body'}]}]},blocks:[block]}}];
+    document.layoutManifest.pages[0].slots[0].fragments[0].end=12;
+    const original=JSON.stringify(document);
+    function TypographyExample() {
+      const [value,setValue]=React.useState({size:18,line:1.8});
+      return <main className="weekly-reader" data-theme="light"><section className="reader-document" data-mobile style={{'--reader-font-size':value.size+'px'}}>
+        <ReaderTypography value={value} onChange={setValue} messages={getMessages('en').weeklyReader}/>
+        <BulletinEbook document={document} chapter="body"/>
+      </section><section className="reader-document" data-typography-paper><BulletinDocumentRenderer document={document} mode="paper" activePage="p0"/></section></main>;
+    }
+    root=createRoot(window.document.getElementById('root'));
+    flushSync(()=>root.render(<TypographyExample/>));
+    window.typographySourceUnchanged=()=>JSON.stringify(document)===original;
   },
   mountRecovery(kind, mobile) {
     if(root) throw Error('already_mounted');

@@ -48,6 +48,7 @@
 .reader-toolbar, .reader-page-controls, .reader-zoom-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
 .reader-toolbar, .reader-page-controls { max-width: 75rem; margin: .5rem auto; }
 .reader-page-controls input { width: 5rem; }
+.reader-sections + .reader-sections { margin-block-start: .75rem; }
 .reader-sections nav { display: flex; flex-wrap: wrap; gap: .5rem; padding: .5rem 0; }
 .reader-stage { position: relative; min-width: 0; }
 .reader-viewport { overflow: auto; height: calc(100dvh - 140px); min-height: 20rem; padding: 1rem; background: var(--hhc-surface-raised); overscroll-behavior: contain; touch-action: auto; scrollbar-color: var(--hhc-control-border) transparent; }
@@ -259,8 +260,12 @@ body:has(.weekly-reader) {padding-bottom: 0;}
 .weekly-reader .reader-chapter-boundary button {width: 48px; height: 44px; border: 0; border-radius: 0; background: transparent; box-shadow: none;}
 .weekly-reader[data-theme='dark'] .reader-chapter-boundary {background: #141B21;}
 .reader-document[data-mobile] .hhc-bulletin-ebook {font-size: var(--reader-font-size, 18px); line-height: var(--reader-line-height, 1.8);}
+/* Override inline PDF size ratios only in reflow; keep paper source styles intact. */
+.reader-document[data-mobile] .hhc-bulletin-ebook [data-font-role] {font-size: inherit !important;}
+.reader-document[data-mobile] .hhc-bulletin-ebook [data-font-role='scripture'] {font-size: calc(1em + 1px) !important;}
 .reader-document[data-mobile] .hhc-bulletin-ebook h2 {font-size: 1.333em;}
-.reader-document[data-mobile] .hhc-bulletin-ebook h3 {font-size: 1.167em;}
+.reader-document[data-mobile] .hhc-bulletin-ebook h3,
+.reader-document[data-mobile] .hhc-bulletin-ebook .hhc-ebook-body-heading h2 {font-size: 1.167em;}
 .reader-document[data-mobile] .hhc-bulletin-ebook [data-fixed-element='title'] {font-size: 1.556em;}
 .reader-document[data-mobile] .hhc-bulletin-ebook [data-fixed-element='subtitle'] {font-size: 1.222em;}
 @media (max-width: 767px) {
