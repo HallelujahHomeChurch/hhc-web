@@ -44,7 +44,7 @@ export function createWeeklyBulletinApi(authorization: BulletinAuthorization, fe
     async fetchArchive(
       series: BulletinSeries,
       locales: readonly BulletinLocale[],
-      {page = 1, pageSize = 12}: {page?: number; pageSize?: number} = {},
+      {page = 1, pageSize = 12, issueNumber}: {page?: number; pageSize?: number; issueNumber?: number} = {},
       signal?: AbortSignal
     ): Promise<WeeklyIssuePage> {
       const normalizedPage = Math.max(1, Math.floor(page));
@@ -54,12 +54,12 @@ export function createWeeklyBulletinApi(authorization: BulletinAuthorization, fe
       let totalItems = 0;
       let discovery: OnlineBulletinDiscovery | undefined;
       try {
-        const result = await client.listOnlineBulletinDiscovery({series, locales, offset: (normalizedPage - 1) * normalizedPageSize, limit: normalizedPageSize, signal});
+        const result = await client.listOnlineBulletinDiscovery({series, locales, offset: (normalizedPage - 1) * normalizedPageSize, limit: normalizedPageSize, issueNumber, signal});
         discovery = result;
       } catch (error) {
         // The legacy PDF API cannot page a multi-language union authoritatively.
         if (!isTransient(error) || signal?.aborted || locales.length !== 1) throw error;
-        const result = await client.listProtectedBulletins({series, locale: locales[0], page: normalizedPage, pageSize: normalizedPageSize, signal});
+        const result = await client.listProtectedBulletins({series, locale: locales[0], page: normalizedPage, pageSize: normalizedPageSize, issueNumber, signal});
         items = groupBulletins(result.data.map(fromPDF)).map(issue => ({...issue, pdfFallback: true}));
         totalItems = result.meta.total;
       }
@@ -67,6 +67,9 @@ export function createWeeklyBulletinApi(authorization: BulletinAuthorization, fe
       if (discovery) {
         items = groupBulletins(discovery.items.map(fromDiscovery));
         totalItems = discovery.total;
+      }
+      if (issueNumber !== undefined && items.some(issue => issue.issueNumber !== issueNumber || issue.versions.some(version => version.series !== series || !locales.includes(version.locale)))) {
+        throw new WeeklyApiError('invalid_response', 'The requested bulletin target does not match the response.');
       }
       return {
         items,

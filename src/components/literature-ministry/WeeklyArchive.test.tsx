@@ -35,6 +35,50 @@ afterEach(() => {
 beforeEach(() => vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'));
 
 describe('WeeklyArchive', () => {
+  it('keeps the requested edition for latest-issue returns from legal acceptance', async () => {
+    search.value = 'series=general&contentLocale=en';
+    bulletinAccess.editions = [{series: 'general', locale: 'en'}, {series: 'general', locale: 'zh-Hant'}];
+    const fetcher = vi.fn<typeof fetch>(async () => discoveryResponse({...bulletin, locale: 'en'}, 100));
+    vi.stubGlobal('fetch', fetcher);
+    render(<WeeklyArchive locale="zh-Hant" messages={messages}/>);
+    expect(await screen.findByRole('button', {name: '下載 PDF: English'})).toBeInTheDocument();
+    expect(fetcher).toHaveBeenCalledOnce();
+    const query = new URL((fetcher.mock.calls[0]![0] as Request).url).searchParams;
+    expect(query.get('locales')).toBe('en'); expect(query.get('limit')).toBe('1'); expect(query.has('issueNumber')).toBe(false);
+    expect(screen.queryByRole('link', {name: 'Next'})).not.toBeInTheDocument();
+  });
+  it('keeps an exact issue and content language across PDF/online selection', async () => {
+    search.value = 'series=children&issueNumber=1300&contentLocale=en&mode=online';
+    bulletinAccess.editions = [{series: 'children', locale: 'en'}, {series: 'general', locale: 'zh-Hant'}];
+    const fetcher = vi.fn<typeof fetch>(async () => discoveryResponse({...bulletin, series: 'children', locale: 'en', issueNumber: 1300}, 1, false));
+    vi.stubGlobal('fetch', fetcher);
+    render(<WeeklyArchive locale="zh-Hant" messages={messages}/>);
+    const link = await screen.findByRole('link', {name: /Read online:/});
+    expect(link).toHaveAttribute('href', '/zh-Hant/literature-ministry/1300/read/children/en');
+    expect(fetcher).toHaveBeenCalledOnce();
+    const query = new URL((fetcher.mock.calls[0]![0] as Request).url).searchParams;
+    expect(query.get('issueNumber')).toBe('1300');
+    expect(query.get('locales')).toBe('en');
+    expect(query.get('series')).toBe('children');
+    expect(screen.queryByText('Latest')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('tab', {name: '下載 PDF'}));
+    expect(replace).toHaveBeenCalledWith('/zh-Hant/literature-ministry?series=children&issueNumber=1300&contentLocale=en', {scroll: false});
+  });
+
+  it.each([
+    'series=children&issueNumber=1300&contentLocale=en',
+    'series=general&issueNumber=0&contentLocale=zh-Hant',
+    'series=general&issueNumber=1737&issueNumber=1738&contentLocale=zh-Hant',
+    'issueNumber=1737',
+  ])('never silently substitutes an unauthorized or invalid target: %s', async (query) => {
+    search.value = query;
+    const fetcher = vi.fn(); vi.stubGlobal('fetch', fetcher);
+    render(<WeeklyArchive locale="en" messages={messages}/>);
+    expect(screen.getByRole('status')).toHaveTextContent('No bulletins');
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(screen.getByRole('link', {name: 'History'})).toHaveAttribute('href', '/en/literature-ministry');
+  });
+
   it('defaults to PDF on the left and preserves explicit online selection without refetching', async () => {
     bulletinAccess.editions = [{series: 'general', locale: 'zh-Hant'}, {series: 'children', locale: 'zh-Hant'}];
     const fetcher = vi.fn(async () => {
