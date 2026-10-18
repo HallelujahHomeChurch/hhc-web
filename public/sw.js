@@ -59,7 +59,7 @@ self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith('/api/') || request.headers.has('Authorization')) {
+  if (url.pathname.startsWith('/api/') || /^\/(zh-Hant|zh-Hans|en|ja|ko)\/notifications(?:\/|$)/.test(url.pathname) || request.headers.has('Authorization')) {
     event.respondWith(fetch(request)); return;
   }
   if (request.method !== 'GET') return;

@@ -2,7 +2,7 @@ import {isReportedAccountError} from './account-observability'
 import * as Sentry from '@sentry/nextjs'
 import type { Breadcrumb } from '@sentry/nextjs'
 
-const sensitiveValue = /\b(code|token|access_token|refresh_token|id_token|verification_token|reset_token|sig|signature)=([^\s&#]+)/gi
+const sensitiveValue = /\b(code|token|access_token|refresh_token|id_token|verification_token|reset_token|cursor|snapshotToken|readSnapshotToken|sig|signature)=([^\s&#]+)/gi
 const email = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi
 const absoluteUrl = /https?:\/\/[^\s"'<>]+/gi
 
@@ -27,7 +27,7 @@ function sanitizeValue(value: unknown, depth = 0): unknown {
   if (!value || typeof value !== 'object') return value
 
   return Object.fromEntries(
-    Object.entries(value).map(([key, item]) => [key, sanitizeValue(item, depth + 1)]),
+    Object.entries(value).map(([key, item]) => [key, /^(cursor|snapshotToken|readSnapshotToken)$/i.test(key) ? '[redacted]' : sanitizeValue(item, depth + 1)]),
   )
 }
 

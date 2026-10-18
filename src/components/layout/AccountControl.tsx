@@ -11,6 +11,7 @@ import {
   emptyNavigationPresentation,
   type NavigationPresentation,
   type AccountAuthState,
+  type InboxClientOptions,
   type AccountSessionClient,
   type BrowserOAuthConfig
 } from '@hallelujahhomechurch/account-client';
@@ -59,6 +60,7 @@ type AccountControlProps = {
 };
 
 type AccountControlContextValue = {
+  inboxAuth: InboxClientOptions['auth'];
   accountSiteUrl: string;
   auth: AccountAuthState;
   navigation: NavigationPresentation;
@@ -108,6 +110,10 @@ export function useCanReadBulletin() {
 
 export function useNavigationPresentation() {
   return useContext(AccountControlContext)?.navigation ?? {...emptyNavigationPresentation, ready: true};
+}
+
+export function useInboxAuthRuntime() {
+  return useContext(AccountControlContext)?.inboxAuth;
 }
 
 export function useAccountAuthorization() {
@@ -302,6 +308,7 @@ export function AccountControlProvider({
 
   return (
     <AccountControlContext.Provider value={{
+      inboxAuth: authRuntime,
       accountSiteUrl,
       auth,
       navigation,

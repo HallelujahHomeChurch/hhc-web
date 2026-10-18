@@ -5,6 +5,7 @@ import {NextIntlClientProvider} from 'next-intl';
 import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {isLocale, productLocales, type Locale} from '@/i18n/locales';
+import {NotificationProvider} from '@/features/notifications/provider';
 import {AccountControlProvider} from '@/components/layout/AccountControl';
 import {InitialLoadingBoundary} from '@/components/layout/InitialLoadingBoundary';
 import {StatementProvider} from '@/components/statements/StatementProvider';
@@ -39,6 +40,7 @@ export default async function LocaleLayout({children, params}: LocaleLayoutProps
     <NextIntlClientProvider locale={rawLocale} messages={messages}>
       <ReaderServiceWorker/>
       <AccountControlProvider labels={messages.site.account}>
+        <NotificationProvider locale={rawLocale}>
         <LegalRequiredNavigation />
         <InitialLoadingBoundary label={messages.site.loading}>
           <StatementProvider locale={rawLocale} labels={messages.site.statement}>
@@ -48,6 +50,7 @@ export default async function LocaleLayout({children, params}: LocaleLayoutProps
           </div>
           </StatementProvider>
         </InitialLoadingBoundary>
+        </NotificationProvider>
       </AccountControlProvider>
     </NextIntlClientProvider>
   );

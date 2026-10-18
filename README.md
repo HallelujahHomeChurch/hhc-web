@@ -250,3 +250,18 @@ Fresh automatic playback waits for that reserve; explicit DVR, saved playback
 state and ended short captures remain usable. The 2–3 minute end-to-end latency
 goal still requires producer/verification and
 real-device measurements; increasing holdback cannot cure sustained backlog.
+
+## Global in-app inbox (candidate)
+
+Authenticated pages share a foreground-only 60-second notification summary refresh.
+The Bell previews five items; `/[locale]/notifications` supports unread filtering,
+current-page cursor navigation and snapshot-bound read-all. Private titles, counts
+and opaque tokens stay in memory, and the route is no-store/noindex and excluded
+from offline caching and analytics. Notification links retain destination authority
+checks; they never perform group approval.
+
+This draft consumes immutable local Shared Inbox candidates for validation. The
+product registry pins remain unchanged. Final shared packaging, approved publication,
+exact registry repinning and CI revalidation are required before merge or release.
+Group request destinations and pending/result copy still require the dependent
+group implementation and final integration acceptance.

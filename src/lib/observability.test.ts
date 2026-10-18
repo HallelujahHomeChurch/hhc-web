@@ -132,3 +132,7 @@ it('does not report an expected cancelled request as a handled failure',()=>{
  captureHandledError(new DOMException('cancelled','AbortError'),{operation:'home.content'});
  expect(sentry.captureException).not.toHaveBeenCalled();
 });
+it('redacts inbox cursor and read-watermark values in query strings and structured telemetry',()=>{
+ const event=sanitizeSentryEvent({message:'/api/notifications/me?cursor=private-cursor&locale=en',extra:{snapshotToken:'private-snapshot',readSnapshotToken:'private-read'},spans:[{data:{'http.query':'cursor=private-cursor'}}]});
+ expect(JSON.stringify(event)).not.toContain('private-');
+});
