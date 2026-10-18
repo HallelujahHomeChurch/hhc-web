@@ -29,6 +29,7 @@ import {liveLibraryItems} from './video-library';
 import {UpcomingBroadcasts} from './UpcomingBroadcasts';
 import {VideoListSkeleton, VideoRecommendationsSkeleton, VideoWatchSkeleton} from './VideoLoading';
 import {LoadingStatus} from '@/components/ui/ContentLoading';
+import {ThumbnailPreview} from './ThumbnailPreview';
 import {clearLineVideoTarget, rememberLineVideoTarget} from '@/lib/line-browser-handoff';
 
 export type Messages = {
@@ -81,6 +82,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
   const listGeneration = useRef(0);
   const api = useMemo(() => createMemberVideoApi(authorization), [authorization]);
   const [upcomingPresent,setUpcomingPresent]=useState<boolean|null>(null);
+  const [hoveredRecording,setHoveredRecording]=useState<string|null>(null);
  const [upcomingState,setUpcomingState]=useState<{ids:string[];complete:boolean;initialState:'loading'|'ready'|'error'}>({ids:[],complete:false,initialState:'loading'});
   const [recordings, setRecordings] = useState<MemberRecording[] | null>(null);
   const [livestreams,setLivestreams]=useState<MemberLiveRecording[]>([]);
@@ -410,7 +412,9 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
               {recordingId&&watch&&recommendationsPending?<VideoRecommendationsSkeleton/>:null}
               {liveItems.map(item=><article id={`recording-${item.id}`} key={item.captureId} className={zoneStyles.card}>
                 <Link href={cardLink(item.id)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
+                  <ThumbnailPreview api={api} recording={item} labels={messages} enabled={view==='list'} activeId={hoveredRecording} onActive={setHoveredRecording}>
                   <LiveRecordingCover api={api} recording={item}/>
+                  </ThumbnailPreview>
                   <span className={`${zoneStyles.badge} ${item.liveState==='live'?zoneStyles.liveBadge:zoneStyles.stateBadge}`}>{liveBadge(item)}</span>
                 </Link>
                 <div className={zoneStyles.info}><h3 className={zoneStyles.title}><Link href={cardLink(item.id)} aria-label={`${item.title} — ${liveBadge(item)}`}>{item.title}</Link></h3><p className={zoneStyles.date}>{(messages.liveStartedDate??'{date}').replace('{date}',formatDate(item.startedAt??item.createdAt,locale))}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}</div>
@@ -420,7 +424,9 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
               {view==='list'&&!invalidQuery&&!loadError&&!livePending&&(!recordings||upcomingState.initialState==='loading')?<VideoListSkeleton label={messages.loading} search={searchMode}/>:null}
               {(view!=='list'||upcomingState.complete&&!livePending?visibleItems:[]).map(item=><article id={`recording-${item.id}`} key={item.id} className={zoneStyles.card}>
                 <Link href={cardLink(item.id)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
+                  <ThumbnailPreview api={api} recording={item} labels={messages} enabled={view==='list'} activeId={hoveredRecording} onActive={setHoveredRecording}>
                   <RecordingCover api={api} id={item.id} title={item.title} expiresAt={item.expiresAt} revision={coverRevision(item)}/>
+                  </ThumbnailPreview>
                   {item.durationSeconds ? <span className={zoneStyles.duration}>{playerClock(item.durationSeconds)}</span>:null}
                 </Link>
                 <div className={zoneStyles.info}><h3 className={zoneStyles.title}>{view==='list'||recordingId ? <Link href={cardLink(item.id)}>{item.title}</Link>:item.title}</h3><p className={zoneStyles.date}>{formatDate(item.uploadedAt,locale)}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}
