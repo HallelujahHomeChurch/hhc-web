@@ -15,6 +15,11 @@ LegalRequiredNavigation warning), production build, static budgets and release
 policy passed against that local candidate. Hover coverage includes dwell/device
 gating, cross-card cancellation, private scope renewal/cleanup and zero telemetry.
 
+Admin: all 128 files / 1,339 tests passed with four workers (131.05 seconds),
+source lint and TypeScript/Vite build passed against the same candidate. Earlier
+parallel campaign timeouts were rerun independently and in the complete bounded
+suite, without changing assertions or timeouts.
+
 Shared UI: 343 tests, lint/build/contracts and packed ESM/Vite/Next consumers passed.
 CMS: PostgreSQL-backed race tests, cadence/custom/End/promotion race coverage and
 vet passed. Asset covers actual FFmpeg sprite generation, live/VOD byte reuse,
@@ -58,3 +63,7 @@ cover and reusable previews after VOD, desktop hover/no telemetry, and stable
 live controls. Existing long-field acceptance need not be repeated. Real iPhone,
 production grants, continuous OBS load/cost and this feature's production behavior
 remain unverified. Historical latency and weak-network failures remain unchanged.
+
+Clean Website CI 39099524281: 162 files / 1,221 tests passed; five suites could
+not import the old registry UI package because it lacks `./player`. This confirms
+the dependency gate above; it is not a passing CI result.
