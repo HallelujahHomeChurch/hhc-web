@@ -1,6 +1,6 @@
 # 線上週報筆記可靠性實作計畫
 
-日期：2026-10-18。版本：P3。狀態：S4/P3 與 T0–T5 均已完成兩席檢驗；整合檢查與 PR CI 進行中。各階段狀態記於 gate record；最終停在 merge 前。
+日期：2026-10-18。版本：P3。狀態：S4/P3 與 T0–T5 均已完成兩席檢驗；[PR #234](https://github.com/HallelujahHomeChurch/hhc-web/pull/234) 已開；最終全量結果見 PR 與最新 CI。各階段狀態記於 gate record；最終停在 merge 前。
 
 Spec：[S4](../specs/2026-10-18-reader-notes-reliability-design.md)。Review：[gate record](../../reviews/2026-10-18-reader-notes-reliability-gates.md)。
 

@@ -87,3 +87,14 @@ Codex t5_visual_gate and t5_access_gate independently reviewed source, relevant 
 T5 distinguishes unsupported/loading/init-error/available/saved offline controls, offers local retry, and adds five-locale parity. Final images comprise 18 baseline and 44 candidate captures (18 matched, 24 special, 2 short-viewport); both seats viewed baseline/candidate images and the updated phone load errors. [Reviewable images and metrics](reader-notes-reliability/README.md) are included in this branch. Synthetic data only. True physical iOS/Android, IME/soft keyboard, assistive technology and installed-PWA acceptance remain unverified; merge/release/production note writes remain unauthorized in this task.
 
 Full repository checks and PR CI are tracked in the final delivery entry below. Historical statements above describe their original checkpoint, not the final task state.
+
+
+## Integration and PR delivery
+
+Feature branch was created from then-current origin/main `6fd3fd0` in its own worktree; refreshed main later advanced to `1215fcc` (#218). The feature was rebased without conflicts. The upstream change adds exact bulletin entry targets and does not modify the note-operation files. [PR #234](https://github.com/HallelujahHomeChurch/hhc-web/pull/234) is open; the latest PR checks are the authoritative full-head CI result. Do not merge or release as part of this task.
+
+Local standard build passed after an initial sandboxed Turbopack attempt stalled; the successful build used normal network access for the existing Google font dependency. Typecheck passed. Static budgets passed (four local fonts, hero 140091 bytes, generated CSS 193250 bytes), and release-policy checks passed. Source lint passed with one unrelated pre-existing legal-navigation warning (still present on refreshed main). Whitespace and artifact-link checks passed.
+
+An initial final full-test run concurrent with the production build encountered timing failures in a chapter-navigation test and unrelated organization-dialog tests; it was stopped and is not counted as a successful run. The full suite is rerun separately after build, against refreshed main. Final outcomes are recorded in the PR validation section and CI. CI also performs dependency scanning, image build and image scanning; no local Docker/production release claim is made.
+
+Physical devices, IME/soft keyboard, screen readers, installed-PWA lifecycle and authenticated production note save/delete are not verified. These remain explicit acceptance gaps before a production-readiness claim.
