@@ -1,0 +1,128 @@
+[
+  {
+    "device": "phone",
+    "theme": "light",
+    "buttons": [
+      {
+        "height": 44,
+        "label": "×",
+        "width": 44
+      },
+      {
+        "height": 44,
+        "label": "取消",
+        "width": 64.6796875
+      },
+      {
+        "height": 44,
+        "label": "移除下載",
+        "width": 95.359375
+      }
+    ]
+  },
+  {
+    "device": "phone",
+    "theme": "dark",
+    "buttons": [
+      {
+        "height": 44,
+        "label": "×",
+        "width": 44
+      },
+      {
+        "height": 44,
+        "label": "取消",
+        "width": 64.6796875
+      },
+      {
+        "height": 44,
+        "label": "移除下載",
+        "width": 95.359375
+      }
+    ]
+  },
+  {
+    "device": "tablet",
+    "theme": "light",
+    "buttons": [
+      {
+        "height": 44,
+        "label": "×",
+        "width": 44
+      },
+      {
+        "height": 44,
+        "label": "取消",
+        "width": 64.6796875
+      },
+      {
+        "height": 44,
+        "label": "移除下載",
+        "width": 95.359375
+      }
+    ]
+  },
+  {
+    "device": "tablet",
+    "theme": "dark",
+    "buttons": [
+      {
+        "height": 44,
+        "label": "×",
+        "width": 44
+      },
+      {
+        "height": 44,
+        "label": "取消",
+        "width": 64.6796875
+      },
+      {
+        "height": 44,
+        "label": "移除下載",
+        "width": 95.359375
+      }
+    ]
+  },
+  {
+    "device": "desktop",
+    "theme": "light",
+    "buttons": [
+      {
+        "height": 44,
+        "label": "×",
+        "width": 44
+      },
+      {
+        "height": 44,
+        "label": "取消",
+        "width": 64.6796875
+      },
+      {
+        "height": 44,
+        "label": "移除下載",
+        "width": 95.359375
+      }
+    ]
+  },
+  {
+    "device": "desktop",
+    "theme": "dark",
+    "buttons": [
+      {
+        "height": 44,
+        "label": "×",
+        "width": 44
+      },
+      {
+        "height": 44,
+        "label": "取消",
+        "width": 64.6796875
+      },
+      {
+        "height": 44,
+        "label": "移除下載",
+        "width": 95.359375
+      }
+    ]
+  }
+]

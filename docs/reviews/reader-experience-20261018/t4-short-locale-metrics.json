@@ -1,0 +1,262 @@
+[
+  {
+    "locale": "en",
+    "theme": "light",
+    "dpr": 1,
+    "height": 600,
+    "scale": 1,
+    "scrollWidth": 390,
+    "tabs": [
+      {
+        "height": 67.1875,
+        "label": "Notes",
+        "width": 111
+      },
+      {
+        "height": 67.1875,
+        "label": "Highlights",
+        "width": 111
+      },
+      {
+        "height": 67.1875,
+        "label": "Earlier annotations",
+        "width": 111
+      }
+    ],
+    "width": 390
+  },
+  {
+    "locale": "en",
+    "theme": "dark",
+    "dpr": 1,
+    "height": 600,
+    "scale": 1,
+    "scrollWidth": 390,
+    "tabs": [
+      {
+        "height": 67.1875,
+        "label": "Notes",
+        "width": 111
+      },
+      {
+        "height": 67.1875,
+        "label": "Highlights",
+        "width": 111
+      },
+      {
+        "height": 67.1875,
+        "label": "Earlier annotations",
+        "width": 111
+      }
+    ],
+    "width": 390
+  },
+  {
+    "locale": "ja",
+    "theme": "light",
+    "dpr": 1,
+    "height": 600,
+    "scale": 1,
+    "scrollWidth": 390,
+    "tabs": [
+      {
+        "height": 44,
+        "label": "ノート",
+        "width": 111
+      },
+      {
+        "height": 44,
+        "label": "ハイライト",
+        "width": 111
+      },
+      {
+        "height": 44,
+        "label": "以前の注釈",
+        "width": 111
+      }
+    ],
+    "width": 390
+  },
+  {
+    "locale": "ja",
+    "theme": "dark",
+    "dpr": 1,
+    "height": 600,
+    "scale": 1,
+    "scrollWidth": 390,
+    "tabs": [
+      {
+        "height": 44,
+        "label": "ノート",
+        "width": 111
+      },
+      {
+        "height": 44,
+        "label": "ハイライト",
+        "width": 111
+      },
+      {
+        "height": 44,
+        "label": "以前の注釈",
+        "width": 111
+      }
+    ],
+    "width": 390
+  },
+  {
+    "locale": "ko",
+    "theme": "light",
+    "dpr": 1,
+    "height": 600,
+    "scale": 1,
+    "scrollWidth": 390,
+    "tabs": [
+      {
+        "height": 44,
+        "label": "노트",
+        "width": 111
+      },
+      {
+        "height": 44,
+        "label": "하이라이트",
+        "width": 111
+      },
+      {
+        "height": 44,
+        "label": "이전 주석",
+        "width": 111
+      }
+    ],
+    "width": 390
+  },
+  {
+    "locale": "ko",
+    "theme": "dark",
+    "dpr": 1,
+    "height": 600,
+    "scale": 1,
+    "scrollWidth": 390,
+    "tabs": [
+      {
+        "height": 44,
+        "label": "노트",
+        "width": 111
+      },
+      {
+        "height": 44,
+        "label": "하이라이트",
+        "width": 111
+      },
+      {
+        "height": 44,
+        "label": "이전 주석",
+        "width": 111
+      }
+    ],
+    "width": 390
+  },
+  {
+    "locale": "zh-Hans",
+    "theme": "light",
+    "dpr": 1,
+    "height": 600,
+    "scale": 1,
+    "scrollWidth": 390,
+    "tabs": [
+      {
+        "height": 44,
+        "label": "笔记",
+        "width": 111
+      },
+      {
+        "height": 44,
+        "label": "画线",
+        "width": 111
+      },
+      {
+        "height": 44,
+        "label": "旧版标注",
+        "width": 111
+      }
+    ],
+    "width": 390
+  },
+  {
+    "locale": "zh-Hans",
+    "theme": "dark",
+    "dpr": 1,
+    "height": 600,
+    "scale": 1,
+    "scrollWidth": 390,
+    "tabs": [
+      {
+        "height": 44,
+        "label": "笔记",
+        "width": 111
+      },
+      {
+        "height": 44,
+        "label": "画线",
+        "width": 111
+      },
+      {
+        "height": 44,
+        "label": "旧版标注",
+        "width": 111
+      }
+    ],
+    "width": 390
+  },
+  {
+    "locale": "zh-Hant",
+    "theme": "light",
+    "dpr": 1,
+    "height": 600,
+    "scale": 1,
+    "scrollWidth": 390,
+    "tabs": [
+      {
+        "height": 44,
+        "label": "筆記",
+        "width": 111
+      },
+      {
+        "height": 44,
+        "label": "畫線",
+        "width": 111
+      },
+      {
+        "height": 44,
+        "label": "舊版標註",
+        "width": 111
+      }
+    ],
+    "width": 390
+  },
+  {
+    "locale": "zh-Hant",
+    "theme": "dark",
+    "dpr": 1,
+    "height": 600,
+    "scale": 1,
+    "scrollWidth": 390,
+    "tabs": [
+      {
+        "height": 44,
+        "label": "筆記",
+        "width": 111
+      },
+      {
+        "height": 44,
+        "label": "畫線",
+        "width": 111
+      },
+      {
+        "height": 44,
+        "label": "舊版標註",
+        "width": 111
+      }
+    ],
+    "width": 390
+  }
+]
