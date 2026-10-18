@@ -244,7 +244,9 @@ consumer, pin the actually published exact UI version, regenerate the registry
 lockfile, update the exact-version assertion and rerun CI. Do not merge this
 consumer while it still depends on an unpublished player subpath.
 
-Live follows a point 60 seconds behind the verified playable end. The viewer
+Live follows a point 90 seconds behind the verified playable end. The viewer
 live indicator, seekbar endpoint and explicit return action share that target.
-The 2–3 minute end-to-end latency goal still requires producer/verification and
+Fresh automatic playback waits for that reserve; explicit DVR, saved playback
+state and ended short captures remain usable. The 2–3 minute end-to-end latency
+goal still requires producer/verification and
 real-device measurements; increasing holdback cannot cure sustained backlog.
