@@ -1,3 +1,4 @@
+import {relativeTime} from '@/lib/relative-time';
 import type {InboxItem} from '@hallelujahhomechurch/account-client';
 import type {NotificationAppHref, NotificationListItem} from '@hallelujahhomechurch/ui';
 import type {Locale} from '@/i18n/locales';
@@ -15,5 +16,5 @@ export function notificationItem(item: InboxItem, locale: Locale, copy: {generic
     if (target?.issueNumber) href = `/${locale}/literature-ministry?${targetQuery(target)}` as NotificationAppHref;
   }
   const content = ['notification.recording','notification.bulletin'].includes(projection.titleKey) && projection.messageKey === 'notification.published';
-  return {id:item.id, title:content && projection.parameters?.title || copy.generic, message:content ? copy.published : '', timeLabel:new Intl.DateTimeFormat(locale,{dateStyle:'medium',timeStyle:'short'}).format(new Date(item.occurredAt)),dateTime:item.occurredAt,isRead:Boolean(item.readAt),...(href ? {link:{href,label:copy.open}} : {})};
+  return {id:item.id, title:content && projection.parameters?.title || copy.generic, message:content ? copy.published : '', timeLabel:relativeTime(item.occurredAt,locale),dateTime:item.occurredAt,isRead:Boolean(item.readAt),...(href ? {link:{href,label:copy.open}} : {})};
 }

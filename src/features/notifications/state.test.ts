@@ -98,3 +98,20 @@ it('suspends background reads without cancelling an already initiated read mutat
  const {store,client}=harness();await flush();let complete!:(value:{read:true})=>void;vi.mocked(client.markRead).mockImplementation(()=>new Promise(resolve=>{complete=resolve;}));const mutation=store.markRead(item.id);await flush();const signal=vi.mocked(client.markRead).mock.lastCall?.[1];
  Object.defineProperty(document,'visibilityState',{configurable:true,value:'hidden'});document.dispatchEvent(new Event('visibilitychange'));expect(signal?.aborted).toBe(false);complete({read:true});await mutation;expect(store.getSnapshot().summary.status).toBe('loading');
 });
+it.each([[401,'read'],[401,'all'],[403,'read'],[403,'all'],[503,'read'],[503,'all']] as const)('fences late summaries after page %i while preserving a global %s mutation',async(status,kind)=>{
+ const {store,client,change}=harness();await flush();let failMutation!:(error:Error)=>void;
+ if(kind==='read')vi.mocked(client.markRead).mockImplementation(()=>new Promise((_resolve,reject)=>{failMutation=reject;}));else vi.mocked(client.markAllRead).mockImplementation(()=>new Promise((_resolve,reject)=>{failMutation=reject;}));
+ const mutation=kind==='read'?store.markRead(item.id):store.markAllRead('summary');await flush();const mutationSignal=kind==='read'?vi.mocked(client.markRead).mock.lastCall?.[1]:vi.mocked(client.markAllRead).mock.lastCall?.[1];
+ let finishOld!:(value:InboxSummary)=>void,finishNew!:(value:InboxSummary)=>void;
+ vi.mocked(client.summary).mockImplementationOnce(()=>new Promise(resolve=>{finishOld=resolve;})).mockImplementationOnce(()=>new Promise(resolve=>{finishNew=resolve;}));
+ const old=store.refresh(true);await flush();const oldSignal=vi.mocked(client.summary).mock.lastCall?.[0]?.signal;
+ vi.mocked(client.list).mockRejectedValueOnce(new AccountSessionError(status,'NTF_DENIED'));cleanups.push(store.mountPage());await flush();
+ expect(store.getSnapshot().summary.status).toBe('error');expect(oldSignal?.aborted).toBe(true);expect(mutationSignal?.aborted).toBe(false);
+ expect(kind==='read'?store.getSnapshot().markingReadIds.includes(item.id):store.getSnapshot().markingAll).toBe(true);
+ if(kind==='all')expect(client.markAllRead).toHaveBeenCalledWith('captured-summary',mutationSignal);
+ const newer=store.refresh(true);await flush();const newerSignal=vi.mocked(client.summary).mock.lastCall?.[0]?.signal;
+ finishOld(summary);await old;await flush();expect(store.getSnapshot().summary.status).toBe('loading');
+ vi.mocked(client.list).mockRejectedValueOnce(new AccountSessionError(status,'NTF_DENIED'));store.setFilter('unread');await flush();
+ expect(newerSignal?.aborted).toBe(true);finishNew(summary);await newer;expect(store.getSnapshot().summary.status).toBe('error');expect(mutationSignal?.aborted).toBe(false);
+ change({status:'anonymous'});expect(mutationSignal?.aborted).toBe(true);failMutation(new Error('late failure'));await mutation;expect(store.getSnapshot().actionError).toBe(false);
+});

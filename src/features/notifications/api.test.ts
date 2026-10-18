@@ -1,4 +1,4 @@
-import {expect,it} from 'vitest';
+import {afterEach,expect,it,vi} from 'vitest';
 import type {InboxItem} from '@hallelujahhomechurch/account-client';
 import {notificationItem} from './api';
 const id='11111111-1111-4111-8111-111111111111', unitId='22222222-2222-4222-8222-222222222222';
@@ -15,3 +15,11 @@ it('maps only closed group destinations with generic pending presentation until 
  expect(notificationItem(item,'ko',copy)).toMatchObject({title:'Notification',message:'',link:{href:type==='join_request_review'?`/ko/organizations/${unitId}?joinRequest=${id}#join-requests`:`/ko/organizations/requests/${id}`}});}
 });
 it('omits unknown actions and never builds arbitrary unsafe links',()=>{expect(notificationItem({...base,projection:{...base.projection,action:undefined}},'en',copy).link).toBeUndefined();});
+
+afterEach(()=>vi.restoreAllMocks());
+it.each([['2026-10-19T12:00:00Z','now'],['2026-10-19T11:59:30Z','30 seconds ago'],['2026-10-19T11:55:00Z','5 minutes ago'],['2026-10-19T10:00:00Z','2 hours ago'],['2026-10-18T12:00:00Z','yesterday'],['2026-10-20T12:00:00Z','now']])('renders relative notification time for %s while retaining the exact timestamp', (occurredAt,timeLabel)=>{
+ vi.spyOn(Date,'now').mockReturnValue(Date.parse('2026-10-19T12:00:00Z'));expect(notificationItem({...base,occurredAt},'en',copy)).toMatchObject({timeLabel,dateTime:occurredAt});
+});
+it.each(['zh-Hant','zh-Hans','en','ja','ko'] as const)('localizes relative notification time in %s',locale=>{
+ vi.spyOn(Date,'now').mockReturnValue(Date.parse('2026-10-19T02:00:00Z'));expect(notificationItem(base,locale,copy).timeLabel).toBe(new Intl.RelativeTimeFormat(locale,{numeric:'auto'}).format(-2,'hour'));
+});

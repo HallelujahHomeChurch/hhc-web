@@ -39,6 +39,7 @@ export function createNotificationStore({client, auth, locale}: {client: InboxCl
       } catch (error) {
         if (!controller.signal.aborted && version === generation) {
           const denied = kind === 'page' && error instanceof AccountSessionError && [401,403,503].includes(error.status);
+          if (denied) {readControllers.get('summary')?.abort();readControllers.delete('summary');pending.delete('summary');}
           publish(denied ? {page:{status:'error'},summary:{status:'error'}} : {[kind]:{status:'error'}});
         }
       } finally {controllers.delete(controller);if (readControllers.get(kind) === controller) readControllers.delete(kind);}
