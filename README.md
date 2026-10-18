@@ -227,3 +227,24 @@ and routes are noindex/nofollow and excluded from sitemap and analytics.
 
 Gateway must release the exact WWW management/notification allowlist before WWW;
 Account's compatible API routes remain during rollout. Release the Account management UI removal last. Business APIs and notification click destinations are unchanged.
+
+### Shared live player (candidate)
+
+This change consumes the reviewed `@hallelujahhomechurch/ui/player` and
+`@hallelujahhomechurch/ui/player.css` from frontend-platform PR #135, planned
+version 1.0.76. Its player regression suite moved with the implementation; this
+application retains member grant, cookie renewal, watermark, telemetry, public
+media-origin and live-to-VOD orchestration tests. Studio uses the same controls
+with a separately scoped staff-preview grant.
+
+The current application registry pin is deliberately unchanged until that shared
+package is merged and published. Local integration uses its packed candidate;
+that is not a production or registry-readiness claim. Before merging this
+consumer, pin the actually published exact UI version, regenerate the registry
+lockfile, update the exact-version assertion and rerun CI. Do not merge this
+consumer while it still depends on an unpublished player subpath.
+
+Live follows a point 60 seconds behind the verified playable end. The viewer
+live indicator, seekbar endpoint and explicit return action share that target.
+The 2–3 minute end-to-end latency goal still requires producer/verification and
+real-device measurements; increasing holdback cannot cure sustained backlog.
