@@ -1,6 +1,6 @@
 import {ReaderActionError, type ReaderExclusive} from '@/features/weekly-reader/usePrivateReader';
 import {PassageText} from './PassageText';
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {Drawer} from '@hallelujahhomechurch/ui';
 import type {BulletinReaderHighlightColor, BulletinReaderMutation, BulletinReaderState, OnlineBulletinAccess} from '@hallelujahhomechurch/hhc-web-client';
 import type {createReaderApi, ReaderSelector} from '@/features/weekly-reader/api';
@@ -12,7 +12,8 @@ import {rangeQuote, selectionPassage} from '@/features/weekly-reader/text-range'
 import {useReaderSelection} from '@/features/weekly-reader/useReaderSelection';
 import type {ReaderMessages} from './ReaderToolbar';
 
-export function ReaderRecovery({api, value, selector, messages: m, onUpdated, onFailure, suspended = false, pendingMutation = null, onPendingChange, mobile = false, runExclusive, available = true, onState, inline = false, onOpenChange}: {
+export function ReaderRecovery({api, value, selector, messages: m, onUpdated, onFailure, suspended = false, pendingMutation = null, onPendingChange, mobile = false, runExclusive, available = true, onState, inline = false, onOpenChange, onConfirm}: {
+  onConfirm?: (description: string) => Promise<boolean>;
   api: ReturnType<typeof createReaderApi>; value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages;
   onUpdated: (value: OnlineBulletinAccess) => void; onFailure: (error: unknown) => void; suspended?: boolean;
   pendingMutation?: BulletinReaderMutation | null; onPendingChange?: (mutation: BulletinReaderMutation | null, result?: import('@/features/weekly-reader/usePrivateReader').ReaderOutcome, previous?: BulletinReaderMutation | null) => void;
@@ -21,6 +22,11 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
   const [open, setOpen] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState(false);
   function changeOpen(next: boolean) {setOpen(next); onOpenChange?.(next);}
   const [prepared, setPrepared] = useState<ReaderUpgrade | null>(null);
+  const [deciding, setDeciding] = useState(false);
+  const decisionPending = useRef(false);
+  const current = useRef({prepared, suspended, open, selector, mounted: false});
+  useLayoutEffect(() => {current.current = {prepared, suspended, open, selector, mounted: true};});
+  useLayoutEffect(() => () => {current.current.mounted = false;}, []);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const epoch = useRef<number | null>(null), controller = useRef<AbortController | null>(null);
   const pending = useRef(pendingMutation);
@@ -91,31 +97,40 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
   const partialConflict = conflict?.sources.some(source => source.segments?.length);
   const recovery = prepared?.recovery[0];
   const entry = prepared?.queue.find(entry => entry.mutation.mutationId === recovery?.mutationId);
+  async function chooseColor(color: BulletinReaderHighlightColor) {
+    if (!prepared || !conflict || busy || suspended || decisionPending.current) return;
+    const snapshot = prepared;
+    decisionPending.current = true; setDeciding(true);
+    try {
+      if (partialConflict && !await onConfirm?.(m.recoveryPartialColor)) return;
+      const latest = current.current;
+      if (!latest.mounted || latest.suspended || !latest.open || latest.prepared !== snapshot || JSON.stringify(latest.selector) !== JSON.stringify(selector) || controller.current && !controller.current.signal.aborted) return;
+      await run(signal => choose(null, {mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: snapshot.value.document.revision, kind: 'resolveHighlightMigrationConflict', payload: {conflictId: conflict.id, chosenColor: color, currentRevision: snapshot.value.document.revision}}, signal));
+    } catch {if (current.current.mounted) setError(true);}
+    finally {decisionPending.current = false; if (current.current.mounted) setDeciding(false);}
+  }
   const content = <div className="reader-private-sheet reader-recovery" hidden={suspended} inert={suspended}>
       <p>{m.recoveryHelp}</p>
       {busy ? <p role="status">{m.syncSyncing}</p> : null}
       {error ? <p role="alert">{m.actionFailed}</p> : null}
-      {awaitingConfirmation ? <section><p>{m.confirmRetryHelp}</p><button type="button" disabled={busy} onClick={() => void run(retryPending)}>{m.confirmRetry}</button></section> : conflict && prepared ? <section>
+      {awaitingConfirmation ? <section><p>{m.confirmRetryHelp}</p><button type="button" disabled={busy || deciding} onClick={() => void run(retryPending)}>{m.confirmRetry}</button></section> : conflict && prepared ? <section>
         <p>{partialConflict ? m.recoveryPartialColor : m.recoveryColor}</p>
         {partialConflict ? <><h3>{m.recoveryCurrentText}</h3><blockquote>{readerSentences(prepared.value.document).filter(sentence => conflict.sentenceIds.includes(sentence.id)).map(sentence => sentence.text).join('\n')}</blockquote></> : null}
         {conflict.sources.map(source => <blockquote key={`${source.sentenceId}:${source.color}`}>
           {source.segments?.length ? source.segments.map(part => <span key={`${part.start}:${part.end}`} className="reader-conflict-fragment" data-color={part.color}>{[...source.quote].slice(part.start, part.end).join('')}</span>) : <><span className="reader-color"><span data-color={source.color}/></span>{source.quote}</>}
         </blockquote>)}
-        <div className="reader-note-actions">{(['yellow', 'red', 'blue'] as const).map(color => <button key={color} className="reader-color" aria-label={m[`${color}Highlight`]} disabled={busy} onClick={() => {
-          if (partialConflict && !window.confirm(m.recoveryPartialColor)) return;
-          void run(signal => choose(null, {mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: prepared.value.document.revision, kind: 'resolveHighlightMigrationConflict', payload: {conflictId: conflict.id, chosenColor: color, currentRevision: prepared.value.document.revision}}, signal));
-        }}><span data-color={color}/></button>)}</div></section> :
+        <div className="reader-note-actions">{(['yellow', 'red', 'blue'] as const).map(color => <button key={color} className="reader-color" aria-label={m[`${color}Highlight`]} disabled={busy || deciding} onClick={() => {void chooseColor(color);}}><span data-color={color}/></button>)}</div></section> :
         recovery && entry && prepared ? <RecoveryChoice key={`${recovery.mutationId}:${entry.resolution?.mutation?.mutationId ?? ''}:${prepared.state.notes.map(note => note.version).join(',')}`} prepared={prepared} previous={value} original={entry.resolution?.mutation ?? entry.mutation} reason={recovery.reason} messages={m} busy={busy} mobile={mobile} onChoose={mutation => void run(signal => choose(entry.mutation.mutationId, mutation, signal))}/> :
-        prepared ? <button type="button" disabled={busy} onClick={() => void run(async signal => {
+        prepared ? <button type="button" disabled={busy || deciding} onClick={() => void run(async signal => {
           const finished = epoch.current === null ? {value: prepared.value, state: prepared.state} : await finishReaderUpgrade(api, selector, prepared, epoch.current, signal);
           signal.throwIfAborted(); if (epoch.current !== null) onState?.(finished.state); onUpdated(finished.value); changeOpen(false);
         })}>{m.applyUpdate}</button> : null}
-      {error ? <button type="button" disabled={busy} onClick={() => void run(prepare)}>{m.retry}</button> : null}
-      <button type="button" disabled={busy} onClick={() => changeOpen(false)}>{m.keepReading}</button>
+      {error ? <button type="button" disabled={busy || deciding} onClick={() => void run(prepare)}>{m.retry}</button> : null}
+      <button type="button" disabled={busy || deciding} onClick={() => changeOpen(false)}>{m.keepReading}</button>
     </div>;
   return <>
-    {available || open ? <button type="button" disabled={busy} onClick={() => {changeOpen(true); setPrepared(null); void run(prepare);}}>{m.reviewSync}</button> : null}
-    {open ? inline ? content : <Drawer title={m.reviewSync} closeLabel={m.noteClose} isOpen onOpenChange={next => {if (!next && !busy && !suspended) changeOpen(false);}}>{content}</Drawer> : null}
+    {available || open ? <button type="button" disabled={busy || deciding} onClick={() => {changeOpen(true); setPrepared(null); void run(prepare);}}>{m.reviewSync}</button> : null}
+    {open ? inline ? content : <Drawer title={m.reviewSync} closeLabel={m.noteClose} isOpen onOpenChange={next => {if (!next && !busy && !deciding && !suspended) changeOpen(false);}}>{content}</Drawer> : null}
   </>;
 }
 

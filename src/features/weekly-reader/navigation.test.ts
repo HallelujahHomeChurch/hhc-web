@@ -49,3 +49,27 @@ describe('reader navigation', () => {
     expect(keyboardPageDelta(event, true)).toBe(0);
   });
 });
+
+it('keeps scalar/source-page anchors and falls back without changing canonical content', async () => {
+  const {resolveReadingAnchor} = await import('./navigation');
+  const document = readerFixture().document.content;
+  const before = JSON.stringify(document);
+  expect(resolveReadingAnchor(document, {kind:'sentence',id:'s1',start:1,page:1})).toEqual({anchor:{kind:'sentence',id:'s1',start:1,page:1},fallback:false});
+  expect(resolveReadingAnchor(document, {kind:'sentence',id:'missing',page:1})).toMatchObject({anchor:{id:'s1',page:1},fallback:true});
+  expect(resolveReadingAnchor(document, {kind:'sentence',id:'s1',page:1},new Set(['s0','s1','s2','s3']))).toBeNull();
+  expect(JSON.stringify(document)).toBe(before);
+});
+
+it('resolves the next visible chapter fragment when the original source page is hidden', async () => {
+  const {resolveReadingAnchor} = await import('./navigation');
+  expect(resolveReadingAnchor(readerFixture().document.content,{kind:'sentence',id:'s1',page:1},new Set(['s1']))).toMatchObject({fallback:true,anchor:{id:'s0',page:0}});
+});
+
+it('ignores offscreen sentences and retains the current source component on blank paper', async()=>{
+ const {visibleReadingAnchor}=await import('./navigation');
+ const root=document.createElement('div'),viewport=document.createElement('div'),sentence=document.createElement('span');
+ viewport.className='reader-viewport';viewport.append(root);root.append(sentence);sentence.dataset.sentenceId='s2';sentence.dataset.fragmentStart='0';sentence.dataset.fragmentEnd='4';
+ viewport.getBoundingClientRect=()=>new DOMRect(0,0,400,300);sentence.getBoundingClientRect=()=>new DOMRect(0,500,300,20);
+ const content=readerFixture().document.content;
+ expect(visibleReadingAnchor(root,content,50,1)).toEqual({kind:'component',id:content.layoutManifest.pages[1].slots[0].componentId,page:1});
+});

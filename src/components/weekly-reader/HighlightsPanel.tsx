@@ -5,7 +5,8 @@ import type {ReaderSentence} from '@/features/weekly-reader/selection';
 import type {ReaderTextRange} from '@/features/weekly-reader/text-range';
 import type {ReaderMessages} from './ReaderToolbar';
 
-export function HighlightsPanel({highlights, sentences, messages: m, busy, onChange}: {
+export function HighlightsPanel({highlights, sentences, messages: m, busy, onChange, query = '', color = 'all'}: {
+  query?: string; color?: string;
   highlights: BulletinReaderState['highlights']; sentences: readonly ReaderSentence[]; messages: ReaderMessages; busy: boolean;
   onChange: (range: ReaderTextRange, color: BulletinReaderHighlightColor | null) => Promise<void>;
 }) {
@@ -18,8 +19,9 @@ export function HighlightsPanel({highlights, sentences, messages: m, busy, onCha
       range: {sentenceId: highlight.sentenceId, start: part.start, end: part.end},
       color: part.color, quote: characters.slice(part.start, part.end).join('')
     }));
-  });
+  }).filter(entry => (color === 'all' || entry.color === color) && entry.quote.normalize('NFKC').toLowerCase().includes(query.normalize('NFKC').trim().toLowerCase()));
   return <section aria-labelledby={heading} className="reader-highlights-list">
+    <p className="reader-filter-count" role="status">{m.highlightCount.replace('{count}', String(entries.length))}</p>
     <h3 id={heading} ref={headingRef} tabIndex={-1}>{m.savedHighlights}</h3>
     {!entries.length ? <p>{m.highlightsEmpty}</p> : entries.map(({range, color, quote}) => <article key={`${range.sentenceId}:${range.start}:${range.end}`} aria-label={quote}>
       <blockquote>{quote}</blockquote>

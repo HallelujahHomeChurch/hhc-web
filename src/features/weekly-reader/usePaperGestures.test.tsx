@@ -2,9 +2,9 @@ import {useRef, useState} from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {expect, it, vi} from 'vitest';
 import {usePaperGestures} from './usePaperGestures';
-function Harness({enabled = true, blocked = false}: {enabled?: boolean; blocked?: boolean}) {
+function Harness({enabled = true, blocked = false, nativeTouch = false}: {enabled?: boolean; blocked?: boolean; nativeTouch?: boolean}) {
   const root = useRef<HTMLDivElement>(null), [zoom, setZoom] = useState(1);
-  const {changeZoom: change} = usePaperGestures({root, enabled, blocked, zoom, setZoom});
+  const {changeZoom: change} = usePaperGestures({root, enabled, nativeTouch, blocked, zoom, setZoom});
   return <div ref={root} data-testid="viewport"><output>{zoom.toFixed(2)}</output><button onClick={() => change(zoom + .25)}>Zoom</button><div data-paper-index="0">Text</div></div>;
 }
 it('intercepts modifier wheel only within an enabled paper viewport', () => {
@@ -55,4 +55,11 @@ it('preserves the page-relative point across a viewport resize without resetting
   const scroll = vi.fn(); Object.defineProperty(root, 'scrollBy', {configurable: true, value: scroll});
   fireEvent.click(screen.getByRole('button', {name: 'Resize'}));
   expect(scroll).toHaveBeenCalledWith({left: 200, top: 400, behavior: 'instant'});
+});
+
+it('keeps native mobile pinch and modifier wheel while allowing explicit zoom buttons', () => {
+ const {getByTestId}=render(<Harness nativeTouch/>);
+ expect(fireEvent.wheel(getByTestId('viewport'),{deltaY:-100,ctrlKey:true})).toBe(true);
+ fireEvent.click(screen.getByRole('button',{name:'Zoom'}));
+ expect(screen.getByRole('status')).toHaveTextContent('1.25');
 });

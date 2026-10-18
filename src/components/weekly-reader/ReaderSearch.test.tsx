@@ -34,3 +34,11 @@ it('submits explicitly and lists all matches before navigating', () => {
   expect(screen.getByRole('searchbox')).toHaveValue('');
   expect(screen.queryByText(m.noResults)).not.toBeInTheDocument();
 });
+it('does not submit a composition Enter and adds chapter context without changing excerpts',()=>{
+ const m=getMessages('en').weeklyReader;render(<ReaderSearch document={readerFixture().document} onJump={vi.fn()} messages={m} mobile/>);
+ const input=screen.getByRole('searchbox');fireEvent.change(input,{target:{value:'內容'}});fireEvent.compositionStart(input);
+ expect(fireEvent.keyDown(input,{key:'Enter',isComposing:true,keyCode:229})).toBe(false);fireEvent.submit(screen.getByRole('search'));
+ expect(screen.queryByRole('list')).not.toBeInTheDocument();fireEvent.compositionEnd(input);fireEvent.submit(screen.getByRole('search'));
+ expect(screen.getAllByRole('listitem')).toHaveLength(4);expect(screen.getByRole('list')).toHaveTextContent(m.chapterBack);
+ expect(screen.getByText(m.easySearchScope)).toBeInTheDocument();
+});

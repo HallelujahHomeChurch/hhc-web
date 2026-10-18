@@ -3,10 +3,10 @@ import {clampPaperZoom} from './navigation';
 
 type Point = {x: number; y: number};
 type Anchor = {page: string; x: number; y: number; point: Point};
-type Props = {root: RefObject<HTMLDivElement | null>; enabled: boolean; blocked: boolean; zoom: number; setZoom: (zoom: number) => void; layoutKey?: string};
+type Props = {root: RefObject<HTMLDivElement | null>; enabled: boolean; nativeTouch?: boolean; blocked: boolean; zoom: number; setZoom: (zoom: number) => void; layoutKey?: string};
 
 /** Scope cancellation to paper; native one-finger scrolling/text selection stays available. */
-export function usePaperGestures({root, enabled, blocked, zoom, setZoom, layoutKey}: Props) {
+export function usePaperGestures({root, enabled, nativeTouch = false, blocked, zoom, setZoom, layoutKey}: Props) {
   const pending = useRef<Anchor | null>(null);
   const liveZoom = useRef(zoom);
   useLayoutEffect(() => {liveZoom.current = zoom;}, [zoom]);
@@ -40,7 +40,7 @@ export function usePaperGestures({root, enabled, blocked, zoom, setZoom, layoutK
   }, [zoom, root, layoutKey]);
   useEffect(() => {
     const element = root.current;
-    if (!enabled || blocked || !element) return;
+    if (!enabled || nativeTouch || blocked || !element) return;
     let pinch: {distance: number; zoom: number} | null = null;
     const wheel = (event: WheelEvent) => {
       if (!event.ctrlKey && !event.metaKey) return;
@@ -70,6 +70,6 @@ export function usePaperGestures({root, enabled, blocked, zoom, setZoom, layoutK
       element.removeEventListener('wheel', wheel); element.removeEventListener('touchstart', start); element.removeEventListener('touchmove', move);
       element.removeEventListener('touchend', end); element.removeEventListener('touchcancel', end);
     };
-  }, [root, enabled, blocked]);
+  }, [root, enabled, nativeTouch, blocked]);
   return {changeZoom: change, captureAnchor};
 }
