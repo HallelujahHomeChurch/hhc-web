@@ -109,6 +109,13 @@ describe('locales', () => {
     expect(zhHant.literatureMinistry.downloading).toBe('正在準備下載週報 {progress} %。');
   });
 
+  it('keeps small-group banner subtitles free of trailing sentence punctuation', () => {
+    for (const messages of [zhHant, zhHans, en, ja, ko]) {
+      expect(messages.organizations.heroSubtitle).not.toMatch(/[。.]$/);
+    }
+    expect(zhHant.organizations.heroSubtitle).toBe('陪人走一生的路，乃人生最高的成就');
+  });
+
   it('keeps latest-news banner subtitles free of redundant punctuation', () => {
     expect(zhHant.news.heroSubtitle).toBe('教會近況、活動資訊與重要公告');
     expect(zhHans.news.heroSubtitle).toBe('教会近况、活动资讯与重要公告');
