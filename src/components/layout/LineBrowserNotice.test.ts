@@ -1,5 +1,6 @@
 import {describe, expect, it} from 'vitest';
-import {externalBrowserHref, isLineBrowser} from './LineBrowserNotice';
+import {externalBrowserHref} from './LineBrowserNotice';
+import {isLineBrowser} from '@/lib/line-browser-handoff';
 import {isStatementSuppressedPath} from '@/features/statements/visibility';
 
 describe('LINE browser handoff', () => {

@@ -6,11 +6,10 @@ import {useTranslations} from 'next-intl';
 import {ArrowUpRight, PanelTopOpen} from 'lucide-react';
 import {isStatementDetailPath, isStatementSuppressedPath} from '@/features/statements/visibility';
 import {useStatement} from '@/components/statements/StatementProvider';
+import {clearLineVideoTarget, isLineBrowser, lineBrowserTarget} from '@/lib/line-browser-handoff';
 
 const dismissalKey = 'hhc:line-browser-notice:dismissed';
 let dismissedWithoutStorage = false;
-
-export const isLineBrowser = (userAgent: string) => /\bLINE\/\d/i.test(userAgent);
 
 export function externalBrowserHref(rawUrl: string): string {
   const url = new URL(rawUrl);
@@ -23,6 +22,7 @@ export function useLineBrowserNotice(pathname: string) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    lineBrowserTarget(window.location.href);
     if (!isLineBrowser(navigator.userAgent) || isStatementSuppressedPath(pathname) || dismissed.current || dismissedWithoutStorage) {
       setVisible(false);
       return;
@@ -32,6 +32,7 @@ export function useLineBrowserNotice(pathname: string) {
   }, [pathname]);
 
   function close() {
+    clearLineVideoTarget();
     dismissed.current = true;
     setVisible(false);
     try { sessionStorage.setItem(dismissalKey, '1'); } catch { dismissedWithoutStorage = true; }
@@ -55,7 +56,7 @@ export function LineBrowserNotice({pathname, onClose}: {pathname: string; onClos
         </div>
       </div>
       <button type="button" className="absolute right-4 top-3 grid size-8 place-items-center rounded-lg text-xl text-ink/60 hover:bg-primary/10" onClick={onClose} aria-label={t('close')}>×</button>
-      <a className="mt-3 ml-12 inline-flex min-h-11 w-[calc(100%-3rem)] items-center justify-center gap-2 rounded-xl bg-primary px-4 font-semibold text-white hover:bg-primary/90 sm:w-auto" href={externalBrowserHref(window.location.href)}>{t('open')} <ArrowUpRight size={17} aria-hidden="true" /></a>
+      <a className="mt-3 ml-12 inline-flex min-h-11 w-[calc(100%-3rem)] items-center justify-center gap-2 rounded-xl bg-primary px-4 font-semibold text-white hover:bg-primary/90 sm:w-auto" href={externalBrowserHref(lineBrowserTarget(window.location.href))} onClick={clearLineVideoTarget}>{t('open')} <ArrowUpRight size={17} aria-hidden="true" /></a>
       {activeStatement && !isStatementDetailPath(pathname) && <div className="mt-3 ml-12 border-t border-primary/20 pt-2 text-xs">
         <Link className="font-semibold text-primary underline-offset-2 hover:underline" href={activeStatement.href ?? '#'}>
           <span lang={activeStatement.resolvedLocale}>{activeStatement.title}</span> · {statement?.labels.readFull} →
