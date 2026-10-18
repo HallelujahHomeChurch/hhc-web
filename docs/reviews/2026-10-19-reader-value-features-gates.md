@@ -26,13 +26,24 @@ F0只讀完成，三項Important待spec處置。
 
 跨裝置可沿既有UUID+payload fingerprint冪等、parent serialization與version CAS；首版建議online CRUD、offline僅讀已確認快照。名稱長度、每document上限、重複名稱、revision重綁策略由後續spec明確定案。低密度UI沿既有側欄Tab與面板內次要入口，不新增常駐正文toolbar。
 
-## 尚待產品決策
+## F0調查時待決策（後續已批准）
 
-已向使用者詢問兩項：跨裝置（含API/DB/SDK相容變更）或僅此裝置；匯出是否附已保存引用。目前未收到選擇，不把預選當批准。其餘可獨立進行的調查與證據已保存；尚未改產品碼，也未寫實作plan。
+F0 checkpoint曾向使用者詢問兩項：跨裝置（含API/DB/SDK相容變更）或僅此裝置；匯出是否附已保存引用。當時未收到選擇，不把預選當批准。其餘可獨立進行的調查與證據已保存；尚未改產品碼，也未寫實作plan。
 
 ## 發布依賴
 
 跨裝置方案的相容順序是producer→SDK發佈→consumer精確pin。各repo分支與PR/CI獨立，不能靠未發布SDK宣稱consumer正式registry驗證已通過。停merge前時，保留尚未滿足的發佈gate及本地candidate證據；不偷merge／publish套件來解除依賴。
 
 
-F0整合窄複核：p3_bookmark_feasibility PASS；p3_export_feasibility要求精確區分sent欄位存在與sent === true，root已按原席指定修句，保留正常durable待同步可包含。兩席原調查Important均已記錄；引用與持久化產品決策尚待回覆，故未進S2/plan gate。
+F0整合窄複核：p3_bookmark_feasibility PASS；p3_export_feasibility要求精確區分sent欄位存在與sent === true，root已按原席指定修句，保留正常durable待同步可包含。兩席原調查Important均已記錄；該checkpoint的引用與持久化產品決策尚待回覆，當時未進S2/plan gate。
+
+
+## 使用者產品決策與S2
+
+使用者已回覆「可以」，明確採跨裝置書籤（含API/DB/SDK/前端）及只匯出自己的筆記文字與來源位置、不附引用。root重寫S2，工程定案online-only CRUD/有效離線只讀、80scalar/100active/revision一律明確重綁、200筆/8MiB輸出與durable快照。
+
+p3_spec_data初查PASS；p3_spec_ux實看4張既有候選，Important為source page含句子卻不含offset。root補canonical fragment.start<=offset<end及fixed-slot來源驗證、跨頁錯頁拒絕案例；另明確最後async IDB重驗後檢實際userActivation，失效拒絕，不虛稱gesture仍在；Tab draft統一採列表受控保留。S2原兩席窄複核均PASS：p3_spec_data維持PASS，p3_spec_ux確認跨頁offset Important解除。兩席均未執行程式／測試；activation／Files及真機接受仍保留。root同時納入queue的replayResult標記，不將其視為安全未送出資料。可進plan gate。
+
+## Plan gate
+
+p3_plan_data、p3_plan_ux兩席獨立只讀PASS，均抽查實際caller；無Critical/Important。資料席核對parent serialization／DSR count／queue merge及發布邊界；UX席核對root dirty gate／fallback resolver／controlled draft與視覺矩陣。未跑測試，不代替T1–T4實作檢驗。root開始T1。
