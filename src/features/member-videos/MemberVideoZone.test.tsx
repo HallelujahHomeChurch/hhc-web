@@ -8,6 +8,10 @@ import {Blob as NodeBlob} from 'node:buffer';
 import {IDBFactory} from 'fake-indexeddb';
 import {PrivateCoverCache} from '@/lib/private-cover-cache';
 import {PrivateCoverProvider} from '@/lib/use-private-cover';
+import {NextIntlClientProvider} from 'next-intl';
+import zhHant from '@/i18n/locales/zh-Hant.json';
+import {LineBrowserNotice, useLineBrowserNotice} from '@/components/layout/LineBrowserNotice';
+import {clearLineVideoTarget, lineBrowserTarget} from '@/lib/line-browser-handoff';
 
 const state = vi.hoisted(() => ({access: 'loading', auth: 'checking'}));
 const list = vi.hoisted(() => vi.fn());
@@ -73,6 +77,58 @@ beforeEach(() => {
 afterEach(() => {cleanup();vi.useRealTimers();vi.restoreAllMocks();});
 
 describe('member video gate', () => {
+  it.each(['open', 'close'])('retains the LINE video URL after the anonymous home redirect and clears it on %s', async action => {
+    const path = '/en/member-videos/11111111-1111-1111-1111-111111111111?t=90#player';
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 LINE/15.0.0');
+    window.history.replaceState({}, '', path);
+    state.auth = 'anonymous';
+    replace.mockImplementationOnce((href: string) => window.history.replaceState({}, '', href));
+    function Notice({pathname}: {pathname: string}) {
+      const notice = useLineBrowserNotice(pathname);
+      return notice.visible ? <LineBrowserNotice pathname={pathname} onClose={notice.close}/> : null;
+    }
+    try {
+      const view = render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <Notice pathname={path.split('?')[0]}/>
+        <MemberVideoZone locale="en" messages={messages} hero={null} recordingId="11111111-1111-1111-1111-111111111111"/>
+      </NextIntlClientProvider>);
+      await waitFor(() => expect(replace).toHaveBeenCalledWith('/en'));
+      expect(list).not.toHaveBeenCalled();
+      view.rerender(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><Notice pathname="/en"/></NextIntlClientProvider>);
+      const link = await screen.findByRole('link', {name: '開啟預設瀏覽器'});
+      expect(link).toHaveAttribute('href', `http://localhost:3000${path.replace('#player', '&openExternalBrowser=1#player')}`);
+      if (action === 'open') {
+        link.addEventListener('click', event => event.preventDefault());
+        fireEvent.click(link);
+      } else {
+        fireEvent.click(screen.getByRole('button', {name: '關閉瀏覽器提示並留在此頁'}));
+      }
+      expect(lineBrowserTarget(window.location.href)).toBe('http://localhost:3000/en');
+    } finally {
+      clearLineVideoTarget();
+      sessionStorage.removeItem('hhc:line-browser-notice:dismissed');
+      window.history.replaceState({}, '', '/');
+    }
+  });
+
+  it.each([
+    ['anonymous', 'loading', 'Mozilla/5.0 Safari/605.1.15'],
+    ['authenticated', 'denied', 'Mozilla/5.0 LINE/15.0.0']
+  ])('keeps the %s/%s home redirect without retaining a video target', async (auth, access, userAgent) => {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(userAgent);
+    window.history.replaceState({}, '', '/en/member-videos/11111111-1111-1111-1111-111111111111');
+    state.auth = auth; state.access = access;
+    try {
+      render(<MemberVideoZone locale="en" messages={messages} hero={null}/>);
+      await waitFor(() => expect(replace).toHaveBeenCalledWith('/en'));
+      expect(list).not.toHaveBeenCalled();
+      expect(lineBrowserTarget('http://localhost:3000/en')).toBe('http://localhost:3000/en');
+    } finally {
+      clearLineVideoTarget();
+      window.history.replaceState({}, '', '/');
+    }
+  });
+
   it.each(['list','watch'] as const)('persists automatic covers without an explicit selection on the %s surface',async view=>{
     vi.stubGlobal('indexedDB',new IDBFactory());
     try{
