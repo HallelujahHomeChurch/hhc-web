@@ -67,3 +67,14 @@ remain unverified. Historical latency and weak-network failures remain unchanged
 Clean Website CI 39099524281: 162 files / 1,221 tests passed; five suites could
 not import the old registry UI package because it lacks `./player`. This confirms
 the dependency gate above; it is not a passing CI result.
+
+## Authorized registry integration (supersedes the earlier dependency gate)
+
+On 2026-10-18, the user approved ordered merge/release. Shared UI PR135 was
+merged as `044232cf4e68840b00a69dcaaa029188e562fabd`; tag `v1.0.76` and release
+39108832127 succeeded. Website now pins the actual registry package, integrity
+`sha512-fb5wA59dpUbx8KQdpkA4T2ijbGYyClViGdfrDnozjRgyXs23vNZskOZmh3ctMM0X5Bz2U0wI1o9PW4DzY9CMXQ==`.
+The complete 1,303-test suite, lint, Next production build, static budgets and
+release-policy checks passed with that installed registry package. New clean PR
+CI and production smoke remain mandatory; this section alone is not deployment
+acceptance. The separate performance advisor findings remain analysis only.
