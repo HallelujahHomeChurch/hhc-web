@@ -4,16 +4,17 @@ import {readerSentences} from '@/features/weekly-reader/selection';
 import {selectionPassage, type ReaderTextRange} from '@/features/weekly-reader/text-range';
 import {useReaderSelection} from '@/features/weekly-reader/useReaderSelection';
 import {PassageText} from './PassageText';
+import {ReaderActionError} from '@/features/weekly-reader/usePrivateReader';
 import type {NoteSaveResult} from './NoteEditor';
 import type {ReaderMessages} from './ReaderToolbar';
 
-export function NoteReanchor({note, document, messages: m, onSave, onComplete, onCancel, suspended = false, mobile = false}: {
+export function NoteReanchor({note, document, messages: m, onSave, onComplete, onCancel, suspended = false, mobile = false, onRecover, initialConflict = null}: {
   note: BulletinReaderNote; document: MemberOnlineDocument; messages: ReaderMessages; suspended?: boolean; mobile?: boolean;
   onSave: (note: BulletinReaderNote, ranges: ReaderTextRange[]) => Promise<NoteSaveResult>;
-  onComplete: () => void; onCancel: () => void;
+  initialConflict?: NoteSaveResult | null; onRecover?: () => void; onComplete: () => void; onCancel: () => void;
 }) {
   const [current, setCurrent] = useState(note);
-  const [conflict, setConflict] = useState<NoteSaveResult | null>(null);
+  const [conflict, setConflict] = useState<NoteSaveResult | null>(initialConflict);
   const [busy, setBusy] = useState(false), [error, setError] = useState(false);
   const saving = useRef(false), root = useRef<HTMLDivElement>(null);
   const sentences = useMemo(() => readerSentences(document), [document]);
@@ -26,7 +27,7 @@ export function NoteReanchor({note, document, messages: m, onSave, onComplete, o
       const result = await onSave(current, ranges);
       if (result.status === 'note_conflict') setConflict(result);
       else onComplete();
-    } catch {setError(true);}
+    } catch (failure) {if (!(failure instanceof ReaderActionError)) setError(true);}
     finally {saving.current = false; setBusy(false);}
   }
   return <form className="reader-note-editor" data-reader-selection-tools onSubmit={event => {event.preventDefault(); void save();}}>
@@ -36,7 +37,7 @@ export function NoteReanchor({note, document, messages: m, onSave, onComplete, o
       {quote ? <blockquote>{quote}</blockquote> : null}
     </fieldset>
     {conflict ? <section role="alert"><p>{m.noteConflict}</p><blockquote>{conflict.note && !conflict.note.deleted ? conflict.note.text : m.noteDeleted}</blockquote>
-      {conflict.note && !conflict.note.deleted && (conflict.note.reanchorRequired || conflict.note.inactiveAnchors.length > 0) ? <button type="button" disabled={suspended} onClick={() => {setCurrent(conflict.note!); setConflict(null); clear();}}>{m.retry}</button> : null}
+      {conflict.durable ? <button type="button" onClick={onRecover}>{m.reviewSync}</button> : conflict.note && !conflict.note.deleted && (conflict.note.reanchorRequired || conflict.note.inactiveAnchors.length > 0) ? <button type="button" disabled={suspended} onClick={() => {setCurrent(conflict.note!); setConflict(null); clear();}}>{m.retry}</button> : null}
     </section> : null}
     {error ? <p role="alert">{m.actionFailed}</p> : null}
     <div className="reader-note-actions"><button type="button" disabled={busy} onClick={onCancel}>{m.noteCancel}</button><button type="submit" disabled={busy || suspended || !!conflict || !quote}>{m.noteSave}</button></div>

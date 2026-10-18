@@ -42,3 +42,11 @@ it('requires explicit retry and reselection after a concurrent note edit', async
   select(); fireEvent.pointerDown(save); fireEvent.click(save);
   await waitFor(() => expect(onSave).toHaveBeenLastCalledWith(updated, [{sentenceId: 's1', start: 1, end: 3}]));
 });
+
+it('keeps a conflict without a cloud note blocked and offers durable recovery', () => {
+  const onSave = vi.fn(), onRecover = vi.fn();
+  render(<NoteReanchor note={note} document={readerFixture().document} messages={props.messages} initialConflict={{status: 'note_conflict', durable: true}} onRecover={onRecover} onSave={onSave} onComplete={vi.fn()} onCancel={vi.fn()}/>);
+  expect(screen.getByRole('button', {name: 'Save'})).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
+  expect(onRecover).toHaveBeenCalledOnce(); expect(onSave).not.toHaveBeenCalled();
+});

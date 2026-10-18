@@ -1,14 +1,15 @@
 import {useId, useRef, useState} from 'react';
 import type {BulletinReaderNote} from '@hallelujahhomechurch/hhc-web-client';
+import {ReaderActionError} from '@/features/weekly-reader/usePrivateReader';
 import type {ReaderMessages} from './ReaderToolbar';
 
 export type NoteSave = {text: string; noteId?: string; baseVersion?: number};
-export type NoteSaveResult = {status: 'applied' | 'queued' | 'note_conflict'; note?: BulletinReaderNote};
+export type NoteSaveResult = {status: 'applied' | 'queued' | 'note_conflict'; note?: BulletinReaderNote; durable?: boolean};
 export type NoteEditorState = {draft: NoteSave; conflict: NoteSaveResult | null};
-export function NoteEditor({messages: m, note, quote, onSave, onComplete, onCancel, editorState, onEditorStateChange}: {
+export function NoteEditor({messages: m, note, quote, onSave, onComplete, onCancel, editorState, onEditorStateChange, onRecover, onKeepCloud = onCancel, failureHandled = false}: {
   messages: ReaderMessages; note?: BulletinReaderNote; quote: string;
   onSave: (draft: NoteSave) => Promise<NoteSaveResult>; onComplete: (status: 'applied' | 'queued') => void; onCancel: () => void;
-  editorState?: NoteEditorState; onEditorStateChange?: (state: NoteEditorState) => void;
+  failureHandled?: boolean; onKeepCloud?: () => void; onRecover?: () => void; editorState?: NoteEditorState; onEditorStateChange?: (state: NoteEditorState) => void;
 }) {
   const [internal, setInternal] = useState<NoteEditorState>({draft: {text: note?.text ?? '', ...(note ? {noteId: note.id, baseVersion: note.version} : {})}, conflict: null});
   const {draft, conflict} = editorState ?? internal;
@@ -26,11 +27,12 @@ export function NoteEditor({messages: m, note, quote, onSave, onComplete, onCanc
       const result = await onSave(draft);
       if (result.status === 'note_conflict') update({draft, conflict: result});
       else onComplete(result.status);
-    } catch {setError(true);}
+    } catch (failure) {if (!(failure instanceof ReaderActionError)) setError(true);}
     finally {saving.current = false; setBusy(false);}
   }
   function chooseLocal(manual: boolean) {
     const cloud = conflict?.note;
+    if (!cloud || cloud.deleted) return;
     update({draft: {text: manual && cloud && !cloud.deleted ? `${cloud.text}\n\n${draft.text}` : draft.text,
       ...(cloud && !cloud.deleted ? {noteId: cloud.id, baseVersion: cloud.version} : {})}, conflict: null});
     textarea.current?.focus();
@@ -43,9 +45,9 @@ export function NoteEditor({messages: m, note, quote, onSave, onComplete, onCanc
     <p id={`${id}-count`}>{m.noteCount.replace('{count}', String(length))}</p>
     {conflict ? <section className="reader-note-conflict" role="alert">
       <p>{m.noteConflict}</p><blockquote>{conflict.note && !conflict.note.deleted ? conflict.note.text : m.noteDeleted}</blockquote>
-      <div className="reader-note-actions"><button type="button" onClick={onCancel}>{m.noteCloud}</button><button type="button" onClick={() => chooseLocal(false)}>{m.noteLocal}</button><button type="button" onClick={() => chooseLocal(true)}>{m.noteManual}</button></div>
+      <div className="reader-note-actions">{conflict.durable ? <button type="button" onClick={onRecover}>{m.reviewSync}</button> : <><button type="button" onClick={onKeepCloud}>{m.noteCloud}</button>{conflict.note && !conflict.note.deleted ? <><button type="button" onClick={() => chooseLocal(false)}>{m.noteLocal}</button><button type="button" onClick={() => chooseLocal(true)}>{m.noteManual}</button></> : null}</>}</div>
     </section> : null}
-    {error ? <p role="alert">{m.actionFailed}</p> : null}
+    {error && !failureHandled ? <p role="alert">{m.actionFailed}</p> : null}
     <div className="reader-note-actions"><button type="button" disabled={busy} onClick={onCancel}>{m.noteCancel}</button><button type="submit" disabled={busy || !!conflict || !draft.text.trim() || length > 10000}>{m.noteSave}</button></div>
   </form>;
 }

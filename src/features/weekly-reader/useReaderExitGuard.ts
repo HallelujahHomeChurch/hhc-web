@@ -5,8 +5,8 @@ import type {ReaderMessages} from '@/components/weekly-reader/ReaderToolbar';
 type Kind = 'home' | 'back';
 type Marker = {id: string; url: string; position: 'base' | 'guard'};
 
-export function useReaderExitGuard({hasUnsavedNote, beforeLeave, messages: m}: {
-  hasUnsavedNote: () => boolean; beforeLeave: () => Promise<boolean>; messages: ReaderMessages;
+export function useReaderExitGuard({hasUnsavedNote, beforeLeave, messages: m, canPrompt = () => true}: {
+  canPrompt?: () => boolean; hasUnsavedNote: () => boolean; beforeLeave: () => Promise<boolean>; messages: ReaderMessages;
 }) {
   const [prompt, setPrompt] = useState<{kind: Kind; dirty: boolean} | null>(null);
   const active = useRef(true);
@@ -18,13 +18,13 @@ export function useReaderExitGuard({hasUnsavedNote, beforeLeave, messages: m}: {
   }, []);
   const confirmLeave = useCallback((kind: Kind) => {
     // Only the first caller owns navigation; a second source must not also leave.
-    if (pending.current) return Promise.resolve(false);
+    if (pending.current || !canPrompt()) return Promise.resolve(false);
     let resolve!: (allowed: boolean) => void;
     const promise = new Promise<boolean>(finish => {resolve = finish;});
     pending.current = {promise, resolve, confirmed: false};
     setPrompt({kind, dirty: hasUnsavedNote()});
     return promise;
-  }, [hasUnsavedNote]);
+  }, [hasUnsavedNote, canPrompt]);
   const requestBack = useEffectEvent(() => confirmLeave('back'));
   useEffect(() => {
     active.current = true;

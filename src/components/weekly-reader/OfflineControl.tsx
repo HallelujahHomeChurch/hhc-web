@@ -1,5 +1,5 @@
 'use client';
-import {Save, Check, LoaderCircle} from 'lucide-react';
+import {Save, Check, LoaderCircle, CircleAlert} from 'lucide-react';
 import {ReaderIconButton} from './ReaderIconButton';
 import {useEffect, useRef, useState} from 'react';
 import type {OnlineBulletinAccess} from '@hallelujahhomechurch/hhc-web-client';
@@ -13,19 +13,28 @@ export function OfflineControl({api, value, selector, locale, messages: m, onSav
   api: Pick<ReturnType<typeof createReaderApi>, 'renew'>; value: OnlineBulletinAccess; selector: ReaderSelector; locale: Locale; messages: ReaderMessages; onSaved: (value: OnlineBulletinAccess) => void; onFailure: (error: unknown) => void;
 }) {
   const [ready, setReady] = useState(false);
+  const [initError, setInitError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [saved, setSaved] = useState<OfflineSave | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
   const controller = useRef<AbortController | null>(null);
   const {accountId, issueNumber, series, contentLocale} = selector;
+  const supported = supportsOfflineReader() && 'serviceWorker' in navigator && typeof MessageChannel !== 'undefined';
   useEffect(() => {
     let active = true;
-    if (supportsOfflineReader() && 'serviceWorker' in navigator && typeof MessageChannel !== 'undefined') void readOfflineSave({accountId, issueNumber, series, contentLocale}).then(result => {
-      if (active) {setSaved(result?.status === 'available' ? result.save : null); setReady(true);}
-    }).catch(() => {});
-    return () => {active = false; controller.current?.abort();};
-  }, [accountId, issueNumber, series, contentLocale, value.access.receiptId]);
-  if (!ready) return null;
+    const timer = setTimeout(() => {if (active) {active = false; setInitError(true); setReady(false);}}, 20000);
+    if (supported) void readOfflineSave({accountId, issueNumber, series, contentLocale}).then(result => {
+      if (active) {setSaved(result?.status === 'available' ? result.save : null); setInitError(false); setReady(true);}
+    }).catch(() => {if (active) {setInitError(true); setReady(false);}}).finally(() => clearTimeout(timer));
+    else clearTimeout(timer);
+    return () => {active = false; clearTimeout(timer); controller.current?.abort();};
+  }, [accountId, issueNumber, series, contentLocale, value.access.receiptId, attempt, supported]);
+  if (!supported) return null;
+  if (!ready) return <div className="reader-offline-control">
+    <ReaderIconButton variant="ghost" aria-label={initError ? m.offlineInitError : m.loading} title={initError ? m.offlineInitError : m.loading} isDisabled={!initError} onPress={() => {setInitError(false); setAttempt(value => value + 1);}} icon={initError ? <CircleAlert size={20} aria-hidden="true"/> : <LoaderCircle size={20} className="reader-saving-spinner" aria-hidden="true"/>}/>
+    {initError ? <div role="alert"><p>{m.offlineInitError}</p><button type="button" onClick={() => {setInitError(false); setAttempt(value => value + 1);}}>{m.retry}</button></div> : null}
+  </div>;
   async function save() {
     if (busy) return;
     setBusy(true); setError(false);

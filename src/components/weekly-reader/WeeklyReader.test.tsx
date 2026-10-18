@@ -6,6 +6,7 @@ import {readerFixture} from '@/features/weekly-reader/test-fixture';
 import {getMessages} from '@/i18n/messages';
 import {WeeklyReader} from './WeeklyReader';
 import {saveReaderReturn} from '@/features/weekly-reader/return-state';
+import {writeTabs, readTabs} from '@/features/weekly-reader/workspace';
 
 const bulletinCss = ['bulletin-paper.css', 'bulletin-paper-v2.css', 'bulletin-paper-v7.css', 'bulletin-ebook.css'].map(file => readFileSync(new URL(import.meta.resolve(`@hallelujahhomechurch/ui/${file}`)), 'utf8')).join('\n');
 
@@ -36,11 +37,11 @@ function selectText(element: Element, start?: number, end?: number, finish = tru
 }
 vi.mock('@/features/weekly-reader/api', async original => ({...await original<typeof import('@/features/weekly-reader/api')>(), createReaderApi: () => ({open: state.open, privateState: state.privateState, mutate: state.mutate})}));
 const props = {locale: 'en' as const, issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const, messages: getMessages('en').weeklyReader};
-function choosePage(page: number) {
+async function choosePage(page: number) {
   const contents = screen.queryByRole('button', {name: props.messages.contents});
   fireEvent.click(contents ?? screen.getByRole('button', {name: 'Thumbnails'}));
   if (contents) fireEvent.click(screen.getByText(props.messages.originalPages, {selector: 'summary'}));
-  fireEvent.click(screen.getByRole('button', {name: `Page ${page}`}));
+  await act(async () => {fireEvent.click(screen.getByRole('button', {name: `Page ${page}`}));});
 }
 function chooseDirection(name: string) {
   fireEvent.click(screen.getByRole('button', {name: /^Reading direction/}));
@@ -150,10 +151,10 @@ describe('protected weekly reader', () => {
   it('ordinary search jump does not request a receipt', async () => {
     render(<WeeklyReader {...props}/>);
     await waitFor(() => expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled());
-    fireEvent.click(screen.getByRole('button', {name: props.messages.search}));
+    await act(async () => {fireEvent.click(screen.getByRole('button', {name: props.messages.search}));});
     fireEvent.change(screen.getByRole('searchbox'), {target: {value: '內容2'}});
     fireEvent.submit(screen.getByRole('search'));
-    fireEvent.click(screen.getByRole('button', {name: /內容2/}));
+    await act(async () => {fireEvent.click(screen.getByRole('button', {name: /內容2/}));});
     expect(screen.queryByRole('dialog', {name: props.messages.search})).not.toBeInTheDocument();
     expect(state.open).toHaveBeenCalledOnce();
   });
@@ -228,7 +229,7 @@ describe('protected weekly reader', () => {
         for(const element of ['welcomeLabel','worshipLabel','workLabel','wordLabel'])expect(paper.querySelector(`[data-fixed-element="${element}"]`)?.textContent).not.toMatch(/[：:]\s*$/);
         expect(paper.querySelector('[data-sentence-id="credit-sentence"]')).toBeNull();
       }
-      choosePage(2);
+      await choosePage(2);
       await waitFor(()=>expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page','p1'));
       const anchor=paper.querySelector('[data-sentence-id="s1"]');
       expect(anchor).toHaveTextContent('內容1。');expect(anchor).toHaveAttribute('data-fragment-start','0');expect(anchor).toHaveAttribute('data-fragment-end','4');
@@ -326,22 +327,22 @@ describe('protected weekly reader', () => {
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       expect(screen.queryByRole('button', {name: props.messages.productionDetails})).not.toBeInTheDocument();
       expect(container.querySelector('.reader-chapter-title')).toBeNull();
-      fireEvent.click(screen.getByRole('button', {name: props.messages.contents}));
-      fireEvent.click(within(screen.getByRole('navigation', {name: props.messages.chapters})).getByRole('button', {name: props.messages.chapterBody}));
+      await act(async () => {fireEvent.click(screen.getByRole('button', {name: props.messages.contents}));});
+      await act(async () => {fireEvent.click(within(screen.getByRole('navigation', {name: props.messages.chapters})).getByRole('button', {name: props.messages.chapterBody}));});
     }
     if (route === 'speaker') {
-      fireEvent.click(screen.getByRole('button',{name:props.messages.contents}));
-      fireEvent.click(within(screen.getByRole('navigation',{name:props.messages.chapters})).getByRole('button',{name:props.messages.chapterWorship}));
-      fireEvent.click(screen.getByRole('button',{name:props.messages.contents}));
-      fireEvent.click(screen.getByText(props.messages.speakers,{selector:'summary'}));
-      fireEvent.click(screen.getByRole('button',{name:'Speaker A'}));
+      await act(async () => {fireEvent.click(screen.getByRole('button',{name:props.messages.contents}));});
+      await act(async () => {fireEvent.click(within(screen.getByRole('navigation',{name:props.messages.chapters})).getByRole('button',{name:props.messages.chapterWorship}));});
+      await act(async () => {fireEvent.click(screen.getByRole('button',{name:props.messages.contents}));});
+      await act(async () => {fireEvent.click(screen.getByText(props.messages.speakers,{selector:'summary'}));});
+      await act(async () => {fireEvent.click(screen.getByRole('button',{name:'Speaker A'}));});
       expect(screen.queryByRole('dialog',{name:props.messages.contents})).not.toBeInTheDocument();
       expect(sessionStorage.getItem(`weekly-reader-position:account-a:${fixture.document.documentId}:1:anchor`)).toBe(JSON.stringify({kind:'sentence',id:'body-heading'}));
     }
-    if (route === 'page') choosePage(2);
+    if (route === 'page') await choosePage(2);
     if (route === 'next') {
       container.querySelector('.reader-viewport')!.scrollTop = 600;
-      fireEvent.click(screen.getByRole('button', {name: props.messages.next}));
+      await act(async () => {fireEvent.click(screen.getByRole('button', {name: props.messages.next}));});
     }
     if (route.startsWith('pull')) {
       const viewport = container.querySelector('.reader-viewport')!;
@@ -364,14 +365,14 @@ describe('protected weekly reader', () => {
         expect(container.querySelector('[data-chapter="cover"]')).toBeInTheDocument();
         expect(container.querySelector('[data-chapter="body"]')).toBeNull();
         fireEvent.keyDown(document, {key: 'Escape'});
-        fireEvent.click(screen.getByRole('button', {name: props.messages.next}));
+        await act(async () => {fireEvent.click(screen.getByRole('button', {name: props.messages.next}));});
       }
     }
     if (route === 'search') {
-      fireEvent.click(screen.getByRole('button', {name: props.messages.search}));
+      await act(async () => {fireEvent.click(screen.getByRole('button', {name: props.messages.search}));});
       fireEvent.change(screen.getByRole('searchbox'), {target: {value: '內容1'}});
       fireEvent.submit(screen.getByRole('search'));
-      fireEvent.click(within(screen.getByRole('dialog', {name: props.messages.search})).getByRole('button', {name: /內容[12]/}));
+      await act(async () => {fireEvent.click(within(screen.getByRole('dialog', {name: props.messages.search})).getByRole('button', {name: /內容[12]/}));});
     }
     await waitFor(() => expect(container.querySelector('[data-chapter="body"] [data-sentence-id="s1"]')).toBeInTheDocument());
     if (route.startsWith('chapter')) expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p1');
@@ -383,18 +384,18 @@ describe('protected weekly reader', () => {
       Object.defineProperties(viewport, {scrollHeight: {value: 1000}, clientHeight: {value: 400}});
       await waitFor(() => expect(viewport.scrollTop).toBe(0));
       viewport.scrollTop = 900;
-      fireEvent.click(screen.getByRole('button', {name: props.messages.previous}));
+      await act(async () => {fireEvent.click(screen.getByRole('button', {name: props.messages.previous}));});
       expect(container.querySelector('[data-chapter="cover"]')).toBeInTheDocument();
       await waitFor(() => expect(viewport.scrollTop).toBe(0));
-      fireEvent.click(screen.getByRole('button', {name: props.messages.next}));
+      await act(async () => {fireEvent.click(screen.getByRole('button', {name: props.messages.next}));});
     }
-    fireEvent.click(screen.getByRole('button', {name: props.messages.next}));
+    await act(async () => {fireEvent.click(screen.getByRole('button', {name: props.messages.next}));});
     expect(container.querySelector('[data-chapter="worship"] [data-sentence-id="s2"]')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', {name: props.messages.next}));
+    await act(async () => {fireEvent.click(screen.getByRole('button', {name: props.messages.next}));});
     expect(screen.queryByRole('button', {name: props.messages.next})).not.toBeInTheDocument();
     expect(container.querySelector('.reader-chapter-actions')).toBeNull();
-    fireEvent.click(screen.getByRole('button', {name: props.messages.contents}));
-    fireEvent.click(within(screen.getByRole('navigation', {name: props.messages.chapters})).getByRole('button', {name: props.messages.chapterWorship}));
+    await act(async () => {fireEvent.click(screen.getByRole('button', {name: props.messages.contents}));});
+    await act(async () => {fireEvent.click(within(screen.getByRole('navigation', {name: props.messages.chapters})).getByRole('button', {name: props.messages.chapterWorship}));});
     expect(container.querySelector('[data-chapter="worship"]')).toBeInTheDocument();
   });
   it('reveals mobile chrome on a settled tap and keeps it visible until another scroll gesture', async () => {
@@ -484,12 +485,12 @@ describe('protected weekly reader', () => {
     }
     const {container} = render(<WeeklyReader {...props}/>);
     await waitFor(() => expect(container.querySelector('[data-bulletin-mode="mobile"]')).not.toBeNull());
-    if (mode === 'page') choosePage(3);
+    if (mode === 'page') await choosePage(3);
     if (mode === 'search') {
-      fireEvent.click(screen.getByRole('button', {name: props.messages.search}));
+      await act(async () => {fireEvent.click(screen.getByRole('button', {name: props.messages.search}));});
       fireEvent.change(screen.getByRole('searchbox'), {target: {value: '內容2'}});
       fireEvent.submit(screen.getByRole('search'));
-      fireEvent.click(within(screen.getByRole('dialog', {name: props.messages.search})).getByRole('button', {name: /內容[12]/}));
+      await act(async () => {fireEvent.click(within(screen.getByRole('dialog', {name: props.messages.search})).getByRole('button', {name: /內容[12]/}));});
       expect(screen.queryByRole('dialog', {name: props.messages.search})).not.toBeInTheDocument();
     }
     await waitFor(() => expect(container.querySelector('.reader-viewport')!.scrollTop).toBeGreaterThanOrEqual(364));
@@ -575,7 +576,7 @@ describe('protected weekly reader', () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
     await waitFor(() => expect(container.querySelectorAll('[data-paper-index]')).toHaveLength(4));
-    choosePage(2);
+    await choosePage(2);
     expect(screen.queryByRole('button', {name: 'Horizontal paging'})).not.toBeInTheDocument();
     chooseDirection('Horizontal paging');
     expect(container.querySelectorAll('[data-paper-index]')).toHaveLength(1);
@@ -700,7 +701,7 @@ describe('protected weekly reader', () => {
     await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
     selectText(container.querySelector('[data-sentence-id="s0"]')!);
     fireEvent.click(screen.getByRole('button', {name: 'Yellow highlight'}));
-    await screen.findByText(props.messages.actionFailed);
+    await screen.findByText(props.messages.operationUnknown);
     expect(screen.queryByRole('button', {name: props.messages.syncAction})).not.toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
     expect(container.querySelector('[data-sentence-id="s0"]')).not.toHaveAttribute('data-highlight');
@@ -708,11 +709,15 @@ describe('protected weekly reader', () => {
     fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'Keep this draft'}});
     fireEvent.pointerDown(document.body);
     fireEvent.click(document.body);
-    expect(screen.getByRole('textbox', {name: props.messages.noteText})).toHaveValue('Keep this draft');
-    expect(confirm).toHaveBeenCalled();
-    confirm.mockReturnValue(true);
+    expect(screen.getByDisplayValue('Keep this draft')).toHaveValue('Keep this draft');
+    expect(confirm).not.toHaveBeenCalled();
+    let dialog = await screen.findByRole('alertdialog');
+    fireEvent.click(within(dialog).getByRole('button', {name: props.messages.noteContinueEditing}));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
-    expect(screen.queryByRole('textbox', {name: props.messages.noteText})).not.toBeInTheDocument();
+    dialog = await screen.findByRole('alertdialog');
+    fireEvent.click(within(dialog).getByRole('button', {name: props.messages.noteDiscard}));
+    await waitFor(() => expect(screen.queryByRole('textbox', {name: props.messages.noteText})).not.toBeInTheDocument());
   });
 
   it('invalidates a snapshot when the same native gesture extends outside the reading surface', async () => {
@@ -731,23 +736,25 @@ describe('protected weekly reader', () => {
   });
 
   it('protects a dirty note when changing pages or opening the notes list', async () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const native = vi.spyOn(window, 'confirm').mockReturnValue(false);
     const {container} = render(<WeeklyReader {...props}/>);
-    await screen.findByText('Private weekly');
-    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
+    await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).toBeEnabled());
     const next = screen.getByRole('button', {name: 'Thumbnails'});
-    const list = screen.getByRole('button', {name: 'My notes'});
     selectText(container.querySelector('[data-sentence-id="s0"]')!, 1, 3);
     fireEvent.click(screen.getByRole('button', {name: 'Note'}));
-    fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'Keep draft and range'}});
+    const textbox = screen.getByRole('textbox', {name: props.messages.noteText});
+    fireEvent.change(textbox, {target: {value: 'Keep draft and range'}});
     fireEvent.click(next);
+    let dialog = await screen.findByRole('alertdialog');
     expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p0');
-    fireEvent.click(list);
-    expect(screen.getByRole('textbox', {name: props.messages.noteText})).toHaveValue('Keep draft and range');
-    expect(confirm).toHaveBeenCalled();
-    confirm.mockReturnValue(true);
-    fireEvent.click(next);
-    fireEvent.click(screen.getByRole('button', {name: 'Page 2'}));
+    expect(textbox).toHaveValue('Keep draft and range');
+    expect(native).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole('button', {name: props.messages.noteContinueEditing}));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    expect(textbox).toHaveValue('Keep draft and range');
+    fireEvent.click(next); dialog = await screen.findByRole('alertdialog');
+    fireEvent.click(within(dialog).getByRole('button', {name: props.messages.noteDiscard}));
+    fireEvent.click(await screen.findByRole('button', {name: 'Page 2'}));
     expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p1');
     expect(screen.queryByRole('textbox', {name: props.messages.noteText})).not.toBeInTheDocument();
   });
@@ -866,6 +873,7 @@ describe('protected weekly reader', () => {
     await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
     fireEvent.click(screen.getByRole('button', {name: 'My notes'}));
     fireEvent.click(screen.getByRole('button', {name: 'Delete'}));
+    fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', {name: 'Delete'}));
     expect(await screen.findByText('Cloud edit')).toBeInTheDocument();
     expect(screen.getByText('Local note')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', {name: 'Keep cloud'}));
@@ -928,8 +936,9 @@ describe('protected weekly reader', () => {
     state.privateState.mockImplementation(() => new Promise(resolve => {finish = resolve;}));
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
-    choosePage(2);
+    await choosePage(2);
     expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p1');
+    await waitFor(() => expect(state.privateState).toHaveBeenCalled());
     await act(async () => finish({state: {...cloud, progress: {pageId: 'p3'}}}));
     expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p1');
   });
@@ -961,7 +970,7 @@ describe('protected weekly reader', () => {
     fireEvent.keyDown(screen.getByRole('region', {name: 'Bulletin reader'}), {key: 'Escape'});
     expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
     selectText(sentence);
-    choosePage(2);
+    await choosePage(2);
     expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
   });
   it('keeps launch disabled unless explicitly enabled after acceptance', () => {
@@ -1032,10 +1041,10 @@ describe('protected weekly reader', () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn()})));
     render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
-    fireEvent.click(screen.getByRole('button', {name: props.messages.contents}));
-    fireEvent.click(screen.getByText(props.messages.originalPages, {selector: 'summary'}));
+    await act(async () => {fireEvent.click(screen.getByRole('button', {name: props.messages.contents}));});
+    await act(async () => {fireEvent.click(screen.getByText(props.messages.originalPages, {selector: 'summary'}));});
     expect(screen.getByRole('button', {name: 'Page 4'})).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', {name: 'Page 4'}));
+    await act(async () => {fireEvent.click(screen.getByRole('button', {name: 'Page 4'}));});
     expect(screen.queryByRole('dialog', {name: props.messages.contents})).not.toBeInTheDocument();
     await waitFor(() => expect(document.activeElement).toHaveAttribute('data-sentence-id', 's3'));
   });
@@ -1079,7 +1088,7 @@ describe('protected weekly reader', () => {
     expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p0');
     fireEvent.click(screen.getAllByRole('button', {name: 'Next page'})[0]);
     expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p1');
-    choosePage(4);
+    await choosePage(4);
     expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p3');
     expect(screen.queryByRole('button', {name: 'Next page'})).not.toBeInTheDocument();
     fireEvent.keyDown(screen.getByRole('region', {name: 'Bulletin reader'}), {key: 'ArrowLeft'});
@@ -1105,7 +1114,7 @@ describe('protected weekly reader', () => {
     expect(container.querySelector('.reader-topbar button[aria-label="Next page"]')).toBeNull();
     expect(container.querySelectorAll('[data-sentence-id]')).toHaveLength(4);
     expect(screen.queryByRole('button', {name: 'Reading direction'})).not.toBeInTheDocument();
-    choosePage(3);
+    await choosePage(3);
     expect(container.querySelector('[data-active-page]')).toHaveAttribute('data-active-page', 'p2');
     expect(screen.queryByRole('complementary', {name: 'Thumbnails'})).not.toBeInTheDocument();
   });
@@ -1195,4 +1204,118 @@ describe('protected weekly reader', () => {
     await screen.findByText('Private weekly');
     expect(state.open.mock.calls[0][1].clientRequestId).toBe(state.open.mock.calls[1][1].clientRequestId);
   });
+});
+it.each(['save', 'delete'] as const)('accepts the first note %s while background progress is in flight', async kind => {
+  const note = {id: 'note-a', sentenceIds: ['s0'], text: 'Original note', quote: 'Quote', version: 1, deleted: false, inactiveAnchors: [], reanchorRequired: false, createdAt: '', updatedAt: ''};
+  const cloud = {...(await state.privateState()).state, notes: [note]};
+  state.privateState.mockResolvedValue({state: cloud});
+  let release!: () => void, inFlight = 0, peak = 0;
+  state.mutate.mockImplementation(async (_selector, _value, mutations) => {
+    inFlight++; peak = Math.max(peak, inFlight);
+    const mutation = mutations[0];
+    if (mutation.kind === 'setProgress') await new Promise<void>(resolve => {release = resolve;});
+    inFlight--;
+    return {state: {...cloud, notes: [{...note, text: 'Changed once', deleted: kind === 'delete'}]}, results: [{mutationId: mutation.mutationId, status: 'applied', revision: 1}]};
+  });
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+  render(<WeeklyReader {...props}/>);
+  await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).toBeEnabled());
+  await choosePage(2);
+  fireEvent(document, new Event('visibilitychange'));
+  await waitFor(() => expect(state.mutate).toHaveBeenCalledOnce());
+  fireEvent.click(screen.getByRole('button', {name: 'My notes'}));
+  if (kind === 'save') {
+    fireEvent.click(screen.getByRole('button', {name: 'Edit'}));
+    fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'Changed once'}});
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}));
+  } else {fireEvent.click(screen.getByRole('button', {name: 'Delete'})); fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', {name: 'Delete'}));}
+  expect(await screen.findByText(props.messages.operationWaiting)).toBeInTheDocument();
+  expect(state.mutate).toHaveBeenCalledOnce();
+  await act(async () => release());
+  await waitFor(() => expect(state.mutate).toHaveBeenCalledTimes(2));
+  expect(state.mutate.mock.calls[1][2][0]).toMatchObject({kind: kind === 'save' ? 'editNote' : 'deleteNote', baseVersion: 1, payload: {noteId: note.id}});
+  expect(peak).toBe(1);
+  await waitFor(() => expect(screen.queryByText(props.messages.operationWaiting)).not.toBeInTheDocument());
+});
+it('keeps a newer draft when retrying an older note and keeps retry reachable inside the notes drawer', async () => {
+  const value = readerFixture();
+  const note = {id: 'note-a', sentenceIds: ['s0'], text: 'Cloud baseline', quote: 'Quote', version: 1, deleted: false, inactiveAnchors: [], reanchorRequired: false, createdAt: '', updatedAt: ''};
+  const cloud = {...(await state.privateState()).state, notes: [note]};
+  state.privateState.mockResolvedValue({state: cloud});
+  const mutation = {mutationId: 'old-note-save', documentRevision: 1, createdAt: new Date().toISOString(), kind: 'editNote' as const, baseVersion: 1, payload: {noteId: note.id, text: 'Older submitted text'}};
+  saveReaderReturn({accountId: 'account-a', documentId: value.document.documentId}, {revision: 1, draft: {noteId: note.id, baseVersion: 1, text: mutation.payload.text}, action: mutation});
+  state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: {...cloud, notes: [{...note, text: mutation.payload.text, version: 2}]}, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]}));
+  render(<WeeklyReader {...props}/>);
+  await waitFor(() => expect(screen.getByRole('textbox', {name: props.messages.noteText})).not.toHaveAttribute('readonly'));
+  const textbox = screen.getByRole('textbox', {name: props.messages.noteText});
+  fireEvent.change(textbox, {target: {value: 'A newer draft to keep'}});
+  const retry = screen.getByRole('button', {name: props.messages.confirmRetry});
+  expect(retry.closest('.reader-private-sheet,.reader-private-panel')).not.toBeNull();
+  await waitFor(() => expect(retry).toBeEnabled()); fireEvent.click(retry);
+  await waitFor(() => expect(state.mutate).toHaveBeenCalledOnce());
+  expect(screen.getByRole('textbox', {name: props.messages.noteText})).toHaveValue('A newer draft to keep');
+  expect(state.mutate.mock.calls[0][2]).toEqual([mutation]);
+});
+
+it('protects a manual delete-conflict merge before any further typing and saves against the cloud baseline', async () => {
+  const note = {id: 'note-a', sentenceIds: ['s0'], text: 'Local note', quote: 'Quote', version: 1, deleted: false, inactiveAnchors: [], reanchorRequired: false, createdAt: '', updatedAt: ''};
+  const cloudNote = {...note, text: 'Cloud edit', version: 2};
+  const cloud = {...(await state.privateState()).state, notes: [note]};
+  state.privateState.mockResolvedValue({state: cloud});
+  state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: {...cloud, notes: [cloudNote]}, results: [{mutationId: mutations[0].mutationId, status: mutations[0].kind === 'deleteNote' ? 'note_conflict' : 'applied', revision: 1, note: cloudNote}]}));
+  const native = vi.spyOn(window, 'confirm');
+  render(<WeeklyReader {...props}/>);
+  await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', {name: 'My notes'}));
+  fireEvent.click(screen.getByRole('button', {name: 'Delete'}));
+  let dialog = await screen.findByRole('alertdialog');
+  fireEvent.click(within(dialog).getByRole('button', {name: 'Cancel'}));
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+  expect(state.mutate).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', {name: 'Delete'}));
+  fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', {name: 'Delete'}));
+  fireEvent.click(await screen.findByRole('button', {name: 'Merge manually'}));
+  const merged = 'Cloud edit\n\nLocal note';
+  expect(screen.getByRole('textbox', {name: 'Note'})).toHaveValue(merged);
+  fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+  dialog = await screen.findByRole('alertdialog');
+  expect(dialog).toHaveTextContent(props.messages.noteDiscardConfirm);
+  fireEvent.click(within(dialog).getByRole('button', {name: props.messages.noteContinueEditing}));
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+  expect(screen.getByRole('textbox', {name: 'Note'})).toHaveValue(merged);
+  fireEvent.click(screen.getByRole('button', {name: 'Save'}));
+  await waitFor(() => expect(state.mutate).toHaveBeenCalledTimes(2));
+  expect(state.mutate.mock.calls[1][2][0]).toMatchObject({kind: 'editNote', baseVersion: 2, payload: {noteId: note.id, text: merged}});
+  expect(native).not.toHaveBeenCalled();
+});
+
+it('cancels a tab-close continuation when a new draft appears during progress flush', async () => {
+  const current = {issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const};
+  writeTabs('account-a', [current, {...current, issueNumber: 1740}]);
+  const cloud = (await state.privateState()).state;
+  let finish!: () => void;
+  state.mutate.mockImplementation((_selector, _value, mutations) => new Promise(resolve => {finish = () => resolve({state: cloud, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]});}));
+  const {container} = render(<WeeklyReader {...props}/>);
+  await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).toBeEnabled());
+  await choosePage(2);
+  fireEvent.click(screen.getByRole('button', {name: /Close bulletin.*1739/}));
+  await waitFor(() => expect(state.mutate).toHaveBeenCalledOnce());
+  selectText(container.querySelector('[data-sentence-id="s0"]')!);
+  fireEvent.click(screen.getByRole('button', {name: 'Note'}));
+  fireEvent.change(screen.getByRole('textbox', {name: 'Note'}), {target: {value: 'Keep the draft created during navigation'}});
+  await act(async () => finish());
+  expect(readTabs('account-a').map(tab => tab.issueNumber)).toEqual([1739, 1740]);
+  expect(screen.getByRole('textbox', {name: 'Note'})).toHaveValue('Keep the draft created during navigation');
+});
+it('shows a local notes-load error and retries without changing the document', async () => {
+  state.privateState.mockRejectedValueOnce(new TypeError('notes network failure'));
+  const {container} = render(<WeeklyReader {...props}/>);
+  expect(await screen.findByText(props.messages.notesLoadError)).toBeInTheDocument();
+  const paper = container.querySelector('[data-bulletin-page]');
+  await waitFor(() => expect(screen.getByRole('button', {name: props.messages.retry})).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', {name: props.messages.retry}));
+  await waitFor(() => expect(screen.queryByText(props.messages.notesLoadError)).not.toBeInTheDocument());
+  expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled();
+  expect(container.querySelector('[data-bulletin-page]')).toBe(paper);
+  expect(state.open).toHaveBeenCalledOnce();
 });

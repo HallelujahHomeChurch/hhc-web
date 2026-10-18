@@ -1,0 +1,401 @@
+[
+  {
+    "device": "phone",
+    "theme": "light",
+    "mode": "normal",
+    "baseline": {
+      "chrome": {
+        "bottom": 52,
+        "height": 52,
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "width": 390,
+        "x": 0,
+        "y": 0
+      },
+      "fonts": "loaded",
+      "paper": {
+        "bottom": 461.328125,
+        "height": 409.328125,
+        "left": 0,
+        "right": 390,
+        "top": 52,
+        "width": 390,
+        "x": 0,
+        "y": 52
+      },
+      "scrollWidth": 390,
+      "visible": "visibility: visible;",
+      "width": 390
+    },
+    "candidate": {
+      "chrome": {
+        "bottom": 52,
+        "height": 52,
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "width": 390,
+        "x": 0,
+        "y": 0
+      },
+      "fonts": "loaded",
+      "paper": {
+        "bottom": 461.359375,
+        "height": 409.359375,
+        "left": 0,
+        "right": 390,
+        "top": 52,
+        "width": 390,
+        "x": 0,
+        "y": 52
+      },
+      "scrollWidth": 390,
+      "visible": "visibility: visible;",
+      "width": 390
+    }
+  },
+  {
+    "device": "phone",
+    "theme": "light",
+    "mode": "list",
+    "baseline": {
+      "chrome": {
+        "bottom": 52,
+        "height": 52,
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "width": 390,
+        "x": 0,
+        "y": 0
+      },
+      "fonts": "loaded",
+      "paper": {
+        "bottom": 461.328125,
+        "height": 409.328125,
+        "left": 0,
+        "right": 390,
+        "top": 52,
+        "width": 390,
+        "x": 0,
+        "y": 52
+      },
+      "scrollWidth": 390,
+      "visible": "visibility: visible;",
+      "width": 390
+    },
+    "candidate": {
+      "chrome": {
+        "bottom": 52,
+        "height": 52,
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "width": 390,
+        "x": 0,
+        "y": 0
+      },
+      "fonts": "loaded",
+      "paper": {
+        "bottom": 461.359375,
+        "height": 409.359375,
+        "left": 0,
+        "right": 390,
+        "top": 52,
+        "width": 390,
+        "x": 0,
+        "y": 52
+      },
+      "scrollWidth": 390,
+      "visible": "visibility: visible;",
+      "width": 390
+    }
+  },
+  {
+    "device": "phone",
+    "theme": "light",
+    "mode": "editor",
+    "baseline": {
+      "chrome": {
+        "bottom": 52,
+        "height": 52,
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "width": 390,
+        "x": 0,
+        "y": 0
+      },
+      "fonts": "loaded",
+      "paper": {
+        "bottom": 406.53125,
+        "height": 354.53125,
+        "left": 0,
+        "right": 390,
+        "top": 52,
+        "width": 390,
+        "x": 0,
+        "y": 52
+      },
+      "scrollWidth": 390,
+      "visible": "visibility: visible;",
+      "width": 390
+    },
+    "candidate": {
+      "chrome": {
+        "bottom": 52,
+        "height": 52,
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "width": 390,
+        "x": 0,
+        "y": 0
+      },
+      "fonts": "loaded",
+      "paper": {
+        "bottom": 461.359375,
+        "height": 409.359375,
+        "left": 0,
+        "right": 390,
+        "top": 52,
+        "width": 390,
+        "x": 0,
+        "y": 52
+      },
+      "scrollWidth": 390,
+      "visible": "visibility: visible;",
+      "width": 390
+    }
+  },
+  {
+    "device": "phone",
+    "theme": "dark",
+    "mode": "normal",
+    "baseline": {
+      "chrome": {
+        "bottom": 52,
+        "height": 52,
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "width": 390,
+        "x": 0,
+        "y": 0
+      },
+      "fonts": "loaded",
+      "paper": {
+        "bottom": 461.328125,
+        "height": 409.328125,
+        "left": 0,
+        "right": 390,
+        "top": 52,
+        "width": 390,
+        "x": 0,
+        "y": 52
+      },
+      "scrollWidth": 390,
+      "visible": "visibility: visible;",
+      "width": 390
+    },
+    "candidate": {
+      "chrome": {
+        "bottom": 52,
+        "height": 52,
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "width": 390,
+        "x": 0,
+        "y": 0
+      },
+      "fonts": "loaded",
+      "paper": {
+        "bottom": 461.359375,
+        "height": 409.359375,
+        "left": 0,
+        "right": 390,
+        "top": 52,
+        "width": 390,
+        "x": 0,
+        "y": 52
+      },
+      "scrollWidth": 390,
+      "visible": "visibility: visible;",
+      "width": 390
+    }
+  },
+  {
+    "device": "phone",
+    "theme": "dark",
+    "mode": "list",
+    "baseline": {
+      "chrome": {
+        "bottom": 52,
+        "height": 52,
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "width": 390,
+        "x": 0,
+        "y": 0
+      },
+      "fonts": "loaded",
+      "paper": {
+        "bottom": 461.328125,
+        "height": 409.328125,
+        "left": 0,
+        "right": 390,
+        "top": 52,
+        "width": 390,
+        "x": 0,
+        "y": 52
+      },
+      "scrollWidth": 390,
+      "visible": "visibility: visible;",
+      "width": 390
+    },
+    "candidate": {
+      "chrome": {
+        "bottom": 52,
+        "height": 52,
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "width": 390,
+        "x": 0,
+        "y": 0
+      },
+      "fonts": "loaded",
+      "paper": {
+        "bottom": 461.359375,
+        "height": 409.359375,
+        "left": 0,
+        "right": 390,
+        "top": 52,
+        "width": 390,
+        "x": 0,
+        "y": 52
+      },
+      "scrollWidth": 390,
+      "visible": "visibility: visible;",
+      "width": 390
+    }
+  },
+  {
+    "device": "phone",
+    "theme": "dark",
+    "mode": "editor",
+    "baseline": {
+      "chrome": {
+        "bottom": 52,
+        "height": 52,
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "width": 390,
+        "x": 0,
+        "y": 0
+      },
+      "fonts": "loaded",
+      "paper": {
+        "bottom": 461.328125,
+        "height": 409.328125,
+        "left": 0,
+        "right": 390,
+        "top": 52,
+        "width": 390,
+        "x": 0,
+        "y": 52
+      },
+      "scrollWidth": 390,
+      "visible": "visibility: visible;",
+      "width": 390
+    },
+    "candidate": {
+      "chrome": {
+        "bottom": 52,
+        "height": 52,
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "width": 390,
+        "x": 0,
+        "y": 0
+      },
+      "fonts": "loaded",
+      "paper": {
+        "bottom": 461.359375,
+        "height": 409.359375,
+        "left": 0,
+        "right": 390,
+        "top": 52,
+        "width": 390,
+        "x": 0,
+        "y": 52
+      },
+      "scrollWidth": 390,
+      "visible": "visibility: visible;",
+      "width": 390
+    }
+  },
+  {
+    "device": "tablet",
+    "theme": "light",
+    "mode": "normal",
+    "baseline": {
+      "chrome": {
+        "bottom": 108,
+        "height": 108,
+        "left": 0,
+        "right": 768,
+        "top": 0,
+        "width": 768,
+        "x": 0,
+        "y": 0
+      },
+      "fonts": "loaded",
+      "paper": {
+        "bottom": 3556,
+        "height": 3432,
+        "left": 53.2734375,
+        "right": 699.71875,
+        "top": 124,
+        "width": 646.4453125,
+        "x": 53.2734375,
+        "y": 124
+      },
+      "scrollWidth": 768,
+      "visible": "visibility: visible; width: 646.448px;",
+      "width": 768
+    },
+    "candidate": {
+      "chrome": {
+        "bottom": 108,
+        "height": 108,
+        "left": 0,
+        "right": 768,
+        "top": 0,
+        "width": 768,
+        "x": 0,
+        "y": 0
+      },
+      "fonts": "loaded",
+      "paper": {
+        "bottom": 3556,
+        "height": 3432,
+        "left": 53.28125,
+        "right": 699.71875,
+        "top": 124,
+        "width": 646.4375,
+        "x": 53.28125,
+        "y": 124
+      },
+      "scrollWidth": 768,
+      "visible": "visibility: visible; width: 646.448px;",
+      "width": 768
+    }
+  }
+]

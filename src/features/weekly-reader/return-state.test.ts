@@ -78,3 +78,19 @@ it('purges a denied edition on fresh login without deleting another edition or a
   expect(readReaderReturn({...binding, documentId: 'doc-b'})).not.toBeNull();
   expect(readReaderReturn({...binding, accountId: 'account-b'})).not.toBeNull();
 });
+it('restores a full two-note merge above the submission limit and retains its pending action through patches', () => {
+  const text = `${'雲'.repeat(10000)}\n\n${'本'.repeat(10000)}`;
+  const action = {mutationId: 'pending', createdAt: new Date().toISOString(), documentRevision: 1, kind: 'setProgress' as const, payload: {pageId: 'p1'}};
+  saveReaderReturn(binding, {...snapshot, draft: {noteId: 'note-a', baseVersion: 2, text}, action});
+  expect(readReaderReturn(binding)?.draft?.text).toBe(text);
+  saveReaderReturn(binding, {pageId: 'p2'});
+  expect(readReaderReturn(binding)).toMatchObject({draft: {text, noteId: 'note-a', baseVersion: 2}, action, pageId: 'p2'});
+});
+it('does not delete an unknown action together with an invalid draft', () => {
+  const action = {mutationId: 'pending', createdAt: new Date().toISOString(), documentRevision: 1, kind: 'setProgress' as const, payload: {pageId: 'p1'}};
+  saveReaderReturn(binding, {...snapshot, action, draft: {text: 'x'.repeat(20003)}});
+  expect(readReaderReturn(binding)?.action).toEqual(action);
+  expect(readReaderReturn(binding)?.draft).toBeUndefined();
+  saveReaderReturn(binding, {pageId: 'p2'});
+  expect(readReaderReturn(binding)?.action).toEqual(action);
+});

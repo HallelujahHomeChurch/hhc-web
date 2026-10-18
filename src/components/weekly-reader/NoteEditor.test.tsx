@@ -39,3 +39,21 @@ it('counts Unicode characters and rejects an oversized note without losing its c
   expect(screen.getByRole('button', {name: 'Save'})).toBeDisabled();
   expect(screen.getByRole('textbox')).toHaveValue('😀'.repeat(10001));
 });
+
+it('does not silently recreate an edited note after the cloud note was deleted', async () => {
+  const note = {id: 'deleted-note', text: 'Original', sentenceIds: ['s0'], inactiveAnchors: [], quote: 'Source', version: 1, deleted: false, reanchorRequired: false, createdAt: '', updatedAt: ''};
+  const onSave = vi.fn().mockResolvedValue({status: 'note_conflict', note: {...note, text: '', version: 2, deleted: true}});
+  const onComplete = vi.fn();
+  render(<NoteEditor messages={messages} note={note} quote={note.quote} onSave={onSave} onComplete={onComplete} onCancel={vi.fn()}/>);
+  fireEvent.change(screen.getByRole('textbox'), {target: {value: 'Retain my local text'}});
+  fireEvent.click(screen.getByRole('button', {name: 'Save'}));
+  await screen.findByText(messages.noteDeleted);
+  expect(screen.getByRole('textbox')).toHaveValue('Retain my local text');
+  expect(screen.queryByRole('button', {name: messages.noteLocal})).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', {name: messages.noteManual})).not.toBeInTheDocument();
+  fireEvent.change(screen.getByRole('textbox'), {target: {value: 'Still retain local text'}});
+  fireEvent.submit(screen.getByRole('textbox').closest('form')!);
+  expect(screen.getByRole('button', {name: 'Save'})).toBeDisabled();
+  expect(onSave).toHaveBeenCalledOnce();
+  expect(onComplete).not.toHaveBeenCalled();
+});

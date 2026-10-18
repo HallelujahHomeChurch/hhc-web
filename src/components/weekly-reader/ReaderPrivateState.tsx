@@ -5,8 +5,8 @@ import {ReaderIconButton} from './ReaderIconButton';
 import type {ReaderSyncStatus} from '@/features/weekly-reader/sync';
 import type {ReaderMessages} from './ReaderToolbar';
 
-export function SyncStatus({status, messages: m}: {status: ReaderSyncStatus; messages: ReaderMessages}) {
-  return <p className="reader-sync-status" role="status">{({synced: m.syncSynced, waiting: m.syncWaiting, syncing: m.syncSyncing, action: m.syncAction, paused: m.syncPaused})[status]}</p>;
+export function SyncStatus({status, messages: m, children}: {status: ReaderSyncStatus; messages: ReaderMessages; children?: ReactNode}) {
+  return <p className="reader-sync-status" role="status">{children ?? ({synced: m.syncSynced, waiting: m.syncWaiting, syncing: m.syncSyncing, action: m.syncAction, paused: m.syncPaused})[status]}</p>;
 }
 
 export function ReaderPrivateState({wide, theme, messages: m, children, onClose, suspended = false}: {wide: boolean; theme: 'light' | 'dark'; messages: ReaderMessages; children: ReactNode; onClose: () => void; suspended?: boolean}) {

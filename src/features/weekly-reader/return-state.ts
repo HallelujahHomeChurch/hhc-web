@@ -46,7 +46,9 @@ export function readReaderReturn(binding: Binding): ReaderReturn | null {
     const value = JSON.parse(raw) as ReaderReturn;
     if (!ranges(value.selectedRanges, value.selected)) throw new Error('invalid_return');
     const age = Date.now() - value.savedAt;
-    if (!Number.isFinite(age) || age < 0 || age >= 30 * 60 * 1000 || !Number.isSafeInteger(value.revision) || value.revision < 1 || typeof value.pageId !== 'string' || value.pageId.length > 128 || !ids(value.selected) || !validAction(value.action) || value.draft && (!text(value.draft.text) || value.draft.noteId !== undefined && !id(value.draft.noteId) || value.draft.baseVersion !== undefined && (!Number.isSafeInteger(value.draft.baseVersion) || value.draft.baseVersion < 1))) throw new Error('invalid_return');
+    if (!Number.isFinite(age) || age < 0 || age >= 30 * 60 * 1000 || !Number.isSafeInteger(value.revision) || value.revision < 1 || typeof value.pageId !== 'string' || value.pageId.length > 128 || !ids(value.selected) || !validAction(value.action)) throw new Error('invalid_return');
+    // A legal manual merge may contain two complete notes before editing down.
+    if (value.draft && (typeof value.draft.text !== 'string' || [...value.draft.text].length > 20002 || value.draft.noteId !== undefined && !id(value.draft.noteId) || value.draft.baseVersion !== undefined && (!Number.isSafeInteger(value.draft.baseVersion) || value.draft.baseVersion < 1))) delete value.draft;
     return value;
   } catch {
     try {sessionStorage.removeItem(key(binding));} catch { /* Storage may be disabled. */ }

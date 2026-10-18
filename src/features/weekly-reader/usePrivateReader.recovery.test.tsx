@@ -1,0 +1,63 @@
+import {act, fireEvent, render, renderHook, screen, waitFor} from '@testing-library/react';
+import {afterEach, expect, it, vi} from 'vitest';
+import {getMessages} from '@/i18n/messages';
+import {ReaderRecovery} from '@/components/weekly-reader/ReaderRecovery';
+import {readerFixture} from './test-fixture';
+import {saveReaderReturn} from './return-state';
+import {usePrivateReader} from './usePrivateReader';
+import type {BulletinReaderMutation, BulletinReaderState} from '@hallelujahhomechurch/hhc-web-client';
+afterEach(() => vi.useRealTimers());
+vi.mock('./offline-store', async original => ({...await original<typeof import('./offline-store')>(), supportsOfflineReader: () => false}));
+it('shares the real Recovery retry gate with hook retry and deferred progress without overlap', async () => {
+  sessionStorage.clear();
+  const value = readerFixture(), selector = {accountId: 'account-a', issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const};
+  const state: BulletinReaderState = {accountId: selector.accountId, documentId: value.document.documentId, appliedRevision: 1, currentRevision: 1, notes: [], highlights: [], progress: null, conflicts: []};
+  const pending: BulletinReaderMutation = {mutationId: 'unknown-highlight', createdAt: new Date().toISOString(), documentRevision: 1, kind: 'setHighlight', payload: {sentenceIds: ['s0'], color: 'yellow'}};
+  saveReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}, {revision: 1, action: pending});
+  let finish!: () => void, inFlight = 0, peak = 0;
+  const api = {open: vi.fn(async () => value), current: vi.fn(async () => value), renew: vi.fn(async () => value), privateState: vi.fn(async () => ({state})), mutate: vi.fn(async (_selector, _value, mutations: BulletinReaderMutation[]) => {
+    inFlight++; peak = Math.max(peak, inFlight);
+    if (mutations[0].mutationId === pending.mutationId) await new Promise<void>(resolve => {finish = resolve;});
+    inFlight--; return {state, results: [{mutationId: mutations[0].mutationId, status: 'applied' as const, revision: 1}]};
+  })};
+  const {result} = renderHook(() => usePrivateReader({api, selector, value, offline: false, allowAction: () => true, onFailure: vi.fn()}));
+  await waitFor(() => expect(result.current.state).toEqual(state));
+  render(<ReaderRecovery api={api} selector={selector} value={value} messages={getMessages('en').weeklyReader} runExclusive={result.current.runExclusive} onState={result.current.acceptState} pendingMutation={pending} onPendingChange={result.current.replacePending} onFailure={vi.fn()} onUpdated={vi.fn()}/>);
+  fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
+  fireEvent.click(await screen.findByRole('button', {name: 'Confirm and retry'}));
+  await waitFor(() => expect(api.mutate).toHaveBeenCalledOnce());
+  const progress: BulletinReaderMutation = {...pending, mutationId: 'latest-progress', kind: 'setProgress', payload: {pageId: 'p2'}};
+  await act(async () => {
+    await expect(result.current.retry()).rejects.toMatchObject({reason: 'busy'});
+    expect(await result.current.mutate(progress)).toEqual({status: 'deferred'});
+  });
+  await act(async () => finish());
+  await waitFor(() => expect(api.mutate).toHaveBeenCalledTimes(2));
+  expect(api.mutate.mock.calls.map(call => call[2])).toEqual([[pending], [progress]]);
+  expect(peak).toBe(1);
+});
+
+it('keeps the actual Recovery work locked after the local deadline without reporting an authorization failure', async () => {
+  sessionStorage.clear();
+  const value = readerFixture(), selector = {accountId: 'account-a', issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const};
+  const state: BulletinReaderState = {accountId: selector.accountId, documentId: value.document.documentId, appliedRevision: 1, currentRevision: 1, notes: [], highlights: [], progress: null, conflicts: []};
+  const pending: BulletinReaderMutation = {mutationId: 'unknown', createdAt: new Date().toISOString(), documentRevision: 1, kind: 'setHighlight', payload: {sentenceIds: ['s0'], color: 'yellow'}};
+  saveReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}, {revision: 1, action: pending, draft: {text: 'Kept draft'}});
+  let finish!: (next: ReturnType<typeof readerFixture>) => void;
+  const api = {open: vi.fn(async () => value), current: vi.fn(() => new Promise<typeof value>(resolve => {finish = resolve;})), renew: vi.fn(async () => value), privateState: vi.fn(async () => ({state})), mutate: vi.fn()};
+  const onFailure = vi.fn();
+  const {result} = renderHook(() => usePrivateReader({api, selector, value, offline: false, allowAction: () => true, onFailure}));
+  await waitFor(() => expect(result.current.state).toEqual(state));
+  render(<ReaderRecovery api={api} selector={selector} value={value} messages={getMessages('en').weeklyReader} runExclusive={result.current.runExclusive} pendingMutation={pending} onFailure={onFailure} onUpdated={vi.fn()}/>);
+  vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+  fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
+  await act(async () => {});
+  expect(api.current).toHaveBeenCalledOnce();
+  await act(async () => vi.advanceTimersByTimeAsync(20000));
+  expect(screen.getByRole('alert')).toHaveTextContent(getMessages('en').weeklyReader.actionFailed);
+  expect(onFailure).not.toHaveBeenCalled(); expect(result.current.busy).toBe(true);
+  await expect(result.current.retry()).rejects.toMatchObject({reason: 'busy'});
+  expect(result.current.pendingMutation).toEqual(pending);
+  await act(async () => {finish(value); await vi.advanceTimersByTimeAsync(0);});
+  expect(result.current.busy).toBe(false); expect(api.mutate).not.toHaveBeenCalled();
+});

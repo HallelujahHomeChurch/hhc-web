@@ -1,0 +1,36 @@
+import {webcrypto} from 'node:crypto';
+import {IDBFactory} from 'fake-indexeddb';
+import {act, renderHook, waitFor} from '@testing-library/react';
+import {afterEach, beforeEach, expect, it, vi} from 'vitest';
+import type {BulletinReaderMutation, BulletinReaderState} from '@hallelujahhomechurch/hhc-web-client';
+import {readerFixture} from './test-fixture';
+import {usePrivateReader} from './usePrivateReader';
+import {activateOfflineAccount, commitOfflineSave, seedPrivateReplica, readPrivateReplica} from './offline-store';
+const now = Date.parse('2026-10-02T00:00:00Z');
+const value = readerFixture(), selector = {accountId: 'account-a', issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const};
+const note = {id: 'note-a', text: 'Original', quote: '內容0。', sentenceIds: ['s0'], inactiveAnchors: [], version: 1, deleted: false, reanchorRequired: false, createdAt: '', updatedAt: ''};
+const state: BulletinReaderState = {accountId: selector.accountId, documentId: value.document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [note], progress: null, conflicts: []};
+beforeEach(() => {
+  vi.useFakeTimers({toFake: ['Date']}); vi.setSystemTime(now);
+  vi.stubGlobal('indexedDB', new IDBFactory()); vi.stubGlobal('crypto', webcrypto);
+  vi.stubGlobal('navigator', {locks: {request: async (_name: string, options: unknown, work?: () => Promise<unknown>) => typeof options === 'function' ? options() : work!()}});
+  sessionStorage.clear();
+});
+afterEach(() => {vi.useRealTimers(); vi.unstubAllGlobals();});
+it('returns the known offline note conflict and retains its exact durable mutation', async () => {
+  const epoch = await activateOfflineAccount(selector.accountId);
+  await commitOfflineSave({selector, value, epoch, resources: [], size: 100, locked: false, lastObservedAt: now}, epoch, now);
+  await seedPrivateReplica(selector, state, epoch, now);
+  const cloud = {...note, text: 'Cloud edit', version: 2};
+  const write: BulletinReaderMutation = {mutationId: 'edit-a', documentRevision: 1, createdAt: new Date(now).toISOString(), kind: 'editNote', baseVersion: 1, payload: {noteId: note.id, text: 'Local edit'}};
+  const api = {renew: vi.fn(async () => value), privateState: vi.fn(async () => ({state})), mutate: vi.fn(async () => ({state: {...state, notes: [cloud]}, results: [{mutationId: write.mutationId, status: 'note_conflict' as const, revision: 1, note: cloud}]}))};
+  const onFailure = vi.fn();
+  const {result} = renderHook(() => usePrivateReader({api, selector, value, offline: false, allowAction: () => true, onFailure}));
+  await waitFor(() => expect(result.current.state).not.toBeNull());
+  let outcome: unknown;
+  await act(async () => {outcome = await result.current.mutate(write);});
+  expect(outcome).toMatchObject({status: 'note_conflict', note: cloud});
+  expect(result.current.status).toBe('action');
+  expect((await readPrivateReplica(selector, now))?.queue[0]).toMatchObject({mutation: write, result: {status: 'note_conflict'}});
+  expect(onFailure).not.toHaveBeenCalled();
+});
