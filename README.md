@@ -4,13 +4,20 @@ Next.js public website for `www.alive.org.tw`.
 
 ## Private recording covers
 
-Member recording cards and the playback poster use authenticated, same-origin
-cover reads, independent of playback sessions. Images remain temporary object
-URLs scoped to the mounted account/recording and are revoked on changes,
-unmount or expiry. Covers never pass through the public Next image optimizer.
-Missing or unavailable covers retain the video placeholder without blocking
-playback; only mounted cards and the selected recording are requested. This is
-an in-memory component cache, not a persistent browser image cache.
+Member recording cards, live thumbnails and playback posters use authenticated,
+same-origin cover reads, independent of playback sessions. After current account,
+entitlement and resource checks, private JPEGs reuse an account-bound memory and
+IndexedDB cache keyed by recording/capture and cover revision. Returning to a page
+reuses the image immediately; reopening the browser restores it from IndexedDB
+without downloading unchanged bytes. HTTP responses remain no-store; covers never
+pass through the public Next image optimizer or service-worker response caches.
+
+Reusable entries are bounded to 64 images / 32 MiB and at most seven days, capped
+by recording/capture expiry. Mounted viewers retain their URLs through eviction.
+Logout, account change and authorization denial clear or invalidate the relevant
+private scope, including cross-tab changes and late downloads. Storage failure
+falls back to memory; unavailable images keep the placeholder and never block
+playback. The cache does not provide offline access to recordings or their lists.
 
 ## License
 
@@ -134,7 +141,8 @@ Banner font regeneration includes the member-video strings in all five locales.
 
 ## Header search and mobile navigation
 
-The mobile bar has two content slots and an account slot on the right. The first
+The mobile bar has two content slots, an optional delegated small-group management slot,
+and an account slot on the right. Management follows recordings and precedes My. The first
 slot prefers authorized literature ministry over news; the second prefers enabled,
 authorized recordings over About. Hidden projected items are omitted. The brand
 returns to the video library from watch pages; on the library and other pages it
@@ -142,8 +150,8 @@ returns to the site home. Public news/About
 remain available on the home page and in the footer. Desktop navigation retains
 its existing destinations; simplified legal pages retain header account access.
 
-Search is visible to every visitor and enabled only on member-video library,
-result and watch routes. Other pages show a disabled trigger until their search
+Search is visible to every visitor and enabled on member-video library,
+result and watch routes, and authorized small-group unit directories. Other pages show a disabled trigger until their search
 behavior is implemented. Video submissions update the URL `q` and search literal
 words across published titles and descriptions after membership, entitlement and
 legal checks. Results use fresh cursor batches; watch recommendations stay
@@ -198,14 +206,47 @@ replaces an existing offline revision.
 
 ## Live thumbnails
 
-Live cards, member search/recommendations and the live player poster share an
-authenticated thumbnail keyed by API/account instance, recording, capture and
-immutable cover revision. Each mount keeps a private Blob/object URL; scope changes,
-authorization failures, expiry and unmount abort/revoke it. A temporary refresh
-failure keeps the previous valid image. HHC branding covers the no-image state.
-Images bypass Next public optimization and persistent caches. This does not change
-live-following, DVR, ABR or playback grant semantics.
+Live cards, member search/recommendations and the live player poster share the
+private cover cache described above. Recording, capture and immutable cover
+revision identify each image; capture expiry remains 24 hours after creation.
+A temporary refresh failure keeps the previous valid image. HHC branding covers
+the no-image state. Live-following, DVR, ABR and playback grants are unchanged.
 
 Consumer release requires the reviewed and published shared Website client plus
 CMS/Gateway live-cover producers. Local packed verification is not production or
 physical OBS acceptance.
+
+## Delegated small-group management
+
+Localized `/organizations`, unit and member routes reuse the Account session runtime,
+Operations/notification contracts and management UI. Entry uses the site's banner;
+inner pages retain compact controls and header member search. Navigation display reuses
+the account-scoped presentation cache; page mounting requires fresh church membership
+and delegated responsibility. Cached navigation hints never authorize access. Private reads are client-only and no-store,
+and routes are noindex/nofollow and excluded from sitemap and analytics.
+
+Gateway must release the exact WWW management/notification allowlist before WWW;
+Account's compatible API routes remain during rollout. Release the Account management UI removal last. Business APIs and notification click destinations are unchanged.
+
+### Shared live player (candidate)
+
+This change consumes the reviewed `@hallelujahhomechurch/ui/player` and
+`@hallelujahhomechurch/ui/player.css` from frontend-platform PR #135, planned
+version 1.0.76. Its player regression suite moved with the implementation; this
+application retains member grant, cookie renewal, watermark, telemetry, public
+media-origin and live-to-VOD orchestration tests. Studio uses the same controls
+with a separately scoped staff-preview grant.
+
+The current application registry pin is deliberately unchanged until that shared
+package is merged and published. Local integration uses its packed candidate;
+that is not a production or registry-readiness claim. Before merging this
+consumer, pin the actually published exact UI version, regenerate the registry
+lockfile, update the exact-version assertion and rerun CI. Do not merge this
+consumer while it still depends on an unpublished player subpath.
+
+Live follows a point 90 seconds behind the verified playable end. The viewer
+live indicator, seekbar endpoint and explicit return action share that target.
+Fresh automatic playback waits for that reserve; explicit DVR, saved playback
+state and ended short captures remain usable. The 2–3 minute end-to-end latency
+goal still requires producer/verification and
+real-device measurements; increasing holdback cannot cure sustained backlog.

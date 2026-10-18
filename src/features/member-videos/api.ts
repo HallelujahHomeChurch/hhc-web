@@ -35,6 +35,7 @@ export function createMemberVideoApi(authorization: Authorization, fetcher: Fetc
     await fetcher(cookie,{method:'DELETE',credentials:'include',cache:'no-store',redirect:'error',referrerPolicy:'no-referrer'});
   }
   return {
+    setCommentReaction: client.setRecordingCommentReaction,
     interactions: client.getRecordingInteractions,
     setLike: client.setRecordingLike,
     comments: client.listRecordingComments,
@@ -45,7 +46,7 @@ export function createMemberVideoApi(authorization: Authorization, fetcher: Fetc
     heartbeat: client.recordPlaybackHeartbeat,
     metrics: client.getMemberRecordingMetrics,
     watch:(id:string,signal?:AbortSignal)=>client.resolveRecordingWatch(id,signal),
-    upcoming:(options:{cursor?:string;limit?:number;signal?:AbortSignal}={})=>client.listMemberBroadcasts(options),
+    upcoming:(options:{cursor?:string;limit?:number;q?:string;signal?:AbortSignal}={})=>client.listMemberBroadcasts(options),
     async broadcastCover(id:string,signal?:AbortSignal) {
       const blob=await client.getMemberBroadcastCover(id,signal);
       if(blob.type!=='image/jpeg'||blob.size<1||blob.size>(1<<20))throw new Error('Invalid broadcast cover');

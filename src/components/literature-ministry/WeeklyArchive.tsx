@@ -2,6 +2,7 @@
 
 import {useEffect, useMemo, useState} from 'react';
 import {useRouter, useSearchParams} from 'next/navigation';
+import {WeeklyArchiveSkeleton, WeeklyLatestSkeleton} from './WeeklyLoading';
 import {Tabs} from '@hallelujahhomechurch/ui';
 import {Button} from '@/components/ui/Button';
 import {DownloadButton} from '@/components/ui/DownloadButton';
@@ -103,9 +104,10 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
         setLatestResult({key: latestKey, state: 'ready', issue: value});
       })
       .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
         if (!(error instanceof DOMException && error.name === 'AbortError')) {
           captureHandledError(error, {operation: 'weekly.latest', tags: {locale, series}});
-          setLatestResult({key: latestKey, state: 'error', issue: null});
+          setLatestResult(current=>current?.key===latestKey&&current.state==='ready'?current:{key:latestKey,state:'error',issue:null});
         }
       });
     return () => controller.abort();
@@ -120,9 +122,10 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
         setArchiveResult({key: archiveKey, state: 'ready', archive: value});
       })
       .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
         if (!(error instanceof DOMException && error.name === 'AbortError')) {
           captureHandledError(error, {operation: 'weekly.archive', tags: {locale, page, series}});
-          setArchiveResult({key: archiveKey, state: 'error', archive: null});
+          setArchiveResult(current=>current?.key===archiveKey&&current.state==='ready'?current:{key:archiveKey,state:'error',archive:null});
         }
       });
     return () => controller.abort();
@@ -150,7 +153,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
               <h3 className="text-[18px] font-semibold text-ink">{messages.loadError}</h3>
               <button className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--hhc-control-border)] bg-paper px-5 font-semibold text-[var(--hhc-control)] transition hover:border-primary hover:bg-primary hover:text-primary-foreground" type="button" onClick={() => setRetryKey((value) => value + 1)}>{messages.retry}</button>
             </div>
-          ) : (
+          ) : latestState === 'loading' ? <WeeklyLatestSkeleton label={messages.loading}/> : (
               <h3 className="mt-4 text-[18px] font-semibold text-muted" aria-live="polite">{latestState === 'ready' ? messages.empty : messages.loading}</h3>
           )}
           </div>
@@ -176,7 +179,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
                 <VersionLinks mode={entryMode} locale={locale} readOnlineLabel={messages.readOnline} issue={issue} workflow={api} preparingLabel={messages.downloading} readyLabel={messages.downloadReady} errorLabel={messages.downloadError} />
               </article>
             ) : null;
-          }) : archiveState === 'ready' ? <p className="text-muted">{messages.empty}</p> : archiveState === 'error' ? <div><p role="alert" className="text-muted">{messages.loadError}</p><button type="button" className="mt-3 min-h-11 rounded-full border border-panel-border px-5" onClick={() => setRetryKey(value => value + 1)}>{messages.retry}</button></div> : <p role="status" className="text-muted">{messages.loading}</p>}
+          }) : archiveState === 'ready' ? <p className="text-muted">{messages.empty}</p> : archiveState === 'error' ? <div><p role="alert" className="text-muted">{messages.loadError}</p><button type="button" className="mt-3 min-h-11 rounded-full border border-panel-border px-5" onClick={() => setRetryKey(value => value + 1)}>{messages.retry}</button></div> : <WeeklyArchiveSkeleton label={messages.loading}/>}
         </div>
         {!target && archive && archive.totalPages > 1 ? (
           <nav className="mt-6 flex flex-wrap items-center justify-end gap-2" aria-label={messages.paginationLabel}>

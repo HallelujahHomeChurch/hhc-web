@@ -38,10 +38,10 @@ describe('locales', () => {
   it('pins exact HHC frontend integration artifacts (registry resolution remains a release gate)', () => {
     expect(Object.fromEntries(Object.entries(packageJson.dependencies).filter(([name]) => name.startsWith('@hallelujahhomechurch/')))).toEqual({
       '@hallelujahhomechurch/account-client': '1.0.67',
-      '@hallelujahhomechurch/hhc-web-client': '1.0.66',
+      '@hallelujahhomechurch/hhc-web-client': '1.0.75',
       '@hallelujahhomechurch/operations-client': '1.0.37',
       '@hallelujahhomechurch/preferences': '1.0.47',
-      '@hallelujahhomechurch/ui': '1.0.63'
+      '@hallelujahhomechurch/ui': '1.0.76'
     });
   });
 
@@ -107,6 +107,13 @@ describe('locales', () => {
     }
     expect(zhHant.home.weeklyDownloading).toBe('正在準備下載週報 {progress} %。');
     expect(zhHant.literatureMinistry.downloading).toBe('正在準備下載週報 {progress} %。');
+  });
+
+  it('keeps small-group banner subtitles free of trailing sentence punctuation', () => {
+    for (const messages of [zhHant, zhHans, en, ja, ko]) {
+      expect(messages.organizations.heroSubtitle).not.toMatch(/[。.]$/);
+    }
+    expect(zhHant.organizations.heroSubtitle).toBe('陪人走一生的路，乃人生最高的成就');
   });
 
   it('keeps latest-news banner subtitles free of redundant punctuation', () => {

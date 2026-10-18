@@ -288,7 +288,7 @@ describe('protected weekly reader', () => {
     expect(document.documentElement).toHaveAttribute('data-theme', 'light');
     localStorage.removeItem('hhc-reader-theme');
   });
-  it.each(['chapter', 'chapter-reordered', 'next', 'page', 'search', 'resume', 'resume-cover', 'pull', 'pull-selection', 'pull-pinch'])('switches mobile chapters via %s while preserving source anchors', async route => {
+  it.each(['speaker', 'chapter', 'chapter-reordered', 'next', 'page', 'search', 'resume', 'resume-cover', 'pull', 'pull-selection', 'pull-pinch'])('switches mobile chapters via %s while preserving source anchors', async route => {
     Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect(0, 500, 300, 30)});
     vi.spyOn(window, 'scrollBy').mockImplementation(() => {});
     vi.stubGlobal('matchMedia', vi.fn(() => ({matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn()})));
@@ -304,6 +304,10 @@ describe('protected weekly reader', () => {
     if (body.type === 'bodySection') body.bodySection.header = {lectureDate: {...blocks[1], id: 'credit', sentences: [{id: 'credit-sentence', spans: [{text: 'Production date', fontRole: 'body'}]}]}, contributors: []};
     const slot = fixture.document.content.layoutManifest.pages[1].slots[0];
     fixture.document.content.layoutManifest.pages[1].slots.unshift({...slot, id: 'credit-slot', blockId: 'credit', fragments: [{sentenceId: 'credit-sentence', start: 0, end: 15}]});
+    if (route === 'speaker' && body.type === 'bodySection') {
+      body.bodySection.contributors=[{role:'speaker',name:{...blocks[1],id:'speaker-name',sentences:[{id:'speaker-name-sentence',spans:[{text:'Speaker A',fontRole:'body'}]}]}}];
+      fixture.document.content.layoutManifest.pages[1].slots.push({...slot,id:'body-heading-slot',blockId:'body-title',fragments:[{sentenceId:'body-heading',start:0,end:7}]});
+    }
     if (route === 'chapter-reordered') fixture.document.content.layoutManifest.pages.reverse();
     state.open.mockResolvedValue(fixture);
     if (route === 'resume' || route === 'resume-cover') {
@@ -324,6 +328,15 @@ describe('protected weekly reader', () => {
       expect(container.querySelector('.reader-chapter-title')).toBeNull();
       fireEvent.click(screen.getByRole('button', {name: props.messages.contents}));
       fireEvent.click(within(screen.getByRole('navigation', {name: props.messages.chapters})).getByRole('button', {name: props.messages.chapterBody}));
+    }
+    if (route === 'speaker') {
+      fireEvent.click(screen.getByRole('button',{name:props.messages.contents}));
+      fireEvent.click(within(screen.getByRole('navigation',{name:props.messages.chapters})).getByRole('button',{name:props.messages.chapterWorship}));
+      fireEvent.click(screen.getByRole('button',{name:props.messages.contents}));
+      fireEvent.click(screen.getByText(props.messages.speakers,{selector:'summary'}));
+      fireEvent.click(screen.getByRole('button',{name:'Speaker A'}));
+      expect(screen.queryByRole('dialog',{name:props.messages.contents})).not.toBeInTheDocument();
+      expect(sessionStorage.getItem(`weekly-reader-position:account-a:${fixture.document.documentId}:1:anchor`)).toBe(JSON.stringify({kind:'sentence',id:'body-heading'}));
     }
     if (route === 'page') choosePage(2);
     if (route === 'next') {
@@ -1154,13 +1167,18 @@ describe('protected weekly reader', () => {
     expect(sessionStorage.getItem(`weekly-reader-position:account-a:${readerFixture().document.documentId}:1`)).toBe('p0');
   });
   it('persists a section anchor and restores it only within the same account/revision', async () => {
-    const key = `weekly-reader-position:account-a:${readerFixture().document.documentId}:1:anchor`;
+    const fixture = readerFixture();
+    const section = fixture.document.content.components[2];
+    if (section.type !== 'backSummary') throw new Error('fixture');
+    fixture.document.content.components[2] = {id: section.id, type: 'bodySection', bodySection: {kind: 'unknown', title: section.items[0].blocks[0], blocks: []}};
+    state.open.mockResolvedValue(fixture);
+    const key = `weekly-reader-position:account-a:${fixture.document.documentId}:1:anchor`;
     const {unmount} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
     fireEvent.click(screen.getByRole('button', {name: 'Thumbnails'}));
     fireEvent.click(screen.getByText('Sections', {selector: 'summary'}));
-    fireEvent.click(screen.getAllByRole('button', {name: 'Summary'})[2]);
-    expect(sessionStorage.getItem(key)).toBe(JSON.stringify({kind: 'component', id: 'c2'}));
+    fireEvent.click(screen.getByRole('button', {name: '內容2。'}));
+    expect(sessionStorage.getItem(key)).toBe(JSON.stringify({kind: 'sentence', id: 's2'}));
     unmount();
     const scroll = vi.spyOn(HTMLElement.prototype, 'scrollIntoView');
     render(<WeeklyReader {...props}/>);

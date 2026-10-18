@@ -23,10 +23,11 @@ describe.each([
   ['zh-Hans','src/assets/fonts/ma-shan-zheng/MaShanZheng-HHC-Banners.woff2','font-ma-shan-zheng'],
   ['ja','src/assets/fonts/klee-one/KleeOne-HHC-Banners.woff2','font-klee-one-banner'],
   ['ko','src/assets/fonts/hhc-pen-hangul/HHC-Pen-Hangul-Banners.woff2','font-hhc-pen-hangul-banner']
-] as const)('%s member video banner', (locale,fontPath,className)=>{
-  it('includes every member-video banner character in its locale subset',()=>{
+] as const)('%s page banners', (locale,fontPath,className)=>{
+  it('includes every member-video and management banner character in its locale subset',()=>{
     const messages=getMessages(locale).memberVideos;
-    const characters=messages.heroTitle+messages.heroSubtitle;
+    const management=getMessages(locale).organizations;
+    const characters=messages.heroTitle+messages.heroSubtitle+management.heroTitle+management.heroSubtitle;
     const missing=JSON.parse(execFileSync('python3',['-c',
       'import json,sys; from fontTools.ttLib import TTFont; cmap=TTFont(sys.argv[1]).getBestCmap(); print(json.dumps(sorted({c for c in sys.argv[2] if not c.isspace() and ord(c) not in cmap})))',
       fontPath,characters],{encoding:'utf8'})) as string[];
@@ -82,7 +83,7 @@ describe.each([
     'src/assets/fonts/klee-one/OFL.txt',
     'bf4063f030cc2ae6adf0a11424a1888e5c0eb4438f1f6d02f52294af868e9b3a',
     'src/assets/fonts/klee-one/KleeOne-HHC-Banners.woff2',
-    '5f72cca94added1435efea49f0f218d2dabedb37162d93213a8d94c4a7a8e98a'
+    '38eaae873b9769f4e478c967c3fb30dde39ad6ca79fd2c64c5c541dde1b6e9fb'
   ],
   [
     'HHC Pen Hangul',
@@ -90,7 +91,7 @@ describe.each([
     'src/assets/fonts/hhc-pen-hangul/OFL.txt',
     '6f0d1ab29c7894010dc88831fb7a0a51edb79136e450344183de5b1a8b52bd43',
     'src/assets/fonts/hhc-pen-hangul/HHC-Pen-Hangul-Banners.woff2',
-    '638ffd838c14090be71343e3d713974d8b64cc695a42f616608881ec14ce1b98'
+    '4d4530723ac01fce10db657eedc5077a5b8d8d04538ecdf569d80199eba3a506'
   ]
 ] as const)('%s source', (_name, sourcePath, licensePath, sourceHash, derivedPath, derivedHash) => {
   it('records the pinned official revision, source hash, copyright, and OFL', () => {

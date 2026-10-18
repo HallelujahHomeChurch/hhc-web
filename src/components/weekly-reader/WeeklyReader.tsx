@@ -601,7 +601,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
         {panel === 'pages' ? <>
           {mobile ? <nav className="reader-chapters" aria-label={m.chapters}>{chapters.map((entry, index) => <Button key={entry.id} variant="ghost" aria-current={entry.id === chapter ? 'location' : undefined} onPress={() => {onChapter(index); closePanel(false);}}>{chapterLabels[entry.id]}</Button>)}</nav> : null}
           {mobile ? <details className="reader-original-pages"><summary>{m.originalPages}</summary><PageNavigator document={document} metadata={value.document.canonicalMetadata} traceCode={value.access.traceCode} theme={theme} page={page} onPage={target => {if (onPage(target)) closePanel(false);}} messages={m}/></details> : <PageNavigator document={document} metadata={value.document.canonicalMetadata} traceCode={value.access.traceCode} theme={theme} page={page} onPage={target => {if (onPage(target)) closePanel();}} messages={m}/>}
-          <SectionNavigator document={document} onSection={id => {onAnchor({kind: 'component', id}); closePanel(!mobile);}} messages={m}/>
+          <SectionNavigator document={document} onSection={anchor => {onAnchor(anchor); closePanel(!mobile);}} messages={m}/>
         </> : null}
         {panel === 'type' ? <ReaderTypography value={typography} onChange={changeTypography} messages={m}/> : null}
       </aside>

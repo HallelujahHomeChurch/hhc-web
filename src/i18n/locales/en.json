@@ -131,6 +131,9 @@
     "page": "Page",
     "zoom": "Zoom",
     "thumbnails": "Thumbnails",
+    "speakers": "Speakers",
+    "speakerStartUnknown": "Start not confirmed",
+    "noSpeakers": "No identified speaker credits in this issue.",
     "sections": "Sections",
     "close": "Close",
     "cover": "Cover",
@@ -152,6 +155,7 @@
       "news": "Latest News",
       "literatureMinistry": "Literature Ministry",
       "memberVideos": "Member Videos",
+      "organizations": "Small groups",
       "menu": "Menu",
       "openMenu": "Open menu",
       "closeMenu": "Close menu",
@@ -163,7 +167,7 @@
       "projectionSystem": "Projection system",
       "projectionWindowLabel": "Open in a new window",
       "projectionPopupBlocked": "Your browser blocked the window. Use the link below to open it.",
-      "organizationManagement": "Small group",
+      "organizationManagement": "Small groups",
       "adminManagement": "Admin",
       "manageAccount": "Account",
       "signIn": "Sign in",
@@ -226,6 +230,7 @@
       "email": "Email subscription settings"
     },
     "search": {
+      "members": "Search members",
       "label": "Search",
       "submit": "Search",
       "clear": "Clear search",
@@ -617,5 +622,9 @@
   "root": {
     "title": "Choose language",
     "description": "Choose the language version you want to browse."
+  },
+  "organizations": {
+    "heroTitle": "Small groups",
+    "heroSubtitle": "Walking alongside others throughout life is life’s greatest achievement"
   }
 }

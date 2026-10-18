@@ -1,9 +1,17 @@
-vi.mock('./VideoInteractions',()=>({VideoInteractions:({children}:{children:import('react').ReactNode})=><>{children}</>}));
+vi.mock('./VideoInteractions',async()=>{const {VideoInformation}=await import('./VideoInformation');return {VideoInteractions:(props:import('react').ComponentProps<typeof VideoInformation>)=><VideoInformation {...props} metrics={null}/>};});
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {MemberVideoZone} from './MemberVideoZone';
 import {videoSearchRefreshEvent} from './search';
 import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
+import {Blob as NodeBlob} from 'node:buffer';
+import {IDBFactory} from 'fake-indexeddb';
+import {PrivateCoverCache} from '@/lib/private-cover-cache';
+import {PrivateCoverProvider} from '@/lib/use-private-cover';
+import {NextIntlClientProvider} from 'next-intl';
+import zhHant from '@/i18n/locales/zh-Hant.json';
+import {LineBrowserNotice, useLineBrowserNotice} from '@/components/layout/LineBrowserNotice';
+import {clearLineVideoTarget, lineBrowserTarget} from '@/lib/line-browser-handoff';
 
 const state = vi.hoisted(() => ({access: 'loading', auth: 'checking'}));
 const list = vi.hoisted(() => vi.fn());
@@ -69,6 +77,76 @@ beforeEach(() => {
 afterEach(() => {cleanup();vi.useRealTimers();vi.restoreAllMocks();});
 
 describe('member video gate', () => {
+  it.each(['open', 'close'])('retains the LINE video URL after the anonymous home redirect and clears it on %s', async action => {
+    const path = '/en/member-videos/11111111-1111-1111-1111-111111111111?t=90#player';
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 LINE/15.0.0');
+    window.history.replaceState({}, '', path);
+    state.auth = 'anonymous';
+    replace.mockImplementationOnce((href: string) => window.history.replaceState({}, '', href));
+    function Notice({pathname}: {pathname: string}) {
+      const notice = useLineBrowserNotice(pathname);
+      return notice.visible ? <LineBrowserNotice pathname={pathname} onClose={notice.close}/> : null;
+    }
+    try {
+      const view = render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
+        <Notice pathname={path.split('?')[0]}/>
+        <MemberVideoZone locale="en" messages={messages} hero={null} recordingId="11111111-1111-1111-1111-111111111111"/>
+      </NextIntlClientProvider>);
+      await waitFor(() => expect(replace).toHaveBeenCalledWith('/en'));
+      expect(list).not.toHaveBeenCalled();
+      view.rerender(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><Notice pathname="/en"/></NextIntlClientProvider>);
+      const link = await screen.findByRole('link', {name: '開啟預設瀏覽器'});
+      expect(link).toHaveAttribute('href', `http://localhost:3000${path.replace('#player', '&openExternalBrowser=1#player')}`);
+      if (action === 'open') {
+        link.addEventListener('click', event => event.preventDefault());
+        fireEvent.click(link);
+      } else {
+        fireEvent.click(screen.getByRole('button', {name: '關閉瀏覽器提示並留在此頁'}));
+      }
+      expect(lineBrowserTarget(window.location.href)).toBe('http://localhost:3000/en');
+    } finally {
+      clearLineVideoTarget();
+      sessionStorage.removeItem('hhc:line-browser-notice:dismissed');
+      window.history.replaceState({}, '', '/');
+    }
+  });
+
+  it.each([
+    ['anonymous', 'loading', 'Mozilla/5.0 Safari/605.1.15'],
+    ['authenticated', 'denied', 'Mozilla/5.0 LINE/15.0.0']
+  ])('keeps the %s/%s home redirect without retaining a video target', async (auth, access, userAgent) => {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(userAgent);
+    window.history.replaceState({}, '', '/en/member-videos/11111111-1111-1111-1111-111111111111');
+    state.auth = auth; state.access = access;
+    try {
+      render(<MemberVideoZone locale="en" messages={messages} hero={null}/>);
+      await waitFor(() => expect(replace).toHaveBeenCalledWith('/en'));
+      expect(list).not.toHaveBeenCalled();
+      expect(lineBrowserTarget('http://localhost:3000/en')).toBe('http://localhost:3000/en');
+    } finally {
+      clearLineVideoTarget();
+      window.history.replaceState({}, '', '/');
+    }
+  });
+
+  it.each(['list','watch'] as const)('persists automatic covers without an explicit selection on the %s surface',async view=>{
+    vi.stubGlobal('indexedDB',new IDBFactory());
+    try{
+      state.auth='authenticated';state.access='available';
+      vi.spyOn(URL,'createObjectURL').mockImplementation(()=>`blob:${crypto.randomUUID()}`);
+      vi.spyOn(URL,'revokeObjectURL').mockImplementation(()=>{});
+      const recording={id:'r1',title:'Automatic cover',packageId};
+      list.mockResolvedValue([recording]);
+      videoApi.cover.mockResolvedValue(new NodeBlob(['jpeg'],{type:'image/jpeg'}) as unknown as Blob);
+      const show=()=>render(<PrivateCoverProvider accountId="member" cache={new PrivateCoverCache()}><MemberVideoZone locale="en" messages={messages} hero={null} view={view} recordingId={view==='watch'?'r1':undefined}/></PrivateCoverProvider>);
+      const first=show();await screen.findAllByAltText('Automatic cover');first.unmount();
+      const restored=show();await screen.findAllByAltText('Automatic cover');
+      expect(videoApi.cover).toHaveBeenCalledOnce();restored.unmount();
+      list.mockResolvedValue([{...recording,selectedCoverId:'custom-cover'}]);
+      show();await screen.findAllByAltText('Automatic cover');
+      expect(videoApi.cover).toHaveBeenCalledTimes(2);
+    }finally{cleanup();vi.unstubAllGlobals();}
+  });
   it('does not start twice or discard a bookmark when switching a live watch route to VOD',async()=>{
     state.auth='authenticated';state.access='available';
     list.mockResolvedValue([{id:'r1',title:'Meeting',packageId}]);
@@ -124,14 +202,14 @@ describe('member video gate', () => {
     videoApi.exchange.mockResolvedValue(playbackUrl);
     const {container}=render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);
     const video=await screen.findByLabelText('Meeting');
-    const summary=screen.getByText(messages.description,{selector:'summary'}),details=summary.closest('details')!;
+    const summary=screen.getByRole('button',{name:'Show more'});
     const description=screen.getByText(/<script>alert/);
-    expect(details.open).toBe(false);expect(description).not.toBeVisible();
-    fireEvent.click(summary);expect(details.open).toBe(true);expect(description).toBeVisible();
+    expect(summary).toHaveAttribute('aria-expanded','false');expect(description).toBeVisible();
+    fireEvent.click(summary);expect(summary).toHaveAttribute('aria-expanded','true');expect(description).toBeVisible();
     expect(description.textContent).toBe('<script>alert(1)</script>\nSunday gathering');
-    expect(description).toHaveClass('whitespace-pre-wrap');expect(container.querySelector('script')).toBeNull();
+    expect(container.querySelector('script')).toBeNull();
     expect(screen.getByLabelText('Meeting')).toBe(video);
-    fireEvent.click(summary);expect(details.open).toBe(false);expect(screen.getByLabelText('Meeting')).toBe(video);
+    fireEvent.click(summary);expect(summary).toHaveAttribute('aria-expanded','false');expect(screen.getByLabelText('Meeting')).toBe(video);
     expect(videoApi.grant).toHaveBeenCalledTimes(1);
   });
   it('omits absent and empty recording descriptions',async()=>{
@@ -362,7 +440,7 @@ describe('member video gate', () => {
     expect(screen.queryByRole('heading',{level:3,name:'Recording 0'})).not.toBeInTheDocument();
     expect(screen.queryByText(/2 hours 30 minutes/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Available until/)).not.toBeInTheDocument();
-    expect(screen.getByText('Uploaded: September 28, 2026')).toBeInTheDocument();
+    expect(screen.getByText('Uploaded · Sep 28, 2026')).toBeInTheDocument();
     expect(screen.queryByRole('button',{name:'Next'})).toBeNull();
     expect(screen.getByRole('heading',{level:2,name:'Recording 0'})).toBeInTheDocument();
   });
@@ -596,7 +674,7 @@ it('plays an authoritative direct VOD while unrelated indexes never respond',asy
  videoApi.watch.mockResolvedValue({recordingId:'r1',view:'vod',recording:{id:'r1',title:'Direct VOD',packageId},live:null,mediaStartSeconds:240,durationSeconds:360});
  videoApi.grant.mockResolvedValue({packageId,watermarkCode:'trace',expiresAt:new Date(Date.now()+3600000).toISOString()});videoApi.exchange.mockResolvedValue(playbackUrl);
  render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);
- expect(await screen.findByLabelText('Direct VOD')).toHaveAttribute('src',playbackUrl);
+ await waitFor(()=>expect(screen.getByLabelText('Direct VOD')).toHaveAttribute('src',playbackUrl));
 });
 
 it('retains a paused non-1x DVR origin through pending End projection and VOD handoff',async()=>{
@@ -624,4 +702,107 @@ it('retains a paused non-1x DVR origin through pending End projection and VOD ha
   await waitFor(()=>expect(vod.src).toBe(playbackUrl));fireEvent.loadedMetadata(vod);
   expect(vod.currentTime).toBe(1000);expect(vod.playbackRate).toBe(1.5);expect(vod.paused).toBe(true);
  } finally {liveSession.playback=null;liveSession.remember.mockReset();}
+});
+
+it('shows matching scheduled broadcasts when search has no live or VOD matches',async()=>{
+ state.auth='authenticated';state.access='available';
+ videoApi.listPage.mockResolvedValue({items:[],nextCursor:null});
+ videoApi.liveList.mockResolvedValue([]);
+ videoApi.upcoming.mockResolvedValue({items:[{recordingId:'scheduled',title:'Faith scheduled',view:'waiting',stateRevision:1,scheduledAt:'2026-10-20T00:00:00Z'}],nextCursor:null});
+ render(<MemberVideoZone view="list" query="faith" locale="en" messages={messages} hero={null}/>);
+ expect(await screen.findByRole('link',{name:'Faith scheduled'})).toHaveAttribute('href','/en/member-videos/scheduled');
+ expect(videoApi.upcoming).toHaveBeenCalledWith(expect.objectContaining({q:'faith'}));
+ expect(screen.queryByText('No recordings')).not.toBeInTheDocument();
+});
+
+it('keeps the same library skeleton through access and independently pending discovery',async()=>{
+ const view=render(<MemberVideoZone view="list" locale="en" messages={messages} hero={null}/>);
+ expect(view.container.querySelector('[data-loading-layout="video-library"]')).not.toBeNull();
+ expect(videoApi.listPage).not.toHaveBeenCalled();
+ state.access='available';state.auth='authenticated';
+ let resolveUpcoming!:(value:unknown)=>void;
+ videoApi.upcoming.mockImplementation(()=>new Promise(resolve=>{resolveUpcoming=resolve}));
+ videoApi.listPage.mockResolvedValue({items:[{id:'vod',title:'Recorded gathering',uploadedAt:'2026-10-01T00:00:00Z'}],nextCursor:null});
+ view.rerender(<MemberVideoZone view="list" locale="en" messages={messages} hero={null}/>);
+ await waitFor(()=>expect(videoApi.upcoming).toHaveBeenCalled());
+ expect(view.container.querySelector('[data-loading-layout="video-library"]')).not.toBeNull();
+ expect(screen.queryByRole('link',{name:'Recorded gathering'})).not.toBeInTheDocument();
+ await act(async()=>resolveUpcoming({items:[],nextCursor:null}));
+ expect(await screen.findByRole('link',{name:'Recorded gathering'})).toBeInTheDocument();
+ expect(view.container.querySelector('[data-loading-layout]')).toBeNull();
+});
+
+it('uses search and watch geometry before their data resolves',async()=>{
+ const view=render(<MemberVideoZone view="list" query="faith" locale="en" messages={messages} hero={null}/>);
+ expect(view.container.querySelector('[data-loading-layout="video-search"]')).not.toBeNull();
+ view.rerender(<MemberVideoZone view="watch" recordingId="pending" locale="en" messages={messages} hero={null}/>);
+ expect(view.container.querySelector('[data-loading-layout="video-watch"]')).not.toBeNull();
+});
+
+it('keeps real recommendations instead of an overlapping recommendation skeleton during watch resolution',async()=>{
+ state.auth='authenticated';state.access='available';
+ list.mockResolvedValue([{id:'other',title:'Another gathering'}]);
+ videoApi.watch.mockImplementation(()=>new Promise(()=>{}));
+ const view=render(<MemberVideoZone view="watch" recordingId="pending" locale="en" messages={messages} hero={null}/>);
+ await screen.findByRole('link',{name:'Another gathering'});
+ expect(view.container.querySelector('[data-loading-layout="video-watch"] > [data-loading-recommendations]')).toBeNull();
+});
+
+it('keeps VOD behind initial live discovery even if upcoming and recordings finish first',async()=>{
+ state.auth='authenticated';state.access='available';
+ let finish!:(items:unknown[])=>void;
+ videoApi.liveList.mockImplementation(()=>new Promise(resolve=>{finish=resolve}));
+ list.mockResolvedValue([{id:'vod',title:'Earlier recording'}]);
+ const view=render(<MemberVideoZone view="list" locale="en" messages={messages} hero={null}/>);
+ await waitFor(()=>expect(videoApi.upcoming).toHaveBeenCalled());
+ await act(async()=>{});
+ expect(view.container.querySelector('[data-loading-layout="video-library"]')).not.toBeNull();
+ expect(screen.queryByRole('link',{name:'Earlier recording'})).not.toBeInTheDocument();
+ await act(async()=>finish([]));
+ expect(await screen.findByRole('link',{name:'Earlier recording'})).toBeInTheDocument();
+ expect(view.container.querySelector('[data-loading-layout]')).toBeNull();
+});
+
+it.each(['', 'faith'])('does not declare %s results empty before live discovery succeeds',async query=>{
+ state.auth='authenticated';state.access='available';
+ let finish!:(items:unknown[])=>void;
+ videoApi.liveList.mockImplementation(()=>new Promise(resolve=>{finish=resolve}));
+ const view=render(<MemberVideoZone view="list" query={query} locale="en" messages={messages} hero={null}/>);
+ await waitFor(()=>expect(videoApi.upcoming).toHaveBeenCalled());
+ await act(async()=>{});
+ const empty=query?'No results for faith':messages.empty;
+ expect(screen.queryByText(empty)).not.toBeInTheDocument();
+ expect(view.container.querySelector('[data-loading-layout]')).not.toBeNull();
+ await act(async()=>finish([]));
+ expect(await screen.findByText(empty)).toBeVisible();
+ expect(view.container.querySelector('[data-loading-layout]')).toBeNull();
+});
+
+it('does not declare empty results after initial live discovery fails',async()=>{
+ state.auth='authenticated';state.access='available';
+ let fail!:(reason:Error)=>void;
+ videoApi.liveList.mockImplementation(()=>new Promise((_,reject)=>{fail=reject}));
+ const view=render(<MemberVideoZone view="list" locale="en" messages={messages} hero={null}/>);
+ await waitFor(()=>expect(videoApi.upcoming).toHaveBeenCalled());
+ await act(async()=>fail(new Error('Live discovery unavailable')));
+ expect(screen.getByText(messages.loadError)).toBeVisible();
+ expect(screen.queryByText(messages.empty)).not.toBeInTheDocument();
+ expect(view.container.querySelector('[data-loading-layout]')).toBeNull();
+});
+
+it.each(['ready','empty','error'] as const)('keeps recommendation loading independent of an already resolved watch: %s',async outcome=>{
+ state.auth='authenticated';state.access='available';
+ let finish!:(items:unknown[])=>void,fail!:(reason:Error)=>void;
+ const recommendations=new Promise((resolve,reject)=>{finish=resolve;fail=reject});
+ list.mockReturnValue(recommendations);
+ videoApi.watch.mockResolvedValue({recordingId:'r1',view:'vod',recording:{id:'r1',title:'Direct watch',packageId},live:null,mediaStartSeconds:0,durationSeconds:360});
+ const view=render(<MemberVideoZone view="watch" recordingId="r1" locale="en" messages={messages} hero={null}/>);
+ await screen.findByRole('heading',{name:'Direct watch'});
+ expect(view.container.querySelector('[data-loading-layout="video-watch"]')).toBeNull();
+ expect(view.container.querySelector('[data-loading-recommendations]')).not.toBeNull();
+ await act(async()=>outcome==='error'?fail(new Error('Index unavailable')):finish(outcome==='ready'?[{id:'other',title:'Another gathering'}]:[]));
+ expect(view.container.querySelector('[data-loading-recommendations]')).toBeNull();
+ expect(screen.getByRole('heading',{name:'Direct watch'})).toBeVisible();
+ if(outcome==='ready')expect(screen.getByRole('link',{name:'Another gathering'})).toBeVisible();
+ if(outcome==='error')expect(screen.getByText(messages.loadError)).toBeVisible();
 });

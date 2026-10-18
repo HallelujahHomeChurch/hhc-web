@@ -1,0 +1,14 @@
+.copy,.archive {display:grid;gap:12px;min-width:0;}
+.latest {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:center;min-height:100px;}
+.row {display:grid;grid-template-columns:125px minmax(0,1fr) auto;gap:20px;align-items:center;min-height:96px;border:1px solid var(--color-panel-border);border-radius:14px;padding:16px 20px;}
+.issue {height:24px;width:110px;}
+.title {height:24px;width:85%;max-width:540px;}
+.line {height:16px;width:65%;max-width:380px;}
+.actions {height:44px;width:160px;border-radius:24px;overflow:hidden;}
+.heading {height:40px;width:65%;}
+.tabs {height:48px;width:240px;border-radius:24px;overflow:hidden;}
+.landing {display:grid;gap:24px;}
+.home {display:grid;justify-items:center;gap:20px;width:100%;min-width:180px;}
+.mark {width:112px;height:112px;border-radius:50%;overflow:hidden;}
+.home .title {width:100%;min-width:160px;}
+@media(max-width:860px){.row,.latest {grid-template-columns:minmax(0,1fr);gap:16px;}.archive .row:nth-child(n+4) {display:none;}}

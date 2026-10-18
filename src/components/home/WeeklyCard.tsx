@@ -1,6 +1,7 @@
 'use client';
 
 import {useEffect, useMemo, useState} from 'react';
+import {HomeWeeklySkeleton} from '@/components/literature-ministry/WeeklyLoading';
 import {BookOpen, FileText} from 'lucide-react';
 import {DownloadButton} from '@/components/ui/DownloadButton';
 import {Button} from '@/components/ui/Button';
@@ -10,7 +11,7 @@ import {formatIssueNumber} from '@/features/weekly/format';
 import {resolveEdition} from '@/features/weekly/resolve-edition';
 import {weeklyEditionLabels, type WeeklyIssue} from '@/features/weekly/types';
 import type {Locale} from '@/i18n/locales';
-import {useAccountIdentity, useBulletinAccess, useBulletinAuthorization} from '@/components/layout/AccountControl';
+import {useAccountAuth, useAccountIdentity, useBulletinAccess, useBulletinAuthorization} from '@/components/layout/AccountControl';
 import {captureHandledError} from '@/lib/observability';
 import type {BulletinSeries} from '@hallelujahhomechurch/preferences';
 
@@ -20,8 +21,11 @@ type WeeklyCardProps = {
   messages: {general: string; children: string; loading: string; downloading: string; downloadReady: string; downloadError: string; error: string; retry: string; readOnline: string; empty: string};
 };
 
+const weeklyCardClassName='grid min-h-[350px] place-items-center rounded-[14px] border border-panel-border bg-panel px-6 py-8 text-center shadow-[inset_0_1px_0_var(--hhc-inset-highlight)] max-[900px]:order-first';
+
 export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
   const bulletinAccess = useBulletinAccess();
+  const auth = useAccountAuth();
   const authorization = useBulletinAuthorization();
   const accountId = useAccountIdentity();
   const api = useMemo(() => createWeeklyBulletinApi(authorization), [authorization]);
@@ -52,19 +56,21 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
           setResults((current) => ({...current, [bulletinSeries]: {key: requestKey, state: 'ready', weekly: value}}));
         })
         .catch((error: unknown) => {
+          if (controller.signal.aborted) return;
           if (!(error instanceof DOMException && error.name === 'AbortError')) {
             captureHandledError(error, {operation: 'weekly.latest', tags: {locale, series: bulletinSeries}});
-            setResults((current) => ({...current, [bulletinSeries]: {key: requestKey, state: 'error', weekly: null}}));
+            setResults(current=>current[bulletinSeries]?.key===requestKey&&current[bulletinSeries]?.state==='ready'?current:{...current,[bulletinSeries]:{key:requestKey,state:'error',weekly:null}});
           }
         });
     }
     return () => controller.abort();
   }, [api, canRead, editions, locale, requestKey, series]);
 
+  if (auth.status==='checking'||bulletinAccess.status==='loading') return <aside data-weekly-card className={weeklyCardClassName} aria-label={ctaLabel}><HomeWeeklySkeleton label={messages.loading}/></aside>;
   if (!canRead) return null;
 
   return (
-    <aside data-weekly-card className="grid min-h-[350px] place-items-center rounded-[14px] border border-panel-border bg-panel px-6 py-8 text-center shadow-[inset_0_1px_0_var(--hhc-inset-highlight)] max-[900px]:order-first" aria-labelledby="weekly-title">
+    <aside data-weekly-card className={weeklyCardClassName} aria-labelledby={state==='loading'?undefined:'weekly-title'} aria-label={state==='loading'?ctaLabel:undefined}>
       {series.length > 1 ? <div role="tablist" aria-label={ctaLabel} className="mb-5 inline-flex rounded-full border border-panel-border bg-paper p-1">
         {series.map((value, index) => <button key={value} id={`weekly-tab-${value}`} role="tab" aria-controls="weekly-series-panel" aria-selected={activeSeries === value} tabIndex={activeSeries === value ? 0 : -1} className={`min-h-10 rounded-full px-4 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${activeSeries === value ? 'bg-primary text-primary-foreground' : 'text-muted hover:text-ink'}`} type="button" onClick={() => setSelectedSeries(value)} onKeyDown={(event) => {
           if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
@@ -109,10 +115,7 @@ export function WeeklyCard({locale, ctaLabel, messages}: WeeklyCardProps) {
           </button>
         </div>
       ) : state === 'ready' ? <h3 id="weekly-title" className="text-muted">{messages.empty}</h3> : (
-        <div aria-live="polite">
-          <BulletinMark />
-          <h3 id="weekly-title" className="text-[18px] font-semibold text-muted">{messages.loading}</h3>
-        </div>
+        <HomeWeeklySkeleton label={messages.loading}/>
       )}
       </div>
     </aside>

@@ -1,37 +1,17 @@
 'use client';
 
-import {useEffect,useRef,useState,type RefObject} from 'react';
+import {useCallback,useEffect,useRef,useState,type RefObject} from 'react';
 import type {MemberLiveRecording} from '@hallelujahhomechurch/hhc-web-client';
 import {Play} from 'lucide-react';
+import {usePrivateCover} from '@/lib/use-private-cover';
 import type {createMemberVideoApi} from './api';
 
 type CoverApi=ReturnType<typeof createMemberVideoApi>;
 
 export function useLiveRecordingCover(api:CoverApi,recording:MemberLiveRecording,enabled=true){
   const {id,captureId,coverRevision,createdAt}=recording;
-  const [value,setValue]=useState<{api:CoverApi;id:string;captureId:string;url:string}|null>(null);
-  const current=useRef(value);
-  useEffect(()=>()=>{if(current.current)URL.revokeObjectURL(current.current.url);current.current=null;},[]);
-  useEffect(()=>{
-    const abort=new AbortController();
-    const expiresAt=Date.parse(createdAt)+24*60*60*1000;
-    const expired=()=>!Number.isFinite(expiresAt)||expiresAt<=Date.now();
-    const discard=()=>{if(current.current)URL.revokeObjectURL(current.current.url);current.current=null;setValue(null);};
-    if(current.current&&(current.current.api!==api||current.current.id!==id||current.current.captureId!==captureId))discard();
-    if(!enabled||expired()||!coverRevision){discard();return;}
-    void api.liveCover(id,captureId,abort.signal).then(blob=>{
-      if(abort.signal.aborted||expired())return;
-      if(current.current)URL.revokeObjectURL(current.current.url);
-      const next={api,id,captureId,url:URL.createObjectURL(blob)};current.current=next;setValue(next);
-    }).catch((error:unknown)=>{
-      if(abort.signal.aborted)return;
-      const status=typeof error==='object'&&error!==null&&'status' in error?error.status:undefined;
-      if(status===401||status===403||status===404||status===428)discard();
-    });
-    const timer=window.setInterval(()=>{if(expired()){abort.abort();discard();window.clearInterval(timer);}},30_000);
-    return()=>{abort.abort();window.clearInterval(timer);};
-  },[api,id,captureId,coverRevision,createdAt,enabled]);
-  return enabled&&value?.api===api&&value.id===id&&value.captureId===captureId?value.url:undefined;
+  const load=useCallback((signal:AbortSignal)=>api.liveCover(id,captureId,signal),[api,id,captureId]);
+  return usePrivateCover({scope:api,resource:`live:${id}:${captureId}`,revision:coverRevision??'',expiresAt:Date.parse(createdAt)+24*60*60*1000,enabled:enabled&&Boolean(coverRevision),keepPrevious:true,load});
 }
 
 export function LiveCoverSurface({url,title,containerRef}:{url?:string;title:string;containerRef?:RefObject<HTMLDivElement|null>}){
@@ -50,31 +30,10 @@ export function LiveRecordingCover({api,recording}:{api:CoverApi;recording:Membe
   return <LiveCoverSurface containerRef={container} url={url} title={recording.title}/>;
 }
 
-// Keep private bytes local to this mounted viewer; never use the public image
-// optimizer, persistent storage, or playback grants for a cover.
+// Covers are account-bound; the provider restores persisted JPEGs only after access checks.
 export function useRecordingCover(api:CoverApi,id:string|undefined,expiresAt?:string|null,revision?:string,enabled=true) {
-  const [value,setValue]=useState<{api:CoverApi;id:string;url:string;revision?:string}|null>(null);
-  useEffect(()=>{
-    if(!id||!enabled) return;
-    const controller=new AbortController();
-    let url='';
-    const release=()=>{
-      controller.abort();
-      if(url) {URL.revokeObjectURL(url);url='';}
-    };
-    const expired=()=>Boolean(expiresAt&&Date.parse(expiresAt)<=Date.now());
-    if(expired()) return;
-    void api.cover(id,controller.signal).then(blob=>{
-      if(controller.signal.aborted||expired()) return;
-      url=URL.createObjectURL(blob);
-      setValue({api,id,url,revision});
-    }).catch(()=>{ /* Optional image failure keeps the existing video placeholder. */ });
-    const timer=window.setInterval(()=>{
-      if(expired()) {release();setValue(null);window.clearInterval(timer);}
-    },60_000);
-    return ()=>{release();window.clearInterval(timer);};
-  },[api,id,expiresAt,revision,enabled]);
-  return value?.api===api&&value.id===id&&value.revision===revision ? value.url:undefined;
+  const load=useCallback((signal:AbortSignal)=>api.cover(id!,signal),[api,id]);
+  return usePrivateCover({scope:api,resource:`vod:${id}`,revision,expiresAt:expiresAt?Date.parse(expiresAt):undefined,enabled:enabled&&Boolean(id),load});
 }
 
 function useCoverVisibility() {

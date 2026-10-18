@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import {BannerSubtitle} from '@/components/BannerSubtitle';
 import styles from './AboutHero.module.css';
 import {bannerFontByLocale} from '@/app/fonts';
 import type {Locale} from '@/i18n/locales';
@@ -42,11 +43,11 @@ export function AboutHero({locale, title, subtitle, imageUrl = '/assets/banners/
       </picture>
       <div className="absolute inset-0 z-[1]" aria-hidden="true" style={{backgroundImage: 'var(--hhc-hero-overlay)'}} />
       <div className="shell relative z-[2] flex min-h-[clamp(430px,56vw,610px)] items-center py-[70px] pb-[88px] max-[620px]:py-12 max-[620px]:pb-16">
-        <div className="min-w-0 max-w-[680px] pt-8 max-[620px]:pt-0">
+        <div className="w-full min-w-0 max-w-[680px] pt-8 max-[620px]:pt-0">
           <h1 id="page-title" className={`${displayFont} ${titleTypography} whitespace-nowrap font-normal leading-[1.08] text-[var(--hhc-brand-strong)]`}>
             {title}
           </h1>
-          <p className={`${displayFont} ${subtitleTypography} mt-5 font-normal text-[var(--hhc-brand-copy)]`}>{subtitle}</p>
+          <BannerSubtitle className={`${displayFont} ${subtitleTypography} mt-5 font-normal text-[var(--hhc-brand-copy)]`}>{subtitle}</BannerSubtitle>
         </div>
       </div>
     </section>

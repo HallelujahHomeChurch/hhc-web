@@ -10,8 +10,9 @@ import zhHant from '@/i18n/locales/zh-Hant.json';
 import {AccountControlProvider, BulletinAccessGate, useAccountAuth} from './AccountControl';
 import {SiteHeader} from './SiteHeader';
 import {InitialLoadingBoundary} from './InitialLoadingBoundary';
+import {OrganizationsGate} from '@/features/organizations/OrganizationsGate';
 
-const searchRouter = vi.hoisted(() => ({push:vi.fn()}));
+const searchRouter = vi.hoisted(() => ({push:vi.fn(), replace:vi.fn()}));
 vi.mock('next/navigation',()=>({useRouter:()=>searchRouter}));
 
 const statementStripState = vi.hoisted(() => ({active: false, notice: false}));
@@ -39,7 +40,7 @@ const accountLabels = {
   menu: '帳號選單',
   projectionSystem: '投影系統', projectionWindowLabel: '另開視窗', projectionPopupBlocked: '瀏覽器阻擋開啟視窗。',
   adminManagement: '後台管理',
-  organizationManagement: '小家管理',
+  organizationManagement: '小家',
   manageAccount: '管理帳號',
   signIn: '登入',
   signOut: '登出',
@@ -67,7 +68,7 @@ const layout: SiteLayout = {
 };
 
 beforeEach(() => {
-  vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
+  vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
 });
 
 afterEach(() => {
@@ -132,30 +133,44 @@ describe('SiteHeader', () => {
   });
 
   it('restores both navigation bars before session resolves without opening protected content, then removes revoked access', async () => {
-    const cached = createNavigationPresentation({key: 'hhc:navigation:www-web', allowedIds: ['account', 'admin', 'literature-ministry', 'member-videos']});
+    vi.stubEnv('NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED', 'true');
+    const cached = createNavigationPresentation({key: 'hhc:navigation:www-web', allowedIds: ['account', 'admin', 'literature-ministry', 'member-videos', 'organizations']});
     cached.identify('u1');
     cached.capture('u1')('account', ['account', 'admin']);
-    cached.capture('u1')('operations', ['literature-ministry', 'member-videos']);
+    cached.capture('u1')('operations', ['literature-ministry', 'member-videos', 'organizations']);
     let resolveSession!: (value: Awaited<ReturnType<AccountSessionClient['getSession']>>) => void;
     const client: AccountSessionClient = {...anonymousSessionClient, getSession: vi.fn(() => new Promise<Awaited<ReturnType<AccountSessionClient['getSession']>>>(resolve => {resolveSession = resolve;})), issueAccessToken: vi.fn(async () => ({accessToken: 'token', expiresIn: 900}))};
-    const fetcher = vi.fn(async () => Response.json({memberships: [], orgRoles: [], responsibilities: [], entitlements: [], version: 'revoked'}));
+    let resolveAccess!: (value: Response) => void;
+    const fetcher = vi.fn(() => new Promise<Response>(resolve => {resolveAccess = resolve;}));
     vi.stubGlobal('fetch', fetcher);
     function Status() { return <output>{useAccountAuth().status}</output>; }
     render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
       <AccountControlProvider client={client} labels={accountLabels}>
         <InitialLoadingBoundary label="Restoring"><SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" /></InitialLoadingBoundary>
         <Status /><BulletinAccessGate><span>Private bulletin</span></BulletinAccessGate>
+        <OrganizationsGate locale="zh-Hant"><span>Private management</span></OrganizationsGate>
       </AccountControlProvider>
     </NextIntlClientProvider>);
     expect(screen.getAllByRole('link', {name: '文字事工'})).toHaveLength(2);
+    expect(screen.getAllByRole('link', {name: '影音專區'})).toHaveLength(2);
+    expect(screen.getAllByRole('link', {name: '小家'})).toHaveLength(2);
+    expect(within(screen.getByRole('navigation', {name: '選單'})).getAllByRole('link').map(link => link.textContent)).toEqual(['文字事工', '影音專區', '小家']);
     expect(screen.queryByText('Restoring')).not.toBeInTheDocument();
     expect(screen.getByText('checking')).toBeInTheDocument();
     expect(screen.queryByText('Private bulletin')).not.toBeInTheDocument();
+    expect(screen.queryByText('Private management')).not.toBeInTheDocument();
     expect(fetcher).not.toHaveBeenCalled();
     expect(client.issueAccessToken).not.toHaveBeenCalled();
     await act(async () => resolveSession({authenticated: true, user: {id: 'u1', email: 'member@example.test', display_name: 'Member', avatar_url: null}, permissions: [], permission_availability: {status: 'available'}}));
+    await waitFor(() => expect(fetcher).toHaveBeenCalledOnce());
+    expect(screen.getAllByRole('link', {name: '小家'})).toHaveLength(2);
+    expect(screen.queryByText('Private management')).not.toBeInTheDocument();
+    await act(async () => resolveAccess(Response.json({memberships: [], orgRoles: [], responsibilities: [], churchMembership: null, entitlements: [], version: 'revoked'})));
     await waitFor(() => expect(screen.queryByRole('link', {name: '文字事工'})).not.toBeInTheDocument());
+    expect(screen.queryByRole('link', {name: '影音專區'})).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', {name: '小家'})).not.toBeInTheDocument();
     expect(screen.queryByText('Private bulletin')).not.toBeInTheDocument();
+    expect(screen.queryByText('Private management')).not.toBeInTheDocument();
     expect(JSON.parse(localStorage.getItem('hhc:navigation:www-web')!).sources.operations.ids).toEqual([]);
   });
 
@@ -382,41 +397,25 @@ describe('SiteHeader', () => {
     expect(within(mobileNavigation).getByRole('link', {name: '關於我們'})).toHaveAttribute('aria-current', 'page');
   });
 
-  it('starts moving the shared mobile indicator and replays only the latest rapid navigation', async () => {
-    let nextFrame = 0;
-    const frames = new Map<number, FrameRequestCallback>();
-    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
-      const id = ++nextFrame;
-      frames.set(id, callback);
-      return id;
-    });
-    const cancelFrame = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation((id) => { frames.delete(id); });
-    const {container} = render(
-      <NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
-        <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" sessionClient={anonymousSessionClient} />
-      </NextIntlClientProvider>
-    );
-
+  it('navigates immediately and selects mobile tabs from the current route without a moving indicator', async () => {
+    const frame = vi.spyOn(window, 'requestAnimationFrame');
+    const view = (pathname: string) => <NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname={pathname} sessionClient={anonymousSessionClient}/></NextIntlClientProvider>;
+    const {container, rerender} = render(view('/zh-Hant/news'));
     await screen.findByRole('link', {name: '登入'});
-    const mobileNavigation = within(screen.getByRole('navigation', {name: '選單'}));
-    const newsLink = mobileNavigation.getByRole('link', {name: '最新消息'});
-    const aboutLink = mobileNavigation.getByRole('link', {name: '關於我們'});
-    newsLink.addEventListener('click', (event) => event.preventDefault());
-    aboutLink.addEventListener('click', (event) => event.preventDefault());
-    const aboutClick = vi.spyOn(aboutLink, 'click');
-    fireEvent.click(newsLink);
-
-    expect(container.querySelector('[data-mobile-nav-indicator]')).toHaveStyle({transform: 'translate3d(0%, 0, 0)'});
-    expect(newsLink).toHaveAttribute('data-active', 'true');
-    act(() => frames.get(1)?.(0));
-    fireEvent.click(aboutLink);
-
-    expect(cancelFrame).toHaveBeenCalledWith(2);
-    expect(container.querySelector('[data-mobile-nav-indicator]')).toHaveStyle({transform: 'translate3d(100%, 0, 0)'});
-    act(() => frames.get(3)?.(16));
-    act(() => frames.get(4)?.(32));
-    expect(aboutClick).toHaveBeenCalledOnce();
-    expect(newsLink).not.toHaveAttribute('data-active');
+    const navigation = within(screen.getByRole('navigation', {name: '選單'}));
+    const news = navigation.getByRole('link', {name: '最新消息'});
+    const about = navigation.getByRole('link', {name: '關於我們'});
+    expect(news).toHaveAttribute('data-active', 'true');
+    expect(container.querySelector('[data-mobile-nav-indicator]')).toBeNull();
+    let prevented = false;
+    about.addEventListener('click', event => {prevented = event.defaultPrevented; event.preventDefault();});
+    frame.mockClear();
+    fireEvent.click(about);
+    expect(prevented).toBe(false);
+    expect(frame).not.toHaveBeenCalled();
+    rerender(view('/zh-Hant/about'));
+    expect(about).toHaveAttribute('data-active', 'true');
+    expect(news).not.toHaveAttribute('data-active');
   });
 
   it('lets long localized branding shrink before the fixed account slot at mobile zoom widths', async () => {
@@ -630,4 +629,31 @@ describe('SiteHeader', () => {
 it.each(['/zh-Hant','/zh-Hant/news','/zh-Hant/member-videos-other'])('shows a disabled search on other routes: %s',pathname=>{
  render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname={pathname} sessionClient={anonymousSessionClient}/></NextIntlClientProvider>);
  expect(screen.getByRole('button',{name:'搜尋（尚未開放）'})).toBeDisabled();
+});
+
+
+it.each([true, false])('places delegated management before My, with no management avatar item: %s', async allowed => {
+  vi.stubEnv('NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED', 'true');
+  vi.stubGlobal('fetch', vi.fn(async () => Response.json({
+    memberships: [], orgRoles: [], qualifications: [], version: 'a'.repeat(64),
+    churchMembership: allowed ? {membershipId: 'm', church: {id: 'church', kind: 'church', name: 'Church', status: 'active'}} : null,
+    responsibilities: allowed ? [{responsibilityId: 'r', orgUnit: {id: 'church', kind: 'church', name: 'Church', status: 'active'}}] : [],
+    entitlements: [{assignmentId: 'e', entitlementCode: 'video.meeting-recordings.access', validFrom: '2026-09-17T00:00:00Z'}]
+  })));
+  const client: AccountSessionClient = {...anonymousSessionClient,
+    getSession: async () => ({authenticated: true, user: {id: 'u1', email: 'member@example.test', display_name: 'Member', avatar_url: null}, permissions: [], permission_availability: {status: 'available'}}),
+    issueAccessToken: async () => ({accessToken: 'test-token', expiresIn: 900})
+  };
+  render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/organizations" sessionClient={client} /></NextIntlClientProvider>);
+  const mobile = screen.getByRole('navigation', {name: '選單'});
+  await within(mobile).findByRole('button', {name: '我的'});
+  await waitFor(() => expect(within(mobile).getAllByRole('link').map(link => link.textContent)).toEqual(allowed ? ['最新消息', '影音專區', '小家'] : ['最新消息', '影音專區']));
+  if (allowed) {
+    expect(within(mobile).getByRole('link', {name: '小家'})).toHaveAttribute('href', '/zh-Hant/organizations');
+    expect(mobile.children[mobile.children.length - 2]).toHaveTextContent('小家');
+    expect(within(screen.getByRole('navigation', {name: '主要導覽'})).getByRole('link', {name: '小家'})).toHaveAttribute('aria-current', 'page');
+  }
+  fireEvent.click(screen.getByRole('button', {name: '帳號選單'}));
+  expect(await screen.findByRole('menu')).toBeInTheDocument();
+  expect(screen.queryByRole('menuitem', {name: '小家'})).not.toBeInTheDocument();
 });

@@ -7,7 +7,10 @@
 .grid {display:grid; grid-template-columns:minmax(0,1fr); gap:28px 20px;}
 .card {min-width:0; display:grid; align-content:start; gap:10px;}
 .thumbnail {align-self:start; aspect-ratio:16/9; position:relative; display:block; overflow:hidden; border-radius:12px;}
-.thumbnail:hover {filter:brightness(1.06);}
+.previewSurface {display:block;width:100%;height:100%;}
+.preview {position:absolute;inset:0;pointer-events:none;opacity:0;}
+.preview[data-playing="true"] {opacity:1;}
+.preview > div {width:100%;height:100%;}
 .thumbnail:focus-visible, .title a:focus-visible {outline:2px solid var(--color-primary); outline-offset:3px;}
 .info {min-width:0; display:grid; align-content:start; gap:5px;}
 .title {color:var(--color-ink); font-size:16px; font-weight:600; line-height:1.4; overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow-wrap:anywhere;}
@@ -50,3 +53,13 @@
   .watch .video > :first-child:not(:fullscreen):not([data-fullscreen="viewport"]) {position:var(--site-watch-position,sticky);top:var(--site-watch-offset,0px);z-index:1;margin-inline:0;transition:top 220ms cubic-bezier(.22,1,.36,1);}
 }
 @media(prefers-reduced-motion:reduce) {.watch .video > :first-child {transition:none;}}
+
+.skeletonRegion {grid-column:1 / -1; min-width:0;}
+.skeletonTitle {height:22px; width:85%;}
+.skeletonLine {height:14px; width:55%;}
+.skeletonInformation {height:96px; border-radius:12px;}
+.skeletonWatch {display:contents;}
+.skeletonWatch > .video {display:grid; gap:16px;}
+.skeletonWatch > .recommendations {grid-column:2; grid-row:1 / span 6;}
+@media(max-width:1279px) {.skeletonWatch > .recommendations {grid-column:1; grid-row:auto;}}
+@media(max-width:639px) {.skeletonRegion .skeletonCard:nth-child(n+4) {display:none;}}

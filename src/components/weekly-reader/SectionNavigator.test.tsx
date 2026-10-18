@@ -1,0 +1,21 @@
+import {cleanup, fireEvent, render, screen} from '@testing-library/react';
+import {afterEach, expect, it, vi} from 'vitest';
+import {SectionNavigator} from './SectionNavigator';
+import {readerFixture} from '@/features/weekly-reader/test-fixture';
+import {getMessages} from '@/i18n/messages';
+afterEach(cleanup);
+it('places the speaker section after chapters and jumps to the visible heading', () => {
+  const document = {...readerFixture().document.content, contentLocale:'zh-Hant' as const, sourcePageCount:4}, onSection = vi.fn(), m = getMessages('en').weeklyReader;
+  const first = document.components[1];
+  if (first.type !== 'backSummary') throw new Error('fixture');
+  const title = first.items[0].blocks[0];
+  document.components[1] = {id: first.id, type: 'bodySection', bodySection: {kind: 'unknown', title, contributors: [{role: 'speaker', name: {...structuredClone(title), id: 'name', sentences: [{id: 'name-sentence', spans: [{text: 'Speaker A', fontRole: 'body'}]}]}}], blocks: []}};
+  render(<SectionNavigator document={document} onSection={onSection} messages={m}/>);
+  expect(screen.getAllByText(/Speakers|Sections/, {selector: 'summary'}).map(element => element.textContent)).toEqual([m.sections, m.speakers]);
+  fireEvent.click(screen.getByText(m.speakers, {selector: 'summary'}));
+  fireEvent.click(screen.getByRole('button', {name: 'Speaker A'}));
+  expect(onSection).toHaveBeenCalledWith({kind: 'sentence', id: 's1'});
+  fireEvent.click(screen.getByText(m.sections, {selector: 'summary'}));
+  expect(screen.getByRole('button', {name: '內容1。 ～ Speaker A'})).toBeVisible();
+  expect(screen.queryByRole('button', {name: m.backSummary})).toBeNull();
+});

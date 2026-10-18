@@ -131,6 +131,9 @@
     "page": "頁碼",
     "zoom": "縮放",
     "thumbnails": "縮圖",
+    "speakers": "講員",
+    "speakerStartUnknown": "起點未確認",
+    "noSpeakers": "本期沒有可辨識的講員署名。",
     "sections": "章節",
     "close": "關閉",
     "cover": "封面",
@@ -152,6 +155,7 @@
       "news": "最新消息",
       "literatureMinistry": "文字事工",
       "memberVideos": "影音專區",
+      "organizations": "小家",
       "menu": "選單",
       "openMenu": "開啟選單",
       "closeMenu": "關閉選單",
@@ -226,6 +230,7 @@
       "email": "Email 訂閱設定"
     },
     "search": {
+      "members": "搜尋會員",
       "label": "搜尋",
       "submit": "搜尋",
       "clear": "清除搜尋",
@@ -646,5 +651,9 @@
   "root": {
     "title": "選擇語言",
     "description": "請選擇要瀏覽的語言版本。"
+  },
+  "organizations": {
+    "heroTitle": "小家",
+    "heroSubtitle": "陪人走一生的路，乃人生最高的成就"
   }
 }
