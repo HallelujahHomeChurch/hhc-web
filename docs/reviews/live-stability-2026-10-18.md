@@ -52,8 +52,8 @@ K3/B1/C1/D1/S10 wire, 30000/1001 fps, 300-frame/10.01-second segments, digest, i
 
 - Asset: `a861f5e4f65b0d53a138bf3b456213fbd6dddf6f`, CI `39095667030` passed.
 - CMS: `46525796674bfcf8f2019e0e946d1a2e9e3a4f7e`, CI `39096639471` passed (11 checks).
-- Shared UI: `a95ce70cc218aa70cf511d9ea9c41f9f389cbaaf`, CI `39096801512` started; 333 local UI tests, including 138 player tests, plus build/lint/contracts and packed Node/Vite/Next consumer smoke passed.
-- Admin: `f6dc91fa2508ba2b3e42bbcbb123f9c90d12f744`; 72 targeted candidate tests, build and source lint passed. Registry CI remains blocked by the unpublished player export.
+- Shared UI: `a95ce70cc218aa70cf511d9ea9c41f9f389cbaaf`, CI `39096801512` as of 2026-10-18 12:33 Asia/Taipei: prepare passed, three required renderer jobs still running; 333 local UI tests, including 138 player tests, plus build/lint/contracts and packed Node/Vite/Next consumer smoke passed.
+- Admin: `f6dc91fa2508ba2b3e42bbcbb123f9c90d12f744`; 72 targeted candidate tests and the final full 128-file / 1339-test suite passed; build and source lint passed. Registry CI `39096660987` failed only the four suites importing the unpublished player export; the dependency gate is not waived.
 - Website: implementation `86cc97660adfd53ea251514d582966b1b452be2d` plus this documentation commit; final packed-candidate full suite passed 165 files / 1273 tests, Next production build passed, lint had zero errors and one pre-existing navigation warning. Registry CI `39096241592` failed because the released UI package does not export `./player`; it is not waived.
 
 No deployment revision or release is claimed for these candidates.
