@@ -1,6 +1,6 @@
 # 第三階段：閱讀加值功能規格草案
 
-日期：2026-10-18。版本 D1。狀態：需求保存與驗收草案，雙席草案保存檢驗 PASS；不是 API／資料模型已定稿，也不是可立即實作的 plan。入口：[總覽與發現追蹤](2026-10-18-reader-improvement-roadmap.md)。先完成第二階段依賴評估與本文件未決事項，更新 spec 並重過實作就緒 gate。
+日期：2026-10-18。版本 D1.1（2026-10-19調查checkpoint）。狀態：原需求草案雙席保存檢驗PASS，第三階段F0兩席調查已完成並保存[證據與待決策](../../reviews/2026-10-19-reader-value-features-gates.md)；不是 API／資料模型已定稿，也不是可立即實作的 plan。入口：[總覽與發現追蹤](2026-10-18-reader-improvement-roadmap.md)。先完成第二階段依賴評估與本文件未決事項，更新 spec 並重過實作就緒 gate。
 
 ## 1. 目標、優先順序與不擴大的範圍
 
@@ -78,3 +78,16 @@
 - O3-6：所選設計的低密度方案、合成baseline、實機驗收資源與每個新增可寫caller的gate整合。
 
 本輪只補需求文件。下一輪先調查並解決阻塞、修訂spec，由兩位Codex檢驗後才寫plan；plan再兩席檢驗。任何實作仍需依最新授權逐步雙席檢驗，PR/CI完成後停在merge前；不執行正式資料寫入或部署。
+
+
+## 7. F0 調查 checkpoint（未定稿）
+
+2026-10-19使用者授權接續調查。兩位Codex查最新API b072123、SDK044232c、Gateway2fe7165；完整notes可由現有全量private state取得，但無全文件總筆數上限，必須另設匯出資源界限，且durability依成功load與IDB queue證明。waiting不是durable的同義詞。sent === true或result/replay/resolution/recoveryReason阻擋；sent === false且無復原標記的已提交queue可包含並標待同步。
+
+目前未找到引用匯出授權或來源URL的語意deep-link契約；不得把copy能力與假造#sentenceId當證據。可以採已核對的HTTPS期數連結及純文字來源位置。匯出是否保留quote已送使用者選擇，未收到回覆前不刪減D1需求或實作下載。
+
+目前沒有bookmark state/kind。跨裝置方案需API資料表及CAS/冪等/遷移/DSR、SDK與consumer相容變更；現有Gateway state/mutation路由可沿用。推薦首版線上CRUD、離線僅讀已確認快照。裝置限定若被選定，應獨立account/document/revision持久集合，不能塞進會被cloud refresh替換的replica，亦不能用30分鐘return-state。
+
+書籤跳轉不得默默使用閱讀模式同頁/章節fallback；僅exact target可直接跳轉，失效明示需重綁。跨裝置vs裝置限定已向使用者詢問，產品選擇未收到；本checkpoint不代表spec實作就緒。名稱/數量/重複語意、revision及offline策略由選定方案的下一版spec明確定案並雙席檢驗。
+
+跨repo順序producer→已發布SDK→consumer正式registry驗證；停merge前不得偷publish或把local packed候選當已發布。尚未寫implementation plan或產品碼。
