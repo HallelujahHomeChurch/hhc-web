@@ -79,3 +79,13 @@ it('allows a same-revision explicit offline save without removing its online-onl
   await store.commitOfflineSave({selector,value,epoch,resources:[],size:100,locked:false,lastObservedAt:now},epoch,now);
   expect((await store.readPrivateReplica(selector,now))?.queue[0].mutation).toEqual(intent);expect((await store.readOfflineSave(selector,now))?.status).toBe('available');
 });
+it('samples live time after queued IDB work instead of mistaking a concurrent read for clock rollback',async()=>{
+ const epoch=await seed();
+ const binding=store.bindOnlinePrivate(selector,value,epoch);
+ vi.setSystemTime(now+1);
+ const reading=store.readPrivateBinding(selector);
+ await expect(Promise.all([binding,reading])).resolves.toHaveLength(2);
+ expect((await store.readPrivateBinding(selector)).writable).toBe(true);
+ vi.setSystemTime(now-1);
+ await expect(store.readPrivateBinding(selector)).rejects.toThrow('offline_access_expired');
+});

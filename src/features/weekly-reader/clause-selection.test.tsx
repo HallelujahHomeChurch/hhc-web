@@ -42,3 +42,14 @@ it('uses measured scaled glyph coordinates and refuses native pinch-zoom taps',(
  vi.stubGlobal('visualViewport',{scale:2});pointer('pointerdown',15,75);pointer('pointerup',15,75);fireEvent.click(screen.getByRole('button'),{clientX:15,clientY:75,detail:1});
  expect(selection().ranges).toEqual([{sentenceId:'s',start:3,end:5}]);
 });
+
+it('extends adjacent keyboard clauses with Shift+arrows and preserves clear and distant reset',()=>{
+ render(<Harness/>);const text=screen.getByRole('button');
+ fireEvent.keyDown(text,{key:'Home'});fireEvent.keyDown(text,{key:'ArrowRight',shiftKey:true});
+ expect(selection().ranges).toEqual([{sentenceId:'s',start:0,end:5}]);
+ fireEvent.keyDown(text,{key:'ArrowRight',shiftKey:true});expect(selection().ranges).toEqual([{sentenceId:'s',start:0,end:7}]);
+ fireEvent.keyDown(text,{key:'ArrowRight',shiftKey:true});expect(selection().ranges).toEqual([{sentenceId:'s',start:0,end:7}]);
+ fireEvent.keyDown(text,{key:' '});expect(selection()).toEqual({ids:[]});
+ fireEvent.keyDown(text,{key:'Home'});fireEvent.keyDown(text,{key:'End'});expect(selection().ranges).toEqual([{sentenceId:'s',start:5,end:7}]);
+ fireEvent.keyDown(text,{key:'ArrowLeft',shiftKey:true});expect(selection().ranges).toEqual([{sentenceId:'s',start:3,end:7}]);
+});

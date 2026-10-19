@@ -60,8 +60,8 @@
   {
     "mode": "easy",
     "sent": {
-      "mutationId": "e0784fe1-3be6-49e8-9936-0872f8271e7d",
-      "createdAt": "2026-10-19T18:26:48.954Z",
+      "mutationId": "25afebef-bd08-4dc9-b483-608932aa1927",
+      "createdAt": "2026-10-19T18:42:29.759Z",
       "documentRevision": 1,
       "kind": "setHighlight",
       "payload": {
@@ -188,8 +188,8 @@
   {
     "mode": "paper",
     "sent": {
-      "mutationId": "9b353c0b-0f06-439c-b18b-0f0aa9ab9f63",
-      "createdAt": "2026-10-19T18:27:08.014Z",
+      "mutationId": "cc4acb5f-64b5-4084-9766-fbca511d3b4e",
+      "createdAt": "2026-10-19T18:42:43.381Z",
       "documentRevision": 1,
       "kind": "setHighlight",
       "payload": {
@@ -254,5 +254,37 @@
       "已選取 15 個字元 數字3.14,000保持完整，",
       ""
     ]
+  },
+  {
+    "kind": "zoomed-paper-300",
+    "viewport": [
+      390,
+      844
+    ],
+    "quote": "已選取 15 個字元 數字3.14,000保持完整，",
+    "boxes": [
+      {
+        "x": 0.1953125,
+        "y": 436.5625,
+        "width": 262.9296875,
+        "height": 24.2890625,
+        "top": 436.5625,
+        "right": 263.125,
+        "bottom": 460.8515625,
+        "left": 0.1953125
+      }
+    ],
+    "status": [
+      "已選取 15 個字元 數字3.14,000保持完整，",
+      ""
+    ],
+    "progress": {
+      "pageId": "p0",
+      "componentId": "c0",
+      "sentenceId": "s0",
+      "recordedAt": "2026-10-19T18:43:00.658Z",
+      "updatedAt": "2026-10-19T18:43:00.658Z"
+    },
+    "view": "{\"zoom\":3,\"direction\":\"vertical\"}"
   }
 ]

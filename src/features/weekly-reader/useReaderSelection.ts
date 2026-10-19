@@ -75,6 +75,13 @@ export function useReaderSelection(root: RefObject<HTMLElement | null>, sentence
         const candidates=fragmentClauses(fragment,sentences,clauses);
         if (!candidates.length) return;
         event.preventDefault();
+        if (event.shiftKey && (event.key==='ArrowLeft'||event.key==='ArrowRight')) {
+          const right=event.key==='ArrowRight', boundary=right?current.current.ranges?.at(-1):current.current.ranges?.[0];
+          const edge=candidates.findIndex(clause=>clause.sentenceId===boundary?.sentenceId&&(right?clause.end===boundary.end:clause.start===boundary.start));
+          const target=candidates[edge<0?(right?0:candidates.length-1):edge+(right?1:-1)];
+          if (target) {keyboardClause.current=target;choose(target);}
+          return;
+        }
         const index=candidates.findIndex(clause=>clause.sentenceId===keyboardClause.current?.sentenceId&&clause.start===keyboardClause.current.start);
         const next=event.key==='Home'?0:event.key==='End'?candidates.length-1:event.key==='ArrowRight'?Math.min(candidates.length-1,index+1):event.key==='ArrowLeft'?Math.max(0,(index<0?candidates.length:index)-1):Math.max(0,index);
         const target=candidates[next]; keyboardClause.current=target;

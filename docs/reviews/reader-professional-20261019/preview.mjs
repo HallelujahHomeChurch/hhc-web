@@ -64,6 +64,7 @@ const locale=['en','ja','ko','zh-Hans','zh-Hant'].includes(params.get('locale'))
 document.documentElement.dataset.theme=params.get('theme')==='dark'?'dark':'light';localStorage.setItem('hhc-reader-theme',document.documentElement.dataset.theme);
 if(params.get('mode')!=='editor')saveReaderReturn({accountId:'local-fixture-account',documentId:value.document.documentId},{revision:1,draft:undefined});
 if(params.get('mode')==='editor')saveReaderReturn({accountId:'local-fixture-account',documentId:value.document.documentId},{revision:1,draft:{text:'尚未儲存的合成筆記。\\n'.repeat(12)}});
+if(scenario==='clauses')sessionStorage.removeItem('weekly-reader-view:weekly-reader-position:local-fixture-account:'+value.document.documentId+':'+value.document.revision);
 if(scenario==='loaderror'||scenario==='error'||scenario==='clauses'){await clearOfflineAccount('local-fixture-account');await activateOfflineAccount('local-fixture-account');}
 if(scenario==='partial'){await clearOfflineAccount('local-fixture-account');await activateOfflineAccount('local-fixture-account');const read=store.read;store.read=(doc)=>({...read(doc),conflicts:[{id:'fixture-partial-conflict',sentenceIds:['s0'],sources:[{sentenceId:'old',quote:'舊版藍色標註需要確認整段覆蓋。',color:'red',segments:[{start:2,end:6,color:'blue'}]}]}]});let reads=0;window.fixtureApi.privateState=async()=>({state:{...store.read(value.document),currentRevision:++reads===1?2:1}});}
 

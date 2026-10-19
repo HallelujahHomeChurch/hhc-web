@@ -12,9 +12,9 @@ export async function prepareReaderUpgrade(api: UpgradeApi, selector: ReaderSele
   return withReaderWriter(selector.accountId, signal, async () => {
     const fresh = await api.renew(selector, value, crypto.randomUUID(), signal);
     signal.throwIfAborted();
-    await bindOnlinePrivate(selector, fresh, epoch, now());
-    const binding = await readPrivateBinding(selector, now());
-    const previous = await readPrivateReplica(selector, now());
+    await bindOnlinePrivate(selector, fresh, epoch, now);
+    const binding = await readPrivateBinding(selector, now);
+    const previous = await readPrivateReplica(selector, now);
     const current = await api.current(selector, value, crypto.randomUUID(), signal);
     const cloud = await api.privateState(selector, value, signal);
     signal.throwIfAborted();
@@ -40,10 +40,10 @@ export async function prepareReaderUpgrade(api: UpgradeApi, selector: ReaderSele
       // exact fingerprint before changing revision/anchors under the same ID.
       if ((entry.sent || entry.replay || entry.mutation.kind === 'resolveHighlightMigrationConflict') && !result) {
         const request = entry.replay ?? entry.mutation;
-        queue = await stageReaderReplay(selector, entry.mutation.mutationId, request, epoch, now(), queue);
+        queue = await stageReaderReplay(selector, entry.mutation.mutationId, request, epoch, now, queue);
         const response = await api.mutate(selector, current, [request], signal);
         signal.throwIfAborted();
-        queue = await recordReaderReplayResult(selector, response.results[0], epoch, queue, now());
+        queue = await recordReaderReplayResult(selector, response.results[0], epoch, queue, now);
         state = response.state; result = response.results[0];
         entry = queue.find(entry => entry.mutation.mutationId === original.mutation.mutationId)!;
       }
@@ -57,7 +57,7 @@ export async function prepareReaderUpgrade(api: UpgradeApi, selector: ReaderSele
     if (state.currentRevision !== current.document.revision) throw new Error('revision_changed');
     const base = previous?.confirmed ?? {...state, currentRevision: value.document.revision, appliedRevision: value.document.revision, highlights: [], notes: [], progress: null, conflicts: []};
     const rebased = rebaseReaderMutations(pending, base, state, cloud.mappings ?? []);
-    if (rebased.recovery.length) queue = await retainReaderRecoveries(selector, rebased.recovery, epoch, queue, now());
+    if (rebased.recovery.length) queue = await retainReaderRecoveries(selector, rebased.recovery, epoch, queue, now);
     return {onlineOnly: binding.onlineOnly, value: current, previousRevision: value.document.revision, state, queue, mutations: rebased.mutations, recovery: [...recovery, ...rebased.recovery]};
   });
 }
@@ -72,18 +72,18 @@ export async function finishReaderUpgrade(api: UpgradeApi, selector: ReaderSelec
       if ((entry.resolution?.result ?? entry.replayResult ?? entry.result)?.status === 'applied') continue;
       const mutation = entry.resolution ? entry.resolution.mutation : prepared.mutations.find(mutation => mutation.mutationId === entry.mutation.mutationId);
       if (!mutation) continue;
-      if (!entry.resolution) queue = await stageReaderReplay(selector, mutation.mutationId, mutation, epoch, now(), queue);
+      if (!entry.resolution) queue = await stageReaderReplay(selector, mutation.mutationId, mutation, epoch, now, queue);
       const response = await api.mutate(selector, prepared.value, [mutation], signal);
       signal.throwIfAborted();
-      queue = await (entry.resolution ? recordReaderRecoveryResult : recordReaderReplayResult)(selector, response.results[0], epoch, queue, now());
+      queue = await (entry.resolution ? recordReaderRecoveryResult : recordReaderReplayResult)(selector, response.results[0], epoch, queue, now);
       state = response.state;
       if (response.results[0].status !== 'applied' || state.currentRevision !== prepared.value.document.revision) throw new Error('action_required');
     }
-    if (prepared.onlineOnly) await commitOnlineUpgrade(selector, prepared.value, state, epoch, prepared.previousRevision, queue, now());
+    if (prepared.onlineOnly) await commitOnlineUpgrade(selector, prepared.value, state, epoch, prepared.previousRevision, queue, now);
     else {
       const staged = await stageOfflineSave(prepared.value, selector, fetcher, now(), signal);
       signal.throwIfAborted();
-      await commitOfflineUpgrade(staged, state, epoch, prepared.previousRevision, queue, now());
+      await commitOfflineUpgrade(staged, state, epoch, prepared.previousRevision, queue, now);
     }
     return {value: prepared.value, state};
   });
