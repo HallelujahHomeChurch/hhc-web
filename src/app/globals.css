@@ -325,14 +325,15 @@
     }
 
     .site-header-account:not([data-mobile-retained="true"]) { display: none; }
-    .site-header[data-search-open="true"] .site-header-brand,
-    .site-header[data-search-open="true"] .site-header-account { visibility: hidden; }
+    .site-header[data-search-open="true"] .site-header-brand { visibility: hidden; }
+    .site-header-private-controls { position: relative; z-index: 3; }
+    .site-header-controls { gap: 8px; }
     .site-header[data-search-open="true"] .site-header-search {
       position: absolute;
       inset: 0;
       display: flex;
       align-items: center;
-      padding: 12px 16px;
+      padding: 12px max(16px, var(--site-search-end)) 12px 16px;
       background: var(--color-paper);
     }
     .site-mobile-account { position: relative; z-index: 1; display: grid; grid-template-rows: 26px 11px; gap: 3px; align-content: center; justify-items: center; min-height: var(--mobile-item-height); }
@@ -492,6 +493,8 @@
 /* Integrate shared controls in their layer so local sizing can override defaults. */
 @layer hhc.components {
   .site-header-search .hhc-expandable-search__field input { font-size: 16px; }
+  .site-header-search .hhc-expandable-search__trigger,
+  .site-header-account .hhc-account-menu__trigger { min-width: 44px; min-height: 44px; }
   .site-header-search .hhc-expandable-search__trigger:disabled { opacity: .4; cursor: not-allowed; }
   @media (min-width: 768px) {
     .site-header[data-search-open="true"][data-search-replaces-nav="true"] .hhc-expandable-search { width: 100%; }

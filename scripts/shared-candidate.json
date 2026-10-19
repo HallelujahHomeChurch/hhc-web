@@ -1,0 +1,13 @@
+{
+  "commit": "fab244007cfd85e24e7a25c1c38e805360c50788",
+  "version": "1.1.1",
+  "archives": {
+    "hallelujahhomechurch-account-client-1.1.1.tgz": "1c6f2ac61279ac72e139288511ddd44826b022cc847181a9c62131c52090e336",
+    "hallelujahhomechurch-donation-client-1.1.1.tgz": "9dd75b0dbb01aaf61a7fb4540c987180c4af95774994edbcbcc3a0af6faf3bf8",
+    "hallelujahhomechurch-donation-ui-1.1.1.tgz": "815cdd48cd709c54b546e66cd74299d0194156e224dfdb0ddc78c835116d068d",
+    "hallelujahhomechurch-hhc-web-client-1.1.1.tgz": "b3d00448bf1e86cda3db14ee1600cbb9ad2d82d9cce7e0b2beb66853b3849467",
+    "hallelujahhomechurch-operations-client-1.1.1.tgz": "1e71b7c4494e8e06fde3dde29b1b939317383365ded1c626c204a44bfabd7296",
+    "hallelujahhomechurch-preferences-1.1.1.tgz": "c546da21d46f7c458626a8c4e915237a33200f1f853993927584763728cd326c",
+    "hallelujahhomechurch-ui-1.1.1.tgz": "7b8a5ead38d3bd9bdff136d7d93cc34c5660db9a2f2ca7818082b3badc6b1215"
+  }
+}

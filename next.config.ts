@@ -26,6 +26,8 @@ const nextConfig: NextConfig = {
     ]
   },
   headers: async () => [
+    {source: '/:locale/notifications/:path*', headers: [{key: 'Cache-Control', value: 'private, no-store'}, {key: 'X-Robots-Tag', value: 'noindex, nofollow'}]},
+    {source: '/api/notifications/:path*', headers: [{key: 'Cache-Control', value: 'private, no-store'}]},
     {source: '/:locale/organizations/:path*', headers: [{key: 'Cache-Control', value: 'private, no-store'}, {key: 'X-Robots-Tag', value: 'noindex, nofollow'}]},
     {source: '/:locale/literature-ministry/offline/reader-shell', headers: [{key: 'X-HHC-Reader-Shell', value: 'public'}, {key: 'X-Robots-Tag', value: 'noindex, nofollow'}]},
     ...weeklyTemplate.assets.map(asset => ({source: asset.url, headers: [{key: 'Cache-Control', value: 'public, max-age=31536000, immutable'}]})),

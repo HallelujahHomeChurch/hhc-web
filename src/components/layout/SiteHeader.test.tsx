@@ -117,7 +117,7 @@ describe('SiteHeader', () => {
   it('reserves center navigation only when the expanded field cannot fit beside it', async () => {
     let width = 1024;
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
-      const bounds = this.classList.contains('site-header-row') ? [0, width] : this.classList.contains('site-header-brand') ? [24, 240] : this.classList.contains('site-header-account') ? [width - 64, width - 24] : this.id === 'site-navigation' ? [width / 2 - 220, width / 2 + 220] : [0, 0];
+      const bounds = this.classList.contains('site-header-row') ? [0, width] : this.classList.contains('site-header-brand') ? [24, 240] : this.classList.contains('site-header-private-controls') ? [width - 116, width - 24] : this.id === 'site-navigation' ? [width / 2 - 220, width / 2 + 220] : [0, 0];
       return {x: bounds[0], y: 0, left: bounds[0], right: bounds[1], top: 0, bottom: 76, width: bounds[1] - bounds[0], height: 76, toJSON: () => ({})};
     });
     render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/member-videos" sessionClient={anonymousSessionClient} /></NextIntlClientProvider>);

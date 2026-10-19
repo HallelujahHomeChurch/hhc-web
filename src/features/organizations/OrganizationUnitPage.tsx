@@ -5,12 +5,14 @@ import { Button, DataTableFrame, Dialog,  Switch } from '@hallelujahhomechurch/u
 import { ChevronRight, FolderPlus, Pencil, Send, UserRoundPlus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { organizationHref } from './routes'
 
 import { useOrganizationApi } from './context'
 import { useOrganizationMessages } from './context'
 import type { EntitlementCode, ManagedJoinCandidate, ManagedMemberPage, ManagedResponsibility, ManagedResponsibilityCandidate, ManagedUnitFolder } from './api'
+import {useNotificationInbox} from '@/features/notifications/provider'
+import {ReviewRequestsSection} from './OrganizationReviewRequests'
 import { OrganizationNotificationDialog } from './OrganizationNotificationDialog'
 import { managedEntitlementCodes, managedEntitlementLabels, useManagedMutation } from './organization-state'
 
@@ -30,6 +32,10 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
   onSearchAvailabilityChange?: (status: OrganizationSearchStatus) => void
 }) {
   const { operationsApi } = useOrganizationApi()
+  const inbox = useNotificationInbox()
+  const router=useRouter(), params=useSearchParams(), pathname=usePathname()
+  const source=params.toString(), selectedLink=params.get('joinRequest')
+  const [consumedLinks]=useState(()=>new Set<string>())
   const { locale, messages: { organizations: t, site } } = useOrganizationMessages()
   const [folder, setFolder] = useState<ManagedUnitFolder | null>(null)
   const [members, setMembers] = useState<ManagedMemberPage | null>(null)
@@ -54,8 +60,17 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
   const { mutate, pending, error } = useManagedMutation()
   const refresh = () => setRevision(value => value + 1)
 
+  useEffect(()=>{
+    if(!loadError||!selectedLink)return
+    consumedLinks.add(selectedLink)
+    const next=new URLSearchParams(source);next.delete('joinRequest')
+    router.replace(pathname+(next.size?`?${next}`:'')+'#join-requests',{scroll:false})
+  },[loadError,selectedLink,source,pathname,router,consumedLinks])
+
   const requestedMemberScope = `${unitId}:${search}:${page}`
   const visibleMembers = memberScope === requestedMemberScope ? members : null
+
+  useEffect(()=>{const refresh=()=>setRevision(v=>v+1);window.addEventListener('focus',refresh);window.addEventListener('hhc:organizations-changed',refresh);return()=>{window.removeEventListener('focus',refresh);window.removeEventListener('hhc:organizations-changed',refresh)}},[])
 
   useEffect(() => {
     if (query.trim() === search) return
@@ -162,6 +177,7 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
       </div>
     </header>
     {!dialog ? mutationError : null}
+    <ReviewRequestsSection consumedLinks={consumedLinks} unitId={unitId} enabled={Boolean(folder.actions.reviewJoinRequests)} onDecided={() => {void inbox?.store.invalidate()}}/>
     <div className="organization-directory">
         <DataTableFrame footer={<div className="organization-section-heading organization-pagination">
           <span className="muted-copy" role="status">{loading ? t.refreshing : t.members + ' · ' + page}</span>

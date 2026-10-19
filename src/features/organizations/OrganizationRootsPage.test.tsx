@@ -1,72 +1,43 @@
-import { render, screen, within } from '@testing-library/react'
+import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-const routing = vi.hoisted(() => ({ params: { unitId: 'unit', memberId: 'member' }, push: vi.fn() }))
-vi.mock('next/navigation', () => ({ useParams: () => routing.params, useRouter: () => routing }))
-import { beforeEach, expect, it, vi } from 'vitest'
-
-import { useOrganizationApi } from './context'
-import { messages } from './messages'
-import { OrganizationRootsPage } from './OrganizationRootsPage'
-
-vi.mock('./context', () => ({ useOrganizationApi: vi.fn(), useOrganizationMessages: () => ({ locale: 'en', messages: messages.en }) }))
-
-
-beforeEach(() => vi.resetAllMocks())
-
-it('renders every server-selected root as one clear viewing link without email or type columns', async () => {
-  const roots = [{ id: 'unit', parentId: 'unmanaged-church', name: 'Family', kind: 'family', status: 'active', version: 1 }, { id: 'other', name: 'Other', kind: 'fellowship', email: 'other@example.test', status: 'active', version: 1 }]
-  vi.mocked(useOrganizationApi).mockReturnValue({ operationsApi: { listManagedRoots: vi.fn().mockResolvedValue(roots) } } as never)
-  render(<OrganizationRootsPage />)
-  const list = await screen.findByRole('list', { name: messages.en.organizations.roots })
-  expect(within(list).getAllByRole('listitem')).toHaveLength(2)
-  expect(within(list).getAllByRole('link')).toHaveLength(2)
-  for (const root of roots) {
-    const link = within(list).getByRole('link', { name: 'View ' + root.name })
-    expect(link).toHaveAttribute('href', '/en/organizations/' + root.id)
-    expect(link).toHaveTextContent(root.name)
-  }
-  expect(screen.queryByText('other@example.test')).not.toBeInTheDocument()
-  expect(screen.queryByRole('table')).not.toBeInTheDocument()
-  expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
-  expect(screen.getByRole('heading', {name: 'My small groups'})).toBeInTheDocument()
-  expect(screen.queryByText(messages.en.organizations.chooseUnit)).not.toBeInTheDocument()
+import {beforeEach, expect, it, vi} from 'vitest'
+import {OrganizationRootsPage} from './OrganizationRootsPage'
+import {messages} from './messages'
+const state=vi.hoisted(()=>({query:'',params:new URLSearchParams(),replace:vi.fn(),invalidate:vi.fn(),api:{listOrgUnitDirectory:vi.fn(),listManagedRoots:vi.fn(),getMyAccess:vi.fn(),listOwnOrgJoinRequests:vi.fn(),createOrgJoinRequest:vi.fn()}}))
+vi.mock('next/navigation',()=>({usePathname:()=>'/en/organizations',useSearchParams:()=>state.params,useRouter:()=>({replace:state.replace})}))
+vi.mock('./context',()=>({useOrganizationApi:()=>({operationsApi:state.api}),useOrganizationMessages:()=>({locale:'en',messages:messages.en})}))
+vi.mock('./OrganizationsSearch',()=>({useOrganizationsSearch:()=>null}))
+vi.mock('@/features/notifications/provider',()=>({useNotificationInbox:()=>({store:{invalidate:state.invalidate}})}))
+const unit=(id:string,name:string,extra={})=>({id,name,kind:'small_group',ancestorLabels:['Church','Family'],relationship:'none',applicationAvailability:'available',ancestorCollapsePreview:[],...extra})
+const pending={id:'request',orgUnitId:'available',orgUnitName:'Available',orgUnitKind:'small_group',status:'pending',requestedAt:'2026-10-19T00:00:00Z',version:1,actions:{cancel:true,approve:false,reject:false},ancestorCollapsePreview:[]}
+beforeEach(()=>{vi.resetAllMocks();state.params=new URLSearchParams();state.api.listManagedRoots.mockResolvedValue([]);state.api.listOrgUnitDirectory.mockImplementation(async({relation})=>({items:relation==='mine'?[unit('managed','Family',{kind:'family',relationship:'managed'})]:[],page:1}));state.api.getMyAccess.mockResolvedValue({responsibilities:[]});state.api.listOwnOrgJoinRequests.mockResolvedValue({items:[],page:1});state.api.createOrgJoinRequest.mockResolvedValue(pending)})
+it('preserves managed roots and renders independently loaded mine and all lists without private fields',async()=>{
+ state.api.listOrgUnitDirectory.mockImplementation(async({relation})=>({items:relation==='mine'?[unit('managed','Family',{kind:'family',relationship:'managed'})]:[unit('available','Available',{email:'secret@example.test'})],page:1}));render(<OrganizationRootsPage/>);
+ expect(await screen.findByRole('link',{name:'View Family'})).toHaveAttribute('href','/en/organizations/managed');expect(await screen.findByRole('button',{name:'Apply Available'})).toBeInTheDocument();expect(screen.getByRole('heading',{name:'All small groups'})).toBeInTheDocument();expect(screen.queryByText('secret@example.test')).not.toBeInTheDocument();expect(screen.queryByRole('table')).not.toBeInTheDocument();expect(state.api.listManagedRoots).not.toHaveBeenCalled();
 })
-
-it('renders authorization state for a direct denied URL', async () => {
-  vi.mocked(useOrganizationApi).mockReturnValue({ operationsApi: { listManagedRoots: vi.fn().mockRejectedValue(Object.assign(new Error(), { status: 403 })) } } as never)
-  render(<OrganizationRootsPage />)
-  expect(await screen.findByRole('alert')).toHaveTextContent('You do not have access')
-  expect(screen.queryByRole('table')).not.toBeInTheDocument()
+it('uses current relationship and availability rather than inferring membership from pending',async()=>{
+ state.api.listOrgUnitDirectory.mockResolvedValue({page:1,items:[unit('joined','Joined',{relationship:'joined',applicationAvailability:'already_joined'}),unit('pending','Pending',{applicationAvailability:'pending',ownPendingRequestId:'request'}),unit('no','No reviewer',{applicationAvailability:'no_reviewer'}),unit('move','Needs move',{applicationAvailability:'affiliation_change_required'}),unit('manage','Manager',{relationship:'managed'})]});render(<OrganizationRootsPage/>);
+ const all=await screen.findByRole('list',{name:'All small groups'});expect(within(all).getByRole('link',{name:'View Joined'})).toBeInTheDocument();expect(within(all).queryByRole('link',{name:'View Pending'})).not.toBeInTheDocument();expect(within(all).getByRole('link',{name:'View request Pending'})).toHaveAttribute('href','/en/organizations/requests/request');expect(within(all).getByRole('button',{name:'Apply No reviewer'})).toBeDisabled();expect(within(all).getByRole('button',{name:'Apply Needs move'})).toBeDisabled();expect(within(all).getByRole('link',{name:'View Manager'})).toBeInTheDocument();expect(within(all).getByRole('button',{name:'Apply Manager'})).toBeEnabled();
 })
-
-it('shows the empty state without a table for an empty successful response', async () => {
-  vi.mocked(useOrganizationApi).mockReturnValue({ operationsApi: { listManagedRoots: vi.fn().mockResolvedValue([]) } } as never)
-  render(<OrganizationRootsPage />)
-  expect(await screen.findByText(messages.en.organizations.empty)).toBeInTheDocument()
-  expect(screen.queryByRole('table')).not.toBeInTheDocument()
+it('discloses exact safe ancestors, submits only a target with stable retry intent, invalidates inbox and stays pending',async()=>{
+ state.api.listOrgUnitDirectory.mockResolvedValue({items:[unit('available','Available',{ancestorCollapsePreview:[{id:'church',name:'Current church',kind:'church'},{id:'family',name:'Current family',kind:'family'}]})],page:1});state.api.createOrgJoinRequest.mockRejectedValueOnce(new TypeError('offline')).mockResolvedValueOnce(pending);render(<OrganizationRootsPage/>);await userEvent.click((await screen.findAllByRole('button',{name:'Apply Available'}))[0]);const dialog=screen.getByRole('dialog');expect(dialog).toHaveTextContent('Current church');expect(dialog).toHaveTextContent('Current family');expect(dialog).toHaveTextContent('Other small groups and fellowships');await userEvent.click(within(dialog).getByRole('button',{name:'Submit request'}));expect(await within(dialog).findByRole('alert')).toBeInTheDocument();await userEvent.click(within(dialog).getByRole('button',{name:'Submit request'}));await waitFor(()=>expect(state.invalidate).toHaveBeenCalledOnce());const calls=state.api.createOrgJoinRequest.mock.calls;expect(calls[0][0]).toEqual({orgUnitId:'available',idempotencyKey:expect.any(String)});expect(calls[1][0]).toEqual(calls[0][0]);expect(await screen.findByText('Pending review. You have not joined yet.')).toBeInTheDocument();
 })
-
-it('retries a failed lookup instead of displaying an empty successful table', async () => {
-  const listManagedRoots = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce([])
-  vi.mocked(useOrganizationApi).mockReturnValue({ operationsApi: { listManagedRoots } } as never)
-  render(<OrganizationRootsPage />)
-  expect(await screen.findByRole('alert')).toHaveTextContent(messages.en.organizations.loadFailed)
-  expect(screen.queryByRole('table')).not.toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
-  await screen.findByText(messages.en.organizations.empty)
-  expect(listManagedRoots).toHaveBeenCalledTimes(2)
+it('keeps the other section available when one fails and retries only the failed section',async()=>{
+ state.api.listOrgUnitDirectory.mockImplementation(async({relation})=>{if(relation==='all')throw new Error('offline');return {items:[unit('managed','Family',{kind:'family',relationship:'managed'})],page:1}});render(<OrganizationRootsPage/>);await screen.findByRole('link',{name:'View Family'});const all=screen.getByRole('region',{name:'All small groups'});await within(all).findByRole('alert');state.api.listOrgUnitDirectory.mockClear();await userEvent.click(within(all).getByRole('button',{name:'Retry'}));await waitFor(()=>expect(state.api.listOrgUnitDirectory).toHaveBeenCalledOnce());expect(state.api.listOrgUnitDirectory.mock.calls[0][0].relation).toBe('all');
 })
-
-it('keeps management links localized for units selected by the server', async () => {
-  vi.mocked(useOrganizationApi).mockReturnValue({operationsApi: {listManagedRoots: vi.fn().mockResolvedValue([{id: 'unit', name: 'Family', kind: 'family', status: 'active'}])}} as never)
-  render(<OrganizationRootsPage />)
-  expect(await screen.findByRole('link', {name: 'View Family'})).toHaveAttribute('href', '/en/organizations/unit')
+it('debounces literal q, resets both URL pages, aborts old reads and ignores late results',async()=>{
+ state.params=new URLSearchParams('minePage=3&allPage=4');render(<OrganizationRootsPage/>);await screen.findByRole('link',{name:'View Family'});const old=state.api.listOrgUnitDirectory.mock.calls[0][0].signal;const input=screen.getByRole('searchbox',{name:'Search small groups or fellowships'});fireEvent.change(input,{target:{value:' %_ '}});expect(state.replace).not.toHaveBeenCalled();await waitFor(()=>expect(state.replace).toHaveBeenCalledWith('/en/organizations?q=%25_', {scroll:false}));await waitFor(()=>expect(old.aborted).toBe(true));await waitFor(()=>expect(state.api.listOrgUnitDirectory).toHaveBeenCalledWith(expect.objectContaining({relation:'all',q:'%_',page:1,limit:20})));expect(state.api.listOrgUnitDirectory).toHaveBeenCalledWith(expect.objectContaining({relation:'mine',q:'%_',page:1}));
 })
+it('does not submit an IME draft before composition ends',async()=>{render(<OrganizationRootsPage/>);await screen.findByRole('link',{name:'View Family'});const input=screen.getByRole('searchbox');fireEvent.compositionStart(input);fireEvent.change(input,{target:{value:'小家'}});await new Promise(r=>setTimeout(r,280));expect(state.replace).not.toHaveBeenCalled();fireEvent.compositionEnd(input);await waitFor(()=>expect(state.replace).toHaveBeenCalledWith('/en/organizations?q=%E5%B0%8F%E5%AE%B6',{scroll:false}));})
+it('shows safe server conflict codes without pretending the request joined',async()=>{state.api.listOrgUnitDirectory.mockResolvedValue({items:[unit('available','Available')],page:1});state.api.createOrgJoinRequest.mockRejectedValue(Object.assign(new Error(),{status:409,code:'no_reviewer'}));render(<OrganizationRootsPage/>);await userEvent.click((await screen.findAllByRole('button',{name:'Apply Available'}))[0]);await userEvent.click(within(screen.getByRole('dialog')).getByRole('button',{name:'Submit request'}));expect(await screen.findByRole('alert')).toHaveTextContent('No reviewer is currently available');expect(screen.queryByText('Already joined')).not.toBeInTheDocument();})
+it('clears old results immediately on query navigation and rejects an aborted late response',async()=>{let resolve!:(value:unknown)=>void;state.api.listOrgUnitDirectory.mockImplementation(({q})=>q==='new'?new Promise(r=>{resolve=r}):Promise.resolve({items:[unit('old','Old private title')],page:1}));const view=render(<OrganizationRootsPage/>);await screen.findAllByText('Old private title');state.params=new URLSearchParams('q=new');view.rerender(<OrganizationRootsPage/>);expect(screen.queryByText('Old private title')).not.toBeInTheDocument();view.unmount();await act(async()=>resolve({items:[unit('late','Late private title')],page:1}));expect(screen.queryByText('Late private title')).not.toBeInTheDocument();})
 
-it('shows list-shaped placeholders with one status before roots are known',()=>{
- vi.mocked(useOrganizationApi).mockReturnValue({operationsApi:{listManagedRoots:()=>new Promise(()=>{})}} as never);
- const view=render(<OrganizationRootsPage/>);
- expect(view.container.querySelector('[data-loading-layout="organization-roots"]')).not.toBeNull();
- expect(screen.getAllByRole('status')).toHaveLength(1);
- expect(screen.queryByRole('link')).not.toBeInTheDocument();
-});
+it.each([401,403,404])('removes both directory sections and confirmation after create %s denial',async status=>{
+ state.api.listOrgUnitDirectory.mockResolvedValue({items:[unit('available','Sensitive target')],page:1});state.api.createOrgJoinRequest.mockRejectedValue(Object.assign(new Error(),{status}));render(<OrganizationRootsPage/>);await userEvent.click((await screen.findAllByRole('button',{name:'Apply Sensitive target'}))[0]);await userEvent.click(within(screen.getByRole('dialog')).getByRole('button',{name:'Submit request'}));expect(await screen.findByRole('alert')).toHaveTextContent('unavailable');expect(screen.queryAllByText('Sensitive target')).toHaveLength(0);expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+})
+it('deduplicates rows and changes only the selected bounded section page',async()=>{
+ const duplicate=unit('available','Available');state.api.listOrgUnitDirectory.mockResolvedValue({items:[duplicate,duplicate],page:1,nextPage:2});render(<OrganizationRootsPage/>);const all=await screen.findByRole('region',{name:'All small groups'});await within(all).findByRole('button',{name:'Apply Available'});expect(within(all).getAllByRole('listitem')).toHaveLength(1);state.api.listOrgUnitDirectory.mockClear();await userEvent.click(within(all).getByRole('button',{name:'Next'}));await waitFor(()=>expect(state.api.listOrgUnitDirectory).toHaveBeenCalledOnce());expect(state.api.listOrgUnitDirectory).toHaveBeenLastCalledWith(expect.objectContaining({relation:'all',page:2}));expect(state.replace).toHaveBeenLastCalledWith('/en/organizations?allPage=2',{scroll:false});
+})
+it('rejects a late create completion after owner-scoped unmount and prevents double submission',async()=>{
+ let resolve!:(value:unknown)=>void;state.api.listOrgUnitDirectory.mockResolvedValue({items:[unit('available','Available')],page:1});state.api.createOrgJoinRequest.mockImplementation(()=>new Promise(r=>{resolve=r}));const view=render(<OrganizationRootsPage/>);await userEvent.click((await screen.findAllByRole('button',{name:'Apply Available'}))[0]);await userEvent.dblClick(within(screen.getByRole('dialog')).getByRole('button',{name:'Submit request'}));expect(state.api.createOrgJoinRequest).toHaveBeenCalledOnce();view.unmount();await act(async()=>resolve(pending));expect(state.invalidate).not.toHaveBeenCalled();
+})

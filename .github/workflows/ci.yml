@@ -10,6 +10,9 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}/../hhc-web-candidate
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -20,6 +23,31 @@ jobs:
           registry-url: https://npm.pkg.github.com
           package-manager-cache: false
       - run: corepack enable
+        working-directory: ${{ github.workspace }}
+      # PR-only unpublished dependency proof. Main/release keeps exact registry installation.
+      - name: Checkout immutable Shared candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: HallelujahHomeChurch/frontend-platform
+          ref: fab244007cfd85e24e7a25c1c38e805360c50788
+          path: .candidate-shared
+          persist-credentials: false
+      - name: Build and pack immutable Shared candidate
+        working-directory: ${{ github.workspace }}/.candidate-shared
+        run: |
+          corepack pnpm install --frozen-lockfile
+          corepack pnpm build
+          corepack pnpm check:packages
+          corepack pnpm pack:packages
+      - name: Test and prepare disposable candidate context
+        working-directory: ${{ github.workspace }}
+        run: |
+          node --test scripts/prepare-shared-candidate.node-test.mjs
+          node scripts/prepare-shared-candidate.mjs prepare .candidate-shared "$GITHUB_WORKSPACE/../hhc-web-candidate"
+      - name: Generate coherent candidate lock
+        run: corepack pnpm install --lockfile-only --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Scan dependencies
         run: |
           trivy_cache="$RUNNER_TEMP/trivy-cache"
@@ -34,12 +62,14 @@ jobs:
       - run: corepack pnpm install --frozen-lockfile
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify installed immutable candidate bytes
+        run: node scripts/prepare-shared-candidate.mjs verify .
       - name: Install existing font subset inspection tools
         run: |
           python3 -m venv "$RUNNER_TEMP/banner-font-tools"
           "$RUNNER_TEMP/banner-font-tools/bin/pip" install 'fonttools==4.60.2' 'Brotli==1.2.0'
           echo "$RUNNER_TEMP/banner-font-tools/bin" >> "$GITHUB_PATH"
-      - run: corepack pnpm test:run
+      - run: GIT_DIR="$GITHUB_WORKSPACE/.git" GIT_WORK_TREE="$PWD" corepack pnpm test:run
       - run: corepack pnpm lint
       - run: corepack pnpm build
       - run: corepack pnpm perf:static

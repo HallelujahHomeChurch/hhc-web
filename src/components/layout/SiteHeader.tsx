@@ -7,6 +7,7 @@ import {NavigationPendingIndicator} from '@/components/ui/NavigationPendingIndic
 import Image from 'next/image';
 import {BookOpenText, Newspaper, PlaySquare, UsersRound} from 'lucide-react';
 import {useTranslations} from 'next-intl';
+import {NotificationBell} from '@/features/notifications/NotificationBell';
 import {VideoSearchField} from '@/features/member-videos/VideoSearchField';
 import {OrganizationsSearch} from '@/features/organizations/OrganizationsSearch';
 import {ExpandableSearchField} from '@hallelujahhomechurch/ui';
@@ -165,7 +166,10 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
               <div className="site-header-search">
                 {pathname === `/${locale}/organizations` || pathname.startsWith(`/${locale}/organizations/`) ? <OrganizationsSearch key={`${owner}:${searchKey}`} onExpandedChange={open => setSearchState({pathname: searchKey, open})} /> : videoSearchEnabled ? <VideoSearchField key={searchKey} locale={locale} query={searchQuery} isLibrary={pathname===videoRoot} label={t('search.video.label')} submitLabel={t('search.submit')} clearLabel={t('search.clear')} closeLabel={t('search.close')} placeholder={t('search.video.placeholder')} onExpandedChange={open=>setSearchState({pathname:searchKey,open})}/> : <ExpandableSearchField label={t('search.unavailable')} submitLabel={t('search.submit')} clearLabel={t('search.clear')} isDisabled/>}
               </div>
-              <div ref={accountRef} className="site-header-account shrink-0" data-mobile-retained={!showNavigation}><AccountControlView /></div>
+              <div ref={accountRef} className="site-header-private-controls flex shrink-0 items-center gap-2">
+                <NotificationBell />
+                <div className="site-header-account shrink-0" data-mobile-retained={!showNavigation || Boolean(owner)}><AccountControlView /></div>
+              </div>
             </div>
           </div>
         </header>

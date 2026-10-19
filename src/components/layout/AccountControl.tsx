@@ -11,6 +11,7 @@ import {
   emptyNavigationPresentation,
   type NavigationPresentation,
   type AccountAuthState,
+  type InboxClientOptions,
   type AccountSessionClient,
   type BrowserOAuthConfig
 } from '@hallelujahhomechurch/account-client';
@@ -59,6 +60,7 @@ type AccountControlProps = {
 };
 
 type AccountControlContextValue = {
+  inboxAuth: InboxClientOptions['auth'];
   accountSiteUrl: string;
   auth: AccountAuthState;
   navigation: NavigationPresentation;
@@ -108,6 +110,10 @@ export function useCanReadBulletin() {
 
 export function useNavigationPresentation() {
   return useContext(AccountControlContext)?.navigation ?? {...emptyNavigationPresentation, ready: true};
+}
+
+export function useInboxAuthRuntime() {
+  return useContext(AccountControlContext)?.inboxAuth;
 }
 
 export function useAccountAuthorization() {
@@ -240,7 +246,7 @@ export function AccountControlProvider({
         if (controller.signal.aborted) return;
         const entitlements = new Set(snapshot.entitlements.map(({entitlementCode}) => entitlementCode));
         const editions = bulletinEditions.filter(({series, locale}) => entitlements.has(entitlementByEdition.get(`${series}/${locale}`)!));
-        const canReadOrganizations = Boolean(snapshot.churchMembership && (snapshot.responsibilities.length > 0 || snapshot.memberships.some(({orgUnit}) => orgUnit.kind === 'small_group')));
+        const canReadOrganizations = Boolean(snapshot.churchMembership);
         if (!commitNavigation('operations', [...(editions.length ? ['literature-ministry'] : []), ...(entitlements.has('video.meeting-recordings.access') ? ['member-videos'] : []), ...(canReadOrganizations ? ['organizations'] : [])])) return;
         setManagedProjection({subject: auth.session.user.id, status: canReadOrganizations ? 'allowed' : 'denied'});
         setBulletinProjection({
@@ -302,6 +308,7 @@ export function AccountControlProvider({
 
   return (
     <AccountControlContext.Provider value={{
+      inboxAuth: authRuntime,
       accountSiteUrl,
       auth,
       navigation,

@@ -4,6 +4,10 @@ it('normalizes only public routes and excludes private or token-bearing destinat
   expect(publicAnalyticsRoute('/zh-Hant', '', '')).toBe('home');
   expect(publicAnalyticsRoute('/en/news/example', '', '')).toBe('news_detail');
   for (const path of [
+    '/en/notifications',
+    '/en/organizations',
+    '/en/organizations/requests/own-result',
+    '/en/notifications/anything',
     '/en/privacy-policy',
     '/en/terms-of-use',
     '/en/member-videos',

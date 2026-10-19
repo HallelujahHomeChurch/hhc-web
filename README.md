@@ -220,9 +220,14 @@ physical OBS acceptance.
 
 Localized `/organizations`, unit and member routes reuse the Account session runtime,
 Operations/notification contracts and management UI. Entry uses the site's banner;
-inner pages retain compact controls and header member search. Navigation display reuses
-the account-scoped presentation cache; page mounting requires fresh church membership
-and delegated responsibility. Cached navigation hints never authorize access. Private reads are client-only and no-store,
+inner pages retain compact controls and header member search. Active church members can
+discover same-church groups and fellowships, keep managed roots, and submit requests
+that remain pending until approval. Confirmation shows the current server-provided
+church/family ancestors affected by the narrow affiliation rule.
+Navigation display reuses the account-scoped presentation cache; directory mounting
+requires fresh church membership, while unit/member access keeps its existing
+server authority checks. The owner-only request result route remains available after
+church membership ends, with live Account admission and no directory or roster access. Cached navigation hints never authorize access. Private reads are client-only and no-store,
 and routes are noindex/nofollow and excluded from sitemap and analytics.
 
 Gateway must release the exact WWW management/notification allowlist before WWW;
@@ -250,3 +255,44 @@ Fresh automatic playback waits for that reserve; explicit DVR, saved playback
 state and ended short captures remain usable. The 2–3 minute end-to-end latency
 goal still requires producer/verification and
 real-device measurements; increasing holdback cannot cure sustained backlog.
+
+## Global in-app inbox (candidate)
+
+Authenticated pages share a foreground-only 60-second notification summary refresh.
+The Bell previews five items; `/[locale]/notifications` supports unread filtering,
+current-page cursor navigation and snapshot-bound read-all. Private titles, counts
+and opaque tokens stay in memory, and the route is no-store/noindex and excluded
+from offline caching and analytics. Notification links retain destination authority
+checks; they never perform group approval.
+
+This draft consumes immutable local Shared Inbox candidates for validation. The
+product registry pins remain unchanged. Final shared packaging, approved publication,
+exact registry repinning and CI revalidation are required before merge or release.
+Current responsible people review pending requests and history in the existing unit
+page. Review links recheck the current unit, request actions and version; approval
+shows the current affected church/family ancestors. The root summary uses the
+server-filtered actionable total across current scopes. Final cross-service
+integration acceptance remains required.
+
+### PR validation of unpublished Shared dependencies
+
+PR CI checks out frontend-platform commit
+`fab244007cfd85e24e7a25c1c38e805360c50788` (coordinated `1.1.1`), builds all
+seven archives and validates their fixed gzip header (magic, compression method,
+flags, timestamp and extra flags). A copied buffer normalizes only OS byte 9
+from macOS 19 / Unix 3 to Unix 3 before exact whole-archive SHA-256 verification
+against `scripts/shared-candidate.json`. Payload/tar/trailer changes still fail;
+source archives remain unchanged. Raw/canonical hashes are retained in candidate
+provenance. The verified canonical bytes feed both host and Docker.
+It exports committed WWW files into a disposable context, adds relative archive
+overrides, regenerates its lockfile and uses that same context for host tests,
+dependency scanning, Docker build and image scanning. Installed package bytes are
+checked against those archives. The immutable weekly-asset check retains the
+real consumer `origin/main` objects through the original checkout's Git directory.
+
+This validates source compatibility only. Product dependency strings, registry
+lockfile, Dockerfile and release workflow remain unchanged. Before WWW merge,
+Shared requires separately approved merge/tag/publication, then WWW must pin the
+actually published exact versions, regenerate its registry lockfile, remove the
+temporary candidate CI path and rerun normal registry installation and image CI.
+No candidate result establishes registry availability or production readiness.
