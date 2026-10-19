@@ -1,7 +1,7 @@
 // Synthetic loopback preview; no production accounts or services.
 import {createRequire} from 'node:module';
 import {mkdtemp, writeFile, symlink} from 'node:fs/promises';
-import {resolve,join} from 'node:path';
+import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 const source=process.argv[2], require=createRequire(join(source,'package.json'));
 const viteRequire=createRequire(require.resolve('vitest/package.json'));

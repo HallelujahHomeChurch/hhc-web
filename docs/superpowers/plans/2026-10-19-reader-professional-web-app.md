@@ -1,6 +1,6 @@
 # 線上閱讀器專業 Web App 體驗改善計劃
 
-日期：2026-10-19。狀態：P1 兩席計劃檢驗 PASS。這一輪交付整合計劃；T0–T6 為後續執行步驟，本輪不執行產品實作、合併或發布。
+日期：2026-10-19。原始 P1 計劃經兩席檢驗 PASS；使用者後續授權實作並停在 merge 前。功能 T0–T5 已完成並逐步雙席 PASS；T6 整合候選、證據及待做裝置接受見 §13、T6.md 與實作 PR #247。以下原始計劃／停止點保留歷史脈絡，不代表尚未授權實作或已發布。
 
 目標是讓閱讀、選取、畫線、寫筆記、查找與匯出形成連貫的工作流程：操作立即有回應，版面穩定，動畫說明位置與狀態的變化，保存失敗仍可恢復。保留目前網站的字型、明暗色彩、圖示與閱讀正文，沿用設計 tokens 和 house UI，不重做品牌或加入裝飾性動畫。
 
@@ -245,3 +245,6 @@ T4 `357c499` 第二輪：資料與 UX 兩位 Codex 均 PASS，無未處置 Criti
 
 
 T5 `06927fc`：資料與 UX 兩位 Codex 均 PASS，無未處置 Critical/Important。真正產品 DOCX 下載、43 段引用／筆記對照、ZIP／XML／快照限制與三頁排版、手機明暗匯出視窗均有證據；詳見 T5.md。T5 完成，開始 T6 整合、完整檢查、PR／exact-head CI 與最終雙席。沒有 merge／release；原生 Word、Files、真機／真帳號接受仍未完成。
+
+
+T6 整合候選：實作 PR [#247](https://github.com/HallelujahHomeChurch/hhc-web/pull/247)。完整 CI `39309590788` 在 `2e9986c` 通過（182檔／1479 tests、lint/build/static/release-policy／Docker／scans）；最終 head 的 CI 與 T6 雙席結論以 PR validation record／checks 為準，不能沿用舊 head 推定。新增五語窄版／三尺寸明暗矩陣、20 次回應時間與 CPU 降速紀錄、延遲 DOCX chunk 預算及本機正式建置 smoke。首次本機並行全測失敗與量測環境問題完整保留，詳見 `docs/reviews/reader-professional-20261019/T6.md`。真機／真帳號／原生 Office 接受仍未完成；沒有 merge／release。

@@ -5,6 +5,8 @@
     {
       "locale": "zh-Hant",
       "theme": "light",
+      "dpr": 1,
+      "emulatedZoomEquivalent": false,
       "shot": "T6-notes-zh-Hant-375x568-light.png",
       "viewport": [
         375,
@@ -92,6 +94,8 @@
     {
       "locale": "zh-Hans",
       "theme": "dark",
+      "dpr": 1,
+      "emulatedZoomEquivalent": false,
       "shot": "T6-notes-zh-Hans-375x568-dark.png",
       "viewport": [
         375,
@@ -179,6 +183,8 @@
     {
       "locale": "en",
       "theme": "light",
+      "dpr": 1,
+      "emulatedZoomEquivalent": false,
       "shot": "T6-notes-en-375x568-light.png",
       "viewport": [
         375,
@@ -266,6 +272,8 @@
     {
       "locale": "ja",
       "theme": "dark",
+      "dpr": 1,
+      "emulatedZoomEquivalent": false,
       "shot": "T6-notes-ja-375x568-dark.png",
       "viewport": [
         375,
@@ -353,6 +361,8 @@
     {
       "locale": "ko",
       "theme": "light",
+      "dpr": 1,
+      "emulatedZoomEquivalent": false,
       "shot": "T6-notes-ko-375x568-light.png",
       "viewport": [
         375,
@@ -440,6 +450,8 @@
     {
       "locale": "en",
       "theme": "dark",
+      "dpr": 1,
+      "emulatedZoomEquivalent": false,
       "shot": "T6-notes-en-844x390-dark.png",
       "viewport": [
         844,
@@ -522,6 +534,451 @@
         "right": 843,
         "bottom": 66,
         "left": 485
+      }
+    },
+    {
+      "locale": "zh-Hant",
+      "theme": "light",
+      "dpr": 1,
+      "emulatedZoomEquivalent": false,
+      "shot": "T6-notes-zh-Hant-768x1024-light.png",
+      "viewport": [
+        768,
+        1024
+      ],
+      "frame": {
+        "x": 408,
+        "y": 0,
+        "width": 360,
+        "height": 1024,
+        "top": 0,
+        "right": 768,
+        "bottom": 1024,
+        "left": 408
+      },
+      "header": {
+        "x": 409,
+        "y": 1,
+        "width": 358,
+        "height": 65,
+        "top": 1,
+        "right": 767,
+        "bottom": 66,
+        "left": 409
+      },
+      "tabs": [
+        {
+          "text": "筆記",
+          "rect": {
+            "x": 429,
+            "y": 86,
+            "width": 106,
+            "height": 44,
+            "top": 86,
+            "right": 535,
+            "bottom": 130,
+            "left": 429
+          },
+          "scrollWidth": 106,
+          "clientWidth": 106
+        },
+        {
+          "text": "畫線",
+          "rect": {
+            "x": 535,
+            "y": 86,
+            "width": 106,
+            "height": 44,
+            "top": 86,
+            "right": 641,
+            "bottom": 130,
+            "left": 535
+          },
+          "scrollWidth": 106,
+          "clientWidth": 106
+        },
+        {
+          "text": "書籤",
+          "rect": {
+            "x": 641,
+            "y": 86,
+            "width": 106,
+            "height": 44,
+            "top": 86,
+            "right": 747,
+            "bottom": 130,
+            "left": 641
+          },
+          "scrollWidth": 106,
+          "clientWidth": 106
+        }
+      ],
+      "bodyOverflow": false,
+      "scrolledHeader": {
+        "x": 409,
+        "y": 1,
+        "width": 358,
+        "height": 65,
+        "top": 1,
+        "right": 767,
+        "bottom": 66,
+        "left": 409
+      }
+    },
+    {
+      "locale": "zh-Hant",
+      "theme": "dark",
+      "dpr": 1,
+      "emulatedZoomEquivalent": false,
+      "shot": "T6-notes-zh-Hant-768x1024-dark.png",
+      "viewport": [
+        768,
+        1024
+      ],
+      "frame": {
+        "x": 408,
+        "y": 0,
+        "width": 360,
+        "height": 1024,
+        "top": 0,
+        "right": 768,
+        "bottom": 1024,
+        "left": 408
+      },
+      "header": {
+        "x": 409,
+        "y": 1,
+        "width": 358,
+        "height": 65,
+        "top": 1,
+        "right": 767,
+        "bottom": 66,
+        "left": 409
+      },
+      "tabs": [
+        {
+          "text": "筆記",
+          "rect": {
+            "x": 429,
+            "y": 86,
+            "width": 106,
+            "height": 44,
+            "top": 86,
+            "right": 535,
+            "bottom": 130,
+            "left": 429
+          },
+          "scrollWidth": 106,
+          "clientWidth": 106
+        },
+        {
+          "text": "畫線",
+          "rect": {
+            "x": 535,
+            "y": 86,
+            "width": 106,
+            "height": 44,
+            "top": 86,
+            "right": 641,
+            "bottom": 130,
+            "left": 535
+          },
+          "scrollWidth": 106,
+          "clientWidth": 106
+        },
+        {
+          "text": "書籤",
+          "rect": {
+            "x": 641,
+            "y": 86,
+            "width": 106,
+            "height": 44,
+            "top": 86,
+            "right": 747,
+            "bottom": 130,
+            "left": 641
+          },
+          "scrollWidth": 106,
+          "clientWidth": 106
+        }
+      ],
+      "bodyOverflow": false,
+      "scrolledHeader": {
+        "x": 409,
+        "y": 1,
+        "width": 358,
+        "height": 65,
+        "top": 1,
+        "right": 767,
+        "bottom": 66,
+        "left": 409
+      }
+    },
+    {
+      "locale": "zh-Hant",
+      "theme": "light",
+      "dpr": 1,
+      "emulatedZoomEquivalent": false,
+      "shot": "T6-notes-zh-Hant-1440x900-light.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "frame": {
+        "x": 1080,
+        "y": 16,
+        "width": 360,
+        "height": 868,
+        "top": 16,
+        "right": 1440,
+        "bottom": 884,
+        "left": 1080
+      },
+      "header": {
+        "x": 1097,
+        "y": 33,
+        "width": 326,
+        "height": 48,
+        "top": 33,
+        "right": 1423,
+        "bottom": 81,
+        "left": 1097
+      },
+      "tabs": [
+        {
+          "text": "筆記",
+          "rect": {
+            "x": 1101,
+            "y": 101,
+            "width": 106,
+            "height": 44,
+            "top": 101,
+            "right": 1207,
+            "bottom": 145,
+            "left": 1101
+          },
+          "scrollWidth": 106,
+          "clientWidth": 106
+        },
+        {
+          "text": "畫線",
+          "rect": {
+            "x": 1207,
+            "y": 101,
+            "width": 106,
+            "height": 44,
+            "top": 101,
+            "right": 1313,
+            "bottom": 145,
+            "left": 1207
+          },
+          "scrollWidth": 106,
+          "clientWidth": 106
+        },
+        {
+          "text": "書籤",
+          "rect": {
+            "x": 1313,
+            "y": 101,
+            "width": 106,
+            "height": 44,
+            "top": 101,
+            "right": 1419,
+            "bottom": 145,
+            "left": 1313
+          },
+          "scrollWidth": 106,
+          "clientWidth": 106
+        }
+      ],
+      "bodyOverflow": false,
+      "scrolledHeader": {
+        "x": 1097,
+        "y": 33,
+        "width": 326,
+        "height": 48,
+        "top": 33,
+        "right": 1423,
+        "bottom": 81,
+        "left": 1097
+      }
+    },
+    {
+      "locale": "zh-Hant",
+      "theme": "dark",
+      "dpr": 1,
+      "emulatedZoomEquivalent": false,
+      "shot": "T6-notes-zh-Hant-1440x900-dark.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "frame": {
+        "x": 1080,
+        "y": 16,
+        "width": 360,
+        "height": 868,
+        "top": 16,
+        "right": 1440,
+        "bottom": 884,
+        "left": 1080
+      },
+      "header": {
+        "x": 1097,
+        "y": 33,
+        "width": 326,
+        "height": 48,
+        "top": 33,
+        "right": 1423,
+        "bottom": 81,
+        "left": 1097
+      },
+      "tabs": [
+        {
+          "text": "筆記",
+          "rect": {
+            "x": 1101,
+            "y": 101,
+            "width": 106,
+            "height": 44,
+            "top": 101,
+            "right": 1207,
+            "bottom": 145,
+            "left": 1101
+          },
+          "scrollWidth": 106,
+          "clientWidth": 106
+        },
+        {
+          "text": "畫線",
+          "rect": {
+            "x": 1207,
+            "y": 101,
+            "width": 106,
+            "height": 44,
+            "top": 101,
+            "right": 1313,
+            "bottom": 145,
+            "left": 1207
+          },
+          "scrollWidth": 106,
+          "clientWidth": 106
+        },
+        {
+          "text": "書籤",
+          "rect": {
+            "x": 1313,
+            "y": 101,
+            "width": 106,
+            "height": 44,
+            "top": 101,
+            "right": 1419,
+            "bottom": 145,
+            "left": 1313
+          },
+          "scrollWidth": 106,
+          "clientWidth": 106
+        }
+      ],
+      "bodyOverflow": false,
+      "scrolledHeader": {
+        "x": 1097,
+        "y": 33,
+        "width": 326,
+        "height": 48,
+        "top": 33,
+        "right": 1423,
+        "bottom": 81,
+        "left": 1097
+      }
+    },
+    {
+      "locale": "en",
+      "theme": "light",
+      "dpr": 2,
+      "emulatedZoomEquivalent": true,
+      "shot": "T6-notes-en-720x450-light.png",
+      "viewport": [
+        720,
+        450
+      ],
+      "frame": {
+        "x": 0,
+        "y": 68,
+        "width": 720,
+        "height": 382,
+        "top": 68,
+        "right": 720,
+        "bottom": 450,
+        "left": 0
+      },
+      "header": {
+        "x": 1,
+        "y": 69,
+        "width": 718,
+        "height": 65,
+        "top": 69,
+        "right": 719,
+        "bottom": 134,
+        "left": 1
+      },
+      "tabs": [
+        {
+          "text": "Notes",
+          "rect": {
+            "x": 21,
+            "y": 154,
+            "width": 226,
+            "height": 44,
+            "top": 154,
+            "right": 247,
+            "bottom": 198,
+            "left": 21
+          },
+          "scrollWidth": 226,
+          "clientWidth": 226
+        },
+        {
+          "text": "Highlights",
+          "rect": {
+            "x": 247,
+            "y": 154,
+            "width": 226,
+            "height": 44,
+            "top": 154,
+            "right": 473,
+            "bottom": 198,
+            "left": 247
+          },
+          "scrollWidth": 226,
+          "clientWidth": 226
+        },
+        {
+          "text": "Bookmarks",
+          "rect": {
+            "x": 473,
+            "y": 154,
+            "width": 226,
+            "height": 44,
+            "top": 154,
+            "right": 699,
+            "bottom": 198,
+            "left": 473
+          },
+          "scrollWidth": 226,
+          "clientWidth": 226
+        }
+      ],
+      "bodyOverflow": false,
+      "scrolledHeader": {
+        "x": 1,
+        "y": 69,
+        "width": 718,
+        "height": 65,
+        "top": 69,
+        "right": 719,
+        "bottom": 134,
+        "left": 1
       }
     }
   ]

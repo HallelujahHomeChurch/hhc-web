@@ -3,9 +3,9 @@ const fs=await import('node:fs/promises'), assert=(await import('node:assert/str
 const p=(await taskSpace(362)).page('p2');
 const dir='/Users/rayselfs/Projects/hhc/website/.worktrees/reader-professional-experience-impl-20261019/docs/reviews/reader-professional-20261019';
 const records=[];
-for(const [locale,width,height,theme] of [['zh-Hant',375,568,'light'],['zh-Hans',375,568,'dark'],['en',375,568,'light'],['ja',375,568,'dark'],['ko',375,568,'light'],['en',844,390,'dark']]) {
+for(const [locale,width,height,theme,dpr=1] of [['zh-Hant',375,568,'light'],['zh-Hans',375,568,'dark'],['en',375,568,'light'],['ja',375,568,'dark'],['ko',375,568,'light'],['en',844,390,'dark'],['zh-Hant',768,1024,'light'],['zh-Hant',768,1024,'dark'],['zh-Hant',1440,900,'light'],['zh-Hant',1440,900,'dark'],['en',720,450,'light',2]]) {
  const m=JSON.parse(await fs.readFile(`${dir}/../../../src/i18n/locales/${locale}.json`,'utf8')).weeklyReader;
- await p.cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
+ await p.cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:dpr,mobile:false});
  await p.goto(`http://127.0.0.1:7152/?scenario=word&locale=${locale}&theme=${theme}&t6=matrix`);
  await p.waitForFunction(label=>{const b=document.querySelector(`button[aria-label="${label}"]`);return b&&!b.disabled;},m.myNotes);
  await p.click(`loc=role:button[name="${m.myNotes}"]`);
@@ -22,7 +22,7 @@ for(const [locale,width,height,theme] of [['zh-Hant',375,568,'light'],['zh-Hans'
  await p.screenshot({path:`${dir}/${shot}`,raw:true});
  await p.evaluate(()=>{const panel=document.querySelector('[role=tabpanel]');panel.scrollTop=panel.scrollHeight;});
  record.scrolledHeader=await p.evaluate(()=>{const f=document.querySelector('.hhc-modal')??document.querySelector('.reader-private-panel:not([hidden])');return f.querySelector('header').getBoundingClientRect().toJSON();});
- assert.equal(record.header.y,record.scrolledHeader.y); records.push({locale,theme,shot,...record});
+ assert.equal(record.header.y,record.scrolledHeader.y); records.push({locale,theme,dpr,emulatedZoomEquivalent:dpr===2,shot,...record});
  await p.keyboard.press('Escape');
 }
 await fs.writeFile(`${dir}/T6-matrix.json`,JSON.stringify({synthetic:true,physicalDevice:false,records},null,2));console.log({matrix:records.length});
