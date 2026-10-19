@@ -19,7 +19,15 @@ jobs:
           node-version: 22
           registry-url: https://npm.pkg.github.com
           package-manager-cache: false
+      - name: Test documentation classification
+        run: node --test scripts/classify-ci-docs.node-test.mjs
+      - name: Classify documentation-only changes
+        id: changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/classify-ci-docs.mjs "$BASE_SHA" "$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - run: corepack enable
+        if: steps.changes.outputs.docs_only != 'true'
       - name: Scan dependencies
         run: |
           trivy_cache="$RUNNER_TEMP/trivy-cache"
@@ -32,25 +40,33 @@ jobs:
             fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 \
             --skip-dirs /workspace/.git --skip-dirs /workspace/node_modules /workspace
       - run: corepack pnpm install --frozen-lockfile
+        if: steps.changes.outputs.docs_only != 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Install existing font subset inspection tools
+        if: steps.changes.outputs.docs_only != 'true'
         run: |
           python3 -m venv "$RUNNER_TEMP/banner-font-tools"
           "$RUNNER_TEMP/banner-font-tools/bin/pip" install 'fonttools==4.60.2' 'Brotli==1.2.0'
           echo "$RUNNER_TEMP/banner-font-tools/bin" >> "$GITHUB_PATH"
       - run: corepack pnpm test:run
+        if: steps.changes.outputs.docs_only != 'true'
       - run: corepack pnpm lint
+        if: steps.changes.outputs.docs_only != 'true'
       - run: corepack pnpm build
+        if: steps.changes.outputs.docs_only != 'true'
       - run: corepack pnpm perf:static
+        if: steps.changes.outputs.docs_only != 'true'
       - run: ./scripts/test-release-policy.sh
       - name: Build image
+        if: steps.changes.outputs.docs_only != 'true'
         run: |
           printf '@hallelujahhomechurch:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=%s\n' "$GITHUB_TOKEN" > "$RUNNER_TEMP/npmrc"
           docker build --secret id=npmrc,src="$RUNNER_TEMP/npmrc" -t hhc-web:verify .
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Scan image
+        if: steps.changes.outputs.docs_only != 'true'
         run: |
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
