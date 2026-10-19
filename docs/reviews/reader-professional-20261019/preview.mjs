@@ -65,10 +65,20 @@ document.documentElement.dataset.theme=params.get('theme')==='dark'?'dark':'ligh
 if(params.get('mode')!=='editor')saveReaderReturn({accountId:'local-fixture-account',documentId:value.document.documentId},{revision:1,draft:undefined});
 if(params.get('mode')==='editor')saveReaderReturn({accountId:'local-fixture-account',documentId:value.document.documentId},{revision:1,draft:{text:'尚未儲存的合成筆記。\\n'.repeat(12)}});
 if(scenario==='clauses')sessionStorage.removeItem('weekly-reader-view:weekly-reader-position:local-fixture-account:'+value.document.documentId+':'+value.document.revision);
-if(scenario==='loaderror'||scenario==='error'||scenario==='clauses'){await clearOfflineAccount('local-fixture-account');await activateOfflineAccount('local-fixture-account');}
+if(scenario==='loaderror'||scenario==='error'||scenario==='clauses'||scenario==='word'){await clearOfflineAccount('local-fixture-account');await activateOfflineAccount('local-fixture-account');}
 if(scenario==='partial'){await clearOfflineAccount('local-fixture-account');await activateOfflineAccount('local-fixture-account');const read=store.read;store.read=(doc)=>({...read(doc),conflicts:[{id:'fixture-partial-conflict',sentenceIds:['s0'],sources:[{sentenceId:'old',quote:'舊版藍色標註需要確認整段覆蓋。',color:'red',segments:[{start:2,end:6,color:'blue'}]}]}]});let reads=0;window.fixtureApi.privateState=async()=>({state:{...store.read(value.document),currentRevision:++reads===1?2:1}});}
 
 if(params.get('view')==='offline'){const epoch=await activateOfflineAccount('local-fixture-account');await commitOfflineSave({selector:{accountId:'local-fixture-account',issueNumber:1739,series:'general',contentLocale:'zh-Hant'},value,resources:[],size:1024,lastObservedAt:Date.now(),epoch,locked:false},epoch);saveReaderReturn({accountId:'local-fixture-account',documentId:value.document.documentId},{revision:1,draft:{text:'待同步的合成離線草稿。'}});}
+if(scenario==='word') {
+ const read=store.read;
+ const pairs=[
+  ['讓閱讀保持專注，工具在需要時出現。','今天從一個小小的行動開始。\\n讓聽見的話進入生活。'],
+  ['長引用包含中文、日文の文章、한국어、emoji 😀 與 <XML & 特殊字元>。'.repeat(14),'這則較長的筆記會自然換頁，保留換行。\\n'.repeat(25)],
+  ['繁體與简体並列，日本語と한국어也能閱讀。😀','第一段 <信 & 愛>\\n\\n第二段保留空行。\\n不會把 [文字](https://example.invalid) 當成格式。'],
+  ['', '這則只有自己的筆記，不補入整份週報，也不猜測遺失的引用。']
+ ];
+ store.read=(doc)=>({...read(doc),notes:pairs.map(([quote,text],i)=>({id:'fixture-word-'+i,quote,text,sentenceIds:['old-'+i],inactiveAnchors:[{sentenceId:'old-'+i,quote,componentId:'old',pageId:'old'}],reanchorRequired:true,version:1,deleted:false,createdAt:'2026-10-01T00:00:00Z',updatedAt:'2026-10-01T00:00:00Z'}))});
+}
 if(scenario==='bookmark-offline'){const epoch=await activateOfflineAccount('local-fixture-account');const selector={accountId:'local-fixture-account',issueNumber:1739,series:'general',contentLocale:'zh-Hant'};await commitOfflineSave({selector,value,resources:[],size:1024,lastObservedAt:Date.now(),epoch,locked:false},epoch);await seedPrivateReplica(selector,store.read(value.document),epoch);window.fixtureApi.open=window.fixtureApi.renew=async()=>{throw new TypeError('synthetic offline network');};}
 const Prototype=params.has('prototype')?(await import('${source}/docs/reviews/reader-professional-20261019/Prototype.tsx')).Prototype:()=>null;\ncreateRoot(document.getElementById('root')).render(params.has('prototype')?<Prototype/>:params.get('view')==='offline'?<OfflineContentPage locale={locale} messages={getMessages(locale).weeklyReader}/>:<WeeklyReader locale={locale} issueNumber={1739} series="general" contentLocale="zh-Hant" messages={getMessages(locale).weeklyReader}/>);
 `);

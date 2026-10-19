@@ -795,7 +795,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     const delta = keyboardPageDelta(event, !!window.getSelection()?.toString());
     if (!reflow && direction === 'horizontal' && delta) {event.preventDefault(); void onPage(page + delta);}
   }}>
-    {exportRequest && !suspended ? <NoteExportDialog messages={m} theme={theme} document={value.document} locale={backHref.split('/')[1] as Locale} issueNumber={selector.issueNumber} visibleIds={exportRequest.ids} total={privateReader.state?.notes.filter(note => !note.deleted).length ?? 0} prepare={privateReader.prepareExport} current={() => !!documentRef.current && allowAction() && !suspended && generation.current === exportRequest.generation} onClose={() => setExportRequest(null)}/> : null}
+    {exportRequest && !suspended ? <NoteExportDialog messages={m} theme={theme} locale={backHref.split('/')[1] as Locale} issueNumber={selector.issueNumber} visibleIds={exportRequest.ids} total={privateReader.state?.notes.filter(note => !note.deleted).length ?? 0} prepare={privateReader.prepareExport} current={() => !!documentRef.current && allowAction() && !suspended && generation.current === exportRequest.generation} onClose={() => setExportRequest(null)}/> : null}
     <ReaderExitDialog exit={exit} theme={theme}/>
     <AlertDialog isOpen={!!decision} title={decision?.title ?? m.myNotes} description={<span ref={node => {
       const overlay = node?.closest<HTMLElement>('.hhc-modal-overlay');

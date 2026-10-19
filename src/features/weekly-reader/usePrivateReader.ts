@@ -441,7 +441,8 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
       if ((context.offline || loaded.current === 'local') && !local) throw new Error('export_unavailable');
       const source = local?.state ?? cloud;
       const notes = source.notes.filter(note => !note.deleted && (!ids || ids.includes(note.id)));
-      if (notes.length === 0 || notes.length > 200 || source.conflicts.length) throw new Error('export_unavailable');
+      if (notes.length > 200) throw new Error('export_limit');
+      if (notes.length === 0 || source.conflicts.length) throw new Error('export_unavailable');
       const fingerprint = JSON.stringify(cloud.notes), localFingerprint = local?.fingerprint;
       const pendingNoteIds = new Set(local?.queue.flatMap(entry => ['createNote', 'editNote', 'reanchorNote'].includes(entry.mutation.kind) && 'noteId' in entry.mutation.payload ? [entry.mutation.payload.noteId as string] : []) ?? []);
       return {notes: structuredClone(notes), local: !!local, pendingNoteIds,

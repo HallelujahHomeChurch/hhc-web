@@ -1,0 +1,56 @@
+{
+  "sha256": "8f7e690c7fd3ee89a15af6f5b53cd7ed6a8afff22d2b742f930fbe239c19e2e0",
+  "downloadFilename": "hhc-notes-1739.docx",
+  "notes": 4,
+  "paragraphs": 43,
+  "missingQuotes": 1,
+  "bytes": 10356,
+  "uncompressedBytes": 39186,
+  "exactTextMatch": true,
+  "externalRelationships": false,
+  "authorMetadata": false,
+  "pages": [
+    {
+      "page": 1,
+      "textBounds": [
+        54.1,
+        66.870764,
+        530.05,
+        769.740764
+      ],
+      "image": "page-1.png",
+      "pixels": [
+        1414,
+        2000
+      ]
+    },
+    {
+      "page": 2,
+      "textBounds": [
+        54.1,
+        57.484764,
+        270.1,
+        785.540764
+      ],
+      "image": "page-2.png",
+      "pixels": [
+        1414,
+        2000
+      ]
+    },
+    {
+      "page": 3,
+      "textBounds": [
+        54.1,
+        57.484764,
+        390.1,
+        478.840764
+      ],
+      "image": "page-3.png",
+      "pixels": [
+        1414,
+        2000
+      ]
+    }
+  ]
+}
