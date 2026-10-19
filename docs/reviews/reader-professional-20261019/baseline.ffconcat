@@ -1,0 +1,23 @@
+ffconcat version 1.0
+file 'baseline-frames/frame-0000.jpg'
+duration 0.04223895072937012
+file 'baseline-frames/frame-0001.jpg'
+duration 0.049581050872802734
+file 'baseline-frames/frame-0002.jpg'
+duration 0.3363640308380127
+file 'baseline-frames/frame-0003.jpg'
+duration 0.7195680141448975
+file 'baseline-frames/frame-0004.jpg'
+duration 0.7904160022735596
+file 'baseline-frames/frame-0005.jpg'
+duration 0.0612640380859375
+file 'baseline-frames/frame-0006.jpg'
+duration 0.0876929759979248
+file 'baseline-frames/frame-0007.jpg'
+duration 0.04573202133178711
+file 'baseline-frames/frame-0008.jpg'
+duration 1
+file 'baseline-frames/frame-0009.jpg'
+duration 0.02
+file 'baseline-frames/frame-0010.jpg'
+duration 0.20000004768371582

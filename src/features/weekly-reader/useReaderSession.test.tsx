@@ -163,3 +163,12 @@ it('applies the same owner-denial boundary to private interaction failures witho
   expect(result.current.value).toBeNull();
   expect(store.removeOfflineSave).toHaveBeenCalledWith(selector);
 });
+
+it.fails('keeps valid actions available during a same-owner background validation', async () => {
+  const {result} = renderHook(() => useReaderSession(api, selector));
+  await waitFor(() => expect(result.current.value).not.toBeNull());
+  api.open.mockImplementationOnce(() => new Promise(() => {}));
+  act(() => window.dispatchEvent(new Event('focus')));
+  await waitFor(() => expect(api.open).toHaveBeenCalledTimes(2));
+  expect(result.current.allowAction()).toBe(true);
+});

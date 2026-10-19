@@ -1,0 +1,26 @@
+{
+  "synthetic": true,
+  "frames": 23,
+  "actions": [
+    {
+      "at": 245,
+      "selector": "text=\"我的筆記\""
+    },
+    {
+      "at": 1104,
+      "selector": "[role=tab]:nth-child(2)"
+    },
+    {
+      "at": 1551,
+      "selector": "[role=dialog] button[aria-label=\"關閉\"]"
+    },
+    {
+      "at": 2347,
+      "selector": "text=\"搜尋本期週報\""
+    },
+    {
+      "at": 3542,
+      "selector": "[role=dialog] button[aria-label=\"關閉\"]"
+    }
+  ]
+}

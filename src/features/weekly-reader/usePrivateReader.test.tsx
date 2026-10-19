@@ -228,3 +228,17 @@ it('exposes a local error and retry even when the fallback storage read never se
   await waitFor(() => expect(result.current.state).toEqual(state));
   expect(result.current.loadError).toBe(false);
 });
+
+it.fails('accepts the first save acknowledgement after same-binding receipt refresh', async () => {
+  let finish!: () => void;
+  api.mutate.mockImplementationOnce(() => new Promise(resolve => {finish = () => resolve({state, results: [{mutationId: mutation.mutationId, status: 'applied', revision: 1}]});}));
+  const {result, rerender} = renderHook(({current}) => usePrivateReader({api, selector, value: current, offline: false, allowAction: () => true, onFailure}), {initialProps: {current: value}});
+  await waitFor(() => expect(result.current.state).toEqual(state));
+  let request!: Promise<unknown>;
+  act(() => {request = result.current.mutate(mutation).catch(error => error);});
+  await waitFor(() => expect(api.mutate).toHaveBeenCalledOnce());
+  rerender({current: {...structuredClone(value), access: {...value.access, receiptId: 'same-binding-fresh-receipt'}}});
+  await act(async () => {finish(); await request;});
+  expect(await request).toMatchObject({status: 'applied'});
+  expect(result.current.canRetry).toBe(false);
+});
