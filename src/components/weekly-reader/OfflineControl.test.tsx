@@ -89,3 +89,10 @@ it('bounds initialization and ignores its late result after retry', async () => 
     expect(screen.getByRole('button', {name: props.messages.saveOffline})).toBeEnabled();
   } finally {vi.useRealTimers();}
 });
+
+it('explains the required synchronization review when committing a download would orphan pending changes', async () => {
+  store.commitOfflineSave.mockRejectedValueOnce(new Error('offline_pending_recovery'));
+  render(<OfflineControl {...props}/>); fireEvent.click(await screen.findByRole('button', {name: props.messages.saveOffline}));
+  expect(await screen.findByRole('alert')).toHaveTextContent(props.messages.offlineRecoveryRequired);
+  expect(props.onSaved).not.toHaveBeenCalled(); expect(store.removeOfflineSave).not.toHaveBeenCalled();
+});

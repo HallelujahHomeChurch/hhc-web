@@ -180,6 +180,11 @@ export async function commitOfflineSave(staged: OfflineSave, epoch: number, now 
     const save = {...staged, instanceId: crypto.randomUUID(), epoch, lastObservedAt: Math.max(now, staged.lastObservedAt)};
     if (accessStatus(offlineCheck(save), current, now) !== 'available') throw new Error('offline_access_expired');
     const key = documentKey(save);
+    const pointer = await result(tx.objectStore('pointers').get(editionKey(staged.selector)));
+    if (pointer && JSON.stringify(pointer) !== JSON.stringify(key)) {
+      const previousReplica: PrivateReplica | undefined = await result(tx.objectStore('private').get(pointer));
+      if (previousReplica?.queue.length) throw new Error('offline_pending_recovery');
+    }
     const previous: OfflineCheck | undefined = await result(tx.objectStore('checks').get(key));
     if (previous && (Date.parse(previous.access.validatedAt) > Date.parse(save.value.access.validatedAt) || previous.locked && Date.parse(previous.access.validatedAt) >= Date.parse(save.value.access.validatedAt))) throw new Error('offline_stale_receipt');
     if (previous?.access.validatedAt === save.value.access.validatedAt) {

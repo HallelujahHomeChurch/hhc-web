@@ -172,3 +172,21 @@ it('keeps valid actions available during a same-owner background validation', as
   await waitFor(() => expect(api.open).toHaveBeenCalledTimes(2));
   expect(result.current.allowAction()).toBe(true);
 });
+
+it('pins an online-only background validation to the open revision until explicit recovery upgrades it', async () => {
+  const first = readerFixture();
+  const {result} = renderHook(() => useReaderSession(api, selector));
+  await waitFor(() => expect(result.current.value).not.toBeNull());
+  const renewed = {...first, access: {...first.access, currentRevision: 2}};
+  api.open.mockResolvedValueOnce(renewed);
+  act(() => window.dispatchEvent(new Event('focus')));
+  await waitFor(() => expect(result.current.value?.access.currentRevision).toBe(2));
+  expect(api.open.mock.calls[1][1]).toMatchObject({revision: 1, receiptId: first.access.receiptId});
+  expect(result.current.value?.document.revision).toBe(1);
+  const next = {...first, document: {...first.document, revision: 2}, access: {...first.access, revision: 2, currentRevision: 2, receiptId: 'explicit-upgrade'}};
+  act(() => result.current.acceptSaved(next));
+  api.open.mockResolvedValueOnce(next);
+  act(() => window.dispatchEvent(new Event('focus')));
+  await waitFor(() => expect(api.open).toHaveBeenCalledTimes(3));
+  expect(api.open.mock.calls[2][1]).toMatchObject({revision: 2, receiptId: 'explicit-upgrade'});
+});

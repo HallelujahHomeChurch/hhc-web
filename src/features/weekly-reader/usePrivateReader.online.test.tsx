@@ -6,7 +6,8 @@ import type {BulletinReaderMutation, BulletinReaderState} from '@hallelujahhomec
 import {readerFixture} from './test-fixture';
 import {usePrivateReader} from './usePrivateReader';
 import {applyLocalMutation} from './private-state';
-import {activateOfflineAccount, readPrivateReplica, readOfflineSave, bindOnlinePrivate, seedPrivateReplica, enqueuePrivateMutation, chooseReaderRecovery, commitOnlineUpgrade} from './offline-store';
+import {clearReaderReturns, readVolatileReader, readerReturnSnapshot, clearReaderReturnIfUnchanged, hasPendingReaderReturn} from './return-state';
+import {activateOfflineAccount, readPrivateReplica, readOfflineSave, bindOnlinePrivate, seedPrivateReplica, enqueuePrivateMutation, chooseReaderRecovery, commitOnlineUpgrade, commitOfflineSave} from './offline-store';
 const storage = vi.hoisted(() => ({fail: false, failBind: false}));
 vi.mock('./offline-store', async original => {const actual = await original<typeof import('./offline-store')>(); return {...actual, bindOnlinePrivate: (...args: Parameters<typeof actual.bindOnlinePrivate>) => storage.failBind ? Promise.reject(new DOMException('full', 'QuotaExceededError')) : actual.bindOnlinePrivate(...args), enqueuePrivateMutation: (...args: Parameters<typeof actual.enqueuePrivateMutation>) => storage.fail ? Promise.reject(new DOMException('full', 'QuotaExceededError')) : actual.enqueuePrivateMutation(...args)};});
 const now = Date.parse('2026-10-02T00:00:00Z'), value = readerFixture();
@@ -16,10 +17,10 @@ const state: BulletinReaderState = {accountId: selector.accountId, documentId: v
 const edit = (id: string, text: string, version: number): BulletinReaderMutation => ({mutationId: id, kind: 'editNote', documentRevision: 1, createdAt: new Date(now).toISOString(), baseVersion: version, payload: {noteId: note.id, text}});
 beforeEach(async () => {storage.fail = false; storage.failBind = false; sessionStorage.clear(); vi.useFakeTimers({toFake: ['Date']}); vi.setSystemTime(now); vi.stubGlobal('indexedDB', new IDBFactory()); vi.stubGlobal('crypto', webcrypto); vi.stubGlobal('navigator', {onLine: true, locks: {request: async (_name: string, options: unknown, work?: () => Promise<unknown>) => typeof options === 'function' ? options() : work!()}}); await activateOfflineAccount(selector.accountId);});
 afterEach(() => {vi.useRealTimers(); vi.unstubAllGlobals();});
-function mount() {
+function mount(offline = false) {
   let cloud = structuredClone(state);
   const api = {renew: vi.fn(async () => value), privateState: vi.fn(async () => ({state: structuredClone(cloud)})), mutate: vi.fn(async (_s, _v, writes: BulletinReaderMutation[]) => {cloud = applyLocalMutation(cloud, writes[0], value.document); return {state: cloud, results: [{mutationId: writes[0].mutationId, status: 'applied' as const, revision: 1}]};})};
-  return {...renderHook(() => usePrivateReader({api, selector, value, offline: false, allowAction: () => true, onFailure: vi.fn()})), api};
+  return {...renderHook(() => usePrivateReader({api, selector, value, offline, allowAction: () => true, onFailure: vi.fn()})), api};
 }
 it('journals online-only writes during a slow send and applies both once without a publication download', async () => {
   const h = mount(); await waitFor(() => expect(h.result.current.state?.notes[0].text).toBe('A'));
@@ -47,6 +48,66 @@ it('keeps accepted content and warns when an IDB quota failure requires memory f
   await act(async () => {await h.result.current.retry();}); expect(h.api.mutate.mock.calls[1][2][0].mutationId).toBe('quota'); expect(h.result.current.unsaved).toBe(false);
 });
 
+it('retains every RAM intent through a temporary authentication unmount and retries the original IDs', async () => {
+  storage.failBind = true;
+  const h = mount(); await waitFor(() => expect(h.result.current.state).not.toBeNull());
+  h.api.mutate.mockRejectedValue(new TypeError('offline'));
+  await act(async () => {await h.result.current.mutate(edit('ram-first', 'B', 1));});
+  await waitFor(() => expect(h.result.current.busy).toBe(false));
+  await act(async () => {await h.result.current.mutate(edit('ram-second', 'C', 2));});
+  await waitFor(() => expect(h.result.current.busy).toBe(false)); h.unmount();
+  const next = mount(); await waitFor(() => expect(next.result.current.status).toBe('synced'));
+  expect(next.result.current.state?.notes[0].text).toBe('C');
+  expect(next.api.mutate.mock.calls.map(call => call[2][0].mutationId)).toEqual(['ram-first', 'ram-second']);
+  expect(next.result.current.status).toBe('synced'); expect(next.result.current.unsaved).toBe(false);
+});
+
+it('keeps all RAM intents on a receipt-validated offline remount before a fresh online resume', async () => {
+  storage.failBind = true; const h = mount(); await waitFor(() => expect(h.result.current.state).not.toBeNull());
+  h.api.mutate.mockRejectedValue(new TypeError('offline'));
+  await act(async () => {await h.result.current.mutate(edit('offline-ram-one', 'B', 1));}); await waitFor(() => expect(h.result.current.busy).toBe(false));
+  await act(async () => {await h.result.current.mutate(edit('offline-ram-two', 'C', 2));}); await waitFor(() => expect(h.result.current.busy).toBe(false)); h.unmount();
+  const epoch = await activateOfflineAccount(selector.accountId);
+  await commitOfflineSave({selector, value, resources: [], size: 0, lastObservedAt: now, epoch, locked: false}, epoch, now);
+  const local = mount(true); await waitFor(() => expect(local.result.current.state?.notes[0].text).toBe('C'));
+  expect(local.api.privateState).not.toHaveBeenCalled(); expect(local.api.mutate).not.toHaveBeenCalled(); expect(local.result.current.unsaved).toBe(true); local.unmount();
+  const online = mount(); await waitFor(() => expect(online.result.current.status).toBe('synced'));
+  expect(online.api.mutate.mock.calls.map(call => call[2][0].mutationId)).toEqual(['offline-ram-one', 'offline-ram-two']);
+});
+
+it('includes volatile writes in removal snapshots and purges them on account change', async () => {
+  storage.failBind = true; const h = mount(); await waitFor(() => expect(h.result.current.state).not.toBeNull());
+  h.api.mutate.mockRejectedValue(new TypeError('offline'));
+  await act(async () => {await h.result.current.mutate(edit('ram-one', 'B', 1));}); await waitFor(() => expect(h.result.current.busy).toBe(false));
+  const binding = {accountId: selector.accountId, documentId: value.document.documentId};
+  const snapshot = readerReturnSnapshot(binding);
+  await act(async () => {await h.result.current.mutate(edit('ram-two', 'C', 2));}); await waitFor(() => expect(h.result.current.busy).toBe(false));
+  clearReaderReturnIfUnchanged(binding, snapshot);
+  expect(readVolatileReader(binding)?.replica.queue).toHaveLength(2); expect(hasPendingReaderReturn(selector.accountId)).toBe(true);
+  h.unmount(); clearReaderReturns('account-b');
+  expect(readVolatileReader(binding)).toBeUndefined(); expect(hasPendingReaderReturn(selector.accountId)).toBe(false);
+});
+
+it('rejects a retained RAM journal after its known owner epoch changes', async () => {
+  storage.failBind = true; const h = mount(); await waitFor(() => expect(h.result.current.state).not.toBeNull());
+  h.api.mutate.mockRejectedValue(new TypeError('offline'));
+  await act(async () => {await h.result.current.mutate(edit('ram-old-epoch', 'B', 1));}); await waitFor(() => expect(h.result.current.busy).toBe(false)); h.unmount();
+  await activateOfflineAccount('account-b');
+  const next = mount(); await waitFor(() => expect(next.result.current.loadError).toBe(true));
+  expect(next.api.mutate).not.toHaveBeenCalled(); expect(next.result.current.state).toBeNull();
+  expect(readVolatileReader({accountId: selector.accountId, documentId: value.document.documentId})).toBeUndefined();
+});
+
+it('aborts an account-switched RAM writer before a late acknowledgement can retain private state again', async () => {
+  storage.failBind = true; const h = mount(); await waitFor(() => expect(h.result.current.state).not.toBeNull());
+  let finish!: () => void;
+  h.api.mutate.mockImplementationOnce(async (_s, _v, writes) => {await new Promise<void>(resolve => {finish = resolve;}); return {state: applyLocalMutation(state, writes[0], value.document), results: [{mutationId: writes[0].mutationId, status: 'applied', revision: 1}]};});
+  await act(async () => {await h.result.current.mutate(edit('late-old-account', 'B', 1));}); await waitFor(() => expect(h.api.mutate).toHaveBeenCalledOnce());
+  act(() => window.dispatchEvent(new CustomEvent('hhc:weekly-reader-account', {detail: {accountId: 'account-b'}})));
+  await act(async () => finish());
+  expect(h.result.current.state).toBeNull(); expect(readVolatileReader({accountId: selector.accountId, documentId: value.document.documentId})).toBeUndefined();
+});
+
 it('does not turn account-epoch drift into a memory writer after storage fallback', async () => {
   const h = mount(); await waitFor(() => expect(h.result.current.state).not.toBeNull()); storage.fail = true; h.api.mutate.mockRejectedValueOnce(new TypeError('offline'));
   await act(async () => {await h.result.current.mutate(edit('private-a', 'B', 1));}); await waitFor(() => expect(h.result.current.busy).toBe(false));
@@ -56,7 +117,8 @@ it('does not turn account-epoch drift into a memory writer after storage fallbac
   await expect(h.result.current.mutate(edit('denied', 'C', 2))).rejects.toThrow();
 });
 
-it('resumes a durable unknown ID on connection restoration without another Save', async () => {
+it.each([false, true])('resumes an unknown ID on connection restoration without another Save (memory=%s)', async memory => {
+  storage.failBind = memory;
   const h = mount(); await waitFor(() => expect(h.result.current.state).not.toBeNull()); h.api.mutate.mockRejectedValueOnce(new TypeError('offline'));
   const intent = edit('reconnect', 'B', 1); await act(async () => {await h.result.current.mutate(intent);}); await waitFor(() => expect(h.result.current.busy).toBe(false));
   fireEvent(window, new Event('online')); await waitFor(() => expect(h.result.current.status).toBe('synced'));

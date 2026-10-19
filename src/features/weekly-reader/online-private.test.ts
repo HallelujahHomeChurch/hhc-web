@@ -64,3 +64,18 @@ it('commits an explicit online-only recovery without fetching resources or repla
   expect(await store.readPrivateBinding(selector,now+1000)).toMatchObject({revision:2,onlineOnly:true,writable:true,replica:{queue:[]}});
   expect(await rows('documents')).toEqual([]);expect(await store.readOfflineSave(selector,now+1000)).toBeNull();
 });
+
+it('refuses ordinary offline download pointer changes while an earlier online-only journal is pending',async()=>{
+  const epoch=await seed();const intent=edit('keep-old','B',1);await store.enqueuePrivateMutation(selector,intent,epoch,now);
+  const current={...structuredClone(value),document:{...value.document,revision:2},access:{...value.access,receiptId:'new',revision:2,currentRevision:2,validatedAt:new Date(now+1000).toISOString(),offlineValidUntil:new Date(now+1000+604800000).toISOString()}};
+  await store.bindOnlinePrivate(selector,current,epoch,now+1000);
+  const before=await store.readPrivateBinding(selector,now+1000);
+  await expect(store.commitOfflineSave({selector,value:current,epoch,resources:[],size:100,locked:false,lastObservedAt:now+1000},epoch,now+1000)).rejects.toThrow('offline_pending_recovery');
+  expect(await store.readPrivateBinding(selector,now+1000)).toEqual(before);expect((await store.readPrivateReplica(selector,now+1000))?.queue[0].mutation).toEqual(intent);
+  expect(await store.readOfflineSave(selector,now+1000)).toBeNull();expect(await rows('documents')).toEqual([]);
+});
+it('allows a same-revision explicit offline save without removing its online-only queue',async()=>{
+  const epoch=await seed();const intent=edit('keep-same','B',1);await store.enqueuePrivateMutation(selector,intent,epoch,now);
+  await store.commitOfflineSave({selector,value,epoch,resources:[],size:100,locked:false,lastObservedAt:now},epoch,now);
+  expect((await store.readPrivateReplica(selector,now))?.queue[0].mutation).toEqual(intent);expect((await store.readOfflineSave(selector,now))?.status).toBe('available');
+});

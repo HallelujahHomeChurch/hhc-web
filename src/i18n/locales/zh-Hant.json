@@ -148,6 +148,7 @@
     "cancelWaiting": "取消等待",
     "retryContinues": "重試上一筆操作；確認後會繼續這次變更。",
     "syncSynced": "已同步",
+    "offlineRecoveryRequired": "舊版還有尚未同步的變更。請先開啟「檢查同步」完成處理，再儲存新版離線副本。",
     "exitUnsavedChanges": "部分變更尚未安全儲存。現在離開可能遺失，建議先繼續閱讀並等待同步。",
     "syncUnsaved": "尚未安全儲存，請保持此頁開啟並重試同步。",
     "syncWaiting": "等待連線",
