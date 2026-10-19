@@ -60,6 +60,7 @@ jobs:
         run: |
           printf '@hallelujahhomechurch:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=%s\n' "$GITHUB_TOKEN" > "$RUNNER_TEMP/npmrc"
           docker build --secret id=npmrc,src="$RUNNER_TEMP/npmrc" -t hhc-web:verify .
+          docker run --rm --entrypoint /nodejs/bin/node hhc-web:verify /app/diagnose-dapr-port.mjs
       - name: Scan image
         run: |
           docker run --rm \
@@ -259,6 +260,11 @@ jobs:
               exit 1
             fi
           done
+      - name: Capture candidate Dapr port evidence
+        if: ${{ failure() && steps.deploy_runtime.outcome != 'skipped' }}
+        # Diagnostics must not prevent rollback or turn a failed deployment green.
+        continue-on-error: true
+        run: timeout 60s bash scripts/collect-dapr-port.sh
       - name: Roll back failed update
         if: ${{ failure() && steps.deploy_runtime.outcome != 'skipped' && env.HAS_PREVIOUS == 'true' }}
         run: |
