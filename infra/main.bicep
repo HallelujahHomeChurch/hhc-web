@@ -94,7 +94,8 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             }
             {
               type: 'Readiness'
-              httpGet: { path: '/health', port: 10000 }
+              // Dapr must accept incoming invocation before the revision becomes ready.
+              httpGet: { path: '/v1.0/healthz', port: 3501 }
               initialDelaySeconds: 20
               periodSeconds: 10
               timeoutSeconds: 3

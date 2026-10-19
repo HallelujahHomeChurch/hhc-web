@@ -81,6 +81,10 @@ docker build --secret id=npmrc,src="$HOME/.npmrc" -t hhc-web:local .
 ```
 
 The runtime serves `GET /health` on port `10000`.
+Startup and liveness probe this application endpoint. Readiness probes Dapr's
+`GET /v1.0/healthz` on its public health port `3501`, so a sidecar startup failure
+cannot pass readiness solely because Next.js is running. This gates readiness;
+it does not resolve Dapr's internal port allocation conflicts.
 
 ## Member video playback
 

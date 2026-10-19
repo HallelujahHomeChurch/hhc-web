@@ -50,6 +50,9 @@ grep -q "cpu: json('0.5')" "$infra"
 grep -q "memory: '1Gi'" "$infra"
 grep -A4 "type: 'Liveness'" "$infra" | grep -q 'initialDelaySeconds: 20'
 grep -A4 "type: 'Readiness'" "$infra" | grep -q 'initialDelaySeconds: 20'
+grep -A2 "type: 'Startup'" "$infra" | grep -Fq "httpGet: { path: '/health', port: 10000 }"
+grep -A2 "type: 'Liveness'" "$infra" | grep -Fq "httpGet: { path: '/health', port: 10000 }"
+grep -A2 "type: 'Readiness'" "$infra" | grep -Fq "httpGet: { path: '/v1.0/healthz', port: 3501 }"
 grep -q "minReplicas: 1" "$infra"
 
 if grep -q 'external:' "$infra"; then
