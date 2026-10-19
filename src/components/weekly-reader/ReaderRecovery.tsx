@@ -1,7 +1,7 @@
 import {isBookmarkMutation} from '@/features/weekly-reader/bookmarks';
 import {ReaderActionError, type ReaderExclusive} from '@/features/weekly-reader/usePrivateReader';
 import {PassageText} from './PassageText';
-import {useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject} from 'react';
+import {useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type RefObject} from 'react';
 import {ReaderPrivateState} from './ReaderPrivateState';
 import type {BulletinReaderHighlightColor, BulletinReaderMutation, BulletinReaderState, OnlineBulletinAccess} from '@hallelujahhomechurch/hhc-web-client';
 import type {createReaderApi, ReaderSelector} from '@/features/weekly-reader/api';
@@ -14,8 +14,8 @@ import {rangeQuote, selectionPassage} from '@/features/weekly-reader/text-range'
 import {useReaderSelection} from '@/features/weekly-reader/useReaderSelection';
 import type {ReaderMessages} from './ReaderToolbar';
 
-export function ReaderRecovery({api, value, selector, messages: m, onUpdated, onFailure, suspended = false, pendingMutation = null, onPendingChange, mobile = false, runExclusive, available = true, onState, inline = false, onOpenChange, onConfirm, onBookmarkRetry, headerRef, theme = 'light'}: {
-  headerRef?: RefObject<HTMLElement | null>; theme?: 'light' | 'dark';
+export function ReaderRecovery({api, value, selector, messages: m, onUpdated, onFailure, suspended = false, pendingMutation = null, onPendingChange, mobile = false, runExclusive, available = true, onState, inline = false, onOpenChange, onConfirm, onBookmarkRetry, headerRef, closeRef, theme = 'light'}: {
+  closeRef?: RefObject<(() => boolean) | null>; headerRef?: RefObject<HTMLElement | null>; theme?: 'light' | 'dark';
   onConfirm?: (description: string) => Promise<boolean>;
   onBookmarkRetry?: () => Promise<import('@/features/weekly-reader/usePrivateReader').ReaderOutcome | undefined>;
   api: ReturnType<typeof createReaderApi>; value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages;
@@ -27,6 +27,10 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
   function changeOpen(next: boolean) {setOpen(next); onOpenChange?.(next);}
   const [prepared, setPrepared] = useState<ReaderUpgrade | null>(null);
   const [deciding, setDeciding] = useState(false);
+  useImperativeHandle(closeRef, () => () => {
+    if (busy || deciding || suspended) return false;
+    changeOpen(false); return true;
+  });
   const decisionPending = useRef(false);
   const current = useRef({prepared, suspended, open, selector, mounted: false});
   useLayoutEffect(() => {current.current = {prepared, suspended, open, selector, mounted: true};});
@@ -157,7 +161,7 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
     </div>;
   return <>
     {available || open ? <button type="button" disabled={busy || deciding} onClick={() => {changeOpen(true); setPrepared(null); void run(prepare);}}>{m.reviewSync}</button> : null}
-    {open ? inline ? content : <ReaderPrivateState wide={false} headerRef={headerRef} title={m.reviewSync} theme={theme} messages={m} suspended={suspended} onClose={() => {if (!busy && !deciding && !suspended) changeOpen(false);}}>{content}</ReaderPrivateState> : null}
+    {inline ? open ? content : null : <ReaderPrivateState isOpen={open} wide={false} headerRef={headerRef} title={m.reviewSync} theme={theme} messages={m} suspended={suspended} onClose={() => {if (!busy && !deciding && !suspended) changeOpen(false);}}>{open ? content : null}</ReaderPrivateState>}
   </>;
 }
 

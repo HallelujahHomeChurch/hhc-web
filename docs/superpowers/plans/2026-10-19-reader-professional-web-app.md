@@ -225,3 +225,10 @@ T1 `116392c` 第二輪 UX PASS／資料 FAIL：一般離線下載仍能切走舊
 T1 `4a7c8b0` 第三輪：資料、UX 兩位 Codex 均 PASS，無 Critical/Important；T1 gate 完成，開始 T2。T2 固定筆記框架／Tabs／編輯器、簡化搜尋與圖示、移除舊版標注 UI、可取消退出 dialog 已形成候選，瀏覽器幾何與深淺色證據見 `docs/reviews/reader-professional-20261019/T2.md`；尚待檢查及雙席 gate，未進 T3。
 
 T2 `ed749d6` 首輪 UX PASS／資料 FAIL（1 Important）：長 inline Recovery 超出固定框後無法捲到恢復操作。修訂候選改為受限 body 捲動並讓獨立 Recovery 共用外殼；高度改讀實測 ReaderTabs header，加16px留白。另補刪除後回相鄰項／列表標題的焦點。48項面板／Recovery／退出測試及14項關鍵整合測試 PASS，TS／相關ESLint／diff PASS；新實際長筆記／Recovery捲動、400px viewport與刪除焦點證據見T2.md。等待T2第二輪雙席，未進T3。
+
+T2 `940ebca` 第二輪：資料與 UX 兩位 Codex 均 PASS，無未處置 Critical/Important；兩席只讀核對修訂與實際畫面／捲動證據。T2 完成，開始 T3。真機 IME／VoiceOver 與完整 CI 仍屬 T6；沒有 merge／release。
+
+T3 實作中，尚未雙席 gate：目錄／設定共用手機筆記外框、獨立桌面設定入口、滿版搜尋與同步聚焦、返回鍵與焦點、共用動畫已形成工作版本。最新 30 項面板／Recovery／退出與 9 項關鍵整合案例 PASS，TS／相關 ESLint／diff PASS；完整畫面與動畫矩陣因瀏覽器擷取持續逾時尚未完成。詳見 `docs/reviews/reader-professional-20261019/T3.md`；保留工作樹，不把初步截圖或程式測試當視覺／真機接受，未進 T4。
+
+
+T3 root 候選已完成範圍實作與可重現視覺證據：手機／平板／桌面深淺色矩陣、實際轉場影格與動畫位置、滿版搜尋／系統返回／原文焦點及 reduced-motion。176 項範圍測試全通過，另補鍵盤循環回歸並通過窄重跑；共177個不同案例有通過紀錄，TS／相關 ESLint／diff PASS。錄影為低幀率流程證據，不代表真機流暢度，詳細限制與歷史失敗見T3.md。等待雙 Codex gate；未開始T4，沒有merge／release。

@@ -1,4 +1,4 @@
-import {useCallback, type ReactNode, type RefObject} from 'react';
+import {useCallback, useState, type ReactNode, type RefObject} from 'react';
 import {Drawer} from '@hallelujahhomechurch/ui';
 import {X} from 'lucide-react';
 import {ReaderIconButton} from './ReaderIconButton';
@@ -9,7 +9,10 @@ export function SyncStatus({status, messages: m, children}: {status: ReaderSyncS
   return <p className="reader-sync-status" role="status">{children ?? ({synced: m.syncSynced, waiting: m.syncWaiting, syncing: m.syncSyncing, action: m.syncAction, paused: m.syncPaused})[status]}</p>;
 }
 
-export function ReaderPrivateState({wide, title, theme, messages: m, children, onClose, suspended = false, headerRef}: {wide: boolean; title?: string; theme: 'light' | 'dark'; messages: ReaderMessages; children: ReactNode; onClose: () => void; suspended?: boolean; headerRef?: RefObject<HTMLElement | null>}) {
+export function ReaderPrivateState({wide, title, theme, messages: m, children, onClose, suspended = false, headerRef, isOpen = true, feedback}: {wide: boolean; title?: string; theme: 'light' | 'dark'; messages: ReaderMessages; children: ReactNode; onClose: () => void; suspended?: boolean; headerRef?: RefObject<HTMLElement | null>; isOpen?: boolean; feedback?: ReactNode}) {
+  // Retain the last open body during the house overlay's exit animation.
+  const [displayed, setDisplayed] = useState({children, title});
+  if (isOpen && (displayed.children !== children || displayed.title !== title)) setDisplayed({children, title});
   const attachSheet = useCallback((node: HTMLDivElement | null) => {
     const overlay = node?.closest<HTMLElement>('.hhc-modal-overlay');
     if (!overlay) return;
@@ -28,6 +31,6 @@ export function ReaderPrivateState({wide, title, theme, messages: m, children, o
     measure(); visual?.addEventListener('resize', measure); visual?.addEventListener('scroll', measure); window.addEventListener('resize', measure);
     return () => {observer?.disconnect(); visual?.removeEventListener('resize', measure); visual?.removeEventListener('scroll', measure); window.removeEventListener('resize', measure);};
   }, [theme, headerRef]);
-  if (wide) return <aside className="reader-private-panel" aria-label={title ?? m.myNotes}><header><h2>{title ?? m.myNotes}</h2><ReaderIconButton variant="ghost" aria-label={m.noteClose} onPress={onClose} icon={<X size={20} aria-hidden="true"/>}/></header>{children}</aside>;
-  return <Drawer title={title ?? m.myNotes} closeLabel={m.noteClose} isOpen onOpenChange={open => {if (!open && !suspended) onClose();}}><div className="reader-private-sheet" ref={attachSheet} hidden={suspended} inert={suspended}>{children}</div></Drawer>;
+  if (wide) return <aside hidden={!isOpen} className="reader-private-panel" aria-label={title ?? m.myNotes}><header><h2>{title ?? m.myNotes}</h2><ReaderIconButton variant="ghost" aria-label={m.noteClose} onPress={onClose} icon={<X size={20} aria-hidden="true"/>}/></header>{feedback}{children}</aside>;
+  return <Drawer title={(isOpen ? title : displayed.title) ?? m.myNotes} closeLabel={m.noteClose} isOpen={isOpen} onOpenChange={open => {if (!open && !suspended) onClose();}}><div className="reader-private-sheet" ref={attachSheet} hidden={suspended} inert={suspended || !isOpen}>{feedback}{isOpen ? children : displayed.children}</div></Drawer>;
 }

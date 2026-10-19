@@ -106,3 +106,19 @@ it('warns about accepted memory changes even after the note editor has closed', 
   expect(result.current.dialogProps.description).toContain(messages.exitUnsavedChanges);
   act(() => result.current.dialogProps.onOpenChange?.(false)); expect(await request).toBe(false); expect(beforeLeave).not.toHaveBeenCalled();
 });
+
+
+it('browser Back dismisses the top overlay before asking to leave the reader', async () => {
+  const model = historyModel(); let overlay = true;
+  const consumeBack = vi.fn(() => {if (!overlay) return false; overlay = false; return true;});
+  const beforeLeave = vi.fn().mockResolvedValue(true);
+  const {result} = renderHook(() => useReaderExitGuard({hasUnsavedNote: () => false, beforeLeave, consumeBack, messages}));
+  await act(async () => model.back());
+  expect(consumeBack).toHaveBeenCalledOnce();
+  expect(result.current.dialogProps.isOpen).toBe(false); expect(beforeLeave).not.toHaveBeenCalled();
+  expect(model.current().__hhcReaderExit).toMatchObject({position: 'guard'});
+  await act(async () => model.back());
+  expect(result.current.dialogProps.isOpen).toBe(true);
+  act(() => result.current.dialogProps.onOpenChange?.(false));
+  expect(model.push).toHaveBeenCalledOnce();
+});

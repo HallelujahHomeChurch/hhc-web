@@ -1029,13 +1029,16 @@ describe('protected weekly reader', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await waitFor(() => expect(trigger).toHaveFocus());
   });
-  it('uses an unshaded dismiss layer for mobile typography settings', async () => {
+  it('uses the notes shell for mobile typography settings', async () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn()})));
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
     fireEvent.click(screen.getByRole('button', {name: props.messages.typography}));
-    expect(container.querySelector('.reader-panel-backdrop')).toHaveAttribute('data-clear', 'true');
-    fireEvent.click(container.querySelector('.reader-panel-backdrop')!);
+    const dialog = screen.getByRole('dialog', {name: props.messages.typography});
+    expect(dialog.closest('.hhc-modal-overlay')).toBeInTheDocument();
+    expect(dialog.querySelector('.reader-private-sheet')).toBeInTheDocument();
+    expect(container.querySelector('.reader-panel-backdrop')).toBeNull();
+    fireEvent.click(within(dialog).getByRole('button', {name: props.messages.noteClose}));
     expect(screen.queryByRole('dialog', {name: props.messages.typography})).not.toBeInTheDocument();
   });
   it('restores a saved sentence without moving focus into the text', async () => {
@@ -1349,7 +1352,7 @@ it.each([false,true])('separates reading mode from the device shell (mobile=%s)'
   await waitFor(()=>expect(screen.getByRole('button',{name:props.messages.myNotes})).toBeEnabled());
   const shell=container.querySelector('.reader-document')!;
   expect(shell).toHaveAttribute('data-reading-mode',mobile?'easy':'paper');
-  fireEvent.click(screen.getByRole('button',{name:mobile?props.messages.contents:props.messages.thumbnails}));
+  fireEvent.click(screen.getByRole('button',{name:props.messages.typography}));
   await act(async()=>fireEvent.click(screen.getByRole('button',{name:mobile?props.messages.paperMode:props.messages.easyMode})));
   expect(shell).toHaveAttribute('data-reading-mode',mobile?'paper':'easy');
   expect(shell.hasAttribute('data-mobile')).toBe(mobile);
@@ -1378,7 +1381,7 @@ it('exposes mobile paper sentence keyboard semantics without toggling twice', as
  vi.stubGlobal('matchMedia',vi.fn(()=>({matches:true,addEventListener:vi.fn(),removeEventListener:vi.fn()})));
  const {container}=render(<WeeklyReader {...props}/>);
  await waitFor(()=>expect(screen.getByRole('button',{name:props.messages.myNotes})).toBeEnabled());
- fireEvent.click(screen.getByRole('button',{name:props.messages.contents}));
+ fireEvent.click(screen.getByRole('button',{name:props.messages.typography}));
  await act(async()=>fireEvent.click(screen.getByRole('button',{name:props.messages.paperMode})));
  fireEvent.click(screen.getByRole('button',{name:props.messages.close}));
  const sentence=container.querySelector('[data-paper-index="0"] [data-sentence-id="s0"]')!;
@@ -1509,4 +1512,47 @@ it('shows a persistent unsaved warning after actual IDB quota fallback while net
   expect(await screen.findByText('Quota accepted draft')).toBeInTheDocument(); await waitFor(() => expect(state.mutate).toHaveBeenCalledOnce());
   expect(screen.getByText(props.messages.syncUnsaved)).toBeVisible(); expect(screen.queryByRole('textbox', {name: props.messages.noteText})).not.toBeInTheDocument();
   expect(screen.queryByRole('button', {name: props.messages.confirmRetry})).not.toBeInTheDocument();
+});
+
+
+it.each([false, true])('keeps contents for navigation and exposes separate settings (mobile=%s)', async mobile => {
+  vi.stubGlobal('matchMedia', vi.fn(() => ({matches: mobile, addEventListener: vi.fn(), removeEventListener: vi.fn()})));
+  render(<WeeklyReader {...props}/>);
+  await waitFor(() => expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled());
+  const title = mobile ? props.messages.contents : props.messages.thumbnails;
+  fireEvent.click(screen.getByRole('button', {name: title}));
+  const contents = screen.getByRole('dialog', {name: title});
+  expect(within(contents).queryByRole('group', {name: props.messages.readingMode})).not.toBeInTheDocument();
+  expect(within(contents).queryByRole('button', {name: props.messages.fontIncrease})).not.toBeInTheDocument();
+  expect(!!contents.closest('.hhc-modal-overlay')).toBe(mobile);
+  fireEvent.click(within(contents).getByRole('button', {name: props.messages.close}));
+  fireEvent.click(screen.getByRole('button', {name: props.messages.typography}));
+  const settings = screen.getByRole('dialog', {name: props.messages.typography});
+  expect(within(settings).getByRole('group', {name: props.messages.readingMode})).toBeInTheDocument();
+  expect(within(settings).queryByRole('button', {name: 'Page 1'})).not.toBeInTheDocument();
+});
+
+it('focuses search during its opening gesture and keeps clear within the input', async () => {
+  render(<WeeklyReader {...props}/>);
+  await waitFor(() => expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', {name: props.messages.search}));
+  const input = screen.getByRole('searchbox');
+  expect(input).toHaveFocus();
+  fireEvent.change(input, {target: {value: '內容'}});
+  fireEvent.click(screen.getByRole('button', {name: props.messages.clearSearch}));
+  expect(input).toHaveValue(''); expect(input).toHaveFocus();
+});
+
+
+it('cycles desktop contents focus through visible controls without entering closed details', async () => {
+  render(<WeeklyReader {...props}/>);
+  await waitFor(() => expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', {name: props.messages.thumbnails}));
+  const dialog = screen.getByRole('dialog', {name: props.messages.thumbnails});
+  const close = within(dialog).getByRole('button', {name: props.messages.close});
+  const visible = [close, ...within(dialog).getAllByRole('button', {name: /^Page /}), ...dialog.querySelectorAll<HTMLElement>('summary')];
+  for (const control of visible) vi.spyOn(control, 'getClientRects').mockReturnValue([new DOMRect(0, 0, 44, 44)] as unknown as DOMRectList);
+  const last = visible.at(-1)!;
+  last.focus(); fireEvent.keyDown(last, {key: 'Tab'}); expect(close).toHaveFocus();
+  fireEvent.keyDown(close, {key: 'Tab', shiftKey: true}); expect(last).toHaveFocus();
 });

@@ -221,3 +221,16 @@ it('routes unknown bookmark retries through the supplied private executor rather
  api.current.mockResolvedValue(value);api.privateState.mockResolvedValue({state:{...cloud,appliedRevision:1,currentRevision:1,bookmarks:[]}});const onBookmarkRetry=vi.fn().mockResolvedValue({mutationId:mutation.mutationId,status:'applied',revision:1});
  render(<ReaderRecovery {...props} pendingMutation={mutation} onBookmarkRetry={onBookmarkRetry}/>);fireEvent.click(screen.getByRole('button',{name:props.messages.reviewSync}));const retry=await screen.findByRole('button',{name:props.messages.confirmRetry});await waitFor(()=>expect(retry).toBeEnabled());fireEvent.click(retry);await waitFor(()=>expect(onBookmarkRetry).toHaveBeenCalledOnce());expect(api.mutate).not.toHaveBeenCalled();
 });
+
+
+it('lets the shared shell close idle inline Recovery while preserving its decisions', async () => {
+  mocks.prepare.mockResolvedValue({value, state: cloud, queue: [], mutations: [], recovery: [], previousRevision: 1});
+  const closeRef = {current: null as (() => boolean) | null};
+  const onOpenChange = vi.fn();
+  render(<ReaderRecovery {...props} inline closeRef={closeRef} onOpenChange={onOpenChange}/>);
+  fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
+  await waitFor(() => expect(screen.queryByText(props.messages.syncSyncing)).not.toBeInTheDocument());
+  act(() => {expect(closeRef.current?.()).toBe(true);});
+  expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  expect(mocks.choose).not.toHaveBeenCalled();
+});

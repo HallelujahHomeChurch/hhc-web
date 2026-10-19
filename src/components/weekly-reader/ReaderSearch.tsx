@@ -8,6 +8,7 @@ import type {ReaderMessages} from './ReaderToolbar';
 
 export function ReaderSearch({document, onJump, messages: m, mobile = false, closeControl}: {document: MemberOnlineDocument; onJump: (sentenceId: string) => void; messages: ReaderMessages; mobile?: boolean; closeControl?: ReactNode}) {
   const composing = useRef(false);
+  const input = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [submitted, setSubmitted] = useState('');
   const results = useMemo(() => {
@@ -17,8 +18,8 @@ export function ReaderSearch({document, onJump, messages: m, mobile = false, clo
   return <div className="reader-search">
     <header className="reader-search-header">{closeControl}
     <form role="search" aria-label={m.search} onSubmit={event => {event.preventDefault(); if (composing.current) return; setSubmitted(query.trim());}}>
-      <input type="search" aria-label={m.search} placeholder={m.search} value={query} maxLength={256} enterKeyHint="search" onCompositionStart={() => {composing.current = true;}} onCompositionEnd={() => {composing.current = false;}} onKeyDown={event => {if (event.key === 'Enter' && (composing.current || event.nativeEvent.isComposing || event.keyCode === 229)) {event.preventDefault();}}} onChange={event => setQuery(event.target.value)}/>
-      {query ? <IconButton variant="ghost" aria-label={m.clearSearch} onPress={() => {setQuery(''); setSubmitted('');}} icon={<X size={18} aria-hidden="true"/>}/> : null}
+      <input ref={input} type="search" aria-label={m.search} placeholder={m.search} value={query} maxLength={256} enterKeyHint="search" onCompositionStart={() => {composing.current = true;}} onCompositionEnd={() => {composing.current = false;}} onKeyDown={event => {if (event.key === 'Enter' && (composing.current || event.nativeEvent.isComposing || event.keyCode === 229)) {event.preventDefault();}}} onChange={event => setQuery(event.target.value)}/>
+      {query ? <IconButton variant="ghost" aria-label={m.clearSearch} onPress={() => {setQuery(''); setSubmitted(''); input.current?.focus({preventScroll: true});}} icon={<X size={18} aria-hidden="true"/>}/> : null}
       <button type="submit" aria-label={m.submitSearch}><Search size={20} aria-hidden="true"/></button>
     </form>
     </header>

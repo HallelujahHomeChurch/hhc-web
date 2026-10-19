@@ -28,18 +28,17 @@
 .reader-quick-pages { display: flex; align-items: center; font-size: .85rem; font-variant-numeric: tabular-nums; }
 .reader-source-label { margin-inline-end: .35rem; }
 .reader-navigation-panel { position: absolute; top: 100%; right: 0; width: min(380px, calc(100vw - 2rem)); max-height: calc(100dvh - 130px); overflow: auto; padding: 1rem; background: var(--hhc-surface); box-shadow: 0 8px 24px #0002; z-index: 45; }
-.reader-panel-backdrop {position: fixed; inset: 0; background: #0003; backdrop-filter: blur(2px); z-index: 40; touch-action: none;}
-.reader-panel-backdrop[data-clear] {background: transparent; backdrop-filter: none;}
+.reader-panel-backdrop {position: fixed; inset: 0; background: rgb(0 0 0 / .4); backdrop-filter: none; z-index: 40; touch-action: none;}
 .weekly-reader .reader-viewport :is([data-sentence-id], [data-component-id], .reader-watermarked):focus {outline: none;}
 .reader-navigation-panel[data-panel='pages'] { left: 0; right: auto; width: min(320px, calc(100vw - 2rem)); height: calc(100dvh - 140px); overscroll-behavior: contain; }
 .reader-navigation-panel[hidden] { display: none; }
 .reader-navigation-panel > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .75rem; }
 .reader-navigation-panel > header h2 { font-size: 1rem; font-weight: 600; }
-.reader-navigation-panel .reader-thumbnails { display: grid; grid-template-columns: repeat(2, 1fr); max-height: none; }
-.reader-navigation-panel .reader-zoom-controls { margin-bottom: 1rem; }
+.reader-navigation-content .reader-thumbnails { display: grid; grid-template-columns: repeat(2, 1fr); max-height: none; }
+.reader-navigation-content .reader-zoom-controls { margin-bottom: 1rem; }
 .reader-navigation-panel .reader-offline-control { display: grid; margin-top: 1rem; }
-.reader-navigation-panel .reader-page-controls { font-size: .85rem; }
-.reader-navigation-panel .reader-page-controls input { width: 4rem; }
+.reader-navigation-content .reader-page-controls { font-size: .85rem; }
+.reader-navigation-content .reader-page-controls input { width: 4rem; }
 .reader-viewport [data-sentence-id], .reader-viewport [data-component-id] { scroll-margin-top: 72px; }
 .reader-viewport[data-mobile] [data-sentence-id], .reader-viewport[data-mobile] [data-component-id] { scroll-margin-top: var(--reader-reading-inset, 112px); }
 .reader-status { max-width: 36rem; margin: 4rem auto; padding: 2rem; text-align: center; }
@@ -169,8 +168,8 @@ form.reader-note-editor {display: flex; flex-direction: column; min-height: 0; f
 .reader-offline-list { display: grid; gap: 1rem; max-width: 48rem; margin: 1rem 0; }
 .reader-offline-list li { padding: 1rem; background: var(--hhc-surface-raised); border-radius: .75rem; }
 .reader-thumbnails { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; padding: .25rem; }
-.weekly-reader .reader-thumbnail { display: grid; justify-items: center; gap: .5rem; padding: .5rem .25rem; height: auto; min-width: 0; border-color: transparent; background: transparent; font-variant-numeric: tabular-nums; }
-.weekly-reader .reader-thumbnail[aria-current='page'] { border-color: var(--hhc-control); background: var(--hhc-primary-soft); }
+.reader-navigation-content .reader-thumbnail { display: grid; justify-items: center; gap: .5rem; padding: .5rem .25rem; height: auto; min-width: 0; border-color: transparent; background: transparent; color: var(--hhc-text); font-variant-numeric: tabular-nums; }
+.reader-navigation-content .reader-thumbnail[aria-current='page'] { border-color: var(--hhc-control); background: var(--hhc-primary-soft); }
 .reader-thumbnail-image { display: block; overflow: hidden; pointer-events: none; user-select: none; background: white; box-shadow: 0 2px 6px #0002; }
 .reader-viewport[data-mobile] { min-height: 0; overflow: auto; padding: 0; background: transparent; }
 .weekly-reader .hhc-bulletin-v1[data-bulletin-mode='mobile'] { padding: 1.25rem; overflow-wrap: anywhere; }
@@ -302,8 +301,6 @@ body:has(.weekly-reader) {padding-bottom: 0;}
   .hhc-bulletin-ebook > :last-child > :last-child,
   .hhc-bulletin-ebook > :last-child > :last-child > :last-child,
   .hhc-bulletin-ebook > :last-child > :last-child > :last-child > :last-child {margin-block-end: 0 !important;}
-  .reader-navigation-panel[data-panel='pages'] {position: fixed; inset: 0 auto 0 0; width: min(360px, 100vw); height: 100dvh; max-height: none; padding-top: max(12px, env(safe-area-inset-top)); z-index: 45;}
-  .reader-navigation-panel[data-panel='type'] {position: fixed; inset: auto 12px calc(76px + env(safe-area-inset-bottom)); width: auto; border-radius: 16px; z-index: 45;}
   .reader-search-panel {width: 100vw; padding-top: max(12px, env(safe-area-inset-top));}
   .reader-document[data-iphone-standalone] .reader-selection-tools {bottom: calc(90px + env(safe-area-inset-bottom));}
 }
@@ -404,3 +401,49 @@ body:has(.weekly-reader) {padding-bottom: 0;}
 .reader-private-sheet.reader-recovery {display: grid; align-content: start; height: auto; min-height: 0; overflow-y: auto;}
 .reader-private-panel > .reader-private-feedback[data-recovery-open],
 .reader-private-sheet > .reader-private-feedback[data-recovery-open] {flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;}
+
+/* Navigation shares the notes frame; the header never participates in scrolling. */
+.reader-private-panel[hidden] {display: none;}
+.reader-private-sheet > .reader-navigation-content {flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable;}
+.reader-navigation-content .reader-thumbnails {display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: none;}
+.reader-navigation-panel:not(.reader-search-panel) {display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--hhc-border); border-radius: 12px;}
+.reader-navigation-panel[hidden] {display: none;}
+.reader-navigation-panel > header {flex: none;}
+.reader-navigation-panel > .reader-navigation-content {flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;}
+.reader-search-panel {opacity: 1; transition: opacity 120ms ease-out, display 120ms allow-discrete; padding-bottom: max(12px, env(safe-area-inset-bottom)); background: var(--hhc-surface);}
+.reader-search-panel[hidden] {opacity: 0;}
+@starting-style {.reader-search-panel:not([hidden]) {opacity: 0;}}
+.weekly-reader .reader-viewport [data-reader-source-focus]:focus {outline: 2px solid var(--hhc-control); outline-offset: 3px;}
+.hhc-modal-overlay:has(.reader-private-sheet)[data-entering] {animation: reader-scrim-in 200ms ease-out;}
+.hhc-modal-overlay:has(.reader-private-sheet)[data-exiting] {animation: reader-scrim-out 160ms ease-in;}
+.hhc-modal-overlay:has(.reader-private-sheet) {--reader-sheet-from: translateX(100%);}
+.hhc-modal-overlay[data-entering] .hhc-modal:has(.reader-private-sheet) {animation: reader-sheet-in 200ms cubic-bezier(.22, 1, .36, 1);}
+.hhc-modal-overlay[data-exiting] .hhc-modal:has(.reader-private-sheet) {animation: reader-sheet-out 160ms ease-in;}
+.hhc-modal-overlay[data-reader-exit][data-entering] {animation: reader-content-in 160ms ease-out;}
+.hhc-modal-overlay[data-reader-exit][data-exiting] {animation: reader-scrim-out 160ms ease-in;}
+.reader-range-layer span {animation: reader-content-in 120ms ease-out;}
+@keyframes reader-sheet-in {from {transform: var(--reader-sheet-from);} to {transform: translate(0);}}
+@keyframes reader-sheet-out {from {transform: translate(0);} to {transform: var(--reader-sheet-from);}}
+@keyframes reader-scrim-in {0% {background-color: transparent;} 75%, 100% {background-color: rgb(0 0 0 / .4);}}
+@keyframes reader-scrim-out {from {opacity: 1;} to {opacity: 0;}}
+@media (max-width: 767px) {
+  .hhc-modal-overlay:has(.reader-private-sheet) {--reader-sheet-from: translateY(100%);}
+  .reader-search-panel {inset-inline: 0; width: 100%; border: 0; border-radius: 0; box-shadow: none;}
+}
+@media (prefers-reduced-motion: reduce) {
+  .reader-search-panel {transition: none;}
+  .reader-range-layer span,
+  .hhc-modal-overlay:has(.reader-private-sheet)[data-entering],
+  .hhc-modal-overlay:has(.reader-private-sheet)[data-exiting],
+  .hhc-modal-overlay[data-entering] .hhc-modal:has(.reader-private-sheet),
+  .hhc-modal-overlay[data-exiting] .hhc-modal:has(.reader-private-sheet),
+  .hhc-modal-overlay[data-reader-exit][data-entering],
+  .hhc-modal-overlay[data-reader-exit][data-exiting] {animation: none;}
+}
+
+.reader-private-sheet button[aria-pressed="true"] {background: var(--hhc-primary-soft); border-color: var(--hhc-control); color: var(--hhc-text);}
+
+.reader-selection-tools, .reader-notes-list article, .reader-highlights-list article {animation: reader-content-in 120ms ease-out;}
+@media (prefers-reduced-motion: reduce) {
+  .reader-selection-tools, .reader-notes-list article, .reader-highlights-list article {animation: none;}
+}
