@@ -1,6 +1,6 @@
 'use client'
 import {useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode} from 'react'
-import {usePathname, useSearchParams} from 'next/navigation'
+import {usePathname, useSearchParams, useRouter} from 'next/navigation'
 import {useAccountIdentity, useOrganizationsAccess} from '@/components/layout/AccountControl'
 import {SiteHeader} from '@/components/layout/SiteHeader'
 import {SiteFooter} from '@/components/layout/SiteFooter'
@@ -17,6 +17,7 @@ import './organizations.css'
 export function OrganizationsShell({locale, layout, children}: {locale: Locale; layout: SiteLayout; children: ReactNode}) {
   const pathname = usePathname()
   const params = useSearchParams()
+  const router = useRouter()
   const owner = useAccountIdentity()
   const access = useOrganizationsAccess()
   const root = `/${locale}/organizations`
@@ -27,6 +28,18 @@ export function OrganizationsShell({locale, layout, children}: {locale: Locale; 
   useLayoutEffect(() => { currentScope.current = scope }, [scope])
   const ownerOnly = new RegExp(`^/${locale}/organizations/requests/[^/]+$`).test(pathname)
   const unitId = pathname.startsWith(`${root}/`) && pathname.slice(root.length + 1).split('/').length === 1 ? pathname.slice(root.length + 1) : ''
+  const reviewQuery = params.get('joinRequest')
+  const [reviewAccess, setReviewAccess] = useState({owner, allowed: access.status === 'allowed', consumed: null as string | null})
+  const reviewLost = Boolean(unitId && reviewQuery && (reviewAccess.allowed && access.status !== 'allowed' || reviewAccess.owner && reviewAccess.owner !== owner))
+  const consumedReview = reviewLost ? reviewQuery : reviewAccess.consumed
+  if (reviewAccess.owner !== owner || reviewAccess.allowed !== (access.status === 'allowed') || !reviewQuery && reviewAccess.consumed) {
+    setReviewAccess({owner, allowed: access.status === 'allowed', consumed: reviewQuery ? consumedReview : null})
+  }
+  useEffect(() => {
+    if (!reviewQuery || reviewQuery !== consumedReview) return
+    const next = new URLSearchParams(source); next.delete('joinRequest')
+    router.replace(pathname + (next.size ? `?${next}` : '') + '#join-requests', {scroll: false})
+  }, [consumedReview, reviewQuery, source, pathname, router])
   const [search, setSearch] = useState({scope, source, query: pathname === root ? rootQuery : '', composing: false, navigations: [] as string[], navigationVersion: 0})
   if (search.scope !== scope) {
     setSearch({scope, source, query: pathname === root ? rootQuery : '', composing: false, navigations: [], navigationVersion: search.navigationVersion + 1})
@@ -54,7 +67,7 @@ export function OrganizationsShell({locale, layout, children}: {locale: Locale; 
     <OrganizationsGate locale={locale} ownerOnly={ownerOnly} loadingFallback={pathname===root?<OrganizationRootsSkeleton label={organizationMessages[locale].loading}/>:pathname.includes('/members/')?<OrganizationMemberSkeleton label={organizationMessages[locale].loading}/>:<OrganizationDirectorySkeleton label={organizationMessages[locale].loading}/>}>
       <main className="organizations">
         {pathname === root ? <AboutHero locale={locale} imageUrl={layout.bannerImageUrl} title={copy.heroTitle} subtitle={copy.heroSubtitle} /> : null}
-        <div className="organizations-main">{children}</div>
+        <div className="organizations-main">{reviewQuery && consumedReview === reviewQuery ? <OrganizationDirectorySkeleton label={organizationMessages[locale].loading}/> : children}</div>
       </main>
     </OrganizationsGate>
     <SiteFooter layout={layout} locale={locale} pathname={pathname} />

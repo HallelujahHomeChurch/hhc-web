@@ -394,3 +394,11 @@ export const joinNotificationMessages = {
     "notification.orgJoin.review.cancelled": "{applicant} 님의 {title} 가입 신청이 취소되었습니다."
   }
 } as const
+
+export const reviewRequestMessages = {
+ en: {version: 'Version', title: 'Join requests', review: 'Review', approve: 'Approve', reject: 'Reject', reload: 'Reload request', summary: '{count} pending requests', empty: 'No requests to review.', confirm: 'Review {applicant}’s request to join {unit}.', unavailable: 'Review requests are currently unavailable.'},
+ 'zh-Hant': {version: '版本', title: '加入申請', review: '審核', approve: '核准', reject: '拒絕', reload: '重新載入申請', summary: '待我審核 {count} 件', empty: '目前沒有待審核的申請。', confirm: '審核 {applicant} 加入「{unit}」的申請。', unavailable: '目前無法查看審核申請。'},
+ 'zh-Hans': {version: '版本', title: '加入申请', review: '审核', approve: '批准', reject: '拒绝', reload: '重新加载申请', summary: '待我审核 {count} 件', empty: '目前没有待审核的申请。', confirm: '审核 {applicant} 加入“{unit}”的申请。', unavailable: '目前无法查看审核申请。'},
+ ja: {version: 'バージョン', title: '参加申請', review: '確認', approve: '承認', reject: '却下', reload: '申請を再読み込み', summary: '確認待ち {count} 件', empty: '確認する申請はありません。', confirm: '{applicant} さんの {unit} への参加申請を確認します。', unavailable: '現在、申請を確認できません。'},
+ ko: {version: '버전', title: '가입 신청', review: '검토', approve: '승인', reject: '거절', reload: '신청 새로고침', summary: '검토 대기 {count}건', empty: '검토할 신청이 없습니다.', confirm: '{applicant}님의 {unit} 가입 신청을 검토합니다.', unavailable: '현재 신청을 검토할 수 없습니다.'},
+} as const

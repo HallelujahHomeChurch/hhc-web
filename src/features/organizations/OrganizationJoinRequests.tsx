@@ -3,6 +3,7 @@ import {Button, Dialog} from '@hallelujahhomechurch/ui'
 import Link from 'next/link'
 import {useParams} from 'next/navigation'
 import {useEffect, useRef, useState} from 'react'
+import {useOrganizationsAccess} from '@/components/layout/AccountControl'
 import {useNotificationInbox} from '@/features/notifications/provider'
 import {useOrganizationApi, useOrganizationMessages} from './context'
 import type {OrgJoinRequest, OrgJoinRequestPage} from './api'
@@ -38,6 +39,11 @@ function OwnRequestsList({status, page, onPage}: {status: 'pending' | 'history';
   const [result, setResult] = useState<OrgJoinRequestPage | null>(null)
   const [error, setError] = useState(false), [revision, setRevision] = useState(0)
   useEffect(() => {
+    const refresh=()=>setRevision(value=>value+1)
+    window.addEventListener('hhc:organizations-changed',refresh)
+    return()=>window.removeEventListener('hhc:organizations-changed',refresh)
+  },[])
+  useEffect(() => {
     const controller = new AbortController()
     void operationsApi.listOwnOrgJoinRequests({status, page, limit: 20, signal: controller.signal})
       .then(value => {if (!controller.signal.aborted) setResult(value)})
@@ -58,6 +64,7 @@ export function OwnJoinRequestPage() {
 function OwnRequest({requestId}: {requestId: string}) {
   const {operationsApi} = useOrganizationApi(), {locale, messages: {organizations: t}} = useOrganizationMessages(), copy = joinRequestMessages[locale]
   const inbox = useNotificationInbox()
+  const access = useOrganizationsAccess()
   const [request, setRequest] = useState<OrgJoinRequest | null>(null)
   const [error, setError] = useState<unknown>(null), [revision, setRevision] = useState(0)
   const [confirming, setConfirming] = useState(false), [pending, setPending] = useState(false)
@@ -77,7 +84,7 @@ function OwnRequest({requestId}: {requestId: string}) {
     intent.current = action; inFlight.current = true; setPending(true); setMutationError(null)
     try {
       const next = await operationsApi.cancelOrgJoinRequest(requestId, {version: action.version, idempotencyKey: action.key})
-      if (mounted.current) {setRequest(next); setConfirming(false); intent.current = null; void inbox?.store.invalidate()}
+      if (mounted.current) {setRequest(next); setConfirming(false); intent.current = null; window.dispatchEvent(new Event('hhc:organizations-changed')); void inbox?.store.invalidate()}
     } catch (error) {
       if (mounted.current) {
         const status = error instanceof Error && 'status' in error ? Number(error.status) : 0
@@ -93,10 +100,23 @@ function OwnRequest({requestId}: {requestId: string}) {
     <h1>{request.orgUnitName}</h1><p>{copy[request.status]}</p>
     {request.status === 'pending' ? <p>{copy.pendingNotice}</p> : null}
     <dl className="organization-request-dates"><div><dt>{copy.requestedAt}</dt><dd><time dateTime={request.requestedAt}>{new Date(request.requestedAt).toLocaleString(locale)}</time></dd></div>{request.decidedAt ? <div><dt>{copy.decidedAt}</dt><dd><time dateTime={request.decidedAt}>{new Date(request.decidedAt).toLocaleString(locale)}</time></dd></div> : null}{request.cancellationReason ? <div><dt>{copy.reason}</dt><dd>{copy[request.cancellationReason]}</dd></div> : null}</dl>
+    {request.status === 'approved' && access.status === 'allowed' ? <ApprovedUnitEntry key={request.orgUnitId} unitId={request.orgUnitId} title={request.orgUnitName}/> : null}
     <CollapseDisclosure units={request.ancestorCollapsePreview}/>
     {request.status === 'pending' && request.actions.cancel ? <Button variant="secondary" onPress={() => {setMutationError(null); setConfirming(true)}}>{copy.cancelRequest}</Button> : null}
     <Dialog isOpen={confirming} onOpenChange={open => {if (!pending) setConfirming(open)}} title={copy.cancelRequest} closeLabel={t.back}>
       <div className="organization-dialog-stack"><p>{copy.cancelConfirm}</p>{mutationError ? <p className="form-error" role="alert">{joinFailureMessage(mutationError, copy)}</p> : null}<div className="organization-actions"><Button variant="secondary" isDisabled={pending} onPress={() => setConfirming(false)}>{t.back}</Button><Button isDisabled={pending} onPress={() => void cancel()}>{pending ? t.sending : copy.cancelRequest}</Button></div></div>
     </Dialog>
   </section>
+}
+
+
+function ApprovedUnitEntry({unitId,title}:{unitId:string;title:string}) {
+ const {operationsApi}=useOrganizationApi(),{locale,messages:{organizations:t}}=useOrganizationMessages()
+ const [available,setAvailable]=useState(false)
+ useEffect(()=>{
+  const controller=new AbortController()
+  void operationsApi.getManagedUnit(unitId,controller.signal).then(folder=>{if(!controller.signal.aborted)setAvailable(folder.unit.id===unitId&&folder.unit.status==='active')}).catch(()=>{if(!controller.signal.aborted)setAvailable(false)})
+  return()=>controller.abort()
+ },[operationsApi,unitId])
+ return available?<Link prefetch={false} href={`/${locale}/organizations/${unitId}`}>{t.view} {title}</Link>:null
 }

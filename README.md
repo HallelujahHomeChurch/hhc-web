@@ -268,5 +268,8 @@ checks; they never perform group approval.
 This draft consumes immutable local Shared Inbox candidates for validation. The
 product registry pins remain unchanged. Final shared packaging, approved publication,
 exact registry repinning and CI revalidation are required before merge or release.
-Group review destinations still require the dependent review UI and final
-integration acceptance.
+Current responsible people review pending requests and history in the existing unit
+page. Review links recheck the current unit, request actions and version; approval
+shows the current affected church/family ancestors. The root summary uses the
+server-filtered actionable total across current scopes. Final cross-service
+integration acceptance remains required.

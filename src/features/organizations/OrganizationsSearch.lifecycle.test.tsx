@@ -9,7 +9,7 @@ import en from '@/i18n/locales/en.json'
 
 const state = vi.hoisted(() => ({
   pathname: '/en/organizations', owner: 'owner', params: new URLSearchParams(),
-  router: {replace: vi.fn()}, api: {listOrgUnitDirectory: vi.fn(), listOwnOrgJoinRequests: vi.fn()},
+  router: {replace: vi.fn()}, api: {listOrgUnitDirectory: vi.fn(), getMyAccess: vi.fn(), listOwnOrgJoinRequests: vi.fn()},
 }))
 vi.mock('next/navigation', () => ({usePathname: () => state.pathname, useSearchParams: () => state.params, useRouter: () => state.router}))
 vi.mock('@/components/layout/AccountControl', () => ({useAccountIdentity: () => state.owner, useOrganizationsAccess: () => ({status: 'allowed'})}))
@@ -36,7 +36,7 @@ beforeEach(() => {
   vi.useFakeTimers(); vi.clearAllMocks()
   state.pathname = '/en/organizations'; state.owner = 'owner'; state.params = new URLSearchParams()
   state.api.listOrgUnitDirectory.mockResolvedValue({items: [], page: 1})
-  state.api.listOwnOrgJoinRequests.mockResolvedValue({items: [], page: 1})
+  state.api.getMyAccess.mockResolvedValue({responsibilities:[]});state.api.listOwnOrgJoinRequests.mockResolvedValue({items: [], page: 1})
 })
 afterEach(() => vi.useRealTimers())
 

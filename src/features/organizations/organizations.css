@@ -163,3 +163,7 @@
 }
 
 :where(.organizations,.hhc-dialog:has(.organization-dialog-stack)) .organization-confirmation { overflow-wrap: anywhere; }
+
+.organization-review-summary > summary { cursor: pointer; min-height: 44px; padding-block: 12px; font-weight: 650; }
+#join-requests { scroll-margin-top: calc(var(--site-top-chrome-height, 76px) + 16px); min-width: 0; }
+#join-requests .organization-unit-name { overflow-wrap: anywhere; }

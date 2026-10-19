@@ -2,12 +2,12 @@ import {
   OperationsApiError,
   type components,
   type createOperationsClient,
-  type OrgUnitDirectoryPage, type OrgJoinRequest, type OrgJoinRequestPage,
+  type OrgUnitDirectoryPage, type OrgJoinRequest, type OrgJoinRequestPage, type ReviewableOrgJoinRequestPage,
 } from '@hallelujahhomechurch/operations-client'
 import { isAbortError, reportApiFailure } from './observability'
 import { AccountSessionError } from '@hallelujahhomechurch/account-client'
 
-export type { DirectoryUnit, OrgUnitDirectoryPage, OrgJoinRequest, OrgJoinRequestPage } from '@hallelujahhomechurch/operations-client'
+export type { DirectoryUnit, OrgUnitDirectoryPage, OrgJoinRequest, OrgJoinRequestPage, ReviewableOrgJoinRequestPage } from '@hallelujahhomechurch/operations-client'
 export { OperationsApiError } from '@hallelujahhomechurch/operations-client'
 
 type Schemas = components['schemas']
@@ -26,7 +26,7 @@ export type ManagedResponsibility = Schemas['UnitResponsibilityView']
 export type ManagedResponsibilityCandidate = Schemas['ManagedResponsibilityCandidate']
 export type EntitlementCode = Schemas['ManagedEntitlementBatchInput']['entitlementCode']
 
-type ApplicantMethods = Pick<OperationsClient, 'listOrgUnitDirectory' | 'listOwnOrgJoinRequests' | 'getOwnOrgJoinRequest' | 'createOrgJoinRequest' | 'cancelOrgJoinRequest'>
+type ApplicantMethods = Pick<OperationsClient, 'listOrgUnitDirectory' | 'listOwnOrgJoinRequests' | 'getOwnOrgJoinRequest' | 'createOrgJoinRequest' | 'cancelOrgJoinRequest' | 'listReviewableOrgJoinRequests' | 'getReviewableOrgJoinRequest' | 'approveOrgJoinRequest' | 'rejectOrgJoinRequest'>
 
 export type OperationsApiClient = ApplicantMethods & {
   getMyAccess: (signal?: AbortSignal) => Promise<OperationsAccess>
@@ -78,6 +78,11 @@ export class OperationsApi implements OperationsApiClient {
   getOwnOrgJoinRequest(id: string, signal?: AbortSignal): Promise<OrgJoinRequest> { return this.client.getOwnOrgJoinRequest(id, signal) }
   createOrgJoinRequest(input: Parameters<ApplicantMethods['createOrgJoinRequest']>[0]): Promise<OrgJoinRequest> { return this.client.createOrgJoinRequest(input) }
   cancelOrgJoinRequest(id: string, input: Parameters<ApplicantMethods['cancelOrgJoinRequest']>[1]): Promise<OrgJoinRequest> { return this.client.cancelOrgJoinRequest(id, input) }
+
+  listReviewableOrgJoinRequests(input: Parameters<ApplicantMethods['listReviewableOrgJoinRequests']>[0]): Promise<ReviewableOrgJoinRequestPage> { return this.client.listReviewableOrgJoinRequests(input) }
+  getReviewableOrgJoinRequest(id: string, signal?: AbortSignal): Promise<OrgJoinRequest> { return this.client.getReviewableOrgJoinRequest(id, signal) }
+  approveOrgJoinRequest(id: string, input: Parameters<ApplicantMethods['approveOrgJoinRequest']>[1]): Promise<OrgJoinRequest> { return this.client.approveOrgJoinRequest(id, input) }
+  rejectOrgJoinRequest(id: string, input: Parameters<ApplicantMethods['rejectOrgJoinRequest']>[1]): Promise<OrgJoinRequest> { return this.client.rejectOrgJoinRequest(id, input) }
 
   getMyAccess(signal?: AbortSignal) {
     return unwrap<OperationsAccess>(this.client.raw.GET('/api/operations/me/access', { signal }))

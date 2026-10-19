@@ -3,7 +3,7 @@ import { ExpandableSearchField } from '@hallelujahhomechurch/ui'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 const routing = vi.hoisted(() => ({ params: { unitId: 'unit', memberId: 'member' }, push: vi.fn() }))
-vi.mock('next/navigation', () => ({ useParams: () => routing.params, useRouter: () => routing }))
+vi.mock('next/navigation', () => ({ useParams: () => routing.params, useRouter: () => routing, useSearchParams:()=>new URLSearchParams(), usePathname:()=>'/en/organizations/church' }))
 import { beforeEach, expect, it, vi } from 'vitest'
 
 import { useOrganizationApi } from './context'

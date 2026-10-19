@@ -3,14 +3,14 @@ import userEvent from '@testing-library/user-event'
 import {beforeEach, expect, it, vi} from 'vitest'
 import {OrganizationRootsPage} from './OrganizationRootsPage'
 import {messages} from './messages'
-const state=vi.hoisted(()=>({query:'',params:new URLSearchParams(),replace:vi.fn(),invalidate:vi.fn(),api:{listOrgUnitDirectory:vi.fn(),listManagedRoots:vi.fn(),listOwnOrgJoinRequests:vi.fn(),createOrgJoinRequest:vi.fn()}}))
+const state=vi.hoisted(()=>({query:'',params:new URLSearchParams(),replace:vi.fn(),invalidate:vi.fn(),api:{listOrgUnitDirectory:vi.fn(),listManagedRoots:vi.fn(),getMyAccess:vi.fn(),listOwnOrgJoinRequests:vi.fn(),createOrgJoinRequest:vi.fn()}}))
 vi.mock('next/navigation',()=>({usePathname:()=>'/en/organizations',useSearchParams:()=>state.params,useRouter:()=>({replace:state.replace})}))
 vi.mock('./context',()=>({useOrganizationApi:()=>({operationsApi:state.api}),useOrganizationMessages:()=>({locale:'en',messages:messages.en})}))
 vi.mock('./OrganizationsSearch',()=>({useOrganizationsSearch:()=>null}))
 vi.mock('@/features/notifications/provider',()=>({useNotificationInbox:()=>({store:{invalidate:state.invalidate}})}))
 const unit=(id:string,name:string,extra={})=>({id,name,kind:'small_group',ancestorLabels:['Church','Family'],relationship:'none',applicationAvailability:'available',ancestorCollapsePreview:[],...extra})
 const pending={id:'request',orgUnitId:'available',orgUnitName:'Available',orgUnitKind:'small_group',status:'pending',requestedAt:'2026-10-19T00:00:00Z',version:1,actions:{cancel:true,approve:false,reject:false},ancestorCollapsePreview:[]}
-beforeEach(()=>{vi.resetAllMocks();state.params=new URLSearchParams();state.api.listManagedRoots.mockResolvedValue([]);state.api.listOrgUnitDirectory.mockImplementation(async({relation})=>({items:relation==='mine'?[unit('managed','Family',{kind:'family',relationship:'managed'})]:[],page:1}));state.api.listOwnOrgJoinRequests.mockResolvedValue({items:[],page:1});state.api.createOrgJoinRequest.mockResolvedValue(pending)})
+beforeEach(()=>{vi.resetAllMocks();state.params=new URLSearchParams();state.api.listManagedRoots.mockResolvedValue([]);state.api.listOrgUnitDirectory.mockImplementation(async({relation})=>({items:relation==='mine'?[unit('managed','Family',{kind:'family',relationship:'managed'})]:[],page:1}));state.api.getMyAccess.mockResolvedValue({responsibilities:[]});state.api.listOwnOrgJoinRequests.mockResolvedValue({items:[],page:1});state.api.createOrgJoinRequest.mockResolvedValue(pending)})
 it('preserves managed roots and renders independently loaded mine and all lists without private fields',async()=>{
  state.api.listOrgUnitDirectory.mockImplementation(async({relation})=>({items:relation==='mine'?[unit('managed','Family',{kind:'family',relationship:'managed'})]:[unit('available','Available',{email:'secret@example.test'})],page:1}));render(<OrganizationRootsPage/>);
  expect(await screen.findByRole('link',{name:'View Family'})).toHaveAttribute('href','/en/organizations/managed');expect(await screen.findByRole('button',{name:'Apply Available'})).toBeInTheDocument();expect(screen.getByRole('heading',{name:'All small groups'})).toBeInTheDocument();expect(screen.queryByText('secret@example.test')).not.toBeInTheDocument();expect(screen.queryByRole('table')).not.toBeInTheDocument();expect(state.api.listManagedRoots).not.toHaveBeenCalled();

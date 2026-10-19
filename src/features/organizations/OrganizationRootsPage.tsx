@@ -10,6 +10,7 @@ import {useOrganizationsSearch} from './OrganizationsSearch'
 import {OrganizationRootsSkeleton} from './OrganizationLoading'
 import {joinRequestMessages} from './messages'
 import {CollapseDisclosure, OwnRequestsSection, joinFailureMessage} from './OrganizationJoinRequests'
+import {ReviewRequestsSummary} from './OrganizationReviewRequests'
 import type {DirectoryUnit, OrgUnitDirectoryPage, OrgJoinRequest} from './api'
 
 const pageNumber = (value: string | null) => value && /^[1-9]\d*$/.test(value) && Number(value) <= 10000 ? Number(value) : 1
@@ -39,6 +40,8 @@ function Directory() {
   const [target, setTarget] = useState<DirectoryUnit | null>(null)
   const [created, setCreated] = useState<OrgJoinRequest | null>(null)
   const [denied, setDenied] = useState(false)
+
+  useEffect(()=>{const refresh=()=>{setCreated(null);setRevision(v=>v+1)};window.addEventListener('hhc:organizations-changed',refresh);return()=>window.removeEventListener('hhc:organizations-changed',refresh)},[])
 
   function navigate(next: typeof current) {
     setSelection(next)
@@ -71,6 +74,7 @@ function Directory() {
       return <DirectorySection key={`${relation}:${current.q}:${page}:${revision}`} relation={relation} q={current.q} page={page} onPage={page => navigate({...current, [relation === 'mine' ? 'minePage' : 'allPage']: page})} onApply={unit => {setCreated(null); setTarget(unit)}}/>
     })}
     {created ? <p role="status">{created.status === 'pending' ? copy.pendingNotice : copy[created.status]} <Link prefetch={false} href={`/${locale}/organizations/requests/${created.id}`}>{copy.viewRequest}</Link></p> : null}
+    <ReviewRequestsSummary key={`review:${revision}`}/>
     <OwnRequestsSection key={revision}/>
     {target ? <ApplyDialog key={target.id} unit={target} onDenied={() => {setTarget(null); setCreated(null); setDenied(true)}} onClose={() => setTarget(null)} onCreated={request => {setTarget(null); setCreated(request); setRevision(value => value + 1); void inbox?.store.invalidate()}} operationsApi={operationsApi}/> : null}
     <span className="sr-only">{t.title}</span>
