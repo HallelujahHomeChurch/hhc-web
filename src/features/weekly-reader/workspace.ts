@@ -31,3 +31,11 @@ export function readPaperView(key: string): PaperView {
 export function writePaperView(key: string, view: PaperView) {
   try {sessionStorage.setItem(`weekly-reader-view:${key}`, JSON.stringify(view));} catch { /* Optional local preferences. */ }
 }
+
+export type ReadingMode = 'paper' | 'easy';
+export function readReadingMode(key: string): ReadingMode | null {
+  try {const value = sessionStorage.getItem(`${key}:mode`); return value === 'paper' || value === 'easy' ? value : null;} catch {return null;}
+}
+export function writeReadingMode(key: string, mode: ReadingMode) {
+  try {sessionStorage.setItem(`${key}:mode`, mode);} catch { /* Optional per-tab presentation preference. */ }
+}

@@ -4,10 +4,11 @@ import {verifyReaderAccess, type ReaderSelector} from './api';
 import {evaluateOfflineAccess, localAccessDeadline} from './offline-access';
 import {applyLocalMutation, verifyPrivateState} from './private-state';
 import type {ReaderRecovery} from './rebase';
-import {clearReaderReturn, hasPendingReaderReturn} from './return-state';
+import {clearReaderReturn, clearReaderReturnIfUnchanged, readerReturnSnapshot, hasPendingReaderReturn} from './return-state';
 
 type Identity = {accountId: string | null; epoch: number};
 export type OfflineSave = {
+  instanceId?: string;
   selector: ReaderSelector;
   value: OnlineBulletinAccess;
   resources: {url: string; bytes: ArrayBuffer; type: string}[];
@@ -166,7 +167,7 @@ export async function commitOfflineSave(staged: OfflineSave, epoch: number, now 
   return navigator.locks.request(`hhc-weekly-reader:${staged.selector.accountId}`, () => transaction('readwrite', async tx => {
     const current = await identity(tx);
     if (current.accountId !== staged.selector.accountId || current.epoch !== epoch) throw new Error('offline_account_changed');
-    const save = {...staged, epoch, lastObservedAt: Math.max(now, staged.lastObservedAt)};
+    const save = {...staged, instanceId: crypto.randomUUID(), epoch, lastObservedAt: Math.max(now, staged.lastObservedAt)};
     if (accessStatus(offlineCheck(save), current, now) !== 'available') throw new Error('offline_access_expired');
     const key = documentKey(save);
     const previous: OfflineCheck | undefined = await result(tx.objectStore('checks').get(key));
@@ -270,19 +271,63 @@ export async function renewOfflineSave(selector: ReaderSelector, value: OnlineBu
   });
 }
 
-export async function removeOfflineSave(selector: ReaderSelector) {
+export type OfflineRemovalSnapshot = {
+  accountId: string; epoch: number; pointer: string; documentId: string; revision: number; instanceId: string;
+  queues: string; returnValue: string | null; pending: boolean;
+};
+const sameDocument = (candidate: IDBValidKey, key: IDBValidKey[]) => Array.isArray(candidate) && candidate.slice(0, 4).length === 4 && candidate.slice(0, 4).every((part, i) => part === key[i]);
+
+async function removalContext(tx: IDBTransaction, selector: ReaderSelector) {
+  const owner = await identity(tx);
+  if (owner.accountId !== selector.accountId) throw new Error('offline_account_changed');
+  const key: IDBValidKey[] | undefined = await result(tx.objectStore('pointers').get(editionKey(selector)));
+  if (!Array.isArray(key) || key[0] !== owner.accountId) throw new Error('offline_replica_changed');
+  const documents = tx.objectStore('documents');
+  const save: OfflineSave | undefined = await result(documents.get(key));
+  if (!save || JSON.stringify(editionKey(save.selector)) !== JSON.stringify(editionKey(selector)) || JSON.stringify(documentKey(save)) !== JSON.stringify(key) || save.epoch !== owner.epoch) throw new Error('offline_replica_changed');
+  if (!save.instanceId) {save.instanceId = crypto.randomUUID(); documents.put(save, key);}
+  const privateStore = tx.objectStore('private');
+  const keys = (await result(privateStore.getAllKeys())).filter(candidate => sameDocument(candidate, key));
+  const queues = await Promise.all(keys.map(async candidate => [candidate, ((await result(privateStore.get(candidate))) as PrivateReplica).queue] as const));
+  queues.sort((a, b) => JSON.stringify(a[0]).localeCompare(JSON.stringify(b[0])));
+  return {accountId: owner.accountId, epoch: owner.epoch, pointer: JSON.stringify(key), documentId: String(key[1]), revision: save.value.access.revision, instanceId: save.instanceId, queues: JSON.stringify(queues), pending: queues.some(([, queue]) => queue.length > 0)};
+}
+
+export async function readOfflineRemovalSnapshot(selector: ReaderSelector): Promise<OfflineRemovalSnapshot> {
+  return transaction('readwrite', async tx => {
+    const snapshot = await removalContext(tx, selector);
+    const pendingReturn = hasPendingReaderReturn(selector.accountId, snapshot.documentId);
+    return {...snapshot, returnValue: readerReturnSnapshot(snapshot), pending: snapshot.pending || pendingReturn};
+  });
+}
+
+export async function removeOfflineSave(selector: ReaderSelector, expected?: OfflineRemovalSnapshot) {
+  if (expected && (expected.accountId !== selector.accountId || readerReturnSnapshot(expected) !== expected.returnValue)) throw new Error('offline_replica_changed');
   const documentId = await transaction('readwrite', async tx => {
     const pointer = tx.objectStore('pointers');
     const key = await result(pointer.get(editionKey(selector)));
-    if (!key) return;
-    const keys = await result(tx.objectStore('documents').getAllKeys());
-    for (const candidate of keys) if (Array.isArray(candidate) && candidate.slice(0, 4).every((part, i) => part === key[i])) {
-      tx.objectStore('documents').delete(candidate); tx.objectStore('checks').delete(candidate); tx.objectStore('private').delete(candidate);
+    if (!key) {if (expected) throw new Error('offline_replica_changed'); return;}
+    const owner = await identity(tx);
+    if (owner.accountId !== selector.accountId) throw new Error('offline_account_changed');
+    if (expected) {
+      const actual = await removalContext(tx, selector);
+      const fields = ['accountId', 'epoch', 'pointer', 'documentId', 'revision', 'instanceId', 'queues'] as const;
+      if (fields.some(field => actual[field] !== expected[field]) || readerReturnSnapshot(expected) !== expected.returnValue) throw new Error('offline_replica_changed');
+    }
+    for (const name of ['documents', 'checks', 'private']) {
+      const store = tx.objectStore(name);
+      for (const candidate of await result(store.getAllKeys())) if (sameDocument(candidate, key)) store.delete(candidate);
     }
     pointer.delete(editionKey(selector));
+    // sessionStorage cannot join IDB: check before commit, then retain any newer return.
+    if (expected && readerReturnSnapshot(expected) !== expected.returnValue) throw new Error('offline_replica_changed');
+    tx.commit();
     return String(key[1]);
   });
-  if (documentId) clearReaderReturn({accountId: selector.accountId, documentId});
+  if (documentId) {
+    if (expected) clearReaderReturnIfUnchanged(expected, expected.returnValue);
+    else clearReaderReturn({accountId: selector.accountId, documentId});
+  }
   notifyEdition(selector);
 }
 
@@ -412,7 +457,7 @@ export async function commitOfflineUpgrade(staged: OfflineSave, state: BulletinR
     const {key: oldKey, save: previous, replica} = await privateContext(tx, staged.selector, epoch, now);
     if (previous.value.access.documentId !== state.documentId || previous.value.access.revision !== previousRevision || staged.value.access.revision < previousRevision || JSON.stringify(replica?.queue ?? []) !== JSON.stringify(expectedQueue)) throw new Error('offline_replica_changed');
     if (replica?.queue.some(entry => entry.resolution ? entry.resolution.mutation && entry.resolution.result?.status !== 'applied' : (entry.replayResult ?? entry.result)?.status !== 'applied')) throw new Error('upgrade_incomplete');
-    const save = {...staged, epoch, lastObservedAt: now};
+    const save = {...staged, instanceId: crypto.randomUUID(), epoch, lastObservedAt: now};
     if (accessStatus(offlineCheck(save), await identity(tx), now) !== 'available') throw new Error('offline_access_expired');
     const key = documentKey(save);
     tx.objectStore('documents').put(save, key);

@@ -57,3 +57,9 @@ it('does not silently recreate an edited note after the cloud note was deleted',
   expect(onSave).toHaveBeenCalledOnce();
   expect(onComplete).not.toHaveBeenCalled();
 });
+
+it.each(['en', 'ja', 'ko', 'zh-Hans', 'zh-Hant'] as const)('keeps the character limit distinct from list counts in %s', locale => {
+  render(<NoteEditor messages={getMessages(locale).weeklyReader} quote="Source" onSave={vi.fn()} onComplete={vi.fn()} onCancel={vi.fn()}/>);
+  fireEvent.change(screen.getByRole('textbox'), {target: {value: '😀abc'}});
+  expect(screen.getByText(/^4 \/ 10,000/)).toBeInTheDocument();
+});

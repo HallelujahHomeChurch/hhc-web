@@ -32,3 +32,11 @@ describe('reader workspace', () => {
     expect(readTabs('a')).toEqual([]);
   });
 });
+
+it('isolates explicit reading modes by binding and rejects invalid or blocked storage', async () => {
+  const {readReadingMode, writeReadingMode} = await import('./workspace');
+  writeReadingMode('weekly-reader-position:a:doc:1', 'easy');
+  expect(readReadingMode('weekly-reader-position:a:doc:1')).toBe('easy');
+  expect(readReadingMode('weekly-reader-position:b:doc:1')).toBeNull();
+  sessionStorage.setItem('invalid:mode', 'auto'); expect(readReadingMode('invalid')).toBeNull();
+});

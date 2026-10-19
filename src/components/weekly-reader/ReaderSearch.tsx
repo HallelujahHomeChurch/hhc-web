@@ -1,12 +1,13 @@
-import {useMemo, useState, type ReactNode} from 'react';
+import {useMemo, useRef, useState, type ReactNode} from 'react';
 import {Search, X} from 'lucide-react';
-import {bulletinMobileDetails} from '@hallelujahhomechurch/ui';
+import {bulletinMobileDetails, bulletinChapters, bulletinBlocks} from '@hallelujahhomechurch/ui';
 import type {MemberOnlineDocument} from '@hallelujahhomechurch/hhc-web-client';
 import {searchSentences} from '@/features/weekly-reader/search';
 import {ReaderIconButton as IconButton} from './ReaderIconButton';
 import type {ReaderMessages} from './ReaderToolbar';
 
 export function ReaderSearch({document, onJump, messages: m, mobile = false, closeControl}: {document: MemberOnlineDocument; onJump: (sentenceId: string) => void; messages: ReaderMessages; mobile?: boolean; closeControl?: ReactNode}) {
+  const composing = useRef(false);
   const [query, setQuery] = useState('');
   const [submitted, setSubmitted] = useState('');
   const results = useMemo(() => {
@@ -15,19 +16,25 @@ export function ReaderSearch({document, onJump, messages: m, mobile = false, clo
   }, [document, submitted, mobile]);
   return <div className="reader-search">
     <header className="reader-search-header">{closeControl}
-    <form role="search" aria-label={m.search} onSubmit={event => {event.preventDefault(); setSubmitted(query.trim());}}>
-      <input type="search" aria-label={m.search} placeholder={m.search} value={query} maxLength={256} enterKeyHint="search" onChange={event => setQuery(event.target.value)}/>
+    <form role="search" aria-label={m.search} onSubmit={event => {event.preventDefault(); if (composing.current) return; setSubmitted(query.trim());}}>
+      <input type="search" aria-label={m.search} placeholder={m.search} value={query} maxLength={256} enterKeyHint="search" onCompositionStart={() => {composing.current = true;}} onCompositionEnd={() => {composing.current = false;}} onKeyDown={event => {if (event.key === 'Enter' && (composing.current || event.nativeEvent.isComposing || event.keyCode === 229)) {event.preventDefault();}}} onChange={event => setQuery(event.target.value)}/>
       {query ? <IconButton variant="ghost" aria-label={m.clearSearch} onPress={() => {setQuery(''); setSubmitted('');}} icon={<X size={18} aria-hidden="true"/>}/> : null}
       <button type="submit" aria-label={m.submitSearch}><Search size={20} aria-hidden="true"/></button>
     </form>
     </header>
+    {mobile ? <p className="reader-search-scope">{m.easySearchScope}</p> : null}
     <div className="reader-search-results">{submitted ? <>
       <p role="status" aria-label={m.searchResults}>{results.length ? m.searchCount.replace('{count}', String(results.length)) : m.noResults}</p>
       <ul className="reader-search-list">{results.map(result => {
         const page = document.content.layoutManifest.pages.findIndex(page => page.slots.some(slot => slot.fragments.some(fragment => fragment.sentenceId === result.sentenceId)) || page.fixedSlots?.some(slot => `canonical-${slot.element}` === result.sentenceId));
+        const componentId = bulletinBlocks(document.content).find(entry => entry.block.sentences.some(sentence => sentence.id === result.sentenceId))?.componentId;
+        const component = document.content.components.find(component => component.id === componentId);
+        const chapter = bulletinChapters(document.content).find(chapter => componentId ? chapter.componentIds.includes(componentId) : result.sentenceId.startsWith('canonical-') && chapter.id === 'cover');
+        const labels = {cover: m.chapterCover, body: m.chapterBody, worship: m.chapterWorship, back: m.chapterBack};
+        const context = component?.type === 'bodySection' ? component.bodySection.title.sentences.map(sentence => sentence.spans.map(span => span.text).join('')).join('') : chapter ? labels[chapter.id] : '';
         return <li key={result.sentenceId}><button type="button" data-reader-search-target={result.sentenceId} onClick={() => onJump(result.sentenceId)}>
           <span lang={document.contentLocale}><SearchExcerpt text={result.text} query={submitted}/></span>
-          {page >= 0 ? <small>{m.page} {page + 1}</small> : null}
+          {context || page >= 0 ? <small>{context}{context && page >= 0 ? ' · ' : ''}{page >= 0 ? `${m.page} ${page + 1}` : ''}</small> : null}
         </button></li>;
       })}</ul>
     </> : null}</div>

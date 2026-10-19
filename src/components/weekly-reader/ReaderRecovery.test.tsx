@@ -1,4 +1,4 @@
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {beforeEach, expect, it, vi} from 'vitest';
 import {getMessages} from '@/i18n/messages';
 import {readerFixture} from '@/features/weekly-reader/test-fixture';
@@ -159,20 +159,21 @@ it('resolves a cloud color conflict without replacing a pending private note', a
   expect(api.mutate.mock.calls[1][2][0].kind).toBe('resolveHighlightMigrationConflict');
 });
 it('shows exact partial conflict snippets and confirms replacement of the full target', async () => {
-  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  const confirm = vi.fn().mockResolvedValue(false);
   const conflict = {id: 'partial-conflict', sentenceIds: ['s0'], sources: [{sentenceId: 'old', color: 'red', quote: 'ABCDE', segments: [{start: 1, end: 3, color: 'blue'}]}]};
   mocks.prepare.mockResolvedValue({value, state: {...cloud, conflicts: [conflict]}, queue: [], mutations: [], recovery: [], previousRevision: 1});
-  render(<ReaderRecovery {...props}/>);
+  render(<ReaderRecovery {...props} onConfirm={confirm}/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
   expect(await screen.findByText('BC')).toHaveAttribute('data-color', 'blue');
   expect(screen.getByText('內容0。')).toBeInTheDocument();
   await waitFor(() => expect(screen.queryByText(props.messages.syncSyncing)).not.toBeInTheDocument());
   fireEvent.click(screen.getByRole('button', {name: props.messages.yellowHighlight}));
   expect(confirm).toHaveBeenCalled(); expect(mocks.choose).not.toHaveBeenCalled();
-  confirm.mockReturnValue(true);
+  await waitFor(() => expect(screen.getByRole('button', {name: props.messages.yellowHighlight})).toBeEnabled());
+  confirm.mockResolvedValue(true);
   fireEvent.click(screen.getByRole('button', {name: props.messages.yellowHighlight}));
   await waitFor(() => expect(mocks.choose).toHaveBeenCalled());
-  confirm.mockRestore();
+
 });
 
 it('publishes the final replayed state before updating the reader value', async () => {
@@ -197,4 +198,20 @@ it('does not republish an old direct prepared snapshot on Apply', async () => {
   await waitFor(() => expect(props.onUpdated).toHaveBeenCalledWith(value));
   expect(onState).toHaveBeenCalledOnce();
   expect(mocks.finish).not.toHaveBeenCalled();
+});
+
+it.each(['unmount', 'suspended', 'account'] as const)('rejects delayed partial-color confirmation after %s drift', async drift => {
+  let finish!: (accepted: boolean) => void;
+  const onConfirm = vi.fn(() => new Promise<boolean>(resolve => {finish = resolve;}));
+  const conflict = {id: 'partial', sentenceIds: ['s0'], sources: [{sentenceId: 'old', color: 'red', quote: 'ABCDE', segments: [{start: 1, end: 3, color: 'blue'}]}]};
+  mocks.prepare.mockResolvedValue({value, state: {...cloud, conflicts: [conflict]}, queue: [], mutations: [], recovery: [], previousRevision: 1});
+  const view = render(<ReaderRecovery {...props} onConfirm={onConfirm}/>);
+  fireEvent.click(screen.getByRole('button', {name: props.messages.reviewSync}));
+  await screen.findByText('BC');
+  await waitFor(() => expect(screen.getByRole('button', {name: props.messages.yellowHighlight})).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', {name: props.messages.yellowHighlight}));
+  fireEvent.click(screen.getByRole('button', {name: props.messages.yellowHighlight})); expect(onConfirm).toHaveBeenCalledOnce();
+  if (drift === 'unmount') view.unmount();
+  else view.rerender(<ReaderRecovery {...props} onConfirm={onConfirm} suspended={drift === 'suspended'} selector={drift === 'account' ? {...props.selector, accountId: 'account-b'} : props.selector}/>);
+  await act(async () => finish(true)); expect(mocks.choose).not.toHaveBeenCalled();
 });

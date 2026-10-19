@@ -1,13 +1,13 @@
 # 線上閱讀改善總覽與顧問發現追蹤
 
-日期：2026-10-18。版本 D1。狀態：文件補齊草案；第二、三階段未獲實作就緒判定。本輪只改文件，兩位 Codex 檢驗結果見下方紀錄。三階段是改善工作的交付分組，不代表每一個候選功能都已通過可行性或使用者接受。
+日期：2026-10-18。版本 D2（2026-10-19）。狀態：第二階段已完成調查、S2 spec與P1 plan雙席檢驗，T0–T3逐步實作各雙席通過；T4整合與PR/CI進行中。第三階段仍僅保存草案。三階段是改善工作的交付分組，不代表每一個候選功能都已通過可行性或使用者接受。
 
 ## 1. 三階段與入口
 
 | 階段 | 範圍 | 文件與狀態 |
 | --- | --- | --- |
 | 1 問題與資料可靠性 | 單次儲存／刪除、互斥、結果不明重試、復原、草稿、站內確認、局部載入錯誤 | [PR #234](https://github.com/HallelujahHomeChurch/hhc-web/pull/234)；實作及最終提交 CI 通過。本任務未 merge／release；真機與真實帳號驗收未完成 |
-| 2 閱讀體驗與 UI／UX | 閱讀模式、側欄分區、筆記／畫線查找、搜尋脈絡、焦點／縮放、確認一致性 | [階段 2 spec](2026-10-18-reader-experience-design.md)，D1 草案保存雙席 PASS；尚未實作就緒，尚無 implementation plan |
+| 2 閱讀體驗與 UI／UX | 閱讀模式、側欄分區、筆記／畫線查找、搜尋脈絡、焦點／縮放、確認一致性 | [階段 2 spec](2026-10-18-reader-experience-design.md)，S2實作就緒及[P1 plan](../plans/2026-10-19-reader-experience.md)雙席通過；T0–T3完成，整合及PR/CI進行中，停merge前 |
 | 3 加值功能 | 筆記匯出與命名書籤優先；Undo 等保留候選 | [階段 3 spec](2026-10-18-reader-value-features-design.md)，D1 草案保存雙席 PASS；尚未實作就緒，尚無 implementation plan |
 
 第一階段的正式 [spec](https://github.com/HallelujahHomeChurch/hhc-web/blob/5d6e027f88e1a7c24a22f546d5ed67d9c7828779/docs/superpowers/specs/2026-10-18-reader-notes-reliability-design.md)、[plan](https://github.com/HallelujahHomeChurch/hhc-web/blob/5d6e027f88e1a7c24a22f546d5ed67d9c7828779/docs/superpowers/plans/2026-10-18-reader-notes-reliability.md)、[檢驗紀錄](https://github.com/HallelujahHomeChurch/hhc-web/blob/5d6e027f88e1a7c24a22f546d5ed67d9c7828779/docs/reviews/2026-10-18-reader-notes-reliability-gates.md)用不可變提交連結保存，避免本文件分支依賴尚未合併的本機檔案。
@@ -43,7 +43,7 @@
 1. 每次接手先讀本總覽、該階段 spec、第一階段契約／檢驗紀錄與現行 repo AGENTS.md；讀取最新 PR／origin/main，不把舊報告視為線上事實。
 2. 先核對已存在的章節／頁碼導航、NFKC 搜尋、位置記憶、直橫方向、主題、字級、離線、畫線、重連與衝突復原，避免重做。
 3. 依第二階段→第三階段排序；各自完成阻塞項調查與 spec 的兩位 Codex 檢驗，才可寫 implementation plan。plan 再由兩位 Codex 檢驗，完成後才執行已授權實作；每個實作步驟仍兩席檢驗，處置 Important/Critical 後才下一步。
-4. 本次雙席文件檢驗只確認需求保留、邊界、風險與可驗收性，不代表未決定項目已被解答，也不代替未來各階段實作就緒 gate。此輪不寫第二、三階段 plan 或產品程式。
+4. 本次雙席文件檢驗只確認需求保留、邊界、風險與可驗收性，不代表未決定項目已被解答，也不代替未來各階段實作就緒 gate。原文件保存輪不寫第二、三階段plan或產品程式；2026-10-19使用者另授權接續第二階段，結果見[逐步紀錄](../../reviews/2026-10-19-reader-experience-gates.md)。第三階段尚未啟動實作就緒調查。
 5. 各階段 UI 變更先保存正常閱讀 baseline，再做可比較候選圖；維持既有視覺語言。模型審圖、瀏覽器 viewport、實體裝置、真實帳號、CI、merge、release 與 smoke 分別記錄。
 6. 每個候選都必須有：證據、已確認／建議／未決定狀態、owner、驗收與決策結果。Deferred 項目留在追蹤表，不因 token/context 或暫存清除消失。
 

@@ -80,7 +80,7 @@
 .reader-range-layer [data-reader-highlight='blue'] { background: #4bb4ff70; }
 .reader-document[data-mobile] .reader-paper-with-notes,
 .reader-recovery-text[data-sentence-selection] { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
-.reader-document[data-mobile] .hhc-bulletin-ebook [data-selected],
+.reader-document[data-reading-mode='easy'] .hhc-bulletin-ebook [data-selected],
 .reader-recovery-text[data-sentence-selection] [data-selected] { outline: none; background: #4bb4ff40; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 .reader-document:not([data-mobile]) .reader-paper-with-notes[data-has-notes] { padding-inline-end: 44px; }
 .reader-note-row {display: flex; justify-content: end; min-height: 44px; margin-block: 4px 8px;}
@@ -260,15 +260,15 @@ body:has(.weekly-reader) {padding-bottom: 0;}
 .reader-chapter-boundary {display: flex; align-items: center; justify-content: center; padding: 8px 0; background: var(--hhc-surface);}
 .weekly-reader .reader-chapter-boundary button {width: 48px; height: 44px; border: 0; border-radius: 0; background: transparent; box-shadow: none;}
 .weekly-reader[data-theme='dark'] .reader-chapter-boundary {background: #141B21;}
-.reader-document[data-mobile] .hhc-bulletin-ebook {font-size: var(--reader-font-size, 18px); line-height: var(--reader-line-height, 1.8);}
+.reader-document[data-reading-mode='easy'] .hhc-bulletin-ebook {font-size: var(--reader-font-size, 18px); line-height: var(--reader-line-height, 1.8);}
 /* Override inline PDF size ratios only in reflow; keep paper source styles intact. */
-.reader-document[data-mobile] .hhc-bulletin-ebook [data-font-role] {font-size: inherit !important;}
-.reader-document[data-mobile] .hhc-bulletin-ebook [data-font-role='scripture'] {font-size: calc(1em + 1px) !important;}
-.reader-document[data-mobile] .hhc-bulletin-ebook h2 {font-size: 1.333em;}
-.reader-document[data-mobile] .hhc-bulletin-ebook h3,
-.reader-document[data-mobile] .hhc-bulletin-ebook .hhc-ebook-body-heading h2 {font-size: 1.167em;}
-.reader-document[data-mobile] .hhc-bulletin-ebook [data-fixed-element='title'] {font-size: 1.556em;}
-.reader-document[data-mobile] .hhc-bulletin-ebook [data-fixed-element='subtitle'] {font-size: 1.222em;}
+.reader-document[data-reading-mode='easy'] .hhc-bulletin-ebook [data-font-role] {font-size: inherit !important;}
+.reader-document[data-reading-mode='easy'] .hhc-bulletin-ebook [data-font-role='scripture'] {font-size: calc(1em + 1px) !important;}
+.reader-document[data-reading-mode='easy'] .hhc-bulletin-ebook h2 {font-size: 1.333em;}
+.reader-document[data-reading-mode='easy'] .hhc-bulletin-ebook h3,
+.reader-document[data-reading-mode='easy'] .hhc-bulletin-ebook .hhc-ebook-body-heading h2 {font-size: 1.167em;}
+.reader-document[data-reading-mode='easy'] .hhc-bulletin-ebook [data-fixed-element='title'] {font-size: 1.556em;}
+.reader-document[data-reading-mode='easy'] .hhc-bulletin-ebook [data-fixed-element='subtitle'] {font-size: 1.222em;}
 @media (max-width: 767px) {
   .reader-document {--color-paper: var(--hhc-surface); --color-line: var(--hhc-border);}
   .reader-chrome {position: absolute; inset: 0 0 auto; background: transparent; pointer-events: none;}
@@ -326,3 +326,18 @@ body:has(.weekly-reader) {padding-bottom: 0;}
   .reader-document > .reader-private-feedback:has([role='alert'], [role='status'], button) { margin-top: 52px; padding: .75rem 1rem; flex: none; }
   .reader-document:has(> .reader-private-feedback :is([role='alert'], [role='status'], button)) .reader-viewport { padding-top: 0; }
 }
+
+.reader-document[data-reading-mode='easy'] .reader-paper-with-notes {width: 100%; max-width: 48rem; padding-inline-end: 0;}
+.reader-document[data-reading-mode='easy'] .reader-note-row {min-height: 44px;}
+.reader-mode-controls {display: flex; gap: .5rem; margin-block-end: .75rem;}
+.reader-mode-controls button {flex: 1; min-width: 0; min-height: 44px;}
+.reader-mode-settings {margin-block-end: 1rem;}
+.reader-private-search {display: grid; gap: .35rem; margin-block: .75rem;}
+.reader-private-search input {width: 100%; min-width: 0; min-height: 44px; color: var(--hhc-text); background: var(--hhc-surface); border: 1px solid var(--hhc-control-border); border-radius: .6rem; padding: .5rem .75rem;}
+.reader-notes-browser .hhc-tabs__list {display: flex; gap: .25rem; flex-wrap: wrap;}
+.reader-notes-browser .hhc-tabs__tab {flex: 1; min-width: 0; min-height: 44px; white-space: normal; padding: .5rem;}
+.reader-filter-row {display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; justify-content: space-between;}
+.reader-filter-colors {display: flex; flex-wrap: wrap; gap: .25rem; margin-block: .75rem;}
+.reader-filter-colors button {min-height: 44px; flex: 1;}
+.reader-filter-count, .reader-search-scope {font-size: .875rem; color: var(--hhc-text-muted); margin-block: .75rem;}
+.reader-search-scope {padding-inline: 1rem; flex: none;}

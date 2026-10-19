@@ -436,6 +436,8 @@ describe('protected weekly reader', () => {
     await waitFor(() => expect(trigger).not.toBeDisabled());
     const user = userEvent.setup();
     trigger.focus(); await user.keyboard('{Enter}');
+    const tab = await screen.findByRole('tab', {name: props.messages.highlightsTab});
+    tab.focus(); await user.keyboard('{Enter}');
     const list = await screen.findByRole('region', {name: 'Highlights'});
     expect(within(list).getByText('容0')).toBeInTheDocument();
     const control = within(list).getByRole('button', {name: operation === 'blue' ? props.messages.blueHighlight : props.messages.clearHighlight});
@@ -1297,6 +1299,7 @@ it('cancels a tab-close continuation when a new draft appears during progress fl
   state.mutate.mockImplementation((_selector, _value, mutations) => new Promise(resolve => {finish = () => resolve({state: cloud, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]});}));
   const {container} = render(<WeeklyReader {...props}/>);
   await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).toBeEnabled());
+  await screen.findByRole('button', {name: /Close bulletin.*1740/});
   await choosePage(2);
   fireEvent.click(screen.getByRole('button', {name: /Close bulletin.*1739/}));
   await waitFor(() => expect(state.mutate).toHaveBeenCalledOnce());
@@ -1318,4 +1321,64 @@ it('shows a local notes-load error and retries without changing the document', a
   expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled();
   expect(container.querySelector('[data-bulletin-page]')).toBe(paper);
   expect(state.open).toHaveBeenCalledOnce();
+});
+
+it.each([false,true])('separates reading mode from the device shell (mobile=%s)', async mobile => {
+  vi.stubGlobal('matchMedia',vi.fn(()=>({matches:mobile,addEventListener:vi.fn(),removeEventListener:vi.fn()})));
+  const {container}=render(<WeeklyReader {...props}/>);
+  await waitFor(()=>expect(screen.getByRole('button',{name:props.messages.myNotes})).toBeEnabled());
+  const shell=container.querySelector('.reader-document')!;
+  expect(shell).toHaveAttribute('data-reading-mode',mobile?'easy':'paper');
+  fireEvent.click(screen.getByRole('button',{name:mobile?props.messages.contents:props.messages.thumbnails}));
+  await act(async()=>fireEvent.click(screen.getByRole('button',{name:mobile?props.messages.paperMode:props.messages.easyMode})));
+  expect(shell).toHaveAttribute('data-reading-mode',mobile?'paper':'easy');
+  expect(shell.hasAttribute('data-mobile')).toBe(mobile);
+  expect(container.querySelector('[data-bulletin-mode="mobile"]')!==null).toBe(!mobile);
+  const key=`weekly-reader-position:account-a:${readerFixture().document.documentId}:1:mode`;
+  expect(sessionStorage.getItem(key)).toBe(mobile?'paper':'easy');
+  expect(state.mutate).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button',{name:props.messages.close}));
+  const event=new KeyboardEvent('keydown',{key:'+',ctrlKey:true,bubbles:true,cancelable:true});
+  shell.dispatchEvent(event); expect(event.defaultPrevented).toBe(false);
+});
+
+it('keeps a dirty note and mode when closing is cancelled', async()=>{
+  const {container}=render(<WeeklyReader {...props}/>);
+  await waitFor(()=>expect(screen.getByRole('button',{name:props.messages.myNotes})).toBeEnabled());
+  selectText(container.querySelector('[data-sentence-id="s0"]')!);
+  fireEvent.click(screen.getByRole('button',{name:props.messages.addNote}));
+  fireEvent.change(screen.getByRole('textbox',{name:props.messages.noteText}),{target:{value:'draft'}});
+  fireEvent.click(screen.getByRole('button',{name:props.messages.noteCancel}));
+  fireEvent.click(await screen.findByRole('button',{name:props.messages.noteContinueEditing}));
+  expect(screen.getByRole('textbox',{name:props.messages.noteText})).toHaveValue('draft');
+  expect(container.querySelector('.reader-document')).toHaveAttribute('data-reading-mode','paper');
+});
+
+it('exposes mobile paper sentence keyboard semantics without toggling twice', async()=>{
+ vi.stubGlobal('matchMedia',vi.fn(()=>({matches:true,addEventListener:vi.fn(),removeEventListener:vi.fn()})));
+ const {container}=render(<WeeklyReader {...props}/>);
+ await waitFor(()=>expect(screen.getByRole('button',{name:props.messages.myNotes})).toBeEnabled());
+ fireEvent.click(screen.getByRole('button',{name:props.messages.contents}));
+ await act(async()=>fireEvent.click(screen.getByRole('button',{name:props.messages.paperMode})));
+ fireEvent.click(screen.getByRole('button',{name:props.messages.close}));
+ const sentence=container.querySelector('[data-paper-index="0"] [data-sentence-id="s0"]')!;
+ expect(sentence).toHaveAttribute('role','button');expect(sentence).toHaveAttribute('tabindex','0');
+ fireEvent.keyDown(sentence,{key:'Enter'});expect(sentence).toHaveAttribute('aria-pressed','true');
+ fireEvent.keyDown(sentence,{key:' '});expect(sentence).toHaveAttribute('aria-pressed','false');
+});
+
+it.each(['cancel', 'confirm'] as const)('uses the shared reader decision for historical discard: %s', async choice => {
+  const cloud = {accountId: 'account-a', documentId: readerFixture().document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: null, conflicts: [], highlightHistory: [{id: 'history', highlight: {sentenceId: 'old', quote: 'Historical quote', color: 'red', active: false, version: 1, updatedAt: ''}}]};
+  state.privateState.mockResolvedValue({state: cloud});
+  state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: {...cloud, highlightHistory: []}, results: mutations.map((mutation: {mutationId: string}) => ({mutationId: mutation.mutationId, status: 'applied', revision: 1}))}));
+  render(<WeeklyReader {...props}/>);
+  await waitFor(() => expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', {name: props.messages.myNotes}));
+  fireEvent.click(screen.getByRole('tab', {name: props.messages.historyTab}));
+  fireEvent.click(screen.getByRole('button', {name: props.messages.clearHighlight}));
+  const dialog = await screen.findByRole('alertdialog'); expect(dialog).toHaveTextContent(props.messages.highlightHistoryDelete);
+  expect(state.mutate).not.toHaveBeenCalled();
+  fireEvent.click(within(dialog).getByRole('button', {name: choice === 'cancel' ? props.messages.noteCancel : props.messages.clearHighlight}));
+  if (choice === 'confirm') await waitFor(() => expect(state.mutate).toHaveBeenCalledExactlyOnceWith(expect.anything(), expect.anything(), [expect.objectContaining({kind: 'discardHighlightHistory', payload: {historyId: 'history'}})], expect.any(AbortSignal)));
+  else {await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()); expect(state.mutate).not.toHaveBeenCalled();}
 });

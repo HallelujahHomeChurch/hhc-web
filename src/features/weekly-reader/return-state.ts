@@ -92,3 +92,9 @@ export function hasPendingReaderReturn(accountId: string, documentId?: string) {
   } catch { /* Storage may be disabled. */ }
   return false;
 }
+
+/** Exact per-tab snapshot for a removal decision; storage denial must fail closed. */
+export function readerReturnSnapshot(binding: Binding) {return sessionStorage.getItem(key(binding));}
+export function clearReaderReturnIfUnchanged(binding: Binding, expected: string | null) {
+  try {if (readerReturnSnapshot(binding) === expected) sessionStorage.removeItem(key(binding));} catch { /* Retain recovery when storage cannot be checked. */ }
+}
