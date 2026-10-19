@@ -69,3 +69,21 @@ T1最終證據：本機完整go test -race ./... -count=1 -p=1以固定source完
 固定source本機完整176檔1404測試+8node檢查PASS；tsc、production build、static budgets PASS（CSS194892 bytes），lint零error/既有LegalRequiredNavigation warning；release policy PASS。修正前交錯編譯的舊run已停止並由final run取代，不把舊run失敗算PASS。targeted21+builder5+root keyboard1另有PASS證據。
 
 真實元件合成本機預覽開啟列表→匯出→準備，DOM確認1筆ready，保存export-desktop-ready.jpg；無正式資料。後續browser download事件等待超時並重置工具，未取得檔案落盤證據，不能宣稱下載或Files接受。T4仍需實看三尺寸明暗/五語/短viewport與實際操作；目前僅此桌面準備圖。可進T3，保留T4與真機gate。
+
+## T3 書籤 consumer
+
+獨立worktree reader-bookmarks-consumer-20261019，branch feat/reader-bookmarks-consumer-20261019，從fresh origin/main1215fcc建立後FF9009179；產品commit636c9e4已push。package.json / lock不變。SDK tgz SHA dc4c6162fe5542a2dd9e9169802683530e89418ba6ef479dc3ce55cdbda5c221，僅替換ignored node_modules候選；Turbopack不接受外部temp symlink，移到node_modules內的候選extract後build通過，無產品設定補丁。
+
+兩席p3_t3_data／p3_t3_ui初查共3 Important。資料席指出舊GET／note ack會覆寫新書籤tombstone；共用retainNewerBookmarks涵蓋seed／ack／bookmark merge，測延遲逆序並保留note queue。原席窄複核PASS。UI席指出筆記儲存會丟失隱藏書籤草稿及表單卸載焦點消失；finishNoteEditor保留草稿、initial Tab復原，原席窄複核確認草稿PASS，但滿100 Add disabled仍需fallback。root補enabled row action／section fallback及99→100 busy→false回歸；最後兩席各自獨立確認此修正PASS。沒有把該原席CHANGES_REQUIRED抹成PASS。
+
+固定來源完整179檔1423測試+8node checks PASS；type/lint/build/perf/releasepolicy PASS，lint僅既有LegalRequiredNavigation warning，CSS195547bytes。修正中的舊mixed-source run不列入PASS。source與測試未在最後全套執行期間變動。
+
+## T4 視覺與交付
+
+p3_t4_delivery PASS；p3_t4_visual初查唯一Important為200%截圖未含Download底部，root補原生Zoom200／完整Download及鍵盤focus證據，原席唯一窄複核PASS。兩席都真看baseline/candidate及指定新UI圖片，未執行測試。沒有新增第三席或Gemini。
+
+三尺寸明暗正常正文與長名、五語短畫面明暗form/export、empty/dirty/house delete/conflict/offline/legacy均有合成fixture畫面；正常六組與Phase2 immutable baseline的max-channel差>30像素比為0。原生200%實際AX確認Download focus並完整入鏡，Return顯示交給browser；還原100%。完整證據及限制在 [candidate evidence](reader-value-features-20261019/README.md)。桌面實際檔案1057bytes已保存、noquote/CMS title斷言PASS；download event timeout不再當阻塞，但不擴張成真機Files接受。
+
+讀回exact-head：API PR265 b6143e8 CI39151345044、SDK PR138 0e6d29c CI39151361617、Web匯出PR237 9009179 CI39196694373全部SUCCESS，皆draft OPEN／mergedAt null／autoMerge null。Consumer636c9e4僅source branch與packed驗證可review，未開一個明知缺已發布SDK的PR。保留producer→published SDK→consumer exact registry pin/CI gate。
+
+最終停止merge前；未merge/tag/publish/deploy，無正式帳號資料寫入。保留所有未合併worktree／branch。真機iOS/Android IME／Files、PWA、safe area／旋轉、screen reader、真帳號跨裝置及真v1–v10/PDF仍是獨立接受項，不能用本機fixture或CI代替。
