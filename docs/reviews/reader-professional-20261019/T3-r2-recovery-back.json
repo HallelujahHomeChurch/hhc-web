@@ -1,0 +1,51 @@
+{
+  "synthetic": true,
+  "idle": {
+    "url": "http://127.0.0.1:7152/?t3=r2&scenario=partial",
+    "restore": [
+      1
+    ],
+    "recoveryOpen": false,
+    "exitOpen": false
+  },
+  "busy": {
+    "url": "http://127.0.0.1:7152/?t3=r2-mobile&scenario=partial",
+    "viewport": [
+      390,
+      844
+    ],
+    "dpr": 1,
+    "frame": {
+      "x": 0,
+      "y": 370.4725341796875,
+      "width": 390,
+      "height": 776,
+      "top": 370.4725341796875,
+      "right": 390,
+      "bottom": 1146.4725341796875,
+      "left": 0
+    },
+    "restore": [
+      1
+    ],
+    "recoveryOpen": true,
+    "exitOpen": false,
+    "keepDisabled": true
+  },
+  "after": {
+    "viewport": [
+      390,
+      844
+    ],
+    "frame": {
+      "x": 0,
+      "y": 68,
+      "width": 390,
+      "height": 776,
+      "top": 68,
+      "right": 390,
+      "bottom": 844,
+      "left": 0
+    }
+  }
+}

@@ -15,7 +15,7 @@ import {writeTabs, readTabs} from '@/features/weekly-reader/workspace';
 
 const bulletinCss = ['bulletin-paper.css', 'bulletin-paper-v2.css', 'bulletin-paper-v7.css', 'bulletin-ebook.css'].map(file => readFileSync(new URL(import.meta.resolve(`@hallelujahhomechurch/ui/${file}`)), 'utf8')).join('\n');
 
-const state = vi.hoisted(() => ({accountId: 'account-a' as string | null, status: 'authenticated', open: vi.fn(), renew: vi.fn(), signIn: vi.fn(), privateState: vi.fn(), mutate: vi.fn()}));
+const state = vi.hoisted(() => ({accountId: 'account-a' as string | null, status: 'authenticated', open: vi.fn(), renew: vi.fn(), signIn: vi.fn(), privateState: vi.fn(), current: vi.fn(), mutate: vi.fn()}));
 vi.mock('@/components/layout/AccountControl', () => ({
   useAccountIdentity: () => state.accountId, useAccountAuth: () => ({status: state.status}),
   useAccountSignIn: () => state.signIn,
@@ -40,7 +40,7 @@ function selectText(element: Element, start?: number, end?: number, finish = tru
   fireEvent(document, new Event('selectionchange'));
   if (finish) fireEvent.pointerUp(element);
 }
-vi.mock('@/features/weekly-reader/api', async original => ({...await original<typeof import('@/features/weekly-reader/api')>(), createReaderApi: () => ({open: state.open, renew: state.renew, privateState: state.privateState, mutate: state.mutate})}));
+vi.mock('@/features/weekly-reader/api', async original => ({...await original<typeof import('@/features/weekly-reader/api')>(), createReaderApi: () => ({open: state.open, renew: state.renew, current: state.current, privateState: state.privateState, mutate: state.mutate})}));
 const props = {locale: 'en' as const, issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const, messages: getMessages('en').weeklyReader};
 async function choosePage(page: number) {
   const contents = screen.queryByRole('button', {name: props.messages.contents});
@@ -52,7 +52,7 @@ function chooseDirection(name: string) {
   fireEvent.click(screen.getByRole('button', {name: /^Reading direction/}));
   expect(document.querySelector('.reader-viewport')).toHaveAttribute('data-direction', name === 'Horizontal paging' ? 'horizontal' : 'vertical');
 }
-beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state.accountId = 'account-a'; state.status = 'authenticated'; state.open.mockReset().mockResolvedValue(readerFixture()); state.renew.mockReset().mockResolvedValue(readerFixture()); state.privateState.mockReset().mockResolvedValue({state: {accountId: 'account-a', documentId: readerFixture().document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: null, conflicts: []}}); state.mutate.mockReset(); sessionStorage.clear(); vi.stubGlobal('matchMedia', vi.fn(() => ({matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn()})));});
+beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state.accountId = 'account-a'; state.status = 'authenticated'; state.open.mockReset().mockResolvedValue(readerFixture()); state.renew.mockReset().mockResolvedValue(readerFixture()); state.current.mockReset().mockResolvedValue(readerFixture()); state.privateState.mockReset().mockResolvedValue({state: {accountId: 'account-a', documentId: readerFixture().document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: null, conflicts: []}}); state.mutate.mockReset(); sessionStorage.clear(); vi.stubGlobal('matchMedia', vi.fn(() => ({matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn()})));});
 afterEach(() => {cleanup(); Reflect.deleteProperty(document, 'fonts'); Reflect.deleteProperty(Range.prototype, 'getBoundingClientRect'); Reflect.deleteProperty(Range.prototype, 'getClientRects'); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.useRealTimers();});
 beforeEach(() => {Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect(0, 100, 300, 20)});});
 
@@ -1555,4 +1555,31 @@ it('cycles desktop contents focus through visible controls without entering clos
   const last = visible.at(-1)!;
   last.focus(); fireEvent.keyDown(last, {key: 'Tab'}); expect(close).toHaveFocus();
   fireEvent.keyDown(close, {key: 'Tab', shiftKey: true}); expect(last).toHaveFocus();
+});
+
+
+it.each([false, true])('browser Back handles standalone Recovery before reader exit (busy=%s)', async busy => {
+  const cloud = (await state.privateState()).state;
+  state.privateState.mockResolvedValue({state: {...cloud, currentRevision: 2}});
+  let finish: ((value: ReturnType<typeof readerFixture>) => void) | undefined;
+  if (busy) state.current.mockImplementationOnce(() => new Promise(resolve => {finish = resolve;}));
+  history.pushState({recoveryTest: true}, '', location.href);
+  render(<WeeklyReader {...props}/>);
+  const review = await screen.findByRole('button', {name: props.messages.reviewSync}, {timeout: 5000});
+  fireEvent.click(review);
+  const recovery = await screen.findByRole('dialog', {name: props.messages.reviewSync});
+  if (busy) expect(within(recovery).getByRole('button', {name: props.messages.keepReading})).toBeDisabled();
+  if (!busy) await waitFor(() => expect(within(recovery).getByRole('button', {name: props.messages.applyUpdate})).toBeEnabled());
+  const go = vi.spyOn(history, 'go');
+  act(() => history.back());
+  await waitFor(() => expect(go).toHaveBeenCalledWith(1));
+  expect(screen.queryByRole('dialog', {name: props.messages.exitTitle})).not.toBeInTheDocument();
+  if (busy) {
+    expect(recovery).toBeInTheDocument();
+    expect(within(recovery).getByRole('button', {name: props.messages.keepReading})).toBeDisabled();
+    await act(async () => finish?.(readerFixture()));
+    await waitFor(() => expect(within(recovery).getByRole('button', {name: props.messages.keepReading})).toBeEnabled());
+  } else await waitFor(() => expect(screen.queryByRole('dialog', {name: props.messages.reviewSync})).not.toBeInTheDocument());
+  await waitFor(() => expect(history.state?.__hhcReaderExit?.position).toBe('guard'));
+  expect(state.mutate).not.toHaveBeenCalled();
 });

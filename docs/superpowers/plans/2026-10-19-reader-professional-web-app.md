@@ -232,3 +232,6 @@ T3 實作中，尚未雙席 gate：目錄／設定共用手機筆記外框、獨
 
 
 T3 root 候選已完成範圍實作與可重現視覺證據：手機／平板／桌面深淺色矩陣、實際轉場影格與動畫位置、滿版搜尋／系統返回／原文焦點及 reduced-motion。176 項範圍測試全通過，另補鍵盤循環回歸並通過窄重跑；共177個不同案例有通過紀錄，TS／相關 ESLint／diff PASS。錄影為低幀率流程證據，不代表真機流暢度，詳細限制與歷史失敗見T3.md。等待雙 Codex gate；未開始T4，沒有merge／release。
+
+
+T3 `e6276a1` 首輪 UX PASS／資料 FAIL（1 Important）：standalone Recovery 漏接系統返回。修訂將 Recovery 放在既有 decision 之後、導航／筆記之前處理，沿用 busy／deciding／suspended guard；2 個實際 history 回歸通過，合成瀏覽器閒置／忙碌返回證據見 T3.md。未進 T4，等待新候選雙席 gate。

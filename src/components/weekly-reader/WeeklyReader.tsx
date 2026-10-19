@@ -620,6 +620,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   }
   const exit = useReaderExitGuard({canPrompt: () => !decisionRequest.current, hasUnsavedNote, hasUnsavedChanges: privateReader.hasUncommitted, consumeBack: () => {
     if (decision) {settleDecision(false); return true;}
+    if (recoveryOpen) {recoveryClose.current?.(); return true;}
     if (panel) {closePanel(); return true;}
     if (notes) {dismissNotesLayer(); return true;}
     return false;
