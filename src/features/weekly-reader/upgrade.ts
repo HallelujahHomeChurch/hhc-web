@@ -1,6 +1,7 @@
 import type {BulletinReaderMutation, BulletinReaderState, OnlineBulletinAccess} from '@hallelujahhomechurch/hhc-web-client';
 import type {createReaderApi, ReaderSelector} from './api';
 import {bindOnlinePrivate, commitOnlineUpgrade, commitOfflineUpgrade, getOfflineIdentity, readPrivateBinding, readPrivateReplica, recordReaderReplayResult, recordReaderRecoveryResult, retainReaderRecoveries, stageOfflineSave, stageReaderReplay, type PendingReaderMutation} from './offline-store';
+import {withReaderWriter} from './sync';
 import {rebaseReaderMutations, type ReaderRecovery} from './rebase';
 
 type UpgradeApi = Pick<ReturnType<typeof createReaderApi>, 'current' | 'renew' | 'privateState' | 'mutate'>;
@@ -8,7 +9,7 @@ export type ReaderUpgrade = {onlineOnly?: boolean; value: OnlineBulletinAccess; 
 
 /** User-accepted update only. Never called from automatic foreground synchronization. */
 export async function prepareReaderUpgrade(api: UpgradeApi, selector: ReaderSelector, value: OnlineBulletinAccess, epoch: number, signal: AbortSignal, now = Date.now): Promise<ReaderUpgrade> {
-  return navigator.locks.request(`hhc-weekly-reader-sync:${selector.accountId}`, {signal}, async () => {
+  return withReaderWriter(selector.accountId, signal, async () => {
     const fresh = await api.renew(selector, value, crypto.randomUUID(), signal);
     signal.throwIfAborted();
     await bindOnlinePrivate(selector, fresh, epoch, now());
@@ -62,7 +63,7 @@ export async function prepareReaderUpgrade(api: UpgradeApi, selector: ReaderSele
 }
 
 export async function finishReaderUpgrade(api: UpgradeApi, selector: ReaderSelector, prepared: ReaderUpgrade, epoch: number, signal: AbortSignal, fetcher = globalThis.fetch.bind(globalThis), now = Date.now) {
-  return navigator.locks.request(`hhc-weekly-reader-sync:${selector.accountId}`, {signal}, async () => {
+  return withReaderWriter(selector.accountId, signal, async () => {
     if (prepared.recovery.length || prepared.state.conflicts.length) throw new Error('action_required');
     let queue = prepared.queue;
     let state = prepared.state;

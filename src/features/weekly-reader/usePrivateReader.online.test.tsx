@@ -6,15 +6,15 @@ import type {BulletinReaderMutation, BulletinReaderState} from '@hallelujahhomec
 import {readerFixture} from './test-fixture';
 import {usePrivateReader} from './usePrivateReader';
 import {applyLocalMutation} from './private-state';
-import {activateOfflineAccount, readPrivateReplica, readOfflineSave} from './offline-store';
-const storage = vi.hoisted(() => ({fail: false}));
-vi.mock('./offline-store', async original => {const actual = await original<typeof import('./offline-store')>(); return {...actual, enqueuePrivateMutation: (...args: Parameters<typeof actual.enqueuePrivateMutation>) => storage.fail ? Promise.reject(new DOMException('full', 'QuotaExceededError')) : actual.enqueuePrivateMutation(...args)};});
+import {activateOfflineAccount, readPrivateReplica, readOfflineSave, bindOnlinePrivate, seedPrivateReplica, enqueuePrivateMutation, chooseReaderRecovery, commitOnlineUpgrade} from './offline-store';
+const storage = vi.hoisted(() => ({fail: false, failBind: false}));
+vi.mock('./offline-store', async original => {const actual = await original<typeof import('./offline-store')>(); return {...actual, bindOnlinePrivate: (...args: Parameters<typeof actual.bindOnlinePrivate>) => storage.failBind ? Promise.reject(new DOMException('full', 'QuotaExceededError')) : actual.bindOnlinePrivate(...args), enqueuePrivateMutation: (...args: Parameters<typeof actual.enqueuePrivateMutation>) => storage.fail ? Promise.reject(new DOMException('full', 'QuotaExceededError')) : actual.enqueuePrivateMutation(...args)};});
 const now = Date.parse('2026-10-02T00:00:00Z'), value = readerFixture();
 const selector = {accountId: 'account-a', issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const};
 const note = {id: 'n', text: 'A', quote: '內容0。', sentenceIds: ['s0'], inactiveAnchors: [], version: 1, deleted: false, reanchorRequired: false, createdAt: '', updatedAt: ''};
 const state: BulletinReaderState = {accountId: selector.accountId, documentId: value.document.documentId, appliedRevision: 1, currentRevision: 1, notes: [note], highlights: [], conflicts: [], progress: null};
 const edit = (id: string, text: string, version: number): BulletinReaderMutation => ({mutationId: id, kind: 'editNote', documentRevision: 1, createdAt: new Date(now).toISOString(), baseVersion: version, payload: {noteId: note.id, text}});
-beforeEach(async () => {storage.fail = false; sessionStorage.clear(); vi.useFakeTimers({toFake: ['Date']}); vi.setSystemTime(now); vi.stubGlobal('indexedDB', new IDBFactory()); vi.stubGlobal('crypto', webcrypto); vi.stubGlobal('navigator', {onLine: true, locks: {request: async (_name: string, options: unknown, work?: () => Promise<unknown>) => typeof options === 'function' ? options() : work!()}}); await activateOfflineAccount(selector.accountId);});
+beforeEach(async () => {storage.fail = false; storage.failBind = false; sessionStorage.clear(); vi.useFakeTimers({toFake: ['Date']}); vi.setSystemTime(now); vi.stubGlobal('indexedDB', new IDBFactory()); vi.stubGlobal('crypto', webcrypto); vi.stubGlobal('navigator', {onLine: true, locks: {request: async (_name: string, options: unknown, work?: () => Promise<unknown>) => typeof options === 'function' ? options() : work!()}}); await activateOfflineAccount(selector.accountId);});
 afterEach(() => {vi.useRealTimers(); vi.unstubAllGlobals();});
 function mount() {
   let cloud = structuredClone(state);
@@ -61,4 +61,41 @@ it('resumes a durable unknown ID on connection restoration without another Save'
   const intent = edit('reconnect', 'B', 1); await act(async () => {await h.result.current.mutate(intent);}); await waitFor(() => expect(h.result.current.busy).toBe(false));
   fireEvent(window, new Event('online')); await waitFor(() => expect(h.result.current.status).toBe('synced'));
   expect(h.api.mutate.mock.calls.map(call => call[2])).toEqual([[intent], [intent]]); expect(h.result.current.state?.notes[0].text).toBe('B');
+});
+
+it('retains the known epoch when initialization quota fails and warns throughout a delayed acknowledgement', async () => {
+  storage.failBind = true; const h = mount(); await waitFor(() => expect(h.result.current.state).not.toBeNull());
+  h.api.mutate.mockImplementationOnce(() => new Promise(() => {}));
+  await act(async () => {await h.result.current.mutate(edit('init-quota', 'B', 1));}); await waitFor(() => expect(h.api.mutate).toHaveBeenCalledOnce());
+  expect(h.result.current.unsaved).toBe(true); expect(h.result.current.hasUncommitted()).toBe(true); expect(h.result.current.busy).toBe(true);
+});
+it('serializes memory fallback with a durable writer in another tab using the same account lock', async () => {
+  const tails = new Map<string, Promise<unknown>>(), lockNames: string[] = [];
+  vi.stubGlobal('navigator', {onLine: true, locks: {request: (name: string, options: unknown, work?: () => Promise<unknown>) => {
+    const callback = typeof options === 'function' ? options as () => Promise<unknown> : work!;
+    const next = (tails.get(name) ?? Promise.resolve()).then(callback); tails.set(name, next.catch(() => {})); lockNames.push(name); return next;
+  }}});
+  const a = mount(), b = mount(); await waitFor(() => {expect(a.result.current.state).not.toBeNull(); expect(b.result.current.state).not.toBeNull();});
+  let release!: () => void;
+  a.api.mutate.mockImplementationOnce(async (_s, _v, writes) => {await new Promise<void>(resolve => {release = resolve;}); return {state: applyLocalMutation(state, writes[0], value.document), results: [{mutationId: writes[0].mutationId, status: 'applied', revision: 1}]};});
+  await act(async () => {await a.result.current.mutate(edit('tab-a', 'B', 1));}); await waitFor(() => expect(a.api.mutate).toHaveBeenCalledOnce());
+  storage.fail = true;
+  await act(async () => {await b.result.current.mutate(edit('tab-b', 'C', 1));}); expect(b.api.mutate).not.toHaveBeenCalled();
+  await act(async () => release()); await waitFor(() => expect(b.api.mutate).toHaveBeenCalledOnce());
+  expect(lockNames.filter(name => name === 'hhc-weekly-reader-sync:account-a')).toHaveLength(2);
+});
+
+it('does not revive a persisted old-revision journal after an explicit recovery commit and reload', async () => {
+  const epoch = await activateOfflineAccount(selector.accountId);
+  await bindOnlinePrivate(selector, value, epoch); await seedPrivateReplica(selector, state, epoch); await enqueuePrivateMutation(selector, edit('old-revision', 'B', 1), epoch);
+  const current = {...structuredClone(value), document: {...value.document, revision: 2}, access: {...value.access, revision: 2, currentRevision: 2, receiptId: 'current', validatedAt: new Date(now).toISOString(), offlineValidUntil: new Date(now + 604800000).toISOString()}};
+  const cloud = {...state, appliedRevision: 2, currentRevision: 2};
+  const api = {privateState: vi.fn(async () => ({state: cloud})), renew: vi.fn(async () => current), mutate: vi.fn()};
+  const h = renderHook(() => usePrivateReader({api, selector, value: current, offline: false, allowAction: () => true, onFailure: vi.fn()}));
+  await waitFor(() => expect(h.result.current.status).toBe('paused')); expect(h.result.current.hasUncommitted()).toBe(false);
+  const original = (await readPrivateReplica(selector))!;
+  const queue = await chooseReaderRecovery(selector, 'old-revision', null, epoch, original.queue);
+  await commitOnlineUpgrade(selector, current, cloud, epoch, 1, queue);
+  act(() => h.result.current.reload()); await waitFor(() => expect(h.result.current.status).toBe('synced'));
+  expect(h.result.current.state).toEqual(cloud); expect(h.result.current.pendingMutation).toBeNull(); expect(api.mutate).not.toHaveBeenCalled();
 });

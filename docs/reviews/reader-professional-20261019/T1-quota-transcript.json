@@ -1,0 +1,20 @@
+{
+  "synthetic": true,
+  "privateStoreQuota": true,
+  "networkDelayMs": 60000,
+  "pending": {
+    "list": true,
+    "warning": "尚未安全儲存，請保持此頁開啟並重試同步。",
+    "text": "內容0。額度不足時仍保留的第二筆合成內容。前往原文編輯刪除",
+    "serverVersion": 1,
+    "networkCalls": 1
+  },
+  "exit": {
+    "description": "離開週報閱讀？×確定要離開目前的週報嗎？ 部分變更尚未安全儲存。現在離開可能遺失，建議先繼續閱讀並等待同步。繼續閱讀離開",
+    "warning": true
+  },
+  "cancelled": {
+    "reader": true,
+    "warning": true
+  }
+}

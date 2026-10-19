@@ -205,7 +205,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     } else if (result.status === 'note_conflict') {
       setNotice('');
       if (!owns) return;
-      if (mutation.kind === 'deleteNote' && operation.local) setDeletion({local: operation.local, cloud: result.note, durable: result.durable});
+      if (mutation.kind === 'deleteNote' && operation.local) setDeletion({local: operation.local, cloud: result.note, durable: result.durable, mutationId: mutation.mutationId});
       else if ((mutation.kind === 'createNote' || mutation.kind === 'editNote') && noteEditorState) setNoteEditorState({...noteEditorState, conflict: {status: 'note_conflict', note: result.note, durable: result.durable}});
       else if (mutation.kind === 'reanchorNote') setReanchorConflict({status: 'note_conflict', note: result.note, durable: result.durable});
     } else setNotice(m.syncAction);
@@ -218,7 +218,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     if (outcome) queueMicrotask(() => {if (active) receiveMutationOutcome(outcome);});
     return () => {active = false;};
   }, [privateReader.mutationOutcome]);
-  const [deletion, setDeletion] = useState<{local: BulletinReaderNote; cloud?: BulletinReaderNote; durable?: boolean} | null>(null);
+  const [deletion, setDeletion] = useState<{local: BulletinReaderNote; cloud?: BulletinReaderNote; durable?: boolean; mutationId: string} | null>(null);
   const [reanchor, setReanchorState] = useState<BulletinReaderNote | null>(null);
   const [reanchorConflict, setReanchorConflict] = useState<import('./NoteEditor').NoteSaveResult | null>(null);
   function setReanchor(note: BulletinReaderNote | null) {generation.current++; setReanchorConflict(null); setReanchorState(note);}
@@ -597,7 +597,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     if (next !== page) setPage(next);
     recordProgress(document.pages[next].id, id);
   }
-  const exit = useReaderExitGuard({canPrompt: () => !decisionRequest.current, hasUnsavedNote, messages: m, beforeLeave: async () => {
+  const exit = useReaderExitGuard({canPrompt: () => !decisionRequest.current, hasUnsavedNote, hasUnsavedChanges: privateReader.hasUncommitted, messages: m, beforeLeave: async () => {
     const dirty = hasUnsavedNote();
     if (allowAction()) {
       recordVisiblePaper();
@@ -718,7 +718,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const unknownAction = privateReader.canRetry && !!privateReader.pendingMutation && !privateReader.busy;
   const currentNotice = notice === m.noteQueued && privateReader.status === 'synced' ? '' : notice;
   const urgentOperation = privateReader.operation === 'confirming' || privateReader.operation === 'timeout' ? operationMessage : '';
-  const feedbackMessage = privateReader.unsaved && (privateReader.canRetry || ['action', 'paused'].includes(privateReader.status)) ? m.syncUnsaved : urgentOperation || (unknownAction ? m.operationUnknown : privateReader.status === 'action' || privateReader.status === 'paused' ? undefined : currentNotice || undefined);
+  const feedbackMessage = privateReader.unsaved ? m.syncUnsaved : urgentOperation || (unknownAction ? m.operationUnknown : privateReader.status === 'action' || privateReader.status === 'paused' ? undefined : currentNotice || undefined);
   const feedback = <div className="reader-private-feedback">
     <div hidden={recoveryOpen} inert={recoveryOpen}>
     {privateReader.loadError ? <div role="alert"><p>{m.notesLoadError}</p><button type="button" disabled={privateReader.busy} onClick={privateReader.reload}>{m.retry}</button></div> : notes && !privateReader.state && fontsReady ? <p role="status">{m.loading}</p> : null}
@@ -735,7 +735,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     </div>
     <div ref={recoveryControl}><ReaderRecovery onBookmarkRetry={privateReader.retry} onConfirm={description => confirmReaderAction(description, m.reviewSync, m.applyUpdate)} inline={!!notes} onOpenChange={setRecoveryOpen} onState={privateReader.acceptState} available={!privateReader.busy && (privateReader.status === 'paused' || privateReader.status === 'action' || !!privateReader.pendingMutation)} runExclusive={privateReader.runExclusive} api={api} value={value} selector={selector} messages={m} mobile={mobile} onUpdated={next => {privateReader.reload(); onUpdated(next);}} onFailure={onFailure} suspended={suspended} pendingMutation={privateReader.pendingMutation} onPendingChange={(mutation, result, previous) => {
       if (mutation && previous && noteOperation.current?.mutation.mutationId === previous.mutationId && noteOperation.current.generation === generation.current) noteOperation.current = {...noteOperation.current, mutation};
-      const remaining = privateReader.replacePending(mutation);
+      const remaining = privateReader.replacePending(mutation, previous?.mutationId ?? null);
       if (!mutation && previous && result) {if (isBookmarkMutation(previous)) settleBookmark(previous, result); else settleNote(previous, result);}
       else if (!mutation && previous && !isBookmarkMutation(previous) && noteOperation.current?.mutation.mutationId === previous.mutationId && noteOperation.current.generation === generation.current) cleanupNotes();
       return remaining;
@@ -852,8 +852,8 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
         if (result.status !== 'applied' && result.status !== 'queued' && result.status !== 'note_conflict') throw new Error(result.status);
         return {status: result.status, note: 'note' in result ? result.note : undefined, durable: 'durable' in result ? result.durable : undefined};
       }} onComplete={() => {}} onCancel={() => setReanchor(null)}/> : deletion ? <section className="reader-note-editor"><p role="alert">{m.noteConflict}</p><h3>{m.recoveryLocal}</h3><blockquote>{deletion.local.text}</blockquote><h3>{m.recoveryCloud}</h3><blockquote>{!deletion.durable && deletion.cloud && !deletion.cloud.deleted ? deletion.cloud.text : m.noteDeleted}</blockquote><div className="reader-note-actions">
-        <button type="button" disabled={foregroundBusy} onClick={() => {if (deletion.durable) openRecovery(); else {privateReader.replacePending(null); setDeletion(null);}}}>{deletion.durable ? m.reviewSync : m.noteCloud}</button>
-        {!deletion.durable && deletion.cloud && !deletion.cloud.deleted ? <><button type="button" disabled={privateReader.busy} onClick={() => {const note = deletion.cloud!; void confirmNote('delete', note.text).then(accepted => {if (accepted) {privateReader.replacePending(null); void deleteNote(note);}});}}>{m.noteDelete}</button><button type="button" disabled={privateReader.busy} onClick={() => {const cloud = deletion.cloud!; privateReader.replacePending(null); setNotes(cloud); setNoteEditorState({draft: {noteId: cloud.id, baseVersion: cloud.version, text: `${cloud.text}\n\n${deletion.local.text}`}, conflict: null}); setDeletion(null);}}>{m.noteManual}</button></> : null}
+        <button type="button" disabled={foregroundBusy} onClick={() => {if (deletion.durable) openRecovery(); else {privateReader.replacePending(null, deletion.mutationId); setDeletion(null);}}}>{deletion.durable ? m.reviewSync : m.noteCloud}</button>
+        {!deletion.durable && deletion.cloud && !deletion.cloud.deleted ? <><button type="button" disabled={privateReader.busy} onClick={() => {const note = deletion.cloud!; void confirmNote('delete', note.text).then(accepted => {if (accepted) {privateReader.replacePending(null, deletion.mutationId); void deleteNote(note);}});}}>{m.noteDelete}</button><button type="button" disabled={privateReader.busy} onClick={() => {const cloud = deletion.cloud!; privateReader.replacePending(null, deletion.mutationId); setNotes(cloud); setNoteEditorState({draft: {noteId: cloud.id, baseVersion: cloud.version, text: `${cloud.text}\n\n${deletion.local.text}`}, conflict: null}); setDeletion(null);}}>{m.noteManual}</button></> : null}
       </div></section> : notes === 'list' ? <>
       <ReaderNotesList messages={m} bookmarks={{document: value.document, bookmarks: privateReader.state?.bookmarks, messages: m, offline, supported: privateReader.bookmarksSupported, cacheWarning: privateReader.bookmarkCacheWarning,
           busy: privateReader.busy || privateReader.canRetry || privateReader.loadError || suspended || !privateReader.state || privateReader.status === 'paused', draft: bookmarkDraft, onDraft: setBookmarkDraft, onCurrent: captureBookmarkPosition,
@@ -864,7 +864,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
           onSave: async mutation => {const result = await privateReader.mutate(mutation); if (result.status !== 'applied' && result.status !== 'queued') throw new Error(result.status);}}}
         notes={{busy: foregroundBusy || suspended, messages: m, notes: privateReader.state?.notes ?? [], onReanchor: setReanchor,
           onJump: id => {void onAnchor({kind: 'sentence', id});}, onEdit: note => {newNoteId.current = null; setNoteEditorState(undefined); setNotes(note);},
-          onDelete: note => {void confirmNote('delete', note.text).then(accepted => {if (accepted) {privateReader.replacePending(null); void deleteNote(note);}});}}}/>
+          onDelete: note => {void confirmNote('delete', note.text).then(accepted => {if (accepted) void deleteNote(note);});}}}/>
 </> : notes === 'restore' && (!editingNote || editingNote.deleted) ? <section className="reader-note-editor">
         <p role="status">{!privateReader.state ? m.loading : m.noteDeleted}</p>
         <textarea aria-label={m.noteText} readOnly rows={8} value={noteEditorState?.draft.text ?? ''}/>

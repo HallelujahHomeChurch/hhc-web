@@ -7,7 +7,7 @@ import {applyLocalMutation} from './private-state';
 import {appendPrivateIntent, acknowledgePrivateIntent, isReaderStorageFailure} from './private-journal';
 import {readerFailureAction} from './offline-access';
 import {bindOnlinePrivate, readPrivateBinding, type PrivateReplica, enqueuePrivateMutation, getOfflineIdentity, readOfflineSave, readPrivateReplica, seedPrivateReplica, readBookmarkCache, mergeBookmarkCache, readReaderExportLocal, supportsOfflineReader} from './offline-store';
-import {syncPrivateReplica, type ReaderSyncStatus} from './sync';
+import {syncPrivateReplica, withReaderWriter, type ReaderSyncStatus} from './sync';
 import {watchOfflineAccount} from './offline-session';
 import {readReaderReturn, saveReaderReturn} from './return-state';
 
@@ -125,11 +125,12 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
           const identity = await getOfflineIdentity();
           if (identity.accountId !== accountId && identity.accountId !== null) throw new Error('offline_account_changed');
           if (identity.accountId === accountId) {
+            epoch.current = identity.epoch;
             await bindOnlinePrivate(bound, value, identity.epoch);
             const binding = await readPrivateBinding(bound);
-            if (!binding.writable) {journal.current = binding.replica ?? null; loaded.current = 'local'; publishState(cloud.state); publishStatus('paused'); return;}
+            if (!binding.writable) {journal.current = binding.replica ?? null; durable.current = true; loaded.current = 'local'; publishState(cloud.state); publishStatus('paused'); return;}
             replica = await seedPrivateReplica(bound, cloud.state, identity.epoch);
-            epoch.current = identity.epoch; durable.current = true;
+            durable.current = true;
           }
         } catch (error) {if (!isReaderStorageFailure(error)) throw error;}
       }
@@ -176,7 +177,10 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
         signal.throwIfAborted();
         if (cache?.pending || cache && (cache.binding.documentId !== context.value.document.documentId || cache.binding.revision !== context.value.document.revision) || !context.allowAction()) throw new Error('bookmark_pending_sync');
         rememberPending(mutation);
-        const response = await context.api.mutate(context.selector, context.value, [mutation], signal);
+        const response = await withReaderWriter(context.selector.accountId, signal, async () => {
+          if (!owner || controller.current !== owner || owner.request.signal.aborted || !current.current.allowAction()) throw new ReaderActionError('cancelled');
+          return context.api.mutate(context.selector, context.value, [mutation], signal);
+        });
         signal.throwIfAborted();
         const result = response.results[0];
         if (!result || result.mutationId !== mutation.mutationId || response.state.accountId !== context.selector.accountId || response.state.documentId !== context.value.document.documentId || !Array.isArray(response.state.bookmarks)) throw new Error('invalid_reader_binding');
@@ -283,23 +287,31 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
             if (result.status === 'synced' && remaining.length && !remaining.some(entry => entry.result)) syncRequested.current = true;
             if (result.status === 'synced') outcome = {status: 'applied', mutationId: '', revision: context.value.document.revision};
           } else {
-            while (journal.current?.queue.length) {
-              signal.throwIfAborted();
-              if (controller.current !== owner || !current.current.allowAction()) throw new ReaderActionError('cancelled');
-              if (epoch.current !== null) {
-                const identity = await getOfflineIdentity(); signal.throwIfAborted();
-                if (identity.accountId !== context.selector.accountId || identity.epoch !== epoch.current) throw new Error('offline_account_changed');
+            const sendMemory = async () => {
+              while (journal.current?.queue.length) {
+                signal.throwIfAborted();
+                if (controller.current !== owner || !current.current.allowAction()) throw new ReaderActionError('cancelled');
+                if (epoch.current !== null) {
+                  const identity = await getOfflineIdentity(); signal.throwIfAborted();
+                  if (identity.accountId !== context.selector.accountId || identity.epoch !== epoch.current) throw new Error('offline_account_changed');
+                }
+                const entry = journal.current.queue[0];
+                if (entry.result) {publishStatus(entry.result.status === 'revision_changed' ? 'paused' : 'action'); break;}
+                if (!Number.isFinite(Date.parse(entry.mutation.createdAt)) || Date.now() - Date.parse(entry.mutation.createdAt) > 90 * 86400000) {
+                  entry.result = {mutationId: entry.mutation.mutationId, status: 'recovery_required', revision: context.value.document.revision};
+                  showJournal(); break;
+                }
+                entry.sent = true;
+                const response = await context.api.mutate(context.selector, context.value, [entry.mutation], signal);
+                signal.throwIfAborted();
+                journal.current = acknowledgePrivateIntent(journal.current, response, context.value.document);
+                outcome = response.results[0]; setMutationOutcome({mutation: entry.mutation, result: outcome}); showJournal();
+                if (outcome.status !== 'applied') {publishStatus(outcome.status === 'revision_changed' ? 'paused' : 'action'); return;}
               }
-              const entry = journal.current.queue[0];
-              if (entry.result) {publishStatus(entry.result.status === 'revision_changed' ? 'paused' : 'action'); break;}
-              entry.sent = true;
-              const response = await context.api.mutate(context.selector, context.value, [entry.mutation], signal);
-              signal.throwIfAborted();
-              journal.current = acknowledgePrivateIntent(journal.current, response, context.value.document);
-              outcome = response.results[0]; setMutationOutcome({mutation: entry.mutation, result: outcome}); showJournal();
-              if (outcome.status !== 'applied') {publishStatus(outcome.status === 'revision_changed' ? 'paused' : 'action'); return;}
-            }
-            publishStatus('synced');
+            };
+            await withReaderWriter(context.selector.accountId, signal, sendMemory);
+            const first = journal.current?.queue[0];
+            publishStatus(first?.result ? first.result.status === 'revision_changed' ? 'paused' : 'action' : first ? 'waiting' : 'synced');
           }
         } catch (error) {syncRequested.current = false; throw error;}
       }, signal));
@@ -334,7 +346,7 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
     showJournal(); publishStatus(context.offline ? 'waiting' : 'syncing'); onAccepted?.();
     let committed = false;
     const queued = enqueueTail.current.then(async () => {
-      if (controller.current !== owner || owner.request.signal.aborted || !current.current.allowAction()) throw new ReaderActionError('cancelled');
+      if (!owner || controller.current !== owner || owner.request.signal.aborted || !current.current.allowAction()) throw new ReaderActionError('cancelled');
       if (durable.current && epoch.current !== null) {
         try {
           await bindOnlinePrivate(context.selector, current.current.value, epoch.current);
@@ -418,7 +430,9 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
   return {state, status, busy, operation, loadError, unsaved, mutationOutcome, bookmarksSupported, bookmarkCacheWarning, bookmarkOutcome, prepareExport, reload: () => setAttempt(value => value + 1), mutate,
     retry: () => active.current ? Promise.reject(new ReaderActionError('busy')) : pending.current && isBookmarkMutation(pending.current) ? mutateBookmark(pending.current, true) : syncJournal(), canRetry,
     cancelWaiting: () => {foreground.current?.abort(new ReaderActionError('cancelled'));},
-    pendingMutation, replacePending: (mutation: BulletinReaderMutation | null) => {
+    hasUncommitted: () => localWrites.current.size > 0 || !durable.current && !!journal.current?.queue.length,
+    pendingMutation, replacePending: (mutation: BulletinReaderMutation | null, expectedId: string | null) => {
+      if ((pending.current?.mutationId ?? null) !== expectedId) throw new Error('pending_action_changed');
       if (!durable.current && journal.current?.queue.length && !isBookmarkMutation(journal.current.queue[0].mutation)) {
         const queue = journal.current.queue.slice(1);
         if (mutation) queue.unshift({mutation, sent: true});

@@ -5,10 +5,10 @@ import type {ReaderMessages} from '@/components/weekly-reader/ReaderToolbar';
 type Kind = 'home' | 'back';
 type Marker = {id: string; url: string; position: 'base' | 'guard'};
 
-export function useReaderExitGuard({hasUnsavedNote, beforeLeave, messages: m, canPrompt = () => true}: {
-  canPrompt?: () => boolean; hasUnsavedNote: () => boolean; beforeLeave: () => Promise<boolean>; messages: ReaderMessages;
+export function useReaderExitGuard({hasUnsavedNote, beforeLeave, messages: m, canPrompt = () => true, hasUnsavedChanges = () => false}: {
+  hasUnsavedChanges?: () => boolean; canPrompt?: () => boolean; hasUnsavedNote: () => boolean; beforeLeave: () => Promise<boolean>; messages: ReaderMessages;
 }) {
-  const [prompt, setPrompt] = useState<{kind: Kind; dirty: boolean} | null>(null);
+  const [prompt, setPrompt] = useState<{kind: Kind; dirty: boolean; uncommitted: boolean} | null>(null);
   const active = useRef(true);
   const pending = useRef<{promise: Promise<boolean>; resolve: (allowed: boolean) => void; confirmed: boolean} | null>(null);
   const settle = useCallback((allowed: boolean) => {
@@ -22,9 +22,9 @@ export function useReaderExitGuard({hasUnsavedNote, beforeLeave, messages: m, ca
     let resolve!: (allowed: boolean) => void;
     const promise = new Promise<boolean>(finish => {resolve = finish;});
     pending.current = {promise, resolve, confirmed: false};
-    setPrompt({kind, dirty: hasUnsavedNote()});
+    setPrompt({kind, dirty: hasUnsavedNote(), uncommitted: hasUnsavedChanges()});
     return promise;
-  }, [hasUnsavedNote, canPrompt]);
+  }, [hasUnsavedNote, hasUnsavedChanges, canPrompt]);
   const requestBack = useEffectEvent(() => confirmLeave('back'));
   useEffect(() => {
     active.current = true;
@@ -70,7 +70,7 @@ export function useReaderExitGuard({hasUnsavedNote, beforeLeave, messages: m, ca
     };
   }, []);
   const dialogProps: AlertDialogProps = {
-    title: m.exitTitle, description: prompt?.dirty ? `${m.exitDescription} ${m.noteDiscardConfirm}` : m.exitDescription,
+    title: m.exitTitle, description: [m.exitDescription, prompt?.dirty ? m.noteDiscardConfirm : '', prompt?.uncommitted ? m.exitUnsavedChanges : ''].filter(Boolean).join(' '),
     isOpen: !!prompt, cancelLabel: m.keepReading, closeLabel: m.close,
     confirmLabel: m.exitConfirm,
     confirmVariant: 'primary',

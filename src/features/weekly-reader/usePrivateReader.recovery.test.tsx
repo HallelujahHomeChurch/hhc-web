@@ -22,7 +22,7 @@ it('shares the real Recovery retry gate with hook retry and deferred progress wi
   })};
   const {result} = renderHook(() => usePrivateReader({api, selector, value, offline: false, allowAction: () => true, onFailure: vi.fn()}));
   await waitFor(() => expect(result.current.state).toEqual(state));
-  render(<ReaderRecovery api={api} selector={selector} value={value} messages={getMessages('en').weeklyReader} runExclusive={result.current.runExclusive} onState={result.current.acceptState} pendingMutation={pending} onPendingChange={result.current.replacePending} onFailure={vi.fn()} onUpdated={vi.fn()}/>);
+  render(<ReaderRecovery api={api} selector={selector} value={value} messages={getMessages('en').weeklyReader} runExclusive={result.current.runExclusive} onState={result.current.acceptState} pendingMutation={pending} onPendingChange={(mutation, _result, previous) => result.current.replacePending(mutation, previous?.mutationId ?? null)} onFailure={vi.fn()} onUpdated={vi.fn()}/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
   fireEvent.click(await screen.findByRole('button', {name: 'Confirm and retry'}));
   await waitFor(() => expect(api.mutate).toHaveBeenCalledOnce());

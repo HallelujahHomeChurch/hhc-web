@@ -4,9 +4,16 @@ import {readerFailureAction} from './offline-access';
 import {acknowledgePrivateMutation, bindOnlinePrivate, claimPrivateMutation, lockOfflineSave, readPrivateReplica, removeOfflineSave, seedPrivateReplica} from './offline-store';
 
 export type ReaderSyncStatus = 'synced' | 'waiting' | 'syncing' | 'action' | 'paused';
+/** One account writer where Web Locks are available; local acceptance never waits here. */
+export function withReaderWriter<T>(accountId: string, signal: AbortSignal, work: () => Promise<T>): Promise<T> {
+  const guarded = async () => {signal.throwIfAborted(); return work();};
+  if (navigator.locks) return navigator.locks.request(`hhc-weekly-reader-sync:${accountId}`, {signal}, guarded);
+  // shortcut: Older browsers serialize per tab with server IDs/CAS; remove when all supported browsers have Web Locks.
+  return guarded();
+}
 export async function syncPrivateReplica(api: Pick<ReturnType<typeof createReaderApi>, 'renew' | 'privateState' | 'mutate'>, selector: ReaderSelector, value: OnlineBulletinAccess, epoch: number, signal: AbortSignal, now = Date.now, onResult?: (mutation: BulletinReaderMutation, result: BulletinReaderMutationResponse['results'][number]) => void) {
   // One foreground sync per account; edits still commit through IDB transactions.
-  return navigator.locks.request(`hhc-weekly-reader-sync:${selector.accountId}`, {signal}, async () => {
+  return withReaderWriter(selector.accountId, signal, async () => {
     try {
       signal.throwIfAborted();
       const fresh = await api.renew(selector, value, crypto.randomUUID(), signal);

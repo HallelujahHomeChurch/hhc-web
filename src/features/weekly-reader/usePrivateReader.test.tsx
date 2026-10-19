@@ -102,7 +102,8 @@ it('retains later memory intents when explicitly resolving the head during recov
   api.mutate.mockRejectedValue(new TypeError('offline'));
   const h = mount(); await waitFor(() => expect(h.result.current.state).toEqual(state));
   await act(async () => {await h.result.current.mutate(mutation); await h.result.current.mutate({...mutation, mutationId: 'later', payload: {sentenceIds: ['s1'], color: 'blue'}});}); await waitFor(() => expect(h.result.current.busy).toBe(false));
-  act(() => {expect(h.result.current.replacePending(null)?.mutationId).toBe('later');}); expect(h.result.current.unsaved).toBe(true); expect(h.result.current.pendingMutation?.mutationId).toBe('later');
+  expect(() => h.result.current.replacePending(null, 'different-intent')).toThrow('pending_action_changed');
+  act(() => {expect(h.result.current.replacePending(null, mutation.mutationId)?.mutationId).toBe('later');}); expect(h.result.current.unsaved).toBe(true); expect(h.result.current.pendingMutation?.mutationId).toBe('later');
 });
 
 it('isolates a new account while an old memory-only send is still completing', async () => {
@@ -114,4 +115,12 @@ it('isolates a new account while an old memory-only send is still completing', a
   await expect(h.result.current.mutate({...mutation, mutationId: 'denied'})).rejects.toThrow();
   await act(async () => finish()); await waitFor(() => expect(h.result.current.state?.accountId).toBe('account-b'));
   expect(h.result.current.pendingMutation).toBeNull(); expect(api.mutate).toHaveBeenCalledOnce(); expect(h.result.current.state?.highlights).toEqual([]);
+});
+
+it('does not resend a memory intent beyond the server idempotency window', async () => {
+  const expired = {...mutation, mutationId: 'expired', createdAt: new Date(Date.now() - 91 * 86400000).toISOString()};
+  saveReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}, {revision: 1, action: expired});
+  const h = mount(); await waitFor(() => expect(h.result.current.state).toEqual(state));
+  await act(async () => {await h.result.current.retry();});
+  expect(api.mutate).not.toHaveBeenCalled(); expect(h.result.current.status).toBe('action'); expect(h.result.current.pendingMutation).toEqual(expired);
 });

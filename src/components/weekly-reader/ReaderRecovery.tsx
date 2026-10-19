@@ -7,6 +7,7 @@ import type {BulletinReaderHighlightColor, BulletinReaderMutation, BulletinReade
 import type {createReaderApi, ReaderSelector} from '@/features/weekly-reader/api';
 import {bindOnlinePrivate, chooseReaderRecovery, getOfflineIdentity, readPrivateBinding, supportsOfflineReader} from '@/features/weekly-reader/offline-store';
 import {finishReaderUpgrade, prepareReaderUpgrade, type ReaderUpgrade} from '@/features/weekly-reader/upgrade';
+import {withReaderWriter} from '@/features/weekly-reader/sync';
 import {manualReaderRecovery} from '@/features/weekly-reader/rebase';
 import {readerSentences} from '@/features/weekly-reader/selection';
 import {rangeQuote, selectionPassage} from '@/features/weekly-reader/text-range';
@@ -80,7 +81,8 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
   }
   async function retryPending(signal: AbortSignal) {
     if (!prepared || !pending.current) return;
-    const response = await api.mutate(selector, prepared.value, [pending.current], signal);
+    const mutation = pending.current;
+    const response = await withReaderWriter(selector.accountId, signal, () => api.mutate(selector, prepared.value, [mutation], signal));
     signal.throwIfAborted();
     onState?.(response.state);
     if (response.results[0].status === 'applied') remember(null, response.results[0]);
@@ -106,7 +108,7 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
       // Resolving a server-identified color conflict must not replace the user's
       // pending note/highlight. A consumed conflict ID cannot recolor it again.
       if (originalId === null && pending.current && mutation?.kind === 'resolveHighlightMigrationConflict') {
-        const response = await api.mutate(selector, prepared.value, [mutation], signal);
+        const response = await withReaderWriter(selector.accountId, signal, () => api.mutate(selector, prepared.value, [mutation], signal));
         signal.throwIfAborted();
         onState?.(response.state);
         if (response.results[0].status !== 'applied') throw new Error('action_required');

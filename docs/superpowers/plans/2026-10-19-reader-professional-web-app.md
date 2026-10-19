@@ -217,3 +217,5 @@ T0 候選 `dd12ca5` 第二輪：資料席 `reader_t0_data_gate`、UX席 `reader_
 正常閱讀、背景資格驗證與儲存不可在 header 下反覆顯示載入／處理／請稍候訊息框。操作立即反映；正常同步狀態僅在筆記面板以低干擾文字或圖示呈現，成功不逐次 toast。只有網路失敗、裝置無法安全保存、權限失效或衝突等需要處理的情況顯示持續可恢復提示。首次載入使用骨架；背景更新保留內容、焦點與捲動。T1、T2、T3 及 T6 的兩人檢驗都必須涵蓋。
 
 T1 root 候選完成：儲存／背景同步與安靜通知已實作，276 項範圍測試分組通過、TS／相關 ESLint／diff PASS；實際合成 Chromium 慢網路雙重編輯證據見 `docs/reviews/reader-professional-20261019/T1.md`。等待 T1 新一輪雙 Codex gate；未開始 T2，不推定產品或真機接受。
+
+T1 `1845175` 首輪雙席 FAIL（四項 Important，無 Critical）：普通刪除誤清 RAM head、RAM writer 未共用帳號 lock、等待 ack 時未持續顯示儲存降級警告、站內離開未納入已接受但未安全儲存的操作。修訂候選已補 expected-ID 保護、共用所有私人寫入 writer、警告與退出文案、revision recovery／90-day guards；新瀏覽器 quota 證據與 291 項範圍驗證見 T1.md。等待第二輪雙席 gate，未進 T2。

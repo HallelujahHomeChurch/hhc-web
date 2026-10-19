@@ -83,3 +83,11 @@ it('unmount cancels a pending confirmation and removes history listeners', async
   unmount(); expect(await request).toBe(false);
   await act(async () => model.back()); expect(beforeLeave).not.toHaveBeenCalled();
 });
+
+it('warns about accepted memory changes even after the note editor has closed', async () => {
+  historyModel(true); const beforeLeave = vi.fn().mockResolvedValue(true);
+  const {result} = renderHook(() => useReaderExitGuard({hasUnsavedNote: () => false, hasUnsavedChanges: () => true, beforeLeave, messages}));
+  let request!: Promise<boolean>; act(() => {request = result.current.confirmLeave('home');});
+  expect(result.current.dialogProps.description).toContain(messages.exitUnsavedChanges);
+  act(() => result.current.dialogProps.onOpenChange?.(false)); expect(await request).toBe(false); expect(beforeLeave).not.toHaveBeenCalled();
+});

@@ -1,4 +1,8 @@
 import {act, cleanup, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
+import type {BulletinReaderState} from '@hallelujahhomechurch/hhc-web-client';
+import {webcrypto} from 'node:crypto';
+import {IDBFactory, IDBObjectStore} from 'fake-indexeddb';
+import {activateOfflineAccount} from '@/features/weekly-reader/offline-store';
 import userEvent from '@testing-library/user-event';
 import {readFileSync} from 'node:fs';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
@@ -6,11 +10,12 @@ import {readerFixture} from '@/features/weekly-reader/test-fixture';
 import {getMessages} from '@/i18n/messages';
 import {WeeklyReader} from './WeeklyReader';
 import {saveReaderReturn} from '@/features/weekly-reader/return-state';
+import {applyLocalMutation} from '@/features/weekly-reader/private-state';
 import {writeTabs, readTabs} from '@/features/weekly-reader/workspace';
 
 const bulletinCss = ['bulletin-paper.css', 'bulletin-paper-v2.css', 'bulletin-paper-v7.css', 'bulletin-ebook.css'].map(file => readFileSync(new URL(import.meta.resolve(`@hallelujahhomechurch/ui/${file}`)), 'utf8')).join('\n');
 
-const state = vi.hoisted(() => ({accountId: 'account-a' as string | null, status: 'authenticated', open: vi.fn(), signIn: vi.fn(), privateState: vi.fn(), mutate: vi.fn()}));
+const state = vi.hoisted(() => ({accountId: 'account-a' as string | null, status: 'authenticated', open: vi.fn(), renew: vi.fn(), signIn: vi.fn(), privateState: vi.fn(), mutate: vi.fn()}));
 vi.mock('@/components/layout/AccountControl', () => ({
   useAccountIdentity: () => state.accountId, useAccountAuth: () => ({status: state.status}),
   useAccountSignIn: () => state.signIn,
@@ -35,7 +40,7 @@ function selectText(element: Element, start?: number, end?: number, finish = tru
   fireEvent(document, new Event('selectionchange'));
   if (finish) fireEvent.pointerUp(element);
 }
-vi.mock('@/features/weekly-reader/api', async original => ({...await original<typeof import('@/features/weekly-reader/api')>(), createReaderApi: () => ({open: state.open, privateState: state.privateState, mutate: state.mutate})}));
+vi.mock('@/features/weekly-reader/api', async original => ({...await original<typeof import('@/features/weekly-reader/api')>(), createReaderApi: () => ({open: state.open, renew: state.renew, privateState: state.privateState, mutate: state.mutate})}));
 const props = {locale: 'en' as const, issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const, messages: getMessages('en').weeklyReader};
 async function choosePage(page: number) {
   const contents = screen.queryByRole('button', {name: props.messages.contents});
@@ -47,7 +52,7 @@ function chooseDirection(name: string) {
   fireEvent.click(screen.getByRole('button', {name: /^Reading direction/}));
   expect(document.querySelector('.reader-viewport')).toHaveAttribute('data-direction', name === 'Horizontal paging' ? 'horizontal' : 'vertical');
 }
-beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state.accountId = 'account-a'; state.status = 'authenticated'; state.open.mockReset().mockResolvedValue(readerFixture()); state.privateState.mockReset().mockResolvedValue({state: {accountId: 'account-a', documentId: readerFixture().document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: null, conflicts: []}}); state.mutate.mockReset(); sessionStorage.clear(); vi.stubGlobal('matchMedia', vi.fn(() => ({matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn()})));});
+beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state.accountId = 'account-a'; state.status = 'authenticated'; state.open.mockReset().mockResolvedValue(readerFixture()); state.renew.mockReset().mockResolvedValue(readerFixture()); state.privateState.mockReset().mockResolvedValue({state: {accountId: 'account-a', documentId: readerFixture().document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: null, conflicts: []}}); state.mutate.mockReset(); sessionStorage.clear(); vi.stubGlobal('matchMedia', vi.fn(() => ({matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn()})));});
 afterEach(() => {cleanup(); Reflect.deleteProperty(document, 'fonts'); Reflect.deleteProperty(Range.prototype, 'getBoundingClientRect'); Reflect.deleteProperty(Range.prototype, 'getClientRects'); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.useRealTimers();});
 beforeEach(() => {Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect(0, 100, 300, 20)});});
 
@@ -1220,7 +1225,7 @@ it.each(['save', 'delete'] as const)('accepts the first note %s while background
     const mutation = mutations[0];
     if (mutation.kind === 'setProgress') await new Promise<void>(resolve => {release = resolve;});
     inFlight--;
-    return {state: {...cloud, notes: [{...note, text: 'Changed once', deleted: kind === 'delete'}]}, results: [{mutationId: mutation.mutationId, status: 'applied', revision: 1}]};
+    return {state: mutation.kind === 'setProgress' ? cloud : {...cloud, notes: [{...note, text: 'Changed once', version: 2, deleted: kind === 'delete'}]}, results: [{mutationId: mutation.mutationId, status: 'applied', revision: 1}]};
   });
   vi.spyOn(window, 'confirm').mockReturnValue(true);
   render(<WeeklyReader {...props}/>);
@@ -1443,4 +1448,56 @@ it.each([false, true])('closes the editor on the first Save and retains a single
   await waitFor(() => expect(screen.getByText('Changed once')).toBeInTheDocument());
   expect(state.mutate.mock.calls.filter(call => call[2][0].kind === 'editNote')).toHaveLength(1);
   expect(screen.queryByRole('textbox', {name: props.messages.noteText})).not.toBeInTheDocument();
+});
+
+it('retains an in-flight edit when deleting a different note, and warns before leaving two memory intents', async () => {
+  const value = readerFixture();
+  const a = {id: 'note-a', text: 'A original', quote: 'Quote A', sentenceIds: ['s0'], inactiveAnchors: [], version: 1, deleted: false, reanchorRequired: false, createdAt: '', updatedAt: ''};
+  const b = {...a, id: 'note-b', text: 'B original', quote: 'Quote B', sentenceIds: ['s1']};
+  let cloud: BulletinReaderState = {...(await state.privateState()).state, notes: [a, b]};
+  state.privateState.mockImplementation(async () => ({state: cloud}));
+  let releaseA!: () => void, releaseB!: () => void;
+  state.mutate.mockImplementation(async (_selector, _value, mutations) => {
+    if (mutations[0].kind === 'editNote') await new Promise<void>(resolve => {releaseA = resolve;});
+    else await new Promise<void>(resolve => {releaseB = resolve;});
+    cloud = applyLocalMutation(cloud, mutations[0], value.document);
+    return {state: cloud, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]};
+  });
+  render(<WeeklyReader {...props}/>); await waitFor(() => expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', {name: props.messages.myNotes}));
+  const first = screen.getByText('A original').closest('article')!;
+  fireEvent.click(within(first).getByRole('button', {name: props.messages.noteEdit}));
+  fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'A accepted'}});
+  fireEvent.click(screen.getByRole('button', {name: props.messages.noteSave}));
+  await waitFor(() => expect(state.mutate).toHaveBeenCalledOnce());
+  expect(screen.getByText(props.messages.syncUnsaved)).toBeInTheDocument();
+  fireEvent.click(within(screen.getByText('B original').closest('article')!).getByRole('button', {name: props.messages.noteDelete}));
+  fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', {name: props.messages.noteDelete}));
+  await waitFor(() => expect(screen.queryByText('B original')).not.toBeInTheDocument());
+  fireEvent.click(screen.getByRole('button', {name: props.messages.noteClose}));
+  fireEvent.click(screen.getByRole('button', {name: props.messages.home}));
+  const exit = await screen.findByRole('alertdialog'); expect(exit).toHaveTextContent(props.messages.exitUnsavedChanges);
+  fireEvent.click(within(exit).getByRole('button', {name: props.messages.keepReading}));
+  await act(async () => releaseA()); await waitFor(() => expect(state.mutate).toHaveBeenCalledTimes(2));
+  expect(state.mutate.mock.calls.map(call => call[2][0].kind)).toEqual(['editNote', 'deleteNote']);
+  expect(state.mutate.mock.calls[1][2][0].payload.noteId).toBe(b.id);
+  await act(async () => releaseB()); await waitFor(() => expect(cloud.notes.find(note => note.id === a.id)?.text).toBe('A accepted'));
+  expect(cloud.notes.find(note => note.id === b.id)?.deleted).toBe(true);
+});
+
+it('shows a persistent unsaved warning after actual IDB quota fallback while network acknowledgement is delayed', async () => {
+  vi.stubGlobal('indexedDB', new IDBFactory()); vi.stubGlobal('crypto', webcrypto);
+  vi.stubGlobal('navigator', {onLine: true, locks: {request: async (_name: string, options: unknown, work?: () => Promise<unknown>) => typeof options === 'function' ? options() : work!()}});
+  await activateOfflineAccount('account-a');
+  const put = IDBObjectStore.prototype.put;
+  vi.spyOn(IDBObjectStore.prototype, 'put').mockImplementation(function(this: IDBObjectStore, value: unknown, key?: IDBValidKey) {if (this.name === 'private') throw new DOMException('full', 'QuotaExceededError'); return put.call(this, value, key);});
+  const note = {id: 'quota-note', text: 'Original', quote: 'Quote', sentenceIds: ['s0'], inactiveAnchors: [], version: 1, deleted: false, reanchorRequired: false, createdAt: '', updatedAt: ''};
+  const cloud = {...(await state.privateState()).state, notes: [note]}; state.privateState.mockResolvedValue({state: cloud});
+  state.mutate.mockImplementationOnce(() => new Promise(() => {}));
+  render(<WeeklyReader {...props}/>); await waitFor(() => expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', {name: props.messages.myNotes})); fireEvent.click(screen.getByRole('button', {name: props.messages.noteEdit}));
+  fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'Quota accepted draft'}}); fireEvent.click(screen.getByRole('button', {name: props.messages.noteSave}));
+  expect(await screen.findByText('Quota accepted draft')).toBeInTheDocument(); await waitFor(() => expect(state.mutate).toHaveBeenCalledOnce());
+  expect(screen.getByText(props.messages.syncUnsaved)).toBeVisible(); expect(screen.queryByRole('textbox', {name: props.messages.noteText})).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', {name: props.messages.confirmRetry})).not.toBeInTheDocument();
 });

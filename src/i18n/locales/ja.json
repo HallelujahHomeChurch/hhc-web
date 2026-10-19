@@ -148,6 +148,7 @@
     "cancelWaiting": "待機をキャンセル",
     "retryContinues": "前の操作を再試行し、確認後に今回の変更を続行します。",
     "syncSynced": "同期済み",
+    "exitUnsavedChanges": "一部の変更はまだ安全に保存されていません。今離れると失われる可能性があります。同期が完了するまで読み続けてください。",
     "syncUnsaved": "まだ安全に保存されていません。このページを開いたまま同期を再試行してください。",
     "syncWaiting": "接続待ち",
     "syncSyncing": "同期中",
