@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: HallelujahHomeChurch/frontend-platform
-          ref: ccef0d8c74c604ad70d5f88b3135a88b5c084303
+          ref: fab244007cfd85e24e7a25c1c38e805360c50788
           path: .candidate-shared
           persist-credentials: false
       - name: Build and pack immutable Shared candidate

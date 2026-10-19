@@ -277,8 +277,13 @@ integration acceptance remains required.
 ### PR validation of unpublished Shared dependencies
 
 PR CI checks out frontend-platform commit
-`ccef0d8c74c604ad70d5f88b3135a88b5c084303` (coordinated `1.1.1`), builds all
-seven archives and verifies their SHA-256 values in `scripts/shared-candidate.json`.
+`fab244007cfd85e24e7a25c1c38e805360c50788` (coordinated `1.1.1`), builds all
+seven archives and validates their fixed gzip header (magic, compression method,
+flags, timestamp and extra flags). A copied buffer normalizes only OS byte 9
+from macOS 19 / Unix 3 to Unix 3 before exact whole-archive SHA-256 verification
+against `scripts/shared-candidate.json`. Payload/tar/trailer changes still fail;
+source archives remain unchanged. Raw/canonical hashes are retained in candidate
+provenance. The verified canonical bytes feed both host and Docker.
 It exports committed WWW files into a disposable context, adds relative archive
 overrides, regenerates its lockfile and uses that same context for host tests,
 dependency scanning, Docker build and image scanning. Installed package bytes are

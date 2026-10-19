@@ -5,10 +5,11 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
+import {gzipSync} from 'node:zlib';
 
 // Behavioral contract: preserve product inputs while staging only verified immutable packages.
 test('candidate staging preserves registry dependencies/scripts and injects archives before Docker install', async () => {
-  const {prepareCandidate, verifyInstalled} = await import('./prepare-shared-candidate.mjs');
+  const {prepareCandidate, verifyInstalled, canonicalArchive} = await import('./prepare-shared-candidate.mjs');
   const root = mkdtempSync(join(tmpdir(), 'shared-candidate-test-'));
   try {
     const consumer = join(root, 'consumer'), shared = join(root, 'shared'), output = join(root, 'candidate');
@@ -28,18 +29,42 @@ test('candidate staging preserves registry dependencies/scripts and injects arch
       writeFileSync(join(pkg, 'package.json'), JSON.stringify({name: `@hallelujahhomechurch/${name}`, version: expected.version}));
       writeFileSync(join(pkg, 'dist/index.js'), `export const name = '${name}';`);
       const archive = `hallelujahhomechurch-${name}-1.1.1.tgz`;
-      execFileSync('tar', ['-czf', join(shared, 'artifacts', archive), '-C', join(root, name), 'package']);
+      const bytes = gzipSync(execFileSync('tar', ['-cf', '-', '-C', join(root, name), 'package'])); bytes[9] = 3;
+      writeFileSync(join(shared, 'artifacts', archive), bytes);
       expected.archives[archive] = createHash('sha256').update(readFileSync(join(shared, 'artifacts', archive))).digest('hex');
     }
     const original = readFileSync(join(consumer, 'package.json'));
     const firstArchive = Object.keys(expected.archives)[0];
     const originalArchive = readFileSync(join(shared, 'artifacts', firstArchive));
     writeFileSync(join(shared, 'artifacts', firstArchive), 'corrupt');
-    assert.throws(() => prepareCandidate({consumer, shared, output, expected}), /checksum/);
+    assert.throws(() => prepareCandidate({consumer, shared, output, expected}), /gzip header/);
     assert.equal(existsSync(output), false, 'invalid inputs must not create context');
-    writeFileSync(join(shared, 'artifacts', firstArchive), originalArchive);
+    const os19 = Buffer.from(originalArchive); os19[9] = 19;
+    const os3 = Buffer.from(originalArchive); os3[9] = 3;
+    assert.deepEqual(canonicalArchive(os19), canonicalArchive(os3));
+    for (const offset of [0, 2, 3, 4, 8, 9]) {
+      const bad = Buffer.from(os19); bad[offset] = 255;
+      assert.throws(() => canonicalArchive(bad), /gzip header/);
+    }
+    const payload = Buffer.from(os19); payload[12] ^= 1;
+    writeFileSync(join(shared, 'artifacts', firstArchive), payload);
+    assert.throws(() => prepareCandidate({consumer, shared, output, expected}), /checksum/);
+    assert.equal(existsSync(output), false);
+    const altered = join(root, 'altered/package'); mkdirSync(altered, {recursive: true});
+    writeFileSync(join(altered, 'package.json'), JSON.stringify({name: '@hallelujahhomechurch/preferences', version: '1.1.1'}));
+    writeFileSync(join(altered, 'changed.txt'), 'tampered member');
+    const alteredBytes = gzipSync(execFileSync('tar', ['-cf', '-', '-C', join(root, 'altered'), 'package'])); alteredBytes[9] = 3;
+    writeFileSync(join(shared, 'artifacts', firstArchive), alteredBytes);
+    assert.throws(() => prepareCandidate({consumer, shared, output, expected}), /checksum/);
+    assert.equal(existsSync(output), false);
+    writeFileSync(join(shared, 'artifacts', firstArchive), os19);
     assert.throws(() => prepareCandidate({consumer, shared, output: consumer, expected}), /outside/);
     prepareCandidate({consumer, shared, output, expected});
+    assert.deepEqual(readFileSync(join(output, 'candidates', firstArchive)), canonicalArchive(os19));
+    const provenance = JSON.parse(readFileSync(join(output, 'candidates/provenance.json')));
+    assert.equal(provenance.inputs[firstArchive].rawGzipOS, 19);
+    assert.equal(provenance.inputs[firstArchive].canonicalSHA256, expected.archives[firstArchive]);
+    assert.deepEqual(readFileSync(join(shared, 'artifacts', firstArchive)), os19, 'source archive must remain unchanged');
     assert.deepEqual(readFileSync(join(consumer, 'package.json')), original);
     const staged = JSON.parse(readFileSync(join(output, 'package.json')));
     assert.deepEqual(staged.dependencies, manifest.dependencies); assert.deepEqual(staged.scripts, manifest.scripts);
