@@ -1,4 +1,5 @@
 import type {BulletinReaderMutation, BulletinReaderState, BulletinReaderStateResponse, BulletinReaderHighlightColor, MemberOnlineDocument} from '@hallelujahhomechurch/hhc-web-client';
+import {isBookmarkMutation} from './bookmarks';
 import {readerSentences} from './selection';
 import {rangeQuote, type ReaderTextRange} from './text-range';
 
@@ -20,6 +21,7 @@ export function rebaseReaderMutations(pending: readonly BulletinReaderMutation[]
   }
   for (const input of pending) {
     const mutation = structuredClone(input);
+    if (isBookmarkMutation(mutation)) {recovery.push({mutationId: mutation.mutationId, reason: 'mapping_unavailable'}); continue;}
     if (mutation.documentRevision === current.currentRevision) {mutations.push(mutation); continue;}
     if ('ranges' in mutation.payload) {
       // Published sentence mappings do not prove partial text offsets.
@@ -56,6 +58,7 @@ export function rebaseReaderMutations(pending: readonly BulletinReaderMutation[]
 
 export function manualReaderRecovery(original: BulletinReaderMutation, state: BulletinReaderState, document: MemberOnlineDocument, choice: {sentenceIds: string[]; text: string; color: BulletinReaderHighlightColor; ranges?: ReaderTextRange[]}): BulletinReaderMutation {
   if (state.documentId !== document.documentId || state.currentRevision !== document.revision) throw new Error('invalid_reader_binding');
+  if (isBookmarkMutation(original)) throw new Error('bookmark_requires_explicit_rebind');
   const partial = 'ranges' in original.payload;
   if (partial && !choice.ranges?.length) throw new Error('range_reselection_required');
   if (choice.ranges) {

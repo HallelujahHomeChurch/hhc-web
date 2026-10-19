@@ -8,7 +8,7 @@ import {ReaderTypography, readTypography, type Typography} from './ReaderTypogra
 import {useReaderTheme} from './useReaderTheme';
 import {AlertDialog, BulletinEbook, bulletinChapters, bulletinChapterForAnchor, bulletinMobileDetails, Button, ReaderWatermark} from '@hallelujahhomechurch/ui';
 import {ReaderIconButton as IconButton} from './ReaderIconButton';
-import type {OnlineBulletinAccess, BulletinReaderMutation, BulletinReaderNote} from '@hallelujahhomechurch/hhc-web-client';
+import type {OnlineBulletinAccess, BulletinReaderMutation, BulletinReaderNote, BulletinReaderBookmark} from '@hallelujahhomechurch/hhc-web-client';
 import type {BulletinLocale, BulletinSeries} from '@hallelujahhomechurch/preferences';
 import {useAccountAuth, useAccountIdentity, useAccountSignIn, useBulletinAccess, useBulletinAuthorization} from '@/components/layout/AccountControl';
 import {createReaderApi, verifyReaderAccess, type ReaderSelector} from '@/features/weekly-reader/api';
@@ -20,6 +20,7 @@ import {watchOfflineAccount} from '@/features/weekly-reader/offline-session';
 import {useReaderSession} from '@/features/weekly-reader/useReaderSession';
 import {useReaderSearchNavigation} from '@/features/weekly-reader/useReaderSearchNavigation';
 import {ReaderActionError, usePrivateReader, type ReaderOutcome} from '@/features/weekly-reader/usePrivateReader';
+import {exactBookmarkTarget, isBookmarkMutation, type BookmarkTarget} from '@/features/weekly-reader/bookmarks';
 import {readerSentences} from '@/features/weekly-reader/selection';
 import {rangeQuote, renderedTextRanges, type ReaderTextRange} from '@/features/weekly-reader/text-range';
 import {selectedHighlight} from '@/features/weekly-reader/highlight-selection';
@@ -44,6 +45,7 @@ import {OfflineControl} from './OfflineControl';
 import {SelectionToolbar} from './SelectionToolbar';
 import {NoteEditor, type NoteSave, type NoteEditorState} from './NoteEditor';
 import {NoteReanchor} from './NoteReanchor';
+import type {BookmarkDraft} from './BookmarksPanel';
 import {ReaderNotesList} from './ReaderNotesList';
 import {NoteExportDialog} from './NoteExportDialog';
 import {ReaderPrivateState, SyncStatus} from './ReaderPrivateState';
@@ -130,7 +132,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const flushProgress = progress.flush;
   const sentences = useMemo(() => readerSentences(value.document), [value.document]);
   const [notice, setNotice] = useState('');
-  const [notes, setNotesState] = useState<'list' | 'new' | 'restore' | BulletinReaderNote | null>(returned?.draft ? returned.draft.noteId ? 'restore' : 'new' : null);
+  const [notes, setNotesState] = useState<'list' | 'new' | 'restore' | BulletinReaderNote | null>(returned?.draft ? returned.draft.noteId ? 'restore' : 'new' : returned?.action && isBookmarkMutation(returned.action) ? 'list' : null);
   const [noteFilter, setNoteFilter] = useState<string[] | null>(null);
   const [exportRequest, setExportRequest] = useState<{ids: string[]; generation: number} | null>(null);
   const storageKey = `weekly-reader-position:${selector.accountId}:${value.document.documentId}:${value.document.revision}`;
@@ -156,6 +158,16 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   }, [allowAction, notes, suspended, setSelection]);
   const [noteEditorState, setEditorState] = useState<NoteEditorState | undefined>(returned?.draft ? {draft: returned.draft, conflict: null} : undefined);
   const generation = useRef(0);
+  const [bookmarkDraft, setBookmarkDraftState] = useState<BookmarkDraft | null>(() => {
+    const action = returned?.action;
+    if (!action || !isBookmarkMutation(action)) return null;
+    return {kind: action.kind === 'createBookmark' ? 'create' : action.kind === 'renameBookmark' ? 'rename' : action.kind === 'deleteBookmark' ? 'delete' : 'reanchor', id: action.payload.bookmarkId, name: action.kind === 'createBookmark' || action.kind === 'renameBookmark' ? action.payload.name : m.bookmarkDefault, originalName: '', baseVersion: action.baseVersion,
+      target: (action.kind === 'createBookmark' || action.kind === 'reanchorBookmark') && action.documentRevision === value.document.revision ? {sentenceId: action.payload.sentenceId, offset: action.payload.offset, pageId: action.payload.pageId} : null};
+  });
+  const bookmarkDraftRef = useRef(bookmarkDraft), bookmarkPosition = useRef<BookmarkTarget | null>(null);
+  function setBookmarkDraft(next: BookmarkDraft | null) {if (JSON.stringify(next) !== JSON.stringify(bookmarkDraftRef.current)) generation.current++; bookmarkDraftRef.current = next; setBookmarkDraftState(next);}
+  const bookmarkOperation = useRef<{mutation: BulletinReaderMutation; generation: number} | null>(returned?.action && isBookmarkMutation(returned.action) ? {mutation: returned.action, generation: 0} : null);
+
   function setNotes(next: typeof notes) {generation.current++; setNotesState(next);}
   const editorDraft = useRef(noteEditorState?.draft);
   function setNoteEditorState(next: NoteEditorState | undefined) {
@@ -188,7 +200,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       if (mutation.kind === 'deleteNote' && result.status === 'queued') setQueuedDelete(operation?.local?.text ?? '');
       if (!owns) return;
       if (mutation.kind === 'createNote' || mutation.kind === 'editNote') {
-        cleanupNotes(); if (mutation.kind === 'createNote') clearSelection();
+        finishNoteEditor(); if (mutation.kind === 'createNote') clearSelection();
         requestAnimationFrame(() => notesButton.current?.focus());
       } else if (mutation.kind === 'deleteNote') {setDeletion(null); setNotes('list');}
       else if (mutation.kind === 'reanchorNote') setReanchor(null);
@@ -230,8 +242,12 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const editingNote = typeof notes === 'object' && notes ? notes : notes === 'restore' ? privateReader.state?.notes.find(note => note.id === returned?.draft?.noteId) : undefined;
   const noteAnchors = editingNote ? editingNote.sentenceIds : selected;
   const noteQuote = editingNote ? editingNote.quote : selection.ranges ? rangeQuote(selection.ranges, sentences) : sentences.filter(sentence => selected.includes(sentence.id)).map(sentence => sentence.text).join('\n');
-  function hasUnsavedNote() {return !!(notes && notes !== 'list' && noteEditorState && noteEditorState.draft.text !== (editingNote?.text ?? ''));}
-  function cleanupNotes() {setExportRequest(null); setNotes(null); setDeletion(null); setReanchor(null); setNoteEditorState(undefined);}
+  function hasUnsavedNote() {return !!bookmarkDraftRef.current || !!(notes && notes !== 'list' && noteEditorState && noteEditorState.draft.text !== (editingNote?.text ?? ''));}
+  function cleanupNotes() {setBookmarkDraft(null); setExportRequest(null); setNotes(null); setDeletion(null); setReanchor(null); setNoteEditorState(undefined);}
+  function finishNoteEditor() {
+    if (!bookmarkDraftRef.current) {cleanupNotes(); return;}
+    setNotes('list'); setDeletion(null); setReanchor(null); setNoteEditorState(undefined);
+  }
   function noteSending() {return operationRef.current === 'sending';}
   async function closeNotes() {
     if (noteSending() || recoveryOpen) return false;
@@ -244,7 +260,34 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   async function openNotesList(ids: string[] | null, trigger?: HTMLButtonElement) {
     if (notes && !await closeNotes()) return;
     noteButton.current = trigger ?? null;
+    bookmarkPosition.current = captureBookmarkPosition();
     setNoteFilter(ids); setNotes('list');
+  }
+  function captureBookmarkPosition() {
+    const root = paperRef.current;
+    return root && !root.closest('[aria-hidden="true"]') ? exactBookmarkTarget(value.document, visibleReadingAnchor(root, value.document.content, readingInset(), page)) : bookmarkPosition.current;
+  }
+  function settleBookmark(mutation: BulletinReaderMutation, result: ReaderOutcome) {
+    const operation = bookmarkOperation.current;
+    if (!operation || operation.mutation.mutationId !== mutation.mutationId || operation.generation !== generation.current) return;
+    if (result.status === 'applied') {setBookmarkDraft(null); setNotice(m.syncSynced);}
+    else if (bookmarkDraftRef.current) setBookmarkDraft({...bookmarkDraftRef.current, error: result.status === 'bookmark_limit' ? m.bookmarkLimit : m.bookmarkConflict, conflict: 'bookmark' in result ? result.bookmark : undefined});
+  }
+  const receiveBookmarkOutcome = useEffectEvent((result: NonNullable<typeof privateReader.bookmarkOutcome>) => {
+    const operation = bookmarkOperation.current;
+    if (operation && result.status === 'applied' && allowAction()) settleBookmark(operation.mutation, result);
+  });
+  useEffect(() => {if (privateReader.bookmarkOutcome) receiveBookmarkOutcome(privateReader.bookmarkOutcome);}, [privateReader.bookmarkOutcome]);
+  async function saveBookmark(input = bookmarkDraftRef.current) {
+    if (!input || !allowAction() || suspended || privateReader.busy) return;
+    if (input.kind === 'delete' && !await confirmReaderAction(m.bookmarkDeleteConfirm, m.bookmarksTab, m.noteDelete)) return;
+    if (!documentRef.current || !allowAction() || input !== bookmarkDraftRef.current) return;
+    const target = input.target;
+    if (input.kind !== 'rename' && input.kind !== 'delete' && (!target || !exactBookmarkTarget(value.document, {kind: 'sentence', id: target.sentenceId, start: target.offset, page: value.document.content.pages.findIndex(page => page.id === target.pageId)}))) {setBookmarkDraft({...input, error: m.bookmarkChoosePosition}); return;}
+    const common = {mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision};
+    const mutation: BulletinReaderMutation = input.kind === 'create' ? {...common, kind: 'createBookmark', payload: {bookmarkId: input.id, name: input.name.trim(), ...target!}} : input.kind === 'rename' ? {...common, kind: 'renameBookmark', baseVersion: input.baseVersion!, payload: {bookmarkId: input.id, name: input.name.trim()}} : input.kind === 'delete' ? {...common, kind: 'deleteBookmark', baseVersion: input.baseVersion!, payload: {bookmarkId: input.id}} : {...common, kind: 'reanchorBookmark', baseVersion: input.baseVersion!, payload: {bookmarkId: input.id, ...target!}};
+    bookmarkOperation.current = {mutation, generation: generation.current};
+    try {settleBookmark(mutation, await privateReader.mutate(mutation));} catch (error) {actionError(error);}
   }
   async function saveNote(draft: NoteSave) {
     const common = {mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision};
@@ -323,6 +366,16 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     chromeRef.current?.querySelector<HTMLElement>(panel === 'search' ? '.reader-search input' : '.reader-navigation-panel:not([hidden]) > header button')?.focus({preventScroll: true});
   }, [panel]);
   const productionSentenceIds = useMemo(() => bulletinMobileDetails(document).sentenceIds, [document]);
+  async function jumpBookmark(bookmark: BulletinReaderBookmark) {
+    const source = value.document, targetPage = source.content.pages.findIndex(page => page.id === bookmark.pageId);
+    const anchor: ReadingAnchor = {kind: 'sentence', id: bookmark.sentenceId, start: bookmark.offset, page: targetPage};
+    if (bookmark.reanchorRequired || bookmark.documentRevision !== source.revision || !exactBookmarkTarget(source, anchor)) {setNotice(m.bookmarkNeedsPosition); return;}
+    const hiddenFixed = bookmark.sentenceId.startsWith('canonical-') && bulletinMobileDetails(document).fixedElements.has(bookmark.sentenceId.slice('canonical-'.length));
+    if (reflow && (productionSentenceIds.has(bookmark.sentenceId) || hiddenFixed)) {
+      if (!await confirmReaderAction(m.bookmarkPaperConfirm, m.bookmarksTab, m.paperMode) || !await closeNotes() || !documentRef.current || !allowAction()) return;
+      modeAnchor.current = anchor; suppressModeProgress.current = true; setReadingMode('paper'); writeReadingMode(storageKey, 'paper');
+    } else await onAnchor({kind: 'sentence', id: bookmark.sentenceId, start: bookmark.offset}, true, targetPage);
+  }
   const chapters = useMemo(() => bulletinChapters(document), [document]);
   const [chapter, setChapter] = useState(chapters[0]?.id ?? 'cover');
   const chapterIndex = chapters.findIndex(entry => entry.id === chapter);
@@ -666,16 +719,16 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       const mutation = privateReader.pendingMutation, snapshot = selection;
       void privateReader.retry().then(result => {
         if (!mutation || !result) return;
-        settleNote(mutation, result);
+        if (isBookmarkMutation(mutation)) settleBookmark(mutation, result); else settleNote(mutation, result);
         if (result.status === 'applied' && (mutation.kind === 'setHighlight' || mutation.kind === 'clearHighlight')) clearIf(snapshot);
       }).catch(actionError);
     }}>{m.confirmRetry}</button></> : null}
     </div>
-    <div ref={recoveryControl}><ReaderRecovery onConfirm={description => confirmReaderAction(description, m.reviewSync, m.applyUpdate)} inline={!!notes} onOpenChange={setRecoveryOpen} onState={privateReader.acceptState} available={!privateReader.busy && (privateReader.status === 'paused' || privateReader.status === 'action' || !!privateReader.pendingMutation)} runExclusive={privateReader.runExclusive} api={api} value={value} selector={selector} messages={m} mobile={mobile} onUpdated={onUpdated} onFailure={onFailure} suspended={suspended} pendingMutation={privateReader.pendingMutation} onPendingChange={(mutation, result, previous) => {
+    <div ref={recoveryControl}><ReaderRecovery onBookmarkRetry={privateReader.retry} onConfirm={description => confirmReaderAction(description, m.reviewSync, m.applyUpdate)} inline={!!notes} onOpenChange={setRecoveryOpen} onState={privateReader.acceptState} available={!privateReader.busy && (privateReader.status === 'paused' || privateReader.status === 'action' || !!privateReader.pendingMutation)} runExclusive={privateReader.runExclusive} api={api} value={value} selector={selector} messages={m} mobile={mobile} onUpdated={onUpdated} onFailure={onFailure} suspended={suspended} pendingMutation={privateReader.pendingMutation} onPendingChange={(mutation, result, previous) => {
       if (mutation && previous && noteOperation.current?.mutation.mutationId === previous.mutationId && noteOperation.current.generation === generation.current) noteOperation.current = {...noteOperation.current, mutation};
       privateReader.replacePending(mutation);
-      if (!mutation && previous && result) settleNote(previous, result);
-      else if (!mutation && previous && noteOperation.current?.mutation.mutationId === previous.mutationId && noteOperation.current.generation === generation.current) cleanupNotes();
+      if (!mutation && previous && result) {if (isBookmarkMutation(previous)) settleBookmark(previous, result); else settleNote(previous, result);}
+      else if (!mutation && previous && !isBookmarkMutation(previous) && noteOperation.current?.mutation.mutationId === previous.mutationId && noteOperation.current.generation === generation.current) cleanupNotes();
     }}/></div>
   </div>;
   return <section ref={documentRef} className="reader-document" data-mobile={mobile || undefined} data-reading-mode={reflow ? 'easy' : 'paper'} data-mobile-hidden={!chromeVisible} data-iphone-standalone={iphoneStandalone || undefined} data-panel-open={!!panel || undefined} data-notes-panel={notes && wideNotes || undefined} aria-label={m.title} role="region" onWheelCapture={() => {suppressModeProgress.current = false;}} onTouchMoveCapture={() => {suppressModeProgress.current = false;}} onPointerDownCapture={() => {suppressModeProgress.current = false;}} onKeyDown={event => {
@@ -791,7 +844,9 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
         <button type="button" disabled={foregroundBusy} onClick={() => deletion.durable ? openRecovery() : setDeletion(null)}>{deletion.durable ? m.reviewSync : m.noteCloud}</button>
         {!deletion.durable && deletion.cloud && !deletion.cloud.deleted ? <><button type="button" disabled={privateReader.busy} onClick={() => {const note = deletion.cloud!; void confirmNote('delete', note.text).then(accepted => {if (accepted) void deleteNote(note);});}}>{m.noteDelete}</button><button type="button" disabled={privateReader.busy} onClick={() => {const cloud = deletion.cloud!; setNotes(cloud); setNoteEditorState({draft: {noteId: cloud.id, baseVersion: cloud.version, text: `${cloud.text}\n\n${deletion.local.text}`}, conflict: null}); setDeletion(null);}}>{m.noteManual}</button></> : null}
       </div></section> : notes === 'list' ? <>
-      <ReaderNotesList messages={m} onExport={ids => setExportRequest({ids, generation: generation.current})} exportDisabled={privateReader.busy || privateReader.loadError || privateReader.canRetry || recoveryOpen || !privateReader.state || ['paused', 'action', 'syncing'].includes(privateReader.status)} filter={noteFilter} onClearFilter={() => setNoteFilter(null)}
+      <ReaderNotesList messages={m} bookmarks={{document: value.document, bookmarks: privateReader.state?.bookmarks, messages: m, offline, supported: privateReader.bookmarksSupported, cacheWarning: privateReader.bookmarkCacheWarning,
+          busy: privateReader.busy || privateReader.canRetry || privateReader.loadError || suspended || !privateReader.state || privateReader.status === 'paused', draft: bookmarkDraft, onDraft: setBookmarkDraft, onCurrent: captureBookmarkPosition,
+          onSave: () => {void saveBookmark();}, onJump: bookmark => {void jumpBookmark(bookmark);}, onDelete: bookmark => {const draft: BookmarkDraft = {kind: 'delete', id: bookmark.id, name: bookmark.name, originalName: bookmark.name, baseVersion: bookmark.version, target: bookmark}; setBookmarkDraft(draft); void saveBookmark(draft);}}} onExport={ids => setExportRequest({ids, generation: generation.current})} exportDisabled={privateReader.busy || privateReader.loadError || privateReader.canRetry || recoveryOpen || !privateReader.state || ['paused', 'action', 'syncing'].includes(privateReader.status)} filter={noteFilter} onClearFilter={() => setNoteFilter(null)}
         highlights={{highlights: savedHighlights, sentences, messages: m, busy: foregroundBusy || !privateReader.state || privateReader.status === 'paused' || suspended,
           onChange: (range, color) => action({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, ...(color ? {kind: 'setHighlight' as const, payload: {sentenceIds: [range.sentenceId], ranges: [range], color}} : {kind: 'clearHighlight' as const, payload: {sentenceIds: [range.sentenceId], ranges: [range]}})})}}
         history={{onConfirm: description => confirmReaderAction(description, m.highlightHistory, m.clearHighlight), history: privateReader.state?.highlightHistory, document: value.document, messages: m, mobile, busy: foregroundBusy || !privateReader.state || privateReader.status === 'paused' || suspended,
@@ -803,7 +858,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
         <p role="status">{!privateReader.state ? m.loading : m.noteDeleted}</p>
         <textarea aria-label={m.noteText} readOnly rows={8} value={noteEditorState?.draft.text ?? ''}/>
         <button type="button" onClick={() => {void closeNotes();}}>{m.noteCancel}</button>
-      </section> : <NoteEditor failureHandled={unknownAction || !!operationMessage} onKeepCloud={cleanupNotes} onRecover={openRecovery} key={editingNote?.id ?? 'new'} messages={m} note={editingNote} quote={noteQuote} editorState={noteEditorState} onEditorStateChange={setNoteEditorState} onSave={saveNote} onComplete={() => {}} onCancel={() => {void closeNotes();}}/>}
+      </section> : <NoteEditor failureHandled={unknownAction || !!operationMessage} onKeepCloud={finishNoteEditor} onRecover={openRecovery} key={editingNote?.id ?? 'new'} messages={m} note={editingNote} quote={noteQuote} editorState={noteEditorState} onEditorStateChange={setNoteEditorState} onSave={saveNote} onComplete={() => {}} onCancel={() => {void closeNotes();}}/>}
       </div>
     </ReaderPrivateState> : null}
   </section>;
