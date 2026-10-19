@@ -37,3 +37,11 @@ it('preserves the historical restore range and color across tab unmounts',async(
  fireEvent.click(screen.getByRole('button',{name:m.noteSave}));
  await waitFor(()=>expect(p.history.onSave).toHaveBeenCalledWith(expect.objectContaining({kind:'restoreHighlight',payload:expect.objectContaining({sentenceIds:['s1'],color:'blue',ranges:[{sentenceId:'s1',start:0,end:4}]})})));
 });
+
+it('exports the currently visible IDs without modifying filters or note drafts',()=>{
+ const p=props(),onExport=vi.fn();render(<ReaderNotesList {...p} onExport={onExport}/>);
+ fireEvent.change(screen.getByRole('searchbox'),{target:{value:'abc'}});
+ fireEvent.click(screen.getByRole('button',{name:m.exportNotes}));expect(onExport).toHaveBeenCalledWith(['n1']);
+ expect(p.notes.onEdit).not.toHaveBeenCalled();expect(p.notes.onDelete).not.toHaveBeenCalled();expect(p.onClearFilter).not.toHaveBeenCalled();
+ fireEvent.click(screen.getByRole('tab',{name:m.highlightsTab}));expect(screen.queryByRole('button',{name:m.exportNotes})).not.toBeInTheDocument();
+});

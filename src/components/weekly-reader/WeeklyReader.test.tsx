@@ -1382,3 +1382,19 @@ it.each(['cancel', 'confirm'] as const)('uses the shared reader decision for his
   if (choice === 'confirm') await waitFor(() => expect(state.mutate).toHaveBeenCalledExactlyOnceWith(expect.anything(), expect.anything(), [expect.objectContaining({kind: 'discardHighlightHistory', payload: {historyId: 'history'}})], expect.any(AbortSignal)));
   else {await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()); expect(state.mutate).not.toHaveBeenCalled();}
 });
+
+it('keeps export modal keyboard navigation separate from horizontal reader paging', async () => {
+ const cloud=(await state.privateState()).state;
+ const note={id:'export-note',text:'Own text',quote:'source',sentenceIds:['s0'],inactiveAnchors:[],version:1,deleted:false,reanchorRequired:false,createdAt:'',updatedAt:''};
+ state.privateState.mockResolvedValue({state:{...cloud,notes:[note]}});
+ render(<WeeklyReader {...props}/>);
+ await waitFor(()=>expect(screen.getByRole('button',{name:props.messages.myNotes})).toBeEnabled());
+ chooseDirection('Horizontal paging');
+ fireEvent.click(screen.getByRole('button',{name:props.messages.myNotes}));
+ const exportButton=await screen.findByRole('button',{name:props.messages.exportNotes});
+ await waitFor(()=>expect(exportButton).toBeEnabled());fireEvent.click(exportButton);
+ const modal=await screen.findByRole('dialog',{name:props.messages.exportNotes});
+ const prepare=within(modal).getByRole('button',{name:props.messages.exportPrepare});
+ for(const key of ['PageDown','PageUp','ArrowRight','ArrowLeft']) {fireEvent.keyDown(prepare,{key});expect(modal).toBeInTheDocument();}
+ expect(state.mutate).not.toHaveBeenCalled();
+});

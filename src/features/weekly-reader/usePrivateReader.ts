@@ -4,7 +4,7 @@ import type {BulletinReaderMutation, BulletinReaderMutationResponse, BulletinRea
 import {awaitReaderRequests, type createReaderApi, type ReaderSelector} from './api';
 import {optimisticReaderState} from './private-state';
 import {readerFailureAction} from './offline-access';
-import {enqueuePrivateMutation, getOfflineIdentity, readOfflineSave, readPrivateReplica, seedPrivateReplica, supportsOfflineReader} from './offline-store';
+import {enqueuePrivateMutation, getOfflineIdentity, readOfflineSave, readPrivateReplica, seedPrivateReplica, readReaderExportLocal, supportsOfflineReader} from './offline-store';
 import {syncPrivateReplica, type ReaderSyncStatus} from './sync';
 import {readReaderReturn, saveReaderReturn} from './return-state';
 
@@ -42,6 +42,7 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
   const [busy, setBusy] = useState(false);
   const [operation, setOperation] = useState<ReaderOperation>('idle');
   const [loadError, setLoadError] = useState(false);
+  const loaded = useRef<'cloud' | 'local' | false>(false);
   const [attempt, setAttempt] = useState(0);
   const [pendingMutation, setPendingMutation] = useState(restored);
   const canRetry = !!pendingMutation;
@@ -74,7 +75,7 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
     current.current = {...current.current, api, selector: {accountId, issueNumber, series, contentLocale}, value, offline};
     const request = new AbortController(), owner = {key, request}; controller.current = owner;
     void bounded(request.signal, signal => exclusive(async () => {
-      setLoadError(false);
+      setLoadError(false); loaded.current = false;
       const bound = {accountId, issueNumber, series, contentLocale};
       const saved = supportsOfflineReader() ? await readOfflineSave(bound).catch(() => null) : null;
       signal.throwIfAborted();
@@ -82,23 +83,25 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
         if (offline) {
           const local = await readPrivateReplica(bound);
           signal.throwIfAborted();
+          loaded.current = local ? 'local' : false;
           publishState(local?.state ?? null); publishStatus(local?.queue.some(entry => entry.result) ? 'action' : local?.queue.length ? 'waiting' : 'synced');
           return;
         }
         const synced = await syncPrivateReplica(api, bound, value, saved.save.epoch, signal);
         signal.throwIfAborted();
+        loaded.current = synced.replica ? 'local' : false;
         publishState(synced.replica?.state ?? null); publishStatus(synced.status); return;
       }
       const cloud = await api.privateState(bound, value, signal);
       signal.throwIfAborted();
       if (cloud.state.currentRevision !== value.document.revision) {publishStatus('paused'); return;}
-      publishState(cloud.state); publishStatus('synced');
+      loaded.current = 'cloud'; publishState(cloud.state); publishStatus('synced');
     }, signal)).catch(async error => {
       if (request.signal.aborted || controller.current !== owner) return;
       if (!(error instanceof ReaderActionError)) current.current.onFailure(error);
       const action = error instanceof ReaderActionError ? 'retain' : readerFailureAction(error);
       const fallbackBase = stateRef.current;
-      setLoadError(true); publishStatus(action === 'retain' || action === 'login' ? 'waiting' : 'action');
+      loaded.current = false; setLoadError(true); publishStatus(action === 'retain' || action === 'login' ? 'waiting' : 'action');
       const local = supportsOfflineReader() && (action === 'retain' || action === 'login') ? await bounded(request.signal, fallbackSignal => interruptible(readPrivateReplica({accountId, issueNumber, series, contentLocale}), fallbackSignal)).catch(() => null) : null;
       if (request.signal.aborted || controller.current !== owner || stateRef.current !== fallbackBase) return;
       if (local || !stateRef.current) publishState(local?.state ?? null);
@@ -221,7 +224,35 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
     if (signal?.aborted) abort(); else signal?.addEventListener('abort', abort, {once: true});
     return bounded(owner.request.signal, child => exclusive(async () => {if (!current.current.allowAction()) throw new ReaderActionError('cancelled'); return work(child);}, child), request).finally(() => signal?.removeEventListener('abort', abort));
   };
-  return {state, status, busy, operation, loadError, reload: () => setAttempt(value => value + 1), mutate,
+  async function prepareExport(ids: readonly string[] | null) {
+    const owner = controller.current, context = current.current;
+    const ready = () => {
+      const next = stateRef.current;
+      if (!owner || controller.current !== owner || owner.request.signal.aborted || !loaded.current || !next || !current.current.allowAction() || pending.current || foreground.current || ['action', 'paused', 'syncing'].includes(statusRef.current) || next.accountId !== context.selector.accountId || next.documentId !== context.value.document.documentId || next.currentRevision !== context.value.document.revision || next.appliedRevision !== next.currentRevision || next.conflicts.length) throw new Error('export_unavailable');
+      return next;
+    };
+    ready();
+    if (active.current) throw new ReaderActionError('busy');
+    return runExclusive(async signal => {
+      const cloud = ready();
+      const local = supportsOfflineReader() ? await readReaderExportLocal(context.selector, context.value.document.documentId, context.value.document.revision) : null;
+      signal.throwIfAborted(); ready();
+      if ((context.offline || loaded.current === 'local') && !local) throw new Error('export_unavailable');
+      const source = local?.state ?? cloud;
+      const notes = source.notes.filter(note => !note.deleted && (!ids || ids.includes(note.id)));
+      if (notes.length === 0 || notes.length > 200 || source.conflicts.length) throw new Error('export_unavailable');
+      const fingerprint = JSON.stringify(cloud.notes), localFingerprint = local?.fingerprint;
+      const pendingNoteIds = new Set(local?.queue.flatMap(entry => ['createNote', 'editNote', 'reanchorNote'].includes(entry.mutation.kind) && 'noteId' in entry.mutation.payload ? [entry.mutation.payload.noteId as string] : []) ?? []);
+      return {notes: structuredClone(notes), local: !!local, pendingNoteIds,
+        validate: (commit: () => void) => runExclusive(async checkSignal => {
+          const actual = supportsOfflineReader() ? await readReaderExportLocal(context.selector, context.value.document.documentId, context.value.document.revision) : null;
+          checkSignal.throwIfAborted();
+          if (JSON.stringify(ready().notes) !== fingerprint || actual?.fingerprint !== localFingerprint) throw new Error('export_changed');
+          commit();
+        })};
+    });
+  }
+  return {state, status, busy, operation, loadError, prepareExport, reload: () => setAttempt(value => value + 1), mutate,
     retry: () => pending.current ? mutate(pending.current, true) : Promise.resolve(undefined), canRetry,
     cancelWaiting: () => {foreground.current?.abort(new ReaderActionError('cancelled'));},
     pendingMutation, replacePending, runExclusive, acceptState: (next: BulletinReaderState) => {

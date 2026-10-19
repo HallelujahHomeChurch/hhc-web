@@ -47,3 +47,25 @@ p3_spec_data初查PASS；p3_spec_ux實看4張既有候選，Important為source p
 ## Plan gate
 
 p3_plan_data、p3_plan_ux兩席獨立只讀PASS，均抽查實際caller；無Critical/Important。資料席核對parent serialization／DSR count／queue merge及發布邊界；UX席核對root dirty gate／fallback resolver／controlled draft與視覺矩陣。未跑測試，不代替T1–T4實作檢驗。root開始T1。
+
+## T1 API／SDK實作
+
+API分支feat/reader-bookmarks-20261019，b6143e8a6ef6844beed0d0e63b49ea55b062d828，draft PR https://github.com/HallelujahHomeChurch/hhc-web-api/pull/265 。SDK分支feat/reader-bookmarks-sdk-20261019，0e6d29c77f58574841a3b446f7ac74c4882f2c0a，draft PR https://github.com/HallelujahHomeChurch/frontend-platform/pull/138 。兩者OPEN、mergedAt null、autoMerge null；CI執行中，不是release。
+
+兩席p3_t1_data／p3_t1_contract初查各一Important，root修正後原席唯一窄複核均PASS。資料席要求UUID identity與PG canonical一致，現在驗證後正規化bookmarkId但不改原mutation fingerprint；純unit及獨立PG測大寫create、compact rename、大寫delete、braced tombstone conflict PASS。契約席要求SDK真實保留CAS，已在producer schema明確create baseVersion:false、其餘required integer，生成後create為never其餘number；4正向／4負向型別contract PASS。另補real HTTP→service→PG書籤持久化／replay／撤銷測試PASS。
+
+SDK完整workspace build/test/lint、7 package contracts、generated無漂移、pack及真實packed Vite/Next consumer builds PASS；無套件發佈、正式package pins未變。API targeted race、隔離PG concurrency／CAS／dedup／DSR count／cascade／fence、migration constraints、go vet、OpenAPI（既有25warnings）、migration／release政策PASS。第一次全套因新worktree缺既有converter dependency失敗，依CI npm ci後5tool tests及onlinebulletins race重驗PASS；修正中的舊run另有舊production／新alias test編譯時差，已以固定head最終全套取代。目前最終go test -race ./... -count=1 -p=1仍執行，T1未進T2，最終結果待補。
+
+T1 gate完成：exact API b6143e8之CI39151345044三組Go core/storage/contracts及verify_policy均SUCCESS；SDK本地完整驗證PASS，兩席Important均窄複核PASS。API本機最終postgres221.961s PASS，其餘尾端套件仍續記；未把未完成本機總run稱PASS。原生renderer／image與SDK CI仍屬T4交付追蹤。開始T2。
+
+T1最終證據：本機完整go test -race ./... -count=1 -p=1以固定source完成，所有套件PASS。API PR265 head b6143e8 CI39151345044全部SUCCESS（含image/native renderer各shard/verify）；SDK PR138 head0e6d29c CI39151361617全部SUCCESS（prepare、三組renderer、verify）。兩者仍draft OPEN、mergedAt null、autoMerge null。
+
+## T2 個人筆記匯出
+
+兩席p3_t2_snapshot／p3_t2_ui各發現1 Important，root修正後原席唯一窄複核均PASS。資料席：移除不在allowlist內的canonicalMetadata.title，no-leak sentinel測試包含CMS標題；只有自己的text與系統來源位置。UI席：匯出modal冒泡翻頁鍵會誤觸正文，root keyboard handler在exportRequest存在時停止處理，整合測四種翻頁鍵modal保持、沒有mutation PASS。
+
+實作：成功load provenance；同IDB transaction讀owner/epoch/key/save instance/access/state/confirmed/fullqueue，重播一致性與未知/復原標記阻擋；prepare及最後download重驗，無flush/retry/sync/mutation。Markdown動態fence、200筆/8MiB整份拒絕、受控HTTPS來源/檔名，不含quote、CMS標題、receipt、token/account。house Dialog、兩階段準備/下載、五語及本機待同步標記，正常正文無新常駐控制。
+
+固定source本機完整176檔1404測試+8node檢查PASS；tsc、production build、static budgets PASS（CSS194892 bytes），lint零error/既有LegalRequiredNavigation warning；release policy PASS。修正前交錯編譯的舊run已停止並由final run取代，不把舊run失敗算PASS。targeted21+builder5+root keyboard1另有PASS證據。
+
+真實元件合成本機預覽開啟列表→匯出→準備，DOM確認1筆ready，保存export-desktop-ready.jpg；無正式資料。後續browser download事件等待超時並重置工具，未取得檔案落盤證據，不能宣稱下載或Files接受。T4仍需實看三尺寸明暗/五語/短viewport與實際操作；目前僅此桌面準備圖。可進T3，保留T4與真機gate。

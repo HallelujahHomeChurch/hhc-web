@@ -13,10 +13,12 @@ type Props = {
   notes: ComponentProps<typeof NotesPanel>;
   highlights: ComponentProps<typeof HighlightsPanel>;
   history: ComponentProps<typeof HighlightHistory>;
+  onExport?: (visibleIds: string[]) => void;
+  exportDisabled?: boolean;
 };
 
 /** Display state only: filtering never changes a draft or submits a reader mutation. */
-export function ReaderNotesList({messages: m, filter, onClearFilter, notes, highlights, history}: Props) {
+export function ReaderNotesList({messages: m, filter, onClearFilter, notes, highlights, history, onExport, exportDisabled}: Props) {
   const [tab, setTab] = useState('notes');
   const [noteQuery, setNoteQuery] = useState(''), [highlightQuery, setHighlightQuery] = useState('');
   const [color, setColor] = useState('all');
@@ -27,6 +29,7 @@ export function ReaderNotesList({messages: m, filter, onClearFilter, notes, high
   const find = (label: string, value: string, update: (value: string) => void) => <label className="reader-private-search">{label}<input type="search" maxLength={256} value={value} onChange={event => update(event.target.value)}/></label>;
   return <div className="reader-notes-browser"><Tabs label={m.noteCategories} selectedKey={tab} onSelectionChange={key => {if (key !== 'notes') onClearFilter(); setTab(key);}} items={[
     {id: 'notes', label: m.notesTab, content: <>
+      {onExport ? <button type="button" disabled={exportDisabled || !notes.notes.some(note => !note.deleted)} onClick={() => onExport(visible.map(note => note.id))}>{m.exportNotes}</button> : null}
       {find(m.searchNotes, noteQuery, setNoteQuery)}
       {filter ? <div className="reader-filter-row"><span>{m.currentPassage}</span><button type="button" onClick={onClearFilter}>{m.showAllNotes}</button></div> : null}
       <p className="reader-filter-count" role="status">{m.noteResultCount.replace('{count}', String(visible.length))}</p>

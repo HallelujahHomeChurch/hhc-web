@@ -16,7 +16,7 @@ Web以第二階段PR236之8974b886為依賴，保留PR234/235/236；新分支fea
 
 Markdown UTF-8，包含固定系統欄位：期數、版別、內容語言、document revision、匯出ISO時間、筆記數、每筆自己的text、保存時間、來源章節/PDF頁碼與本期reader HTTPS連結。**不輸出note.quote、ranges內quote、inactiveAnchors文字或任何其他週報正文。** 使用者自己寫入text的內容原樣保留；不猜測其文字來源。
 
-所有不受信任文字（包括標題、章節標籤、筆記）放進無語言標籤的動態長度反引號fenced code block：delimiter至少3且長於內容最長反引號連續段，單獨占行；不把文字插入HTML/Markdown link語法。系統來源URL另行生成，固定https://www.alive.org.tw加受驗證的locale/正整數期數/series/contentLocale reader路徑，不含token、receipt、account、query或假造#sentenceId。現有reader沒有語意URL deep-link契約，因此不聲稱連結直達原句；PDF頁碼與章節為純文字來源位置。
+所有不受信任文字（包括來源章節標籤、筆記）放進無語言標籤的動態長度反引號fenced code block：delimiter至少3且長於內容最長反引號連續段，單獨占行；不把文字插入HTML/Markdown link語法。系統來源URL另行生成，固定https://www.alive.org.tw加受驗證的locale/正整數期數/series/contentLocale reader路徑，不含token、receipt、account、query或假造#sentenceId。現有reader沒有語意URL deep-link契約，因此不聲稱連結直達原句；PDF頁碼與章節為純文字來源位置。
 
 可解析的note ranges以原始scalar範圍對應manifest fragment/source page，無range用既有sentence對應。被刪除/隱藏/跨revision/需重綁或無法證明時寫「來源位置待確認」，不跳到同頁其他句也不補全文。檔名固定安全結構hhc-notes-期數-series-contentLocale.md，不含個資或不受信任標題。
 

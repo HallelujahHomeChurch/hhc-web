@@ -356,6 +356,26 @@ async function privateTransaction<T>(run: (tx: IDBTransaction) => Promise<T>): P
   return outcome.value;
 }
 
+export type ReaderExportLocal = {state: BulletinReaderState; queue: PendingReaderMutation[]; fingerprint: string};
+
+/** A single IDB transaction binds the complete replica to its saved instance and receipt. */
+export async function readReaderExportLocal(selector: ReaderSelector, documentId: string, revision: number, now = Date.now()): Promise<ReaderExportLocal | null> {
+  return privateTransaction(async tx => {
+    const pointer = await result(tx.objectStore('pointers').get(editionKey(selector)));
+    if (!pointer) return null;
+    const owner = await identity(tx);
+    const {key, save, replica} = await privateContext(tx, selector, undefined, now);
+    if (!save.instanceId || !replica || save.value.document.documentId !== documentId || save.value.document.revision !== revision || save.epoch !== owner.epoch) throw new Error('export_unavailable');
+    verifyPrivateState(replica.confirmed, selector.accountId, documentId, revision);
+    if (replica.state.currentRevision !== revision || replica.confirmed.currentRevision !== revision) throw new Error('export_unavailable');
+    if (replica.queue.some(entry => entry.sent !== false || entry.result !== undefined || entry.replay !== undefined || entry.replayResult !== undefined || entry.resolution !== undefined || entry.recoveryReason !== undefined)) throw new Error('export_unavailable');
+    let projected = replica.confirmed;
+    for (const entry of replica.queue) projected = applyLocalMutation(projected, entry.mutation, save.value.document);
+    if (JSON.stringify(projected) !== JSON.stringify(replica.state)) throw new Error('export_unavailable');
+    return {state: replica.state, queue: replica.queue, fingerprint: JSON.stringify([owner, key, save.instanceId, save.value.access, replica])};
+  });
+}
+
 export async function readPrivateReplica(selector: ReaderSelector, now = Date.now()): Promise<PrivateReplica | null> {
   return privateTransaction(async tx => (await privateContext(tx, selector, undefined, now)).replica ?? null);
 }
