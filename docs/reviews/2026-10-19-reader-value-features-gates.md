@@ -87,3 +87,7 @@ p3_t4_delivery PASS；p3_t4_visual初查唯一Important為200%截圖未含Downlo
 讀回exact-head：API PR265 b6143e8 CI39151345044、SDK PR138 0e6d29c CI39151361617、Web匯出PR237 9009179 CI39196694373全部SUCCESS，皆draft OPEN／mergedAt null／autoMerge null。Consumer636c9e4僅source branch與packed驗證可review，未開一個明知缺已發布SDK的PR。保留producer→published SDK→consumer exact registry pin/CI gate。
 
 最終停止merge前；未merge/tag/publish/deploy，無正式帳號資料寫入。保留所有未合併worktree／branch。真機iOS/Android IME／Files、PWA、safe area／旋轉、screen reader、真帳號跨裝置及真v1–v10/PDF仍是獨立接受項，不能用本機fixture或CI代替。
+
+## 依賴整合前置更新（04:37 UTC）
+
+使用者要求優先釐清收尾，仍保留merge前停止點。兩席依賴核對找出SDK1.0.76與既有正式版本碰撞；root在SDK feature分支整合最新main11464e8，協調8個manifest為候選1.0.78，commit8c5fcdc已push PR138。兩席修正複查PASS；完整本機workspace/build/test/lint/generated/contracts/pack/real packed Vite+Next及9個renderer gate tests PASS。新CI39200281237仍進行中，舊head的CI39151361617不代表此新head通過。未發布／未改consumer正式pin，完整順序、版本斷言與授權／實機缺口見 [dependency checkpoint](2026-10-19-reader-dependency-integration.md)。
