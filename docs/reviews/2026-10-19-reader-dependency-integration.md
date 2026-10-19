@@ -31,3 +31,19 @@ Azure control plane reports hhc-web-api latestReadyRevision `hhc-web-api--000023
 ## Final pre-merge result
 
 The coordinated1.0.78 candidate is absent from all seven registries and v1.0.78 tag at the availability snapshot; recheck at release time. SDK local validation plus exact-head CI and both correction reviewers PASS. Consumer source remains636c9e4 with local-only1.0.78 full validation PASS. The consumer formal manifest/lock/assertion are still unchanged1.0.75, so formal registry integration is pending API/SDK main merge and successful package publication. All feature worktrees are retained. No production mutation or PR merge was performed.
+
+## Authorized producer release / 1.1.0 progression
+
+User now authorized continuing producer merge/release, with SDK advancing to 1.1.0; website PRs still stop before merge. Supersedes the earlier authorization/version statements for future work without rewriting historical evidence. Root and all seven SDK manifests are 1.1.0 at58649f2. No 1.0.78 tag/package was published. Registry1.1.0 absent in all seven packages and v1.1.0 absent at preflight; must recheck before tag.
+
+Two independent read-only Codex seats minor_version_review and producer_release_preflight_review PASS: compatible additive bookmark capability, coordinated versions, merged-main tag gate, seven-package publication and additive migration104/rollback sequencing. API pool10/5 and min1/max3 unchanged; one healthy live replica235 observed. Fresh PG one-minute total connections26–30 and failed-connections0 observed; these include system roles and do not prove general-slot headroom or rollout overlap safety. No capacity/config changes authorized or performed. Existing release smoke and rollback remain mandatory.
+
+SDK1.1.0 full local workspace build/test/lint/generated/package contracts, seven packs, real Vite/Next packed consumers and nine renderer release-gate tests PASS; candidate client tgz SHA2560f93a3a7001ba5595a12bc27989401fcdef2edc882adf31f4bd98369127ad3a8. Exact new-head CI pending. Prior1.0.78 CI/pack remains historical. API265 authorized squash merge requested through normal PR path; runtime release/health still must be verified before declaring producer ready.
+
+## API producer released; maintenance boundary
+
+PR265 squash-merged to main28a6d9d22f23e2126679f719dccd07da86caf50f at05:44:40Z. Production release39206125567 SUCCESS including migration104, runtime/worker/extractor deployment and smoke. Revision236 Healthy/Running/active/100% traffic, digest sha256:b6a3aeaef1294b2c1252a74a49a8e29e72e5a9337d6a7549822881fac97c8b8f matches ACR main28a6d9d. Original rollout artifact records90 successful ready/CMS/OIDC HTTP200 samples, transport0, API+daprd ready/started/restarts0; passed05:58:27Z. Rollback was available but skipped because forward release succeeded; not a rollback exercise.
+
+Two independent post-release read-only seats api_release_artifact_check and api_release_health_check PASS. PG rollout metrics failed_connections0; total active_connections observed peak34, not a general-slot or worst-case-capacity guarantee. SDK reader contract semantic equality against actual merged API confirmed for2 paths and38 reader schemas, canonical SHA2567663a48b6c989fa2882d615432c0368ced54d254af6774fe436a60c9d8316beb. Entire YAML files differ in pre-existing non-reader layout/descriptions; equality claim is scoped to reader contracts.
+
+User announced maintenance14:00–16:00 Asia/Taipei on2026-10-19. Original rollout samples were13:56–13:58, before maintenance. At14:01–14:03 ready/OIDC remain200 JSON; home/site-layout503 JSON withRetry-After300. This is an observed maintenance response, not evidence of a new code regression. A post16:00 public contract smoke remains required; do not bypass maintenance or declare end-to-end public acceptance during it. API producer release gate is complete, separate from this remaining public acceptance check.

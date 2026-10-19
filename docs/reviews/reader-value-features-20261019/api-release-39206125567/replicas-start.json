@@ -1,0 +1,19 @@
+[
+  {
+    "containers": [
+      {
+        "name": "hhc-web-api",
+        "ready": true,
+        "restarts": 0,
+        "started": true
+      },
+      {
+        "name": "daprd",
+        "ready": true,
+        "restarts": 0,
+        "started": true
+      }
+    ],
+    "name": "hhc-web-api--0000236-5948458d4-8r59s"
+  }
+]
