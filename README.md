@@ -273,3 +273,21 @@ page. Review links recheck the current unit, request actions and version; approv
 shows the current affected church/family ancestors. The root summary uses the
 server-filtered actionable total across current scopes. Final cross-service
 integration acceptance remains required.
+
+### PR validation of unpublished Shared dependencies
+
+PR CI checks out frontend-platform commit
+`ccef0d8c74c604ad70d5f88b3135a88b5c084303` (coordinated `1.1.1`), builds all
+seven archives and verifies their SHA-256 values in `scripts/shared-candidate.json`.
+It exports committed WWW files into a disposable context, adds relative archive
+overrides, regenerates its lockfile and uses that same context for host tests,
+dependency scanning, Docker build and image scanning. Installed package bytes are
+checked against those archives. The immutable weekly-asset check retains the
+real consumer `origin/main` objects through the original checkout's Git directory.
+
+This validates source compatibility only. Product dependency strings, registry
+lockfile, Dockerfile and release workflow remain unchanged. Before WWW merge,
+Shared requires separately approved merge/tag/publication, then WWW must pin the
+actually published exact versions, regenerate its registry lockfile, remove the
+temporary candidate CI path and rerun normal registry installation and image CI.
+No candidate result establishes registry availability or production readiness.
