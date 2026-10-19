@@ -1,0 +1,25 @@
+{
+  "syntheticOnly": true,
+  "node": "v24.21.0",
+  "results": [
+    {
+      "kind": "emoji",
+      "notes": 200,
+      "scalarsPerNote": 10000,
+      "bytes": 8003691,
+      "milliseconds": 11.69,
+      "limit": 8388608,
+      "withinLimit": true
+    },
+    {
+      "kind": "backticks",
+      "notes": 200,
+      "scalarsPerNote": 10000,
+      "bytes": 6002891,
+      "milliseconds": 3.43,
+      "limit": 8388608,
+      "withinLimit": true
+    }
+  ],
+  "scope": "Serialization sizing only; not physical phone memory or Files acceptance"
+}

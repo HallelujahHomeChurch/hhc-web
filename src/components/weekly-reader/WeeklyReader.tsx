@@ -45,6 +45,7 @@ import {SelectionToolbar} from './SelectionToolbar';
 import {NoteEditor, type NoteSave, type NoteEditorState} from './NoteEditor';
 import {NoteReanchor} from './NoteReanchor';
 import {ReaderNotesList} from './ReaderNotesList';
+import {NoteExportDialog} from './NoteExportDialog';
 import {ReaderPrivateState, SyncStatus} from './ReaderPrivateState';
 import {ReaderRecovery} from './ReaderRecovery';
 import '@hallelujahhomechurch/ui/bulletin-paper.css';
@@ -131,6 +132,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const [notice, setNotice] = useState('');
   const [notes, setNotesState] = useState<'list' | 'new' | 'restore' | BulletinReaderNote | null>(returned?.draft ? returned.draft.noteId ? 'restore' : 'new' : null);
   const [noteFilter, setNoteFilter] = useState<string[] | null>(null);
+  const [exportRequest, setExportRequest] = useState<{ids: string[]; generation: number} | null>(null);
   const storageKey = `weekly-reader-position:${selector.accountId}:${value.document.documentId}:${value.document.revision}`;
   const paperRef = useRef<HTMLDivElement>(null);
   const [mobile, setMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
@@ -229,7 +231,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const noteAnchors = editingNote ? editingNote.sentenceIds : selected;
   const noteQuote = editingNote ? editingNote.quote : selection.ranges ? rangeQuote(selection.ranges, sentences) : sentences.filter(sentence => selected.includes(sentence.id)).map(sentence => sentence.text).join('\n');
   function hasUnsavedNote() {return !!(notes && notes !== 'list' && noteEditorState && noteEditorState.draft.text !== (editingNote?.text ?? ''));}
-  function cleanupNotes() {setNotes(null); setDeletion(null); setReanchor(null); setNoteEditorState(undefined);}
+  function cleanupNotes() {setExportRequest(null); setNotes(null); setDeletion(null); setReanchor(null); setNoteEditorState(undefined);}
   function noteSending() {return operationRef.current === 'sending';}
   async function closeNotes() {
     if (noteSending() || recoveryOpen) return false;
@@ -677,6 +679,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     }}/></div>
   </div>;
   return <section ref={documentRef} className="reader-document" data-mobile={mobile || undefined} data-reading-mode={reflow ? 'easy' : 'paper'} data-mobile-hidden={!chromeVisible} data-iphone-standalone={iphoneStandalone || undefined} data-panel-open={!!panel || undefined} data-notes-panel={notes && wideNotes || undefined} aria-label={m.title} role="region" onWheelCapture={() => {suppressModeProgress.current = false;}} onTouchMoveCapture={() => {suppressModeProgress.current = false;}} onPointerDownCapture={() => {suppressModeProgress.current = false;}} onKeyDown={event => {
+    if (exportRequest) return;
     suppressModeProgress.current = false;
     if (event.key === 'Tab' && panel) {
       const panelRoot = chromeRef.current?.querySelector<HTMLElement>('.reader-navigation-panel:not([hidden])');
@@ -691,6 +694,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     const delta = keyboardPageDelta(event, !!window.getSelection()?.toString());
     if (!reflow && direction === 'horizontal' && delta) {event.preventDefault(); void onPage(page + delta);}
   }}>
+    {exportRequest && !suspended ? <NoteExportDialog messages={m} theme={theme} document={value.document} locale={backHref.split('/')[1] as Locale} issueNumber={selector.issueNumber} visibleIds={exportRequest.ids} total={privateReader.state?.notes.filter(note => !note.deleted).length ?? 0} prepare={privateReader.prepareExport} current={() => !!documentRef.current && allowAction() && !suspended && generation.current === exportRequest.generation} onClose={() => setExportRequest(null)}/> : null}
     <ReaderExitDialog exit={exit} theme={theme}/>
     <AlertDialog isOpen={!!decision} title={decision?.title ?? m.myNotes} description={<span ref={node => {
       const overlay = node?.closest<HTMLElement>('.hhc-modal-overlay');
@@ -787,7 +791,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
         <button type="button" disabled={foregroundBusy} onClick={() => deletion.durable ? openRecovery() : setDeletion(null)}>{deletion.durable ? m.reviewSync : m.noteCloud}</button>
         {!deletion.durable && deletion.cloud && !deletion.cloud.deleted ? <><button type="button" disabled={privateReader.busy} onClick={() => {const note = deletion.cloud!; void confirmNote('delete', note.text).then(accepted => {if (accepted) void deleteNote(note);});}}>{m.noteDelete}</button><button type="button" disabled={privateReader.busy} onClick={() => {const cloud = deletion.cloud!; setNotes(cloud); setNoteEditorState({draft: {noteId: cloud.id, baseVersion: cloud.version, text: `${cloud.text}\n\n${deletion.local.text}`}, conflict: null}); setDeletion(null);}}>{m.noteManual}</button></> : null}
       </div></section> : notes === 'list' ? <>
-      <ReaderNotesList messages={m} filter={noteFilter} onClearFilter={() => setNoteFilter(null)}
+      <ReaderNotesList messages={m} onExport={ids => setExportRequest({ids, generation: generation.current})} exportDisabled={privateReader.busy || privateReader.loadError || privateReader.canRetry || recoveryOpen || !privateReader.state || ['paused', 'action', 'syncing'].includes(privateReader.status)} filter={noteFilter} onClearFilter={() => setNoteFilter(null)}
         highlights={{highlights: savedHighlights, sentences, messages: m, busy: foregroundBusy || !privateReader.state || privateReader.status === 'paused' || suspended,
           onChange: (range, color) => action({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, ...(color ? {kind: 'setHighlight' as const, payload: {sentenceIds: [range.sentenceId], ranges: [range], color}} : {kind: 'clearHighlight' as const, payload: {sentenceIds: [range.sentenceId], ranges: [range]}})})}}
         history={{onConfirm: description => confirmReaderAction(description, m.highlightHistory, m.clearHighlight), history: privateReader.state?.highlightHistory, document: value.document, messages: m, mobile, busy: foregroundBusy || !privateReader.state || privateReader.status === 'paused' || suspended,

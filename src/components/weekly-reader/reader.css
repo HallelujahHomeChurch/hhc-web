@@ -341,3 +341,9 @@ body:has(.weekly-reader) {padding-bottom: 0;}
 .reader-filter-colors button {min-height: 44px; flex: 1;}
 .reader-filter-count, .reader-search-scope {font-size: .875rem; color: var(--hhc-text-muted); margin-block: .75rem;}
 .reader-search-scope {padding-inline: 1rem; flex: none;}
+
+.reader-note-export {overflow-wrap: anywhere; min-width: 0;}
+.reader-note-export fieldset {border: 0; padding: 0; margin-block: 1rem;}
+.reader-note-export label {display: flex; align-items: center; gap: .75rem; min-height: 44px; padding-block: .5rem;}
+.reader-note-export input {flex: none;}
+.reader-note-export .reader-note-actions {margin-block-start: 1rem;}
