@@ -12,19 +12,19 @@ export function ReviewRequestsSection({unitId, enabled, onDecided, consumedLinks
  const {locale,messages:{organizations:t}}=useOrganizationMessages(), copy=reviewRequestMessages[locale]
  const router=useRouter(), pathname=usePathname(), params=useSearchParams()
  const query=params.get('joinRequest'), source=params.toString()
- const [selected,setSelected]=useState<string|null>(null), [denied,setDenied]=useState(false), [revision,setRevision]=useState(0)
+ const [selection,setSelection]=useState<{id:string;open:boolean;sequence:number}|null>(null), [denied,setDenied]=useState(false), [revision,setRevision]=useState(0)
  const [filter,setFilter]=useState<'pending'|'history'>('pending'),[page,setPage]=useState(1)
  const [intents]=useState(()=>new Map<string,ReviewIntent>())
  const close=useCallback(()=>{
-  setSelected(null)
+  setSelection(current=>current?.open?{...current,open:false}:current)
   if(query){consumedLinks.add(query);const next=new URLSearchParams(source);next.delete('joinRequest');router.replace(pathname+(next.size?`?${next}`:'')+'#join-requests',{scroll:false})}
  },[query,source,router,pathname,consumedLinks])
  const deny=useCallback(()=>{setDenied(true);close()},[close])
  useEffect(()=>{
   if(!enabled){queueMicrotask(close);return}
-  if(!query){queueMicrotask(()=>setSelected(null));return}
+  if(!query){queueMicrotask(close);return}
   if(!canonicalRequestId(query)){queueMicrotask(close);return}
-  if(!consumedLinks.has(query))queueMicrotask(()=>setSelected(query))
+  if(!consumedLinks.has(query))queueMicrotask(()=>setSelection(current=>({id:query,open:true,sequence:(current?.sequence??0)+1})))
  },[query,enabled,close,consumedLinks])
  useEffect(()=>{
   const revalidate=()=>setRevision(v=>v+1)
@@ -36,8 +36,8 @@ export function ReviewRequestsSection({unitId, enabled, onDecided, consumedLinks
   <h2>{copy.title}</h2>
   {denied?<div><p role="alert" className="form-error">{copy.unavailable}</p><Button variant="secondary" onPress={()=>{setDenied(false);setRevision(v=>v+1);window.dispatchEvent(new Event('hhc:organizations-changed'))}}>{t.retry}</Button></div>:<>
    <div className="organization-actions" role="group" aria-label={copy.title}>{(['pending','history'] as const).map(value=><Button key={value} variant={filter===value?'primary':'secondary'} aria-pressed={filter===value} onPress={()=>{setFilter(value);setPage(1)}}>{joinRequestMessages[locale][value==='pending'?'pendingTab':'historyTab']}</Button>)}</div>
-   <ReviewRequestList key={`${filter}:${page}:${revision}`} unitId={unitId} filter={filter} page={page} onPage={setPage} onSelect={setSelected} onDenied={deny}/>
-   {selected?<JoinRequestDialog intents={intents} key={selected} unitId={unitId} requestId={selected} onClose={close} onDenied={deny} onDecided={()=>{close();setRevision(v=>v+1);window.dispatchEvent(new Event('hhc:organizations-changed'));onDecided()}}/>:null}
+   <ReviewRequestList key={`${filter}:${page}:${revision}`} unitId={unitId} filter={filter} page={page} onPage={setPage} onSelect={id=>setSelection(current=>({id,open:true,sequence:(current?.sequence??0)+1}))} onDenied={deny}/>
+   {selection?<JoinRequestDialog isOpen={selection.open} intents={intents} key={`${selection.id}:${selection.sequence}`} unitId={unitId} requestId={selection.id} onClose={close} onDenied={deny} onDecided={()=>{close();setRevision(v=>v+1);window.dispatchEvent(new Event('hhc:organizations-changed'));onDecided()}}/>:null}
   </>}
  </section>
 }

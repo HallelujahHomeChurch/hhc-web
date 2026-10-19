@@ -8,7 +8,7 @@ import {joinRequestMessages, reviewRequestMessages} from './messages'
 
 export type ReviewIntent = {action:'approve'|'reject';version:number;key:string}
 
-export function JoinRequestDialog({requestId, unitId, onClose, onDenied, onDecided, intents}: {requestId: string; unitId: string; intents: Map<string,ReviewIntent>; onClose: () => void; onDenied: () => void; onDecided: () => void}) {
+export function JoinRequestDialog({requestId, unitId, isOpen, onClose, onDenied, onDecided, intents}: {requestId: string; unitId: string; isOpen: boolean; intents: Map<string,ReviewIntent>; onClose: () => void; onDenied: () => void; onDecided: () => void}) {
  const {operationsApi}=useOrganizationApi(), {locale,messages:{organizations:t}}=useOrganizationMessages()
  const copy=reviewRequestMessages[locale], join=joinRequestMessages[locale]
  const [request,setRequest]=useState<OrgJoinRequest|null>(null), [error,setError]=useState<unknown>(null), [revision,setRevision]=useState(0), [blocked,setBlocked]=useState(false), [pending,setPending]=useState(false)
@@ -16,6 +16,7 @@ export function JoinRequestDialog({requestId, unitId, onClose, onDenied, onDecid
  const inFlight=useRef(false), mounted=useRef(true)
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false}},[])
  useEffect(()=>{
+  if(!isOpen)return
   const controller=new AbortController()
   void operationsApi.getReviewableOrgJoinRequest(requestId,controller.signal).then(value=>{
    if(controller.signal.aborted)return
@@ -23,7 +24,7 @@ export function JoinRequestDialog({requestId, unitId, onClose, onDenied, onDecid
    setRequest(value)
   }).catch(reason=>{if(!controller.signal.aborted){if([401,403,404].includes(status(reason)))onDenied();else setError(reason)}})
   return()=>controller.abort()
- },[operationsApi,requestId,unitId,revision,onDenied])
+ },[operationsApi,requestId,unitId,revision,onDenied,isOpen])
  async function decide(action:'approve'|'reject') {
   if(!request||request.status!=='pending'||!request.actions[action]||blocked||inFlight.current||intent&&intent.action!==action)return
   const target=intent??{action,version:request.version,key:crypto.randomUUID()};setIntent(target);intents.set(requestId,target);inFlight.current=true;setPending(true);setError(null)
@@ -34,7 +35,7 @@ export function JoinRequestDialog({requestId, unitId, onClose, onDenied, onDecid
    if(mounted.current){if([401,403,404].includes(status(reason))){onDenied();return}setError(reason);if([409,412].includes(status(reason)))setBlocked(true)}
   } finally {inFlight.current=false;if(mounted.current)setPending(false)}
  }
- return <Dialog isOpen onOpenChange={open=>{if(!open&&!pending)onClose()}} title={copy.title} closeLabel={t.back}>
+ return <Dialog isOpen={isOpen} onOpenChange={open=>{if(!open&&!pending)onClose()}} title={copy.title} closeLabel={t.back}>
   <div className="organization-dialog-stack">
    {request?<><p>{copy.confirm.replace('{applicant}',request.applicantDisplayName||'—').replace('{unit}',request.orgUnitName)}</p><p>{join[request.status]} · {copy.version} {request.version}</p><CollapseDisclosure units={request.ancestorCollapsePreview}/></>:!error?<p role="status">{t.loading}</p>:null}
    {error?<p role="alert" className="form-error">{joinFailureMessage(error,join)}</p>:null}
