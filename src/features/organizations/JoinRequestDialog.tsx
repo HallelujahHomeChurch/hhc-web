@@ -37,7 +37,9 @@ export function JoinRequestDialog({requestId, unitId, isOpen, onClose, onDenied,
  }
  return <Dialog isOpen={isOpen} onOpenChange={open=>{if(!open&&!pending)onClose()}} title={copy.title} closeLabel={t.back}>
   <div className="organization-dialog-stack">
-   {request?<><p>{copy.confirm.replace('{applicant}',request.applicantDisplayName||'—').replace('{unit}',request.orgUnitName)}</p><p>{join[request.status]} · {copy.version} {request.version}</p><CollapseDisclosure units={request.ancestorCollapsePreview}/></>:!error?<p role="status">{t.loading}</p>:null}
+   {request?<><p>{copy.confirm.replace('{applicant}',request.applicantDisplayName||'—').replace('{unit}',request.orgUnitName)}</p><p>{join[request.status]} · {copy.version} {request.version}</p><p>{copy.consequence}</p>
+    <dl className="organization-request-dates"><div><dt>{join.requestedAt}</dt><dd><time dateTime={request.requestedAt}>{new Date(request.requestedAt).toLocaleString(locale)}</time></dd></div>{request.decidedAt?<div><dt>{join.decidedAt}</dt><dd><time dateTime={request.decidedAt}>{new Date(request.decidedAt).toLocaleString(locale)}</time></dd></div>:null}</dl>
+    <CollapseDisclosure units={request.ancestorCollapsePreview}/></>:!error?<p role="status">{t.loading}</p>:null}
    {error?<p role="alert" className="form-error">{joinFailureMessage(error,join)}</p>:null}
    <div className="organization-actions"><Button variant="secondary" isDisabled={pending} onPress={onClose}>{t.back}</Button>
    {blocked||!request&&error?<Button isDisabled={pending} onPress={()=>{setRequest(null);setError(null);setBlocked(false);setIntent(null);intents.delete(requestId);setRevision(v=>v+1)}}>{copy.reload}</Button>:request?.status==='pending'?<>{request.actions.approve?<Button isDisabled={pending||Boolean(intent&&intent.action!=='approve')} onPress={()=>void decide('approve')}>{pending&&intent?.action==='approve'?t.sending:copy.approve}</Button>:null}{request.actions.reject?<Button variant="secondary" isDisabled={pending||Boolean(intent&&intent.action!=='reject')} onPress={()=>void decide('reject')}>{pending&&intent?.action==='reject'?t.sending:copy.reject}</Button>:null}</>:null}

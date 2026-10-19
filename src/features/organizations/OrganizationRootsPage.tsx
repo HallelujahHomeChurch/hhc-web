@@ -69,12 +69,12 @@ function Directory() {
   if (denied) return <section className="organization-document organization-page"><p role="alert" className="form-error">{copy.unavailable}</p><Button variant="secondary" onPress={() => {setDenied(false); setRevision(value => value + 1)}}>{t.retry}</Button></section>
   return <div className="organization-document organization-page organization-roots-page">
     <label className="organization-group-search">{copy.searchGroups}<input type="search" className="organization-input" placeholder={copy.searchGroups} value={value} maxLength={200} onCompositionStart={() => search?.setComposing ? search.setComposing(true) : setComposing(true)} onCompositionEnd={() => search?.setComposing ? search.setComposing(false) : setComposing(false)} onChange={event => {const value = [...event.target.value].slice(0, 100).join(''); if (search) search.setQuery(value); else setDraft({source, value})}}/></label>
+    <ReviewRequestsSummary key={`review:${revision}`}/>
     {(['mine', 'all'] as const).map(relation => {
       const page = relation === 'mine' ? current.minePage : current.allPage
       return <DirectorySection key={`${relation}:${current.q}:${page}:${revision}`} relation={relation} q={current.q} page={page} onPage={page => navigate({...current, [relation === 'mine' ? 'minePage' : 'allPage']: page})} onApply={unit => {setCreated(null); setTarget(unit)}}/>
     })}
     {created ? <p role="status">{created.status === 'pending' ? copy.pendingNotice : copy[created.status]} <Link prefetch={false} href={`/${locale}/organizations/requests/${created.id}`}>{copy.viewRequest}</Link></p> : null}
-    <ReviewRequestsSummary key={`review:${revision}`}/>
     <OwnRequestsSection key={revision}/>
     {target ? <ApplyDialog key={target.id} unit={target} onDenied={() => {setTarget(null); setCreated(null); setDenied(true)}} onClose={() => setTarget(null)} onCreated={request => {setTarget(null); setCreated(request); setRevision(value => value + 1); void inbox?.store.invalidate()}} operationsApi={operationsApi}/> : null}
     <span className="sr-only">{t.title}</span>

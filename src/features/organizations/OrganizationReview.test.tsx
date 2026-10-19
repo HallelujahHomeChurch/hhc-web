@@ -1,19 +1,21 @@
-import {act, render, screen, waitFor} from '@testing-library/react'
+import {act, render, screen, waitFor, within} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {beforeEach, expect, it, vi} from 'vitest'
 import {OrganizationUnitPage} from './OrganizationUnitPage'
 import {OrganizationRootsPage} from './OrganizationRootsPage'
 import {messages} from './messages'
-const state=vi.hoisted(()=>({params:new URLSearchParams(),replace:vi.fn(),invalidate:vi.fn(),api:{getManagedUnit:vi.fn(),listManagedMembers:vi.fn(),getMyAccess:vi.fn(),listReviewableOrgJoinRequests:vi.fn(),getReviewableOrgJoinRequest:vi.fn(),approveOrgJoinRequest:vi.fn(),rejectOrgJoinRequest:vi.fn(),listOrgUnitDirectory:vi.fn(),listOwnOrgJoinRequests:vi.fn()}}))
+import type {Locale} from '@/i18n/locales'
+import {JoinRequestDialog} from './JoinRequestDialog'
+const state=vi.hoisted(()=>({locale:'en' as Locale,params:new URLSearchParams(),replace:vi.fn(),invalidate:vi.fn(),api:{getManagedUnit:vi.fn(),listManagedMembers:vi.fn(),getMyAccess:vi.fn(),listReviewableOrgJoinRequests:vi.fn(),getReviewableOrgJoinRequest:vi.fn(),approveOrgJoinRequest:vi.fn(),rejectOrgJoinRequest:vi.fn(),listOrgUnitDirectory:vi.fn(),listOwnOrgJoinRequests:vi.fn()}}))
 const router={replace:state.replace}
 vi.mock('next/navigation',()=>({useParams:()=>({unitId:'11111111-1111-4111-8111-111111111111'}),usePathname:()=>'/en/organizations/11111111-1111-4111-8111-111111111111',useSearchParams:()=>state.params,useRouter:()=>router}))
-vi.mock('./context',()=>({useOrganizationApi:()=>({operationsApi:state.api}),useOrganizationMessages:()=>({locale:'en',messages:messages.en})}))
+vi.mock('./context',()=>({useOrganizationApi:()=>({operationsApi:state.api}),useOrganizationMessages:()=>({locale:state.locale,messages:messages[state.locale]})}))
 vi.mock('./OrganizationsSearch',()=>({useOrganizationsSearch:()=>null}))
 vi.mock('@/features/notifications/provider',()=>({useNotificationInbox:()=>({store:{invalidate:state.invalidate}})}))
 const unit='11111111-1111-4111-8111-111111111111', id='22222222-2222-4222-8222-222222222222'
 const request={id,orgUnitId:unit,orgUnitName:'Target group',applicantDisplayName:'Current applicant',orgUnitKind:'small_group',status:'pending',requestedAt:'2026-10-19T00:00:00Z',version:7,actions:{cancel:false,approve:true,reject:true},ancestorCollapsePreview:[{id:'family',name:'Current family',kind:'family'}]}
 const folder={unit:{id:unit,name:'Target group',kind:'small_group',status:'active'},breadcrumb:[],children:[],actions:{reviewJoinRequests:true}}
-beforeEach(()=>{vi.resetAllMocks();state.params=new URLSearchParams();state.api.getManagedUnit.mockResolvedValue(folder);state.api.listManagedMembers.mockResolvedValue({items:[],page:1});state.api.listReviewableOrgJoinRequests.mockResolvedValue({items:[request],page:1,actionablePendingTotal:4});state.api.getReviewableOrgJoinRequest.mockResolvedValue(request);state.api.approveOrgJoinRequest.mockResolvedValue({...request,status:'approved',version:8,actions:{cancel:false,approve:false,reject:false}});state.api.getMyAccess.mockResolvedValue({responsibilities:[{orgUnitId:unit}]});state.api.listOrgUnitDirectory.mockResolvedValue({items:[],page:1});state.api.listOwnOrgJoinRequests.mockResolvedValue({items:[],page:1})})
+beforeEach(()=>{vi.resetAllMocks();state.locale='en';state.params=new URLSearchParams();state.api.getManagedUnit.mockResolvedValue(folder);state.api.listManagedMembers.mockResolvedValue({items:[],page:1});state.api.listReviewableOrgJoinRequests.mockResolvedValue({items:[request],page:1,actionablePendingTotal:4});state.api.getReviewableOrgJoinRequest.mockResolvedValue(request);state.api.approveOrgJoinRequest.mockResolvedValue({...request,status:'approved',version:8,actions:{cancel:false,approve:false,reject:false}});state.api.getMyAccess.mockResolvedValue({responsibilities:[{orgUnitId:unit}]});state.api.listOrgUnitDirectory.mockResolvedValue({items:[],page:1});state.api.listOwnOrgJoinRequests.mockResolvedValue({items:[],page:1})})
 it('places the server-authorized review queue before the roster and loads current disclosure on selection',async()=>{const view=render(<OrganizationUnitPage/>);await userEvent.click(await screen.findByRole('button',{name:'Review Current applicant'}));const dialog=await screen.findByRole('dialog');expect(dialog).toHaveTextContent('Current family');expect(dialog).toHaveTextContent('Other small groups and fellowships');expect(view.container.querySelector('#join-requests')!.compareDocumentPosition(screen.getByRole('table',{hidden:true}))&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();expect(state.api.listReviewableOrgJoinRequests).toHaveBeenCalledWith(expect.objectContaining({orgUnitId:unit,status:'pending',page:1,limit:20}));})
 it('ordinary members never fetch reviewer data, even with a notification query',async()=>{state.params=new URLSearchParams({joinRequest:id,q:'Alice',page:'3'});state.api.getManagedUnit.mockResolvedValue({...folder,actions:{}});render(<OrganizationUnitPage/>);await screen.findByRole('table');expect(state.api.listReviewableOrgJoinRequests).not.toHaveBeenCalled();expect(state.api.getReviewableOrgJoinRequest).not.toHaveBeenCalled();await waitFor(()=>expect(state.replace).toHaveBeenCalledWith(expect.stringContaining('?q=Alice&page=3'),{scroll:false}));})
 it('retries uncertain approval with exactly the original version/action/key and invalidates inbox',async()=>{state.api.approveOrgJoinRequest.mockRejectedValueOnce(new TypeError('offline'));render(<OrganizationUnitPage/>);await userEvent.click(await screen.findByRole('button',{name:'Review Current applicant'}));await userEvent.click(await screen.findByRole('button',{name:'Approve'}));await screen.findByRole('alert');expect(screen.getByRole('button',{name:'Reject'})).toBeDisabled();await userEvent.click(screen.getByRole('button',{name:'Approve'}));await waitFor(()=>expect(state.invalidate).toHaveBeenCalledOnce());expect(state.api.approveOrgJoinRequest.mock.calls[0]).toEqual([id,{version:7,idempotencyKey:expect.any(String)}]);expect(state.api.approveOrgJoinRequest.mock.calls[1]).toEqual(state.api.approveOrgJoinRequest.mock.calls[0]);})
@@ -32,3 +34,59 @@ it('locks double decisions and fences a late completion after route unmount',asy
 it('keeps an uncertain intent across close and explicit row reopening',async()=>{state.api.approveOrgJoinRequest.mockRejectedValueOnce(new TypeError('offline'));render(<OrganizationUnitPage/>);await userEvent.click(await screen.findByRole('button',{name:'Review Current applicant'}));await userEvent.click(await screen.findByRole('button',{name:'Approve'}));await screen.findByRole('alert');await userEvent.click(screen.getAllByRole('button',{name:'Back'}).at(-1)!);await userEvent.click(screen.getByRole('button',{name:'Review Current applicant'}));await userEvent.click(await screen.findByRole('button',{name:'Approve'}));expect(state.api.approveOrgJoinRequest.mock.calls[1]).toEqual(state.api.approveOrgJoinRequest.mock.calls[0]);})
 
 it('restores a connected keyboard-focused row trigger after Escape',async()=>{render(<OrganizationUnitPage/>);const trigger=await screen.findByRole('button',{name:'Review Current applicant'});trigger.focus();expect(trigger).toHaveFocus();await userEvent.keyboard(' ');await screen.findByRole('button',{name:'Approve'});await userEvent.keyboard('{Escape}');await waitFor(()=>expect(screen.queryByRole('dialog')).not.toBeInTheDocument());await waitFor(()=>expect(trigger).toHaveFocus());})
+
+it.each([
+ ['en','Approval adds the target affiliation. It does not automatically grant recording, bulletin or management access.'],
+ ['zh-Hant','核准會新增目標單位的歸屬，不會自動授予聚會錄影、週報或管理權限。'],
+ ['zh-Hans','批准会新增目标单位的归属，不会自动授予聚会录像、周报或管理权限。'],
+ ['ja','承認すると申請先の所属が追加されます。録画、週報、管理の権限は自動的には付与されません。'],
+ ['ko','승인하면 대상 단위 소속이 추가됩니다. 녹화 영상, 주보 또는 관리 권한은 자동으로 부여되지 않습니다.'],
+] as const)('discloses affiliation-only approval consequences in %s',async(locale,consequence)=>{
+ state.locale=locale
+ render(<JoinRequestDialog requestId={id} unitId={unit} isOpen intents={new Map()} onClose={vi.fn()} onDenied={vi.fn()} onDecided={vi.fn()}/>)
+ const dialog=await screen.findByRole('dialog')
+ await within(dialog).findByText('Current family')
+ expect(dialog).toHaveTextContent(consequence)
+ expect(state.api.approveOrgJoinRequest).not.toHaveBeenCalled()
+})
+it.each(['pending','approved'] as const)('shows current detail timestamps for %s requests',async status=>{
+ const requestedAt='2026-10-21T03:04:05Z',decidedAt='2026-10-22T06:07:08Z'
+ state.api.getReviewableOrgJoinRequest.mockResolvedValue({...request,status,requestedAt,...(status==='approved'?{decidedAt,actions:{approve:false,reject:false,cancel:false}}:{})})
+ render(<OrganizationUnitPage/>)
+ await userEvent.click(await screen.findByRole('button',{name:'Review Current applicant'}))
+ const dialog=await screen.findByRole('dialog')
+ await within(dialog).findByText('Current family')
+ expect(within(dialog).getByText('Requested')).toBeInTheDocument()
+ expect(dialog.querySelector(`time[datetime="${requestedAt}"]`)).toBeInTheDocument()
+ expect(dialog.querySelector(`time[datetime="${request.requestedAt}"]`)).not.toBeInTheDocument()
+ if(status==='approved'){
+  expect(within(dialog).getByText('Result')).toBeInTheDocument()
+  expect(dialog.querySelector(`time[datetime="${decidedAt}"]`)).toBeInTheDocument()
+ } else expect(within(dialog).queryByText('Result')).not.toBeInTheDocument()
+})
+it('puts the single current review summary before both group lists',async()=>{
+ render(<OrganizationRootsPage/>)
+ const summary=await screen.findByRole('region',{name:'Join requests'})
+ await within(summary).findByText('4 pending requests')
+ for(const name of ['My small groups','All small groups']){
+  expect(summary.compareDocumentPosition(screen.getByRole('region',{name}))&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+ }
+ expect(document.querySelectorAll('.organization-review-summary')).toHaveLength(1)
+ expect(state.api.listReviewableOrgJoinRequests).toHaveBeenCalledOnce()
+})
+it('keeps the root summary expanded across keyed bounded review pages',async()=>{
+ const next={...request,id:'33333333-3333-4333-8333-333333333333',applicantDisplayName:'Next applicant'}
+ state.api.listReviewableOrgJoinRequests.mockResolvedValueOnce({items:[request],page:1,nextPage:2,actionablePendingTotal:4}).mockResolvedValueOnce({items:[next],page:2,actionablePendingTotal:4})
+ render(<OrganizationRootsPage/>)
+ const summary=await screen.findByRole('region',{name:'Join requests'})
+ await userEvent.click(await within(summary).findByText('4 pending requests'))
+ await waitFor(()=>expect(summary.querySelector('details')).toHaveAttribute('open'))
+ const oldSignal=state.api.listReviewableOrgJoinRequests.mock.calls[0][0].signal
+ await userEvent.click(within(summary).getByRole('button',{name:'Next'}))
+ await within(summary).findByRole('link',{name:'Review Next applicant'})
+ expect(summary.querySelector('details')).toHaveAttribute('open')
+ expect(oldSignal.aborted).toBe(true)
+ expect(state.api.listReviewableOrgJoinRequests).toHaveBeenCalledTimes(2)
+ expect(state.api.listReviewableOrgJoinRequests).toHaveBeenLastCalledWith(expect.objectContaining({status:'pending',page:2,limit:5}))
+ expect(state.api.getMyAccess).toHaveBeenCalledOnce()
+})

@@ -43,7 +43,7 @@ export function ReviewRequestsSection({unitId, enabled, onDecided, consumedLinks
 }
 export function ReviewRequestsSummary() {
  const {operationsApi}=useOrganizationApi(),{locale,messages:{organizations:t}}=useOrganizationMessages(),copy=reviewRequestMessages[locale]
- const [allowed,setAllowed]=useState<boolean|null>(null),[failed,setFailed]=useState(false),[revision,setRevision]=useState(0),[page,setPage]=useState(1)
+ const [allowed,setAllowed]=useState<boolean|null>(null),[failed,setFailed]=useState(false),[revision,setRevision]=useState(0),[page,setPage]=useState(1),[expanded,setExpanded]=useState(false)
  useEffect(()=>{
   const controller=new AbortController()
   void operationsApi.getMyAccess(controller.signal).then(access=>{if(!controller.signal.aborted)setAllowed(access.responsibilities.length>0)}).catch(()=>{if(!controller.signal.aborted){setAllowed(false);setFailed(true)}})
@@ -51,9 +51,9 @@ export function ReviewRequestsSummary() {
  },[operationsApi,revision])
  useEffect(()=>{const refresh=()=>{setAllowed(null);setFailed(false);setRevision(v=>v+1)};window.addEventListener('focus',refresh);return()=>window.removeEventListener('focus',refresh)},[])
  if(failed)return <p role="alert">{copy.unavailable} <Button variant="secondary" onPress={()=>{setFailed(false);setRevision(v=>v+1)}}>{t.retry}</Button></p>
- return allowed?<section className="organization-directory-section" aria-label={copy.title}><h2>{copy.title}</h2><ReviewRequestList key={`${page}:${revision}`} filter="pending" page={page} onPage={setPage}/></section>:null
+ return allowed?<section className="organization-directory-section" aria-label={copy.title}><h2>{copy.title}</h2><ReviewRequestList key={`${page}:${revision}`} filter="pending" page={page} onPage={setPage} expanded={expanded} onExpandedChange={setExpanded}/></section>:null
 }
-function ReviewRequestList({unitId,filter,page,onPage,onSelect,onDenied}: {unitId?:string;filter:'pending'|'history';page:number;onPage:(page:number)=>void;onSelect?:(id:string)=>void;onDenied?:()=>void}) {
+function ReviewRequestList({unitId,filter,page,onPage,onSelect,onDenied,expanded,onExpandedChange}: {unitId?:string;filter:'pending'|'history';page:number;onPage:(page:number)=>void;onSelect?:(id:string)=>void;onDenied?:()=>void;expanded?:boolean;onExpandedChange?:(expanded:boolean)=>void}) {
  const {operationsApi}=useOrganizationApi(),{locale,messages:{organizations:t}}=useOrganizationMessages(),copy=reviewRequestMessages[locale],join=joinRequestMessages[locale]
  const [data,setData]=useState<ReviewableOrgJoinRequestPage|null>(null),[error,setError]=useState(false),[revision,setRevision]=useState(0)
  useEffect(()=>{
@@ -67,6 +67,6 @@ function ReviewRequestList({unitId,filter,page,onPage,onSelect,onDenied}: {unitI
  {data.items.length?<ul className="organization-unit-list">{data.items.map(item=><li key={item.id}><div className="organization-discovery-row"><span className="organization-unit-name">{item.applicantDisplayName||'—'}<small>{item.orgUnitName} · {join[item.status]} · <time dateTime={item.requestedAt}>{new Date(item.requestedAt).toLocaleString(locale)}</time>{item.decidedAt?<> · {join.decidedAt} <time dateTime={item.decidedAt}>{new Date(item.decidedAt).toLocaleString(locale)}</time></>:null}</small></span>{onSelect?<Button variant="secondary" size="sm" aria-label={`${copy.review} ${item.applicantDisplayName||item.orgUnitName}`} onPress={()=>onSelect(item.id)}>{copy.review}</Button>:<Link prefetch={false} aria-label={`${copy.review} ${item.applicantDisplayName||item.orgUnitName}`} href={`/${locale}/organizations/${item.orgUnitId}?joinRequest=${item.id}#join-requests`}>{copy.review}</Link>}</div></li>)}</ul>:<p>{copy.empty}</p>}
  {page>1||data.nextPage?<nav className="organization-actions" aria-label={copy.title}><Button variant="secondary" isDisabled={page===1} onPress={()=>onPage(page-1)}>{t.previous}</Button><span>{page}</span><Button variant="secondary" isDisabled={!data.nextPage} onPress={()=>data.nextPage&&onPage(data.nextPage)}>{t.next}</Button></nav>:null}</>
  const summary=copy.summary.replace('{count}',String(data.actionablePendingTotal))
- return unitId?<><p role="status">{summary}</p>{rows}</>:<details className="organization-review-summary"><summary>{summary}</summary>{rows}</details>
+ return unitId?<><p role="status">{summary}</p>{rows}</>:<details className="organization-review-summary" open={expanded} onToggle={event=>onExpandedChange?.(event.currentTarget.open)}><summary>{summary}</summary>{rows}</details>
 }
 function canonicalRequestId(value:string){return /^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(value)}
