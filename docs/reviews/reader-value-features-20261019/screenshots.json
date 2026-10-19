@@ -1,0 +1,266 @@
+{
+  "source": "636c9e4",
+  "syntheticOnly": true,
+  "screenshots": [
+    {
+      "file": "bookmarks-desktop-dark-long.jpg",
+      "bytes": 52201,
+      "sha256": "cc9cf1e80c2850ec26e09e7a1332a9159fabeb2977da6ed2c490c0e89b4d81a6"
+    },
+    {
+      "file": "bookmarks-desktop-light-delete.jpg",
+      "bytes": 38885,
+      "sha256": "63405b0ec53694f4705d796e1c84e98119d213803a8ac3193915db369633e3f1"
+    },
+    {
+      "file": "bookmarks-desktop-light-draft.jpg",
+      "bytes": 48819,
+      "sha256": "b4d421b8427f2a8ab6f98a7c46499216f2d37dc479ead7c2dd8a51d6376ed19a"
+    },
+    {
+      "file": "bookmarks-desktop-light-empty.jpg",
+      "bytes": 35547,
+      "sha256": "a9058a6a3dbf8a9c2c8cd4860f8815c6858dcdff90fe0d56fa21a047b15f9fa5"
+    },
+    {
+      "file": "bookmarks-desktop-light-long.jpg",
+      "bytes": 52362,
+      "sha256": "69db206ad3b8d7da78683036e3269ab1971e86e3f1d497c40ff55a09af953cb4"
+    },
+    {
+      "file": "bookmarks-phone-dark-long.jpg",
+      "bytes": 33926,
+      "sha256": "265d0e37f5c6a5b402745722ce199f4e6da90bebbf06f9c7f77b0a9d474d4452"
+    },
+    {
+      "file": "bookmarks-phone-dark-offline.jpg",
+      "bytes": 25340,
+      "sha256": "e0db5c500ff9c51661dfd045edbda7615dc602801e79c12c9d348179256eb5f7"
+    },
+    {
+      "file": "bookmarks-phone-light-dirty-close.jpg",
+      "bytes": 26214,
+      "sha256": "9a6fc2802533670ff9ac6e4c06943af9ecef89b9e111039540ae85f55d1f3395"
+    },
+    {
+      "file": "bookmarks-phone-light-long.jpg",
+      "bytes": 35368,
+      "sha256": "55c573fa2376de3d321fe369945eb61071fee9b90c533bef1a06eaab80d98321"
+    },
+    {
+      "file": "bookmarks-phone-short-en-conflict.jpg",
+      "bytes": 26043,
+      "sha256": "ae49fa08685bef88b28077011ee4858e92599988d6933b83f3656797549d7481"
+    },
+    {
+      "file": "bookmarks-short-en-dark-form.jpg",
+      "bytes": 23830,
+      "sha256": "21d7e5475ee92536c0f493ac28ba26a52d8d7dad4e15a6992caac0b45ee344e8"
+    },
+    {
+      "file": "bookmarks-short-en-light-form.jpg",
+      "bytes": 24439,
+      "sha256": "944640b2ef416047287c9c91b4ca83a10842635f8ab83ddeb5904ed9e66bb860"
+    },
+    {
+      "file": "bookmarks-short-ja-dark-form.jpg",
+      "bytes": 23287,
+      "sha256": "77379307f455c948d278b6baf95fdd8ce7dca4cf319d18e6d12f743f933aaee3"
+    },
+    {
+      "file": "bookmarks-short-ja-light-form.jpg",
+      "bytes": 23753,
+      "sha256": "35ce0876ec3e56c4aeb2f1140e3dde495477cb7cc26f2a343f715e0c4174c2ea"
+    },
+    {
+      "file": "bookmarks-short-ko-dark-form.jpg",
+      "bytes": 21193,
+      "sha256": "dac8285fd07a60597c93bcff0303cfa6a69bcda68670f1ad67954e567b112c1a"
+    },
+    {
+      "file": "bookmarks-short-ko-light-form.jpg",
+      "bytes": 21526,
+      "sha256": "c0e13c6ce0307edf95cbfac7b6cead60de23b52cbe2fe0eaff8ba475f738e815"
+    },
+    {
+      "file": "bookmarks-short-zh-Hans-dark-form.jpg",
+      "bytes": 21468,
+      "sha256": "81c073de51790aa6362ee9417affe30de719b5025dab50683b85459c42993bc1"
+    },
+    {
+      "file": "bookmarks-short-zh-Hans-light-form.jpg",
+      "bytes": 21937,
+      "sha256": "62803eeeed729f8e5e8b4e8f466ae84254ace82a7af59adde66b6e51ce0d896d"
+    },
+    {
+      "file": "bookmarks-short-zh-Hant-dark-form.jpg",
+      "bytes": 21476,
+      "sha256": "202c0c00f8c39ee2ac206f4ec9b5fc6a93dfac2a4154486b811acd7338778c3c"
+    },
+    {
+      "file": "bookmarks-short-zh-Hant-light-form.jpg",
+      "bytes": 22006,
+      "sha256": "d4402ae13904af956703476df37d3d217d2a9d919b17cea76068fb3bc0975399"
+    },
+    {
+      "file": "bookmarks-tablet-dark-long.jpg",
+      "bytes": 37418,
+      "sha256": "6f84eb7b34439981f0cfee9db33f4c565a6655e4b190115755532bbe53affeda"
+    },
+    {
+      "file": "bookmarks-tablet-light-legacy.jpg",
+      "bytes": 27861,
+      "sha256": "5153c715812f2caac5c174aa06e8a54ddb2e33c0449335f348ec60209f7287a3"
+    },
+    {
+      "file": "bookmarks-tablet-light-long.jpg",
+      "bytes": 39007,
+      "sha256": "2907076c848f9682a1dc42e126dbfe4ea840f7b4771b3a0796479c80a56c7b3e"
+    },
+    {
+      "file": "bookmarks-wide-form-not-zoom.jpg",
+      "bytes": 40838,
+      "sha256": "dfec19d28326e1c87a02668ab607783314e4b515ddbd80448efaaeba4ea0649d"
+    },
+    {
+      "file": "candidate-desktop-dark-normal.jpg",
+      "bytes": 22924,
+      "sha256": "2758851bc4f6c0eaea7938e9ec481bf3c8e45e8704fceb64f79dddb786754342"
+    },
+    {
+      "file": "candidate-desktop-light-normal.jpg",
+      "bytes": 23354,
+      "sha256": "c2be46a3c449a8d2cb9506e2378d4c105353054b2aba211fa08c32cd4ea1d746"
+    },
+    {
+      "file": "candidate-phone-dark-normal.jpg",
+      "bytes": 16354,
+      "sha256": "782974f55586438df5f296082eab3899ef681a06cec1f9d409ff4f3ffb99505b"
+    },
+    {
+      "file": "candidate-phone-light-normal.jpg",
+      "bytes": 15845,
+      "sha256": "97b725430b47eae58b5470572be3cc39f8f73ddc7ee992a0257dbf46bf7292a8"
+    },
+    {
+      "file": "candidate-tablet-dark-normal.jpg",
+      "bytes": 18828,
+      "sha256": "12e434960957f3ad6a28ddc561d71cefc8703ff153c88e0ff55c6ae488bc3b62"
+    },
+    {
+      "file": "candidate-tablet-light-normal.jpg",
+      "bytes": 18636,
+      "sha256": "ba61cf9be854da33dd2eb02fab4d3eea391c44f4e0dbb9d3349b94c7feee5da5"
+    },
+    {
+      "file": "export-browser-200-bottom.jpg",
+      "bytes": 277064,
+      "sha256": "e72258b89815615911d3d4dbb18a94262a7851d1368feedff591f2fb28f2c5a4"
+    },
+    {
+      "file": "export-browser-200-download-focus.jpg",
+      "bytes": 396838,
+      "sha256": "3dc91e15070808ff0751d1f4a4a80aa3113d0f549b44aebc2d5b8f5d07f81384"
+    },
+    {
+      "file": "export-browser-200-handed.jpg",
+      "bytes": 429792,
+      "sha256": "830bdac7afc5a1ab1213299937b6876117303f5e4ad12e6206dcbfeb502c7504"
+    },
+    {
+      "file": "export-browser-200-top.jpg",
+      "bytes": 310899,
+      "sha256": "27560c78887c3695abfa63ecb4bbd311093ea4112cd4d0619bf7e09cc3cd9202"
+    },
+    {
+      "file": "export-desktop-dark-ready.jpg",
+      "bytes": 66763,
+      "sha256": "5c7fc0b0749031eac04aa5cf675577e59544c4d4d458a5c2a99649a9810bf656"
+    },
+    {
+      "file": "export-desktop-light-handed.jpg",
+      "bytes": 68919,
+      "sha256": "954be281235fe75fd650232d82d1e44b712c9a7b9a113a889bf4eace78aeb94b"
+    },
+    {
+      "file": "export-desktop-light-ready.jpg",
+      "bytes": 76767,
+      "sha256": "d4882b343ec03c810ac4bf6afedaa9bd1757408f3f4c8cb63d414c96ebbc7fb3"
+    },
+    {
+      "file": "export-desktop-ready.jpg",
+      "bytes": 56592,
+      "sha256": "d418ccd76974de914980f364fec17a06778259883849be0bbc0ce1f2bbe941f8"
+    },
+    {
+      "file": "export-phone-dark-ready.jpg",
+      "bytes": 40055,
+      "sha256": "497413aefb2265ed8249c6df5e310a38d033f6b4d9dbcafaa9211b69f6ada29e"
+    },
+    {
+      "file": "export-phone-light-ready.jpg",
+      "bytes": 45643,
+      "sha256": "66b03367d39fc043872e1fe72193c36a9347c46b70dba395902b404fe132aa8c"
+    },
+    {
+      "file": "export-short-en-dark-ready.jpg",
+      "bytes": 28681,
+      "sha256": "22f9ca008f46c60375181113354c635527bb49d3d31a32b45bc77c45cf1fe805"
+    },
+    {
+      "file": "export-short-en-light-ready.jpg",
+      "bytes": 31606,
+      "sha256": "5885ed9186f7d171c7e81e91afbfdf0aa5f834bcf719111a094de70ffb382abf"
+    },
+    {
+      "file": "export-short-ja-dark-ready.jpg",
+      "bytes": 31779,
+      "sha256": "c5e33244ebf55135c17c20ec517be3732f4bee5de7fa6dd6750eb8be60cd599e"
+    },
+    {
+      "file": "export-short-ja-light-ready.jpg",
+      "bytes": 34829,
+      "sha256": "70d39f273d3e27fbeefafe0d1ed60127ff5979f04b8c1e9bc00f34f3eb732a13"
+    },
+    {
+      "file": "export-short-ko-dark-ready.jpg",
+      "bytes": 30225,
+      "sha256": "5764e9a70d8ecddf66d7b9407a68cf643da4508e52e12463c8e8e7298acfe13b"
+    },
+    {
+      "file": "export-short-ko-light-ready.jpg",
+      "bytes": 33794,
+      "sha256": "58c2f999b20ca9c30266c0c1c554d7f08a06a41806767e55470e76e092cc0565"
+    },
+    {
+      "file": "export-short-zh-Hans-dark-ready.jpg",
+      "bytes": 28371,
+      "sha256": "34040dd29c05346a11c30bd04a842fb2cd1c967c4860419660d175dba9469fcb"
+    },
+    {
+      "file": "export-short-zh-Hans-light-ready.jpg",
+      "bytes": 31785,
+      "sha256": "15480fcd257677871cd68b79f697e941c90b534ee0a2fd9160ed68607b90c8e7"
+    },
+    {
+      "file": "export-short-zh-Hant-dark-ready.jpg",
+      "bytes": 28154,
+      "sha256": "d4f0fe75d30e6abc8a2aa93424988ad70ca3f05355893d882aee18a6ff2011ae"
+    },
+    {
+      "file": "export-short-zh-Hant-light-ready.jpg",
+      "bytes": 31618,
+      "sha256": "9101ee2ac585f2a8bd7d15111f5460068f24fa89e413bc0e3b1702e0da64303a"
+    },
+    {
+      "file": "export-tablet-dark-ready.jpg",
+      "bytes": 41522,
+      "sha256": "598a8795eeff7013387d29f3faf99456a460aaf486b1f91e1f117d4d2b90ce78"
+    },
+    {
+      "file": "export-tablet-light-ready.jpg",
+      "bytes": 47454,
+      "sha256": "98db476f0f82ca7f10ecdd9ccd8af5a3769de8f45c16beb58bc7fd428e4d913b"
+    }
+  ]
+}

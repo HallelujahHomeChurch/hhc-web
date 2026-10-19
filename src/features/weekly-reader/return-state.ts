@@ -31,6 +31,10 @@ function validAction(value: unknown): value is BulletinReaderMutation | null {
     case 'reanchorNote': return id(action.payload.noteId) && ids(action.payload.sentenceIds) && action.payload.sentenceIds.length > 0 && Array.isArray(action.payload.ranges) && ranges(action.payload.ranges, action.payload.sentenceIds) && Number.isSafeInteger(action.baseVersion) && (action.baseVersion ?? 0) > 0;
     case 'editNote': return id(action.payload.noteId) && text(action.payload.text) && Number.isSafeInteger(action.baseVersion) && (action.baseVersion ?? 0) > 0;
     case 'deleteNote': return id(action.payload.noteId) && Number.isSafeInteger(action.baseVersion) && (action.baseVersion ?? 0) > 0;
+    case 'createBookmark': return action.baseVersion === undefined && id(action.payload.bookmarkId) && typeof action.payload.name === 'string' && [...action.payload.name.trim()].length > 0 && [...action.payload.name.trim()].length <= 80 && id(action.payload.sentenceId) && id(action.payload.pageId) && Number.isSafeInteger(action.payload.offset) && action.payload.offset >= 0;
+    case 'renameBookmark': return id(action.payload.bookmarkId) && typeof action.payload.name === 'string' && [...action.payload.name.trim()].length > 0 && [...action.payload.name.trim()].length <= 80 && Number.isSafeInteger(action.baseVersion) && action.baseVersion > 0;
+    case 'deleteBookmark': return id(action.payload.bookmarkId) && Number.isSafeInteger(action.baseVersion) && action.baseVersion > 0;
+    case 'reanchorBookmark': return id(action.payload.bookmarkId) && id(action.payload.sentenceId) && id(action.payload.pageId) && Number.isSafeInteger(action.payload.offset) && action.payload.offset >= 0 && Number.isSafeInteger(action.baseVersion) && action.baseVersion > 0;
     case 'setProgress': return Object.values(action.payload).every(value => value === '' || id(value));
     case 'resolveHighlightMigrationConflict': return id(action.payload.conflictId) && ['yellow', 'red', 'blue'].includes(action.payload.chosenColor) && Number.isSafeInteger(action.payload.currentRevision);
     default: return false;

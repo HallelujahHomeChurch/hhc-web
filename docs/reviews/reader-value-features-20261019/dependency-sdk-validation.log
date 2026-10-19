@@ -1,0 +1,542 @@
+
+> hhc-frontend-platform@1.0.78 build /Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019
+> pnpm -r --if-present build
+
+(node:94178) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Scope: 7 of 8 workspace projects
+packages/account-client build$ tsc -p tsconfig.build.json
+packages/donation-client build$ tsc -p tsconfig.build.json
+packages/hhc-web-client build$ tsc -p tsconfig.build.json
+packages/preferences build$ tsc -p tsconfig.build.json
+packages/donation-client build: Done
+packages/ui build$ tsc -p tsconfig.json && cp src/styles.css dist/styles.css && cp src/bulletin-reader/paper.css dist/bulletin-reader/paper.css && cp src/bulletin-reader/v2/paper.css dist/bulletin-reader/v2/paper.css && cp src/bulletin-reader/v7/paper.css dist/bulletin-reader/v7/paper.css && cp src/bulletin-reader/ebook.css dist/bulletin-reader/ebook.css && cp src/player/player.css dist/player/player.css
+packages/preferences build: Done
+packages/account-client build: Done
+packages/hhc-web-client build: Done
+packages/ui build: Done
+packages/donation-ui build$ tsc -p tsconfig.json
+packages/operations-client build$ tsc -p tsconfig.build.json
+packages/operations-client build: Done
+packages/donation-ui build: Done
+
+> hhc-frontend-platform@1.0.78 pretest /Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019
+> pnpm --filter @hallelujahhomechurch/account-client build && pnpm --filter @hallelujahhomechurch/donation-ui^... build
+
+(node:94319) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+> @hallelujahhomechurch/account-client@1.0.78 build /Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019/packages/account-client
+> tsc -p tsconfig.build.json
+
+(node:94337) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Scope: 2 of 8 workspace projects
+packages/donation-client build$ tsc -p tsconfig.build.json
+packages/ui build$ tsc -p tsconfig.json && cp src/styles.css dist/styles.css && cp src/bulletin-reader/paper.css dist/bulletin-reader/paper.css && cp src/bulletin-reader/v2/paper.css dist/bulletin-reader/v2/paper.css && cp src/bulletin-reader/v7/paper.css dist/bulletin-reader/v7/paper.css && cp src/bulletin-reader/ebook.css dist/bulletin-reader/ebook.css && cp src/player/player.css dist/player/player.css
+packages/donation-client build: Done
+packages/ui build: Done
+
+> hhc-frontend-platform@1.0.78 test /Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019
+> pnpm -r --if-present test:run
+
+(node:94386) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Scope: 7 of 8 workspace projects
+packages/account-client test:run$ vitest run
+packages/donation-client test:run$ vitest run
+packages/hhc-web-client test:run$ node --test scripts/generate-bulletin-domain.test.mjs && vitest run src
+packages/preferences test:run$ vitest run
+packages/preferences test:run:  RUN  v4.1.10 /Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019/packages/preferences
+packages/account-client test:run:  RUN  v4.1.10 /Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019/packages/account-client
+packages/donation-client test:run:  RUN  v4.1.10 /Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019/packages/donation-client
+packages/preferences test:run:  Test Files  4 passed (4)
+packages/preferences test:run:       Tests  33 passed (33)
+packages/preferences test:run:    Start at  12:34:35
+packages/preferences test:run:    Duration  719ms (transform 344ms, setup 0ms, import 529ms, tests 41ms, environment 1ms)
+packages/preferences test:run: Done
+packages/ui test:run$ vitest run
+packages/donation-client test:run:  Test Files  1 passed (1)
+packages/donation-client test:run:       Tests  6 passed (6)
+packages/donation-client test:run:    Start at  12:34:35
+packages/donation-client test:run:    Duration  826ms (transform 110ms, setup 0ms, import 148ms, tests 50ms, environment 0ms)
+packages/donation-client test:run: Done
+packages/account-client test:run:  Test Files  9 passed (9)
+packages/account-client test:run:       Tests  145 passed (145)
+packages/account-client test:run:    Start at  12:34:35
+packages/account-client test:run:    Duration  932ms (transform 1.56s, setup 0ms, import 2.13s, tests 449ms, environment 1ms)
+packages/account-client test:run: Done
+packages/ui test:run:  RUN  v4.1.10 /Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019/packages/ui
+packages/hhc-web-client test:run: ✔ check is non-writing with default source (6026.656333ms)
+packages/hhc-web-client test:run: ✔ check is non-writing with explicit source (5164.999666ms)
+packages/hhc-web-client test:run: ✔ fails closed: relevant-shape (6085.142125ms)
+packages/hhc-web-client test:run: ✔ fails closed: missing-reference (1588.717834ms)
+packages/hhc-web-client test:run: ✔ fails closed: missing-input (922.229708ms)
+packages/hhc-web-client test:run: ✔ fails closed: stale-json (1227.256083ms)
+packages/ui test:run:  Test Files  19 passed (19)
+packages/ui test:run:       Tests  343 passed (343)
+packages/ui test:run:    Start at  12:34:36
+packages/ui test:run:    Duration  20.29s (transform 7.59s, setup 11.13s, import 31.49s, tests 35.19s, environment 60.43s)
+packages/hhc-web-client test:run: ✔ fails closed: stale-types (791.690959ms)
+packages/ui test:run: Done
+packages/hhc-web-client test:run: ✔ unrelated schema does not drift; shared enums and recursive references remain complete (773.345209ms)
+packages/hhc-web-client test:run: ℹ tests 8
+packages/hhc-web-client test:run: ℹ suites 0
+packages/hhc-web-client test:run: ℹ pass 8
+packages/hhc-web-client test:run: ℹ fail 0
+packages/hhc-web-client test:run: ℹ cancelled 0
+packages/hhc-web-client test:run: ℹ skipped 0
+packages/hhc-web-client test:run: ℹ todo 0
+packages/hhc-web-client test:run: ℹ duration_ms 22655.461375
+packages/hhc-web-client test:run:  RUN  v4.1.10 /Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019/packages/hhc-web-client
+packages/hhc-web-client test:run:  Test Files  13 passed (13)
+packages/hhc-web-client test:run:       Tests  120 passed (120)
+packages/hhc-web-client test:run:    Start at  12:34:57
+packages/hhc-web-client test:run:    Duration  982ms (transform 862ms, setup 0ms, import 1.62s, tests 1.41s, environment 6ms)
+packages/hhc-web-client test:run: Done
+packages/operations-client test:run$ vitest run
+packages/donation-ui test:run$ vitest run
+packages/operations-client test:run:  RUN  v4.1.10 /Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019/packages/operations-client
+packages/donation-ui test:run:  RUN  v4.1.10 /Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019/packages/donation-ui
+packages/operations-client test:run:  Test Files  3 passed (3)
+packages/operations-client test:run:       Tests  25 passed (25)
+packages/operations-client test:run:    Start at  12:34:58
+packages/operations-client test:run:    Duration  423ms (transform 319ms, setup 0ms, import 406ms, tests 162ms, environment 0ms)
+packages/operations-client test:run: Done
+packages/donation-ui test:run:  Test Files  1 passed (1)
+packages/donation-ui test:run:       Tests  6 passed (6)
+packages/donation-ui test:run:    Start at  12:34:58
+packages/donation-ui test:run:    Duration  3.02s (transform 271ms, setup 128ms, import 1.31s, tests 757ms, environment 618ms)
+packages/donation-ui test:run: Done
+
+> hhc-frontend-platform@1.0.78 lint /Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019
+> pnpm -r --if-present lint
+
+(node:95280) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Scope: 7 of 8 workspace projects
+packages/donation-client lint$ oxlint src && tsc -p tsconfig.json --noEmit
+packages/hhc-web-client lint$ oxlint src
+packages/preferences lint$ tsc -p tsconfig.json --noEmit
+packages/account-client lint$ tsc -p tsconfig.json --noEmit
+packages/hhc-web-client lint: Done
+packages/ui lint$ tsc -p tsconfig.json --noEmit
+packages/donation-client lint: Done
+packages/preferences lint: Done
+packages/account-client lint: Done
+packages/ui lint: Done
+packages/operations-client lint$ oxlint src && tsc -p tsconfig.json --noEmit
+packages/donation-ui lint$ tsc -p tsconfig.json --noEmit
+packages/donation-ui lint: Done
+packages/operations-client lint: Done
+(node:95537) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+> @hallelujahhomechurch/hhc-web-client@1.0.78 check:generated /Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019/packages/hhc-web-client
+> pnpm generate && git diff --exit-code -- src/generated.ts
+
+
+> @hallelujahhomechurch/hhc-web-client@1.0.78 generate /Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019/packages/hhc-web-client
+> openapi-typescript openapi/hhc-web-api.yaml -o src/generated.ts
+
+✨ openapi-typescript 7.13.0
+🚀 openapi/hhc-web-api.yaml → src/generated.ts [461.3ms]
+
+> hhc-frontend-platform@1.0.78 check:packages /Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019
+> pnpm --filter @hallelujahhomechurch/hhc-web-client exec tsc -p tsconfig.locale-contract.json && node scripts/check-package-contracts.mjs
+
+(node:95600) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Package contracts pass (7 packages checked).
+
+> hhc-frontend-platform@1.0.78 pack:packages /Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019
+> node scripts/pack-packages.mjs
+
+📦  @hallelujahhomechurch/preferences@1.0.78
+Tarball Contents
+dist/analytics-copy.d.ts
+dist/analytics-copy.js
+dist/analytics.d.ts
+dist/analytics.js
+dist/index.d.ts
+dist/index.js
+dist/statement-dismissal.d.ts
+dist/statement-dismissal.js
+package.json
+Tarball Details
+/Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019/artifacts/hallelujahhomechurch-preferences-1.0.78.tgz
+📦  @hallelujahhomechurch/account-client@1.0.78
+Tarball Contents
+dist/admin-access.d.ts
+dist/admin-access.d.ts.map
+dist/admin-access.js
+dist/browser-runtime.d.ts
+dist/browser-runtime.d.ts.map
+dist/browser-runtime.js
+dist/conformance.d.ts
+dist/conformance.d.ts.map
+dist/conformance.js
+dist/data-requests.d.ts
+dist/data-requests.d.ts.map
+dist/data-requests.js
+dist/index.d.ts
+dist/index.d.ts.map
+dist/index.js
+dist/legal.d.ts
+dist/legal.d.ts.map
+dist/legal.js
+dist/navigation-presentation.d.ts
+dist/navigation-presentation.d.ts.map
+dist/navigation-presentation.js
+dist/oauth.d.ts
+dist/oauth.d.ts.map
+dist/oauth.js
+dist/session-client.d.ts
+dist/session-client.d.ts.map
+dist/session-client.js
+LICENSE
+package.json
+Tarball Details
+/Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019/artifacts/hallelujahhomechurch-account-client-1.0.78.tgz
+📦  @hallelujahhomechurch/hhc-web-client@1.0.78
+Tarball Contents
+dist/client.d.ts
+dist/client.d.ts.map
+dist/client.js
+dist/generated.d.ts
+dist/generated.d.ts.map
+dist/generated.js
+dist/index.d.ts
+dist/index.d.ts.map
+dist/index.js
+package.json
+Tarball Details
+/Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019/artifacts/hallelujahhomechurch-hhc-web-client-1.0.78.tgz
+📦  @hallelujahhomechurch/operations-client@1.0.78
+Tarball Contents
+dist/access.d.ts
+dist/access.d.ts.map
+dist/access.js
+dist/client.d.ts
+dist/client.d.ts.map
+dist/client.js
+dist/generated.d.ts
+dist/generated.d.ts.map
+dist/generated.js
+dist/index.d.ts
+dist/index.d.ts.map
+dist/index.js
+package.json
+Tarball Details
+/Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019/artifacts/hallelujahhomechurch-operations-client-1.0.78.tgz
+📦  @hallelujahhomechurch/ui@1.0.78
+Tarball Contents
+dist/bulletin-reader/artifact.d.ts
+dist/bulletin-reader/artifact.d.ts.map
+dist/bulletin-reader/artifact.js
+dist/bulletin-reader/backPanelPresentation.d.ts
+dist/bulletin-reader/backPanelPresentation.d.ts.map
+dist/bulletin-reader/backPanelPresentation.js
+dist/bulletin-reader/BulletinDocumentRenderer.d.ts
+dist/bulletin-reader/BulletinDocumentRenderer.d.ts.map
+dist/bulletin-reader/BulletinDocumentRenderer.js
+dist/bulletin-reader/BulletinEbook.d.ts
+dist/bulletin-reader/BulletinEbook.d.ts.map
+dist/bulletin-reader/BulletinEbook.js
+dist/bulletin-reader/ebook.css
+dist/bulletin-reader/fixed.d.ts
+dist/bulletin-reader/fixed.d.ts.map
+dist/bulletin-reader/fixed.js
+dist/bulletin-reader/generated.d.ts
+dist/bulletin-reader/generated.d.ts.map
+dist/bulletin-reader/generated.js
+dist/bulletin-reader/measure.d.ts
+dist/bulletin-reader/measure.d.ts.map
+dist/bulletin-reader/measure.js
+dist/bulletin-reader/paper.css
+dist/bulletin-reader/paperPresentation.d.ts
+dist/bulletin-reader/paperPresentation.d.ts.map
+dist/bulletin-reader/paperPresentation.js
+dist/bulletin-reader/ReaderWatermark.d.ts
+dist/bulletin-reader/ReaderWatermark.d.ts.map
+dist/bulletin-reader/ReaderWatermark.js
+dist/bulletin-reader/template-assets.json
+dist/bulletin-reader/v10/artifact.d.ts
+dist/bulletin-reader/v10/artifact.d.ts.map
+dist/bulletin-reader/v10/artifact.js
+dist/bulletin-reader/v10/BulletinDocumentRenderer.d.ts
+dist/bulletin-reader/v10/BulletinDocumentRenderer.d.ts.map
+dist/bulletin-reader/v10/BulletinDocumentRenderer.js
+dist/bulletin-reader/v2/artifact.d.ts
+dist/bulletin-reader/v2/artifact.d.ts.map
+dist/bulletin-reader/v2/artifact.js
+dist/bulletin-reader/v2/BulletinDocumentRenderer.d.ts
+dist/bulletin-reader/v2/BulletinDocumentRenderer.d.ts.map
+dist/bulletin-reader/v2/BulletinDocumentRenderer.js
+dist/bulletin-reader/v2/fixed.d.ts
+dist/bulletin-reader/v2/fixed.d.ts.map
+dist/bulletin-reader/v2/fixed.js
+dist/bulletin-reader/v2/paper.css
+dist/bulletin-reader/v2/template-assets.json
+dist/bulletin-reader/v3/artifact.d.ts
+dist/bulletin-reader/v3/artifact.d.ts.map
+dist/bulletin-reader/v3/artifact.js
+dist/bulletin-reader/v3/BulletinDocumentRenderer.d.ts
+dist/bulletin-reader/v3/BulletinDocumentRenderer.d.ts.map
+dist/bulletin-reader/v3/BulletinDocumentRenderer.js
+dist/bulletin-reader/v3/measure.d.ts
+dist/bulletin-reader/v3/measure.d.ts.map
+dist/bulletin-reader/v3/measure.js
+dist/bulletin-reader/v4/artifact.d.ts
+dist/bulletin-reader/v4/artifact.d.ts.map
+dist/bulletin-reader/v4/artifact.js
+dist/bulletin-reader/v4/BulletinDocumentRenderer.d.ts
+dist/bulletin-reader/v4/BulletinDocumentRenderer.d.ts.map
+dist/bulletin-reader/v4/BulletinDocumentRenderer.js
+dist/bulletin-reader/v4/measure.d.ts
+dist/bulletin-reader/v4/measure.d.ts.map
+dist/bulletin-reader/v4/measure.js
+dist/bulletin-reader/v5/artifact.d.ts
+dist/bulletin-reader/v5/artifact.d.ts.map
+dist/bulletin-reader/v5/artifact.js
+dist/bulletin-reader/v5/BulletinDocumentRenderer.d.ts
+dist/bulletin-reader/v5/BulletinDocumentRenderer.d.ts.map
+dist/bulletin-reader/v5/BulletinDocumentRenderer.js
+dist/bulletin-reader/v5/measure.d.ts
+dist/bulletin-reader/v5/measure.d.ts.map
+dist/bulletin-reader/v5/measure.js
+dist/bulletin-reader/v6/artifact.d.ts
+dist/bulletin-reader/v6/artifact.d.ts.map
+dist/bulletin-reader/v6/artifact.js
+dist/bulletin-reader/v6/BulletinDocumentRenderer.d.ts
+dist/bulletin-reader/v6/BulletinDocumentRenderer.d.ts.map
+dist/bulletin-reader/v6/BulletinDocumentRenderer.js
+dist/bulletin-reader/v6/fixed.d.ts
+dist/bulletin-reader/v6/fixed.d.ts.map
+dist/bulletin-reader/v6/fixed.js
+dist/bulletin-reader/v6/measure.d.ts
+dist/bulletin-reader/v6/measure.d.ts.map
+dist/bulletin-reader/v6/measure.js
+dist/bulletin-reader/v7/artifact.d.ts
+dist/bulletin-reader/v7/artifact.d.ts.map
+dist/bulletin-reader/v7/artifact.js
+dist/bulletin-reader/v7/BulletinDocumentRenderer.d.ts
+dist/bulletin-reader/v7/BulletinDocumentRenderer.d.ts.map
+dist/bulletin-reader/v7/BulletinDocumentRenderer.js
+dist/bulletin-reader/v7/fonts.d.ts
+dist/bulletin-reader/v7/fonts.d.ts.map
+dist/bulletin-reader/v7/fonts.js
+dist/bulletin-reader/v7/paper.css
+dist/bulletin-reader/v7/template-assets.json
+dist/bulletin-reader/v8/artifact.d.ts
+dist/bulletin-reader/v8/artifact.d.ts.map
+dist/bulletin-reader/v8/artifact.js
+dist/bulletin-reader/v8/BulletinDocumentRenderer.d.ts
+dist/bulletin-reader/v8/BulletinDocumentRenderer.d.ts.map
+dist/bulletin-reader/v8/BulletinDocumentRenderer.js
+dist/bulletin-reader/v9/artifact.d.ts
+dist/bulletin-reader/v9/artifact.d.ts.map
+dist/bulletin-reader/v9/artifact.js
+dist/bulletin-reader/v9/BulletinDocumentRenderer.d.ts
+dist/bulletin-reader/v9/BulletinDocumentRenderer.d.ts.map
+dist/bulletin-reader/v9/BulletinDocumentRenderer.js
+dist/bulletin-reader/v9/fixed.d.ts
+dist/bulletin-reader/v9/fixed.d.ts.map
+dist/bulletin-reader/v9/fixed.js
+dist/bulletin-reader/versions.d.ts
+dist/bulletin-reader/versions.d.ts.map
+dist/bulletin-reader/versions.js
+dist/controls.d.ts
+dist/controls.d.ts.map
+dist/controls.js
+dist/data.d.ts
+dist/data.d.ts.map
+dist/data.js
+dist/forms.d.ts
+dist/forms.d.ts.map
+dist/forms.js
+dist/index.d.ts
+dist/index.d.ts.map
+dist/index.js
+dist/layout.d.ts
+dist/layout.d.ts.map
+dist/layout.js
+dist/load-more.d.ts
+dist/load-more.d.ts.map
+dist/load-more.js
+dist/overlays.d.ts
+dist/overlays.d.ts.map
+dist/overlays.js
+dist/player/HlsPlayer.d.ts
+dist/player/HlsPlayer.d.ts.map
+dist/player/HlsPlayer.js
+dist/player/index.d.ts
+dist/player/index.d.ts.map
+dist/player/index.js
+dist/player/live-player.d.ts
+dist/player/live-player.d.ts.map
+dist/player/live-player.js
+dist/player/player.css
+dist/player/PlayerChrome.d.ts
+dist/player/PlayerChrome.d.ts.map
+dist/player/PlayerChrome.js
+dist/player/preview-cache.d.ts
+dist/player/preview-cache.d.ts.map
+dist/player/preview-cache.js
+dist/player/preview-index.d.ts
+dist/player/preview-index.d.ts.map
+dist/player/preview-index.js
+dist/player/PreviewSprite.d.ts
+dist/player/PreviewSprite.d.ts.map
+dist/player/PreviewSprite.js
+dist/player/recording-watermark.d.ts
+dist/player/recording-watermark.d.ts.map
+dist/player/recording-watermark.js
+dist/player/RecordingWatermark.d.ts
+dist/player/RecordingWatermark.d.ts.map
+dist/player/RecordingWatermark.js
+dist/player/styles.d.ts
+dist/player/styles.d.ts.map
+dist/player/styles.js
+dist/player/use-player-fullscreen.d.ts
+dist/player/use-player-fullscreen.d.ts.map
+dist/player/use-player-fullscreen.js
+dist/player/use-preview-index.d.ts
+dist/player/use-preview-index.d.ts.map
+dist/player/use-preview-index.js
+dist/styles.css
+package.json
+Tarball Details
+/Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019/artifacts/hallelujahhomechurch-ui-1.0.78.tgz
+📦  @hallelujahhomechurch/donation-client@1.0.78
+Tarball Contents
+dist/generated.d.ts
+dist/generated.d.ts.map
+dist/generated.js
+dist/index.d.ts
+dist/index.d.ts.map
+dist/index.js
+package.json
+Tarball Details
+/Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019/artifacts/hallelujahhomechurch-donation-client-1.0.78.tgz
+📦  @hallelujahhomechurch/donation-ui@1.0.78
+Tarball Contents
+dist/index.d.ts
+dist/index.d.ts.map
+dist/index.js
+package.json
+Tarball Details
+/Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019/artifacts/hallelujahhomechurch-donation-ui-1.0.78.tgz
+
+> hhc-frontend-platform@1.0.78 test:consumers /Users/rayselfs/Projects/hhc/website/.worktrees/reader-value-sdk-20261019
+> node scripts/test-packed-consumers.mjs
+
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Progress: resolved 58, reused 26, downloaded 7, added 0
+Progress: resolved 69, reused 38, downloaded 7, added 0
+Packages: +45
++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 74, reused 43, downloaded 7, added 9
+Progress: resolved 74, reused 43, downloaded 7, added 43
+Progress: resolved 74, reused 43, downloaded 7, added 44
+Progress: resolved 74, reused 43, downloaded 7, added 45, done
+(node:95940) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+dependencies:
++ @hallelujahhomechurch/account-client 1.0.78
++ @hallelujahhomechurch/donation-client 1.0.78
++ @hallelujahhomechurch/donation-ui 1.0.78
++ @hallelujahhomechurch/hhc-web-client 1.0.78
++ @hallelujahhomechurch/operations-client 1.0.78
++ @hallelujahhomechurch/preferences 1.0.78
++ @hallelujahhomechurch/ui 1.0.78
++ @vitejs/plugin-react 6.0.3 (6.1.2 is available)
++ react 19.2.7
++ react-dom 19.2.7
++ vite 8.1.4 (8.3.4 is available)
+
+Done in 5.5s using pnpm v10.12.1
+
+> @ build /private/var/folders/44/xz7mr0l506l1xcg3g3n_nd8w0000gn/T/hhc-package-smoke-G6I6WE/vite
+> vite build
+
+vite v8.1.4 building client environment for production...
+[2Ktransforming...
+/assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2 referenced in /assets/weekly/v1/symbol-89ed6ff28006ceddbfb893fc2812b5868c5b691341c48959a092b25f33ec5bdd.woff2 didn't resolve at build time, it will remain unchanged to be resolved at runtime
+
+/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2 referenced in /assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2 didn't resolve at build time, it will remain unchanged to be resolved at runtime
+
+/assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2 referenced in /assets/weekly/v1/scripture-b330d18e5aee29a4035c7ea34581f4268b9913ce9051cd978218caf51c16ca2d.woff2 didn't resolve at build time, it will remain unchanged to be resolved at runtime
+
+/assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2 referenced in /assets/weekly/v1/emphasis-9c02738cbfdf263d60baceaf5e97dd1dd39230daf64e98bf91be07a8609fb962.woff2 didn't resolve at build time, it will remain unchanged to be resolved at runtime
+✓ 3315 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.16 kB │ gzip:   0.14 kB
+dist/assets/index-Ph6-ABtY.css   49.38 kB │ gzip:   9.42 kB
+dist/assets/hls-BZqVGdSr.js     575.18 kB │ gzip: 179.11 kB
+dist/assets/index-CMI7T3s3.js   803.19 kB │ gzip: 182.78 kB
+
+✓ built in 645ms
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Progress: resolved 78, reused 49, downloaded 0, added 0
+Packages: +51
++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 81, reused 52, downloaded 0, added 19
+Progress: resolved 81, reused 52, downloaded 0, added 37
+Progress: resolved 81, reused 52, downloaded 0, added 49
+Progress: resolved 81, reused 52, downloaded 0, added 51, done
+(node:96148) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+dependencies:
++ @hallelujahhomechurch/account-client 1.0.78
++ @hallelujahhomechurch/donation-client 1.0.78
++ @hallelujahhomechurch/donation-ui 1.0.78
++ @hallelujahhomechurch/hhc-web-client 1.0.78
++ @hallelujahhomechurch/operations-client 1.0.78
++ @hallelujahhomechurch/preferences 1.0.78
++ @hallelujahhomechurch/ui 1.0.78
++ next 16.2.9 (16.3.8 is available)
++ react 19.2.7
++ react-dom 19.2.7
+
+devDependencies:
++ @types/node 24.10.13 (26.6.5 is available)
++ @types/react 19.2.17
++ @types/react-dom 19.2.3
++ typescript 6.0.3 (7.0.2 is available)
+
+Done in 5.1s using pnpm v10.12.1
+
+> @ build /private/var/folders/44/xz7mr0l506l1xcg3g3n_nd8w0000gn/T/hhc-package-smoke-G6I6WE/next
+> next build
+
+▲ Next.js 16.2.9 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 2.3s
+  Running TypeScript ...
+
+  We detected TypeScript in your project and created a tsconfig.json file for you.
+  Finished TypeScript in 1376ms ...
+  Collecting page data using 4 workers ...
+  Generating static pages using 4 workers (0/3) ...
+✓ Generating static pages using 4 workers (3/3) in 221ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+└ ○ /_not-found
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packed consumer builds pass (artifacts).

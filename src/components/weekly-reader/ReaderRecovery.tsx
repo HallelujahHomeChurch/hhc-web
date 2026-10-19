@@ -1,3 +1,4 @@
+import {isBookmarkMutation} from '@/features/weekly-reader/bookmarks';
 import {ReaderActionError, type ReaderExclusive} from '@/features/weekly-reader/usePrivateReader';
 import {PassageText} from './PassageText';
 import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
@@ -12,8 +13,9 @@ import {rangeQuote, selectionPassage} from '@/features/weekly-reader/text-range'
 import {useReaderSelection} from '@/features/weekly-reader/useReaderSelection';
 import type {ReaderMessages} from './ReaderToolbar';
 
-export function ReaderRecovery({api, value, selector, messages: m, onUpdated, onFailure, suspended = false, pendingMutation = null, onPendingChange, mobile = false, runExclusive, available = true, onState, inline = false, onOpenChange, onConfirm}: {
+export function ReaderRecovery({api, value, selector, messages: m, onUpdated, onFailure, suspended = false, pendingMutation = null, onPendingChange, mobile = false, runExclusive, available = true, onState, inline = false, onOpenChange, onConfirm, onBookmarkRetry}: {
   onConfirm?: (description: string) => Promise<boolean>;
+  onBookmarkRetry?: () => Promise<import('@/features/weekly-reader/usePrivateReader').ReaderOutcome | undefined>;
   api: ReturnType<typeof createReaderApi>; value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages;
   onUpdated: (value: OnlineBulletinAccess) => void; onFailure: (error: unknown) => void; suspended?: boolean;
   pendingMutation?: BulletinReaderMutation | null; onPendingChange?: (mutation: BulletinReaderMutation | null, result?: import('@/features/weekly-reader/usePrivateReader').ReaderOutcome, previous?: BulletinReaderMutation | null) => void;
@@ -75,6 +77,18 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
     else acknowledged.current = response.results[0];
     await prepare(signal);
   }
+  async function retryBookmark() {
+    if (!onBookmarkRetry || busy || !pending.current || !isBookmarkMutation(pending.current)) return;
+    setBusy(true); setError(false);
+    try {
+      const result = await onBookmarkRetry();
+      if (!current.current.mounted || !current.current.open || !result) return;
+      if (result.status === 'applied') remember(null, result);
+      else if ('mutationId' in result) acknowledged.current = result;
+      setBusy(false); await run(prepare);
+    } catch {if (current.current.mounted) setError(true);}
+    finally {if (current.current.mounted) setBusy(false);}
+  }
   async function choose(originalId: string | null, mutation: BulletinReaderMutation | null, signal: AbortSignal) {
     if (!prepared) return;
     if (epoch.current !== null) await chooseReaderRecovery(selector, originalId, mutation, epoch.current, prepared.queue);
@@ -113,7 +127,7 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
       <p>{m.recoveryHelp}</p>
       {busy ? <p role="status">{m.syncSyncing}</p> : null}
       {error ? <p role="alert">{m.actionFailed}</p> : null}
-      {awaitingConfirmation ? <section><p>{m.confirmRetryHelp}</p><button type="button" disabled={busy || deciding} onClick={() => void run(retryPending)}>{m.confirmRetry}</button></section> : conflict && prepared ? <section>
+      {awaitingConfirmation ? <section><p>{m.confirmRetryHelp}</p>{pendingMutation && isBookmarkMutation(pendingMutation) ? prepared && prepared.value.document.revision !== value.document.revision ? <button type="button" disabled={busy || deciding} onClick={() => {onUpdated(prepared.value); changeOpen(false);}}>{m.applyUpdate}</button> : <button type="button" disabled={busy || deciding || !onBookmarkRetry} onClick={() => {void retryBookmark();}}>{m.confirmRetry}</button> : <button type="button" disabled={busy || deciding} onClick={() => void run(retryPending)}>{m.confirmRetry}</button>}</section> : conflict && prepared ? <section>
         <p>{partialConflict ? m.recoveryPartialColor : m.recoveryColor}</p>
         {partialConflict ? <><h3>{m.recoveryCurrentText}</h3><blockquote>{readerSentences(prepared.value.document).filter(sentence => conflict.sentenceIds.includes(sentence.id)).map(sentence => sentence.text).join('\n')}</blockquote></> : null}
         {conflict.sources.map(source => <blockquote key={`${source.sentenceId}:${source.color}`}>
@@ -155,6 +169,7 @@ function RecoveryChoice({prepared, previous, original, reason, messages: m, busy
   const [error, setError] = useState(false);
   const note = original.kind === 'createNote' || original.kind === 'editNote';
   const anchors = original.kind === 'setHighlight' || original.kind === 'restoreHighlight' || original.kind === 'clearHighlight' || original.kind === 'reanchorNote' || note && !cloud;
+  if (isBookmarkMutation(original)) return <section className="reader-note-editor"><p>{m.bookmarkRebindHelp}</p><h3>{m.recoveryLocal}</h3><p className="reader-note-text">{original.kind === 'createBookmark' || original.kind === 'renameBookmark' ? original.payload.name : m.bookmarksTab}</p><h3>{m.recoveryCloud}</h3><p className="reader-note-text">{prepared.state.bookmarks?.find(bookmark => bookmark.id === original.payload.bookmarkId && !bookmark.deleted)?.name ?? m.bookmarkDeleted}</p><button type="button" disabled={busy} onClick={() => onChoose(null)}>{m.noteCloud}</button></section>;
   const description = {removed_anchor: m.recoveryRemoved, anchor_limit: m.recoveryLimit, color_conflict: m.recoveryColor, note_conflict: m.recoveryNote, mapping_unavailable: m.recoveryMapping, expired_mutation: m.recoveryExpired}[reason];
   return <section className="reader-note-editor" data-reader-selection-tools>
     <p role="status">{description}</p>

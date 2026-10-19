@@ -1,0 +1,11 @@
+ WARN  Issue while reading "/Users/rayselfs/Projects/hhc/website/.worktrees/reader-bookmarks-consumer-20261019/.npmrc". Failed to replace env in config: ${NODE_AUTH_TOKEN}
+
+ RUN  v4.1.10 /Users/rayselfs/Projects/hhc/website/.worktrees/reader-bookmarks-consumer-20261019
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  12:08:32
+   Duration  1.48s (transform 83ms, setup 71ms, import 530ms, tests 354ms, environment 435ms)
+
+ WARN  Issue while reading "/Users/rayselfs/Projects/hhc/website/.worktrees/reader-bookmarks-consumer-20261019/.npmrc". Failed to replace env in config: ${NODE_AUTH_TOKEN}

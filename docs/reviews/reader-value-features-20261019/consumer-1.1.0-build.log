@@ -1,0 +1,105 @@
+ WARN  Issue while reading "/Users/rayselfs/Projects/hhc/website/.worktrees/reader-bookmarks-consumer-20261019/.npmrc". Failed to replace env in config: ${NODE_AUTH_TOKEN}
+ WARN  Issue while reading "/Users/rayselfs/Projects/hhc/website/.worktrees/reader-bookmarks-consumer-20261019/.npmrc". Failed to replace env in config: ${NODE_AUTH_TOKEN}
+
+> @hallelujahhomechurch/hhc-web@0.1.0 lint /Users/rayselfs/Projects/hhc/website/.worktrees/reader-bookmarks-consumer-20261019
+> eslint
+
+
+/Users/rayselfs/Projects/hhc/website/.worktrees/reader-bookmarks-consumer-20261019/docs/reviews/reader-value-features-20261019/preview.mjs
+  4:9  warning  'resolve' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/rayselfs/Projects/hhc/website/.worktrees/reader-bookmarks-consumer-20261019/src/components/legal/LegalRequiredNavigation.tsx
+  11:7  warning  Do not use `window.location.assign()` to navigate to internal Next.js pages. Use `redirect()` in the render phase, or `useRouter().push()` in Client Components' event handlers instead. See: https://nextjs.org/docs/messages/no-location-assign-relative-destination  @next/next/no-location-assign-relative-destination
+
+✖ 2 problems (0 errors, 2 warnings)
+
+ WARN  Issue while reading "/Users/rayselfs/Projects/hhc/website/.worktrees/reader-bookmarks-consumer-20261019/.npmrc". Failed to replace env in config: ${NODE_AUTH_TOKEN}
+
+> @hallelujahhomechurch/hhc-web@0.1.0 build /Users/rayselfs/Projects/hhc/website/.worktrees/reader-bookmarks-consumer-20261019
+> next build
+
+▲ Next.js 16.3.8 (Turbopack)
+✓ Running next.config.ts took 1282ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 2.3s
+  Running TypeScript ...
+  Finished TypeScript in 5.2s ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/75) ...
+  Generating static pages using 9 workers (18/75) 
+  Generating static pages using 9 workers (37/75) 
+  Generating static pages using 9 workers (56/75) 
+✓ Generating static pages using 9 workers (75/75) in 1347ms
+  Finalizing page optimization ...
+
+Route (app)                                                                    Revalidate  Expire
+┌ ƒ /
+├ ○ /_not-found                                                                        1m      1y
+├ ƒ /[locale]
+├   /[locale]/about
+│ ├ ● /zh-Hant/about                                                                   1m      1y
+│ ├ ● /zh-Hans/about                                                                   1m      1y
+│ ├ ● /en/about                                                                        1m      1y
+│ └ ● [+2 more paths]
+├   /[locale]/help/account
+│ ├ ● /zh-Hant/help/account                                                            1m      1y
+│ ├ ● /zh-Hans/help/account                                                            1m      1y
+│ ├ ● /en/help/account                                                                 1m      1y
+│ └ ● [+2 more paths]
+├   /[locale]/literature-ministry
+│ ├ ● /zh-Hant/literature-ministry                                                     1m      1y
+│ ├ ● /zh-Hans/literature-ministry                                                     1m      1y
+│ ├ ● /en/literature-ministry                                                          1m      1y
+│ └ ● [+2 more paths]
+├ ƒ /[locale]/literature-ministry/[issueNumber]/read/[series]/[contentLocale]
+├   /[locale]/literature-ministry/offline
+│ ├ ● /zh-Hant/literature-ministry/offline                                             1m      1y
+│ ├ ● /zh-Hans/literature-ministry/offline                                             1m      1y
+│ ├ ● /en/literature-ministry/offline                                                  1m      1y
+│ └ ● [+2 more paths]
+├   /[locale]/literature-ministry/offline/reader-shell
+│ ├ ● /zh-Hant/literature-ministry/offline/reader-shell                                1m      1y
+│ ├ ● /zh-Hans/literature-ministry/offline/reader-shell                                1m      1y
+│ ├ ● /en/literature-ministry/offline/reader-shell                                     1m      1y
+│ └ ● [+2 more paths]
+├   /[locale]/maintenance
+│ ├ ● /zh-Hant/maintenance                                                             1m      1y
+│ ├ ● /zh-Hans/maintenance                                                             1m      1y
+│ ├ ● /en/maintenance                                                                  1m      1y
+│ └ ● [+2 more paths]
+├ ƒ /[locale]/member-videos
+├ ƒ /[locale]/member-videos/[id]
+├ ƒ /[locale]/news
+├ ƒ /[locale]/news/[slug]
+├ ƒ /[locale]/newsletter/unsubscribe
+├   /[locale]/organizations
+│ ├ ● /zh-Hant/organizations                                                           1m      1y
+│ ├ ● /zh-Hans/organizations                                                           1m      1y
+│ ├ ● /en/organizations                                                                1m      1y
+│ └ ● [+2 more paths]
+├ ƒ /[locale]/organizations/[unitId]
+├ ƒ /[locale]/organizations/[unitId]/members/[memberId]
+├ ƒ /[locale]/privacy-policy
+├ ƒ /[locale]/statements/[slug]
+├ ƒ /[locale]/terms-of-use
+├ ○ /apple-icon.png
+├ ƒ /csp-report
+├ ƒ /health
+├ ○ /manifest.webmanifest
+├ ○ /oauth/callback                                                                    1m      1y
+├ ○ /opengraph-image
+├ ○ /robots.txt
+└ ƒ /sitemap.xml
+
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+
+ WARN  Issue while reading "/Users/rayselfs/Projects/hhc/website/.worktrees/reader-bookmarks-consumer-20261019/.npmrc". Failed to replace env in config: ${NODE_AUTH_TOKEN}
+
+> @hallelujahhomechurch/hhc-web@0.1.0 perf:static /Users/rayselfs/Projects/hhc/website/.worktrees/reader-bookmarks-consumer-20261019
+> node scripts/check-static-budgets.mjs
+
+Static budgets passed: 4 local font(s), hero 140091 bytes, CSS 195547 bytes
