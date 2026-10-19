@@ -1,0 +1,80 @@
+{
+  "source": "636c9e4",
+  "exportSource": "9009179",
+  "sdkCandidateSha256": "dc4c6162fe5542a2dd9e9169802683530e89418ba6ef479dc3ce55cdbda5c221",
+  "normalPairs": [
+    {
+      "size": "desktop",
+      "theme": "light",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "fraction_max_channel_difference_over_30": 0.0,
+      "baseline": "docs/reviews/reader-experience-20261018/baseline-desktop-light-normal.jpg",
+      "candidate": "candidate-desktop-light-normal.jpg"
+    },
+    {
+      "size": "desktop",
+      "theme": "dark",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "fraction_max_channel_difference_over_30": 0.0,
+      "baseline": "docs/reviews/reader-experience-20261018/baseline-desktop-dark-normal.jpg",
+      "candidate": "candidate-desktop-dark-normal.jpg"
+    },
+    {
+      "size": "tablet",
+      "theme": "light",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "fraction_max_channel_difference_over_30": 0.0,
+      "baseline": "docs/reviews/reader-experience-20261018/baseline-tablet-light-normal.jpg",
+      "candidate": "candidate-tablet-light-normal.jpg"
+    },
+    {
+      "size": "tablet",
+      "theme": "dark",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "fraction_max_channel_difference_over_30": 0.0,
+      "baseline": "docs/reviews/reader-experience-20261018/baseline-tablet-dark-normal.jpg",
+      "candidate": "candidate-tablet-dark-normal.jpg"
+    },
+    {
+      "size": "phone",
+      "theme": "light",
+      "dimensions": [
+        390,
+        844
+      ],
+      "fraction_max_channel_difference_over_30": 0.0,
+      "baseline": "docs/reviews/reader-experience-20261018/baseline-phone-light-normal.jpg",
+      "candidate": "candidate-phone-light-normal.jpg"
+    },
+    {
+      "size": "phone",
+      "theme": "dark",
+      "dimensions": [
+        390,
+        844
+      ],
+      "fraction_max_channel_difference_over_30": 0.0,
+      "baseline": "docs/reviews/reader-experience-20261018/baseline-phone-dark-normal.jpg",
+      "candidate": "candidate-phone-dark-normal.jpg"
+    }
+  ],
+  "download": {
+    "bytes": 1057,
+    "sha256": "38e35b2b4f437646756d79248f262ace5172129c8341d9364b913f5ff43c5ee9",
+    "observedMtime": "2026-10-19T12:12:02+08:00",
+    "quotesAndCmsTitleExcluded": true
+  },
+  "browser200Acceptance": "PASS native Zoom 200%; Download fully visible and keyboard focused; Return handed to browser; restored Zoom100. See browser-200-focus.txt and export-browser-200-download-focus/handed.jpg. Earlier top/bottom are partial only."
+}

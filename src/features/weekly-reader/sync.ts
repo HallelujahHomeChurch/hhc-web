@@ -26,7 +26,7 @@ export async function syncPrivateReplica(api: Pick<ReturnType<typeof createReade
         if (response.results[0].status !== 'applied' || response.state.currentRevision !== value.document.revision) break;
       }
       const replica = await readPrivateReplica(selector, now());
-      return {status: replica?.queue.length ? 'action' as const : 'synced' as const, replica};
+      return {status: replica?.queue.length ? 'action' as const : 'synced' as const, replica, bookmarksSupported: Array.isArray(cloud.state.bookmarks)};
     } catch (error) {
       if (!signal.aborted) {
         const action = readerFailureAction(error);

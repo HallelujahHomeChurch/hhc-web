@@ -2,6 +2,7 @@ import {getBulletinRendererCapabilities} from '@hallelujahhomechurch/ui';
 import type {OnlineBulletinAccess, BulletinReaderMutation, BulletinReaderMutationResponse, BulletinReaderState} from '@hallelujahhomechurch/hhc-web-client';
 import {verifyReaderAccess, type ReaderSelector} from './api';
 import {evaluateOfflineAccess, localAccessDeadline} from './offline-access';
+import {isBookmarkMutation} from './bookmarks';
 import {applyLocalMutation, verifyPrivateState} from './private-state';
 import type {ReaderRecovery} from './rebase';
 import {clearReaderReturn, clearReaderReturnIfUnchanged, readerReturnSnapshot, hasPendingReaderReturn} from './return-state';
@@ -356,6 +357,39 @@ async function privateTransaction<T>(run: (tx: IDBTransaction) => Promise<T>): P
   return outcome.value;
 }
 
+function retainNewerBookmarks(current: BulletinReaderState['bookmarks'], incoming: BulletinReaderState['bookmarks']) {
+  if (incoming === undefined) return current;
+  const merged = new Map((current ?? []).map(bookmark => [bookmark.id, bookmark]));
+  for (const bookmark of incoming) if ((merged.get(bookmark.id)?.version ?? 0) <= bookmark.version) merged.set(bookmark.id, bookmark);
+  return [...merged.values()];
+}
+
+export type BookmarkCacheBinding = {epoch: number; instanceId: string; documentId: string; revision: number};
+export async function readBookmarkCache(selector: ReaderSelector) {
+  return privateTransaction(async tx => {
+    const pointer = await result(tx.objectStore('pointers').get(editionKey(selector)));
+    if (!pointer) return null;
+    const {save, replica} = await privateContext(tx, selector, undefined, Date.now());
+    if (!save.instanceId || !replica) throw new Error('private_state_unavailable');
+    verifyPrivateState(replica.confirmed, selector.accountId, save.value.document.documentId, save.value.document.revision);
+    return {binding: {epoch: save.epoch, instanceId: save.instanceId, documentId: save.value.document.documentId, revision: save.value.document.revision}, pending: replica.queue.length > 0};
+  });
+}
+
+export async function mergeBookmarkCache(selector: ReaderSelector, expected: BookmarkCacheBinding, cloud: BulletinReaderState) {
+  return privateTransaction(async tx => {
+    const {key, save, replica} = await privateContext(tx, selector, expected.epoch, Date.now());
+    if (!replica || save.instanceId !== expected.instanceId || save.value.document.documentId !== expected.documentId || save.value.document.revision !== expected.revision) throw new Error('offline_replica_changed');
+    verifyPrivateState(cloud, selector.accountId, expected.documentId, expected.revision);
+    if (cloud.currentRevision !== expected.revision || !cloud.bookmarks) throw new Error('invalid_reader_binding');
+    // A second tab may already have a newer acknowledgement or a newly queued note.
+    const bookmarks = retainNewerBookmarks(replica.confirmed.bookmarks, cloud.bookmarks);
+    const next = {...replica, state: {...replica.state, bookmarks}, confirmed: {...replica.confirmed, bookmarks}};
+    tx.objectStore('private').put(next, key);
+    return next;
+  });
+}
+
 export type ReaderExportLocal = {state: BulletinReaderState; queue: PendingReaderMutation[]; fingerprint: string};
 
 /** A single IDB transaction binds the complete replica to its saved instance and receipt. */
@@ -387,13 +421,16 @@ export async function seedPrivateReplica(selector: ReaderSelector, state: Bullet
     if (state.currentRevision !== save.value.access.revision) throw new Error('revision_changed');
     // Pending operations must be replayed against the server before replacing their base.
     if (replica?.queue.length) return replica;
-    const next: PrivateReplica = {state, confirmed: state, queue: []};
+    const bookmarks = retainNewerBookmarks(replica?.confirmed.bookmarks, state.bookmarks);
+    const retained = bookmarks === undefined ? state : {...state, bookmarks};
+    const next: PrivateReplica = {state: retained, confirmed: retained, queue: []};
     tx.objectStore('private').put(next, key);
     return next;
   });
 }
 
 export async function enqueuePrivateMutation(selector: ReaderSelector, mutation: BulletinReaderMutation, epoch: number, now = Date.now()) {
+  if (isBookmarkMutation(mutation)) throw new Error('bookmark_online_only');
   return privateTransaction(async tx => {
     const {key, save, replica} = await privateContext(tx, selector, epoch, now);
     if (!replica) throw new Error('private_state_unavailable');
@@ -433,14 +470,16 @@ export async function acknowledgePrivateMutation(selector: ReaderSelector, respo
     if (!replica || response.results.length !== 1 || response.results[0].mutationId !== replica.queue[0]?.mutation.mutationId) throw new Error('invalid_reader_binding');
     verifyPrivateState(response.state, selector.accountId, save.value.access.documentId, save.value.access.revision);
     const acknowledged = response.results[0];
+    const bookmarks = retainNewerBookmarks(replica.confirmed.bookmarks, response.state.bookmarks);
+    const cloud = bookmarks === undefined ? response.state : {...response.state, bookmarks};
     if (response.state.currentRevision !== save.value.access.revision || acknowledged.status !== 'applied') {
       replica.queue[0].result = acknowledged;
-      if (response.state.currentRevision === save.value.access.revision) replica.confirmed = response.state;
+      if (response.state.currentRevision === save.value.access.revision) replica.confirmed = cloud;
       tx.objectStore('private').put(replica, key);
       return replica;
     }
     const queue = replica.queue.slice(1);
-    let state = response.state;
+    let state = cloud;
     for (const entry of queue) {
       try {state = applyLocalMutation(state, entry.mutation, save.value.document);}
       catch {
@@ -450,7 +489,7 @@ export async function acknowledgePrivateMutation(selector: ReaderSelector, respo
         break;
       }
     }
-    const next = {state, confirmed: response.state, queue};
+    const next = {state, confirmed: cloud, queue};
     tx.objectStore('private').put(next, key);
     return next;
   });

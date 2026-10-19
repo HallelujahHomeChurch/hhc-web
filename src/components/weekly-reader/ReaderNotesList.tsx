@@ -1,5 +1,6 @@
 import {useState, useCallback, type ComponentProps} from 'react';
 import {Tabs} from '@hallelujahhomechurch/ui';
+import {BookmarksPanel} from './BookmarksPanel';
 import {NotesPanel} from './NotesPanel';
 import {HighlightsPanel} from './HighlightsPanel';
 import {HighlightHistory, type HistoryDraft} from './HighlightHistory';
@@ -15,11 +16,12 @@ type Props = {
   history: ComponentProps<typeof HighlightHistory>;
   onExport?: (visibleIds: string[]) => void;
   exportDisabled?: boolean;
+  bookmarks?: ComponentProps<typeof BookmarksPanel>;
 };
 
 /** Display state only: filtering never changes a draft or submits a reader mutation. */
-export function ReaderNotesList({messages: m, filter, onClearFilter, notes, highlights, history, onExport, exportDisabled}: Props) {
-  const [tab, setTab] = useState('notes');
+export function ReaderNotesList({messages: m, filter, onClearFilter, notes, highlights, history, onExport, exportDisabled, bookmarks}: Props) {
+  const [tab, setTab] = useState(bookmarks?.draft ? 'bookmarks' : 'notes');
   const [noteQuery, setNoteQuery] = useState(''), [highlightQuery, setHighlightQuery] = useState('');
   const [color, setColor] = useState('all');
   const [historyDraft, setHistoryDraft] = useState<HistoryDraft | undefined>(undefined);
@@ -42,6 +44,7 @@ export function ReaderNotesList({messages: m, filter, onClearFilter, notes, high
       {highlightQuery || color !== 'all' ? <button type="button" onClick={() => {setHighlightQuery(''); setColor('all');}}>{m.clearFilters}</button> : null}
       <HighlightsPanel {...highlights} query={highlightQuery} color={color}/>
     </>},
+    ...(bookmarks ? [{id: 'bookmarks', label: m.bookmarksTab, content: <BookmarksPanel {...bookmarks}/>}]: []),
     {id: 'history', label: m.historyTab, content: <HighlightHistory {...history} initialDraft={historyDraft} onDraftChange={rememberHistory}/>}
   ]}/></div>;
 }

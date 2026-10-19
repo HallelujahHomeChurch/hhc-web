@@ -1,0 +1,13 @@
+{
+  "active": true,
+  "containers": [
+    {
+      "image": "alive.azurecr.io/alive/hhc-web-api@sha256:b6a3aeaef1294b2c1252a74a49a8e29e72e5a9337d6a7549822881fac97c8b8f",
+      "name": "hhc-web-api"
+    }
+  ],
+  "health": "Healthy",
+  "min": 1,
+  "running": "Running",
+  "traffic": 100
+}

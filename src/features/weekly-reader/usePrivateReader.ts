@@ -2,9 +2,10 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import type {BulletinReaderMutation, BulletinReaderMutationResponse, BulletinReaderState, OnlineBulletinAccess} from '@hallelujahhomechurch/hhc-web-client';
 import {awaitReaderRequests, type createReaderApi, type ReaderSelector} from './api';
+import {isBookmarkMutation} from './bookmarks';
 import {optimisticReaderState} from './private-state';
 import {readerFailureAction} from './offline-access';
-import {enqueuePrivateMutation, getOfflineIdentity, readOfflineSave, readPrivateReplica, seedPrivateReplica, readReaderExportLocal, supportsOfflineReader} from './offline-store';
+import {enqueuePrivateMutation, getOfflineIdentity, readOfflineSave, readPrivateReplica, seedPrivateReplica, readBookmarkCache, mergeBookmarkCache, readReaderExportLocal, supportsOfflineReader} from './offline-store';
 import {syncPrivateReplica, type ReaderSyncStatus} from './sync';
 import {readReaderReturn, saveReaderReturn} from './return-state';
 
@@ -42,6 +43,10 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
   const [busy, setBusy] = useState(false);
   const [operation, setOperation] = useState<ReaderOperation>('idle');
   const [loadError, setLoadError] = useState(false);
+  const [bookmarksSupported, setBookmarksSupported] = useState(false);
+  const bookmarkCapability = useRef(false);
+  const [bookmarkCacheWarning, setBookmarkCacheWarning] = useState(false);
+  const [bookmarkOutcome, setBookmarkOutcome] = useState<BulletinReaderMutationResponse['results'][number] | null>(null);
   const loaded = useRef<'cloud' | 'local' | false>(false);
   const [attempt, setAttempt] = useState(0);
   const [pendingMutation, setPendingMutation] = useState(restored);
@@ -75,7 +80,7 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
     current.current = {...current.current, api, selector: {accountId, issueNumber, series, contentLocale}, value, offline};
     const request = new AbortController(), owner = {key, request}; controller.current = owner;
     void bounded(request.signal, signal => exclusive(async () => {
-      setLoadError(false); loaded.current = false;
+      setLoadError(false); loaded.current = false; setBookmarkOutcome(null); setBookmarkCacheWarning(false); bookmarkCapability.current = false; setBookmarksSupported(false);
       const bound = {accountId, issueNumber, series, contentLocale};
       const saved = supportsOfflineReader() ? await readOfflineSave(bound).catch(() => null) : null;
       signal.throwIfAborted();
@@ -89,12 +94,14 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
         }
         const synced = await syncPrivateReplica(api, bound, value, saved.save.epoch, signal);
         signal.throwIfAborted();
+        bookmarkCapability.current = synced.bookmarksSupported === true; setBookmarksSupported(bookmarkCapability.current);
         loaded.current = synced.replica ? 'local' : false;
         publishState(synced.replica?.state ?? null); publishStatus(synced.status); return;
       }
       const cloud = await api.privateState(bound, value, signal);
       signal.throwIfAborted();
       if (cloud.state.currentRevision !== value.document.revision) {publishStatus('paused'); return;}
+      bookmarkCapability.current = Array.isArray(cloud.state.bookmarks); setBookmarksSupported(bookmarkCapability.current);
       loaded.current = 'cloud'; publishState(cloud.state); publishStatus('synced');
     }, signal)).catch(async error => {
       if (request.signal.aborted || controller.current !== owner) return;
@@ -125,6 +132,29 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
     const mutation = previous ?? input;
     let queued = false;
     try {
+      if (isBookmarkMutation(mutation)) {
+        if (context.offline || navigator.onLine === false || !bookmarkCapability.current || rollback.bookmarks === undefined) throw new Error('bookmark_unavailable');
+        const cache = supportsOfflineReader() ? await readBookmarkCache(context.selector) : null;
+        signal.throwIfAborted();
+        if (cache?.pending || cache && (cache.binding.documentId !== context.value.document.documentId || cache.binding.revision !== context.value.document.revision) || !context.allowAction()) throw new Error('bookmark_pending_sync');
+        replacePending(mutation);
+        const response = await context.api.mutate(context.selector, context.value, [mutation], signal);
+        signal.throwIfAborted();
+        const result = response.results[0];
+        if (!result || result.mutationId !== mutation.mutationId || response.state.accountId !== context.selector.accountId || response.state.documentId !== context.value.document.documentId || !Array.isArray(response.state.bookmarks)) throw new Error('invalid_reader_binding');
+        setBookmarkOutcome(result);
+        if (result.status !== 'revision_changed') replacePending(null);
+        setLoadError(false);
+        if (response.state.currentRevision !== context.value.document.revision) {publishState(rollback); publishStatus('paused'); return result;}
+        let next = response.state;
+        if (cache && response.state.bookmarks) {
+          try {next = (await mergeBookmarkCache(context.selector, cache.binding, response.state)).state; setBookmarkCacheWarning(false);}
+          catch {setBookmarkCacheWarning(true); next = {...rollback, bookmarks: response.state.bookmarks};}
+        }
+        if (!owner || owner !== controller.current || owner.request.signal.aborted || !context.allowAction()) throw new ReaderActionError('cancelled');
+        publishState(next); publishStatus(result.status === 'applied' ? 'synced' : 'action');
+        return result;
+      }
       if (mutation.documentRevision === context.value.document.revision) publishState(optimisticReaderState(rollback, mutation, context.value.document));
       const saved = supportsOfflineReader() ? await readOfflineSave(context.selector).catch(() => null) : null;
       signal.throwIfAborted();
@@ -142,6 +172,7 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
         publishStatus('syncing');
         const synced = await syncPrivateReplica(context.api, context.selector, context.value, identity.epoch, signal);
         signal.throwIfAborted();
+        bookmarkCapability.current = synced.bookmarksSupported === true; setBookmarksSupported(bookmarkCapability.current);
         publishState(synced.replica?.state ?? local.state); publishStatus(synced.status);
         const conflict = synced.replica?.queue.find(entry => entry.mutation.mutationId === mutation.mutationId)?.result;
         if (conflict) return {...conflict, durable: true};
@@ -152,7 +183,7 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
       replacePending(mutation);
       const response = await context.api.mutate(context.selector, context.value, [mutation], signal);
       signal.throwIfAborted();
-      setLoadError(false);
+      setLoadError(false); bookmarkCapability.current = Array.isArray(response.state.bookmarks); setBookmarksSupported(bookmarkCapability.current);
       if (response.results[0].status !== 'revision_changed') replacePending(null);
       if (response.state.currentRevision !== context.value.document.revision) {publishState(rollback); publishStatus('paused');}
       else {publishState(response.state); publishStatus(response.results[0].status === 'applied' ? 'synced' : 'action');}
@@ -252,7 +283,7 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
         })};
     });
   }
-  return {state, status, busy, operation, loadError, prepareExport, reload: () => setAttempt(value => value + 1), mutate,
+  return {state, status, busy, operation, loadError, bookmarksSupported, bookmarkCacheWarning, bookmarkOutcome, prepareExport, reload: () => setAttempt(value => value + 1), mutate,
     retry: () => pending.current ? mutate(pending.current, true) : Promise.resolve(undefined), canRetry,
     cancelWaiting: () => {foreground.current?.abort(new ReaderActionError('cancelled'));},
     pendingMutation, replacePending, runExclusive, acceptState: (next: BulletinReaderState) => {

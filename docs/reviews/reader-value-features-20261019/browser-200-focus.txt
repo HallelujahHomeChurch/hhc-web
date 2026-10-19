@@ -1,0 +1,3 @@
+							709 button Zoom: 200%
+									735 button 下載
+The focused UI element is 735 button 下載

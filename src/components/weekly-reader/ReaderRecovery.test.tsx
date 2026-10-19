@@ -215,3 +215,9 @@ it.each(['unmount', 'suspended', 'account'] as const)('rejects delayed partial-c
   else view.rerender(<ReaderRecovery {...props} onConfirm={onConfirm} suspended={drift === 'suspended'} selector={drift === 'account' ? {...props.selector, accountId: 'account-b'} : props.selector}/>);
   await act(async () => finish(true)); expect(mocks.choose).not.toHaveBeenCalled();
 });
+
+it('routes unknown bookmark retries through the supplied private executor rather than direct recovery API writes',async()=>{
+ mocks.read.mockResolvedValue(null);const mutation={mutationId:'unknown-bookmark',kind:'renameBookmark' as const,documentRevision:1,createdAt:new Date().toISOString(),baseVersion:1,payload:{bookmarkId:'bookmark-a',name:'Retained name'}};
+ api.current.mockResolvedValue(value);api.privateState.mockResolvedValue({state:{...cloud,appliedRevision:1,currentRevision:1,bookmarks:[]}});const onBookmarkRetry=vi.fn().mockResolvedValue({mutationId:mutation.mutationId,status:'applied',revision:1});
+ render(<ReaderRecovery {...props} pendingMutation={mutation} onBookmarkRetry={onBookmarkRetry}/>);fireEvent.click(screen.getByRole('button',{name:props.messages.reviewSync}));const retry=await screen.findByRole('button',{name:props.messages.confirmRetry});await waitFor(()=>expect(retry).toBeEnabled());fireEvent.click(retry);await waitFor(()=>expect(onBookmarkRetry).toHaveBeenCalledOnce());expect(api.mutate).not.toHaveBeenCalled();
+});
