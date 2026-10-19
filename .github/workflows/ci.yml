@@ -63,6 +63,7 @@ jobs:
         run: |
           printf '@hallelujahhomechurch:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=%s\n' "$GITHUB_TOKEN" > "$RUNNER_TEMP/npmrc"
           docker build --secret id=npmrc,src="$RUNNER_TEMP/npmrc" -t hhc-web:verify .
+          docker run --rm --entrypoint /nodejs/bin/node hhc-web:verify /app/diagnose-dapr-port.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Scan image

@@ -86,6 +86,15 @@ Startup and liveness probe this application endpoint. Readiness probes Dapr's
 cannot pass readiness solely because Next.js is running. This gates readiness;
 it does not resolve Dapr's internal port allocation conflicts.
 
+After a failed deployment, release diagnostics have a 60-second total budget to
+capture port `50002` sockets from the matching candidate image before rollback.
+Snapshots contain TCP state, ports, UID, socket inode, namespace IDs and matching
+visible PID/executable names; they omit IP addresses, process arguments and
+environment values. Console failures cannot block rollback or clear the original
+release failure. An unresolved inode means ownership is unknown from the app's
+PID namespace; it does not prove the listener belongs to Dapr. These diagnostics
+preserve evidence for investigation and do not fix port allocation.
+
 ## Member video playback
 
 The navigation entry requires both `NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED=true`
