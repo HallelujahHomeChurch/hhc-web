@@ -1,8 +1,8 @@
 import {isBookmarkMutation} from '@/features/weekly-reader/bookmarks';
 import {ReaderActionError, type ReaderExclusive} from '@/features/weekly-reader/usePrivateReader';
 import {PassageText} from './PassageText';
-import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
-import {Drawer} from '@hallelujahhomechurch/ui';
+import {useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject} from 'react';
+import {ReaderPrivateState} from './ReaderPrivateState';
 import type {BulletinReaderHighlightColor, BulletinReaderMutation, BulletinReaderState, OnlineBulletinAccess} from '@hallelujahhomechurch/hhc-web-client';
 import type {createReaderApi, ReaderSelector} from '@/features/weekly-reader/api';
 import {bindOnlinePrivate, chooseReaderRecovery, getOfflineIdentity, readPrivateBinding, supportsOfflineReader} from '@/features/weekly-reader/offline-store';
@@ -14,7 +14,8 @@ import {rangeQuote, selectionPassage} from '@/features/weekly-reader/text-range'
 import {useReaderSelection} from '@/features/weekly-reader/useReaderSelection';
 import type {ReaderMessages} from './ReaderToolbar';
 
-export function ReaderRecovery({api, value, selector, messages: m, onUpdated, onFailure, suspended = false, pendingMutation = null, onPendingChange, mobile = false, runExclusive, available = true, onState, inline = false, onOpenChange, onConfirm, onBookmarkRetry}: {
+export function ReaderRecovery({api, value, selector, messages: m, onUpdated, onFailure, suspended = false, pendingMutation = null, onPendingChange, mobile = false, runExclusive, available = true, onState, inline = false, onOpenChange, onConfirm, onBookmarkRetry, headerRef, theme = 'light'}: {
+  headerRef?: RefObject<HTMLElement | null>; theme?: 'light' | 'dark';
   onConfirm?: (description: string) => Promise<boolean>;
   onBookmarkRetry?: () => Promise<import('@/features/weekly-reader/usePrivateReader').ReaderOutcome | undefined>;
   api: ReturnType<typeof createReaderApi>; value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages;
@@ -156,7 +157,7 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
     </div>;
   return <>
     {available || open ? <button type="button" disabled={busy || deciding} onClick={() => {changeOpen(true); setPrepared(null); void run(prepare);}}>{m.reviewSync}</button> : null}
-    {open ? inline ? content : <Drawer title={m.reviewSync} closeLabel={m.noteClose} isOpen onOpenChange={next => {if (!next && !busy && !deciding && !suspended) changeOpen(false);}}>{content}</Drawer> : null}
+    {open ? inline ? content : <ReaderPrivateState wide={false} headerRef={headerRef} title={m.reviewSync} theme={theme} messages={m} suspended={suspended} onClose={() => {if (!busy && !deciding && !suspended) changeOpen(false);}}>{content}</ReaderPrivateState> : null}
   </>;
 }
 

@@ -348,6 +348,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const [paperJump, setPaperJump] = useState(0);
   const [panel, setPanel] = useState<'pages' | 'search' | 'type' | null>(null);
   const chromeRef = useRef<HTMLDivElement>(null);
+  const readerHeader = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
     const chrome = chromeRef.current;
     if (!chrome) return;
@@ -726,7 +727,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const currentNotice = notice === m.noteQueued && privateReader.status === 'synced' ? '' : notice;
   const urgentOperation = privateReader.operation === 'confirming' || privateReader.operation === 'timeout' ? operationMessage : '';
   const feedbackMessage = privateReader.unsaved ? m.syncUnsaved : urgentOperation || (unknownAction ? m.operationUnknown : privateReader.status === 'action' || privateReader.status === 'paused' ? undefined : currentNotice || undefined);
-  const feedback = <div className="reader-private-feedback">
+  const feedback = <div className="reader-private-feedback" data-recovery-open={recoveryOpen || undefined}>
     <div hidden={recoveryOpen} inert={recoveryOpen}>
     {privateReader.loadError ? <div role="alert"><p>{m.notesLoadError}</p><button type="button" disabled={privateReader.busy} onClick={privateReader.reload}>{m.retry}</button></div> : null}
     {!privateReader.loadError && privateReader.state && (feedbackMessage || privateReader.status === 'action' || privateReader.status === 'paused') ? <SyncStatus status={privateReader.status} messages={m}>{feedbackMessage}</SyncStatus> : null}
@@ -740,7 +741,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       }).catch(actionError);
     }}>{m.confirmRetry}</button></> : null}
     </div>
-    <div ref={recoveryControl}><ReaderRecovery onBookmarkRetry={privateReader.retry} onConfirm={description => confirmReaderAction(description, m.reviewSync, m.applyUpdate)} inline={!!notes} onOpenChange={setRecoveryOpen} onState={privateReader.acceptState} available={!privateReader.busy && (privateReader.status === 'paused' || privateReader.status === 'action' || !!privateReader.pendingMutation)} runExclusive={privateReader.runExclusive} api={api} value={value} selector={selector} messages={m} mobile={mobile} onUpdated={next => {privateReader.reload(); onUpdated(next);}} onFailure={onFailure} suspended={suspended} pendingMutation={privateReader.pendingMutation} onPendingChange={(mutation, result, previous) => {
+    <div ref={recoveryControl}><ReaderRecovery headerRef={readerHeader} theme={theme} onBookmarkRetry={privateReader.retry} onConfirm={description => confirmReaderAction(description, m.reviewSync, m.applyUpdate)} inline={!!notes} onOpenChange={setRecoveryOpen} onState={privateReader.acceptState} available={!privateReader.busy && (privateReader.status === 'paused' || privateReader.status === 'action' || !!privateReader.pendingMutation)} runExclusive={privateReader.runExclusive} api={api} value={value} selector={selector} messages={m} mobile={mobile} onUpdated={next => {privateReader.reload(); onUpdated(next);}} onFailure={onFailure} suspended={suspended} pendingMutation={privateReader.pendingMutation} onPendingChange={(mutation, result, previous) => {
       if (mutation && previous && noteOperation.current?.mutation.mutationId === previous.mutationId && noteOperation.current.generation === generation.current) noteOperation.current = {...noteOperation.current, mutation};
       const remaining = privateReader.replacePending(mutation, previous?.mutationId ?? null);
       if (!mutation && previous && result) {if (isBookmarkMutation(previous)) settleBookmark(previous, result); else settleNote(previous, result);}
@@ -773,7 +774,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
 
     <div ref={chromeRef} className="reader-chrome">
       <div className="reader-chrome-controls" inert={!!panel}>
-      <ReaderTabs accountId={selector.accountId} locale={backHref.split('/')[1] as Locale} current={selector} title={value.document.canonicalMetadata.title} messages={m} beforeLeave={() => exit.confirmLeave('home')} beforeNavigate={async () => {
+      <ReaderTabs headerRef={readerHeader} accountId={selector.accountId} locale={backHref.split('/')[1] as Locale} current={selector} title={value.document.canonicalMetadata.title} messages={m} beforeLeave={() => exit.confirmLeave('home')} beforeNavigate={async () => {
         if (!allowAction() || notes && !await closeNotes()) return false;
         const beforeFlush = generation.current;
         recordVisiblePaper();
@@ -847,7 +848,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       onClear={() => void action({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, kind: 'clearHighlight', payload: {sentenceIds: selected, ...(selection.ranges ? {ranges: selection.ranges} : {})}})}
       onCopy={() => {const snapshot = selection; void (selection.ranges ? copyTextRanges(value.document, selection.ranges, allowAction) : copySentences(value.document, selected, allowAction)).then(() => {setNotice(m.copySuccess); clearIf(snapshot);}).catch(() => setNotice(m.copyFailed));}}
       onNote={() => {newNoteId.current = null; setNoteEditorState(undefined); setNotes('new');}}/>
-    {notes ? <ReaderPrivateState wide={wideNotes} theme={theme} messages={m} onClose={() => {void closeNotes();}} suspended={suspended}>
+    {notes ? <ReaderPrivateState headerRef={readerHeader} wide={wideNotes} theme={theme} messages={m} onClose={() => {void closeNotes();}} suspended={suspended}>
       {feedback}
       <div className="reader-private-content" hidden={recoveryOpen} inert={recoveryOpen}>
       {notes === 'list' && !privateReader.state ? !privateReader.loadError ? <ReaderLoading label={m.loading}/> : null : reanchor ? <NoteReanchor initialConflict={reanchorConflict} onRecover={openRecovery} key={`${reanchor.id}:${reanchorConflict ? 'conflict' : 'editing'}:${reanchorConflict?.note?.version ?? reanchor.version}`} note={reanchor} document={value.document} messages={m} mobile={mobile} suspended={suspended} onSave={async (note, ranges) => {

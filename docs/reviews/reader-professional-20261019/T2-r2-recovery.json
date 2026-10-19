@@ -1,0 +1,119 @@
+{
+  "synthetic": true,
+  "fixtureCorrection": "privateState adds the existing fromRevision/mappings contract; applied live before Retry, mirrored in preview.mjs",
+  "before": {
+    "frame": {
+      "x": 0,
+      "y": 68,
+      "width": 390,
+      "height": 776,
+      "top": 68,
+      "right": 390,
+      "bottom": 844,
+      "left": 0
+    },
+    "header": {
+      "x": 1,
+      "y": 69,
+      "width": 388,
+      "height": 65,
+      "top": 69,
+      "right": 389,
+      "bottom": 134,
+      "left": 1
+    },
+    "body": {
+      "height": 653,
+      "scrollHeight": 840,
+      "top": 0,
+      "overflow": "auto"
+    },
+    "lastAction": {
+      "x": 17,
+      "y": 946.3515625,
+      "width": 341,
+      "height": 44,
+      "top": 946.3515625,
+      "right": 358,
+      "bottom": 990.3515625,
+      "left": 17
+    }
+  },
+  "normal": {
+    "frame": {
+      "x": 0,
+      "y": 68,
+      "width": 390,
+      "height": 776,
+      "top": 68,
+      "right": 390,
+      "bottom": 844,
+      "left": 0
+    },
+    "header": {
+      "x": 1,
+      "y": 69,
+      "width": 388,
+      "height": 65,
+      "top": 69,
+      "right": 389,
+      "bottom": 134,
+      "left": 1
+    },
+    "body": {
+      "height": 653,
+      "scrollHeight": 840,
+      "top": 187.5,
+      "overflow": "auto"
+    },
+    "lastAction": {
+      "x": 17,
+      "y": 758.8515625,
+      "width": 341,
+      "height": 44,
+      "top": 758.8515625,
+      "right": 358,
+      "bottom": 802.8515625,
+      "left": 17
+    }
+  },
+  "keyboard": {
+    "frame": {
+      "x": 0,
+      "y": 68,
+      "width": 390,
+      "height": 332,
+      "top": 68,
+      "right": 390,
+      "bottom": 400,
+      "left": 0
+    },
+    "header": {
+      "x": 1,
+      "y": 69,
+      "width": 388,
+      "height": 65,
+      "top": 69,
+      "right": 389,
+      "bottom": 134,
+      "left": 1
+    },
+    "body": {
+      "height": 209,
+      "scrollHeight": 840,
+      "top": 631.5,
+      "overflow": "auto"
+    },
+    "lastAction": {
+      "x": 17,
+      "y": 314.8515625,
+      "width": 341,
+      "height": 44,
+      "top": 314.8515625,
+      "right": 358,
+      "bottom": 358.8515625,
+      "left": 17
+    }
+  },
+  "note": "visualViewport height is a deliberate 400px simulation, not a physical IME"
+}

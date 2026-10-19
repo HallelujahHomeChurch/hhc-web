@@ -223,3 +223,5 @@ T1 `1845175` 首輪雙席 FAIL（四項 Important，無 Critical）：普通刪�
 T1 `116392c` 第二輪 UX PASS／資料 FAIL：一般離線下載仍能切走舊 pending queue pointer。第三版候選補同 transaction 的拒絕與恢復指引，並固定線上背景驗證的 revision；同分頁 RAM replica 在暫時登入卸載後保留全佇列，重新資格／epoch 檢查後以原 ID 續傳，帳號變動即清除並中止 writer。297 項範圍案例分組 PASS，TS／相關 ESLint／diff PASS；見 T1.md。等待第三輪雙席 gate，未開始 T2。
 
 T1 `4a7c8b0` 第三輪：資料、UX 兩位 Codex 均 PASS，無 Critical/Important；T1 gate 完成，開始 T2。T2 固定筆記框架／Tabs／編輯器、簡化搜尋與圖示、移除舊版標注 UI、可取消退出 dialog 已形成候選，瀏覽器幾何與深淺色證據見 `docs/reviews/reader-professional-20261019/T2.md`；尚待檢查及雙席 gate，未進 T3。
+
+T2 `ed749d6` 首輪 UX PASS／資料 FAIL（1 Important）：長 inline Recovery 超出固定框後無法捲到恢復操作。修訂候選改為受限 body 捲動並讓獨立 Recovery 共用外殼；高度改讀實測 ReaderTabs header，加16px留白。另補刪除後回相鄰項／列表標題的焦點。48項面板／Recovery／退出測試及14項關鍵整合測試 PASS，TS／相關ESLint／diff PASS；新實際長筆記／Recovery捲動、400px viewport與刪除焦點證據見T2.md。等待T2第二輪雙席，未進T3。

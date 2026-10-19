@@ -1,0 +1,13 @@
+{
+  "synthetic": true,
+  "beforeFix": {
+    "tag": "BODY",
+    "inPanel": false
+  },
+  "afterFix": {
+    "tag": "H3",
+    "text": "筆記",
+    "inNotes": true,
+    "empty": true
+  }
+}

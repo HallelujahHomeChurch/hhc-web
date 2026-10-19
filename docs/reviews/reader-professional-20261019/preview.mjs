@@ -40,7 +40,7 @@ else if(old&&old.version===mutation.baseVersion){bookmark={...old,...payload,ver
 else {bookmark=old;status='bookmark_conflict';}
 const response={state:store.read(document),results:[{mutationId:mutation.mutationId,status,revision:document.revision,bookmark}]};bookmarkReceipts.set(mutation.mutationId,response);return response;};
 const readPreview=store.read;store.read=(document)=>({...readPreview(document),...(previewParams.get('bookmarks')==='legacy'?{}:{bookmarks:structuredClone(fixtureBookmarks)}),highlightHistory:[{id:'fixture-history',highlight:{sentenceId:'old-sentence',quote:'舊版合成引用文字。',color:'red',active:false,version:1,updatedAt:''}}]});
-window.fixtureApi={open:async()=>value,current:async()=>value,renew:async()=>value,privateState:async()=>({state:store.read(value.document)}),mutate:async(_selector,_value,mutations)=>{if(window.fixtureDelay)await new Promise(r=>setTimeout(r,window.fixtureDelay));return store.mutate(value.document,mutations);}};
+window.fixtureApi={open:async()=>value,current:async()=>value,renew:async()=>value,privateState:async()=>({state:store.read(value.document),fromRevision:value.document.revision,mappings:[]}),mutate:async(_selector,_value,mutations)=>{if(window.fixtureDelay)await new Promise(r=>setTimeout(r,window.fixtureDelay));return store.mutate(value.document,mutations);}};
 window.fixtureState=()=>store.read(value.document);
 const scenario=new URLSearchParams(location.search).get('scenario');
 const originalMutate=window.fixtureApi.mutate;
