@@ -1,0 +1,72 @@
+{
+  "account-client": {
+    "name": "@hallelujahhomechurch/account-client",
+    "version": "1.1.0",
+    "gitHead": null,
+    "dist": {
+      "integrity": "sha512-4l+meh1xnvkYCCwsBtQfh4vc8Ls1w+zoMSJhsmrCh7oSqhBfFByVlnOdMNwVBXjK75X9VeZU6oln2h98Gn3D1A==",
+      "tarball": "https://npm.pkg.github.com/download/@hallelujahhomechurch/account-client/1.1.0/aab0bfdcbe222e86ca3f23358996f8a6a6465246",
+      "shasum": "aab0bfdcbe222e86ca3f23358996f8a6a6465246"
+    }
+  },
+  "donation-client": {
+    "name": "@hallelujahhomechurch/donation-client",
+    "version": "1.1.0",
+    "gitHead": null,
+    "dist": {
+      "integrity": "sha512-DXDZRimjRutE7cSD8RBPA2w8BT1ySKmByQ7/iEhJhnoDdkPDjNit7i6cbuPFE1+Vk5zsADQbeOwVCZKgSTojGw==",
+      "tarball": "https://npm.pkg.github.com/download/@hallelujahhomechurch/donation-client/1.1.0/e1c1ca30f4eef67d1d14b0dd92522b68db1ea7e2",
+      "shasum": "e1c1ca30f4eef67d1d14b0dd92522b68db1ea7e2"
+    }
+  },
+  "donation-ui": {
+    "name": "@hallelujahhomechurch/donation-ui",
+    "version": "1.1.0",
+    "gitHead": null,
+    "dist": {
+      "integrity": "sha512-clOj4bWXFv6E3xNP8070s6g3fKi6q0MxxkpB2HUi4gMh3mFRAsAqvCeq9qwN0ib98S5Z7c3Aoh2UIYmNcSHlpg==",
+      "tarball": "https://npm.pkg.github.com/download/@hallelujahhomechurch/donation-ui/1.1.0/b7a1bd7d51fc58a5ebf3cd5abb79424f7899524a",
+      "shasum": "b7a1bd7d51fc58a5ebf3cd5abb79424f7899524a"
+    }
+  },
+  "hhc-web-client": {
+    "name": "@hallelujahhomechurch/hhc-web-client",
+    "version": "1.1.0",
+    "gitHead": null,
+    "dist": {
+      "integrity": "sha512-rap8+PbJxHkCLWyBJrMzsBLPVhiA27jSz5sf0My+7LJf/QAD53i7xux7ZjUFw/K5X2kEDSShcHuVNBJIugdzWA==",
+      "tarball": "https://npm.pkg.github.com/download/@hallelujahhomechurch/hhc-web-client/1.1.0/14774476d1e19beff4e1f26d60fcbf3a1da4a5c4",
+      "shasum": "14774476d1e19beff4e1f26d60fcbf3a1da4a5c4"
+    }
+  },
+  "operations-client": {
+    "name": "@hallelujahhomechurch/operations-client",
+    "version": "1.1.0",
+    "gitHead": null,
+    "dist": {
+      "integrity": "sha512-KthV6ozK73MkvtgdoNTP6A1qJWxNwJfD+/ryu/DAxHUFX1wkE+es1SQdJhR2EN2HyO1DLFOAtUikVcLIvQEiKQ==",
+      "tarball": "https://npm.pkg.github.com/download/@hallelujahhomechurch/operations-client/1.1.0/d1a2fd721346aed78b71b7d11fd8f1b932259adb",
+      "shasum": "d1a2fd721346aed78b71b7d11fd8f1b932259adb"
+    }
+  },
+  "preferences": {
+    "name": "@hallelujahhomechurch/preferences",
+    "version": "1.1.0",
+    "gitHead": null,
+    "dist": {
+      "integrity": "sha512-kiDDRpdNoU1ykLxQd9JxutNI6QJ0YkC4elQqg/8ksxrvy5Xr8K6YOm66fSjgX4RTxpq9NyM40LIZGZ0EeGudsw==",
+      "tarball": "https://npm.pkg.github.com/download/@hallelujahhomechurch/preferences/1.1.0/15d769a2e6436d6cd2fb59fbabe92788f33b4ee3",
+      "shasum": "15d769a2e6436d6cd2fb59fbabe92788f33b4ee3"
+    }
+  },
+  "ui": {
+    "name": "@hallelujahhomechurch/ui",
+    "version": "1.1.0",
+    "gitHead": null,
+    "dist": {
+      "integrity": "sha512-QYTtg4Dg8kAs6zw8no8zfvkXbAG9gqhgPtjBUGcSXzUOMbPTl4nKI6CFsm1TamL+fksKhNqIQ/WEYxEkq9zesg==",
+      "tarball": "https://npm.pkg.github.com/download/@hallelujahhomechurch/ui/1.1.0/b41a6c90b37e73f699243a0c31104b6264a7fd93",
+      "shasum": "b41a6c90b37e73f699243a0c31104b6264a7fd93"
+    }
+  }
+}

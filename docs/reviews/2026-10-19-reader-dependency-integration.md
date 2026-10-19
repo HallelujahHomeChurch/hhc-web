@@ -47,3 +47,27 @@ PR265 squash-merged to main28a6d9d22f23e2126679f719dccd07da86caf50f at05:44:40Z.
 Two independent post-release read-only seats api_release_artifact_check and api_release_health_check PASS. PG rollout metrics failed_connections0; total active_connections observed peak34, not a general-slot or worst-case-capacity guarantee. SDK reader contract semantic equality against actual merged API confirmed for2 paths and38 reader schemas, canonical SHA2567663a48b6c989fa2882d615432c0368ced54d254af6774fe436a60c9d8316beb. Entire YAML files differ in pre-existing non-reader layout/descriptions; equality claim is scoped to reader contracts.
 
 User announced maintenance14:00–16:00 Asia/Taipei on2026-10-19. Original rollout samples were13:56–13:58, before maintenance. At14:01–14:03 ready/OIDC remain200 JSON; home/site-layout503 JSON withRetry-After300. This is an observed maintenance response, not evidence of a new code regression. A post16:00 public contract smoke remains required; do not bypass maintenance or declare end-to-end public acceptance during it. API producer release gate is complete, separate from this remaining public acceptance check.
+
+## SDK1.1.0 merge/tag
+
+SDK feature58649f2103193835d2d0afdda6e3c15a2481f59c exact-head CI39206125737 completed SUCCESS for all5jobs. Two independent pre-tag seats sdk_110_tag_gate and sdk_110_contract_gate PASS. The contract seat clarified that merge-triggered main CI is not an explicit hard gate before pushing a tag: release independently performs complete prepare/renderer/verify gates. Both main CI and tag release are tracked; neither can be reported passed while pending.
+
+PR138 squash-merged at06:15:33Z to343aa8366cc65734f827f9f690002cd246c5afa0. Root fetched main, verified merged tree exactly equals reviewed feature tree and all8manifests1.1.0. Immediately before tagging, all7registry version full-page queries returned no1.1.0 and remotev1.1.0 absent. Annotatedv1.1.0 was pushed pointing to actual main343aa83, never feature58649f2. Tag release39208976862 and main CI39208883111 are now in progress. Package publication not yet established; consumer formal1.0.75 pins remain unchanged.
+
+## SDK actual registry verification
+
+Tag release39208976862 and main CI39208883111 both completed SUCCESS at actual main343aa8366cc65734f827f9f690002cd246c5afa0. Seven registry package metadata queries confirm1.1.0 with SHA512integrity/tarball/shasum; gitHead is absent on all7, so no registry gitHead is claimed. Provenance is actual merged-main/tag → same-run verified artifacts → publisher → registry.
+
+Client actual registry tgz SHA256161bcc496180dced823b25089d9a5869734eb581124360b760e54153128926d2, SRI matches registry. It contains ReaderBookmark and create/rename/delete/reanchor mutation declarations. Root independently compared all11package file contents against the locally verified1.1.0pack: identical file lists and bytes. Archive byteSHA differs from local0f93a3a7; never replace registry integrity with the local archive hash. Post-publication two-seat review in progress; formal consumer pins remain1.0.75 until it completes.
+
+SDK post-publication independent seats sdk_110_publication_check and sdk_110_registry_contract_check both PASS. Publisher shasum matches registry metadata for all7; client archive SRI/SHA1 and every packaged file independently checked. No missing gitHead is invented. API → actual SDK1.1.0 publication gate complete; website code remains unmerged.
+
+Formal consumer integration now updates only client package pin, resolved lock and exact-version locale assertion to1.1.0. Entire previous node_modules, including ignored1.0.78 candidate, moved outside worktree before registry resolution/frozen install; no shared SDK package was edited. Full validation and consumer PR CI are pending, so this is not yet an accepted registry consumer build.
+
+## Consumer registry local verification
+
+Fresh frozen install resolved node_modules/.pnpm registry client1.1.0, not a candidate/file/link reference. Lock tarball URL and SHA512integrity exactly match actual registry metadata. Diff relative to previously reviewed consumer product636c9e4 outside docs is limited to package.json, pnpm-lock.yaml and src/i18n/locales.test.ts: only client1.0.75→1.1.0 and exact-version assertion/resolution. Other frontend pins and product source are unchanged.
+
+Fixed-source full179testfiles/1423tests plus8Nodechecks PASS; TypeScript noEmit, lint, production build, static budgets and release policy PASS. Lint retains one existing LegalRequiredNavigation warning; pnpm local commands without auth emit the existing unset NODE_AUTH_TOKEN placeholder warning, while authenticated registry install/metadata/SRI checks succeeded. CSS195547bytes. No new visual changes; earlier screenshots remain tied to their original candidate evidence.
+
+Consumer draft PR/exact-head CI and final two-seat integration review are next. Their final status will be recorded in the PR description/checks rather than adding a documentation-only commit after CI and changing the reviewed head. This paragraph is a historical pre-CI checkpoint, not a claim that CI or final reviewers already passed. Website PRs remain unmerged; maintenance-end public smoke and physical device/real-account acceptance remain separate.
