@@ -242,3 +242,6 @@ T3 `4477732` 第二輪：資料與 UX 兩位 Codex 均 PASS，無未處置 Criti
 T4 `8da66b6` 第一輪：資料／UX 均 FAIL，待補 mode／zoom 原失敗診斷與安靜背景驗證；UX 另指出同 fragment 缺鍵盤連續擴選。已重現一個既有 IDB 時間競態（有效資格被早取時間誤判為倒退），正在修正與複驗；T4 未完成，未進 T5／merge／release。
 
 T4 `357c499` 第二輪：資料與 UX 兩位 Codex 均 PASS，無未處置 Critical/Important。鍵盤連選及 IDB 排隊早取時間造成資格誤判已修；完整合成瀏覽器300%／Escape／跨頁／安靜背景與精確畫線範圍通過。T4 完成，開始 T5。仍無merge／release，真機與完整 CI 待 T6。
+
+
+T5 `06927fc`：資料與 UX 兩位 Codex 均 PASS，無未處置 Critical/Important。真正產品 DOCX 下載、43 段引用／筆記對照、ZIP／XML／快照限制與三頁排版、手機明暗匯出視窗均有證據；詳見 T5.md。T5 完成，開始 T6 整合、完整檢查、PR／exact-head CI 與最終雙席。沒有 merge／release；原生 Word、Files、真機／真帳號接受仍未完成。

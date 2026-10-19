@@ -18,7 +18,6 @@ import {createRoot} from 'react-dom/client';
 import {flushSync} from 'react-dom';
 import {OfflineContentPage} from '${source}/src/components/weekly-reader/OfflineContentPage';
 import {NoteReanchor} from '${source}/src/components/weekly-reader/NoteReanchor';
-import {HighlightHistory} from '${source}/src/components/weekly-reader/HighlightHistory';
 import {ReaderTypography} from '${source}/src/components/weekly-reader/ReaderTypography';
 import {BulletinEbook, BulletinDocumentRenderer} from '@hallelujahhomechurch/ui';
 import '@hallelujahhomechurch/ui/styles.css';
@@ -85,12 +84,13 @@ window.bulletinFixture = {
     window.typographySourceUnchanged=()=>JSON.stringify(document)===original;
   },
   mountRecovery(kind, mobile) {
+    if(kind!=='note') throw Error('unsupported_recovery_fixture');
     if(root) throw Error('already_mounted');
     root=createRoot(document.getElementById('root'));
     window.fixtureActions=[];
     const messages=getMessages('en').weeklyReader, bulletin=readerFixture().document;
     const note={id:'fixture-note',text:'Synthetic note',quote:'Original quote',sentenceIds:[],inactiveAnchors:[],version:1,deleted:false,reanchorRequired:true,createdAt:'',updatedAt:''};
-    const content=kind==='note'?<NoteReanchor note={note} document={bulletin} messages={messages} mobile={mobile} onSave={async (note,ranges)=>{window.fixtureActions.push({note,ranges});return {status:'applied'};}} onComplete={()=>{}} onCancel={()=>{}}/>:<HighlightHistory history={[{id:'fixture-history',highlight:{sentenceId:'gone',quote:'Old quote',color:'red',active:false,version:1,updatedAt:''}}]} document={bulletin} messages={messages} mobile={mobile} busy={false} onSave={async mutation=>{window.fixtureActions.push(mutation);}}/>;
+    const content=<NoteReanchor note={note} document={bulletin} messages={messages} mobile={mobile} onSave={async (note,ranges)=>{window.fixtureActions.push({note,ranges});return {status:'applied'};}} onComplete={()=>{}} onCancel={()=>{}}/>;
     flushSync(()=>root.render(content));
   },
   unmount() { if(root) flushSync(()=>root.unmount()); root=undefined; },

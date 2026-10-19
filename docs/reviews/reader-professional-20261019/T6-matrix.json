@@ -1,0 +1,528 @@
+{
+  "synthetic": true,
+  "physicalDevice": false,
+  "records": [
+    {
+      "locale": "zh-Hant",
+      "theme": "light",
+      "shot": "T6-notes-zh-Hant-375x568-light.png",
+      "viewport": [
+        375,
+        568
+      ],
+      "frame": {
+        "x": 0,
+        "y": 68,
+        "width": 375,
+        "height": 500,
+        "top": 68,
+        "right": 375,
+        "bottom": 568,
+        "left": 0
+      },
+      "header": {
+        "x": 1,
+        "y": 69,
+        "width": 373,
+        "height": 65,
+        "top": 69,
+        "right": 374,
+        "bottom": 134,
+        "left": 1
+      },
+      "tabs": [
+        {
+          "text": "筆記",
+          "rect": {
+            "x": 21,
+            "y": 154,
+            "width": 111,
+            "height": 44,
+            "top": 154,
+            "right": 132,
+            "bottom": 198,
+            "left": 21
+          },
+          "scrollWidth": 111,
+          "clientWidth": 111
+        },
+        {
+          "text": "畫線",
+          "rect": {
+            "x": 132,
+            "y": 154,
+            "width": 111,
+            "height": 44,
+            "top": 154,
+            "right": 243,
+            "bottom": 198,
+            "left": 132
+          },
+          "scrollWidth": 111,
+          "clientWidth": 111
+        },
+        {
+          "text": "書籤",
+          "rect": {
+            "x": 243,
+            "y": 154,
+            "width": 111,
+            "height": 44,
+            "top": 154,
+            "right": 354,
+            "bottom": 198,
+            "left": 243
+          },
+          "scrollWidth": 111,
+          "clientWidth": 111
+        }
+      ],
+      "bodyOverflow": false,
+      "scrolledHeader": {
+        "x": 1,
+        "y": 69,
+        "width": 373,
+        "height": 65,
+        "top": 69,
+        "right": 374,
+        "bottom": 134,
+        "left": 1
+      }
+    },
+    {
+      "locale": "zh-Hans",
+      "theme": "dark",
+      "shot": "T6-notes-zh-Hans-375x568-dark.png",
+      "viewport": [
+        375,
+        568
+      ],
+      "frame": {
+        "x": 0,
+        "y": 68,
+        "width": 375,
+        "height": 500,
+        "top": 68,
+        "right": 375,
+        "bottom": 568,
+        "left": 0
+      },
+      "header": {
+        "x": 1,
+        "y": 69,
+        "width": 373,
+        "height": 65,
+        "top": 69,
+        "right": 374,
+        "bottom": 134,
+        "left": 1
+      },
+      "tabs": [
+        {
+          "text": "笔记",
+          "rect": {
+            "x": 21,
+            "y": 154,
+            "width": 111,
+            "height": 44,
+            "top": 154,
+            "right": 132,
+            "bottom": 198,
+            "left": 21
+          },
+          "scrollWidth": 111,
+          "clientWidth": 111
+        },
+        {
+          "text": "画线",
+          "rect": {
+            "x": 132,
+            "y": 154,
+            "width": 111,
+            "height": 44,
+            "top": 154,
+            "right": 243,
+            "bottom": 198,
+            "left": 132
+          },
+          "scrollWidth": 111,
+          "clientWidth": 111
+        },
+        {
+          "text": "书签",
+          "rect": {
+            "x": 243,
+            "y": 154,
+            "width": 111,
+            "height": 44,
+            "top": 154,
+            "right": 354,
+            "bottom": 198,
+            "left": 243
+          },
+          "scrollWidth": 111,
+          "clientWidth": 111
+        }
+      ],
+      "bodyOverflow": false,
+      "scrolledHeader": {
+        "x": 1,
+        "y": 69,
+        "width": 373,
+        "height": 65,
+        "top": 69,
+        "right": 374,
+        "bottom": 134,
+        "left": 1
+      }
+    },
+    {
+      "locale": "en",
+      "theme": "light",
+      "shot": "T6-notes-en-375x568-light.png",
+      "viewport": [
+        375,
+        568
+      ],
+      "frame": {
+        "x": 0,
+        "y": 68,
+        "width": 375,
+        "height": 500,
+        "top": 68,
+        "right": 375,
+        "bottom": 568,
+        "left": 0
+      },
+      "header": {
+        "x": 1,
+        "y": 69,
+        "width": 373,
+        "height": 65,
+        "top": 69,
+        "right": 374,
+        "bottom": 134,
+        "left": 1
+      },
+      "tabs": [
+        {
+          "text": "Notes",
+          "rect": {
+            "x": 21,
+            "y": 154,
+            "width": 111,
+            "height": 44,
+            "top": 154,
+            "right": 132,
+            "bottom": 198,
+            "left": 21
+          },
+          "scrollWidth": 111,
+          "clientWidth": 111
+        },
+        {
+          "text": "Highlights",
+          "rect": {
+            "x": 132,
+            "y": 154,
+            "width": 111,
+            "height": 44,
+            "top": 154,
+            "right": 243,
+            "bottom": 198,
+            "left": 132
+          },
+          "scrollWidth": 111,
+          "clientWidth": 111
+        },
+        {
+          "text": "Bookmarks",
+          "rect": {
+            "x": 243,
+            "y": 154,
+            "width": 111,
+            "height": 44,
+            "top": 154,
+            "right": 354,
+            "bottom": 198,
+            "left": 243
+          },
+          "scrollWidth": 111,
+          "clientWidth": 111
+        }
+      ],
+      "bodyOverflow": false,
+      "scrolledHeader": {
+        "x": 1,
+        "y": 69,
+        "width": 373,
+        "height": 65,
+        "top": 69,
+        "right": 374,
+        "bottom": 134,
+        "left": 1
+      }
+    },
+    {
+      "locale": "ja",
+      "theme": "dark",
+      "shot": "T6-notes-ja-375x568-dark.png",
+      "viewport": [
+        375,
+        568
+      ],
+      "frame": {
+        "x": 0,
+        "y": 68,
+        "width": 375,
+        "height": 500,
+        "top": 68,
+        "right": 375,
+        "bottom": 568,
+        "left": 0
+      },
+      "header": {
+        "x": 1,
+        "y": 69,
+        "width": 373,
+        "height": 65,
+        "top": 69,
+        "right": 374,
+        "bottom": 134,
+        "left": 1
+      },
+      "tabs": [
+        {
+          "text": "ノート",
+          "rect": {
+            "x": 21,
+            "y": 154,
+            "width": 111,
+            "height": 44,
+            "top": 154,
+            "right": 132,
+            "bottom": 198,
+            "left": 21
+          },
+          "scrollWidth": 111,
+          "clientWidth": 111
+        },
+        {
+          "text": "ハイライト",
+          "rect": {
+            "x": 132,
+            "y": 154,
+            "width": 111,
+            "height": 44,
+            "top": 154,
+            "right": 243,
+            "bottom": 198,
+            "left": 132
+          },
+          "scrollWidth": 111,
+          "clientWidth": 111
+        },
+        {
+          "text": "ブックマーク",
+          "rect": {
+            "x": 243,
+            "y": 154,
+            "width": 111,
+            "height": 44,
+            "top": 154,
+            "right": 354,
+            "bottom": 198,
+            "left": 243
+          },
+          "scrollWidth": 111,
+          "clientWidth": 111
+        }
+      ],
+      "bodyOverflow": false,
+      "scrolledHeader": {
+        "x": 1,
+        "y": 69,
+        "width": 373,
+        "height": 65,
+        "top": 69,
+        "right": 374,
+        "bottom": 134,
+        "left": 1
+      }
+    },
+    {
+      "locale": "ko",
+      "theme": "light",
+      "shot": "T6-notes-ko-375x568-light.png",
+      "viewport": [
+        375,
+        568
+      ],
+      "frame": {
+        "x": 0,
+        "y": 68,
+        "width": 375,
+        "height": 500,
+        "top": 68,
+        "right": 375,
+        "bottom": 568,
+        "left": 0
+      },
+      "header": {
+        "x": 1,
+        "y": 69,
+        "width": 373,
+        "height": 65,
+        "top": 69,
+        "right": 374,
+        "bottom": 134,
+        "left": 1
+      },
+      "tabs": [
+        {
+          "text": "노트",
+          "rect": {
+            "x": 21,
+            "y": 154,
+            "width": 111,
+            "height": 44,
+            "top": 154,
+            "right": 132,
+            "bottom": 198,
+            "left": 21
+          },
+          "scrollWidth": 111,
+          "clientWidth": 111
+        },
+        {
+          "text": "하이라이트",
+          "rect": {
+            "x": 132,
+            "y": 154,
+            "width": 111,
+            "height": 44,
+            "top": 154,
+            "right": 243,
+            "bottom": 198,
+            "left": 132
+          },
+          "scrollWidth": 111,
+          "clientWidth": 111
+        },
+        {
+          "text": "북마크",
+          "rect": {
+            "x": 243,
+            "y": 154,
+            "width": 111,
+            "height": 44,
+            "top": 154,
+            "right": 354,
+            "bottom": 198,
+            "left": 243
+          },
+          "scrollWidth": 111,
+          "clientWidth": 111
+        }
+      ],
+      "bodyOverflow": false,
+      "scrolledHeader": {
+        "x": 1,
+        "y": 69,
+        "width": 373,
+        "height": 65,
+        "top": 69,
+        "right": 374,
+        "bottom": 134,
+        "left": 1
+      }
+    },
+    {
+      "locale": "en",
+      "theme": "dark",
+      "shot": "T6-notes-en-844x390-dark.png",
+      "viewport": [
+        844,
+        390
+      ],
+      "frame": {
+        "x": 484,
+        "y": 0,
+        "width": 360,
+        "height": 390,
+        "top": 0,
+        "right": 844,
+        "bottom": 390,
+        "left": 484
+      },
+      "header": {
+        "x": 485,
+        "y": 1,
+        "width": 358,
+        "height": 65,
+        "top": 1,
+        "right": 843,
+        "bottom": 66,
+        "left": 485
+      },
+      "tabs": [
+        {
+          "text": "Notes",
+          "rect": {
+            "x": 505,
+            "y": 86,
+            "width": 106,
+            "height": 44,
+            "top": 86,
+            "right": 611,
+            "bottom": 130,
+            "left": 505
+          },
+          "scrollWidth": 106,
+          "clientWidth": 106
+        },
+        {
+          "text": "Highlights",
+          "rect": {
+            "x": 611,
+            "y": 86,
+            "width": 106,
+            "height": 44,
+            "top": 86,
+            "right": 717,
+            "bottom": 130,
+            "left": 611
+          },
+          "scrollWidth": 106,
+          "clientWidth": 106
+        },
+        {
+          "text": "Bookmarks",
+          "rect": {
+            "x": 717,
+            "y": 86,
+            "width": 106,
+            "height": 44,
+            "top": 86,
+            "right": 823,
+            "bottom": 130,
+            "left": 717
+          },
+          "scrollWidth": 106,
+          "clientWidth": 106
+        }
+      ],
+      "bodyOverflow": false,
+      "scrolledHeader": {
+        "x": 485,
+        "y": 1,
+        "width": 358,
+        "height": 65,
+        "top": 1,
+        "right": 843,
+        "bottom": 66,
+        "left": 485
+      }
+    }
+  ]
+}

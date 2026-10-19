@@ -1,5 +1,6 @@
 import {readdir, readFile, stat} from 'node:fs/promises';
 import path from 'node:path';
+import {gzipSync} from 'node:zlib';
 
 const root = path.resolve(process.env.HHC_STATIC_BUDGET_ROOT ?? '.');
 const fontConfigPath = path.join(root, 'src/app/fonts.ts');
@@ -49,6 +50,18 @@ if (heroSize > maxHeroBytes) {
 }
 
 const chunksPath = path.join(root, '.next/static/chunks');
+const scripts = await readdir(chunksPath).then(names => names.filter(name => name.endsWith('.js'))).catch(() => []);
+const exportChunks = [];
+for (const name of scripts) {
+  const bytes = await readFile(path.join(chunksPath, name));
+  if (bytes.includes(Buffer.from('docProps/core.xml'))) exportChunks.push(bytes);
+}
+if (scripts.length && !exportChunks.length) failures.push('DOCX export chunk missing from production build');
+const exportBytes = exportChunks.reduce((total, bytes) => total + bytes.length, 0);
+const exportGzipBytes = exportChunks.reduce((total, bytes) => total + gzipSync(bytes).length, 0);
+if (exportBytes > 512 * 1024 || exportGzipBytes > 160 * 1024) {
+  failures.push(`DOCX export exceeds 512 KiB raw / 160 KiB gzip: ${exportBytes} / ${exportGzipBytes} bytes`);
+}
 const generatedCssBytes = await readdir(chunksPath, {withFileTypes: true})
   .then(async (entries) => {
     const sizes = await Promise.all(entries.filter((entry) => entry.isFile() && entry.name.endsWith('.css')).map((entry) => stat(path.join(chunksPath, entry.name)).then(({size}) => size)));
@@ -63,5 +76,5 @@ if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exitCode = 1;
 } else {
-  console.log(`Static budgets passed: ${localFontSources.length} local font(s), hero ${heroSize} bytes, CSS ${generatedCssBytes} bytes`);
+  console.log(`Static budgets passed: ${localFontSources.length} local font(s), hero ${heroSize} bytes, CSS ${generatedCssBytes} bytes; DOCX ${exportBytes} raw / ${exportGzipBytes} gzip bytes`);
 }
