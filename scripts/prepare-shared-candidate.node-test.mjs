@@ -58,3 +58,15 @@ test('candidate staging preserves registry dependencies/scripts and injects arch
     assert.throws(() => verifyInstalled(output, expected), /installed bytes/);
   } finally {rmSync(root, {recursive: true, force: true});}
 });
+
+// Workflow policy is checked independently from the generated disposable context.
+test('PR workflow pins the candidate and keeps both required scans on its coherent context', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  const expected = JSON.parse(readFileSync(new URL('./shared-candidate.json', import.meta.url)));
+  assert.ok(workflow.includes(`ref: ${expected.commit}`));
+  assert.match(workflow, /working-directory: \$\{\{ github.workspace \}\}\/\.\.\/hhc-web-candidate/);
+  assert.ok(workflow.includes('"$GITHUB_WORKSPACE/../hhc-web-candidate"'));
+  assert.equal((workflow.match(/ghcr\.io\/aquasecurity\/trivy@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969/g) ?? []).length, 2);
+  assert.ok(workflow.indexOf('Generate coherent candidate lock') < workflow.indexOf('Scan dependencies'));
+  assert.ok(workflow.includes('GIT_DIR="$GITHUB_WORKSPACE/.git" GIT_WORK_TREE="$PWD" corepack pnpm test:run'));
+});

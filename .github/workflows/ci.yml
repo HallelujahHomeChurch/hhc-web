@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ${{ runner.temp }}/hhc-web-candidate
+        working-directory: ${{ github.workspace }}/../hhc-web-candidate
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -43,7 +43,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: |
           node --test scripts/prepare-shared-candidate.node-test.mjs
-          node scripts/prepare-shared-candidate.mjs prepare .candidate-shared "$RUNNER_TEMP/hhc-web-candidate"
+          node scripts/prepare-shared-candidate.mjs prepare .candidate-shared "$GITHUB_WORKSPACE/../hhc-web-candidate"
       - name: Generate coherent candidate lock
         run: corepack pnpm install --lockfile-only --ignore-scripts
         env:
