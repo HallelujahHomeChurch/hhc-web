@@ -158,6 +158,7 @@
     "unsyncedWarning": "未同期の変更がこの端末から削除されます。続行しますか？",
     "reauthWriteConfirm": "アカウントを再確認しました。保留中の変更を適用しますか？",
     "selectionActions": "選択したテキストの操作",
+    "clauseKeyboardHelp": "Tab でフォーカスを移動します。文中では左右矢印で節を選び、Enter またはスペースで選択を切り替えます。",
     "selectionCount": "選択中：{count} 文字",
     "highlightColors": "ハイライトの色",
     "yellowHighlight": "黄色のハイライト",

@@ -235,3 +235,6 @@ T3 root 候選已完成範圍實作與可重現視覺證據：手機／平板／
 
 
 T3 `e6276a1` 首輪 UX PASS／資料 FAIL（1 Important）：standalone Recovery 漏接系統返回。修訂將 Recovery 放在既有 decision 之後、導航／筆記之前處理，沿用 busy／deciding／suspended guard；2 個實際 history 回歸通過，合成瀏覽器閒置／忙碌返回證據見 T3.md。未進 T4，等待新候選雙席 gate。
+
+
+T3 `4477732` 第二輪：資料與 UX 兩位 Codex 均 PASS，無未處置 Critical/Important；standalone Recovery 返回邊界已處置。T3 完成，開始 T4。兩席只讀檢驗，完整 CI／真機接受仍屬 T6；未 merge／release。

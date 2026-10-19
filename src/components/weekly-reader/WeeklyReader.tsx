@@ -162,7 +162,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const {selection, selecting, setSelection, clear: clearSelection, clearIf} = useReaderSelection(paperRef, sentences, {
     ids: returned?.revision === value.document.revision ? returned.selected.filter(id => sentences.some(sentence => sentence.id === id)) : [],
     ranges: returned?.revision === value.document.revision ? returned.selectedRanges : undefined
-  }, !!notes || suspended, mobile ? 'sentence' : 'text');
+  }, !!notes || suspended, mobile ? 'clause' : 'text');
   const selected = selection.ids;
   const selectionRanges = useMemo(() => selection.ranges ?? sentences.filter(sentence => selected.includes(sentence.id)).map(sentence => ({sentenceId: sentence.id, start: 0, end: [...sentence.text].length})), [selection.ranges, selected, sentences]);
   const savedHighlights = useMemo(() => privateReader.state?.highlights ?? [], [privateReader.state?.highlights]);
@@ -567,7 +567,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
           const range = anchor.kind === 'sentence' && anchor.start !== undefined ? renderedTextRanges(viewport, {sentenceId: anchor.id, start: anchor.start, end: anchor.start + 1})[0] : undefined;
           viewport.scrollTop += (range?.getBoundingClientRect().top ?? element.getBoundingClientRect().top) - readingInset();
           if (anchor.focus) {
-            element.tabIndex = -1;
+            if (!element.hasAttribute('tabindex')) element.tabIndex = -1;
             element.focus({preventScroll: true}); emphasizeSource(element);
           }
         }
@@ -589,7 +589,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
         if (range && typeof range.getBoundingClientRect === 'function') viewport.scrollTop += range.getBoundingClientRect().top - viewport.getBoundingClientRect().top - 16;
         else destination.scrollIntoView({block: 'start'});
         if (anchor.focus) {
-          destination.tabIndex = -1;
+          if (!destination.hasAttribute('tabindex')) destination.tabIndex = -1;
           destination.focus({preventScroll: true}); emphasizeSource(destination);
         }
       }
@@ -662,7 +662,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       const rect = target === 0 ? paperRef.current.getBoundingClientRect() : first && renderedTextRanges(paperRef.current, first)[0]?.getBoundingClientRect();
       if (rect && viewportRef.current) viewportRef.current.scrollTop += rect.top - readingInset();
       const destination = first ? Array.from(paperRef.current.querySelectorAll<HTMLElement>('[data-sentence-id]')).find(element => element.dataset.sentenceId === first.sentenceId) : chapterHeading.current;
-      if (destination && sourceJump.focus) {destination.tabIndex = -1; destination.focus({preventScroll: true}); emphasizeSource(destination);}
+      if (destination && sourceJump.focus) {if (!destination.hasAttribute('tabindex')) destination.tabIndex = -1; destination.focus({preventScroll: true}); emphasizeSource(destination);}
     });
     return () => cancelAnimationFrame(frame);
   }, [sourceJump, reflow, fontsReady, value.document.content, chapter, productionSentenceIds, readingInset]);
@@ -836,7 +836,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     {value.document.metadataSyncPending ? <p role="status">{m.metadataPending}</p> : null}
     {!notes ? feedback : null}
     <div className="reader-stage" inert={!!panel}>
-    <div ref={viewportRef} className="reader-viewport" data-mobile={mobile || undefined} data-direction={reflow ? undefined : direction} data-active-page={active.id} style={{touchAction: mobile || reflow || notes || nativeZoomed ? 'auto' : direction === 'horizontal' && !zoomed ? 'pan-y' : 'pan-x pan-y'}} tabIndex={0} onContextMenu={event => {if (!(event.target instanceof Element && event.target.closest('input,textarea,select,[contenteditable="true"]'))) event.preventDefault();}} onClick={event => {
+    <div ref={viewportRef} className="reader-viewport" aria-description={mobile ? m.clauseKeyboardHelp : undefined} data-mobile={mobile || undefined} data-direction={reflow ? undefined : direction} data-active-page={active.id} style={{touchAction: mobile || reflow || notes || nativeZoomed ? 'auto' : direction === 'horizontal' && !zoomed ? 'pan-y' : 'pan-x pan-y'}} tabIndex={0} onContextMenu={event => {if (!(event.target instanceof Element && event.target.closest('input,textarea,select,[contenteditable="true"]'))) event.preventDefault();}} onClick={event => {
       if (mobile && !(event.target instanceof Element && event.target.closest('button,a,input,textarea,select,[contenteditable]'))) revealChrome();
     }} onPointerDown={event => {
       if (event.pointerType !== 'touch' || notes || reflow || suspended) return;
@@ -857,7 +857,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       {reflow ? <div ref={chapterHeading} tabIndex={-1} role="group" aria-label={chapterLabels[chapter]} className="reader-watermarked" style={{"--reader-font-size": `${typography.size}px`, "--reader-line-height": typography.line} as React.CSSProperties}><BulletinEbook document={document} chapter={chapter} canonicalMetadata={value.document.canonicalMetadata} sentenceState={sentenceState} selectable={mobile && !notes && !suspended}/><ReaderWatermark traceCode={value.access.traceCode} tone={theme}/></div> :
         <PaperViewport selectable={mobile && !notes && !suspended} document={document} metadata={value.document.canonicalMetadata} sentenceState={sentenceState} traceCode={value.access.traceCode} theme={theme} page={page} direction={direction} zoom={zoom} viewport={viewport}/>}
       <NoteIndicators root={paperRef} notes={privateReader.state?.notes ?? []} layoutKey={reflow ? `${chapter}:${fontsReady}:${typography.size}:${typography.line}` : `${active.id}:${scale}:${fontsReady}:${direction}`} label={m.myNotes} onOpen={(ids, trigger) => {void openNotesList(ids, trigger);}} mobile={reflow}/>
-      <RangeHighlights root={paperRef} highlights={savedHighlights} layoutKey={reflow ? `${chapter}:${fontsReady}:${typography.size}:${typography.line}` : `${active.id}:${scale}:${fontsReady}:${direction}`} onSelect={mobile ? undefined : selectExisting}/>
+      <RangeHighlights selectedRanges={mobile ? selectionRanges : undefined} root={paperRef} highlights={savedHighlights} layoutKey={reflow ? `${chapter}:${fontsReady}:${typography.size}:${typography.line}` : `${active.id}:${scale}:${fontsReady}:${direction}`} onSelect={mobile ? undefined : selectExisting}/>
       </div>
       {reflow && chapterIndex < chapters.length - 1 ? <div className="reader-chapter-boundary"><IconButton variant="ghost" aria-label={m.next} isDisabled={suspended} onPress={() => {void onChapter(chapterIndex + 1);}} icon={<ArrowDown size={20} aria-hidden="true"/>}/></div> : null}
     </div>
@@ -866,7 +866,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       {page > 0 ? <IconButton variant="ghost" aria-label={m.previous} title={m.previous} isDisabled={suspended || page === 0} onPress={() => {void onPage(page - 1);}} icon={<ChevronLeft size={20} aria-hidden="true"/>}/> : null}
       {page < document.pages.length - 1 ? <IconButton variant="ghost" aria-label={m.next} title={m.next} isDisabled={suspended || page >= document.pages.length - 1} onPress={() => {void onPage(page + 1);}} icon={<ChevronRight size={20} aria-hidden="true"/>}/> : null}
     </div> : null}
-    <SelectionToolbar messages={m} root={paperRef} ranges={selectionRanges} count={selecting ? 0 : selectionRanges.reduce((count, range) => count + range.end - range.start, 0)} color={highlightSelection.color} clearable={highlightSelection.clearable} busy={foregroundBusy || !privateReader.state || privateReader.status === 'paused'} noteOpen={!!notes} noteButtonRef={noteButton}
+    <SelectionToolbar description={mobile ? noteQuote : undefined} messages={m} root={paperRef} ranges={selectionRanges} count={selecting ? 0 : selectionRanges.reduce((count, range) => count + range.end - range.start, 0)} color={highlightSelection.color} clearable={highlightSelection.clearable} busy={foregroundBusy || !privateReader.state || privateReader.status === 'paused'} noteOpen={!!notes} noteButtonRef={noteButton}
       onColor={color => void action({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, kind: 'setHighlight', payload: {sentenceIds: selected, color, ...(selection.ranges ? {ranges: selection.ranges} : {})}})}
       onClear={() => void action({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, kind: 'clearHighlight', payload: {sentenceIds: selected, ...(selection.ranges ? {ranges: selection.ranges} : {})}})}
       onCopy={() => {const snapshot = selection; void (selection.ranges ? copyTextRanges(value.document, selection.ranges, allowAction) : copySentences(value.document, selected, allowAction)).then(() => {setNotice(m.copySuccess); clearIf(snapshot);}).catch(() => setNotice(m.copyFailed));}}

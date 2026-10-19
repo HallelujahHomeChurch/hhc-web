@@ -12,13 +12,6 @@ export function readerSentences(document: MemberOnlineDocument): ReaderSentence[
   ];
 }
 
-export function toggleSentence(selected: readonly string[], id: string, index: readonly ReaderSentence[]): string[] {
-  const wanted = new Set(selected);
-  if (wanted.has(id)) wanted.delete(id);
-  else if (wanted.size < 500) wanted.add(id);
-  return index.filter(sentence => wanted.has(sentence.id)).map(sentence => sentence.id);
-}
-
 export function selectedColor(selected: readonly string[], highlights: Readonly<Record<string, BulletinReaderHighlightColor | undefined>>): BulletinReaderHighlightColor | null {
   const first = highlights[selected[0]];
   return first && selected.every(id => highlights[id] === first) ? first : null;

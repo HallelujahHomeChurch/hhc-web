@@ -175,7 +175,7 @@ describe('protected weekly reader', () => {
     expect(screen.queryByRole('dialog', {name: props.messages.search})).not.toBeInTheDocument();
     expect(state.open).toHaveBeenCalledOnce();
   });
-  it('toggles mobile sentences, dismisses from distant blank space and persists non-contiguous whole-sentence highlights', async () => {
+  it('toggles mobile clauses, dismisses from blank space and resets a non-adjacent highlight passage', async () => {
     vi.stubGlobal('matchMedia', vi.fn(query => ({matches: query === '(max-width: 767px)', addEventListener: vi.fn(), removeEventListener: vi.fn()})));
     const cloud = (await state.privateState()).state;
     state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: cloud, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]}));
@@ -194,7 +194,50 @@ describe('protected weekly reader', () => {
     fireEvent.click(last); fireEvent.click(first);
     fireEvent.click(screen.getByRole('button', {name: 'Blue highlight'}));
     await waitFor(() => expect(state.mutate).toHaveBeenCalled());
-    expect(state.mutate.mock.calls[0][2][0].payload).toEqual({sentenceIds: ['s0', 's3'], color: 'blue'});
+    expect(state.mutate.mock.calls[0][2][0].payload).toEqual({sentenceIds: ['s0'], ranges: [{sentenceId:'s0',start:0,end:4}], color: 'blue'});
+  });
+  it.each((['paper','easy'] as const).flatMap(mode => (['copy','highlight','note'] as const).map(action => [mode,action] as const)))('uses the exact mobile clause for %s %s', async (mode, action) => {
+    vi.stubGlobal('matchMedia', vi.fn(query => ({matches: query === '(max-width: 767px)', addEventListener: vi.fn(), removeEventListener: vi.fn()})));
+    const value = readerFixture(), component = value.document.content.components[0];
+    if (component.type !== 'backSummary') throw new Error('fixture');
+    component.items[0].blocks[0].sentences[0].spans = [{text:'甲😀，乙。丙。',fontRole:'body'}];
+    value.document.content.layoutManifest.pages[0].slots[0].fragments[0].end = 7;
+    state.open.mockResolvedValue(value); state.current.mockResolvedValue(value);
+    sessionStorage.setItem(`weekly-reader-position:account-a:${value.document.documentId}:1:mode`,mode);
+    let cloud: BulletinReaderState = (await state.privateState()).state;
+    state.mutate.mockImplementation(async (_selector, _value, mutations) => {
+      cloud = applyLocalMutation(cloud, mutations[0], value.document);
+      return {state:cloud,results:[{mutationId:mutations[0].mutationId,status:'applied',revision:1}]};
+    });
+    Object.defineProperty(Range.prototype,'getClientRects',{configurable:true,value:function(this:Range){return [new DOMRect(this.toString().startsWith('甲')?0:this.toString().startsWith('乙')?30:50,20,20,12)];}});
+    const clipboard = {writeText:vi.fn().mockResolvedValue(undefined)}, original = Object.getOwnPropertyDescriptor(navigator,'clipboard');
+    Object.defineProperty(navigator,'clipboard',{configurable:true,value:clipboard});
+    try {
+      const {container} = render(<WeeklyReader {...props}/>);
+      await waitFor(() => expect(screen.getByRole('button',{name:props.messages.myNotes})).toBeEnabled(),{timeout:5000});
+      const text = container.querySelector('[data-sentence-id="s0"]')!;
+      for (const type of ['pointerdown','pointerup']) {
+        const event = new MouseEvent(type,{bubbles:true,clientX:35,clientY:25}); Object.defineProperty(event,'pointerId',{value:1}); fireEvent(text,event);
+      }
+      fireEvent.click(text,{clientX:35,clientY:25,detail:1});
+      if (action === 'copy') {
+        fireEvent.click(screen.getByRole('button',{name:props.messages.copySelection}));
+        await waitFor(() => expect(clipboard.writeText).toHaveBeenCalledWith('乙。\n\n— 第 1739 期《Private weekly》'));
+      } else {
+        if (action === 'highlight') fireEvent.click(screen.getByRole('button',{name:'Blue highlight'}));
+        else {
+          fireEvent.click(screen.getByRole('button',{name:props.messages.addNote}));
+          expect(await screen.findByRole('dialog',{name:props.messages.myNotes})).toHaveTextContent('乙。');
+          fireEvent.change(screen.getByRole('textbox',{name:props.messages.noteText}),{target:{value:'自己的筆記'}});
+          fireEvent.click(screen.getByRole('button',{name:props.messages.noteSave}));
+        }
+        await waitFor(() => expect(state.mutate.mock.calls.some(call => call[2][0].kind === (action === 'highlight' ? 'setHighlight' : 'createNote'))).toBe(true));
+        const mutation = state.mutate.mock.calls.find(call => call[2][0].kind === (action === 'highlight' ? 'setHighlight' : 'createNote'))![2][0];
+        expect(mutation.payload.ranges).toEqual([{sentenceId:'s0',start:3,end:5}]);
+        expect(mutation.payload.sentenceIds).toEqual(['s0']);
+        if (action === 'note') expect(cloud.notes[0]).toMatchObject({quote:'乙。',text:'自己的筆記'});
+      }
+    } finally {if (original) Object.defineProperty(navigator,'clipboard',original); else Reflect.deleteProperty(navigator,'clipboard');}
   });
   it.each(([
     ['zh-Hant',1440],['zh-Hans',1440],['zh-Hant',1024],['zh-Hans',1024],['zh-Hant',390],['zh-Hans',390],

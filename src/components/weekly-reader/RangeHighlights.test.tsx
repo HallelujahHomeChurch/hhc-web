@@ -21,3 +21,15 @@ it('paints mounted partial ranges and lets a tap reopen that exact range without
   fireEvent.click(root.firstChild!, {clientX: 15, clientY: 25});
   expect(onSelect).toHaveBeenCalledWith({sentenceId: 'a', start: 1, end: 3});
 });
+
+it('paints only the selected scalar range once in its own layer without replacing text', async () => {
+  const root = document.createElement('div');
+  root.innerHTML = '<span data-sentence-id="s" data-fragment-start="0" data-fragment-end="7">甲😀，乙。丙。</span>';
+  document.body.append(root);
+  const measured: string[] = [];
+  Object.defineProperty(Range.prototype, 'getClientRects', {configurable: true, value: function(this: Range) {measured.push(this.toString()); return [new DOMRect(30, 20, 20, 12), new DOMRect(30, 20, 20, 12)];}});
+  const {container} = render(<RangeHighlights root={{current: root}} layoutKey="p1" highlights={[]} selectedRanges={[{sentenceId:'s',start:3,end:5}]}/>);
+  await waitFor(() => expect(container.querySelectorAll('.reader-selection-layer [data-reader-highlight="selection"]')).toHaveLength(1));
+  expect(measured).toEqual(['乙。']);
+  expect(root.textContent).toBe('甲😀，乙。丙。');
+});

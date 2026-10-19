@@ -447,3 +447,8 @@ body:has(.weekly-reader) {padding-bottom: 0;}
 @media (prefers-reduced-motion: reduce) {
   .reader-selection-tools, .reader-notes-list article, .reader-highlights-list article {animation: none;}
 }
+
+.reader-range-layer [data-reader-highlight='selection'] {background: #4bb4ff50;}
+.reader-document[data-mobile] .reader-paper-with-notes [data-sentence-id][data-selected] {background: transparent; outline: none; box-shadow: none;}
+
+.reader-selection-layer {mix-blend-mode: normal;}

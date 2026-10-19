@@ -158,6 +158,7 @@
     "unsyncedWarning": "此设备尚未同步的更改将被移除，是否继续？",
     "reauthWriteConfirm": "已重新验证帐号，是否应用先前的更改？",
     "selectionActions": "已选文字的操作",
+    "clauseKeyboardHelp": "以 Tab 移动焦点；在句子中用左右方向键选短句，Enter 或空格键切换选择。",
     "selectionCount": "已选取 {count} 个字符",
     "highlightColors": "标注颜色",
     "yellowHighlight": "黄色荧光",

@@ -25,6 +25,13 @@ window.fixtureValue=readerFixture();
 const value=window.fixtureValue;value.access.accountId='local-fixture-account';
 const fixtureTime=Date.now();value.access.validatedAt=new Date(fixtureTime).toISOString();value.access.offlineValidUntil=new Date(fixtureTime+604800000).toISOString();
 value.document.canonicalMetadata.title='閱讀與筆記合成測試';
+if(new URLSearchParams(location.search).get('scenario')==='clauses') {
+  const text='「起初😀，」我們學習彼此相愛，並在生活中實踐信仰。數字3.14,000保持完整，最後一起前行。';
+  const first=value.document.content.components[0];first.items[0].blocks[0].sentences[0].spans=[{text,fontRole:'body'}];
+  value.document.content.layoutManifest.pages[0].slots[0].fragments[0].end=[...text].length;
+  if(new URLSearchParams(location.search).has('split')) {value.document.content.layoutManifest.pages[0].slots[0].fragments[0].end=25;value.document.content.layoutManifest.pages[1].slots=[{...value.document.content.layoutManifest.pages[0].slots[0],id:'continued',fragments:[{sentenceId:'s0',start:25,end:[...text].length}]}];}
+}
+
 const store=createReaderPreviewStore();
 const note={mutationId:'fixture-seed',documentRevision:1,createdAt:new Date().toISOString(),kind:'createNote',payload:{noteId:'fixture-note',sentenceIds:['s0'],text:'這是一段用來檢查筆記版面與操作的合成文字。\\n'.repeat(12)}};
 store.mutate(value.document,[note]);
@@ -57,7 +64,7 @@ const locale=['en','ja','ko','zh-Hans','zh-Hant'].includes(params.get('locale'))
 document.documentElement.dataset.theme=params.get('theme')==='dark'?'dark':'light';localStorage.setItem('hhc-reader-theme',document.documentElement.dataset.theme);
 if(params.get('mode')!=='editor')saveReaderReturn({accountId:'local-fixture-account',documentId:value.document.documentId},{revision:1,draft:undefined});
 if(params.get('mode')==='editor')saveReaderReturn({accountId:'local-fixture-account',documentId:value.document.documentId},{revision:1,draft:{text:'尚未儲存的合成筆記。\\n'.repeat(12)}});
-if(scenario==='loaderror'||scenario==='error'){await clearOfflineAccount('local-fixture-account');await activateOfflineAccount('local-fixture-account');}
+if(scenario==='loaderror'||scenario==='error'||scenario==='clauses'){await clearOfflineAccount('local-fixture-account');await activateOfflineAccount('local-fixture-account');}
 if(scenario==='partial'){await clearOfflineAccount('local-fixture-account');await activateOfflineAccount('local-fixture-account');const read=store.read;store.read=(doc)=>({...read(doc),conflicts:[{id:'fixture-partial-conflict',sentenceIds:['s0'],sources:[{sentenceId:'old',quote:'舊版藍色標註需要確認整段覆蓋。',color:'red',segments:[{start:2,end:6,color:'blue'}]}]}]});let reads=0;window.fixtureApi.privateState=async()=>({state:{...store.read(value.document),currentRevision:++reads===1?2:1}});}
 
 if(params.get('view')==='offline'){const epoch=await activateOfflineAccount('local-fixture-account');await commitOfflineSave({selector:{accountId:'local-fixture-account',issueNumber:1739,series:'general',contentLocale:'zh-Hant'},value,resources:[],size:1024,lastObservedAt:Date.now(),epoch,locked:false},epoch);saveReaderReturn({accountId:'local-fixture-account',documentId:value.document.documentId},{revision:1,draft:{text:'待同步的合成離線草稿。'}});}
