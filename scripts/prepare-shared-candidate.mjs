@@ -37,8 +37,9 @@ export function prepareCandidate({consumer, shared, output, expected = expectedC
   const archives = archivesAt(join(shared, 'artifacts'), expected);
   // Export committed consumer files only: never copy credentials, caches or nested checkouts.
   const paths = git(consumer, 'ls-tree', '-r', '--name-only', 'HEAD').split('\n');
-  assert.ok(paths.every(path => !/(^|\/)(\.env(?:\.[^/]*)?|\.npmrc|\.superpowers|node_modules|\.next|\.git)(\/|$)/.test(path) || path === '.npmrc'), 'unsafe tracked candidate input');
-  const source = execFileSync('git', ['archive', 'HEAD'], {cwd: consumer, maxBuffer: 64 * 1024 * 1024});
+  const safePaths = paths.filter(path => !/(^|\/)(\.env(?:\.[^/]*)?|\.npmrc|\.superpowers|node_modules|\.next|\.git)(\/|$)/.test(path));
+  assert.ok(safePaths.includes('package.json') && safePaths.includes('Dockerfile'), 'missing candidate inputs');
+  const source = execFileSync('git', ['archive', 'HEAD', '--', ...safePaths], {cwd: consumer, maxBuffer: 256 * 1024 * 1024});
   mkdirSync(output, {recursive: true});
   execFileSync('tar', ['-xf', '-', '-C', output], {input: source});
   rmSync(join(output, '.npmrc'), {force: true});
