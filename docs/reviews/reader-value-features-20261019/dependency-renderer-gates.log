@@ -1,0 +1,17 @@
+✔ the shards retain every original host and container command exactly once (1.796875ms)
+✔ the aggregate accepts only successful dependencies and complete same-commit coverage (1.442042ms)
+✔ a failed renderer command aborts its shard without recording completed coverage (106.720833ms)
+✔ missing verified assets fails before a host suite can skip font checks (24.185958ms)
+✔ release shards retain exactly all nine original container commands and no host commands (0.342125ms)
+✔ release gate rejects missing, duplicate, wrong-mode, stale-run and wrong-version receipts (0.681541ms)
+✔ CI and release use the same non-publishing shard runner and release cannot bypass verification (27.003042ms)
+✔ release execution records receipts only after every container command succeeds (793.876708ms)
+✔ both shard and publisher restore reject either corrupted tar before extracting or loading (531.820959ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1528.629042

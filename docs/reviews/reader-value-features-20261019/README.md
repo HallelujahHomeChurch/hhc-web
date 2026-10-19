@@ -31,3 +31,7 @@ Remaining gates: producer release → published SDK → exact registry consumer 
 ## Reproduce local UI
 
 The standalone `preview.mjs` was used against this exact worktree with its installed packed candidate: `node docs/reviews/reader-value-features-20261019/preview.mjs "$PWD"`. It binds loopback port 7152 and creates a temporary Vite fixture. Query parameters support `theme`, `locale`, `bookmarks=empty|long|conflict|invalid|legacy`, and `scenario=bookmark-offline`. This is local review tooling, not application code. Its only account identity is disposable `local-fixture-account`; it never calls production services. It does not simulate the production API security or persistence contract.
+
+## Dependency preparation follow-up
+
+See [integration checkpoint](../2026-10-19-reader-dependency-integration.md). SDK feature source now8c5fcdc includes latest main11464e8 and plans coordinated1.0.78; its new exact-head CI39200281237 completed SUCCESS (prepare, all three renderer groups and verify). Only the ignored local candidate was replaced with packed1.0.78 (SHA5d57749142ff369b2b9adc3855c26055a6848ca52130f96cd039c5f0be44be3e), and the unchanged consumer source passed a new full179-file/1423-test+8-node run, type/lint/build/perf/policy. Formal registry manifest/lock remain1.0.75; no package publication or registry consumer CI. Original screenshots/metrics above retain their original1.0.76 source provenance.

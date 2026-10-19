@@ -91,3 +91,5 @@ p3_t4_delivery PASS；p3_t4_visual初查唯一Important為200%截圖未含Downlo
 ## 依賴整合前置更新（04:37 UTC）
 
 使用者要求優先釐清收尾，仍保留merge前停止點。兩席依賴核對找出SDK1.0.76與既有正式版本碰撞；root在SDK feature分支整合最新main11464e8，協調8個manifest為候選1.0.78，commit8c5fcdc已push PR138。兩席修正複查PASS；完整本機workspace/build/test/lint/generated/contracts/pack/real packed Vite+Next及9個renderer gate tests PASS。新CI39200281237仍進行中，舊head的CI39151361617不代表此新head通過。未發布／未改consumer正式pin，完整順序、版本斷言與授權／實機缺口見 [dependency checkpoint](2026-10-19-reader-dependency-integration.md)。
+
+依賴前置最終結果：SDK8c5fcdc的CI39200281237五項（prepare、legacy／v7-v8／v9-v10、verify）全部SUCCESS；consumer只在ignored node_modules使用新packed1.0.78，固定source再跑179檔1423測試+8Node及type/lint/build/perf/policy全部PASS。七個registry與v1.0.78 tag在可用性快照均未占用，發布前仍須重查。正式consumer manifest/lock/version assertion仍為1.0.75，未把本機候選說成registry整合。仍需API→SDK合併／tag發布的新授權；這輪未合併任何PR或發布。
