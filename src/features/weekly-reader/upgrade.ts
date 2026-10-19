@@ -1,17 +1,18 @@
 import type {BulletinReaderMutation, BulletinReaderState, OnlineBulletinAccess} from '@hallelujahhomechurch/hhc-web-client';
 import type {createReaderApi, ReaderSelector} from './api';
-import {commitOfflineUpgrade, getOfflineIdentity, readPrivateReplica, recordReaderReplayResult, recordReaderRecoveryResult, retainReaderRecoveries, renewOfflineSave, stageOfflineSave, stageReaderReplay, type PendingReaderMutation} from './offline-store';
+import {bindOnlinePrivate, commitOnlineUpgrade, commitOfflineUpgrade, getOfflineIdentity, readPrivateBinding, readPrivateReplica, recordReaderReplayResult, recordReaderRecoveryResult, retainReaderRecoveries, stageOfflineSave, stageReaderReplay, type PendingReaderMutation} from './offline-store';
 import {rebaseReaderMutations, type ReaderRecovery} from './rebase';
 
 type UpgradeApi = Pick<ReturnType<typeof createReaderApi>, 'current' | 'renew' | 'privateState' | 'mutate'>;
-export type ReaderUpgrade = {value: OnlineBulletinAccess; previousRevision: number; state: BulletinReaderState; queue: PendingReaderMutation[]; mutations: BulletinReaderMutation[]; recovery: ReaderRecovery[]};
+export type ReaderUpgrade = {onlineOnly?: boolean; value: OnlineBulletinAccess; previousRevision: number; state: BulletinReaderState; queue: PendingReaderMutation[]; mutations: BulletinReaderMutation[]; recovery: ReaderRecovery[]};
 
 /** User-accepted update only. Never called from automatic foreground synchronization. */
 export async function prepareReaderUpgrade(api: UpgradeApi, selector: ReaderSelector, value: OnlineBulletinAccess, epoch: number, signal: AbortSignal, now = Date.now): Promise<ReaderUpgrade> {
   return navigator.locks.request(`hhc-weekly-reader-sync:${selector.accountId}`, {signal}, async () => {
     const fresh = await api.renew(selector, value, crypto.randomUUID(), signal);
     signal.throwIfAborted();
-    await renewOfflineSave(selector, fresh, epoch, now());
+    await bindOnlinePrivate(selector, fresh, epoch, now());
+    const binding = await readPrivateBinding(selector, now());
     const previous = await readPrivateReplica(selector, now());
     const current = await api.current(selector, value, crypto.randomUUID(), signal);
     const cloud = await api.privateState(selector, value, signal);
@@ -56,7 +57,7 @@ export async function prepareReaderUpgrade(api: UpgradeApi, selector: ReaderSele
     const base = previous?.confirmed ?? {...state, currentRevision: value.document.revision, appliedRevision: value.document.revision, highlights: [], notes: [], progress: null, conflicts: []};
     const rebased = rebaseReaderMutations(pending, base, state, cloud.mappings ?? []);
     if (rebased.recovery.length) queue = await retainReaderRecoveries(selector, rebased.recovery, epoch, queue, now());
-    return {value: current, previousRevision: value.document.revision, state, queue, mutations: rebased.mutations, recovery: [...recovery, ...rebased.recovery]};
+    return {onlineOnly: binding.onlineOnly, value: current, previousRevision: value.document.revision, state, queue, mutations: rebased.mutations, recovery: [...recovery, ...rebased.recovery]};
   });
 }
 
@@ -77,9 +78,12 @@ export async function finishReaderUpgrade(api: UpgradeApi, selector: ReaderSelec
       state = response.state;
       if (response.results[0].status !== 'applied' || state.currentRevision !== prepared.value.document.revision) throw new Error('action_required');
     }
-    const staged = await stageOfflineSave(prepared.value, selector, fetcher, now(), signal);
-    signal.throwIfAborted();
-    await commitOfflineUpgrade(staged, state, epoch, prepared.previousRevision, queue, now());
+    if (prepared.onlineOnly) await commitOnlineUpgrade(selector, prepared.value, state, epoch, prepared.previousRevision, queue, now());
+    else {
+      const staged = await stageOfflineSave(prepared.value, selector, fetcher, now(), signal);
+      signal.throwIfAborted();
+      await commitOfflineUpgrade(staged, state, epoch, prepared.previousRevision, queue, now());
+    }
     return {value: prepared.value, state};
   });
 }

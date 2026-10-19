@@ -148,6 +148,7 @@
     "cancelWaiting": "取消等待",
     "retryContinues": "重試上一筆操作；確認後會繼續這次變更。",
     "syncSynced": "已同步",
+    "syncUnsaved": "尚未安全儲存，請保持此頁開啟並重試同步。",
     "syncWaiting": "等待連線",
     "syncSyncing": "同步中",
     "syncAction": "需要處理",

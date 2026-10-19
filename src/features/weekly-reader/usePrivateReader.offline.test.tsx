@@ -29,7 +29,8 @@ it('returns the known offline note conflict and retains its exact durable mutati
   await waitFor(() => expect(result.current.state).not.toBeNull());
   let outcome: unknown;
   await act(async () => {outcome = await result.current.mutate(write);});
-  expect(outcome).toMatchObject({status: 'note_conflict', note: cloud});
+  expect(outcome).toMatchObject({status: 'queued', durable: true});
+  await waitFor(() => expect(result.current.status).toBe('action'));
   expect(result.current.status).toBe('action');
   expect((await readPrivateReplica(selector, now))?.queue[0]).toMatchObject({mutation: write, result: {status: 'note_conflict'}});
   expect(onFailure).not.toHaveBeenCalled();

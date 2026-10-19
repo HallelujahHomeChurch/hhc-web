@@ -51,6 +51,7 @@ if(scenario==='conflict'||scenario==='deleted'){window.fixtureApi.mutate=async(_
 
 clearReaderReturn({accountId:'local-fixture-account',documentId:value.document.documentId});
 for(const key of Object.keys(sessionStorage))if(key.startsWith('weekly-reader-position:local-fixture-account:'))sessionStorage.removeItem(key);
+await activateOfflineAccount('local-fixture-account');
 const params=new URLSearchParams(location.search);
 const locale=['en','ja','ko','zh-Hans','zh-Hant'].includes(params.get('locale'))?params.get('locale'):'zh-Hant';
 document.documentElement.dataset.theme=params.get('theme')==='dark'?'dark':'light';localStorage.setItem('hhc-reader-theme',document.documentElement.dataset.theme);

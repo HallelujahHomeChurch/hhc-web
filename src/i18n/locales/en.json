@@ -148,6 +148,7 @@
     "cancelWaiting": "Cancel waiting",
     "retryContinues": "Retry the previous action, then continue this change after confirmation.",
     "syncSynced": "Synced",
+    "syncUnsaved": "Not safely saved yet. Keep this page open and retry synchronization.",
     "syncWaiting": "Waiting for connection",
     "syncSyncing": "Syncing",
     "syncAction": "Action required",

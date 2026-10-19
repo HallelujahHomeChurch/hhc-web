@@ -148,6 +148,7 @@
     "cancelWaiting": "待機をキャンセル",
     "retryContinues": "前の操作を再試行し、確認後に今回の変更を続行します。",
     "syncSynced": "同期済み",
+    "syncUnsaved": "まだ安全に保存されていません。このページを開いたまま同期を再試行してください。",
     "syncWaiting": "接続待ち",
     "syncSyncing": "同期中",
     "syncAction": "対応が必要です",

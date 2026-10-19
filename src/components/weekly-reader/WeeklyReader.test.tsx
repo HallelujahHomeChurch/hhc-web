@@ -48,7 +48,7 @@ function chooseDirection(name: string) {
   expect(document.querySelector('.reader-viewport')).toHaveAttribute('data-direction', name === 'Horizontal paging' ? 'horizontal' : 'vertical');
 }
 beforeEach(() => {vi.stubEnv('NEXT_PUBLIC_WEEKLY_READER_ENABLED', 'true'); state.accountId = 'account-a'; state.status = 'authenticated'; state.open.mockReset().mockResolvedValue(readerFixture()); state.privateState.mockReset().mockResolvedValue({state: {accountId: 'account-a', documentId: readerFixture().document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: null, conflicts: []}}); state.mutate.mockReset(); sessionStorage.clear(); vi.stubGlobal('matchMedia', vi.fn(() => ({matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn()})));});
-afterEach(() => {cleanup(); Reflect.deleteProperty(document, 'fonts'); Reflect.deleteProperty(Range.prototype, 'getBoundingClientRect'); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.useRealTimers();});
+afterEach(() => {cleanup(); Reflect.deleteProperty(document, 'fonts'); Reflect.deleteProperty(Range.prototype, 'getBoundingClientRect'); Reflect.deleteProperty(Range.prototype, 'getClientRects'); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.useRealTimers();});
 beforeEach(() => {Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect(0, 100, 300, 20)});});
 
 describe('protected weekly reader', () => {
@@ -60,18 +60,16 @@ describe('protected weekly reader', () => {
     expect(container.querySelector('[data-sentence-id]')).toBeNull();
     expect(state.open).not.toHaveBeenCalled();
   });
-  it('authorization validation covers content but retains a content-free header silhouette', async () => {
+  it('background authorization validation preserves usable content without a loading message', async () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
     let finish!: (value: ReturnType<typeof readerFixture>) => void;
     state.open.mockImplementationOnce(() => new Promise(resolve => {finish = resolve;}));
     fireEvent(window, new Event('focus'));
     await waitFor(() => expect(state.open).toHaveBeenCalledTimes(2));
-    const mask = container.querySelector('.reader-loading-shell[data-overlay]');
-    expect(mask?.querySelector('.reader-tabbar')).toBeInTheDocument();
-    expect(mask).not.toHaveTextContent('Private weekly');
-    expect(mask?.querySelector('[data-sentence-id]')).toBeNull();
-    expect(container.querySelector('.reader-document')?.closest('[inert]')).toHaveAttribute('aria-hidden', 'true');
+    expect(container.querySelector('.reader-loading-shell[data-overlay]')).toBeNull();
+    expect(container.querySelector('.reader-document')?.closest('[inert]')).toBeNull();
+    expect(screen.getByText('Private weekly')).toBeInTheDocument();
     await act(async () => finish(readerFixture()));
     expect(container.querySelector('.reader-loading-shell[data-overlay]')).toBeNull();
   });
@@ -87,7 +85,7 @@ describe('protected weekly reader', () => {
   });
   it.each(['cancel', 'confirm'])('exit dialog can %s while authorization revalidation is pending', async action => {
     render(<WeeklyReader {...props}/>);
-    await waitFor(() => expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled());
+    await screen.findByText('Private weekly');
     fireEvent.click(screen.getByRole('button', {name: props.messages.home}));
     let finish!: (value: ReturnType<typeof readerFixture>) => void;
     state.open.mockImplementationOnce(() => new Promise(resolve => {finish = resolve;}));
@@ -139,8 +137,8 @@ describe('protected weekly reader', () => {
     fireEvent(window, new Event('focus'));
     await waitFor(() => expect(state.open).toHaveBeenCalledTimes(2));
     expect(container.querySelector('.reader-document')!.closest('[hidden]')).toBeNull();
-    expect(container.querySelector('.reader-document')!.closest('[inert]')).toHaveAttribute('aria-hidden', 'true');
-    expect(container.querySelector('.reader-loading')).toHaveAttribute('aria-busy', 'true');
+    expect(container.querySelector('.reader-document')!.closest('[inert]')).toBeNull();
+    expect(container.querySelector('.reader-loading')).toBeNull();
     pointer('pointerup');
     fireEvent.click(result);
     await act(async () => finish(readerFixture()));
@@ -498,7 +496,7 @@ describe('protected weekly reader', () => {
     await waitFor(() => expect(container.querySelector('.reader-viewport')!.scrollTop).toBeGreaterThanOrEqual(364));
     expect(scroll).not.toHaveBeenCalled();
   });
-  it('restores an existing note quote and edit identity without changing its base version', async () => {
+  it('preserves a stale restored draft and asks for a merge without sending its obsolete CAS', async () => {
     const fixture = readerFixture(), cloud = (await state.privateState()).state;
     const note = {id: 'note-a', sentenceIds: ['s0'], text: 'Cloud text', quote: 'Original quotation', version: 4, deleted: false, inactiveAnchors: ['s0'], reanchorRequired: true, createdAt: '', updatedAt: ''};
     saveReaderReturn({accountId: 'account-a', documentId: fixture.document.documentId}, {revision: 1, draft: {noteId: 'note-a', baseVersion: 2, text: 'My unsaved edit'}});
@@ -510,8 +508,9 @@ describe('protected weekly reader', () => {
     expect(screen.getByRole('textbox', {name: props.messages.noteText})).toHaveValue('My unsaved edit');
     expect(state.mutate).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', {name: props.messages.noteSave}));
-    await waitFor(() => expect(state.mutate).toHaveBeenCalled());
-    expect(state.mutate.mock.calls[0][2][0]).toMatchObject({kind: 'editNote', baseVersion: 2, payload: {noteId: 'note-a', text: 'My unsaved edit'}});
+    expect(await screen.findByText(props.messages.noteConflict)).toBeInTheDocument();
+    expect(screen.getByRole('textbox', {name: props.messages.noteText})).toHaveValue('My unsaved edit');
+    expect(state.mutate).not.toHaveBeenCalled();
   });
   it('keeps a missing existing note draft readable without offering create or save', async () => {
     saveReaderReturn({accountId: 'account-a', documentId: readerFixture().document.documentId}, {revision: 1, draft: {noteId: 'missing', baseVersion: 1, text: 'Do not discard'}});
@@ -673,7 +672,8 @@ describe('protected weekly reader', () => {
     expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
   });
 
-  it('keeps toolbar selection until acknowledgement, then closes it and preserves the saved color', async () => {
+  it('closes the toolbar immediately, preserving the optimistic highlight until acknowledgement', async () => {
+    Object.defineProperty(Range.prototype, 'getClientRects', {configurable: true, value: () => [new DOMRect(0, 100, 300, 20)]});
     const cloud = (await state.privateState()).state;
     let acknowledge!: () => void;
     state.mutate.mockImplementation((_selector, _value, mutations) => new Promise(resolve => {
@@ -689,24 +689,27 @@ describe('protected weekly reader', () => {
     expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
     fireEvent.click(color);
     await waitFor(() => expect(acknowledge).toBeTypeOf('function'));
-    expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
+    await waitFor(() => expect(container.querySelector('[data-reader-highlight="yellow"]')).not.toBeNull());
     await act(async () => acknowledge());
     expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
     expect(sentence).toHaveAttribute('data-highlight', 'yellow');
   });
 
   it('retains retry context after a failed highlight and does not discard an open note on outside click', async () => {
+    Object.defineProperty(Range.prototype, 'getClientRects', {configurable: true, value: () => [new DOMRect(0, 100, 300, 20)]});
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    state.mutate.mockRejectedValue(new Error('temporary'));
+    state.mutate.mockRejectedValue(new TypeError('temporary'));
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
     await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
     selectText(container.querySelector('[data-sentence-id="s0"]')!);
     fireEvent.click(screen.getByRole('button', {name: 'Yellow highlight'}));
-    await screen.findByText(props.messages.operationUnknown);
+    await screen.findByText(props.messages.syncUnsaved);
     expect(screen.queryByRole('button', {name: props.messages.syncAction})).not.toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
-    expect(container.querySelector('[data-sentence-id="s0"]')).not.toHaveAttribute('data-highlight');
+    expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
+    await waitFor(() => expect(container.querySelector('[data-reader-highlight="yellow"]')).not.toBeNull());
+    selectText(container.querySelector('[data-sentence-id="s0"]')!);
     fireEvent.click(screen.getByRole('button', {name: 'Note'}));
     fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'Keep this draft'}});
     fireEvent.pointerDown(document.body);
@@ -849,7 +852,7 @@ describe('protected weekly reader', () => {
     expect(await screen.findByRole('textbox', {name: props.messages.noteText})).toHaveValue('Do not lose this draft');
     vi.unstubAllGlobals();
   });
-  it('hides portal note text during foreground authorization and restores the unchanged draft afterward', async () => {
+  it('keeps the same portal editor and draft usable during background authorization', async () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
     await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
@@ -860,7 +863,7 @@ describe('protected weekly reader', () => {
     state.open.mockImplementationOnce(() => new Promise(resolve => {finish = resolve;}));
     fireEvent.focus(window);
     await waitFor(() => expect(state.open).toHaveBeenCalledTimes(2));
-    expect(screen.queryByRole('textbox', {name: props.messages.noteText})).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', {name: props.messages.noteText})).toHaveValue('Unsaved private draft');
     await act(async () => finish(readerFixture()));
     expect(await screen.findByRole('textbox', {name: props.messages.noteText})).toHaveValue('Unsaved private draft');
   });
@@ -911,7 +914,7 @@ describe('protected weekly reader', () => {
     expect(screen.queryByRole('button', {name: 'Continue reading'})).not.toBeInTheDocument();
     expect(state.mutate).not.toHaveBeenCalled();
   });
-  it('retains selected sentences across foreground authorization checks without permitting actions during validation', async () => {
+  it('keeps selected sentences and annotation actions usable during background validation', async () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
     await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).not.toBeDisabled());
@@ -921,7 +924,7 @@ describe('protected weekly reader', () => {
     state.open.mockImplementationOnce(() => new Promise(resolve => {finish = resolve;}));
     fireEvent.focus(window);
     await waitFor(() => expect(state.open).toHaveBeenCalledTimes(2));
-    expect(screen.queryByRole('button', {name: 'Copy'})).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Copy'})).toBeEnabled();
     await act(async () => finish(readerFixture()));
     await screen.findByRole('button', {name: 'Copy'});
     expect(screen.getByRole('button', {name: 'Copy'})).toBeInTheDocument();
@@ -1231,7 +1234,8 @@ it.each(['save', 'delete'] as const)('accepts the first note %s while background
     fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'Changed once'}});
     fireEvent.click(screen.getByRole('button', {name: 'Save'}));
   } else {fireEvent.click(screen.getByRole('button', {name: 'Delete'})); fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', {name: 'Delete'}));}
-  expect(await screen.findByText(props.messages.operationWaiting)).toBeInTheDocument();
+  expect(screen.queryByText(props.messages.operationWaiting)).not.toBeInTheDocument();
+  expect(screen.queryByRole('textbox', {name: props.messages.noteText})).not.toBeInTheDocument();
   expect(state.mutate).toHaveBeenCalledOnce();
   await act(async () => release());
   await waitFor(() => expect(state.mutate).toHaveBeenCalledTimes(2));
@@ -1291,24 +1295,21 @@ it('protects a manual delete-conflict merge before any further typing and saves 
   expect(native).not.toHaveBeenCalled();
 });
 
-it('cancels a tab-close continuation when a new draft appears during progress flush', async () => {
+it('closes a clean bulletin without waiting for a background progress acknowledgement', async () => {
   const current = {issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const};
   writeTabs('account-a', [current, {...current, issueNumber: 1740}]);
   const cloud = (await state.privateState()).state;
   let finish!: () => void;
   state.mutate.mockImplementation((_selector, _value, mutations) => new Promise(resolve => {finish = () => resolve({state: cloud, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]});}));
-  const {container} = render(<WeeklyReader {...props}/>);
+  render(<WeeklyReader {...props}/>);
   await waitFor(() => expect(screen.getByRole('button', {name: 'My notes'})).toBeEnabled());
   await screen.findByRole('button', {name: /Close bulletin.*1740/});
   await choosePage(2);
   fireEvent.click(screen.getByRole('button', {name: /Close bulletin.*1739/}));
   await waitFor(() => expect(state.mutate).toHaveBeenCalledOnce());
-  selectText(container.querySelector('[data-sentence-id="s0"]')!);
-  fireEvent.click(screen.getByRole('button', {name: 'Note'}));
-  fireEvent.change(screen.getByRole('textbox', {name: 'Note'}), {target: {value: 'Keep the draft created during navigation'}});
+  await waitFor(() => expect(readTabs('account-a').map(tab => tab.issueNumber)).toEqual([1740]));
   await act(async () => finish());
-  expect(readTabs('account-a').map(tab => tab.issueNumber)).toEqual([1739, 1740]);
-  expect(screen.getByRole('textbox', {name: 'Note'})).toHaveValue('Keep the draft created during navigation');
+  expect(readTabs('account-a').map(tab => tab.issueNumber)).toEqual([1740]);
 });
 it('shows a local notes-load error and retries without changing the document', async () => {
   state.privateState.mockRejectedValueOnce(new TypeError('notes network failure'));
@@ -1417,4 +1418,29 @@ it('preserves a hidden bookmark draft when saving an ordinary note after switchi
  state.mutate.mockImplementation(async(_s,_v,mutations)=>({state:{...cloud,notes:[{...note,text:mutations[0].payload.text,version:2}],bookmarks:[]},results:[{mutationId:mutations[0].mutationId,status:'applied',revision:1}]}));
  render(<WeeklyReader {...props}/>);await waitFor(()=>expect(screen.getByRole('button',{name:props.messages.myNotes})).toBeEnabled());fireEvent.click(screen.getByRole('button',{name:props.messages.myNotes}));fireEvent.click(await screen.findByRole('tab',{name:props.messages.bookmarksTab}));fireEvent.click(screen.getByRole('button',{name:props.messages.bookmarkAdd}));fireEvent.change(screen.getByRole('textbox',{name:props.messages.bookmarkName}),{target:{value:'Keep bookmark draft'}});fireEvent.click(screen.getByRole('tab',{name:props.messages.notesTab}));fireEvent.click(screen.getByRole('button',{name:props.messages.noteEdit}));fireEvent.change(screen.getByRole('textbox',{name:props.messages.noteText}),{target:{value:'Changed note'}});fireEvent.click(screen.getByRole('button',{name:props.messages.noteSave}));
  await waitFor(()=>expect(screen.getByRole('textbox',{name:props.messages.bookmarkName})).toHaveValue('Keep bookmark draft'));expect(state.mutate.mock.calls[0][2][0]).toMatchObject({kind:'editNote'});
+});
+
+
+it.each([false, true])('closes the editor on the first Save and retains a single edit with focus refresh=%s', async refresh => {
+  const value = readerFixture();
+  const note = {id: 'n', text: 'Original', quote: '內容0。', sentenceIds: ['s0'], inactiveAnchors: [], version: 1, deleted: false, reanchorRequired: false, createdAt: '', updatedAt: ''};
+  const cloud = {accountId: 'account-a', documentId: value.document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [note], progress: null, conflicts: []};
+  state.privateState.mockResolvedValue({state: cloud});
+  let finish!: () => void;
+  state.mutate.mockImplementation((_selector, _value, writes) => writes[0].kind === 'editNote' ? new Promise(resolve => {finish = () => resolve({state: {...cloud, notes: [{...note, text: 'Changed once', version: 2}]}, results: [{mutationId: writes[0].mutationId, status: 'applied', revision: 1}]});}) : Promise.resolve({state: cloud, results: [{mutationId: writes[0].mutationId, status: 'applied', revision: 1}]}));
+  const {container} = render(<WeeklyReader {...props}/>);
+  await waitFor(() => expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', {name: props.messages.myNotes}));
+  fireEvent.click(await screen.findByRole('button', {name: props.messages.noteEdit}));
+  fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'Changed once'}});
+  fireEvent.click(screen.getByRole('button', {name: props.messages.noteSave}));
+  expect(screen.queryByRole('textbox', {name: props.messages.noteText})).not.toBeInTheDocument();
+  expect(await screen.findByText('Changed once')).toBeInTheDocument();
+  await waitFor(() => expect(finish).toBeDefined());
+  if (refresh) {fireEvent(window, new Event('focus')); await waitFor(() => expect(state.open).toHaveBeenCalledTimes(2));}
+  expect(container.querySelector('.reader-loading-shell[data-overlay]')).toBeNull();
+  await act(async () => finish());
+  await waitFor(() => expect(screen.getByText('Changed once')).toBeInTheDocument());
+  expect(state.mutate.mock.calls.filter(call => call[2][0].kind === 'editNote')).toHaveLength(1);
+  expect(screen.queryByRole('textbox', {name: props.messages.noteText})).not.toBeInTheDocument();
 });

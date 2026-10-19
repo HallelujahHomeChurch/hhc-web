@@ -102,7 +102,7 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
   const allowAction = useCallback(() => {
     const value = state.value;
     const now = Date.now();
-    if (!value || blocked.current || state.validating) return false;
+    if (!value || blocked.current) return false;
     if (now < highWater.current || now >= windowEnd.current) {
       setState({value: null, offline: false, error: 'unavailable'});
       if (supportsOfflineReader()) void lockOfflineSave({accountId, issueNumber, series, contentLocale}).catch(() => {});
@@ -114,7 +114,7 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
       if (status !== 'available') setState({value: null, offline: false, error: 'unavailable'});
     }).catch(() => setState({value: null, offline: false, error: 'unavailable'}));
     return true;
-  }, [state.value, state.offline, state.validating, accountId, issueNumber, series, contentLocale]);
+  }, [state.value, state.offline, accountId, issueNumber, series, contentLocale]);
   useEffect(() => {
     if (!state.value) return;
     const timeout = window.setTimeout(allowAction, Math.max(0, windowEnd.current - Date.now()));

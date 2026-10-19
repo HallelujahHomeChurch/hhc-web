@@ -209,3 +209,11 @@ T0若發現本機journal、hit-test或Word生成不能滿足本規格，先修�
 - T0 首輪：資料／UX 兩席 FAIL；缺少 lifecycle 相容細節與可複核的基準、提案、動態及 DOCX 證據。沒有先進 T1。
 - T0 候選 2：相容表、六張基準、實際元件面板／滿版搜尋提案、流程影格／影片、browser DOCX 原型及三頁 render 已補齊，詳見 `docs/reviews/reader-professional-20261019/T0.md`。等待該候選新一輪雙席 gate；原 FAIL 保留，不以補檔推定 PASS。
 - 產品功能 T1–T6、真機接受、PR CI、merge／release 仍未完成。
+
+T0 候選 `dd12ca5` 第二輪：資料席 `reader_t0_data_gate`、UX席 `reader_t0_ux_gate` 均 PASS，無 Critical/Important。兩席只讀核對契約、原碼、實際截圖／影格與 DOCX 產物；沒有重跑測試或真機接受。T1 開始；T0 低幀率錄影只供流程原型檢查。
+
+### 2026-10-19 補充：安靜的背景操作
+
+正常閱讀、背景資格驗證與儲存不可在 header 下反覆顯示載入／處理／請稍候訊息框。操作立即反映；正常同步狀態僅在筆記面板以低干擾文字或圖示呈現，成功不逐次 toast。只有網路失敗、裝置無法安全保存、權限失效或衝突等需要處理的情況顯示持續可恢復提示。首次載入使用骨架；背景更新保留內容、焦點與捲動。T1、T2、T3 及 T6 的兩人檢驗都必須涵蓋。
+
+T1 root 候選完成：儲存／背景同步與安靜通知已實作，276 項範圍測試分組通過、TS／相關 ESLint／diff PASS；實際合成 Chromium 慢網路雙重編輯證據見 `docs/reviews/reader-professional-20261019/T1.md`。等待 T1 新一輪雙 Codex gate；未開始 T2，不推定產品或真機接受。

@@ -5,7 +5,7 @@ import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {Drawer} from '@hallelujahhomechurch/ui';
 import type {BulletinReaderHighlightColor, BulletinReaderMutation, BulletinReaderState, OnlineBulletinAccess} from '@hallelujahhomechurch/hhc-web-client';
 import type {createReaderApi, ReaderSelector} from '@/features/weekly-reader/api';
-import {chooseReaderRecovery, getOfflineIdentity, readOfflineSave, supportsOfflineReader} from '@/features/weekly-reader/offline-store';
+import {bindOnlinePrivate, chooseReaderRecovery, getOfflineIdentity, readPrivateBinding, supportsOfflineReader} from '@/features/weekly-reader/offline-store';
 import {finishReaderUpgrade, prepareReaderUpgrade, type ReaderUpgrade} from '@/features/weekly-reader/upgrade';
 import {manualReaderRecovery} from '@/features/weekly-reader/rebase';
 import {readerSentences} from '@/features/weekly-reader/selection';
@@ -18,7 +18,7 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
   onBookmarkRetry?: () => Promise<import('@/features/weekly-reader/usePrivateReader').ReaderOutcome | undefined>;
   api: ReturnType<typeof createReaderApi>; value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages;
   onUpdated: (value: OnlineBulletinAccess) => void; onFailure: (error: unknown) => void; suspended?: boolean;
-  pendingMutation?: BulletinReaderMutation | null; onPendingChange?: (mutation: BulletinReaderMutation | null, result?: import('@/features/weekly-reader/usePrivateReader').ReaderOutcome, previous?: BulletinReaderMutation | null) => void;
+  pendingMutation?: BulletinReaderMutation | null; onPendingChange?: (mutation: BulletinReaderMutation | null, result?: import('@/features/weekly-reader/usePrivateReader').ReaderOutcome, previous?: BulletinReaderMutation | null) => BulletinReaderMutation | null | void;
   mobile?: boolean; runExclusive?: ReaderExclusive; available?: boolean; onState?: (state: BulletinReaderState) => void; inline?: boolean; onOpenChange?: (open: boolean) => void;
 }) {
   const [open, setOpen] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState(false);
@@ -44,12 +44,22 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
     finally {request.abort(); setBusy(false);}
   }
   async function prepare(signal: AbortSignal) {
-    const saved = supportsOfflineReader() ? await readOfflineSave(selector) : null;
-    if (saved && !pending.current) {
+    const local = supportsOfflineReader() ? await readPrivateBinding(selector).catch(() => null) : null;
+    if (local && !pending.current) {
       const owner = await getOfflineIdentity();
-      if (owner.accountId !== selector.accountId) throw new Error('offline_account_changed');
+      if (owner.accountId !== selector.accountId || owner.epoch !== local.epoch) throw new Error('offline_account_changed');
       epoch.current = owner.epoch;
-      const next = await prepareReaderUpgrade(api, selector, value, owner.epoch, signal);
+      let next: ReaderUpgrade;
+      if (local.onlineOnly && local.revision !== value.document.revision) {
+        const current = await api.current(selector, value, crypto.randomUUID(), signal);
+        signal.throwIfAborted();
+        await bindOnlinePrivate(selector, current, owner.epoch);
+        const cloud = await api.privateState(selector, current, signal);
+        const latest = await readPrivateBinding(selector);
+        signal.throwIfAborted();
+        next = {onlineOnly: true, value: current, previousRevision: latest.revision, state: cloud.state, queue: latest.replica?.queue ?? [], mutations: [],
+          recovery: (latest.replica?.queue ?? []).filter(entry => !entry.resolution || entry.resolution.result && entry.resolution.result.status !== 'applied').map(entry => ({mutationId: entry.mutation.mutationId, reason: 'mapping_unavailable' as const}))};
+      } else next = await prepareReaderUpgrade(api, selector, value, owner.epoch, signal);
       signal.throwIfAborted(); onState?.(next.state); setPrepared(next); setAwaitingConfirmation(false);
     } else {
       epoch.current = null;
@@ -66,7 +76,7 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
     }
   }
   function remember(mutation: BulletinReaderMutation | null, result?: import('@/features/weekly-reader/usePrivateReader').ReaderOutcome) {
-    const previous = pending.current; pending.current = mutation; acknowledged.current = null; onPendingChange?.(mutation, result, previous);
+    const previous = pending.current; pending.current = mutation; acknowledged.current = null; const remaining = onPendingChange?.(mutation, result, previous); if (remaining !== undefined) pending.current = remaining;
   }
   async function retryPending(signal: AbortSignal) {
     if (!prepared || !pending.current) return;

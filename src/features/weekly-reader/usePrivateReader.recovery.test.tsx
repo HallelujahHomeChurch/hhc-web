@@ -29,7 +29,7 @@ it('shares the real Recovery retry gate with hook retry and deferred progress wi
   const progress: BulletinReaderMutation = {...pending, mutationId: 'latest-progress', kind: 'setProgress', payload: {pageId: 'p2'}};
   await act(async () => {
     await expect(result.current.retry()).rejects.toMatchObject({reason: 'busy'});
-    expect(await result.current.mutate(progress)).toEqual({status: 'deferred'});
+    expect(await result.current.mutate(progress)).toEqual({status: 'queued', durable: false});
   });
   await act(async () => finish());
   await waitFor(() => expect(api.mutate).toHaveBeenCalledTimes(2));

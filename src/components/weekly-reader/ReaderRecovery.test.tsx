@@ -6,13 +6,13 @@ import {ReaderRecovery} from './ReaderRecovery';
 const value = readerFixture();
 const mocks = vi.hoisted(() => ({prepare: vi.fn(), finish: vi.fn(), choose: vi.fn(), read: vi.fn(), identity: vi.fn()}));
 vi.mock('@/features/weekly-reader/upgrade', () => ({prepareReaderUpgrade: mocks.prepare, finishReaderUpgrade: mocks.finish}));
-vi.mock('@/features/weekly-reader/offline-store', () => ({supportsOfflineReader: () => true, getOfflineIdentity: mocks.identity, readOfflineSave: mocks.read, chooseReaderRecovery: mocks.choose}));
+vi.mock('@/features/weekly-reader/offline-store', () => ({supportsOfflineReader: () => true, getOfflineIdentity: mocks.identity, readPrivateBinding: mocks.read, bindOnlinePrivate: vi.fn(), chooseReaderRecovery: mocks.choose}));
 const api = {open: vi.fn(), renew: vi.fn(), current: vi.fn(), privateState: vi.fn(), mutate: vi.fn()};
 const props = {api, value, selector: {accountId: 'account-a', issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const}, messages: getMessages('en').weeklyReader, onUpdated: vi.fn(), onFailure: vi.fn()};
 const cloud = {accountId: 'account-a', documentId: value.document.documentId, appliedRevision: 2, currentRevision: 2, notes: [], highlights: [], progress: null, conflicts: []};
 beforeEach(() => {
   vi.resetAllMocks();
-  mocks.identity.mockResolvedValue({accountId: 'account-a', epoch: 1}); mocks.read.mockResolvedValue({status: 'available'});
+  mocks.identity.mockResolvedValue({accountId: 'account-a', epoch: 1}); mocks.read.mockResolvedValue({epoch: 1, revision: 1, onlineOnly: false, replica: null});
   mocks.prepare.mockResolvedValue({value, state: cloud, queue: [], mutations: [], recovery: [], previousRevision: 1}); mocks.finish.mockResolvedValue({value, state: cloud});
 });
 it('shows the original historical range while requiring a fresh location after revision change', async () => {
