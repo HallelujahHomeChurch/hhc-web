@@ -254,6 +254,7 @@
     },
     "search": {
       "members": "搜尋會員",
+      "groups": "搜尋小家或團契名稱",
       "label": "搜尋",
       "submit": "搜尋",
       "clear": "清除搜尋",

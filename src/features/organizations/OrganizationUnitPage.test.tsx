@@ -249,8 +249,8 @@ it('groups editing with business actions separately from the breadcrumb', async 
  expect(edit.closest('.organization-actions')).not.toBeNull();
 });
 
-it('renders ordinary members as a read-only roster with no management links or action column', async () => {
- operationsApi.getManagedUnit.mockResolvedValue({unit:{id:'church',kind:'small_group',name:'My group',status:'active'},breadcrumb:[],children:[],actions:{}})
+it.each(['small_group','fellowship'])('renders ordinary %s members as a read-only roster with no management links or action column', async kind => {
+ operationsApi.getManagedUnit.mockResolvedValue({unit:{id:'church',kind,name:'My group',status:'active'},breadcrumb:[],children:[],actions:{}})
  mount()
  const table = await screen.findByRole('table')
  await within(table).findByText('Alice')

@@ -1,3 +1,4 @@
+import {joinNotificationMessages} from '@/features/organizations/messages';
 import {relativeTime} from '@/lib/relative-time';
 import type {InboxItem} from '@hallelujahhomechurch/account-client';
 import type {NotificationAppHref, NotificationListItem} from '@hallelujahhomechurch/ui';
@@ -16,5 +17,9 @@ export function notificationItem(item: InboxItem, locale: Locale, copy: {generic
     if (target?.issueNumber) href = `/${locale}/literature-ministry?${targetQuery(target)}` as NotificationAppHref;
   }
   const content = ['notification.recording','notification.bulletin'].includes(projection.titleKey) && projection.messageKey === 'notification.published';
-  return {id:item.id, title:content && projection.parameters?.title || copy.generic, message:content ? copy.published : '', timeLabel:relativeTime(item.occurredAt,locale),dateTime:item.occurredAt,isRead:Boolean(item.readAt),...(href ? {link:{href,label:copy.open}} : {})};
+  const groupCopy = joinNotificationMessages[locale];
+  const groupKey = projection.messageKey;
+  const group = projection.titleKey === 'notification.orgJoin' && groupKey !== 'notification.orgJoin' && Object.hasOwn(groupCopy, groupKey);
+  const groupMessage = group ? groupCopy[groupKey as keyof typeof groupCopy].replace(/\{(title|applicant)\}/g, (_, key: string) => projection.parameters?.[key] ?? '') : '';
+  return {id:item.id, title:group ? groupCopy['notification.orgJoin'] : content && projection.parameters?.title || copy.generic, message:group ? groupMessage : content ? copy.published : '', timeLabel:relativeTime(item.occurredAt,locale),dateTime:item.occurredAt,isRead:Boolean(item.readAt),...(href ? {link:{href,label:copy.open}} : {})};
 }

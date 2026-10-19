@@ -246,7 +246,7 @@ export function AccountControlProvider({
         if (controller.signal.aborted) return;
         const entitlements = new Set(snapshot.entitlements.map(({entitlementCode}) => entitlementCode));
         const editions = bulletinEditions.filter(({series, locale}) => entitlements.has(entitlementByEdition.get(`${series}/${locale}`)!));
-        const canReadOrganizations = Boolean(snapshot.churchMembership && (snapshot.responsibilities.length > 0 || snapshot.memberships.some(({orgUnit}) => orgUnit.kind === 'small_group')));
+        const canReadOrganizations = Boolean(snapshot.churchMembership);
         if (!commitNavigation('operations', [...(editions.length ? ['literature-ministry'] : []), ...(entitlements.has('video.meeting-recordings.access') ? ['member-videos'] : []), ...(canReadOrganizations ? ['organizations'] : [])])) return;
         setManagedProjection({subject: auth.session.user.id, status: canReadOrganizations ? 'allowed' : 'denied'});
         setBulletinProjection({

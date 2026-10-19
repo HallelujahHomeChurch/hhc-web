@@ -220,9 +220,14 @@ physical OBS acceptance.
 
 Localized `/organizations`, unit and member routes reuse the Account session runtime,
 Operations/notification contracts and management UI. Entry uses the site's banner;
-inner pages retain compact controls and header member search. Navigation display reuses
-the account-scoped presentation cache; page mounting requires fresh church membership
-and delegated responsibility. Cached navigation hints never authorize access. Private reads are client-only and no-store,
+inner pages retain compact controls and header member search. Active church members can
+discover same-church groups and fellowships, keep managed roots, and submit requests
+that remain pending until approval. Confirmation shows the current server-provided
+church/family ancestors affected by the narrow affiliation rule.
+Navigation display reuses the account-scoped presentation cache; directory mounting
+requires fresh church membership, while unit/member access keeps its existing
+server authority checks. The owner-only request result route remains available after
+church membership ends, with live Account admission and no directory or roster access. Cached navigation hints never authorize access. Private reads are client-only and no-store,
 and routes are noindex/nofollow and excluded from sitemap and analytics.
 
 Gateway must release the exact WWW management/notification allowlist before WWW;
@@ -263,5 +268,5 @@ checks; they never perform group approval.
 This draft consumes immutable local Shared Inbox candidates for validation. The
 product registry pins remain unchanged. Final shared packaging, approved publication,
 exact registry repinning and CI revalidation are required before merge or release.
-Group request destinations and pending/result copy still require the dependent
-group implementation and final integration acceptance.
+Group review destinations still require the dependent review UI and final
+integration acceptance.

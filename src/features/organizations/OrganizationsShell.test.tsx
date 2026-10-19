@@ -4,11 +4,11 @@ import {OrganizationsShell} from './OrganizationsShell'
 import {useOrganizationsSearch, type OrganizationsSearchState} from './OrganizationsSearch'
 import type {SiteLayout} from '@/features/site-layout/types'
 const state = vi.hoisted(() => ({pathname:'/zh-Hant/organizations',owner:'owner'}))
-vi.mock('next/navigation',()=>({usePathname:()=>state.pathname}))
+vi.mock('next/navigation',()=>({usePathname:()=>state.pathname,useSearchParams:()=>new URLSearchParams()}))
 vi.mock('@/components/layout/AccountControl',()=>({useAccountIdentity:()=>state.owner,useOrganizationsAccess:()=>({status:'allowed'})}))
 vi.mock('@/components/layout/SiteHeader',()=>({SiteHeader:()=>null}))
 vi.mock('@/components/layout/SiteFooter',()=>({SiteFooter:()=>null}))
-vi.mock('./OrganizationsGate',()=>({OrganizationsGate:({children}:{children:React.ReactNode})=>children}))
+vi.mock('./OrganizationsGate',()=>({OrganizationsGate:({children,ownerOnly}:{children:React.ReactNode;ownerOnly:boolean})=><div data-testid="gate" data-owner-only={String(ownerOnly)}>{children}</div>}))
 const layout={bannerImageUrl:'/assets/banners/hero.jpg'} as SiteLayout
 beforeEach(()=>{state.pathname='/zh-Hant/organizations';state.owner='owner'})
 it('uses the approved title and subtitle in the existing entry banner',()=>{
@@ -41,4 +41,15 @@ it('isolates header member search across routes and account changes, ignoring st
  state.owner='other'
  view.rerender(<OrganizationsShell locale="zh-Hant" layout={layout}><Probe /></OrganizationsShell>)
  expect(screen.getByText('disabled:')).toBeInTheDocument()
+})
+
+it.each([
+ ['/zh-Hant/organizations/requests/request',true],
+ ['/zh-Hant/organizations/unit',false],
+ ['/zh-Hant/organizations/unit/members/member',false],
+ ['/zh-Hant/organizations/requests/request/members/member',false],
+])('limits owner-only admission to exact necessary result route %s', (pathname,exception)=>{
+ state.pathname=pathname
+ render(<OrganizationsShell locale="zh-Hant" layout={layout}><p>Content</p></OrganizationsShell>)
+ expect(screen.getByTestId('gate')).toHaveAttribute('data-owner-only',String(exception))
 })

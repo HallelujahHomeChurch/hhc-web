@@ -2,7 +2,7 @@
 
 import {createContext, useContext, useMemo, type ReactNode} from 'react'
 import {createOperationsClient} from '@hallelujahhomechurch/operations-client'
-import {useAccountAuthorization, useAccountIdentity} from '@/components/layout/AccountControl'
+import {useAccountAuthorization, useAccountIdentity, useInboxAuthRuntime} from '@/components/layout/AccountControl'
 import type {Locale} from '@/i18n/locales'
 import {OperationsApi} from './api'
 import {UnitNotificationsApi} from './notifications-api'
@@ -12,10 +12,11 @@ const Context = createContext<{locale: Locale; operationsApi: OperationsApi; uni
 export function OrganizationClientsProvider({locale, children}: {locale: Locale; children: ReactNode}) {
   const authorization = useAccountAuthorization()
   const owner = useAccountIdentity()
+  const auth = useInboxAuthRuntime()
   const value = useMemo(() => ({locale, owner,
-    operationsApi: new OperationsApi(createOperationsClient({baseUrl: '', ...authorization, fetcher: (input, init) => fetch(input, {...init, cache: 'no-store'})})),
+    operationsApi: new OperationsApi(createOperationsClient({baseUrl: '', ...authorization, auth, fetcher: (input, init) => fetch(input, {...init, cache: 'no-store'})})),
     unitNotificationsApi: new UnitNotificationsApi(authorization),
-  }), [locale, authorization, owner])
+  }), [locale, authorization, owner, auth])
   return <Context.Provider value={value}>{children}</Context.Provider>
 }
 export function useOrganizationApi() {

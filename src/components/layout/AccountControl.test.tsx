@@ -49,7 +49,7 @@ describe('AccountControl', () => {
     await waitFor(() => expect(screen.getByTestId('management-access')).toHaveTextContent('u1:allowed'));
     if (change === 'switched') vi.mocked(client.getSession).mockResolvedValue({authenticated: true, user: {id: 'u2', email: 'other@example.test', display_name: 'Other', avatar_url: null}, permissions: [], permission_availability: {status: 'available'}});
     if (change === 'failed') fetcher.mockRejectedValue(new Error('unavailable'));
-    else fetcher.mockImplementation(async () => Response.json({...managedAccessSnapshot, responsibilities: []}));
+    else fetcher.mockImplementation(async () => Response.json({...managedAccessSnapshot, churchMembership: undefined, responsibilities: []}));
     fireEvent(window, new Event('focus'));
     await waitFor(() => expect(screen.getByTestId('management-access')).toHaveTextContent(change === 'failed' ? 'u1:unavailable' : `${change === 'switched' ? 'u2' : 'u1'}:denied`));
   });
@@ -89,7 +89,7 @@ describe('AccountControl', () => {
     await waitFor(() => expect(fetcher.mock.calls.length).toBeGreaterThan(1));
     expect(screen.getByRole('textbox', {name: 'Draft subject'})).toHaveValue('Keep my unsent draft');
     if (result === 'failed') reject(new Error('offline'));
-    else resolve(Response.json(result === 'allowed' ? managedAccessSnapshot : {...managedAccessSnapshot, responsibilities: []}));
+    else resolve(Response.json(result === 'allowed' ? managedAccessSnapshot : {...managedAccessSnapshot, churchMembership: undefined, responsibilities: []}));
     if (result === 'allowed') {
       await waitFor(() => expect(screen.getByRole('textbox', {name: 'Draft subject'})).toHaveValue('Keep my unsent draft'));
     } else await waitFor(() => expect(screen.queryByRole('textbox', {name: 'Draft subject'})).not.toBeInTheDocument());
@@ -305,8 +305,8 @@ it('hides cached Admin access when current permissions are unavailable', async (
 it.each([
  ['small_group', true, 'allowed'],
  ['small_group', false, 'denied'],
- ['family', true, 'denied'],
- ['fellowship', true, 'denied'],
+ ['family', true, 'allowed'],
+ ['fellowship', true, 'allowed'],
 ])('projects direct %s membership with church=%s as %s', async (kind, church, expected) => {
  vi.stubGlobal('fetch',vi.fn().mockResolvedValue(Response.json({...managedAccessSnapshot,
   churchMembership: church ? managedAccessSnapshot.churchMembership : undefined,
@@ -323,3 +323,10 @@ it('uses a page-provided bulletin loading fallback without mounting private chil
  expect(screen.queryByText('Private issue')).not.toBeInTheDocument();
  expect(view.container.querySelectorAll('main')).toHaveLength(1);
 });
+
+it('allows an active church member without affiliations and denies email-only qualification', async () => {
+ vi.stubGlobal('fetch',vi.fn().mockResolvedValue(Response.json({...managedAccessSnapshot, responsibilities:[],memberships:[]})))
+ function Access(){return <output>{useOrganizationsAccess().status}</output>}
+ render(<AccountControlProvider client={sessionClient([])} labels={labels}><Access /></AccountControlProvider>)
+ expect(await screen.findByText('allowed')).toBeInTheDocument()
+})

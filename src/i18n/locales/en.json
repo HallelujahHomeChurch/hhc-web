@@ -254,6 +254,7 @@
     },
     "search": {
       "members": "Search members",
+      "groups": "Search small groups or fellowships",
       "label": "Search",
       "submit": "Search",
       "clear": "Clear search",

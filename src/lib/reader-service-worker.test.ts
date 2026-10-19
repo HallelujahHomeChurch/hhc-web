@@ -20,6 +20,8 @@ it('keeps member requests and all Authorization-bearing requests outside Cache S
   const w = worker();
   await expect(w.request('/api/member/bulletins/online')).rejects.toThrow('offline');
   await expect(w.request('/en/notifications', {}, true)).rejects.toThrow('offline');
+  await expect(w.request('/en/organizations', {}, true)).rejects.toThrow('offline');
+  await expect(w.request('/en/organizations/requests/own-result', {}, true)).rejects.toThrow('offline');
   await expect(w.request('/api/notifications/me?cursor=private')).rejects.toThrow('offline');
   await expect(w.request('/_next/static/chunk.js', {headers: {Authorization: 'Bearer test-only'}})).rejects.toThrow('offline');
   expect(w.cache.match).not.toHaveBeenCalled(); expect(w.cache.put).not.toHaveBeenCalled();

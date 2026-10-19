@@ -254,6 +254,7 @@
     },
     "search": {
       "members": "회원 검색",
+      "groups": "소그룹 또는 교제 모임 이름 검색",
       "label": "검색",
       "submit": "검색",
       "clear": "검색 지우기",
