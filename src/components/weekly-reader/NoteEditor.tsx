@@ -38,6 +38,7 @@ export function NoteEditor({messages: m, note, quote, onSave, onComplete, onCanc
     textarea.current?.focus();
   }
   return <form className="reader-note-editor" onSubmit={event => {event.preventDefault(); void save();}}>
+    <div className="reader-note-editor-body">
     <blockquote>{quote}</blockquote>
     {note?.inactiveAnchors.length || note?.reanchorRequired ? <p>{m.noteRemoved}</p> : null}
     <label htmlFor={id}>{m.noteText}</label>
@@ -48,6 +49,7 @@ export function NoteEditor({messages: m, note, quote, onSave, onComplete, onCanc
       <div className="reader-note-actions">{conflict.durable ? <button type="button" onClick={onRecover}>{m.reviewSync}</button> : <><button type="button" onClick={onKeepCloud}>{m.noteCloud}</button>{conflict.note && !conflict.note.deleted ? <><button type="button" onClick={() => chooseLocal(false)}>{m.noteLocal}</button><button type="button" onClick={() => chooseLocal(true)}>{m.noteManual}</button></> : null}</>}</div>
     </section> : null}
     {error && !failureHandled ? <p role="alert">{m.actionFailed}</p> : null}
-    <div className="reader-note-actions"><button type="button" disabled={busy} onClick={onCancel}>{m.noteCancel}</button><button type="submit" disabled={busy || !!conflict || !draft.text.trim() || length > 10000}>{m.noteSave}</button></div>
+    </div>
+    <footer className="reader-note-actions"><button type="button" disabled={busy} onClick={onCancel}>{m.noteCancel}</button><button type="submit" disabled={busy || !!conflict || !draft.text.trim() || length > 10000}>{m.noteSave}</button></footer>
   </form>;
 }

@@ -221,3 +221,5 @@ T1 root 候選完成：儲存／背景同步與安靜通知已實作，276 項�
 T1 `1845175` 首輪雙席 FAIL（四項 Important，無 Critical）：普通刪除誤清 RAM head、RAM writer 未共用帳號 lock、等待 ack 時未持續顯示儲存降級警告、站內離開未納入已接受但未安全儲存的操作。修訂候選已補 expected-ID 保護、共用所有私人寫入 writer、警告與退出文案、revision recovery／90-day guards；新瀏覽器 quota 證據與 291 項範圍驗證見 T1.md。等待第二輪雙席 gate，未進 T2。
 
 T1 `116392c` 第二輪 UX PASS／資料 FAIL：一般離線下載仍能切走舊 pending queue pointer。第三版候選補同 transaction 的拒絕與恢復指引，並固定線上背景驗證的 revision；同分頁 RAM replica 在暫時登入卸載後保留全佇列，重新資格／epoch 檢查後以原 ID 續傳，帳號變動即清除並中止 writer。297 項範圍案例分組 PASS，TS／相關 ESLint／diff PASS；見 T1.md。等待第三輪雙席 gate，未開始 T2。
+
+T1 `4a7c8b0` 第三輪：資料、UX 兩位 Codex 均 PASS，無 Critical/Important；T1 gate 完成，開始 T2。T2 固定筆記框架／Tabs／編輯器、簡化搜尋與圖示、移除舊版標注 UI、可取消退出 dialog 已形成候選，瀏覽器幾何與深淺色證據見 `docs/reviews/reader-professional-20261019/T2.md`；尚待檢查及雙席 gate，未進 T3。

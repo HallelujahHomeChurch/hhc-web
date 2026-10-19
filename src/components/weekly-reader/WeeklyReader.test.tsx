@@ -78,6 +78,19 @@ describe('protected weekly reader', () => {
     await act(async () => finish(readerFixture()));
     expect(container.querySelector('.reader-loading-shell[data-overlay]')).toBeNull();
   });
+  it('keeps initial My Notes loading inside the fixed panel without a false empty list', async () => {
+    const cloud = (await state.privateState()).state;
+    saveReaderReturn({accountId: 'account-a', documentId: cloud.documentId}, {revision: 1, action: {mutationId: 'restored-bookmark', kind: 'createBookmark', documentRevision: 1, createdAt: new Date().toISOString(), payload: {bookmarkId: 'waiting-bookmark', name: 'Place', sentenceId: 's0', offset: 0, pageId: 'p0'}}});
+    let finish!: (response: {state: typeof cloud}) => void;
+    state.privateState.mockImplementationOnce(() => new Promise(resolve => {finish = resolve;}));
+    render(<WeeklyReader {...props}/>);
+    const panel = await screen.findByRole('dialog', {name: props.messages.myNotes});
+    expect(within(panel).getByRole('status')).toHaveTextContent(props.messages.loading);
+    expect(within(panel).queryByText(props.messages.noteEmpty)).not.toBeInTheDocument();
+    await act(async () => finish({state: cloud}));
+    fireEvent.click(within(panel).getByRole('tab', {name: props.messages.notesTab}));
+    expect(within(panel).getByText(props.messages.noteEmpty)).toBeInTheDocument();
+  });
   it('document fetch retains header chrome without exposing bulletin text', async () => {
     let finish!: (value: ReturnType<typeof readerFixture>) => void;
     state.open.mockImplementationOnce(() => new Promise(resolve => {finish = resolve;}));
@@ -96,12 +109,12 @@ describe('protected weekly reader', () => {
     state.open.mockImplementationOnce(() => new Promise(resolve => {finish = resolve;}));
     fireEvent(window, new Event('focus'));
     await waitFor(() => expect(state.open).toHaveBeenCalledTimes(2));
-    const dialog = await screen.findByRole('alertdialog');
+    const dialog = await screen.findByRole('dialog', {name: props.messages.exitTitle});
     fireEvent.click(within(dialog).getByRole('button', {name: action === 'cancel' ? props.messages.keepReading : props.messages.exitConfirm}));
-    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('dialog', {name: props.messages.exitTitle})).not.toBeInTheDocument());
     await act(async () => finish(readerFixture()));
   });
-  it('home cancel preserves position and dirty draft in one combined dialog without native confirm', async () => {
+  it.each(['button', 'backdrop'])('home cancel by %s preserves position and dirty draft without native confirm', async cancel => {
     const value = readerFixture();
     saveReaderReturn({accountId: 'account-a', documentId: value.document.documentId}, {revision: 1, pageId: 'p2', draft: {text: 'Keep my unsaved draft'}});
     const nativeConfirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
@@ -114,11 +127,12 @@ describe('protected weekly reader', () => {
     const textbox = await screen.findByRole('textbox', {name: props.messages.noteText});
     const pageBefore = container.querySelector('[data-active-page]')?.getAttribute('data-active-page');
     fireEvent.click(screen.getByRole('button', {name: props.messages.home}));
-    const dialog = await screen.findByRole('alertdialog');
+    const dialog = await screen.findByRole('dialog', {name: props.messages.exitTitle});
     expect(dialog).toHaveTextContent(props.messages.noteDiscardConfirm);
     expect(nativeConfirm).not.toHaveBeenCalled();
-    fireEvent.click(within(dialog).getByRole('button', {name: props.messages.keepReading}));
-    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    if (cancel === 'backdrop') await userEvent.click(dialog.closest('.hhc-modal-overlay')!);
+    else fireEvent.click(within(dialog).getByRole('button', {name: props.messages.keepReading}));
+    await waitFor(() => expect(screen.queryByRole('dialog', {name: props.messages.exitTitle})).not.toBeInTheDocument());
     expect(textbox).toHaveValue('Keep my unsaved draft');
     expect(container.querySelector('[data-active-page]')?.getAttribute('data-active-page')).toBe(pageBefore);
   });
@@ -429,7 +443,7 @@ describe('protected weekly reader', () => {
     await screen.findByRole('dialog', {name: props.messages.myNotes});
     expect(fireEvent.contextMenu(screen.getByRole('dialog', {name: props.messages.myNotes}))).toBe(true);
   });
-  it.each(['blue', 'clear'])('allows keyboard users to %s an existing exact highlight range', async operation => {
+  it('allows keyboard users to clear an existing exact highlight range', async () => {
     const cloud = (await state.privateState()).state;
     const highlights = [{sentenceId: 's0', quote: '內容0。', color: 'yellow', active: true, version: 1, updatedAt: '', segments: [{start: 1, end: 3, color: 'yellow'}]}];
     state.privateState.mockResolvedValue({state: {...cloud, highlights}});
@@ -443,10 +457,10 @@ describe('protected weekly reader', () => {
     tab.focus(); await user.keyboard('{Enter}');
     const list = await screen.findByRole('region', {name: 'Highlights'});
     expect(within(list).getByText('容0')).toBeInTheDocument();
-    const control = within(list).getByRole('button', {name: operation === 'blue' ? props.messages.blueHighlight : props.messages.clearHighlight});
+    const control = within(list).getByRole('button', {name: props.messages.clearHighlight});
     control.focus(); await user.keyboard('{Enter}');
     await waitFor(() => expect(state.mutate).toHaveBeenCalled());
-    expect(state.mutate.mock.calls[0][2][0]).toMatchObject({kind: operation === 'blue' ? 'setHighlight' : 'clearHighlight', payload: {sentenceIds: ['s0'], ranges: [{sentenceId: 's0', start: 1, end: 3}], ...(operation === 'blue' ? {color: 'blue'} : {})}});
+    expect(state.mutate.mock.calls[0][2][0]).toMatchObject({kind: 'clearHighlight', payload: {sentenceIds: ['s0'], ranges: [{sentenceId: 's0', start: 1, end: 3}]}});
     expect(within(list).queryByText('容0')).not.toBeInTheDocument();
   });
   it('records the first mobile sentence below the chrome, not the obscured sentence', async () => {
@@ -571,7 +585,7 @@ describe('protected weekly reader', () => {
       fireEvent(document, new Event('visibilitychange'));
     } else {
       fireEvent.click(screen.getByRole('button', {name: 'Bulletin library'}));
-      fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', {name: props.messages.exitConfirm}));
+      fireEvent.click(within(await screen.findByRole('dialog', {name: props.messages.exitTitle})).getByRole('button', {name: props.messages.exitConfirm}));
     }
     await waitFor(() => expect(state.mutate).toHaveBeenCalled(), {timeout: 150});
     expect(state.mutate.mock.calls[0][2][0]).toMatchObject({kind: 'setProgress', payload: {pageId: 'p2'}});
@@ -614,15 +628,15 @@ describe('protected weekly reader', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Note'}));
     fireEvent.change(screen.getByRole('textbox', {name: props.messages.noteText}), {target: {value: 'Unsaved draft'}});
     fireEvent.click(screen.getByRole('button', {name: 'Bulletin library'}));
-    const homeDialog = await screen.findByRole('alertdialog');
+    const homeDialog = await screen.findByRole('dialog', {name: props.messages.exitTitle});
     expect(homeDialog).toHaveTextContent(props.messages.noteDiscardConfirm);
     fireEvent.click(within(homeDialog).getByRole('button', {name: props.messages.keepReading}));
-    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('dialog', {name: props.messages.exitTitle})).not.toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', {name: /Close bulletin/}));
-    const closeDialog = await screen.findByRole('alertdialog');
+    const closeDialog = await screen.findByRole('dialog', {name: props.messages.exitTitle});
     expect(closeDialog).toHaveTextContent(props.messages.noteDiscardConfirm);
     fireEvent.click(within(closeDialog).getByRole('button', {name: props.messages.keepReading}));
-    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('dialog', {name: props.messages.exitTitle})).not.toBeInTheDocument());
     expect(confirm).not.toHaveBeenCalled();
     expect(screen.getByRole('textbox', {name: props.messages.noteText})).toHaveValue('Unsaved draft');
   });
@@ -1373,20 +1387,15 @@ it('exposes mobile paper sentence keyboard semantics without toggling twice', as
  fireEvent.keyDown(sentence,{key:' '});expect(sentence).toHaveAttribute('aria-pressed','false');
 });
 
-it.each(['cancel', 'confirm'] as const)('uses the shared reader decision for historical discard: %s', async choice => {
+it('does not expose legacy annotations or send a history mutation when opening My Notes', async () => {
   const cloud = {accountId: 'account-a', documentId: readerFixture().document.documentId, appliedRevision: 1, currentRevision: 1, highlights: [], notes: [], progress: null, conflicts: [], highlightHistory: [{id: 'history', highlight: {sentenceId: 'old', quote: 'Historical quote', color: 'red', active: false, version: 1, updatedAt: ''}}]};
   state.privateState.mockResolvedValue({state: cloud});
-  state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: {...cloud, highlightHistory: []}, results: mutations.map((mutation: {mutationId: string}) => ({mutationId: mutation.mutationId, status: 'applied', revision: 1}))}));
   render(<WeeklyReader {...props}/>);
   await waitFor(() => expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled());
   fireEvent.click(screen.getByRole('button', {name: props.messages.myNotes}));
-  fireEvent.click(screen.getByRole('tab', {name: props.messages.historyTab}));
-  fireEvent.click(screen.getByRole('button', {name: props.messages.clearHighlight}));
-  const dialog = await screen.findByRole('alertdialog'); expect(dialog).toHaveTextContent(props.messages.highlightHistoryDelete);
-  expect(state.mutate).not.toHaveBeenCalled();
-  fireEvent.click(within(dialog).getByRole('button', {name: choice === 'cancel' ? props.messages.noteCancel : props.messages.clearHighlight}));
-  if (choice === 'confirm') await waitFor(() => expect(state.mutate).toHaveBeenCalledExactlyOnceWith(expect.anything(), expect.anything(), [expect.objectContaining({kind: 'discardHighlightHistory', payload: {historyId: 'history'}})], expect.any(AbortSignal)));
-  else {await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()); expect(state.mutate).not.toHaveBeenCalled();}
+  expect(screen.queryByRole('tab', {name: props.messages.historyTab})).not.toBeInTheDocument();
+  expect(screen.queryByText('Historical quote')).not.toBeInTheDocument();
+  expect(state.mutate).not.toHaveBeenCalled(); expect(cloud.highlightHistory).toHaveLength(1);
 });
 
 it('keeps export modal keyboard navigation separate from horizontal reader paging', async () => {
@@ -1476,7 +1485,7 @@ it('retains an in-flight edit when deleting a different note, and warns before l
   await waitFor(() => expect(screen.queryByText('B original')).not.toBeInTheDocument());
   fireEvent.click(screen.getByRole('button', {name: props.messages.noteClose}));
   fireEvent.click(screen.getByRole('button', {name: props.messages.home}));
-  const exit = await screen.findByRole('alertdialog'); expect(exit).toHaveTextContent(props.messages.exitUnsavedChanges);
+  const exit = await screen.findByRole('dialog', {name: props.messages.exitTitle}); expect(exit).toHaveTextContent(props.messages.exitUnsavedChanges);
   fireEvent.click(within(exit).getByRole('button', {name: props.messages.keepReading}));
   await act(async () => releaseA()); await waitFor(() => expect(state.mutate).toHaveBeenCalledTimes(2));
   expect(state.mutate.mock.calls.map(call => call[2][0].kind)).toEqual(['editNote', 'deleteNote']);

@@ -6,7 +6,7 @@ import {useScrollChrome} from '@/components/layout/useScrollChrome';
 import {isIPhoneDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 import {ReaderTypography, readTypography, type Typography} from './ReaderTypography';
 import {useReaderTheme} from './useReaderTheme';
-import {AlertDialog, BulletinEbook, bulletinChapters, bulletinChapterForAnchor, bulletinMobileDetails, Button, ReaderWatermark} from '@hallelujahhomechurch/ui';
+import {AlertDialog, Dialog, BulletinEbook, bulletinChapters, bulletinChapterForAnchor, bulletinMobileDetails, Button, ReaderWatermark} from '@hallelujahhomechurch/ui';
 import {ReaderIconButton as IconButton} from './ReaderIconButton';
 import type {OnlineBulletinAccess, BulletinReaderMutation, BulletinReaderNote, BulletinReaderBookmark} from '@hallelujahhomechurch/hhc-web-client';
 import type {BulletinLocale, BulletinSeries} from '@hallelujahhomechurch/preferences';
@@ -109,10 +109,17 @@ function AuthorizedReader(props: Props & {accountId: string; readerTheme: Return
 }
 
 function ReaderExitDialog({exit, theme}: {exit: ReturnType<typeof useReaderExitGuard>; theme: 'light' | 'dark'}) {
-  return <AlertDialog {...exit.dialogProps} description={<span ref={node => {
+  const dialog = exit.dialogProps;
+  return <Dialog title={dialog.title} isOpen={dialog.isOpen} closeLabel={dialog.closeLabel} onOpenChange={dialog.onOpenChange}>
+    <p ref={node => {
     const overlay = node?.closest<HTMLElement>('.hhc-modal-overlay');
     if (overlay) {overlay.dataset.readerExit = ''; overlay.dataset.theme = theme; overlay.style.colorScheme = theme;}
-  }}>{exit.dialogProps.description}</span>}/>;
+  }}>{dialog.description}</p>
+    <div className="hhc-dialog__actions">
+      <Button variant="secondary" onPress={() => dialog.onOpenChange?.(false)}>{dialog.cancelLabel}</Button>
+      <Button variant="primary" isDisabled={exit.confirming} onPress={() => {void dialog.onConfirm();}}>{dialog.confirmLabel}</Button>
+    </div>
+  </Dialog>;
 }
 
 function ReaderSessionStatus({props, session, signIn}: {props: Props & {accountId: string; readerTheme: ReturnType<typeof useReaderTheme>}; session: ReturnType<typeof useReaderSession>; signIn: ReturnType<typeof useAccountSignIn>}) {
@@ -597,7 +604,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     if (next !== page) setPage(next);
     recordProgress(document.pages[next].id, id);
   }
-  const exit = useReaderExitGuard({canPrompt: () => !decisionRequest.current, hasUnsavedNote, hasUnsavedChanges: privateReader.hasUncommitted, messages: m, beforeLeave: async () => {
+  const exit = useReaderExitGuard({canPrompt: () => !decisionRequest.current, hasUnsavedNote, hasUnsavedChanges: privateReader.hasUncommitted, messages: m, beforeLeave: async isCurrent => {
     const dirty = hasUnsavedNote();
     if (allowAction()) {
       recordVisiblePaper();
@@ -606,7 +613,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       saveReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}, {revision: value.document.revision, pageId: visiblePage});
       if (!privateReader.busy) await flushReaderProgressBeforeExit(flushProgress);
     }
-    if (!documentRef.current) return false;
+    if (!documentRef.current || !isCurrent()) return false;
     if (dirty && allowAction()) saveReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}, {draft: undefined});
     cleanupNotes();
     return true;
@@ -721,7 +728,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const feedbackMessage = privateReader.unsaved ? m.syncUnsaved : urgentOperation || (unknownAction ? m.operationUnknown : privateReader.status === 'action' || privateReader.status === 'paused' ? undefined : currentNotice || undefined);
   const feedback = <div className="reader-private-feedback">
     <div hidden={recoveryOpen} inert={recoveryOpen}>
-    {privateReader.loadError ? <div role="alert"><p>{m.notesLoadError}</p><button type="button" disabled={privateReader.busy} onClick={privateReader.reload}>{m.retry}</button></div> : notes && !privateReader.state && fontsReady ? <p role="status">{m.loading}</p> : null}
+    {privateReader.loadError ? <div role="alert"><p>{m.notesLoadError}</p><button type="button" disabled={privateReader.busy} onClick={privateReader.reload}>{m.retry}</button></div> : null}
     {!privateReader.loadError && privateReader.state && (feedbackMessage || privateReader.status === 'action' || privateReader.status === 'paused') ? <SyncStatus status={privateReader.status} messages={m}>{feedbackMessage}</SyncStatus> : null}
     {privateReader.operation === 'waiting' || privateReader.operation === 'confirming' ? <button type="button" onClick={privateReader.cancelWaiting}>{m.cancelWaiting}</button> : null}
     {!privateReader.busy && privateReader.canRetry && privateReader.status !== 'paused' ? <><p>{privateReader.operation === 'confirming' ? m.retryContinues : m.confirmRetryHelp}</p><button type="button" disabled={privateReader.busy} onClick={() => {
@@ -842,9 +849,8 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       onNote={() => {newNoteId.current = null; setNoteEditorState(undefined); setNotes('new');}}/>
     {notes ? <ReaderPrivateState wide={wideNotes} theme={theme} messages={m} onClose={() => {void closeNotes();}} suspended={suspended}>
       {feedback}
-      {privateReader.state && !feedbackMessage && ['syncing', 'waiting'].includes(privateReader.status) ? <SyncStatus status={privateReader.status} messages={m}/> : null}
-      <div hidden={recoveryOpen} inert={recoveryOpen}>
-      {reanchor ? <NoteReanchor initialConflict={reanchorConflict} onRecover={openRecovery} key={`${reanchor.id}:${reanchorConflict ? 'conflict' : 'editing'}:${reanchorConflict?.note?.version ?? reanchor.version}`} note={reanchor} document={value.document} messages={m} mobile={mobile} suspended={suspended} onSave={async (note, ranges) => {
+      <div className="reader-private-content" hidden={recoveryOpen} inert={recoveryOpen}>
+      {notes === 'list' && !privateReader.state ? !privateReader.loadError ? <ReaderLoading label={m.loading}/> : null : reanchor ? <NoteReanchor initialConflict={reanchorConflict} onRecover={openRecovery} key={`${reanchor.id}:${reanchorConflict ? 'conflict' : 'editing'}:${reanchorConflict?.note?.version ?? reanchor.version}`} note={reanchor} document={value.document} messages={m} mobile={mobile} suspended={suspended} onSave={async (note, ranges) => {
         const mutation: BulletinReaderMutation = {mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, kind: 'reanchorNote', baseVersion: note.version, payload: {noteId: note.id, sentenceIds: ranges.map(range => range.sentenceId), ranges}};
         noteOperation.current = {mutation, generation: generation.current, local: note};
         const result = await privateReader.mutate(mutation);
@@ -860,8 +866,6 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
           onSave: () => {void saveBookmark();}, onJump: bookmark => {void jumpBookmark(bookmark);}, onDelete: bookmark => {const draft: BookmarkDraft = {kind: 'delete', id: bookmark.id, name: bookmark.name, originalName: bookmark.name, baseVersion: bookmark.version, target: bookmark}; setBookmarkDraft(draft); void saveBookmark(draft);}}} onExport={ids => setExportRequest({ids, generation: generation.current})} exportDisabled={privateReader.busy || privateReader.loadError || privateReader.canRetry || recoveryOpen || !privateReader.state || ['paused', 'action', 'syncing'].includes(privateReader.status)} filter={noteFilter} onClearFilter={() => setNoteFilter(null)}
         highlights={{highlights: savedHighlights, sentences, messages: m, busy: foregroundBusy || !privateReader.state || privateReader.status === 'paused' || suspended,
           onChange: (range, color) => action({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, ...(color ? {kind: 'setHighlight' as const, payload: {sentenceIds: [range.sentenceId], ranges: [range], color}} : {kind: 'clearHighlight' as const, payload: {sentenceIds: [range.sentenceId], ranges: [range]}})})}}
-        history={{onConfirm: description => confirmReaderAction(description, m.highlightHistory, m.clearHighlight), history: privateReader.state?.highlightHistory, document: value.document, messages: m, mobile, busy: foregroundBusy || !privateReader.state || privateReader.status === 'paused' || suspended,
-          onSave: async mutation => {const result = await privateReader.mutate(mutation); if (result.status !== 'applied' && result.status !== 'queued') throw new Error(result.status);}}}
         notes={{busy: foregroundBusy || suspended, messages: m, notes: privateReader.state?.notes ?? [], onReanchor: setReanchor,
           onJump: id => {void onAnchor({kind: 'sentence', id});}, onEdit: note => {newNoteId.current = null; setNoteEditorState(undefined); setNotes(note);},
           onDelete: note => {void confirmNote('delete', note.text).then(accepted => {if (accepted) void deleteNote(note);});}}}/>
@@ -871,6 +875,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
         <button type="button" onClick={() => {void closeNotes();}}>{m.noteCancel}</button>
       </section> : <NoteEditor failureHandled={unknownAction || !!operationMessage} onKeepCloud={finishNoteEditor} onRecover={openRecovery} key={editingNote?.id ?? 'new'} messages={m} note={editingNote} quote={noteQuote} editorState={noteEditorState} onEditorStateChange={setNoteEditorState} onSave={saveNote} onComplete={() => {}} onCancel={() => {void closeNotes();}}/>}
       </div>
+      <div className="reader-private-sync-slot">{privateReader.state && !feedbackMessage && ['syncing', 'waiting'].includes(privateReader.status) ? <SyncStatus status={privateReader.status} messages={m}/> : null}</div>
     </ReaderPrivateState> : null}
   </section>;
 }

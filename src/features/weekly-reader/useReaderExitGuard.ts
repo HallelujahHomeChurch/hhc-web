@@ -6,9 +6,9 @@ type Kind = 'home' | 'back';
 type Marker = {id: string; url: string; position: 'base' | 'guard'};
 
 export function useReaderExitGuard({hasUnsavedNote, beforeLeave, messages: m, canPrompt = () => true, hasUnsavedChanges = () => false}: {
-  hasUnsavedChanges?: () => boolean; canPrompt?: () => boolean; hasUnsavedNote: () => boolean; beforeLeave: () => Promise<boolean>; messages: ReaderMessages;
+  hasUnsavedChanges?: () => boolean; canPrompt?: () => boolean; hasUnsavedNote: () => boolean; beforeLeave: (isCurrent: () => boolean) => Promise<boolean>; messages: ReaderMessages;
 }) {
-  const [prompt, setPrompt] = useState<{kind: Kind; dirty: boolean; uncommitted: boolean} | null>(null);
+  const [prompt, setPrompt] = useState<{kind: Kind; dirty: boolean; uncommitted: boolean; confirming: boolean} | null>(null);
   const active = useRef(true);
   const pending = useRef<{promise: Promise<boolean>; resolve: (allowed: boolean) => void; confirmed: boolean} | null>(null);
   const settle = useCallback((allowed: boolean) => {
@@ -22,7 +22,7 @@ export function useReaderExitGuard({hasUnsavedNote, beforeLeave, messages: m, ca
     let resolve!: (allowed: boolean) => void;
     const promise = new Promise<boolean>(finish => {resolve = finish;});
     pending.current = {promise, resolve, confirmed: false};
-    setPrompt({kind, dirty: hasUnsavedNote(), uncommitted: hasUnsavedChanges()});
+    setPrompt({kind, dirty: hasUnsavedNote(), uncommitted: hasUnsavedChanges(), confirming: false});
     return promise;
   }, [hasUnsavedNote, hasUnsavedChanges, canPrompt]);
   const requestBack = useEffectEvent(() => confirmLeave('back'));
@@ -74,15 +74,16 @@ export function useReaderExitGuard({hasUnsavedNote, beforeLeave, messages: m, ca
     isOpen: !!prompt, cancelLabel: m.keepReading, closeLabel: m.close,
     confirmLabel: m.exitConfirm,
     confirmVariant: 'primary',
-    onOpenChange: open => {if (!open && !pending.current?.confirmed) settle(false);},
+    onOpenChange: open => {if (!open) settle(false);},
     onConfirm: async () => {
       const request = pending.current;
       if (!request || request.confirmed) return;
       request.confirmed = true;
+      setPrompt(previous => previous ? {...previous, confirming: true} : null);
       let allowed = false;
-      try {allowed = await beforeLeave();} catch { /* Leave failures cancel without discarding state. */ }
+      try {allowed = await beforeLeave(() => active.current && pending.current === request);} catch { /* Leave failures cancel without discarding state. */ }
       if (active.current && pending.current === request) settle(allowed);
     }
   };
-  return {confirmLeave, dialogProps};
+  return {confirmLeave, dialogProps, confirming: prompt?.confirming ?? false};
 }

@@ -1,0 +1,96 @@
+{
+  "synthetic": true,
+  "motion": [
+    {
+      "t": 0,
+      "transform": "matrix(1, 0, 0, 1, 0, 0)",
+      "opacity": "0"
+    },
+    {
+      "t": 16.600000000000364,
+      "transform": "matrix(1, 0, 0, 1, 0, 0)",
+      "opacity": "0"
+    },
+    {
+      "t": 49,
+      "transform": "matrix(1, 0, 0, 1, 32.3961, 0)",
+      "opacity": "0.404725"
+    },
+    {
+      "t": 83.30000000000018,
+      "transform": "matrix(1, 0, 0, 1, 62.0234, 0)",
+      "opacity": "0.742082"
+    },
+    {
+      "t": 116.60000000000036,
+      "transform": "matrix(1, 0, 0, 1, 86.0596, 0)",
+      "opacity": "0.955295"
+    },
+    {
+      "t": 149.30000000000018,
+      "transform": "matrix(1, 0, 0, 1, 104.11, 0)",
+      "opacity": "1"
+    },
+    {
+      "t": 183.30000000000018,
+      "transform": "matrix(1, 0, 0, 1, 114.878, 0)",
+      "opacity": "1"
+    },
+    {
+      "t": 216.60000000000036,
+      "transform": "matrix(1, 0, 0, 1, 115.992, 0)",
+      "opacity": "1"
+    },
+    {
+      "t": 248.90000000000055,
+      "transform": "matrix(1, 0, 0, 1, 115.992, 0)",
+      "opacity": "1"
+    },
+    {
+      "t": 1249,
+      "transform": "matrix(1, 0, 0, 1, 115.992, 0)",
+      "opacity": "1"
+    }
+  ],
+  "reduced": {
+    "transition": "0s",
+    "animation": "none"
+  },
+  "keyboard": {
+    "simulation": "visualViewport height overridden to 400; no physical IME",
+    "frame": {
+      "x": 0,
+      "y": 100,
+      "width": 390,
+      "height": 300,
+      "top": 100,
+      "right": 390,
+      "bottom": 400,
+      "left": 0
+    },
+    "header": {
+      "x": 1,
+      "y": 101,
+      "width": 388,
+      "height": 65,
+      "top": 101,
+      "right": 389,
+      "bottom": 166,
+      "left": 1
+    },
+    "footer": {
+      "x": 17,
+      "y": 302,
+      "width": 356,
+      "height": 57,
+      "top": 302,
+      "right": 373,
+      "bottom": 359,
+      "left": 17
+    },
+    "body": {
+      "height": 108,
+      "scrollHeight": 290
+    }
+  }
+}
