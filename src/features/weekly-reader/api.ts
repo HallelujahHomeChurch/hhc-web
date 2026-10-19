@@ -9,6 +9,12 @@ export type ReaderSelector = {accountId: string; issueNumber: number; series: Bu
 type Authorization = Parameters<typeof createProtectedFetch>[0];
 const hash = /^[0-9a-f]{64}$/;
 
+const requests = new WeakMap<AbortSignal, Set<Promise<unknown>>>();
+/** Keep the writer gate until transports settle, even if the UI deadline wins. */
+export async function awaitReaderRequests(signal: AbortSignal) {
+  while (requests.get(signal)?.size) await Promise.allSettled([...requests.get(signal)!]);
+}
+
 function withReaderDeadline<T>(operation: (signal: AbortSignal) => Promise<T>, signal?: AbortSignal): Promise<T> {
   if (signal?.aborted) return Promise.reject(signal.reason);
   const controller = new AbortController();
@@ -22,10 +28,16 @@ function withReaderDeadline<T>(operation: (signal: AbortSignal) => Promise<T>, s
       controller.abort(failure); reject(failure);
     }, 20000);
   });
-  return Promise.race([interrupted, Promise.resolve().then(() => {
+  const work = Promise.resolve().then(() => {
     controller.signal.throwIfAborted();
     return operation(controller.signal);
-  })]).finally(() => {clearTimeout(timer); signal?.removeEventListener('abort', cancel);});
+  });
+  if (signal) {
+    const pending = requests.get(signal) ?? new Set<Promise<unknown>>();
+    requests.set(signal, pending); pending.add(work);
+    void work.then(() => pending.delete(work), () => pending.delete(work));
+  }
+  return Promise.race([interrupted, work]).finally(() => {clearTimeout(timer); signal?.removeEventListener('abort', cancel);});
 }
 
 export function verifyReaderAccess(value: OnlineBulletinAccess, expected: ReaderSelector): BulletinRenderableDocument {

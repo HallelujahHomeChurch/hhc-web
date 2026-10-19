@@ -88,3 +88,14 @@ it('preserves manual tab browsing when an inactive tab is closed', () => {
   fireEvent.click(screen.getByRole('button', {name: /Close.*1739/}));
   expect(nav.scrollLeft).toBe(180);
 });
+it('does not change tabs when a navigation guard completes after unmount', async () => {
+  writeTabs('a', [first, second]);
+  let finish!: (allowed: boolean) => void;
+  const beforeNavigate = vi.fn(() => new Promise<boolean>(resolve => {finish = resolve;}));
+  const {unmount} = render(<ReaderTabs {...props} beforeNavigate={beforeNavigate}/>);
+  act(() => vi.advanceTimersToNextFrame());
+  fireEvent.click(screen.getByRole('button', {name: /Close.*1740/}));
+  await waitFor(() => expect(beforeNavigate).toHaveBeenCalledOnce());
+  unmount(); await act(async () => finish(true));
+  expect(readTabs('a')).toEqual([first, second]);
+});

@@ -80,6 +80,6 @@ export async function finishReaderUpgrade(api: UpgradeApi, selector: ReaderSelec
     const staged = await stageOfflineSave(prepared.value, selector, fetcher, now(), signal);
     signal.throwIfAborted();
     await commitOfflineUpgrade(staged, state, epoch, prepared.previousRevision, queue, now());
-    return prepared.value;
+    return {value: prepared.value, state};
   });
 }

@@ -16,6 +16,7 @@
 .reader-tab h1 { display: inline; font-size: inherit; font-weight: 600; }
 .reader-tabbar .hhc-icon-button { flex: none; width: 44px; min-height: 44px; padding: .5rem; border: 0; background: transparent; }
 .hhc-modal-overlay[data-reader-exit] button { min-width: 44px; min-height: 44px; }
+.hhc-modal-overlay[data-reader-exit] .reader-note-text { display: block; max-height: 8rem; overflow: auto; }
 .reader-icon-control { display: inline-flex; flex: none; }
 .reader-topbar .reader-zoom-controls { flex-wrap: nowrap; gap: 0; }
 .reader-zoom-controls output { min-width: 3.5rem; text-align: center; font-size: .8rem; font-variant-numeric: tabular-nums; }
@@ -320,3 +321,8 @@ body:has(.weekly-reader) {padding-bottom: 0;}
 .reader-loading-icon {animation: reader-loading-spin 1s linear infinite;}
 @keyframes reader-loading-spin {to {transform: rotate(360deg);}}
 @media (prefers-reduced-motion: reduce) {.reader-loading-icon {animation: none;}}
+
+@media (max-width: 767px) {
+  .reader-document > .reader-private-feedback:has([role='alert'], [role='status'], button) { margin-top: 52px; padding: .75rem 1rem; flex: none; }
+  .reader-document:has(> .reader-private-feedback :is([role='alert'], [role='status'], button)) .reader-viewport { padding-top: 0; }
+}

@@ -1,7 +1,8 @@
+import {ReaderActionError, type ReaderExclusive} from '@/features/weekly-reader/usePrivateReader';
 import {PassageText} from './PassageText';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {Drawer} from '@hallelujahhomechurch/ui';
-import type {BulletinReaderHighlightColor, BulletinReaderMutation, OnlineBulletinAccess} from '@hallelujahhomechurch/hhc-web-client';
+import type {BulletinReaderHighlightColor, BulletinReaderMutation, BulletinReaderState, OnlineBulletinAccess} from '@hallelujahhomechurch/hhc-web-client';
 import type {createReaderApi, ReaderSelector} from '@/features/weekly-reader/api';
 import {chooseReaderRecovery, getOfflineIdentity, readOfflineSave, supportsOfflineReader} from '@/features/weekly-reader/offline-store';
 import {finishReaderUpgrade, prepareReaderUpgrade, type ReaderUpgrade} from '@/features/weekly-reader/upgrade';
@@ -11,13 +12,14 @@ import {rangeQuote, selectionPassage} from '@/features/weekly-reader/text-range'
 import {useReaderSelection} from '@/features/weekly-reader/useReaderSelection';
 import type {ReaderMessages} from './ReaderToolbar';
 
-export function ReaderRecovery({api, value, selector, messages: m, onUpdated, onFailure, suspended = false, pendingMutation = null, onPendingChange, mobile = false}: {
+export function ReaderRecovery({api, value, selector, messages: m, onUpdated, onFailure, suspended = false, pendingMutation = null, onPendingChange, mobile = false, runExclusive, available = true, onState, inline = false, onOpenChange}: {
   api: ReturnType<typeof createReaderApi>; value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages;
   onUpdated: (value: OnlineBulletinAccess) => void; onFailure: (error: unknown) => void; suspended?: boolean;
-  pendingMutation?: BulletinReaderMutation | null; onPendingChange?: (mutation: BulletinReaderMutation | null) => void;
-  mobile?: boolean;
+  pendingMutation?: BulletinReaderMutation | null; onPendingChange?: (mutation: BulletinReaderMutation | null, result?: import('@/features/weekly-reader/usePrivateReader').ReaderOutcome, previous?: BulletinReaderMutation | null) => void;
+  mobile?: boolean; runExclusive?: ReaderExclusive; available?: boolean; onState?: (state: BulletinReaderState) => void; inline?: boolean; onOpenChange?: (open: boolean) => void;
 }) {
   const [open, setOpen] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState(false);
+  function changeOpen(next: boolean) {setOpen(next); onOpenChange?.(next);}
   const [prepared, setPrepared] = useState<ReaderUpgrade | null>(null);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const epoch = useRef<number | null>(null), controller = useRef<AbortController | null>(null);
@@ -29,8 +31,8 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
     if (controller.current && !controller.current.signal.aborted) return;
     const request = new AbortController(); controller.current = request;
     setBusy(true); setError(false);
-    try {await work(request.signal);}
-    catch (failure) {if (!request.signal.aborted) {setError(true); onFailure(failure);}}
+    try {await (runExclusive ? runExclusive(work, request.signal) : work(request.signal));}
+    catch (failure) {if (!request.signal.aborted) {setError(true); if (!(failure instanceof ReaderActionError)) onFailure(failure);}}
     finally {request.abort(); setBusy(false);}
   }
   async function prepare(signal: AbortSignal) {
@@ -40,12 +42,13 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
       if (owner.accountId !== selector.accountId) throw new Error('offline_account_changed');
       epoch.current = owner.epoch;
       const next = await prepareReaderUpgrade(api, selector, value, owner.epoch, signal);
-      signal.throwIfAborted(); setPrepared(next); setAwaitingConfirmation(false);
+      signal.throwIfAborted(); onState?.(next.state); setPrepared(next); setAwaitingConfirmation(false);
     } else {
       epoch.current = null;
       const current = await api.current(selector, value, crypto.randomUUID(), signal);
       const cloud = await api.privateState(selector, current, signal);
       signal.throwIfAborted();
+      onState?.(cloud.state);
       const mutation = pending.current;
       const expired = mutation && new Date().getTime() - Date.parse(mutation.createdAt) > 90 * 86400000;
       const reviewed = mutation && acknowledged.current?.mutationId === mutation.mutationId;
@@ -54,14 +57,15 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
         recovery: mutation && (reviewed || expired) ? [{mutationId: mutation.mutationId, reason: expired ? 'expired_mutation' : acknowledged.current?.status === 'note_conflict' ? 'note_conflict' : 'mapping_unavailable'}] : [], previousRevision: value.document.revision});
     }
   }
-  function remember(mutation: BulletinReaderMutation | null) {
-    pending.current = mutation; acknowledged.current = null; onPendingChange?.(mutation);
+  function remember(mutation: BulletinReaderMutation | null, result?: import('@/features/weekly-reader/usePrivateReader').ReaderOutcome) {
+    const previous = pending.current; pending.current = mutation; acknowledged.current = null; onPendingChange?.(mutation, result, previous);
   }
   async function retryPending(signal: AbortSignal) {
     if (!prepared || !pending.current) return;
     const response = await api.mutate(selector, prepared.value, [pending.current], signal);
     signal.throwIfAborted();
-    if (response.results[0].status === 'applied') remember(null);
+    onState?.(response.state);
+    if (response.results[0].status === 'applied') remember(null, response.results[0]);
     else acknowledged.current = response.results[0];
     await prepare(signal);
   }
@@ -74,6 +78,7 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
       if (originalId === null && pending.current && mutation?.kind === 'resolveHighlightMigrationConflict') {
         const response = await api.mutate(selector, prepared.value, [mutation], signal);
         signal.throwIfAborted();
+        onState?.(response.state);
         if (response.results[0].status !== 'applied') throw new Error('action_required');
         await prepare(signal); return;
       }
@@ -86,9 +91,7 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
   const partialConflict = conflict?.sources.some(source => source.segments?.length);
   const recovery = prepared?.recovery[0];
   const entry = prepared?.queue.find(entry => entry.mutation.mutationId === recovery?.mutationId);
-  return <>
-    <button type="button" onClick={() => {setOpen(true); setPrepared(null); void run(prepare);}}>{m.reviewSync}</button>
-    {open ? <Drawer title={m.reviewSync} closeLabel={m.noteClose} isOpen onOpenChange={next => {if (!next && !busy && !suspended) setOpen(false);}}><div className="reader-private-sheet reader-recovery" hidden={suspended} inert={suspended}>
+  const content = <div className="reader-private-sheet reader-recovery" hidden={suspended} inert={suspended}>
       <p>{m.recoveryHelp}</p>
       {busy ? <p role="status">{m.syncSyncing}</p> : null}
       {error ? <p role="alert">{m.actionFailed}</p> : null}
@@ -104,12 +107,15 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
         }}><span data-color={color}/></button>)}</div></section> :
         recovery && entry && prepared ? <RecoveryChoice key={`${recovery.mutationId}:${entry.resolution?.mutation?.mutationId ?? ''}:${prepared.state.notes.map(note => note.version).join(',')}`} prepared={prepared} previous={value} original={entry.resolution?.mutation ?? entry.mutation} reason={recovery.reason} messages={m} busy={busy} mobile={mobile} onChoose={mutation => void run(signal => choose(entry.mutation.mutationId, mutation, signal))}/> :
         prepared ? <button type="button" disabled={busy} onClick={() => void run(async signal => {
-          const current = epoch.current === null ? prepared.value : await finishReaderUpgrade(api, selector, prepared, epoch.current, signal);
-          signal.throwIfAborted(); onUpdated(current); setOpen(false);
+          const finished = epoch.current === null ? {value: prepared.value, state: prepared.state} : await finishReaderUpgrade(api, selector, prepared, epoch.current, signal);
+          signal.throwIfAborted(); if (epoch.current !== null) onState?.(finished.state); onUpdated(finished.value); changeOpen(false);
         })}>{m.applyUpdate}</button> : null}
       {error ? <button type="button" disabled={busy} onClick={() => void run(prepare)}>{m.retry}</button> : null}
-      <button type="button" disabled={busy} onClick={() => setOpen(false)}>{m.keepReading}</button>
-    </div></Drawer> : null}
+      <button type="button" disabled={busy} onClick={() => changeOpen(false)}>{m.keepReading}</button>
+    </div>;
+  return <>
+    {available || open ? <button type="button" disabled={busy} onClick={() => {changeOpen(true); setPrepared(null); void run(prepare);}}>{m.reviewSync}</button> : null}
+    {open ? inline ? content : <Drawer title={m.reviewSync} closeLabel={m.noteClose} isOpen onOpenChange={next => {if (!next && !busy && !suspended) changeOpen(false);}}>{content}</Drawer> : null}
   </>;
 }
 

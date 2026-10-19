@@ -1,6 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {readerFixture} from './test-fixture';
-import {createReaderApi, verifyReaderAccess} from './api';
+import {awaitReaderRequests, createReaderApi, verifyReaderAccess} from './api';
 import {BULLETIN_RENDERER_V2_DIGEST,BULLETIN_RENDERER_V2_ASSETS} from '@hallelujahhomechurch/ui';
 
 const client = vi.hoisted(() => ({listOnlineBulletinDiscovery: vi.fn(), openOnlineBulletin: vi.fn(), getReaderState: vi.fn(), applyReaderMutations: vi.fn()}));
@@ -22,6 +22,17 @@ it.each(['open', 'renew', 'current', 'privateState', 'mutate'] as const)('reader
   expect(signal.aborted).toBe(false);
   await vi.advanceTimersByTimeAsync(1); await rejected;
   expect(signal.aborted).toBe(true); expect(vi.getTimerCount()).toBe(0);
+});
+it('tracks the actual transport after the deadline wrapper has rejected', async () => {
+  vi.useFakeTimers(); const owner = new AbortController();
+  let finish!: () => void;
+  client.applyReaderMutations.mockImplementationOnce(() => new Promise(resolve => {finish = () => resolve({});}));
+  const request = createReaderApi(auth).mutate(selector, readerFixture(), [], owner.signal);
+  const rejected = expect(request).rejects.toThrow('reader_request_timeout');
+  await vi.advanceTimersByTimeAsync(20000); await rejected;
+  const settled = vi.fn(); void awaitReaderRequests(owner.signal).then(settled);
+  await vi.advanceTimersByTimeAsync(0); expect(settled).not.toHaveBeenCalled();
+  finish(); await vi.advanceTimersByTimeAsync(0); expect(settled).toHaveBeenCalledOnce();
 });
 it('discovery and document access share one deadline and late responses cannot replace the timeout', async () => {
   vi.useFakeTimers();

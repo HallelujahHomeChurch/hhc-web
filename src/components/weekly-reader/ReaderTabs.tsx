@@ -7,10 +7,13 @@ import type {ReaderMessages} from './ReaderToolbar';
 
 export function ReaderTabs({accountId, locale, current, title, messages: m, beforeNavigate, beforeLeave, search}: {accountId: string; locale: Locale; current: ReaderTab; title?: string; messages: ReaderMessages; beforeNavigate?: () => Promise<boolean>; beforeLeave?: () => Promise<boolean>; search?: ReactNode}) {
   const [tabs, setTabs] = useState<ReaderTab[]>([current]);
-  const [busy, setBusy] = useState(false);
+  const [busyBinding, setBusyBinding] = useState<string | null>(null);
+  const navigationGeneration = useRef(0);
   const tabList = useRef<HTMLElement>(null);
   const pendingReveal = useRef(true);
   const key = tabKey(current);
+  const binding = `${accountId}:${key}`, busy = busyBinding === binding;
+  useEffect(() => () => {navigationGeneration.current++;}, [accountId, key]);
   const {issueNumber, series, contentLocale} = current;
   useEffect(() => {
     const next = addTab(readTabs(accountId), {issueNumber, series, contentLocale, title});
@@ -35,13 +38,15 @@ export function ReaderTabs({accountId, locale, current, title, messages: m, befo
   }, [tabs, key]);
   async function navigate(href: string, next?: ReaderTab[]) {
     if (busy) return;
-    setBusy(true);
+    const generation = navigationGeneration.current;
+    setBusyBinding(binding);
     try {
       const guard = href === `/${locale}/literature-ministry` ? beforeLeave ?? beforeNavigate : beforeNavigate;
       if (guard && !await guard()) return;
+      if (generation !== navigationGeneration.current) return;
       if (next) {writeTabs(accountId, next); setTabs(next);}
       window.location.assign(href);
-    } finally {setBusy(false);}
+    } finally {if (generation === navigationGeneration.current) setBusyBinding(null);}
   }
   const home = `/${locale}/literature-ministry`;
   return <header className="reader-tabbar">

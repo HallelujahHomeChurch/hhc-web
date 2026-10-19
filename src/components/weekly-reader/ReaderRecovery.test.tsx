@@ -13,7 +13,7 @@ const cloud = {accountId: 'account-a', documentId: value.document.documentId, ap
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.identity.mockResolvedValue({accountId: 'account-a', epoch: 1}); mocks.read.mockResolvedValue({status: 'available'});
-  mocks.prepare.mockResolvedValue({value, state: cloud, queue: [], mutations: [], recovery: [], previousRevision: 1}); mocks.finish.mockResolvedValue(value);
+  mocks.prepare.mockResolvedValue({value, state: cloud, queue: [], mutations: [], recovery: [], previousRevision: 1}); mocks.finish.mockResolvedValue({value, state: cloud});
 });
 it('shows the original historical range while requiring a fresh location after revision change', async () => {
   const mutation = {mutationId: 'historical', documentRevision: 1, createdAt: '', kind: 'restoreHighlight', payload: {historyId: 'history', sentenceIds: ['s0'], color: 'red', ranges: [{sentenceId: 's0', start: 0, end: 1}]}};
@@ -114,7 +114,7 @@ it('does not lose an unsaved action on revision update and confirms its original
   await screen.findByRole('button', {name: 'Apply and synchronize'});
   expect(api.mutate.mock.calls[1][2][0].mutationId).not.toBe('original');
   expect(api.mutate.mock.calls[1][2][0].payload.text).toBe(pending.payload.text);
-  expect(onPendingChange).toHaveBeenLastCalledWith(null);
+  expect(onPendingChange).toHaveBeenLastCalledWith(null, expect.objectContaining({status: 'applied'}), expect.objectContaining({kind: 'createNote'}));
 });
 it('shows local and cloud note text and records an explicit cloud choice without discarding on cancel', async () => {
   const mutation = {mutationId: 'old', documentRevision: 1, createdAt: '', kind: 'editNote', baseVersion: 1, payload: {noteId: 'note', text: 'Local text'}};
@@ -173,4 +173,28 @@ it('shows exact partial conflict snippets and confirms replacement of the full t
   fireEvent.click(screen.getByRole('button', {name: props.messages.yellowHighlight}));
   await waitFor(() => expect(mocks.choose).toHaveBeenCalled());
   confirm.mockRestore();
+});
+
+it('publishes the final replayed state before updating the reader value', async () => {
+  const final = {...cloud, progress: {pageId: 'p2', recordedAt: '', updatedAt: ''}};
+  mocks.finish.mockResolvedValueOnce({value, state: final});
+  const onState = vi.fn();
+  render(<ReaderRecovery {...props} onState={onState}/>);
+  fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
+  fireEvent.click(await screen.findByRole('button', {name: 'Apply and synchronize'}));
+  await waitFor(() => expect(props.onUpdated).toHaveBeenCalledWith(value));
+  expect(onState).toHaveBeenLastCalledWith(final);
+  expect(onState.mock.invocationCallOrder.at(-1)).toBeLessThan(props.onUpdated.mock.invocationCallOrder.at(-1)!);
+});
+it('does not republish an old direct prepared snapshot on Apply', async () => {
+  mocks.read.mockResolvedValueOnce(null); api.current.mockResolvedValueOnce(value); api.privateState.mockResolvedValueOnce({state: cloud});
+  const onState = vi.fn();
+  render(<ReaderRecovery {...props} onState={onState}/>);
+  fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
+  const apply = await screen.findByRole('button', {name: 'Apply and synchronize'});
+  expect(onState).toHaveBeenCalledOnce();
+  fireEvent.click(apply);
+  await waitFor(() => expect(props.onUpdated).toHaveBeenCalledWith(value));
+  expect(onState).toHaveBeenCalledOnce();
+  expect(mocks.finish).not.toHaveBeenCalled();
 });

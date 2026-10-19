@@ -64,3 +64,28 @@ it('shows a disabled saved icon for an available current revision', async () => 
   expect(await screen.findByRole('button', {name: 'Saved offline'})).toBeDisabled();
   expect(store.removeOfflineSave).not.toHaveBeenCalled();
 });
+it('exposes initialization failure and retries locally without claiming an offline save', async () => {
+  store.readOfflineSave.mockRejectedValueOnce(new Error('storage unavailable'));
+  render(<OfflineControl {...props}/>);
+  expect(await screen.findByRole('alert')).toHaveTextContent(props.messages.offlineInitError);
+  expect(screen.queryByRole('button', {name: props.messages.savedOffline})).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', {name: props.messages.retry}));
+  expect(await screen.findByRole('button', {name: props.messages.saveOffline})).toBeEnabled();
+  expect(store.commitOfflineSave).not.toHaveBeenCalled(); expect(props.onSaved).not.toHaveBeenCalled();
+});
+it('bounds initialization and ignores its late result after retry', async () => {
+  let finish!: (value: unknown) => void;
+  store.readOfflineSave.mockImplementationOnce(() => new Promise(resolve => {finish = resolve;}));
+  vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+  try {
+    const {act} = await import('@testing-library/react');
+    render(<OfflineControl {...props}/>);
+    expect(screen.getByRole('button', {name: props.messages.loading})).toBeDisabled();
+    await act(async () => vi.advanceTimersByTimeAsync(20000));
+    expect(screen.getByRole('alert')).toHaveTextContent(props.messages.offlineInitError);
+    fireEvent.click(screen.getByRole('button', {name: props.messages.retry}));
+    await act(async () => {});
+    await act(async () => finish({status: 'available', save: {value: props.value}}));
+    expect(screen.getByRole('button', {name: props.messages.saveOffline})).toBeEnabled();
+  } finally {vi.useRealTimers();}
+});
