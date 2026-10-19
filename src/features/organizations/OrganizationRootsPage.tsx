@@ -13,9 +13,9 @@ import {CollapseDisclosure, OwnRequestsSection, joinFailureMessage} from './Orga
 import type {DirectoryUnit, OrgUnitDirectoryPage, OrgJoinRequest} from './api'
 
 const pageNumber = (value: string | null) => value && /^[1-9]\d*$/.test(value) && Number(value) <= 10000 ? Number(value) : 1
-function queryState(value: string) {
+function queryState(value: string, navigationVersion = 0) {
   const params = new URLSearchParams(value)
-  return {source: value, q: [...(params.get('q') ?? '').trim()].slice(0, 100).join(''), minePage: pageNumber(params.get('minePage')), allPage: pageNumber(params.get('allPage'))}
+  return {source: value, navigationVersion, q: [...(params.get('q') ?? '').trim()].slice(0, 100).join(''), minePage: pageNumber(params.get('minePage')), allPage: pageNumber(params.get('allPage'))}
 }
 export function OrganizationRootsPage() {
   return <Suspense fallback={<OrganizationRootsSkeleton label="…"/>}><Directory/></Suspense>
@@ -28,8 +28,9 @@ function Directory() {
   const search = useOrganizationsSearch()
   const params = useSearchParams(), router = useRouter(), pathname = usePathname()
   const source = params.toString()
-  const [selection, setSelection] = useState(() => queryState(source))
-  const current = selection.source === source ? selection : queryState(source)
+  const navigationVersion = search?.navigationVersion ?? 0, onNavigate = search?.onNavigate
+  const [selection, setSelection] = useState(() => queryState(source, navigationVersion))
+  const current = selection.source === source && selection.navigationVersion === navigationVersion ? selection : queryState(source, navigationVersion)
   const [draft, setDraft] = useState({source, value: current.q})
   const value = search?.query ?? (draft.source === source ? draft.value : current.q)
   const [composing, setComposing] = useState(false)
@@ -45,6 +46,7 @@ function Directory() {
     if (next.q) query.set('q', next.q)
     if (next.minePage > 1) query.set('minePage', String(next.minePage))
     if (next.allPage > 1) query.set('allPage', String(next.allPage))
+    onNavigate?.(query.toString())
     router.replace(pathname + (query.size ? `?${query}` : ''), {scroll: false})
   }
   useEffect(() => {
@@ -52,17 +54,18 @@ function Directory() {
     const q = [...value.trim()].slice(0, 100).join('')
     if (q === current.q) return
     const timer = setTimeout(() => {
-      const next = {source, q, minePage: 1, allPage: 1}
+      const next = {source, navigationVersion, q, minePage: 1, allPage: 1}
       setSelection(next)
       const query = new URLSearchParams(q ? {q} : {})
+      onNavigate?.(query.toString())
       router.replace(pathname + (query.size ? `?${query}` : ''), {scroll: false})
     }, 250)
     return () => clearTimeout(timer)
-  }, [value, isComposing, current.q, source, pathname, router])
+  }, [value, isComposing, current.q, source, pathname, router, navigationVersion, onNavigate])
 
   if (denied) return <section className="organization-document organization-page"><p role="alert" className="form-error">{copy.unavailable}</p><Button variant="secondary" onPress={() => {setDenied(false); setRevision(value => value + 1)}}>{t.retry}</Button></section>
   return <div className="organization-document organization-page organization-roots-page">
-    <label className="organization-group-search">{copy.searchGroups}<input type="search" className="organization-input" placeholder={copy.searchGroups} value={value} maxLength={200} onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)} onChange={event => {const value = [...event.target.value].slice(0, 100).join(''); if (search) search.setQuery(value); else setDraft({source, value})}}/></label>
+    <label className="organization-group-search">{copy.searchGroups}<input type="search" className="organization-input" placeholder={copy.searchGroups} value={value} maxLength={200} onCompositionStart={() => search?.setComposing ? search.setComposing(true) : setComposing(true)} onCompositionEnd={() => search?.setComposing ? search.setComposing(false) : setComposing(false)} onChange={event => {const value = [...event.target.value].slice(0, 100).join(''); if (search) search.setQuery(value); else setDraft({source, value})}}/></label>
     {(['mine', 'all'] as const).map(relation => {
       const page = relation === 'mine' ? current.minePage : current.allPage
       return <DirectorySection key={`${relation}:${current.q}:${page}:${revision}`} relation={relation} q={current.q} page={page} onPage={page => navigate({...current, [relation === 'mine' ? 'minePage' : 'allPage']: page})} onApply={unit => {setCreated(null); setTarget(unit)}}/>

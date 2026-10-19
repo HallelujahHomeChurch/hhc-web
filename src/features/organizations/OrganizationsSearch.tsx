@@ -3,7 +3,7 @@ import {createContext, useContext, useState} from 'react'
 import {Button, ExpandableSearchField} from '@hallelujahhomechurch/ui'
 import {useTranslations} from 'next-intl'
 
-export type OrganizationsSearchState = {query: string; kind?: 'groups' | 'members'; available: boolean; composing?: boolean; setComposing?: (composing: boolean) => void; setQuery: (query: string) => void; setAvailable: (status: {unitId: string; available: boolean}) => void}
+export type OrganizationsSearchState = {query: string; kind?: 'groups' | 'members'; available: boolean; composing?: boolean; onNavigate?: (source: string) => void; navigationVersion?: number; setComposing?: (composing: boolean) => void; setQuery: (query: string) => void; setAvailable: (status: {unitId: string; available: boolean}) => void}
 export const OrganizationsSearchContext = createContext<OrganizationsSearchState | null>(null)
 export function useOrganizationsSearch() { return useContext(OrganizationsSearchContext) }
 export function OrganizationsSearch({onExpandedChange}: {onExpandedChange: (expanded: boolean) => void}) {
