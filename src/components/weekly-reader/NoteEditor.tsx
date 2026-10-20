@@ -1,4 +1,4 @@
-import {useId, useRef, useState} from 'react';
+import {useEffect, useId, useRef, useState} from 'react';
 import type {BulletinReaderNote} from '@hallelujahhomechurch/hhc-web-client';
 import {ReaderActionError} from '@/features/weekly-reader/usePrivateReader';
 import type {ReaderMessages} from './ReaderToolbar';
@@ -19,6 +19,20 @@ export function NoteEditor({messages: m, note, quote, onSave, onComplete, onCanc
   const [error, setError] = useState(false);
   const textarea = useRef<HTMLTextAreaElement>(null);
   const id = useId();
+  // Let the house modal install its iOS focus/keyboard scroll handling first.
+  useEffect(() => {
+    const input = textarea.current, body = input?.parentElement;
+    if (!input || !body) return;
+    input.focus();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => {
+      if (input.ownerDocument.activeElement !== input) return;
+      const field = input.getBoundingClientRect(), visible = body.getBoundingClientRect();
+      if (field.bottom > visible.bottom) body.scrollTop += field.bottom - visible.bottom;
+      else if (field.top < visible.top) body.scrollTop += field.top - visible.top;
+    });
+    observer?.observe(body);
+    return () => observer?.disconnect();
+  }, []);
   const length = [...draft.text].length;
   async function save() {
     if (saving.current || conflict || !draft.text.trim() || length > 10000) return;
@@ -42,7 +56,7 @@ export function NoteEditor({messages: m, note, quote, onSave, onComplete, onCanc
     <blockquote>{quote}</blockquote>
     {note?.inactiveAnchors.length || note?.reanchorRequired ? <p>{m.noteRemoved}</p> : null}
     <label htmlFor={id}>{m.noteText}</label>
-    <textarea ref={textarea} id={id} autoFocus rows={8} value={draft.text} disabled={busy} aria-describedby={`${id}-count`} aria-invalid={length > 10000 || undefined} onChange={event => update({draft: {...draft, text: event.target.value}, conflict})}/>
+    <textarea ref={textarea} id={id} rows={8} value={draft.text} disabled={busy} aria-describedby={`${id}-count`} aria-invalid={length > 10000 || undefined} onChange={event => update({draft: {...draft, text: event.target.value}, conflict})}/>
     <p id={`${id}-count`}>{m.noteCount.replace('{count}', String(length))}</p>
     {conflict ? <section className="reader-note-conflict" role="alert">
       <p>{m.noteConflict}</p><blockquote>{conflict.note && !conflict.note.deleted ? conflict.note.text : m.noteDeleted}</blockquote>

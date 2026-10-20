@@ -1308,22 +1308,23 @@ it.each(['save', 'delete'] as const)('accepts the first note %s while background
   expect(peak).toBe(1);
   await waitFor(() => expect(screen.queryByText(props.messages.operationWaiting)).not.toBeInTheDocument());
 });
-it('keeps a newer draft when retrying an older note and keeps retry reachable inside the notes drawer', async () => {
+it('keeps a newer draft while automatically confirming an older note without manual sync UI', async () => {
   const value = readerFixture();
   const note = {id: 'note-a', sentenceIds: ['s0'], text: 'Cloud baseline', quote: 'Quote', version: 1, deleted: false, inactiveAnchors: [], reanchorRequired: false, createdAt: '', updatedAt: ''};
   const cloud = {...(await state.privateState()).state, notes: [note]};
   state.privateState.mockResolvedValue({state: cloud});
   const mutation = {mutationId: 'old-note-save', documentRevision: 1, createdAt: new Date().toISOString(), kind: 'editNote' as const, baseVersion: 1, payload: {noteId: note.id, text: 'Older submitted text'}};
   saveReaderReturn({accountId: 'account-a', documentId: value.document.documentId}, {revision: 1, draft: {noteId: note.id, baseVersion: 1, text: mutation.payload.text}, action: mutation});
-  state.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: {...cloud, notes: [{...note, text: mutation.payload.text, version: 2}]}, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]}));
+  let finish!: () => void;
+  state.mutate.mockImplementation(async (_selector, _value, mutations) => {await new Promise<void>(resolve => {finish = resolve;}); return ({state: {...cloud, notes: [{...note, text: mutation.payload.text, version: 2}]}, results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]});});
   render(<WeeklyReader {...props}/>);
   await waitFor(() => expect(screen.getByRole('textbox', {name: props.messages.noteText})).not.toHaveAttribute('readonly'));
   const textbox = screen.getByRole('textbox', {name: props.messages.noteText});
   fireEvent.change(textbox, {target: {value: 'A newer draft to keep'}});
-  const retry = screen.getByRole('button', {name: props.messages.confirmRetry});
-  expect(retry.closest('.reader-private-sheet,.reader-private-panel')).not.toBeNull();
-  await waitFor(() => expect(retry).toBeEnabled()); fireEvent.click(retry);
   await waitFor(() => expect(state.mutate).toHaveBeenCalledOnce());
+  expect(screen.queryByRole('button', {name: props.messages.confirmRetry})).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', {name: props.messages.reviewSync})).not.toBeInTheDocument();
+  await act(async () => finish());
   expect(screen.getByRole('textbox', {name: props.messages.noteText})).toHaveValue('A newer draft to keep');
   expect(state.mutate.mock.calls[0][2]).toEqual([mutation]);
 });
@@ -1625,4 +1626,26 @@ it.each([false, true])('browser Back handles standalone Recovery before reader e
   } else await waitFor(() => expect(screen.queryByRole('dialog', {name: props.messages.reviewSync})).not.toBeInTheDocument());
   await waitFor(() => expect(history.state?.__hhcReaderExit?.position).toBe('guard'));
   expect(state.mutate).not.toHaveBeenCalled();
+});
+
+it('keeps normal durable writes out of recovery UI throughout their background request', async () => {
+  vi.stubGlobal('indexedDB', new IDBFactory()); vi.stubGlobal('crypto', webcrypto);
+  vi.stubGlobal('navigator', {onLine: true, locks: {request: async (_name: string, options: unknown, work?: () => Promise<unknown>) => typeof options === 'function' ? options() : work!()}});
+  await activateOfflineAccount('account-a');
+  let finish!: () => void;
+  state.mutate.mockImplementation(async (_selector, _value, mutations) => {await new Promise<void>(resolve => {finish = resolve;}); return {state: applyLocalMutation((await state.privateState()).state, mutations[0], readerFixture().document), results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]};});
+  const {container} = render(<WeeklyReader {...props}/>);
+  await screen.findByText('Private weekly');
+  const flashes: string[] = [];
+  const observer = new MutationObserver(() => {const text = container.querySelector('.reader-document > .reader-private-feedback')?.textContent?.trim(); if (text) flashes.push(text);});
+  observer.observe(container, {subtree: true, childList: true, characterData: true});
+  const sentence = container.querySelector('[data-sentence-id="s0"]')!;
+  selectText(sentence);
+  const highlight = screen.getByRole('button', {name: props.messages.yellowHighlight});
+  await waitFor(() => expect(highlight).toBeEnabled()); fireEvent.click(highlight);
+  await waitFor(() => expect(state.mutate).toHaveBeenCalledOnce());
+  expect(screen.queryByRole('button', {name: props.messages.reviewSync})).not.toBeInTheDocument();
+  await act(async () => finish());
+  await waitFor(() => expect(container.querySelector('.reader-document > .reader-private-feedback')).toHaveTextContent(''));
+  observer.disconnect(); expect(flashes).toEqual([]);
 });

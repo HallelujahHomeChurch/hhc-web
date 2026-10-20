@@ -6,7 +6,7 @@ import type {BulletinReaderMutation, BulletinReaderState} from '@hallelujahhomec
 import {readerFixture} from './test-fixture';
 import {usePrivateReader} from './usePrivateReader';
 import {applyLocalMutation} from './private-state';
-import {clearReaderReturns, readVolatileReader, readerReturnSnapshot, clearReaderReturnIfUnchanged, hasPendingReaderReturn} from './return-state';
+import {clearReaderReturns, saveReaderReturn, readReaderReturn, readVolatileReader, readerReturnSnapshot, clearReaderReturnIfUnchanged, hasPendingReaderReturn} from './return-state';
 import {activateOfflineAccount, readPrivateReplica, readOfflineSave, bindOnlinePrivate, seedPrivateReplica, enqueuePrivateMutation, chooseReaderRecovery, commitOnlineUpgrade, commitOfflineSave} from './offline-store';
 const storage = vi.hoisted(() => ({fail: false, failBind: false}));
 vi.mock('./offline-store', async original => {const actual = await original<typeof import('./offline-store')>(); return {...actual, bindOnlinePrivate: (...args: Parameters<typeof actual.bindOnlinePrivate>) => storage.failBind ? Promise.reject(new DOMException('full', 'QuotaExceededError')) : actual.bindOnlinePrivate(...args), enqueuePrivateMutation: (...args: Parameters<typeof actual.enqueuePrivateMutation>) => storage.fail ? Promise.reject(new DOMException('full', 'QuotaExceededError')) : actual.enqueuePrivateMutation(...args)};});
@@ -61,7 +61,7 @@ it.each([false, true])('automatically retries a transient failure without anothe
   const intent = edit('automatic-retry', 'B', 1);
   await act(async () => {await h.result.current.mutate(intent);});
   await waitFor(() => expect(h.result.current.status).toBe('waiting'));
-  expect(h.result.current.canRetry).toBe(memory);
+  expect(h.result.current.canRetry).toBe(false);
   await waitFor(() => expect(h.result.current.status).toBe('synced'), {timeout: 3000});
   expect(h.api.mutate.mock.calls.map(call => call[2])).toEqual([[intent], [intent]]);
   expect(h.result.current.state?.notes[0].text).toBe('B');
@@ -194,4 +194,28 @@ it('does not revive a persisted old-revision journal after an explicit recovery 
   await commitOnlineUpgrade(selector, current, cloud, epoch, 1, queue);
   act(() => h.result.current.reload()); await waitFor(() => expect(h.result.current.status).toBe('synced'));
   expect(h.result.current.state).toEqual(cloud); expect(h.result.current.pendingMutation).toBeNull(); expect(api.mutate).not.toHaveBeenCalled();
+});
+
+it('clears a restored return action already confirmed by the durable offline queue', async () => {
+  const epoch = await activateOfflineAccount(selector.accountId);
+  await commitOfflineSave({selector, value, resources: [], size: 100, lastObservedAt: now, epoch, locked: false}, epoch, now);
+  await seedPrivateReplica(selector, state, epoch);
+  const intent = edit('restored-durable', 'B', 1);
+  await enqueuePrivateMutation(selector, intent, epoch);
+  saveReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}, {revision: 1, action: intent});
+  const h = mount(); await waitFor(() => expect(h.result.current.status).toBe('synced'));
+  expect(h.api.mutate.mock.calls.map(call => call[2])).toEqual([[intent]]);
+  expect(h.result.current.pendingMutation).toBeNull(); expect(h.result.current.canRetry).toBe(false);
+  expect(readReaderReturn({accountId: selector.accountId, documentId: value.document.documentId})?.action).toBeNull();
+});
+it('automatically confirms a return-only intent even when an offline copy exists', async () => {
+  const epoch = await activateOfflineAccount(selector.accountId);
+  await commitOfflineSave({selector, value, resources: [], size: 100, lastObservedAt: now, epoch, locked: false}, epoch, now);
+  await seedPrivateReplica(selector, state, epoch);
+  const intent = edit('return-only', 'B', 1);
+  saveReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}, {revision: 1, action: intent});
+  const h = mount(); await waitFor(() => expect(h.api.mutate).toHaveBeenCalledOnce());
+  await waitFor(() => expect(h.result.current.status).toBe('synced'));
+  expect(h.api.mutate.mock.calls[0][2]).toEqual([intent]);
+  expect(h.result.current.pendingMutation).toBeNull(); expect(h.result.current.state?.notes[0].text).toBe('B');
 });

@@ -52,7 +52,7 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
   const loaded = useRef<'cloud' | 'local' | false>(false);
   const [attempt, setAttempt] = useState(0);
   const [pendingMutation, setPendingMutation] = useState(restored);
-  const [retryNeeded, setRetryNeeded] = useState(!!restored);
+  const [retryNeeded, setRetryNeeded] = useState(!!restored && isBookmarkMutation(restored));
   const canRetry = retryNeeded || !!pendingMutation && isBookmarkMutation(pendingMutation);
   const [mutationOutcome, setMutationOutcome] = useState<{mutation: BulletinReaderMutation; result: ReaderOutcome} | null>(null);
   const [unsaved, setUnsaved] = useState(false);
@@ -96,7 +96,7 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
     journal.current = null; loaded.current = false;
     void bounded(request.signal, signal => exclusive(async () => {
       journal.current = null; durable.current = false; journalBlocked.current = false; epoch.current = null; setUnsaved(false);
-      setPendingMutation(pending.current); setRetryNeeded(!!pending.current); setMutationOutcome(null);
+      setPendingMutation(pending.current); setRetryNeeded(!!pending.current && isBookmarkMutation(pending.current)); setMutationOutcome(null);
       setLoadError(false); loaded.current = false; setBookmarkOutcome(null); setBookmarkCacheWarning(false); bookmarkCapability.current = false; setBookmarksSupported(false);
       const bound = {accountId, issueNumber, series, contentLocale};
       const saved = supportsOfflineReader() ? await readOfflineSave(bound).catch(() => null) : null;
@@ -107,17 +107,26 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
           const local = retained ?? await readPrivateReplica(bound);
           signal.throwIfAborted();
           journal.current = local; durable.current = !retained; epoch.current = saved.save.epoch;
-          if (retained) {rememberPending(retained.queue[0]?.mutation ?? null); setUnsaved(!!retained.queue.length); setRetryNeeded(!!retained.queue.length);}
+          if (retained) {rememberPending(retained.queue[0]?.mutation ?? null); setUnsaved(!!retained.queue.length); setRetryNeeded(false);}
           loaded.current = local ? 'local' : false;
           publishState(local?.state ?? null); publishStatus(local && local.state.currentRevision !== value.document.revision ? 'paused' : local?.queue.some(entry => entry.result) ? 'action' : local?.queue.length ? 'waiting' : 'synced');
           return;
         }
+        const pendingId = pending.current && !isBookmarkMutation(pending.current) ? pending.current.mutationId : null;
+        const queuedPending = pendingId && (await readPrivateReplica(bound))?.queue.some(entry => entry.mutation.mutationId === pendingId);
         const synced = await syncPrivateReplica(api, bound, value, saved.save.epoch, signal);
         signal.throwIfAborted();
         bookmarkCapability.current = synced.bookmarksSupported === true; setBookmarksSupported(bookmarkCapability.current);
-        journal.current = synced.replica; durable.current = true; epoch.current = saved.save.epoch;
+        if (queuedPending && synced.status === 'synced' && !synced.replica?.queue.some(entry => entry.mutation.mutationId === pendingId)) rememberPending(null);
+        durable.current = true; epoch.current = saved.save.epoch;
+        journal.current = synced.replica ? restorePending(synced.replica) : null;
         loaded.current = synced.replica ? 'local' : false;
-        publishState(synced.replica?.state ?? null); publishStatus(synced.status); return;
+        publishState(journal.current?.state ?? null);
+        setUnsaved(!durable.current && !!journal.current?.queue.length);
+        if (journal.current) retainVolatileReader(bound, value.document.revision, epoch.current, journal.current, !durable.current);
+        publishStatus(synced.status === 'synced' && journal.current?.queue.length ? 'waiting' : synced.status);
+        if (synced.status === 'synced' && journal.current?.queue.length) {syncRequested.current = true; queueMicrotask(() => {void pump.current().catch(() => {});});}
+        return;
       }
       const cloud = await api.privateState(bound, value, signal);
       signal.throwIfAborted();
@@ -130,7 +139,7 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
         signal.throwIfAborted();
         journal.current = retained; loaded.current = 'cloud';
         rememberPending(retained.queue[0]?.mutation ?? null);
-        setRetryNeeded(!!retained.queue.length);
+        setRetryNeeded(false);
         bookmarkCapability.current = Array.isArray(cloud.state.bookmarks); setBookmarksSupported(bookmarkCapability.current);
         publishState(retained.state); setUnsaved(!!retained.queue.length);
         if (retained.state.currentRevision !== value.document.revision || cloud.state.currentRevision !== value.document.revision) {publishState(cloud.state); publishStatus('paused'); return;}
@@ -156,11 +165,11 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
         } catch (error) {if (!isReaderStorageFailure(error)) throw error;}
       }
       signal.throwIfAborted();
-      if (pending.current && !isBookmarkMutation(pending.current) && !replica.queue.some(entry => entry.mutation.mutationId === pending.current?.mutationId)) {replica = {...replica, queue: [{mutation: pending.current, sent: true}, ...replica.queue]}; durable.current = false;}
+      replica = restorePending(replica);
       journal.current = replica; loaded.current = durable.current ? 'local' : 'cloud';
       publishState(replica.state); publishStatus(replica.queue.some(entry => entry.result) ? 'action' : replica.queue.length ? 'waiting' : 'synced');
       setUnsaved(!durable.current && !!replica.queue.length);
-      if (durable.current && replica.queue.length && !replica.queue.some(entry => entry.result)) {syncRequested.current = true; queueMicrotask(() => {void pump.current().catch(() => {});});}
+      if (!offline && replica.queue.length && !replica.queue.some(entry => entry.result)) {syncRequested.current = true; queueMicrotask(() => {void pump.current().catch(() => {});});}
     }, signal)).catch(async error => {
       if (request.signal.aborted || controller.current !== owner) return;
       if (!(error instanceof ReaderActionError)) current.current.onFailure(error);
@@ -175,6 +184,12 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
     return () => {if (retryTimer.current) clearTimeout(retryTimer.current); retryTimer.current = null; request.abort(new ReaderActionError('cancelled')); foreground.current?.abort(new ReaderActionError('cancelled'));};
   }, [api, accountId, issueNumber, series, contentLocale, key, attempt, exclusive, publishState, publishStatus]);
 
+  function restorePending(replica: PrivateReplica): PrivateReplica {
+    const mutation = pending.current;
+    if (!mutation || isBookmarkMutation(mutation) || replica.queue.some(entry => entry.mutation.mutationId === mutation.mutationId)) return replica;
+    durable.current = false;
+    return {...replica, queue: [{mutation, sent: true}, ...replica.queue]};
+  }
   function rememberPending(mutation: BulletinReaderMutation | null) {
     pending.current = mutation; setPendingMutation(mutation);
     const context = current.current;
@@ -271,6 +286,7 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
     setUnsaved(!durable.current && !!replica.queue.length);
     if (!replica.queue.length) setRetryNeeded(false);
     if (!durable.current) rememberPending(replica.queue[0]?.mutation ?? null);
+    else if (!replica.queue.length && !localWrites.current.size && pending.current && !isBookmarkMutation(pending.current)) rememberPending(null);
   }
   async function refreshJournal(owner: NonNullable<typeof controller.current>) {
     if (!durable.current) return;
@@ -347,7 +363,7 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
       if (durable.current && (action === 'retain' || action === 'login')) await refreshJournal(owner).catch(() => {});
       if (controller.current !== owner || owner.request.signal.aborted) return;
       publishStatus(action === 'retain' || action === 'login' ? 'waiting' : 'action');
-      setRetryNeeded(action === 'retain' && !durable.current || action === 'login');
+      setRetryNeeded(false);
       if (action === 'retain' && journal.current?.queue.length) {
         retryTimer.current = setTimeout(() => {retryTimer.current = null; if (controller.current === owner && !owner.request.signal.aborted) void pump.current().catch(() => {});}, retryDelay.current);
         retryDelay.current = Math.min(30000, retryDelay.current * 2);
