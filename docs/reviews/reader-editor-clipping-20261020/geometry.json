@@ -1,0 +1,236 @@
+[
+  {
+    "height": 844,
+    "body": {
+      "top": 98,
+      "bottom": 758,
+      "height": 660
+    },
+    "field": {
+      "top": 250.1796875,
+      "bottom": 755,
+      "height": 504.8203125
+    },
+    "footer": {
+      "top": 770,
+      "bottom": 827,
+      "height": 57
+    },
+    "counter": {
+      "top": 795.3984375,
+      "bottom": 814.59375,
+      "height": 19.1953125
+    },
+    "label": {
+      "top": 216.5859375,
+      "bottom": 242.1796875,
+      "height": 25.59375
+    },
+    "quote": {
+      "top": 101,
+      "bottom": 208.5859375,
+      "height": 107.5859375
+    },
+    "scroll": 0,
+    "focus": true,
+    "outline": "rgb(226, 177, 170) solid 2px",
+    "outlineOffset": "-3px",
+    "text": "我是一个\n第二行的合成筆記",
+    "minimumLineHeight": 51.6
+  },
+  {
+    "height": 400,
+    "body": {
+      "top": 98,
+      "bottom": 314,
+      "height": 216
+    },
+    "field": {
+      "top": 195.09375,
+      "bottom": 311,
+      "height": 115.90625
+    },
+    "footer": {
+      "top": 326,
+      "bottom": 383,
+      "height": 57
+    },
+    "counter": {
+      "top": 351.3984375,
+      "bottom": 370.59375,
+      "height": 19.1953125
+    },
+    "label": {
+      "top": 161.5,
+      "bottom": 187.09375,
+      "height": 25.59375
+    },
+    "quote": {
+      "top": 101,
+      "bottom": 153.5,
+      "height": 52.5
+    },
+    "scroll": 0,
+    "focus": true,
+    "outline": "rgb(226, 177, 170) solid 2px",
+    "outlineOffset": "-3px",
+    "text": "我是一个\n第二行的合成筆記",
+    "minimumLineHeight": 51.6
+  },
+  {
+    "height": 336,
+    "body": {
+      "top": 98,
+      "bottom": 250,
+      "height": 152
+    },
+    "field": {
+      "top": 179.09375,
+      "bottom": 247,
+      "height": 67.90625
+    },
+    "footer": {
+      "top": 262,
+      "bottom": 319,
+      "height": 57
+    },
+    "counter": {
+      "top": 287.3984375,
+      "bottom": 306.59375,
+      "height": 19.1953125
+    },
+    "label": {
+      "top": 145.5,
+      "bottom": 171.09375,
+      "height": 25.59375
+    },
+    "quote": {
+      "top": 101,
+      "bottom": 137.5,
+      "height": 36.5
+    },
+    "scroll": 0,
+    "focus": true,
+    "outline": "rgb(226, 177, 170) solid 2px",
+    "outlineOffset": "-3px",
+    "text": "我是一个\n第二行的合成筆記",
+    "minimumLineHeight": 51.6
+  },
+  {
+    "height": 300,
+    "body": {
+      "top": 98,
+      "bottom": 214,
+      "height": 116
+    },
+    "field": {
+      "top": 155.09375,
+      "bottom": 211.09375,
+      "height": 56
+    },
+    "footer": {
+      "top": 226,
+      "bottom": 283,
+      "height": 57
+    },
+    "counter": {
+      "top": 251.3984375,
+      "bottom": 270.59375,
+      "height": 19.1953125
+    },
+    "label": {
+      "top": 121.5,
+      "bottom": 147.09375,
+      "height": 25.59375
+    },
+    "quote": {
+      "top": 87.5,
+      "bottom": 113.5,
+      "height": 26
+    },
+    "scroll": 13.5,
+    "focus": true,
+    "outline": "rgb(226, 177, 170) solid 2px",
+    "outlineOffset": "-3px",
+    "text": "我是一个\n第二行的合成筆記",
+    "minimumLineHeight": 51.6
+  },
+  {
+    "height": 260,
+    "body": {
+      "top": 98,
+      "bottom": 174,
+      "height": 76
+    },
+    "field": {
+      "top": 115.09375,
+      "bottom": 171.09375,
+      "height": 56
+    },
+    "footer": {
+      "top": 186,
+      "bottom": 243,
+      "height": 57
+    },
+    "counter": {
+      "top": 211.3984375,
+      "bottom": 230.59375,
+      "height": 19.1953125
+    },
+    "label": {
+      "top": 81.5,
+      "bottom": 107.09375,
+      "height": 25.59375
+    },
+    "quote": {
+      "top": 47.5,
+      "bottom": 73.5,
+      "height": 26
+    },
+    "scroll": 53.5,
+    "focus": true,
+    "outline": "rgb(226, 177, 170) solid 2px",
+    "outlineOffset": "-3px",
+    "text": "我是一个\n第二行的合成筆記",
+    "minimumLineHeight": 51.6
+  },
+  {
+    "height": 336,
+    "body": {
+      "top": 98,
+      "bottom": 250,
+      "height": 152
+    },
+    "field": {
+      "top": 179.09375,
+      "bottom": 247,
+      "height": 67.90625
+    },
+    "footer": {
+      "top": 262,
+      "bottom": 319,
+      "height": 57
+    },
+    "counter": {
+      "top": 287.3984375,
+      "bottom": 306.59375,
+      "height": 19.1953125
+    },
+    "label": {
+      "top": 145.5,
+      "bottom": 171.09375,
+      "height": 25.59375
+    },
+    "quote": {
+      "top": 101,
+      "bottom": 137.5,
+      "height": 36.5
+    },
+    "scroll": 0,
+    "focus": true,
+    "outline": "rgb(226, 177, 170) solid 2px",
+    "outlineOffset": "-3px",
+    "text": "我是一个\n第二行的合成筆記",
+    "minimumLineHeight": 51.6
+  }
+]
