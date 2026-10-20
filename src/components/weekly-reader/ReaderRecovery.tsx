@@ -1,30 +1,36 @@
 import {isBookmarkMutation} from '@/features/weekly-reader/bookmarks';
 import {ReaderActionError, type ReaderExclusive} from '@/features/weekly-reader/usePrivateReader';
 import {PassageText} from './PassageText';
-import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
-import {Drawer} from '@hallelujahhomechurch/ui';
+import {useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type RefObject} from 'react';
+import {ReaderPrivateState} from './ReaderPrivateState';
 import type {BulletinReaderHighlightColor, BulletinReaderMutation, BulletinReaderState, OnlineBulletinAccess} from '@hallelujahhomechurch/hhc-web-client';
 import type {createReaderApi, ReaderSelector} from '@/features/weekly-reader/api';
-import {chooseReaderRecovery, getOfflineIdentity, readOfflineSave, supportsOfflineReader} from '@/features/weekly-reader/offline-store';
+import {bindOnlinePrivate, chooseReaderRecovery, getOfflineIdentity, readPrivateBinding, supportsOfflineReader} from '@/features/weekly-reader/offline-store';
 import {finishReaderUpgrade, prepareReaderUpgrade, type ReaderUpgrade} from '@/features/weekly-reader/upgrade';
+import {withReaderWriter} from '@/features/weekly-reader/sync';
 import {manualReaderRecovery} from '@/features/weekly-reader/rebase';
 import {readerSentences} from '@/features/weekly-reader/selection';
 import {rangeQuote, selectionPassage} from '@/features/weekly-reader/text-range';
 import {useReaderSelection} from '@/features/weekly-reader/useReaderSelection';
 import type {ReaderMessages} from './ReaderToolbar';
 
-export function ReaderRecovery({api, value, selector, messages: m, onUpdated, onFailure, suspended = false, pendingMutation = null, onPendingChange, mobile = false, runExclusive, available = true, onState, inline = false, onOpenChange, onConfirm, onBookmarkRetry}: {
+export function ReaderRecovery({api, value, selector, messages: m, onUpdated, onFailure, suspended = false, pendingMutation = null, onPendingChange, mobile = false, runExclusive, available = true, onState, inline = false, onOpenChange, onConfirm, onBookmarkRetry, headerRef, closeRef, theme = 'light'}: {
+  closeRef?: RefObject<(() => boolean) | null>; headerRef?: RefObject<HTMLElement | null>; theme?: 'light' | 'dark';
   onConfirm?: (description: string) => Promise<boolean>;
   onBookmarkRetry?: () => Promise<import('@/features/weekly-reader/usePrivateReader').ReaderOutcome | undefined>;
   api: ReturnType<typeof createReaderApi>; value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages;
   onUpdated: (value: OnlineBulletinAccess) => void; onFailure: (error: unknown) => void; suspended?: boolean;
-  pendingMutation?: BulletinReaderMutation | null; onPendingChange?: (mutation: BulletinReaderMutation | null, result?: import('@/features/weekly-reader/usePrivateReader').ReaderOutcome, previous?: BulletinReaderMutation | null) => void;
+  pendingMutation?: BulletinReaderMutation | null; onPendingChange?: (mutation: BulletinReaderMutation | null, result?: import('@/features/weekly-reader/usePrivateReader').ReaderOutcome, previous?: BulletinReaderMutation | null) => BulletinReaderMutation | null | void;
   mobile?: boolean; runExclusive?: ReaderExclusive; available?: boolean; onState?: (state: BulletinReaderState) => void; inline?: boolean; onOpenChange?: (open: boolean) => void;
 }) {
   const [open, setOpen] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState(false);
   function changeOpen(next: boolean) {setOpen(next); onOpenChange?.(next);}
   const [prepared, setPrepared] = useState<ReaderUpgrade | null>(null);
   const [deciding, setDeciding] = useState(false);
+  useImperativeHandle(closeRef, () => () => {
+    if (busy || deciding || suspended) return false;
+    changeOpen(false); return true;
+  });
   const decisionPending = useRef(false);
   const current = useRef({prepared, suspended, open, selector, mounted: false});
   useLayoutEffect(() => {current.current = {prepared, suspended, open, selector, mounted: true};});
@@ -44,12 +50,22 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
     finally {request.abort(); setBusy(false);}
   }
   async function prepare(signal: AbortSignal) {
-    const saved = supportsOfflineReader() ? await readOfflineSave(selector) : null;
-    if (saved && !pending.current) {
+    const local = supportsOfflineReader() ? await readPrivateBinding(selector).catch(() => null) : null;
+    if (local && !pending.current) {
       const owner = await getOfflineIdentity();
-      if (owner.accountId !== selector.accountId) throw new Error('offline_account_changed');
+      if (owner.accountId !== selector.accountId || owner.epoch !== local.epoch) throw new Error('offline_account_changed');
       epoch.current = owner.epoch;
-      const next = await prepareReaderUpgrade(api, selector, value, owner.epoch, signal);
+      let next: ReaderUpgrade;
+      if (local.onlineOnly && local.revision !== value.document.revision) {
+        const current = await api.current(selector, value, crypto.randomUUID(), signal);
+        signal.throwIfAborted();
+        await bindOnlinePrivate(selector, current, owner.epoch);
+        const cloud = await api.privateState(selector, current, signal);
+        const latest = await readPrivateBinding(selector);
+        signal.throwIfAborted();
+        next = {onlineOnly: true, value: current, previousRevision: latest.revision, state: cloud.state, queue: latest.replica?.queue ?? [], mutations: [],
+          recovery: (latest.replica?.queue ?? []).filter(entry => !entry.resolution || entry.resolution.result && entry.resolution.result.status !== 'applied').map(entry => ({mutationId: entry.mutation.mutationId, reason: 'mapping_unavailable' as const}))};
+      } else next = await prepareReaderUpgrade(api, selector, value, owner.epoch, signal);
       signal.throwIfAborted(); onState?.(next.state); setPrepared(next); setAwaitingConfirmation(false);
     } else {
       epoch.current = null;
@@ -66,11 +82,12 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
     }
   }
   function remember(mutation: BulletinReaderMutation | null, result?: import('@/features/weekly-reader/usePrivateReader').ReaderOutcome) {
-    const previous = pending.current; pending.current = mutation; acknowledged.current = null; onPendingChange?.(mutation, result, previous);
+    const previous = pending.current; pending.current = mutation; acknowledged.current = null; const remaining = onPendingChange?.(mutation, result, previous); if (remaining !== undefined) pending.current = remaining;
   }
   async function retryPending(signal: AbortSignal) {
     if (!prepared || !pending.current) return;
-    const response = await api.mutate(selector, prepared.value, [pending.current], signal);
+    const mutation = pending.current;
+    const response = await withReaderWriter(selector.accountId, signal, () => api.mutate(selector, prepared.value, [mutation], signal));
     signal.throwIfAborted();
     onState?.(response.state);
     if (response.results[0].status === 'applied') remember(null, response.results[0]);
@@ -96,7 +113,7 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
       // Resolving a server-identified color conflict must not replace the user's
       // pending note/highlight. A consumed conflict ID cannot recolor it again.
       if (originalId === null && pending.current && mutation?.kind === 'resolveHighlightMigrationConflict') {
-        const response = await api.mutate(selector, prepared.value, [mutation], signal);
+        const response = await withReaderWriter(selector.accountId, signal, () => api.mutate(selector, prepared.value, [mutation], signal));
         signal.throwIfAborted();
         onState?.(response.state);
         if (response.results[0].status !== 'applied') throw new Error('action_required');
@@ -144,7 +161,7 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
     </div>;
   return <>
     {available || open ? <button type="button" disabled={busy || deciding} onClick={() => {changeOpen(true); setPrepared(null); void run(prepare);}}>{m.reviewSync}</button> : null}
-    {open ? inline ? content : <Drawer title={m.reviewSync} closeLabel={m.noteClose} isOpen onOpenChange={next => {if (!next && !busy && !deciding && !suspended) changeOpen(false);}}>{content}</Drawer> : null}
+    {inline ? open ? content : null : <ReaderPrivateState isOpen={open} wide={false} headerRef={headerRef} title={m.reviewSync} theme={theme} messages={m} suspended={suspended} onClose={() => {if (!busy && !deciding && !suspended) changeOpen(false);}}>{open ? content : null}</ReaderPrivateState>}
   </>;
 }
 
@@ -154,7 +171,7 @@ function RecoveryChoice({prepared, previous, original, reason, messages: m, busy
   const sentences = useMemo(() => readerSentences(prepared.value.document), [prepared.value.document]);
   const rangeRoot = useRef<HTMLDivElement>(null);
   const partial = 'ranges' in original.payload;
-  const {selection} = useReaderSelection(rangeRoot, sentences, {ids: []}, !partial || busy, mobile ? 'sentence' : 'text');
+  const {selection} = useReaderSelection(rangeRoot, sentences, {ids: []}, !partial || busy, mobile ? 'clause' : 'text');
   const {ranges, quote: selectedQuote} = selectionPassage(selection, sentences);
   const cloud = original.kind === 'createNote' || original.kind === 'editNote' || original.kind === 'deleteNote' || original.kind === 'reanchorNote' ? prepared.state.notes.find(note => note.id === original.payload.noteId && !note.deleted) : undefined;
   const sourceIds = original.kind === 'setHighlight' || original.kind === 'clearHighlight' || original.kind === 'createNote' ? original.payload.sentenceIds : [];
@@ -178,7 +195,7 @@ function RecoveryChoice({prepared, previous, original, reason, messages: m, busy
     {note ? <><label>{m.noteText}<textarea value={text} disabled={busy} onChange={event => setText(event.target.value)}/></label><p>{m.noteCount.replace('{count}', String([...text].length))}</p>{cloud ? <button type="button" disabled={busy} onClick={() => setText(`${cloud.text}\n\n${text}`)}>{m.noteManual}</button> : null}</> : null}
     {original.kind === 'deleteNote' ? <p>{m.noteDeleteConfirm}</p> : null}
     {original.kind === 'setHighlight' || original.kind === 'restoreHighlight' ? <fieldset><legend>{m.highlightColors}</legend>{(['yellow', 'red', 'blue'] as const).map(option => <label key={option}><input type="radio" name="recovery-color" value={option} checked={color === option} onChange={() => setColor(option)} disabled={busy}/>{m[`${option}Highlight`]}</label>)}</fieldset> : null}
-    {anchors && partial ? <fieldset><legend>{m.recoveryRange}</legend><PassageText root={rangeRoot} sentences={sentences} selection={selection} mobile={mobile}/><blockquote>{selectedQuote || m.recoveryRange}</blockquote></fieldset> : anchors ? <fieldset><legend>{m.recoveryAnchors}</legend><input type="search" aria-label={m.search} value={search} onChange={event => setSearch(event.target.value)}/><p>{m.recoveryAnchorCount.replace('{count}', String(ids.length))}</p><div className="reader-recovery-anchors">{sentences.filter(sentence => sentence.text.includes(search)).map(sentence => <label key={sentence.id}><input type="checkbox" checked={ids.includes(sentence.id)} disabled={busy || ids.length >= 500 && !ids.includes(sentence.id)} onChange={event => setIds(event.target.checked ? [...ids, sentence.id] : ids.filter(id => id !== sentence.id))}/>{sentence.text}</label>)}</div></fieldset> : null}
+    {anchors && partial ? <fieldset aria-description={mobile ? m.clauseKeyboardHelp : undefined}><legend>{m.recoveryRange}</legend><PassageText root={rangeRoot} sentences={sentences} selection={selection} mobile={mobile}/><blockquote aria-live="polite">{selectedQuote || m.recoveryRange}</blockquote></fieldset> : anchors ? <fieldset><legend>{m.recoveryAnchors}</legend><input type="search" aria-label={m.search} value={search} onChange={event => setSearch(event.target.value)}/><p>{m.recoveryAnchorCount.replace('{count}', String(ids.length))}</p><div className="reader-recovery-anchors">{sentences.filter(sentence => sentence.text.includes(search)).map(sentence => <label key={sentence.id}><input type="checkbox" checked={ids.includes(sentence.id)} disabled={busy || ids.length >= 500 && !ids.includes(sentence.id)} onChange={event => setIds(event.target.checked ? [...ids, sentence.id] : ids.filter(id => id !== sentence.id))}/>{sentence.text}</label>)}</div></fieldset> : null}
     {error ? <p role="alert">{m.actionFailed}</p> : null}
     <div className="reader-note-actions" data-reader-selection-tools><button type="button" disabled={busy} onClick={() => onChoose(null)}>{m.noteCloud}</button><button type="button" disabled={busy || note && (!text.trim() || [...text].length > 10000) || anchors && !(partial ? selectedQuote : ids.length) || original.kind === 'deleteNote' && !cloud} onClick={() => {
       try {onChoose(manualReaderRecovery(original, prepared.state, prepared.value.document, {sentenceIds: partial ? selection.ids : ids, text, color, ...(partial ? {ranges} : {})}));}

@@ -46,6 +46,8 @@ describe('reader navigation', () => {
     expect(keyboardPageDelta({...event, target: document.createElement('input')}, false)).toBe(0);
     const editable = document.createElement('div'); editable.setAttribute('contenteditable', 'true');
     expect(keyboardPageDelta({...event, target: editable}, false)).toBe(0);
+    const clause = document.createElement('span'); clause.setAttribute('role', 'button');
+    expect(keyboardPageDelta({...event, target: clause}, false)).toBe(0);
     expect(keyboardPageDelta(event, true)).toBe(0);
   });
 });

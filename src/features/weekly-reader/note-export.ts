@@ -1,54 +1,72 @@
-import {bulletinChapters} from '@hallelujahhomechurch/ui';
-import type {BulletinReaderNote, MemberOnlineDocument} from '@hallelujahhomechurch/hhc-web-client';
+import type {BulletinReaderNote} from '@hallelujahhomechurch/hhc-web-client';
 import {isLocale, type Locale} from '@/i18n/locales';
-import {readerSentences} from './selection';
-import {tabHref} from './workspace';
 
 export const maxExportBytes = 8 * 1024 * 1024;
-function fenced(text: string) {
-  let longest = 0, run = 0;
-  for (const char of text) {run = char === '`' ? run + 1 : 0; longest = Math.max(longest, run);}
-  const fence = '`'.repeat(Math.max(3, longest + 1));
-  return `${fence}\n${text}\n${fence}\n\n`;
-}
+const mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
-export function noteSource(document: MemberOnlineDocument, note: BulletinReaderNote, unknown: string, chapters: Record<string, string>) {
-  if (note.reanchorRequired || note.inactiveAnchors.length) return unknown;
-  const sentences = readerSentences(document);
-  const ranges = note.ranges?.length ? note.ranges : note.sentenceIds.map(sentenceId => ({sentenceId, start: 0, end: sentences.find(s => s.id === sentenceId)?.text ? [...sentences.find(s => s.id === sentenceId)!.text].length : 0}));
-  const positions = new Set<string>();
-  if (!ranges.length) return unknown;
-  for (const range of ranges) {
-    const sentence = sentences.find(s => s.id === range.sentenceId);
-    if (!sentence || !Number.isSafeInteger(range.start) || !Number.isSafeInteger(range.end) || range.start < 0 || range.end <= range.start || range.end > [...sentence.text].length) return unknown;
-    const chapter = bulletinChapters(document.content).find(chapter => chapter.componentIds.includes(sentence.componentId))?.id;
-    let located = false;
-    document.content.layoutManifest.pages.forEach(page => {
-      if (page.slots.some(slot => slot.fragments.some(f => f.sentenceId === range.sentenceId && f.start < range.end && range.start < f.end)) || page.fixedSlots?.some(slot => `canonical-${slot.element}` === range.sentenceId)) {
-        const index = document.content.pages.findIndex(p => p.id === page.pageId);
-        if (index >= 0) {positions.add(`${chapter ? chapters[chapter] ?? chapter : ''} · PDF ${index + 1}`); located = true;}
-      }
-    });
-    if (!located) return unknown;
+// Inspect the builder's ZIP directory, without decompressing or reimplementing its packaging.
+function uncompressedBytes(buffer: ArrayBuffer) {
+  const view = new DataView(buffer), end = buffer.byteLength - 22;
+  if (end < 0 || view.getUint32(end, true) !== 0x06054b50 || view.getUint16(end + 20, true) !== 0 || view.getUint32(end + 4, true) !== 0) throw new Error('export_unavailable');
+  let offset = view.getUint32(end + 16, true), total = 0;
+  if (offset + view.getUint32(end + 12, true) !== end) throw new Error('export_unavailable');
+  const entries = view.getUint16(end + 10, true);
+  if (entries !== view.getUint16(end + 8, true) || entries === 0xffff) throw new Error('export_unavailable');
+  for (let i = 0; i < entries; i++) {
+    if (offset + 46 > end || view.getUint32(offset, true) !== 0x02014b50) throw new Error('export_unavailable');
+    total += view.getUint32(offset + 24, true);
+    if (total > maxExportBytes) throw new Error('export_limit');
+    offset += 46 + view.getUint16(offset + 28, true) + view.getUint16(offset + 30, true) + view.getUint16(offset + 32, true);
   }
-  return [...positions].join('\n');
+  if (offset !== end) throw new Error('export_unavailable');
+  return total;
 }
 
-export function buildNoteExport({document, notes, pendingNoteIds, locale, issueNumber, createdAt, unknownSource, chapters}: {
-  document: MemberOnlineDocument; notes: readonly BulletinReaderNote[]; pendingNoteIds: ReadonlySet<string>; locale: Locale; issueNumber: number; createdAt: string; unknownSource: string; chapters: Record<string, string>;
+export async function buildNoteExport({notes, locale, issueNumber, labels}: {
+  notes: readonly BulletinReaderNote[]; locale: Locale; issueNumber: number; labels: {quote: string; note: string};
 }) {
-  if (!notes.length || notes.length > 200 || !isLocale(locale) || !Number.isSafeInteger(issueNumber) || issueNumber < 1 || issueNumber >= 1e9 || !['general', 'children'].includes(document.series) || !['zh-Hant', 'zh-Hans', 'en'].includes(document.contentLocale) || !Number.isFinite(Date.parse(createdAt))) throw new Error('export_unavailable');
-  const chunks: string[] = [], encoder = new TextEncoder(); let bytes = 0;
-  const append = (text: string) => {bytes += encoder.encode(text).byteLength; if (bytes > maxExportBytes) throw new Error('export_limit'); chunks.push(text);};
-  const text = (value: string) => {if (value.length > 20000) throw new Error('export_limit'); append(fenced(value));};
-  append(`# HHC notes\n\nIssue: ${issueNumber}\nEdition: ${document.series}\nLanguage: ${document.contentLocale}\nRevision: ${document.revision}\nExported: ${new Date(createdAt).toISOString()}\nNotes: ${notes.length}\n\n`);
-  append(`https://www.alive.org.tw${tabHref(locale, {issueNumber, series: document.series, contentLocale: document.contentLocale})}\n\n`);
-  for (const [index, note] of notes.entries()) {
+  if (!notes.length || notes.length > 200 || !isLocale(locale) || !Number.isSafeInteger(issueNumber) || issueNumber < 1 || issueNumber >= 1e9) throw new Error('export_unavailable');
+  let bytes = 0, escapedBytes = 0;
+  const encoder = new TextEncoder();
+  const text = (value: string) => {
+    if (typeof value !== 'string' || !value.isWellFormed() || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/u.test(value)) throw new Error('export_unavailable');
+    if (value.length > maxExportBytes) throw new Error('export_limit');
+    const length = encoder.encode(value).byteLength;
+    bytes += length; escapedBytes += length;
+    for (const char of value) escapedBytes += char === '&' ? 4 : char === '<' || char === '>' ? 3 : 0;
+    if (bytes > maxExportBytes || escapedBytes > maxExportBytes) throw new Error('export_limit');
+    return value.replace(/\r\n?/g, '\n');
+  };
+  const entries = notes.map(note => {
     if (note.deleted || typeof note.text !== 'string' || note.text.length > 20000 || [...note.text].length > 10000) throw new Error('export_unavailable');
-    append(`## ${index + 1}\n\n`); text(note.text);
-    append('Saved:\n\n'); text(note.updatedAt);
-    append('Source:\n\n'); text(noteSource(document, note, unknownSource, chapters));
-    if (pendingNoteIds.has(note.id)) append('Pending sync\n\n');
+    const quote = text(note.quote ?? ''), own = text(note.text);
+    if (quote.trim()) text(labels.quote);
+    text(labels.note);
+    return {quote: quote.trim() ? quote : '', own};
+  });
+  // Each content paragraph emits at least 80 bytes of spacing/widow XML; reject newline bombs before building objects.
+  let paragraphs = 0;
+  for (const entry of entries) for (const value of [entry.own, ...(entry.quote ? [entry.quote] : [])]) {
+    paragraphs++;
+    for (const char of value) if (char === '\n') paragraphs++;
   }
-  return {text: chunks.join(''), bytes, filename: `hhc-notes-${issueNumber}-${document.series}-${document.contentLocale}.md`};
+  if (paragraphs * 80 > maxExportBytes) throw new Error('export_limit');
+  const {Document, Packer, Paragraph, TextRun} = await import('docx');
+  const children: InstanceType<typeof Paragraph>[] = [];
+  for (const entry of entries) {
+    if (entry.quote) {
+      children.push(new Paragraph({children: [new TextRun({text: labels.quote, bold: true, size: 20, color: '606060'})], keepNext: true, spacing: {before: 200, after: 100}}));
+      for (const line of entry.quote.split('\n')) children.push(new Paragraph({text: line, indent: {left: 240, right: 240}, shading: {fill: 'F3F4F6'}, spacing: {after: 100, line: 360}, widowControl: true}));
+    }
+    children.push(new Paragraph({children: [new TextRun({text: labels.note, bold: true, size: 20, color: '606060'})], keepNext: true, spacing: {before: 160, after: 100}}));
+    const lines = entry.own.split('\n');
+    lines.forEach((line, index) => children.push(new Paragraph({text: line, spacing: {after: index === lines.length - 1 ? 360 : 100, line: 360}, widowControl: true})));
+  }
+  const language = {'en': 'en-US', 'zh-Hant': 'zh-TW', 'zh-Hans': 'zh-CN', 'ja': 'ja-JP', 'ko': 'ko-KR'}[locale];
+  const buffer = await Packer.toArrayBuffer(new Document({creator: '', lastModifiedBy: '', title: '', description: '', subject: '', keywords: '',
+    styles: {default: {document: {run: {font: {ascii: 'Arial Unicode MS', hAnsi: 'Arial Unicode MS', eastAsia: 'Arial Unicode MS', cs: 'Arial Unicode MS'}, size: 24, color: '000000', language: {value: language, eastAsia: language}}, paragraph: {spacing: {line: 360}}}}},
+    sections: [{properties: {page: {margin: {top: 1080, bottom: 1080, left: 1080, right: 1080}}}, children}]}));
+  const xmlBytes = uncompressedBytes(buffer);
+  if (buffer.byteLength > maxExportBytes) throw new Error('export_limit');
+  return {buffer, bytes: buffer.byteLength, uncompressedBytes: xmlBytes, missingQuotes: entries.filter(entry => !entry.quote).length, mimeType, filename: `hhc-notes-${issueNumber}.docx`};
 }

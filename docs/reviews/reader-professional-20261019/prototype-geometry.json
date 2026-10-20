@@ -1,0 +1,114 @@
+[
+  {
+    "label": "我的筆記",
+    "viewport": [
+      390,
+      844
+    ],
+    "panel": {
+      "x": 0,
+      "y": 144,
+      "width": 390,
+      "height": 700,
+      "top": 144,
+      "right": 390,
+      "bottom": 844,
+      "left": 0
+    },
+    "header": {
+      "x": 1,
+      "y": 145,
+      "width": 388,
+      "height": 65,
+      "top": 145,
+      "right": 389,
+      "bottom": 210,
+      "left": 1
+    },
+    "active": null
+  },
+  {
+    "label": "目錄",
+    "viewport": [
+      390,
+      844
+    ],
+    "panel": {
+      "x": 0,
+      "y": 144,
+      "width": 390,
+      "height": 700,
+      "top": 144,
+      "right": 390,
+      "bottom": 844,
+      "left": 0
+    },
+    "header": {
+      "x": 1,
+      "y": 145,
+      "width": 388,
+      "height": 65,
+      "top": 145,
+      "right": 389,
+      "bottom": 210,
+      "left": 1
+    },
+    "active": null
+  },
+  {
+    "label": "字級與行距",
+    "viewport": [
+      390,
+      844
+    ],
+    "panel": {
+      "x": 0,
+      "y": 144,
+      "width": 390,
+      "height": 700,
+      "top": 144,
+      "right": 390,
+      "bottom": 844,
+      "left": 0
+    },
+    "header": {
+      "x": 1,
+      "y": 145,
+      "width": 388,
+      "height": 65,
+      "top": 145,
+      "right": 389,
+      "bottom": 210,
+      "left": 1
+    },
+    "active": null
+  },
+  {
+    "label": "搜尋本期週報",
+    "viewport": [
+      390,
+      844
+    ],
+    "panel": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 844,
+      "top": 0,
+      "right": 390,
+      "bottom": 844,
+      "left": 0
+    },
+    "header": {
+      "x": 17,
+      "y": 17,
+      "width": 356,
+      "height": 56,
+      "top": 17,
+      "right": 373,
+      "bottom": 73,
+      "left": 17
+    },
+    "active": "search"
+  }
+]

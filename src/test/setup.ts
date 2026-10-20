@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 import {afterEach, vi} from 'vitest';
+import {clearReaderReturns} from '../features/weekly-reader/return-state';
 
 const mockFont = {
   className: 'mock-font-class',
@@ -25,5 +26,6 @@ HTMLElement.prototype.scrollIntoView ??= () => undefined;
 
 // Navigation snapshots persist across mounts, but must not leak between test cases.
 afterEach(() => {
+  clearReaderReturns();
   for (const key of Object.keys(localStorage)) if (key.startsWith('hhc:navigation:')) localStorage.removeItem(key)
 })

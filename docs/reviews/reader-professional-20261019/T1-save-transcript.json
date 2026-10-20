@@ -1,0 +1,91 @@
+{
+  "synthetic": true,
+  "networkDelayMs": 3500,
+  "focusRefresh": true,
+  "first": {
+    "list": true,
+    "editor": false,
+    "loading": false,
+    "text": "內容0。T1 第一次修改，儲存立即回到筆記。前往原文編輯刪除",
+    "server": {
+      "id": "fixture-note",
+      "text": "這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n",
+      "sentenceIds": [
+        "s0"
+      ],
+      "inactiveAnchors": [],
+      "quote": "內容0。",
+      "version": 1,
+      "deleted": false,
+      "reanchorRequired": false,
+      "createdAt": "2026-10-19T15:33:39.120Z",
+      "updatedAt": "2026-10-19T15:33:39.120Z"
+    }
+  },
+  "second": {
+    "list": true,
+    "editor": false,
+    "text": "內容0。T1 第二次修改，較晚回覆不能蓋回舊文字。前往原文編輯刪除",
+    "loading": false,
+    "server": {
+      "id": "fixture-note",
+      "text": "這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n這是一段用來檢查筆記版面與操作的合成文字。\n",
+      "sentenceIds": [
+        "s0"
+      ],
+      "inactiveAnchors": [],
+      "quote": "內容0。",
+      "version": 1,
+      "deleted": false,
+      "reanchorRequired": false,
+      "createdAt": "2026-10-19T15:33:39.120Z",
+      "updatedAt": "2026-10-19T15:33:39.120Z"
+    }
+  },
+  "final": {
+    "text": "內容0。T1 第二次修改，較晚回覆不能蓋回舊文字。前往原文編輯刪除",
+    "server": {
+      "id": "fixture-note",
+      "text": "T1 第二次修改，較晚回覆不能蓋回舊文字。",
+      "sentenceIds": [
+        "s0"
+      ],
+      "inactiveAnchors": [],
+      "quote": "內容0。",
+      "version": 3,
+      "deleted": false,
+      "reanchorRequired": false,
+      "createdAt": "2026-10-19T15:33:39.120Z",
+      "updatedAt": "2026-10-19T15:33:44.991Z"
+    },
+    "writes": [
+      [
+        {
+          "mutationId": "d10e41c4-e471-45f0-972c-3625b7bea01f",
+          "createdAt": "2026-10-19T15:33:42.700Z",
+          "documentRevision": 1,
+          "kind": "editNote",
+          "baseVersion": 1,
+          "payload": {
+            "noteId": "fixture-note",
+            "text": "T1 第一次修改，儲存立即回到筆記。"
+          }
+        }
+      ],
+      [
+        {
+          "mutationId": "c37151fc-31e0-4e4d-bb50-b41263d2a194",
+          "createdAt": "2026-10-19T15:33:44.991Z",
+          "documentRevision": 1,
+          "kind": "editNote",
+          "baseVersion": 2,
+          "payload": {
+            "noteId": "fixture-note",
+            "text": "T1 第二次修改，較晚回覆不能蓋回舊文字。"
+          }
+        }
+      ]
+    ],
+    "loading": false
+  }
+}

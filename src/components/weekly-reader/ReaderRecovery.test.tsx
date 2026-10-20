@@ -6,13 +6,13 @@ import {ReaderRecovery} from './ReaderRecovery';
 const value = readerFixture();
 const mocks = vi.hoisted(() => ({prepare: vi.fn(), finish: vi.fn(), choose: vi.fn(), read: vi.fn(), identity: vi.fn()}));
 vi.mock('@/features/weekly-reader/upgrade', () => ({prepareReaderUpgrade: mocks.prepare, finishReaderUpgrade: mocks.finish}));
-vi.mock('@/features/weekly-reader/offline-store', () => ({supportsOfflineReader: () => true, getOfflineIdentity: mocks.identity, readOfflineSave: mocks.read, chooseReaderRecovery: mocks.choose}));
+vi.mock('@/features/weekly-reader/offline-store', () => ({supportsOfflineReader: () => true, getOfflineIdentity: mocks.identity, readPrivateBinding: mocks.read, bindOnlinePrivate: vi.fn(), chooseReaderRecovery: mocks.choose}));
 const api = {open: vi.fn(), renew: vi.fn(), current: vi.fn(), privateState: vi.fn(), mutate: vi.fn()};
 const props = {api, value, selector: {accountId: 'account-a', issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const}, messages: getMessages('en').weeklyReader, onUpdated: vi.fn(), onFailure: vi.fn()};
 const cloud = {accountId: 'account-a', documentId: value.document.documentId, appliedRevision: 2, currentRevision: 2, notes: [], highlights: [], progress: null, conflicts: []};
 beforeEach(() => {
   vi.resetAllMocks();
-  mocks.identity.mockResolvedValue({accountId: 'account-a', epoch: 1}); mocks.read.mockResolvedValue({status: 'available'});
+  mocks.identity.mockResolvedValue({accountId: 'account-a', epoch: 1}); mocks.read.mockResolvedValue({epoch: 1, revision: 1, onlineOnly: false, replica: null});
   mocks.prepare.mockResolvedValue({value, state: cloud, queue: [], mutations: [], recovery: [], previousRevision: 1}); mocks.finish.mockResolvedValue({value, state: cloud});
 });
 it('shows the original historical range while requiring a fresh location after revision change', async () => {
@@ -46,9 +46,12 @@ it('requires a new native range after revision change and retains only its exact
   await waitFor(() => expect(mocks.choose).toHaveBeenCalled());
   expect(mocks.choose.mock.calls[0][2]).toMatchObject({documentRevision: 2, payload: {sentenceIds: ['s0'], ranges: [{sentenceId: 's0', start: 0, end: 2}]}});
 });
-it('requires explicit mobile sentence reselection without silently enlarging a historical partial range', async () => {
+it('requires explicit mobile clause reselection without silently enlarging a historical partial range', async () => {
   const mutation = {mutationId: 'partial-mobile', documentRevision: 1, createdAt: '', kind: 'setHighlight', payload: {sentenceIds: ['s0'], color: 'yellow', ranges: [{sentenceId: 's0', start: 1, end: 3}]}};
-  const current = {...value, document: {...value.document, revision: 2}};
+  const current = structuredClone(value); current.document.revision=2;
+  const component=current.document.content.components[1];
+  if(component.type!=='backSummary')throw new Error('fixture');
+  component.items[0].blocks[0].sentences[0].spans=[{text:'甲😀，乙。丙。',fontRole:'body'}];
   mocks.prepare.mockResolvedValue({value: current, state: cloud, queue: [{mutation, sent: true}], mutations: [], recovery: [{mutationId: mutation.mutationId, reason: 'mapping_unavailable'}], previousRevision: 1});
   const {container} = render(<ReaderRecovery {...props} mobile/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
@@ -56,11 +59,11 @@ it('requires explicit mobile sentence reselection without silently enlarging a h
   await waitFor(() => expect(screen.queryByText(props.messages.syncSyncing)).not.toBeInTheDocument());
   expect(keep).toBeDisabled();
   expect(mocks.choose).not.toHaveBeenCalled();
-  fireEvent.click(container.ownerDocument.querySelector('[data-sentence-id="s1"]')!);
+  fireEvent.click(container.ownerDocument.querySelector('[data-sentence-id="s1"][data-fragment-start="3"]')!);
   expect(keep).toBeEnabled();
   fireEvent.click(keep);
   await waitFor(() => expect(mocks.choose).toHaveBeenCalled());
-  expect(mocks.choose.mock.calls[0][2]).toMatchObject({documentRevision: 2, payload: {sentenceIds: ['s1'], ranges: [{sentenceId: 's1', start: 0, end: 4}]}});
+  expect(mocks.choose.mock.calls[0][2]).toMatchObject({documentRevision: 2, payload: {sentenceIds: ['s1'], ranges: [{sentenceId: 's1', start: 3, end: 5}]}});
 });
 it('requires explicit acceptance before switching and retains the reader on cancellation or failure', async () => {
   render(<ReaderRecovery {...props}/>);
@@ -220,4 +223,17 @@ it('routes unknown bookmark retries through the supplied private executor rather
  mocks.read.mockResolvedValue(null);const mutation={mutationId:'unknown-bookmark',kind:'renameBookmark' as const,documentRevision:1,createdAt:new Date().toISOString(),baseVersion:1,payload:{bookmarkId:'bookmark-a',name:'Retained name'}};
  api.current.mockResolvedValue(value);api.privateState.mockResolvedValue({state:{...cloud,appliedRevision:1,currentRevision:1,bookmarks:[]}});const onBookmarkRetry=vi.fn().mockResolvedValue({mutationId:mutation.mutationId,status:'applied',revision:1});
  render(<ReaderRecovery {...props} pendingMutation={mutation} onBookmarkRetry={onBookmarkRetry}/>);fireEvent.click(screen.getByRole('button',{name:props.messages.reviewSync}));const retry=await screen.findByRole('button',{name:props.messages.confirmRetry});await waitFor(()=>expect(retry).toBeEnabled());fireEvent.click(retry);await waitFor(()=>expect(onBookmarkRetry).toHaveBeenCalledOnce());expect(api.mutate).not.toHaveBeenCalled();
+});
+
+
+it('lets the shared shell close idle inline Recovery while preserving its decisions', async () => {
+  mocks.prepare.mockResolvedValue({value, state: cloud, queue: [], mutations: [], recovery: [], previousRevision: 1});
+  const closeRef = {current: null as (() => boolean) | null};
+  const onOpenChange = vi.fn();
+  render(<ReaderRecovery {...props} inline closeRef={closeRef} onOpenChange={onOpenChange}/>);
+  fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
+  await waitFor(() => expect(screen.queryByText(props.messages.syncSyncing)).not.toBeInTheDocument());
+  act(() => {expect(closeRef.current?.()).toBe(true);});
+  expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  expect(mocks.choose).not.toHaveBeenCalled();
 });

@@ -1,0 +1,70 @@
+{
+  "syntheticChromium": true,
+  "nativeKeyboard": false,
+  "evidence": [
+    {
+      "height": 260,
+      "body": [
+        98,
+        174
+      ],
+      "field": [
+        104.09375,
+        174.09375
+      ],
+      "footer": [
+        186,
+        243
+      ],
+      "focus": "TEXTAREA"
+    },
+    {
+      "height": 300,
+      "body": [
+        98,
+        214
+      ],
+      "field": [
+        104.09375,
+        214.09375
+      ],
+      "footer": [
+        226,
+        283
+      ],
+      "focus": "TEXTAREA"
+    },
+    {
+      "height": 400,
+      "body": [
+        98,
+        314
+      ],
+      "field": [
+        129.59375,
+        273.59375
+      ],
+      "footer": [
+        326,
+        383
+      ],
+      "focus": "TEXTAREA"
+    },
+    {
+      "height": 844,
+      "body": [
+        98,
+        758
+      ],
+      "field": [
+        176.59375,
+        717.40625
+      ],
+      "footer": [
+        770,
+        827
+      ],
+      "focus": "TEXTAREA"
+    }
+  ]
+}

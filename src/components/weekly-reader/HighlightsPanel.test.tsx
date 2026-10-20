@@ -22,7 +22,8 @@ it('shows only active anchored segments and disables mutations while syncing', (
   const list = screen.getByRole('region', {name: 'Highlights'});
   expect(within(list).getAllByRole('article')).toHaveLength(1);
   for (const button of within(list).getAllByRole('button')) expect(button).toBeDisabled();
-  expect(screen.getByRole('button', {name: 'Blue highlight'})).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.queryByRole('button', {name: 'Blue highlight'})).not.toBeInTheDocument();
+  expect(screen.getByText('😀')).toHaveAttribute('data-color', 'blue');
 });
 
 it('offers an empty state instead of controls for missing or inactive anchors', () => {

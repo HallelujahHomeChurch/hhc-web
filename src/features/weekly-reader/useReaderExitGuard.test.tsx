@@ -83,3 +83,42 @@ it('unmount cancels a pending confirmation and removes history listeners', async
   unmount(); expect(await request).toBe(false);
   await act(async () => model.back()); expect(beforeLeave).not.toHaveBeenCalled();
 });
+
+it('cancels an already-confirmed leave and ignores its late completion after a new prompt opens', async () => {
+  historyModel(true); let finish!: (allowed: boolean) => void; let isCurrent!: () => boolean;
+  const beforeLeave = vi.fn((current: () => boolean) => {isCurrent = current; return new Promise<boolean>(resolve => {finish = resolve;});});
+  const {result} = renderHook(() => useReaderExitGuard({hasUnsavedNote: () => true, beforeLeave, messages}));
+  let first!: Promise<boolean>; act(() => {first = result.current.confirmLeave('home');});
+  let confirmation!: Promise<void>; act(() => {confirmation = Promise.resolve(result.current.dialogProps.onConfirm());});
+  expect(result.current.confirming).toBe(true); expect(isCurrent()).toBe(true);
+  act(() => result.current.dialogProps.onOpenChange?.(false));
+  expect(await first).toBe(false); expect(isCurrent()).toBe(false);
+  let second!: Promise<boolean>; act(() => {second = result.current.confirmLeave('home');});
+  await act(async () => {finish(true); await confirmation;});
+  expect(result.current.dialogProps.isOpen).toBe(true);
+  act(() => result.current.dialogProps.onOpenChange?.(false)); expect(await second).toBe(false);
+});
+
+it('warns about accepted memory changes even after the note editor has closed', async () => {
+  historyModel(true); const beforeLeave = vi.fn().mockResolvedValue(true);
+  const {result} = renderHook(() => useReaderExitGuard({hasUnsavedNote: () => false, hasUnsavedChanges: () => true, beforeLeave, messages}));
+  let request!: Promise<boolean>; act(() => {request = result.current.confirmLeave('home');});
+  expect(result.current.dialogProps.description).toContain(messages.exitUnsavedChanges);
+  act(() => result.current.dialogProps.onOpenChange?.(false)); expect(await request).toBe(false); expect(beforeLeave).not.toHaveBeenCalled();
+});
+
+
+it('browser Back dismisses the top overlay before asking to leave the reader', async () => {
+  const model = historyModel(); let overlay = true;
+  const consumeBack = vi.fn(() => {if (!overlay) return false; overlay = false; return true;});
+  const beforeLeave = vi.fn().mockResolvedValue(true);
+  const {result} = renderHook(() => useReaderExitGuard({hasUnsavedNote: () => false, beforeLeave, consumeBack, messages}));
+  await act(async () => model.back());
+  expect(consumeBack).toHaveBeenCalledOnce();
+  expect(result.current.dialogProps.isOpen).toBe(false); expect(beforeLeave).not.toHaveBeenCalled();
+  expect(model.current().__hhcReaderExit).toMatchObject({position: 'guard'});
+  await act(async () => model.back());
+  expect(result.current.dialogProps.isOpen).toBe(true);
+  act(() => result.current.dialogProps.onOpenChange?.(false));
+  expect(model.push).toHaveBeenCalledOnce();
+});

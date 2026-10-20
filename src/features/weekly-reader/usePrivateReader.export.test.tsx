@@ -76,3 +76,11 @@ it.each(['result', 'replay', 'replayResult', 'resolution', 'recoveryReason'])('b
   await expect(readReaderExportLocal(selector, value.document.documentId, 1, now)).rejects.toThrow('export_unavailable');
   expect((await readPrivateReplica(selector, now))?.queue).toHaveLength(1);
 });
+
+it('reports the note limit clearly while allowing a smaller explicit filter without syncing',async()=>{
+ await seedPrivateReplica(selector,{...state,notes:Array.from({length:201},(_,i)=>({...note,id:'n'+i}))},epoch,now);
+ const hook=mount();await waitFor(()=>expect(hook.result.current.state?.notes).toHaveLength(201));
+ await act(async()=>{await expect(hook.result.current.prepareExport(null)).rejects.toThrow('export_limit');});
+ await act(async()=>{expect((await hook.result.current.prepareExport(['n0'])).notes.map(n=>n.id)).toEqual(['n0']);});
+ expect(hook.api.mutate).not.toHaveBeenCalled();expect(hook.api.renew).not.toHaveBeenCalled();
+});

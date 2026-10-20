@@ -16,6 +16,7 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
   const [loginRequired, setLoginRequired] = useState(false);
   const requestId = useRef<string | null>(null);
   const knownDocument = useRef<string | null>(null);
+  const onlineRevision = useRef<OnlineBulletinAccess | null>(null);
   const highWater = useRef(0);
   const windowEnd = useRef(0);
   const receipt = useRef<string | null>(null);
@@ -60,8 +61,9 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
       requestId.current ??= crypto.randomUUID();
       try {
         const value = saved ? await api.renew(bound, saved.save.value, requestId.current, controller.signal)
-          : await api.open(bound, {clientRequestId: requestId.current}, controller.signal);
+          : await api.open(bound, {clientRequestId: requestId.current, ...(onlineRevision.current ? {revision: onlineRevision.current.access.revision, receiptId: onlineRevision.current.access.receiptId} : {})}, controller.signal);
         controller.signal.throwIfAborted();
+        if (!saved && onlineRevision.current && (value.document.documentId !== onlineRevision.current.document.documentId || value.access.revision !== onlineRevision.current.access.revision)) throw new Error('invalid_reader_binding');
         if (owner?.accountId === accountId) {
           const current = await getOfflineIdentity();
           if (current.accountId !== accountId || current.epoch !== owner.epoch) throw new Error('offline_account_changed');
@@ -70,6 +72,7 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
         controller.signal.throwIfAborted();
         observeValidation(value, saved?.save.value.access.validatedAt === value.access.validatedAt ? saved.save.localValidUntil : undefined);
         knownDocument.current = value.document.documentId;
+        onlineRevision.current = value;
         requestId.current = null;
         setLoginRequired(false);
         setState({value, offline: false, error: null});
@@ -102,7 +105,7 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
   const allowAction = useCallback(() => {
     const value = state.value;
     const now = Date.now();
-    if (!value || blocked.current || state.validating) return false;
+    if (!value || blocked.current) return false;
     if (now < highWater.current || now >= windowEnd.current) {
       setState({value: null, offline: false, error: 'unavailable'});
       if (supportsOfflineReader()) void lockOfflineSave({accountId, issueNumber, series, contentLocale}).catch(() => {});
@@ -114,7 +117,7 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
       if (status !== 'available') setState({value: null, offline: false, error: 'unavailable'});
     }).catch(() => setState({value: null, offline: false, error: 'unavailable'}));
     return true;
-  }, [state.value, state.offline, state.validating, accountId, issueNumber, series, contentLocale]);
+  }, [state.value, state.offline, accountId, issueNumber, series, contentLocale]);
   useEffect(() => {
     if (!state.value) return;
     const timeout = window.setTimeout(allowAction, Math.max(0, windowEnd.current - Date.now()));
@@ -124,6 +127,7 @@ export function useReaderSession(api: Pick<ReturnType<typeof createReaderApi>, '
     if (blocked.current) return;
     verifyReaderAccess(value, {accountId, issueNumber, series, contentLocale});
     observeValidation(value);
+    onlineRevision.current = value;
     setState({value, offline: false, error: null});
   }, [accountId, issueNumber, series, contentLocale, observeValidation]);
   const privateFailure = useCallback((failure: unknown) => {

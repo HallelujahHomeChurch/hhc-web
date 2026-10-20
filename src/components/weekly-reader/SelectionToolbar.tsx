@@ -4,12 +4,12 @@ import type {ReaderMessages} from './ReaderToolbar';
 import {renderedTextRanges, type ReaderTextRange} from '@/features/weekly-reader/text-range';
 
 type Props = {
-  messages: ReaderMessages; count: number; color: BulletinReaderHighlightColor | null;
+  messages: ReaderMessages; description?: string; count: number; color: BulletinReaderHighlightColor | null;
   busy?: boolean; noteOpen?: boolean; noteButtonRef?: RefObject<HTMLButtonElement | null>;
   clearable?: boolean; root?: RefObject<HTMLDivElement | null>; ranges?: readonly ReaderTextRange[];
   onColor: (color: BulletinReaderHighlightColor) => void; onClear: () => void; onCopy: () => void; onNote: () => void;
 };
-export function SelectionToolbar({messages: m, count, color, busy, noteOpen, noteButtonRef, clearable = true, root, ranges, onColor, onClear, onCopy, onNote}: Props) {
+export function SelectionToolbar({messages: m, description, count, color, busy, noteOpen, noteButtonRef, clearable = true, root, ranges, onColor, onClear, onCopy, onNote}: Props) {
   const tools = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<CSSProperties>();
   useEffect(() => {
@@ -35,7 +35,7 @@ export function SelectionToolbar({messages: m, count, color, busy, noteOpen, not
   }, [root, ranges, count, noteOpen]);
   if (!count || noteOpen) return null;
   return <div ref={tools} className="reader-selection-tools" style={position} data-floating={!!position || undefined}>
-    <p role="status" className="reader-selection-count">{m.selectionCount.replace('{count}', String(count))}</p>
+    <p role="status" className="reader-selection-count">{m.selectionCount.replace('{count}', String(count))}{description ? <span className="hhc-sr-only"> {[...description].slice(0,160).join('')}{[...description].length > 160 ? '…' : ''}</span> : null}</p>
     <div className="reader-selection-actions" role="group" aria-label={m.selectionActions}>
       <div className="reader-color-group" role="group" aria-label={m.highlightColors}>
         {(['yellow', 'red', 'blue'] as const).map(value => <button key={value} type="button" className="reader-color" disabled={busy} aria-label={m[`${value}Highlight`]} title={m[`${value}Highlight`]} aria-pressed={color === value} onClick={() => onColor(value)}><span aria-hidden="true" data-color={value}/></button>)}

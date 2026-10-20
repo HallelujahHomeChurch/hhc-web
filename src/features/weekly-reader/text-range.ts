@@ -6,7 +6,7 @@ export type ReaderTextRange = {sentenceId: string; start: number; end: number};
 /** Recover DOM ranges for the mounted fragments without mutating React's text. */
 export function renderedTextRanges(root: HTMLElement, selected: ReaderTextRange): Range[] {
   const ranges: Range[] = [];
-  for (const element of root.querySelectorAll<HTMLElement>('[data-sentence-id]')) {
+  for (const element of root.matches('[data-sentence-id]') ? [root] : root.querySelectorAll<HTMLElement>('[data-sentence-id]')) {
     if (element.dataset.sentenceId !== selected.sentenceId || element.closest('[inert], [hidden], [aria-hidden="true"]')) continue;
     const from = Number(element.dataset.fragmentStart), to = Number(element.dataset.fragmentEnd);
     const start = Math.max(from, selected.start) - from, end = Math.min(to, selected.end) - from;

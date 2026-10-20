@@ -1,0 +1,7 @@
+{
+  "passed": 0,
+  "failed": 1,
+  "failure": [
+    "Error: promise rejected \"Error: offline_access_expired\" instead of resolving\n    at _Assertion.__VITEST_RESOLVES__ (file:///Users/rayselfs/Projects/hhc/website/.worktrees/reader-professional-experience-impl-20261019/node_modules/.pnpm/@vitest+expect@4.1.10/node_modules/@vitest/expect/dist/index.js:1710:17)\n    at _Assertion.propertyGetter (file:///Users/rayselfs/Projects/hhc/website/.worktrees/reader-professional-experience-impl-20261019/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1570:27)\n    at Reflect.get (<anonymous>)\n    at Object.proxyGetter [as get] (file:///Users/rayselfs/Projects/hhc/website/.worktrees/reader-professional-experience-impl-20261019/node_modules/.pnpm/chai@6.2.2/node_modules/chai/index.js:1659:22)\n    at /Users/rayselfs/Projects/hhc/website/.worktrees/reader-professional-experience-impl-20261019/src/features/weekly-reader/online-private.test.ts:87:46\n    at file:///Users/rayselfs/Projects/hhc/website/.worktrees/reader-professional-experience-impl-20261019/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+  ]
+}

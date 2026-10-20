@@ -1,0 +1,146 @@
+{
+  "productionBuild": true,
+  "loopbackOnly": true,
+  "productionDeployment": false,
+  "packaging": "standalone server with task-local symlinks to static/public, matching Docker runtime layout; not container/live gateway smoke",
+  "results": [
+    {
+      "path": "/health",
+      "status": 200,
+      "type": "application/json",
+      "bytes": 20
+    },
+    {
+      "path": "/zh-Hant/maintenance",
+      "status": 200,
+      "type": "text/html; charset=utf-8",
+      "bytes": 23772
+    },
+    {
+      "path": "/zh-Hant/literature-ministry/offline/reader-shell",
+      "status": 200,
+      "type": "text/html; charset=utf-8",
+      "bytes": 36827
+    },
+    {
+      "path": "/_next/static/chunks/30ixm__jk4eg1.js",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8",
+      "bytes": 32133
+    },
+    {
+      "path": "/_next/static/chunks/34zi8j_trbqg1.js",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8",
+      "bytes": 426962
+    },
+    {
+      "path": "/_next/static/chunks/2f5cg0lfhu1r1.js",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8",
+      "bytes": 155989
+    },
+    {
+      "path": "/_next/static/chunks/091z36yqafo_a.js",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8",
+      "bytes": 55161
+    },
+    {
+      "path": "/_next/static/chunks/turbopack-0evlbpb1ihgf4.js",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8",
+      "bytes": 10980
+    },
+    {
+      "path": "/_next/static/chunks/0d_4fjoyi696w.js",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8",
+      "bytes": 3044
+    },
+    {
+      "path": "/_next/static/chunks/0ek6pw8ntturj.js",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8",
+      "bytes": 13978
+    },
+    {
+      "path": "/_next/static/chunks/0rrbm0uqqko9u.js",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8",
+      "bytes": 844
+    },
+    {
+      "path": "/_next/static/chunks/30vjszolqz2_-.js",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8",
+      "bytes": 21930
+    },
+    {
+      "path": "/_next/static/chunks/3un8h9ln0f3ta.js",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8",
+      "bytes": 39774
+    },
+    {
+      "path": "/_next/static/chunks/2j1dm-jato-0m.js",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8",
+      "bytes": 50746
+    },
+    {
+      "path": "/_next/static/chunks/1-d2x1cj_go27.js",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8",
+      "bytes": 308062
+    },
+    {
+      "path": "/_next/static/chunks/344w1qstucpoz.js",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8",
+      "bytes": 21783
+    },
+    {
+      "path": "/_next/static/chunks/0gh1zs1f7bhwv.js",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8",
+      "bytes": 29843
+    },
+    {
+      "path": "/_next/static/chunks/0cz1d0mv5g_q7.js",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8",
+      "bytes": 112594
+    },
+    {
+      "path": "/_next/static/chunks/0z1aes4s3_vl9.js",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8",
+      "bytes": 17365
+    },
+    {
+      "path": "/_next/static/chunks/1qs7rom59w4zp.js",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8",
+      "bytes": 12853
+    },
+    {
+      "path": "/_next/static/chunks/1f3oknkfcw2h4.js",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8",
+      "bytes": 111674
+    },
+    {
+      "path": "/_next/static/chunks/1lrrtiuo74ajg.js",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8",
+      "bytes": 177554
+    },
+    {
+      "path": "/_next/static/chunks/1om1gjzzrlzqs.js",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8",
+      "bytes": 193746
+    }
+  ]
+}
