@@ -31,6 +31,7 @@ export function NoteReanchor({note, document, messages: m, onSave, onComplete, o
     finally {saving.current = false; setBusy(false);}
   }
   return <form className="reader-note-editor" data-reader-selection-tools onSubmit={event => {event.preventDefault(); void save();}}>
+    <div className="reader-note-editor-body">
     <blockquote>{current.quote}</blockquote><p className="reader-note-text">{current.text}</p>
     <fieldset aria-description={mobile ? m.clauseKeyboardHelp : undefined} disabled={busy || suspended || !!conflict}><legend>{m.recoveryRange}</legend>
       <PassageText root={root} sentences={sentences} selection={selection} mobile={mobile} tabIndex={0}/>
@@ -40,6 +41,7 @@ export function NoteReanchor({note, document, messages: m, onSave, onComplete, o
       {conflict.durable ? <button type="button" onClick={onRecover}>{m.reviewSync}</button> : conflict.note && !conflict.note.deleted && (conflict.note.reanchorRequired || conflict.note.inactiveAnchors.length > 0) ? <button type="button" disabled={suspended} onClick={() => {setCurrent(conflict.note!); setConflict(null); clear();}}>{m.retry}</button> : null}
     </section> : null}
     {error ? <p role="alert">{m.actionFailed}</p> : null}
-    <div className="reader-note-actions"><button type="button" disabled={busy} onClick={onCancel}>{m.noteCancel}</button><button type="submit" disabled={busy || suspended || !!conflict || !quote}>{m.noteSave}</button></div>
+    </div>
+    <footer className="reader-note-actions"><button type="button" disabled={busy} onClick={onCancel}>{m.noteCancel}</button><button type="submit" disabled={busy || suspended || !!conflict || !quote}>{m.noteSave}</button></footer>
   </form>;
 }

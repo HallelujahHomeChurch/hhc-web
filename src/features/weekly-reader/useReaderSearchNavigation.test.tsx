@@ -52,3 +52,10 @@ it('keyboard activation navigates once without pointer inference', () => {
   act(() => hook.result.current('s1'));
   expect(onJump).toHaveBeenCalledExactlyOnceWith('s1');
 });
+it('retains the match offset when authorization interrupts a completed tap', () => {
+  const {button, options, hook, pointer, onJump} = setup();
+  button.dataset.readerSearchStart = '7';
+  pointer('pointerdown'); hook.rerender({...options, suspended: true}); pointer('pointerup');
+  hook.rerender(options);
+  expect(onJump).toHaveBeenCalledExactlyOnceWith('s1', 7);
+});

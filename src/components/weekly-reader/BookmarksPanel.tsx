@@ -5,8 +5,8 @@ import {bookmarkTargets, type BookmarkTarget} from '@/features/weekly-reader/boo
 import {readerSentences} from '@/features/weekly-reader/selection';
 import type {ReaderMessages} from './ReaderToolbar';
 export type BookmarkDraft = {kind: 'create' | 'rename' | 'reanchor' | 'delete'; id: string; name: string; originalName: string; baseVersion?: number; target: BookmarkTarget | null; conflict?: BulletinReaderBookmark; error?: string};
-export function BookmarksPanel({document, bookmarks, messages: m, offline, supported, busy, cacheWarning, draft, onDraft, onCurrent, onSave, onJump, onDelete}: {
-  document: MemberOnlineDocument; bookmarks: BulletinReaderBookmark[] | undefined; messages: ReaderMessages; offline: boolean; supported: boolean; busy: boolean; cacheWarning: boolean;
+export function BookmarksPanel({document, bookmarks, messages: m, offline, supported, busy, navigationBusy = busy, cacheWarning, draft, onDraft, onCurrent, onSave, onJump, onDelete}: {
+  navigationBusy?: boolean; document: MemberOnlineDocument; bookmarks: BulletinReaderBookmark[] | undefined; messages: ReaderMessages; offline: boolean; supported: boolean; busy: boolean; cacheWarning: boolean;
   draft: BookmarkDraft | null; onDraft: (draft: BookmarkDraft | null) => void; onCurrent: () => BookmarkTarget | null; onSave: () => void;
   onJump: (bookmark: BulletinReaderBookmark) => void; onDelete: (bookmark: BulletinReaderBookmark) => void;
 }) {
@@ -46,7 +46,7 @@ export function BookmarksPanel({document, bookmarks, messages: m, offline, suppo
     {!active.length && bookmarks ? <p>{m.bookmarkEmpty}</p> : null}
     <div className="reader-bookmark-list">{active.map(bookmark => <article key={bookmark.id}>
       <h3>{bookmark.name}</h3><p>{bookmark.reanchorRequired || bookmark.documentRevision !== document.revision ? m.bookmarkNeedsPosition : position(bookmark)}</p>
-      <div className="reader-note-actions"><button type="button" disabled={busy || !!draft || bookmark.reanchorRequired || bookmark.documentRevision !== document.revision} onClick={() => onJump(bookmark)}>{m.noteJump}</button>
+      <div className="reader-note-actions"><button type="button" disabled={navigationBusy || !!draft || bookmark.reanchorRequired || bookmark.documentRevision !== document.revision} onClick={() => onJump(bookmark)}>{m.noteJump}</button>
         <button type="button" data-bookmark-id={bookmark.id} data-bookmark-action="rename" disabled={disabled || !!draft} onClick={() => onDraft({kind: 'rename', id: bookmark.id, name: bookmark.name, originalName: bookmark.name, baseVersion: bookmark.version, target: bookmark})}>{m.bookmarkRename}</button>
         <button type="button" data-bookmark-id={bookmark.id} data-bookmark-action="reanchor" disabled={disabled || !!draft} onClick={() => onDraft({kind: 'reanchor', id: bookmark.id, name: bookmark.name, originalName: bookmark.name, baseVersion: bookmark.version, target: null})}>{m.bookmarkReanchor}</button>
         <button type="button" data-bookmark-id={bookmark.id} data-bookmark-action="delete" disabled={disabled || !!draft} onClick={() => onDelete(bookmark)}>{m.noteDelete}</button></div>

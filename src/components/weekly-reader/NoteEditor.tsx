@@ -52,7 +52,7 @@ export function NoteEditor({messages: m, note, quote, onSave, onComplete, onCanc
       ...(cloud && !cloud.deleted ? {noteId: cloud.id, baseVersion: cloud.version} : {})}, conflict: null});
     textarea.current?.focus();
   }
-  return <form className="reader-note-editor" onSubmit={event => {event.preventDefault(); void save();}}>
+  return <form className="reader-note-editor" data-reader-selection-tools onSubmit={event => {event.preventDefault(); void save();}}>
     <div className="reader-note-editor-body">
     <blockquote>{quote}</blockquote>
     {note?.inactiveAnchors.length || note?.reanchorRequired ? <p>{m.noteRemoved}</p> : null}
