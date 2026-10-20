@@ -17,7 +17,7 @@ export function OfflineControl({api, value, selector, locale, messages: m, onSav
   const [attempt, setAttempt] = useState(0);
   const [saved, setSaved] = useState<OfflineSave | null>(null);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<'save' | 'recovery' | null>(null);
   const controller = useRef<AbortController | null>(null);
   const {accountId, issueNumber, series, contentLocale} = selector;
   const supported = supportsOfflineReader() && 'serviceWorker' in navigator && typeof MessageChannel !== 'undefined';
@@ -37,7 +37,7 @@ export function OfflineControl({api, value, selector, locale, messages: m, onSav
   </div>;
   async function save() {
     if (busy) return;
-    setBusy(true); setError(false);
+    setBusy(true); setError(null);
     const request = new AbortController(); controller.current = request;
     try {
       const owner = await getOfflineIdentity();
@@ -49,13 +49,13 @@ export function OfflineControl({api, value, selector, locale, messages: m, onSav
       await commitOfflineSave(staged, owner.epoch);
       request.signal.throwIfAborted();
       setSaved({...staged, epoch: owner.epoch}); onSaved(fresh);
-    } catch (failure) {if (!request.signal.aborted) {setError(true); onFailure(failure);}}
+    } catch (failure) {if (!request.signal.aborted) {setError(failure instanceof Error && failure.message === 'offline_pending_recovery' ? 'recovery' : 'save'); onFailure(failure);}}
     finally {if (!request.signal.aborted) setBusy(false);}
   }
   const complete = saved?.value.access.revision === value.access.revision;
   const label = busy ? m.savingOffline : complete ? m.savedOffline : m.saveOffline;
   return <div className="reader-offline-control" aria-busy={busy}>
     <ReaderIconButton variant="ghost" aria-label={label} title={label} isDisabled={busy || complete} onPress={() => void save()} icon={busy ? <LoaderCircle size={20} className="reader-saving-spinner" aria-hidden="true"/> : complete ? <Check size={20} aria-hidden="true"/> : <Save size={20} aria-hidden="true"/>}/>
-    {error ? <p role="alert">{m.offlineError}</p> : null}
+    {error ? <p role="alert">{error === 'recovery' ? m.offlineRecoveryRequired : m.offlineError}</p> : null}
   </div>;
 }

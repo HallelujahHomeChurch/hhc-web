@@ -1,12 +1,13 @@
 'use client';
 
 import {useCallback, useEffect, useEffectEvent, useLayoutEffect, useSyncExternalStore, useMemo, useRef, useState, type ReactNode} from 'react';
+import {flushSync} from 'react-dom';
 import {NotebookPen, Search, ALargeSmall, ArrowUp, ArrowDown, X, ChevronsUpDown, ChevronsLeftRight, ChevronLeft, ChevronRight, PanelLeft, Moon, Sun} from 'lucide-react';
 import {useScrollChrome} from '@/components/layout/useScrollChrome';
 import {isIPhoneDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 import {ReaderTypography, readTypography, type Typography} from './ReaderTypography';
 import {useReaderTheme} from './useReaderTheme';
-import {AlertDialog, BulletinEbook, bulletinChapters, bulletinChapterForAnchor, bulletinMobileDetails, Button, ReaderWatermark} from '@hallelujahhomechurch/ui';
+import {AlertDialog, Dialog, BulletinEbook, bulletinChapters, bulletinChapterForAnchor, bulletinMobileDetails, Button, ReaderWatermark} from '@hallelujahhomechurch/ui';
 import {ReaderIconButton as IconButton} from './ReaderIconButton';
 import type {OnlineBulletinAccess, BulletinReaderMutation, BulletinReaderNote, BulletinReaderBookmark} from '@hallelujahhomechurch/hhc-web-client';
 import type {BulletinLocale, BulletinSeries} from '@hallelujahhomechurch/preferences';
@@ -61,6 +62,13 @@ const subscribeStandalone = () => () => undefined;
 const iphoneStandaloneSnapshot = () => isIPhoneDevice() && isStandaloneWebApp();
 const serverStandaloneSnapshot = () => false;
 type Anchor = {kind: 'component' | 'sentence'; id: string; start?: number};
+function emphasizeSource(element: HTMLElement) {
+  element.dataset.readerSourceFocus = '';
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  element.getAnimations?.().filter(animation => animation.id === 'reader-source').forEach(animation => animation.cancel());
+  const animation = element.animate?.([{backgroundColor: 'var(--hhc-primary-soft)'}, {backgroundColor: 'transparent'}], {duration: 1000, easing: 'ease-out'});
+  if (animation) animation.id = 'reader-source';
+}
 export function WeeklyReader(props: Props) {
   const readerTheme = useReaderTheme();
   const accountId = useAccountIdentity();
@@ -100,20 +108,26 @@ function AuthorizedReader(props: Props & {accountId: string; readerTheme: Return
     if (!session.allowAction()) {event.preventDefault(); event.stopPropagation();}
   };
   if (session.value) return <>
-    {session.validating ? <ReaderLoading label={m.loading} overlay showHeader/> : null}
-    <div aria-hidden={session.validating || undefined} inert={session.validating} onClickCapture={guard} onKeyDownCapture={guard} onPointerDownCapture={guard} onCopyCapture={guard}>
+    <div onClickCapture={guard} onKeyDownCapture={guard} onPointerDownCapture={guard} onCopyCapture={guard}>
     {session.offline ? <p role="status">{m.offlineNotice}</p> : null}
     {session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}
-    <ReaderDocument readerTheme={props.readerTheme} key={`${session.value.document.documentId}:${session.value.document.revision}`} value={session.value} selector={selector} messages={m} api={api} offline={session.offline} allowAction={session.allowAction} onFailure={session.privateFailure} onUpdated={session.acceptSaved} suspended={!!session.validating} backHref={`/${props.locale}/literature-ministry`} offlineControl={<OfflineControl api={api} value={session.value} selector={selector} locale={props.locale} messages={m} onSaved={session.acceptSaved} onFailure={session.privateFailure}/>}/>
+    <ReaderDocument readerTheme={props.readerTheme} key={`${session.value.document.documentId}:${session.value.document.revision}`} value={session.value} selector={selector} messages={m} api={api} offline={session.offline} allowAction={session.allowAction} onFailure={session.privateFailure} onUpdated={session.acceptSaved} suspended={false} backHref={`/${props.locale}/literature-ministry`} offlineControl={<OfflineControl api={api} value={session.value} selector={selector} locale={props.locale} messages={m} onSaved={session.acceptSaved} onFailure={session.privateFailure}/>}/>
   </div></>;
   return <ReaderSessionStatus props={props} session={session} signIn={signIn}/>;
 }
 
 function ReaderExitDialog({exit, theme}: {exit: ReturnType<typeof useReaderExitGuard>; theme: 'light' | 'dark'}) {
-  return <AlertDialog {...exit.dialogProps} description={<span ref={node => {
+  const dialog = exit.dialogProps;
+  return <Dialog title={dialog.title} isOpen={dialog.isOpen} closeLabel={dialog.closeLabel} onOpenChange={dialog.onOpenChange}>
+    <p ref={node => {
     const overlay = node?.closest<HTMLElement>('.hhc-modal-overlay');
     if (overlay) {overlay.dataset.readerExit = ''; overlay.dataset.theme = theme; overlay.style.colorScheme = theme;}
-  }}>{exit.dialogProps.description}</span>}/>;
+  }}>{dialog.description}</p>
+    <div className="hhc-dialog__actions">
+      <Button variant="secondary" onPress={() => dialog.onOpenChange?.(false)}>{dialog.cancelLabel}</Button>
+      <Button variant="primary" isDisabled={exit.confirming} onPress={() => {void dialog.onConfirm();}}>{dialog.confirmLabel}</Button>
+    </div>
+  </Dialog>;
 }
 
 function ReaderSessionStatus({props, session, signIn}: {props: Props & {accountId: string; readerTheme: ReturnType<typeof useReaderTheme>}; session: ReturnType<typeof useReaderSession>; signIn: ReturnType<typeof useAccountSignIn>}) {
@@ -148,7 +162,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const {selection, selecting, setSelection, clear: clearSelection, clearIf} = useReaderSelection(paperRef, sentences, {
     ids: returned?.revision === value.document.revision ? returned.selected.filter(id => sentences.some(sentence => sentence.id === id)) : [],
     ranges: returned?.revision === value.document.revision ? returned.selectedRanges : undefined
-  }, !!notes || suspended, mobile ? 'sentence' : 'text');
+  }, !!notes || suspended, mobile ? 'clause' : 'text');
   const selected = selection.ids;
   const selectionRanges = useMemo(() => selection.ranges ?? sentences.filter(sentence => selected.includes(sentence.id)).map(sentence => ({sentenceId: sentence.id, start: 0, end: [...sentence.text].length})), [selection.ranges, selected, sentences]);
   const savedHighlights = useMemo(() => privateReader.state?.highlights ?? [], [privateReader.state?.highlights]);
@@ -177,7 +191,8 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const noteOperation = useRef<{mutation: BulletinReaderMutation; generation: number; local?: BulletinReaderNote} | null>(returned?.action ? {mutation: returned.action, generation: 0} : null);
   const [recoveryOpen, setRecoveryOpen] = useState(false);
   const recoveryControl = useRef<HTMLDivElement>(null);
-  const [queuedDelete, setQueuedDelete] = useState('');
+  const recoveryClose = useRef<(() => boolean) | null>(null);
+  function dismissNotesLayer() {if (recoveryOpen) recoveryClose.current?.(); else void closeNotes();}
   const operationRef = useRef(privateReader.operation);
   useEffect(() => {operationRef.current = privateReader.operation;}, [privateReader.operation]);
   const foregroundBusy = ['waiting', 'confirming', 'sending'].includes(privateReader.operation);
@@ -195,24 +210,32 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   function settleNote(mutation: BulletinReaderMutation, result: ReaderOutcome) {
     const operation = noteOperation.current;
     const owns = operation?.mutation.mutationId === mutation.mutationId && operation.generation === generation.current;
-    if (result.status === 'applied' || result.status === 'queued') {
-      setNotice(result.status === 'queued' ? m.noteQueued : m.syncSynced);
-      if (mutation.kind === 'deleteNote' && result.status === 'queued') setQueuedDelete(operation?.local?.text ?? '');
+    if (result.status === 'applied') {setNotice(''); return;}
+    if (result.status === 'queued') {
+      setNotice('');
       if (!owns) return;
       if (mutation.kind === 'createNote' || mutation.kind === 'editNote') {
         finishNoteEditor(); if (mutation.kind === 'createNote') clearSelection();
         requestAnimationFrame(() => notesButton.current?.focus());
-      } else if (mutation.kind === 'deleteNote') {setDeletion(null); setNotes('list');}
+      } else if (mutation.kind === 'deleteNote') {setDeletion(null); setNotes('list'); if (operation) operation.generation = generation.current;}
       else if (mutation.kind === 'reanchorNote') setReanchor(null);
     } else if (result.status === 'note_conflict') {
       setNotice('');
       if (!owns) return;
-      if (mutation.kind === 'deleteNote' && operation.local) setDeletion({local: operation.local, cloud: result.note, durable: result.durable});
+      if (mutation.kind === 'deleteNote' && operation.local) setDeletion({local: operation.local, cloud: result.note, durable: result.durable, mutationId: mutation.mutationId});
       else if ((mutation.kind === 'createNote' || mutation.kind === 'editNote') && noteEditorState) setNoteEditorState({...noteEditorState, conflict: {status: 'note_conflict', note: result.note, durable: result.durable}});
       else if (mutation.kind === 'reanchorNote') setReanchorConflict({status: 'note_conflict', note: result.note, durable: result.durable});
     } else setNotice(m.syncAction);
   }
-  const [deletion, setDeletion] = useState<{local: BulletinReaderNote; cloud?: BulletinReaderNote; durable?: boolean} | null>(null);
+  const receiveMutationOutcome = useEffectEvent((outcome: NonNullable<typeof privateReader.mutationOutcome>) => {
+    if (allowAction()) settleNote(outcome.mutation, outcome.result);
+  });
+  useEffect(() => {
+    const outcome = privateReader.mutationOutcome; let active = true;
+    if (outcome) queueMicrotask(() => {if (active) receiveMutationOutcome(outcome);});
+    return () => {active = false;};
+  }, [privateReader.mutationOutcome]);
+  const [deletion, setDeletion] = useState<{local: BulletinReaderNote; cloud?: BulletinReaderNote; durable?: boolean; mutationId: string} | null>(null);
   const [reanchor, setReanchorState] = useState<BulletinReaderNote | null>(null);
   const [reanchorConflict, setReanchorConflict] = useState<import('./NoteEditor').NoteSaveResult | null>(null);
   function setReanchor(note: BulletinReaderNote | null) {generation.current++; setReanchorConflict(null); setReanchorState(note);}
@@ -249,12 +272,12 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     setNotes('list'); setDeletion(null); setReanchor(null); setNoteEditorState(undefined);
   }
   function noteSending() {return operationRef.current === 'sending';}
-  async function closeNotes() {
+  async function closeNotes(restoreFocus = true) {
     if (noteSending() || recoveryOpen) return false;
     if (hasUnsavedNote() && !await confirmNote('discard')) return false;
     if (!documentRef.current || !allowAction() || noteSending()) return false;
     privateReader.cancelWaiting(); cleanupNotes();
-    requestAnimationFrame(() => (noteButton.current ?? notesButton.current)?.focus());
+    if (restoreFocus) requestAnimationFrame(() => (noteButton.current ?? notesButton.current)?.focus());
     return true;
   }
   async function openNotesList(ids: string[] | null, trigger?: HTMLButtonElement) {
@@ -270,7 +293,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   function settleBookmark(mutation: BulletinReaderMutation, result: ReaderOutcome) {
     const operation = bookmarkOperation.current;
     if (!operation || operation.mutation.mutationId !== mutation.mutationId || operation.generation !== generation.current) return;
-    if (result.status === 'applied') {setBookmarkDraft(null); setNotice(m.syncSynced);}
+    if (result.status === 'applied') {setBookmarkDraft(null); setNotice('');}
     else if (bookmarkDraftRef.current) setBookmarkDraft({...bookmarkDraftRef.current, error: result.status === 'bookmark_limit' ? m.bookmarkLimit : m.bookmarkConflict, conflict: 'bookmark' in result ? result.bookmark : undefined});
   }
   const receiveBookmarkOutcome = useEffectEvent((result: NonNullable<typeof privateReader.bookmarkOutcome>) => {
@@ -294,7 +317,10 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     newNoteId.current ??= crypto.randomUUID();
     const mutation: BulletinReaderMutation = draft.noteId && draft.baseVersion ? {...common, kind: 'editNote', baseVersion: draft.baseVersion, payload: {noteId: draft.noteId, text: draft.text}} : {...common, kind: 'createNote', payload: {noteId: newNoteId.current, sentenceIds: noteAnchors, text: draft.text, ...(selection.ranges ? {ranges: selection.ranges} : {})}};
     noteOperation.current = {mutation, generation: generation.current};
-    const result = await privateReader.mutate(mutation);
+    const result = await privateReader.mutate(mutation, false, () => {
+      setNotes('list'); setNoteEditorState(undefined); newNoteId.current = null;
+      if (mutation.kind === 'createNote') clearSelection();
+    });
     settleNote(mutation, result);
     if (result.status !== 'applied' && result.status !== 'queued' && result.status !== 'note_conflict') throw new Error(result.status);
     return {status: result.status, note: 'note' in result ? result.note : undefined, durable: 'durable' in result ? result.durable : undefined};
@@ -302,7 +328,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   async function action(mutation: BulletinReaderMutation) {
     const actedSelection = selection;
     try {
-      const result = await privateReader.mutate(mutation);
+      const result = await privateReader.mutate(mutation, false, () => clearIf(actedSelection));
       const saved = result.status === 'applied' || result.status === 'queued';
       setNotice(saved ? '' : m.syncAction);
       // An older response must not dismiss a selection made while it was pending.
@@ -332,6 +358,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const [paperJump, setPaperJump] = useState(0);
   const [panel, setPanel] = useState<'pages' | 'search' | 'type' | null>(null);
   const chromeRef = useRef<HTMLDivElement>(null);
+  const readerHeader = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
     const chrome = chromeRef.current;
     if (!chrome) return;
@@ -351,8 +378,11 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
   const previousReflow = useRef(reflow);
   const chapterStart = useRef(false);
   async function openPanel(next: Exclude<typeof panel, null>, trigger: Element) {
-    if (notes && !await closeNotes()) return;
-    revealChrome(); clearSelection(); panelTrigger.current = trigger instanceof HTMLElement ? trigger : null; setPanel(current => current === next ? null : next);
+    if (notes && !await closeNotes(false)) return;
+    revealChrome(); clearSelection(); panelTrigger.current = trigger instanceof HTMLElement ? trigger : null;
+    // iOS needs focus within the opening gesture, before any transition completes.
+    flushSync(() => setPanel(current => current === next ? null : next));
+    if (next === 'search') chromeRef.current?.querySelector<HTMLInputElement>('.reader-search input')?.focus({preventScroll: true});
   }
   function closePanel(restoreFocus = true) {
     setPanel(null);
@@ -537,8 +567,8 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
           const range = anchor.kind === 'sentence' && anchor.start !== undefined ? renderedTextRanges(viewport, {sentenceId: anchor.id, start: anchor.start, end: anchor.start + 1})[0] : undefined;
           viewport.scrollTop += (range?.getBoundingClientRect().top ?? element.getBoundingClientRect().top) - readingInset();
           if (anchor.focus) {
-            element.tabIndex = -1;
-            element.focus({preventScroll: true});
+            if (!element.hasAttribute('tabindex')) element.tabIndex = -1;
+            element.focus({preventScroll: true}); emphasizeSource(element);
           }
         }
         pendingAnchor.current = null;
@@ -559,8 +589,8 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
         if (range && typeof range.getBoundingClientRect === 'function') viewport.scrollTop += range.getBoundingClientRect().top - viewport.getBoundingClientRect().top - 16;
         else destination.scrollIntoView({block: 'start'});
         if (anchor.focus) {
-          destination.tabIndex = -1;
-          destination.focus({preventScroll: true});
+          if (!destination.hasAttribute('tabindex')) destination.tabIndex = -1;
+          destination.focus({preventScroll: true}); emphasizeSource(destination);
         }
       }
       pendingAnchor.current = null;
@@ -588,7 +618,13 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     if (next !== page) setPage(next);
     recordProgress(document.pages[next].id, id);
   }
-  const exit = useReaderExitGuard({canPrompt: () => !decisionRequest.current, hasUnsavedNote, messages: m, beforeLeave: async () => {
+  const exit = useReaderExitGuard({canPrompt: () => !decisionRequest.current, hasUnsavedNote, hasUnsavedChanges: privateReader.hasUncommitted, consumeBack: () => {
+    if (decision) {settleDecision(false); return true;}
+    if (recoveryOpen) {recoveryClose.current?.(); return true;}
+    if (panel) {closePanel(); return true;}
+    if (notes) {dismissNotesLayer(); return true;}
+    return false;
+  }, messages: m, beforeLeave: async isCurrent => {
     const dirty = hasUnsavedNote();
     if (allowAction()) {
       recordVisiblePaper();
@@ -597,7 +633,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       saveReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}, {revision: value.document.revision, pageId: visiblePage});
       if (!privateReader.busy) await flushReaderProgressBeforeExit(flushProgress);
     }
-    if (!documentRef.current) return false;
+    if (!documentRef.current || !isCurrent()) return false;
     if (dirty && allowAction()) saveReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}, {draft: undefined});
     cleanupNotes();
     return true;
@@ -626,7 +662,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       const rect = target === 0 ? paperRef.current.getBoundingClientRect() : first && renderedTextRanges(paperRef.current, first)[0]?.getBoundingClientRect();
       if (rect && viewportRef.current) viewportRef.current.scrollTop += rect.top - readingInset();
       const destination = first ? Array.from(paperRef.current.querySelectorAll<HTMLElement>('[data-sentence-id]')).find(element => element.dataset.sentenceId === first.sentenceId) : chapterHeading.current;
-      if (destination && sourceJump.focus) {destination.tabIndex = -1; destination.focus({preventScroll: true});}
+      if (destination && sourceJump.focus) {if (!destination.hasAttribute('tabindex')) destination.tabIndex = -1; destination.focus({preventScroll: true}); emphasizeSource(destination);}
     });
     return () => cancelAnimationFrame(frame);
   }, [sourceJump, reflow, fontsReady, value.document.content, chapter, productionSentenceIds, readingInset]);
@@ -665,7 +701,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     const index = document.pages.findIndex(page => page.id === layout?.pageId);
     if (index < 0) return false;
     if (reflow && anchor.kind === 'sentence' && productionSentenceIds.has(anchor.id)) {setNotice(m.modePositionFallback); return false;}
-    if (record && notes && !await closeNotes()) return false;
+    if (record && notes && !await closeNotes(false)) return false;
     if (!applyPage(index, record)) return false;
     const targetChapter = bulletinChapterForAnchor(document, anchor);
     if (targetChapter) setChapter(targetChapter);
@@ -706,14 +742,14 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     return () => cancelAnimationFrame(frame);
   }, [resumeResolved, fontsReady, suspended, restoredPage, restoredAnchor, privateReader.state, privateReader.status]);
   const operationMessage = privateReader.operation === 'confirming' ? m.operationUnknown : privateReader.operation === 'waiting' ? m.operationWaiting : privateReader.operation === 'sending' ? m.operationSending : privateReader.operation === 'timeout' ? m.operationTimeout : '';
-  const unknownAction = !!privateReader.pendingMutation && !privateReader.busy;
+  const unknownAction = privateReader.canRetry && !!privateReader.pendingMutation && !privateReader.busy;
   const currentNotice = notice === m.noteQueued && privateReader.status === 'synced' ? '' : notice;
-  const feedbackMessage = operationMessage || (unknownAction ? m.operationUnknown : privateReader.status === 'action' || privateReader.status === 'paused' ? undefined : currentNotice || undefined);
-  const feedback = <div className="reader-private-feedback">
+  const urgentOperation = privateReader.operation === 'confirming' || privateReader.operation === 'timeout' ? operationMessage : '';
+  const feedbackMessage = privateReader.unsaved ? m.syncUnsaved : urgentOperation || (unknownAction ? m.operationUnknown : privateReader.status === 'action' || privateReader.status === 'paused' ? undefined : currentNotice || undefined);
+  const feedback = <div className="reader-private-feedback" data-recovery-open={recoveryOpen || undefined}>
     <div hidden={recoveryOpen} inert={recoveryOpen}>
-    {privateReader.loadError ? <div role="alert"><p>{m.notesLoadError}</p><button type="button" disabled={privateReader.busy} onClick={privateReader.reload}>{m.retry}</button></div> : !privateReader.state && fontsReady ? <p role="status">{m.loading}</p> : null}
-    {!privateReader.loadError && privateReader.state && (feedbackMessage || privateReader.status === 'waiting' || privateReader.status === 'action' || privateReader.status === 'paused') ? <SyncStatus status={privateReader.status} messages={m}>{feedbackMessage}</SyncStatus> : null}
-    {queuedDelete && privateReader.status !== 'synced' ? <p>{m.noteDeletePending}<span className="reader-note-text">{queuedDelete}</span></p> : null}
+    {privateReader.loadError ? <div role="alert"><p>{m.notesLoadError}</p><button type="button" disabled={privateReader.busy} onClick={privateReader.reload}>{m.retry}</button></div> : null}
+    {!privateReader.loadError && privateReader.state && (feedbackMessage || privateReader.status === 'action' || privateReader.status === 'paused') ? <SyncStatus status={privateReader.status} messages={m}>{feedbackMessage}</SyncStatus> : null}
     {privateReader.operation === 'waiting' || privateReader.operation === 'confirming' ? <button type="button" onClick={privateReader.cancelWaiting}>{m.cancelWaiting}</button> : null}
     {!privateReader.busy && privateReader.canRetry && privateReader.status !== 'paused' ? <><p>{privateReader.operation === 'confirming' ? m.retryContinues : m.confirmRetryHelp}</p><button type="button" disabled={privateReader.busy} onClick={() => {
       const mutation = privateReader.pendingMutation, snapshot = selection;
@@ -724,19 +760,31 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       }).catch(actionError);
     }}>{m.confirmRetry}</button></> : null}
     </div>
-    <div ref={recoveryControl}><ReaderRecovery onBookmarkRetry={privateReader.retry} onConfirm={description => confirmReaderAction(description, m.reviewSync, m.applyUpdate)} inline={!!notes} onOpenChange={setRecoveryOpen} onState={privateReader.acceptState} available={!privateReader.busy && (privateReader.status === 'paused' || privateReader.status === 'action' || !!privateReader.pendingMutation)} runExclusive={privateReader.runExclusive} api={api} value={value} selector={selector} messages={m} mobile={mobile} onUpdated={onUpdated} onFailure={onFailure} suspended={suspended} pendingMutation={privateReader.pendingMutation} onPendingChange={(mutation, result, previous) => {
+    <div ref={recoveryControl}><ReaderRecovery closeRef={recoveryClose} headerRef={readerHeader} theme={theme} onBookmarkRetry={privateReader.retry} onConfirm={description => confirmReaderAction(description, m.reviewSync, m.applyUpdate)} inline={!!notes} onOpenChange={setRecoveryOpen} onState={privateReader.acceptState} available={!privateReader.busy && (privateReader.status === 'paused' || privateReader.status === 'action' || !!privateReader.pendingMutation)} runExclusive={privateReader.runExclusive} api={api} value={value} selector={selector} messages={m} mobile={mobile} onUpdated={next => {privateReader.reload(); onUpdated(next);}} onFailure={onFailure} suspended={suspended} pendingMutation={privateReader.pendingMutation} onPendingChange={(mutation, result, previous) => {
       if (mutation && previous && noteOperation.current?.mutation.mutationId === previous.mutationId && noteOperation.current.generation === generation.current) noteOperation.current = {...noteOperation.current, mutation};
-      privateReader.replacePending(mutation);
+      const remaining = privateReader.replacePending(mutation, previous?.mutationId ?? null);
       if (!mutation && previous && result) {if (isBookmarkMutation(previous)) settleBookmark(previous, result); else settleNote(previous, result);}
       else if (!mutation && previous && !isBookmarkMutation(previous) && noteOperation.current?.mutation.mutationId === previous.mutationId && noteOperation.current.generation === generation.current) cleanupNotes();
+      return remaining;
     }}/></div>
+  </div>;
+  const navigationBody = <div className="reader-navigation-content">
+        {panel === 'type' ? <div className="reader-mode-settings">
+          <div role="group" aria-label={m.readingMode} className="reader-mode-controls">{(['paper', 'easy'] as const).map(mode => <button key={mode} type="button" aria-pressed={(reflow ? 'easy' : 'paper') === mode} onClick={() => {void changeReadingMode(mode);}}>{mode === 'paper' ? m.paperMode : m.easyMode}</button>)}</div>
+          {reflow ? <ReaderTypography value={typography} onChange={changeTypography} messages={m}/> : <><ReaderToolbar messages={m} zoom={zoom} setZoom={changeZoom}/><button type="button" aria-label={`${m.readingDirection}: ${m[direction]}`} onClick={() => setDirection(current => current === 'vertical' ? 'horizontal' : 'vertical')}>{m[direction]}</button></>}
+        </div> : null}
+        {panel === 'pages' ? <>
+          {reflow ? <nav className="reader-chapters" aria-label={m.chapters}>{chapters.map((entry, index) => <Button key={entry.id} variant="ghost" aria-current={entry.id === chapter ? 'location' : undefined} onPress={() => {void onChapter(index).then(allowed => {if (allowed) closePanel(false);});}}>{chapterLabels[entry.id]}</Button>)}</nav> : null}
+          {reflow ? <details className="reader-original-pages"><summary>{m.originalPages}</summary><PageNavigator document={document} metadata={value.document.canonicalMetadata} traceCode={value.access.traceCode} theme={theme} page={page} onPage={target => {void onPage(target).then(allowed => {if (allowed) closePanel(false);});}} messages={m}/></details> : <PageNavigator document={document} metadata={value.document.canonicalMetadata} traceCode={value.access.traceCode} theme={theme} page={page} onPage={target => {void onPage(target).then(allowed => {if (allowed) closePanel();});}} messages={m}/>}
+          <SectionNavigator document={document} onSection={anchor => {void onAnchor(anchor).then(allowed => {if (allowed) closePanel(!mobile);});}} messages={m}/>
+        </> : null}
   </div>;
   return <section ref={documentRef} className="reader-document" data-mobile={mobile || undefined} data-reading-mode={reflow ? 'easy' : 'paper'} data-mobile-hidden={!chromeVisible} data-iphone-standalone={iphoneStandalone || undefined} data-panel-open={!!panel || undefined} data-notes-panel={notes && wideNotes || undefined} aria-label={m.title} role="region" onWheelCapture={() => {suppressModeProgress.current = false;}} onTouchMoveCapture={() => {suppressModeProgress.current = false;}} onPointerDownCapture={() => {suppressModeProgress.current = false;}} onKeyDown={event => {
     if (exportRequest) return;
     suppressModeProgress.current = false;
     if (event.key === 'Tab' && panel) {
       const panelRoot = chromeRef.current?.querySelector<HTMLElement>('.reader-navigation-panel:not([hidden])');
-      const focusable = Array.from(panelRoot?.querySelectorAll<HTMLElement>('button:not(:disabled),input,a[href],summary') ?? []);
+      const focusable = Array.from(panelRoot?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),a[href],summary,[tabindex]:not([tabindex="-1"])') ?? []).filter(element => element.getClientRects().length > 0);
       const first = focusable[0], last = focusable.at(-1);
       if (event.shiftKey && globalThis.document.activeElement === first) {event.preventDefault(); last?.focus();}
       else if (!event.shiftKey && globalThis.document.activeElement === last) {event.preventDefault(); first?.focus();}
@@ -747,7 +795,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
     const delta = keyboardPageDelta(event, !!window.getSelection()?.toString());
     if (!reflow && direction === 'horizontal' && delta) {event.preventDefault(); void onPage(page + delta);}
   }}>
-    {exportRequest && !suspended ? <NoteExportDialog messages={m} theme={theme} document={value.document} locale={backHref.split('/')[1] as Locale} issueNumber={selector.issueNumber} visibleIds={exportRequest.ids} total={privateReader.state?.notes.filter(note => !note.deleted).length ?? 0} prepare={privateReader.prepareExport} current={() => !!documentRef.current && allowAction() && !suspended && generation.current === exportRequest.generation} onClose={() => setExportRequest(null)}/> : null}
+    {exportRequest && !suspended ? <NoteExportDialog messages={m} theme={theme} locale={backHref.split('/')[1] as Locale} issueNumber={selector.issueNumber} visibleIds={exportRequest.ids} total={privateReader.state?.notes.filter(note => !note.deleted).length ?? 0} prepare={privateReader.prepareExport} current={() => !!documentRef.current && allowAction() && !suspended && generation.current === exportRequest.generation} onClose={() => setExportRequest(null)}/> : null}
     <ReaderExitDialog exit={exit} theme={theme}/>
     <AlertDialog isOpen={!!decision} title={decision?.title ?? m.myNotes} description={<span ref={node => {
       const overlay = node?.closest<HTMLElement>('.hhc-modal-overlay');
@@ -756,7 +804,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
 
     <div ref={chromeRef} className="reader-chrome">
       <div className="reader-chrome-controls" inert={!!panel}>
-      <ReaderTabs accountId={selector.accountId} locale={backHref.split('/')[1] as Locale} current={selector} title={value.document.canonicalMetadata.title} messages={m} beforeLeave={() => exit.confirmLeave('home')} beforeNavigate={async () => {
+      <ReaderTabs headerRef={readerHeader} accountId={selector.accountId} locale={backHref.split('/')[1] as Locale} current={selector} title={value.document.canonicalMetadata.title} messages={m} beforeLeave={() => exit.confirmLeave('home')} beforeNavigate={async () => {
         if (!allowAction() || notes && !await closeNotes()) return false;
         const beforeFlush = generation.current;
         recordVisiblePaper();
@@ -765,7 +813,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       }} search={<IconButton variant="ghost" aria-label={m.search} title={m.search} aria-expanded={panel === 'search'} onPress={event => {void openPanel('search', event.target);}} icon={<Search size={20} aria-hidden="true"/>}/>}/>
       <header className={mobile ? "reader-topbar site-mobile-tab-bar" : "reader-topbar"} data-mobile-hidden={!chromeVisible} data-iphone-standalone={iphoneStandalone || undefined} aria-label={m.title}>
         <IconButton variant="ghost" aria-label={mobile ? m.contents : m.thumbnails} title={mobile ? m.contents : m.thumbnails} aria-expanded={panel === 'pages'} onPress={event => {void openPanel('pages', event.target);}} icon={<PanelLeft size={20} aria-hidden="true"/>}/>
-        {mobile ? <IconButton variant="ghost" aria-label={m.typography} aria-expanded={panel === 'type'} onPress={event => {void openPanel('type', event.target);}} icon={<ALargeSmall size={20} aria-hidden="true"/>}/> : null}
+        <IconButton variant="ghost" aria-label={m.typography} aria-expanded={panel === 'type'} onPress={event => {void openPanel('type', event.target);}} icon={<ALargeSmall size={20} aria-hidden="true"/>}/>
         <IconButton variant="ghost" aria-label={theme === 'dark' ? m.lightMode : m.darkMode} title={theme === 'dark' ? m.lightMode : m.darkMode} aria-pressed={theme === 'dark'} onPress={toggleTheme} icon={theme === 'dark' ? <Sun size={20} aria-hidden="true"/> : <Moon size={20} aria-hidden="true"/>}/>
         <IconButton buttonRef={notesButton} variant="ghost" aria-label={m.myNotes} aria-description={m.savedHighlights} title={m.myNotes} isDisabled={!privateReader.state} onPress={() => {revealChrome(); setPanel(null); void openNotesList(null);}} icon={<NotebookPen size={20} aria-hidden="true"/>}/>
         {offlineControl}
@@ -775,27 +823,20 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
         </div> : null}
       </header>
       </div>
-      {panel ? <div className="reader-panel-backdrop" data-clear={panel === 'type' || undefined} aria-hidden="true" onClick={() => closePanel()}/> : null}
-      <aside className="reader-navigation-panel" role="dialog" aria-modal="true" data-panel={panel} hidden={!panel || panel === 'search'} aria-label={panel === 'pages' ? mobile ? m.contents : m.thumbnails : m.typography}>
+      {panel && (!mobile || panel === 'search') ? <div className="reader-panel-backdrop" aria-hidden="true" onClick={() => closePanel()}/> : null}
+      {!mobile ? <aside className="reader-navigation-panel" role="dialog" aria-modal="true" data-panel={panel} hidden={mobile || !panel || panel === 'search'} aria-label={panel === 'pages' ? mobile ? m.contents : m.thumbnails : m.typography}>
         <header><h2>{panel === 'pages' ? mobile ? m.contents : m.thumbnails : m.typography}</h2><IconButton variant="ghost" aria-label={m.close} onPress={() => closePanel()} icon={<X size={20} aria-hidden="true"/>}/></header>
-        {panel === 'pages' || panel === 'type' ? <div className="reader-mode-settings">
-          <div role="group" aria-label={m.readingMode} className="reader-mode-controls">{(['paper', 'easy'] as const).map(mode => <button key={mode} type="button" aria-pressed={(reflow ? 'easy' : 'paper') === mode} onClick={() => {void changeReadingMode(mode);}}>{mode === 'paper' ? m.paperMode : m.easyMode}</button>)}</div>
-          {reflow ? <ReaderTypography value={typography} onChange={changeTypography} messages={m}/> : mobile ? <><ReaderToolbar messages={m} zoom={zoom} setZoom={changeZoom}/><button type="button" aria-label={`${m.readingDirection}: ${m[direction]}`} onClick={() => setDirection(current => current === 'vertical' ? 'horizontal' : 'vertical')}>{m[direction]}</button></> : null}
-        </div> : null}
-        {panel === 'pages' ? <>
-          {reflow ? <nav className="reader-chapters" aria-label={m.chapters}>{chapters.map((entry, index) => <Button key={entry.id} variant="ghost" aria-current={entry.id === chapter ? 'location' : undefined} onPress={() => {void onChapter(index).then(allowed => {if (allowed) closePanel(false);});}}>{chapterLabels[entry.id]}</Button>)}</nav> : null}
-          {reflow ? <details className="reader-original-pages"><summary>{m.originalPages}</summary><PageNavigator document={document} metadata={value.document.canonicalMetadata} traceCode={value.access.traceCode} theme={theme} page={page} onPage={target => {void onPage(target).then(allowed => {if (allowed) closePanel(false);});}} messages={m}/></details> : <PageNavigator document={document} metadata={value.document.canonicalMetadata} traceCode={value.access.traceCode} theme={theme} page={page} onPage={target => {void onPage(target).then(allowed => {if (allowed) closePanel();});}} messages={m}/>}
-          <SectionNavigator document={document} onSection={anchor => {void onAnchor(anchor).then(allowed => {if (allowed) closePanel(!mobile);});}} messages={m}/>
-        </> : null}
-      </aside>
-      <aside className="reader-navigation-panel reader-search-panel" role="dialog" aria-modal="true" data-panel="search" hidden={panel !== 'search'} aria-label={m.search}>
+        {navigationBody}
+      </aside> : null}
+      {mobile ? <ReaderPrivateState isOpen={panel === 'pages' || panel === 'type'} wide={false} title={panel === 'pages' ? m.contents : m.typography} headerRef={readerHeader} theme={theme} messages={m} onClose={() => closePanel()} suspended={suspended}>{panel === 'pages' || panel === 'type' ? navigationBody : null}</ReaderPrivateState> : null}
+      <aside className="reader-navigation-panel reader-search-panel" role="dialog" aria-modal="true" data-panel="search" hidden={panel !== 'search'} inert={panel !== 'search'} aria-label={m.search}>
         <ReaderSearch document={value.document} mobile={reflow} onJump={jumpFromSearch} messages={m} closeControl={<IconButton variant="ghost" aria-label={m.close} onPress={() => closePanel()} icon={<ChevronLeft size={22} aria-hidden="true"/>}/>}/>
       </aside>
     </div>
     {value.document.metadataSyncPending ? <p role="status">{m.metadataPending}</p> : null}
     {!notes ? feedback : null}
     <div className="reader-stage" inert={!!panel}>
-    <div ref={viewportRef} className="reader-viewport" data-mobile={mobile || undefined} data-direction={reflow ? undefined : direction} data-active-page={active.id} style={{touchAction: mobile || reflow || notes || nativeZoomed ? 'auto' : direction === 'horizontal' && !zoomed ? 'pan-y' : 'pan-x pan-y'}} tabIndex={0} onContextMenu={event => {if (!(event.target instanceof Element && event.target.closest('input,textarea,select,[contenteditable="true"]'))) event.preventDefault();}} onClick={event => {
+    <div ref={viewportRef} className="reader-viewport" aria-description={mobile ? m.clauseKeyboardHelp : undefined} data-mobile={mobile || undefined} data-direction={reflow ? undefined : direction} data-active-page={active.id} style={{touchAction: mobile || reflow || notes || nativeZoomed ? 'auto' : direction === 'horizontal' && !zoomed ? 'pan-y' : 'pan-x pan-y'}} tabIndex={0} onContextMenu={event => {if (!(event.target instanceof Element && event.target.closest('input,textarea,select,[contenteditable="true"]'))) event.preventDefault();}} onClick={event => {
       if (mobile && !(event.target instanceof Element && event.target.closest('button,a,input,textarea,select,[contenteditable]'))) revealChrome();
     }} onPointerDown={event => {
       if (event.pointerType !== 'touch' || notes || reflow || suspended) return;
@@ -816,7 +857,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       {reflow ? <div ref={chapterHeading} tabIndex={-1} role="group" aria-label={chapterLabels[chapter]} className="reader-watermarked" style={{"--reader-font-size": `${typography.size}px`, "--reader-line-height": typography.line} as React.CSSProperties}><BulletinEbook document={document} chapter={chapter} canonicalMetadata={value.document.canonicalMetadata} sentenceState={sentenceState} selectable={mobile && !notes && !suspended}/><ReaderWatermark traceCode={value.access.traceCode} tone={theme}/></div> :
         <PaperViewport selectable={mobile && !notes && !suspended} document={document} metadata={value.document.canonicalMetadata} sentenceState={sentenceState} traceCode={value.access.traceCode} theme={theme} page={page} direction={direction} zoom={zoom} viewport={viewport}/>}
       <NoteIndicators root={paperRef} notes={privateReader.state?.notes ?? []} layoutKey={reflow ? `${chapter}:${fontsReady}:${typography.size}:${typography.line}` : `${active.id}:${scale}:${fontsReady}:${direction}`} label={m.myNotes} onOpen={(ids, trigger) => {void openNotesList(ids, trigger);}} mobile={reflow}/>
-      <RangeHighlights root={paperRef} highlights={savedHighlights} layoutKey={reflow ? `${chapter}:${fontsReady}:${typography.size}:${typography.line}` : `${active.id}:${scale}:${fontsReady}:${direction}`} onSelect={mobile ? undefined : selectExisting}/>
+      <RangeHighlights selectedRanges={mobile ? selectionRanges : undefined} root={paperRef} highlights={savedHighlights} layoutKey={reflow ? `${chapter}:${fontsReady}:${typography.size}:${typography.line}` : `${active.id}:${scale}:${fontsReady}:${direction}`} onSelect={mobile ? undefined : selectExisting}/>
       </div>
       {reflow && chapterIndex < chapters.length - 1 ? <div className="reader-chapter-boundary"><IconButton variant="ghost" aria-label={m.next} isDisabled={suspended} onPress={() => {void onChapter(chapterIndex + 1);}} icon={<ArrowDown size={20} aria-hidden="true"/>}/></div> : null}
     </div>
@@ -825,15 +866,14 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       {page > 0 ? <IconButton variant="ghost" aria-label={m.previous} title={m.previous} isDisabled={suspended || page === 0} onPress={() => {void onPage(page - 1);}} icon={<ChevronLeft size={20} aria-hidden="true"/>}/> : null}
       {page < document.pages.length - 1 ? <IconButton variant="ghost" aria-label={m.next} title={m.next} isDisabled={suspended || page >= document.pages.length - 1} onPress={() => {void onPage(page + 1);}} icon={<ChevronRight size={20} aria-hidden="true"/>}/> : null}
     </div> : null}
-    <SelectionToolbar messages={m} root={paperRef} ranges={selectionRanges} count={selecting ? 0 : selectionRanges.reduce((count, range) => count + range.end - range.start, 0)} color={highlightSelection.color} clearable={highlightSelection.clearable} busy={foregroundBusy || !privateReader.state || privateReader.status === 'paused'} noteOpen={!!notes} noteButtonRef={noteButton}
+    <SelectionToolbar description={mobile ? noteQuote : undefined} messages={m} root={paperRef} ranges={selectionRanges} count={selecting ? 0 : selectionRanges.reduce((count, range) => count + range.end - range.start, 0)} color={highlightSelection.color} clearable={highlightSelection.clearable} busy={foregroundBusy || !privateReader.state || privateReader.status === 'paused'} noteOpen={!!notes} noteButtonRef={noteButton}
       onColor={color => void action({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, kind: 'setHighlight', payload: {sentenceIds: selected, color, ...(selection.ranges ? {ranges: selection.ranges} : {})}})}
       onClear={() => void action({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, kind: 'clearHighlight', payload: {sentenceIds: selected, ...(selection.ranges ? {ranges: selection.ranges} : {})}})}
       onCopy={() => {const snapshot = selection; void (selection.ranges ? copyTextRanges(value.document, selection.ranges, allowAction) : copySentences(value.document, selected, allowAction)).then(() => {setNotice(m.copySuccess); clearIf(snapshot);}).catch(() => setNotice(m.copyFailed));}}
       onNote={() => {newNoteId.current = null; setNoteEditorState(undefined); setNotes('new');}}/>
-    {notes ? <ReaderPrivateState wide={wideNotes} theme={theme} messages={m} onClose={() => {void closeNotes();}} suspended={suspended}>
-      {feedback}
-      <div hidden={recoveryOpen} inert={recoveryOpen}>
-      {reanchor ? <NoteReanchor initialConflict={reanchorConflict} onRecover={openRecovery} key={`${reanchor.id}:${reanchorConflict ? 'conflict' : 'editing'}:${reanchorConflict?.note?.version ?? reanchor.version}`} note={reanchor} document={value.document} messages={m} mobile={mobile} suspended={suspended} onSave={async (note, ranges) => {
+    <ReaderPrivateState isOpen={!!notes} headerRef={readerHeader} wide={wideNotes} theme={theme} messages={m} onClose={dismissNotesLayer} suspended={suspended} feedback={notes ? feedback : null}>{notes ? <>
+      <div className="reader-private-content" hidden={recoveryOpen} inert={recoveryOpen}>
+      {notes === 'list' && !privateReader.state ? !privateReader.loadError ? <ReaderLoading label={m.loading}/> : null : reanchor ? <NoteReanchor initialConflict={reanchorConflict} onRecover={openRecovery} key={`${reanchor.id}:${reanchorConflict ? 'conflict' : 'editing'}:${reanchorConflict?.note?.version ?? reanchor.version}`} note={reanchor} document={value.document} messages={m} mobile={mobile} suspended={suspended} onSave={async (note, ranges) => {
         const mutation: BulletinReaderMutation = {mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, kind: 'reanchorNote', baseVersion: note.version, payload: {noteId: note.id, sentenceIds: ranges.map(range => range.sentenceId), ranges}};
         noteOperation.current = {mutation, generation: generation.current, local: note};
         const result = await privateReader.mutate(mutation);
@@ -841,16 +881,14 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
         if (result.status !== 'applied' && result.status !== 'queued' && result.status !== 'note_conflict') throw new Error(result.status);
         return {status: result.status, note: 'note' in result ? result.note : undefined, durable: 'durable' in result ? result.durable : undefined};
       }} onComplete={() => {}} onCancel={() => setReanchor(null)}/> : deletion ? <section className="reader-note-editor"><p role="alert">{m.noteConflict}</p><h3>{m.recoveryLocal}</h3><blockquote>{deletion.local.text}</blockquote><h3>{m.recoveryCloud}</h3><blockquote>{!deletion.durable && deletion.cloud && !deletion.cloud.deleted ? deletion.cloud.text : m.noteDeleted}</blockquote><div className="reader-note-actions">
-        <button type="button" disabled={foregroundBusy} onClick={() => deletion.durable ? openRecovery() : setDeletion(null)}>{deletion.durable ? m.reviewSync : m.noteCloud}</button>
-        {!deletion.durable && deletion.cloud && !deletion.cloud.deleted ? <><button type="button" disabled={privateReader.busy} onClick={() => {const note = deletion.cloud!; void confirmNote('delete', note.text).then(accepted => {if (accepted) void deleteNote(note);});}}>{m.noteDelete}</button><button type="button" disabled={privateReader.busy} onClick={() => {const cloud = deletion.cloud!; setNotes(cloud); setNoteEditorState({draft: {noteId: cloud.id, baseVersion: cloud.version, text: `${cloud.text}\n\n${deletion.local.text}`}, conflict: null}); setDeletion(null);}}>{m.noteManual}</button></> : null}
+        <button type="button" disabled={foregroundBusy} onClick={() => {if (deletion.durable) openRecovery(); else {privateReader.replacePending(null, deletion.mutationId); setDeletion(null);}}}>{deletion.durable ? m.reviewSync : m.noteCloud}</button>
+        {!deletion.durable && deletion.cloud && !deletion.cloud.deleted ? <><button type="button" disabled={privateReader.busy} onClick={() => {const note = deletion.cloud!; void confirmNote('delete', note.text).then(accepted => {if (accepted) {privateReader.replacePending(null, deletion.mutationId); void deleteNote(note);}});}}>{m.noteDelete}</button><button type="button" disabled={privateReader.busy} onClick={() => {const cloud = deletion.cloud!; privateReader.replacePending(null, deletion.mutationId); setNotes(cloud); setNoteEditorState({draft: {noteId: cloud.id, baseVersion: cloud.version, text: `${cloud.text}\n\n${deletion.local.text}`}, conflict: null}); setDeletion(null);}}>{m.noteManual}</button></> : null}
       </div></section> : notes === 'list' ? <>
       <ReaderNotesList messages={m} bookmarks={{document: value.document, bookmarks: privateReader.state?.bookmarks, messages: m, offline, supported: privateReader.bookmarksSupported, cacheWarning: privateReader.bookmarkCacheWarning,
           busy: privateReader.busy || privateReader.canRetry || privateReader.loadError || suspended || !privateReader.state || privateReader.status === 'paused', draft: bookmarkDraft, onDraft: setBookmarkDraft, onCurrent: captureBookmarkPosition,
           onSave: () => {void saveBookmark();}, onJump: bookmark => {void jumpBookmark(bookmark);}, onDelete: bookmark => {const draft: BookmarkDraft = {kind: 'delete', id: bookmark.id, name: bookmark.name, originalName: bookmark.name, baseVersion: bookmark.version, target: bookmark}; setBookmarkDraft(draft); void saveBookmark(draft);}}} onExport={ids => setExportRequest({ids, generation: generation.current})} exportDisabled={privateReader.busy || privateReader.loadError || privateReader.canRetry || recoveryOpen || !privateReader.state || ['paused', 'action', 'syncing'].includes(privateReader.status)} filter={noteFilter} onClearFilter={() => setNoteFilter(null)}
         highlights={{highlights: savedHighlights, sentences, messages: m, busy: foregroundBusy || !privateReader.state || privateReader.status === 'paused' || suspended,
           onChange: (range, color) => action({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, ...(color ? {kind: 'setHighlight' as const, payload: {sentenceIds: [range.sentenceId], ranges: [range], color}} : {kind: 'clearHighlight' as const, payload: {sentenceIds: [range.sentenceId], ranges: [range]}})})}}
-        history={{onConfirm: description => confirmReaderAction(description, m.highlightHistory, m.clearHighlight), history: privateReader.state?.highlightHistory, document: value.document, messages: m, mobile, busy: foregroundBusy || !privateReader.state || privateReader.status === 'paused' || suspended,
-          onSave: async mutation => {const result = await privateReader.mutate(mutation); if (result.status !== 'applied' && result.status !== 'queued') throw new Error(result.status);}}}
         notes={{busy: foregroundBusy || suspended, messages: m, notes: privateReader.state?.notes ?? [], onReanchor: setReanchor,
           onJump: id => {void onAnchor({kind: 'sentence', id});}, onEdit: note => {newNoteId.current = null; setNoteEditorState(undefined); setNotes(note);},
           onDelete: note => {void confirmNote('delete', note.text).then(accepted => {if (accepted) void deleteNote(note);});}}}/>
@@ -860,6 +898,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
         <button type="button" onClick={() => {void closeNotes();}}>{m.noteCancel}</button>
       </section> : <NoteEditor failureHandled={unknownAction || !!operationMessage} onKeepCloud={finishNoteEditor} onRecover={openRecovery} key={editingNote?.id ?? 'new'} messages={m} note={editingNote} quote={noteQuote} editorState={noteEditorState} onEditorStateChange={setNoteEditorState} onSave={saveNote} onComplete={() => {}} onCancel={() => {void closeNotes();}}/>}
       </div>
-    </ReaderPrivateState> : null}
+      <div className="reader-private-sync-slot">{privateReader.state && !feedbackMessage && ['syncing', 'waiting'].includes(privateReader.status) ? <SyncStatus status={privateReader.status} messages={m}/> : null}</div>
+    </> : null}</ReaderPrivateState>
   </section>;
 }

@@ -4,6 +4,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import test from 'node:test';
+import {randomBytes} from 'node:crypto';
 
 const checker = path.resolve('scripts/check-static-budgets.mjs');
 
@@ -102,4 +103,22 @@ test('rejects generated CSS over 400 KiB after a production build', async (t) =>
 
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /generated css exceeds 400 KiB/i);
+});
+
+test('bounds the lazy DOCX chunk in both raw and gzip bytes', async (t) => {
+  const root = await fixture();
+  t.after(() => rm(root, {recursive: true, force: true}));
+  const chunks = path.join(root, '.next/static/chunks');
+  await mkdir(chunks, {recursive: true});
+  const filename = path.join(chunks, 'export.js');
+  await writeFile(filename, 'docProps/core.xml');
+  assert.equal(run(root).status, 0);
+  for (const content of ['docProps/core.xml' + 'x'.repeat(512 * 1024), 'docProps/core.xml' + randomBytes(180 * 1024).toString('base64')]) {
+    await writeFile(filename, content);
+    const result = run(root);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /DOCX export exceeds 512 KiB raw \/ 160 KiB gzip/);
+  }
+  await writeFile(filename, 'unrelated application chunk');
+  assert.match(run(root).stderr, /DOCX export chunk missing/);
 });

@@ -1,0 +1,15 @@
+{
+  "buildId": "1AS1SDkeglNrgNKd9nzD8",
+  "limits": {
+    "raw": 524288,
+    "gzip": 163840
+  },
+  "exports": [
+    {
+      "name": "09_a6_r3cz2lu.js",
+      "raw": 435111,
+      "gzip": 122629,
+      "inInitialClientReferences": false
+    }
+  ]
+}

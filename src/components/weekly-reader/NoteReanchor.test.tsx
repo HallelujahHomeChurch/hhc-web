@@ -50,3 +50,14 @@ it('keeps a conflict without a cloud note blocked and offers durable recovery', 
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
   expect(onRecover).toHaveBeenCalledOnce(); expect(onSave).not.toHaveBeenCalled();
 });
+
+it('relinks a mobile note to one clause using canonical Unicode offsets', async () => {
+  const value=readerFixture(),component=value.document.content.components[0];
+  if(component.type!=='backSummary')throw new Error('fixture');
+  component.items[0].blocks[0].sentences[0].spans=[{text:'甲😀，乙。丙。',fontRole:'body'}];
+  const onSave=vi.fn().mockResolvedValue({status:'applied'});
+  render(<NoteReanchor {...props} document={value.document} mobile onSave={onSave}/>);
+  fireEvent.click(screen.getByRole('button',{name:'乙。'}));
+  fireEvent.click(screen.getByRole('button',{name:'Save'}));
+  await waitFor(()=>expect(onSave).toHaveBeenCalledWith(note,[{sentenceId:'s0',start:3,end:5}]));
+});

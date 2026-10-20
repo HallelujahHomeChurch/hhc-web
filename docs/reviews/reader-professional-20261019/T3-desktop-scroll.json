@@ -1,0 +1,170 @@
+[
+  {
+    "label": "initial",
+    "body": [
+      0,
+      0
+    ],
+    "view": [
+      0,
+      0
+    ],
+    "viewRect": {
+      "x": 0,
+      "y": 108,
+      "width": 1440,
+      "height": 736,
+      "top": 108,
+      "right": 1440,
+      "bottom": 844,
+      "left": 0
+    },
+    "paper": {
+      "x": 443.015625,
+      "y": 124,
+      "width": 494.9609375,
+      "height": 700,
+      "top": 124,
+      "right": 937.9765625,
+      "bottom": 824,
+      "left": 443.015625
+    },
+    "source": {
+      "x": 492.5118713378906,
+      "y": 197.11412048339844,
+      "width": 47.313751220703125,
+      "height": 13.4068603515625,
+      "top": 197.11412048339844,
+      "right": 539.8256225585938,
+      "bottom": 210.52098083496094,
+      "left": 492.5118713378906
+    },
+    "active": "<body style=\"margin:0\"><div id=\"root\"><main class=\"weekly-reader\" data-theme=\"light\" style=\"color-scheme: light; --reade"
+  },
+  {
+    "label": "contents",
+    "body": [
+      0,
+      0
+    ],
+    "view": [
+      0,
+      0
+    ],
+    "viewRect": {
+      "x": 0,
+      "y": 108,
+      "width": 1440,
+      "height": 736,
+      "top": 108,
+      "right": 1440,
+      "bottom": 844,
+      "left": 0
+    },
+    "paper": {
+      "x": 452.9140625,
+      "y": 124,
+      "width": 475.1640625,
+      "height": 672,
+      "top": 124,
+      "right": 928.078125,
+      "bottom": 796,
+      "left": 452.9140625
+    },
+    "source": {
+      "x": 500.4304504394531,
+      "y": 194.1895751953125,
+      "width": 45.421173095703125,
+      "height": 12.870574951171875,
+      "top": 194.1895751953125,
+      "right": 545.8516235351562,
+      "bottom": 207.06015014648438,
+      "left": 500.4304504394531
+    },
+    "active": "<button class=\"hhc-button hhc-button--ghost hhc-button--md hhc-icon-button\" data-rac=\"\" type=\"button\" tabindex=\"0\" data-"
+  },
+  {
+    "label": "closed",
+    "body": [
+      0,
+      0
+    ],
+    "view": [
+      0,
+      0
+    ],
+    "viewRect": {
+      "x": 0,
+      "y": 108,
+      "width": 1440,
+      "height": 736,
+      "top": 108,
+      "right": 1440,
+      "bottom": 844,
+      "left": 0
+    },
+    "paper": {
+      "x": 452.9140625,
+      "y": 124,
+      "width": 475.1640625,
+      "height": 672,
+      "top": 124,
+      "right": 928.078125,
+      "bottom": 796,
+      "left": 452.9140625
+    },
+    "source": {
+      "x": 500.4304504394531,
+      "y": 194.1895751953125,
+      "width": 45.421173095703125,
+      "height": 12.870574951171875,
+      "top": 194.1895751953125,
+      "right": 545.8516235351562,
+      "bottom": 207.06015014648438,
+      "left": 500.4304504394531
+    },
+    "active": "<body style=\"margin:0\"><div id=\"root\"><main class=\"weekly-reader\" data-theme=\"light\" style=\"color-scheme: light; --reade"
+  },
+  {
+    "label": "settings",
+    "body": [
+      0,
+      0
+    ],
+    "view": [
+      0,
+      0
+    ],
+    "viewRect": {
+      "x": 0,
+      "y": 108,
+      "width": 1440,
+      "height": 736,
+      "top": 108,
+      "right": 1440,
+      "bottom": 844,
+      "left": 0
+    },
+    "paper": {
+      "x": 452.9140625,
+      "y": 124,
+      "width": 475.1640625,
+      "height": 672,
+      "top": 124,
+      "right": 928.078125,
+      "bottom": 796,
+      "left": 452.9140625
+    },
+    "source": {
+      "x": 500.4304504394531,
+      "y": 194.1895751953125,
+      "width": 45.421173095703125,
+      "height": 12.870574951171875,
+      "top": 194.1895751953125,
+      "right": 545.8516235351562,
+      "bottom": 207.06015014648438,
+      "left": 500.4304504394531
+    },
+    "active": "<button class=\"hhc-button hhc-button--ghost hhc-button--md hhc-icon-button\" data-rac=\"\" type=\"button\" tabindex=\"0\" data-"
+  }
+]

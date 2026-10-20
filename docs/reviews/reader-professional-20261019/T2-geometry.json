@@ -1,0 +1,418 @@
+{
+  "synthetic": true,
+  "origin": "http://127.0.0.1:7152",
+  "states": {
+    "notes": {
+      "frame": {
+        "x": 0,
+        "y": 124,
+        "width": 390,
+        "height": 720,
+        "top": 124,
+        "right": 390,
+        "bottom": 844,
+        "left": 0
+      },
+      "header": {
+        "x": 1,
+        "y": 125,
+        "width": 388,
+        "height": 65,
+        "top": 125,
+        "right": 389,
+        "bottom": 190,
+        "left": 1
+      },
+      "tabs": {
+        "x": 17,
+        "y": 206,
+        "width": 356,
+        "height": 52,
+        "top": 206,
+        "right": 373,
+        "bottom": 258,
+        "left": 17
+      },
+      "panel": {
+        "x": 17,
+        "y": 258,
+        "width": 356,
+        "height": 545,
+        "top": 258,
+        "right": 373,
+        "bottom": 803,
+        "left": 17,
+        "scrollHeight": 582,
+        "clientHeight": 545
+      },
+      "input": {
+        "x": 19,
+        "y": 274,
+        "width": 337,
+        "height": 44,
+        "top": 274,
+        "right": 356,
+        "bottom": 318,
+        "left": 19
+      },
+      "editor": null
+    },
+    "highlights": {
+      "frame": {
+        "x": 0,
+        "y": 124,
+        "width": 390,
+        "height": 720,
+        "top": 124,
+        "right": 390,
+        "bottom": 844,
+        "left": 0
+      },
+      "header": {
+        "x": 1,
+        "y": 125,
+        "width": 388,
+        "height": 65,
+        "top": 125,
+        "right": 389,
+        "bottom": 190,
+        "left": 1
+      },
+      "tabs": {
+        "x": 17,
+        "y": 206,
+        "width": 356,
+        "height": 52,
+        "top": 206,
+        "right": 373,
+        "bottom": 258,
+        "left": 17
+      },
+      "panel": {
+        "x": 17,
+        "y": 258,
+        "width": 356,
+        "height": 545,
+        "top": 258,
+        "right": 373,
+        "bottom": 803,
+        "left": 17,
+        "scrollHeight": 545,
+        "clientHeight": 545
+      },
+      "input": {
+        "x": 19,
+        "y": 274,
+        "width": 337,
+        "height": 44,
+        "top": 274,
+        "right": 356,
+        "bottom": 318,
+        "left": 19
+      },
+      "editor": null
+    },
+    "bookmarks": {
+      "frame": {
+        "x": 0,
+        "y": 124,
+        "width": 390,
+        "height": 720,
+        "top": 124,
+        "right": 390,
+        "bottom": 844,
+        "left": 0
+      },
+      "header": {
+        "x": 1,
+        "y": 125,
+        "width": 388,
+        "height": 65,
+        "top": 125,
+        "right": 389,
+        "bottom": 190,
+        "left": 1
+      },
+      "tabs": {
+        "x": 17,
+        "y": 206,
+        "width": 356,
+        "height": 52,
+        "top": 206,
+        "right": 373,
+        "bottom": 258,
+        "left": 17
+      },
+      "panel": {
+        "x": 17,
+        "y": 258,
+        "width": 356,
+        "height": 545,
+        "top": 258,
+        "right": 373,
+        "bottom": 803,
+        "left": 17,
+        "scrollHeight": 545,
+        "clientHeight": 545
+      },
+      "editor": null
+    },
+    "editor": {
+      "frame": {
+        "x": 0,
+        "y": 124,
+        "width": 390,
+        "height": 720,
+        "top": 124,
+        "right": 390,
+        "bottom": 844,
+        "left": 0
+      },
+      "header": {
+        "x": 1,
+        "y": 125,
+        "width": 388,
+        "height": 65,
+        "top": 125,
+        "right": 389,
+        "bottom": 190,
+        "left": 1
+      },
+      "panel": null,
+      "footer": {
+        "x": 17,
+        "y": 746,
+        "width": 356,
+        "height": 57,
+        "top": 746,
+        "right": 373,
+        "bottom": 803,
+        "left": 17
+      },
+      "editor": {
+        "height": 528,
+        "scrollHeight": 528
+      }
+    },
+    "390-dark": {
+      "frame": {
+        "x": 0,
+        "y": 124,
+        "width": 390,
+        "height": 720,
+        "top": 124,
+        "right": 390,
+        "bottom": 844,
+        "left": 0
+      },
+      "header": {
+        "x": 1,
+        "y": 125,
+        "width": 388,
+        "height": 65,
+        "top": 125,
+        "right": 389,
+        "bottom": 190,
+        "left": 1
+      },
+      "tabs": {
+        "x": 17,
+        "y": 206,
+        "width": 356,
+        "height": 52,
+        "top": 206,
+        "right": 373,
+        "bottom": 258,
+        "left": 17
+      },
+      "panel": {
+        "x": 17,
+        "y": 258,
+        "width": 356,
+        "height": 545,
+        "top": 258,
+        "right": 373,
+        "bottom": 803,
+        "left": 17,
+        "scrollHeight": 582,
+        "clientHeight": 545
+      },
+      "input": {
+        "x": 19,
+        "y": 274,
+        "width": 337,
+        "height": 44,
+        "top": 274,
+        "right": 356,
+        "bottom": 318,
+        "left": 19
+      },
+      "editor": null
+    },
+    "768-light": {
+      "frame": {
+        "x": 408,
+        "y": 0,
+        "width": 360,
+        "height": 844,
+        "top": 0,
+        "right": 768,
+        "bottom": 844,
+        "left": 408
+      },
+      "header": {
+        "x": 409,
+        "y": 1,
+        "width": 358,
+        "height": 65,
+        "top": 1,
+        "right": 767,
+        "bottom": 66,
+        "left": 409
+      },
+      "tabs": {
+        "x": 425,
+        "y": 82,
+        "width": 326,
+        "height": 52,
+        "top": 82,
+        "right": 751,
+        "bottom": 134,
+        "left": 425
+      },
+      "panel": {
+        "x": 425,
+        "y": 134,
+        "width": 326,
+        "height": 669,
+        "top": 134,
+        "right": 751,
+        "bottom": 803,
+        "left": 425,
+        "scrollHeight": 889,
+        "clientHeight": 669
+      },
+      "input": {
+        "x": 427,
+        "y": 150,
+        "width": 307,
+        "height": 44,
+        "top": 150,
+        "right": 734,
+        "bottom": 194,
+        "left": 427
+      },
+      "editor": null
+    },
+    "1440-light": {
+      "frame": {
+        "x": 1080,
+        "y": 16,
+        "width": 360,
+        "height": 812,
+        "top": 16,
+        "right": 1440,
+        "bottom": 828,
+        "left": 1080
+      },
+      "header": {
+        "x": 1097,
+        "y": 33,
+        "width": 326,
+        "height": 48,
+        "top": 33,
+        "right": 1423,
+        "bottom": 81,
+        "left": 1097
+      },
+      "tabs": {
+        "x": 1097,
+        "y": 97,
+        "width": 326,
+        "height": 52,
+        "top": 97,
+        "right": 1423,
+        "bottom": 149,
+        "left": 1097
+      },
+      "panel": {
+        "x": 1097,
+        "y": 149,
+        "width": 326,
+        "height": 638,
+        "top": 149,
+        "right": 1423,
+        "bottom": 787,
+        "left": 1097,
+        "scrollHeight": 851,
+        "clientHeight": 638
+      },
+      "input": {
+        "x": 1099,
+        "y": 165,
+        "width": 307,
+        "height": 44,
+        "top": 165,
+        "right": 1406,
+        "bottom": 209,
+        "left": 1099
+      },
+      "editor": null
+    },
+    "1440-dark": {
+      "frame": {
+        "x": 1080,
+        "y": 16,
+        "width": 360,
+        "height": 812,
+        "top": 16,
+        "right": 1440,
+        "bottom": 828,
+        "left": 1080
+      },
+      "header": {
+        "x": 1097,
+        "y": 33,
+        "width": 326,
+        "height": 48,
+        "top": 33,
+        "right": 1423,
+        "bottom": 81,
+        "left": 1097
+      },
+      "tabs": {
+        "x": 1097,
+        "y": 97,
+        "width": 326,
+        "height": 52,
+        "top": 97,
+        "right": 1423,
+        "bottom": 149,
+        "left": 1097
+      },
+      "panel": {
+        "x": 1097,
+        "y": 149,
+        "width": 326,
+        "height": 638,
+        "top": 149,
+        "right": 1423,
+        "bottom": 787,
+        "left": 1097,
+        "scrollHeight": 851,
+        "clientHeight": 638
+      },
+      "input": {
+        "x": 1099,
+        "y": 165,
+        "width": 307,
+        "height": 44,
+        "top": 165,
+        "right": 1406,
+        "bottom": 209,
+        "left": 1099
+      },
+      "editor": null
+    }
+  }
+}

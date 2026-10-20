@@ -5,10 +5,10 @@ import type {ReaderMessages} from '@/components/weekly-reader/ReaderToolbar';
 type Kind = 'home' | 'back';
 type Marker = {id: string; url: string; position: 'base' | 'guard'};
 
-export function useReaderExitGuard({hasUnsavedNote, beforeLeave, messages: m, canPrompt = () => true}: {
-  canPrompt?: () => boolean; hasUnsavedNote: () => boolean; beforeLeave: () => Promise<boolean>; messages: ReaderMessages;
+export function useReaderExitGuard({hasUnsavedNote, beforeLeave, messages: m, canPrompt = () => true, hasUnsavedChanges = () => false, consumeBack = () => false}: {
+  consumeBack?: () => boolean; hasUnsavedChanges?: () => boolean; canPrompt?: () => boolean; hasUnsavedNote: () => boolean; beforeLeave: (isCurrent: () => boolean) => Promise<boolean>; messages: ReaderMessages;
 }) {
-  const [prompt, setPrompt] = useState<{kind: Kind; dirty: boolean} | null>(null);
+  const [prompt, setPrompt] = useState<{kind: Kind; dirty: boolean; uncommitted: boolean; confirming: boolean} | null>(null);
   const active = useRef(true);
   const pending = useRef<{promise: Promise<boolean>; resolve: (allowed: boolean) => void; confirmed: boolean} | null>(null);
   const settle = useCallback((allowed: boolean) => {
@@ -22,10 +22,10 @@ export function useReaderExitGuard({hasUnsavedNote, beforeLeave, messages: m, ca
     let resolve!: (allowed: boolean) => void;
     const promise = new Promise<boolean>(finish => {resolve = finish;});
     pending.current = {promise, resolve, confirmed: false};
-    setPrompt({kind, dirty: hasUnsavedNote()});
+    setPrompt({kind, dirty: hasUnsavedNote(), uncommitted: hasUnsavedChanges(), confirming: false});
     return promise;
-  }, [hasUnsavedNote, canPrompt]);
-  const requestBack = useEffectEvent(() => confirmLeave('back'));
+  }, [hasUnsavedNote, hasUnsavedChanges, canPrompt]);
+  const requestBack = useEffectEvent(() => consumeBack() ? Promise.resolve(false) : confirmLeave('back'));
   useEffect(() => {
     active.current = true;
     const url = window.location.href;
@@ -70,19 +70,20 @@ export function useReaderExitGuard({hasUnsavedNote, beforeLeave, messages: m, ca
     };
   }, []);
   const dialogProps: AlertDialogProps = {
-    title: m.exitTitle, description: prompt?.dirty ? `${m.exitDescription} ${m.noteDiscardConfirm}` : m.exitDescription,
+    title: m.exitTitle, description: [m.exitDescription, prompt?.dirty ? m.noteDiscardConfirm : '', prompt?.uncommitted ? m.exitUnsavedChanges : ''].filter(Boolean).join(' '),
     isOpen: !!prompt, cancelLabel: m.keepReading, closeLabel: m.close,
     confirmLabel: m.exitConfirm,
     confirmVariant: 'primary',
-    onOpenChange: open => {if (!open && !pending.current?.confirmed) settle(false);},
+    onOpenChange: open => {if (!open) settle(false);},
     onConfirm: async () => {
       const request = pending.current;
       if (!request || request.confirmed) return;
       request.confirmed = true;
+      setPrompt(previous => previous ? {...previous, confirming: true} : null);
       let allowed = false;
-      try {allowed = await beforeLeave();} catch { /* Leave failures cancel without discarding state. */ }
+      try {allowed = await beforeLeave(() => active.current && pending.current === request);} catch { /* Leave failures cancel without discarding state. */ }
       if (active.current && pending.current === request) settle(allowed);
     }
   };
-  return {confirmLeave, dialogProps};
+  return {confirmLeave, dialogProps, confirming: prompt?.confirming ?? false};
 }

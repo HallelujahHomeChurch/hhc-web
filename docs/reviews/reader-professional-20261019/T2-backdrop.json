@@ -1,0 +1,9 @@
+{
+  "synthetic": true,
+  "before": "http://127.0.0.1:7152/?t2=backdrop",
+  "after": {
+    "readerPresent": true,
+    "exitDialogPresent": false,
+    "focused": "週報列表"
+  }
+}

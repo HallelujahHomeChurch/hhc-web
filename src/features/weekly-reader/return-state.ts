@@ -1,6 +1,7 @@
 import type {BulletinReaderMutation} from '@hallelujahhomechurch/hhc-web-client';
 import type {ReaderSelector} from './api';
 import type {ReaderTextRange} from './text-range';
+import type {PrivateReplica} from './offline-store';
 
 type Binding = {accountId: string; documentId: string};
 export type ReaderReturn = {
@@ -12,6 +13,15 @@ export type ReaderReturn = {
 };
 const prefix = 'weekly-reader-return:';
 const key = ({accountId, documentId}: Binding) => `${prefix}${accountId}:${documentId}`;
+// Keep the same RAM journal through a temporary auth unmount; never persist it as a second queue.
+const volatile = new Map<string, {selector: ReaderSelector; revision: number; epoch: number | null; replica: PrivateReplica}>();
+export function readVolatileReader(binding: Binding) {return volatile.get(key(binding));}
+export function retainVolatileReader(selector: ReaderSelector, revision: number, epoch: number | null, replica: PrivateReplica, needed: boolean) {
+  const name = key({accountId: selector.accountId, documentId: replica.state.documentId});
+  if (!needed || !replica.queue.length) {volatile.delete(name); return;}
+  volatile.delete(name); volatile.set(name, {selector, revision, epoch, replica});
+  while (volatile.size > 8) volatile.delete(volatile.keys().next().value!);
+}
 const id = (value: unknown) => typeof value === 'string' && value.length > 0 && value.length <= 128;
 const ids = (value: unknown): value is string[] => Array.isArray(value) && value.length <= 500 && value.every(id) && new Set(value).size === value.length;
 const text = (value: unknown) => typeof value === 'string' && [...value].length <= 10000;
@@ -67,14 +77,17 @@ export function saveReaderReturn(binding: Binding, patch: Partial<Omit<ReaderRet
 }
 /** Logout clears all; account changes keep only the newly authenticated account. */
 export function clearReaderReturns(keepAccount?: string) {
+  for (const [name, value] of volatile) if (value.selector.accountId !== keepAccount) volatile.delete(name);
   try {
     for (const name of Object.keys(sessionStorage)) if (name.startsWith(prefix) && (!keepAccount || !name.startsWith(`${prefix}${keepAccount}:`))) sessionStorage.removeItem(name);
   } catch { /* Storage may be disabled. */ }
 }
 export function clearReaderReturn(binding: Binding) {
+  volatile.delete(key(binding));
   try {sessionStorage.removeItem(key(binding));} catch { /* Storage may be disabled. */ }
 }
 export function clearReaderEditionReturn(selector: ReaderSelector) {
+  for (const [name, value] of volatile) if (value.selector.accountId === selector.accountId && value.selector.issueNumber === selector.issueNumber && value.selector.series === selector.series && value.selector.contentLocale === selector.contentLocale) volatile.delete(name);
   try {
     for (const name of Object.keys(sessionStorage)) {
       if (!name.startsWith(`${prefix}${selector.accountId}:`)) continue;
@@ -85,6 +98,7 @@ export function clearReaderEditionReturn(selector: ReaderSelector) {
   } catch { /* Storage may be disabled. */ }
 }
 export function hasPendingReaderReturn(accountId: string, documentId?: string) {
+  for (const value of volatile.values()) if (value.selector.accountId === accountId && (!documentId || value.replica.state.documentId === documentId)) return true;
   try {
     for (const name of Object.keys(sessionStorage)) {
       if (!name.startsWith(`${prefix}${accountId}:`)) continue;
@@ -98,7 +112,10 @@ export function hasPendingReaderReturn(accountId: string, documentId?: string) {
 }
 
 /** Exact per-tab snapshot for a removal decision; storage denial must fail closed. */
-export function readerReturnSnapshot(binding: Binding) {return sessionStorage.getItem(key(binding));}
+export function readerReturnSnapshot(binding: Binding) {
+  const stored = sessionStorage.getItem(key(binding)), ram = readVolatileReader(binding);
+  return ram ? JSON.stringify([stored, ram.revision, ram.epoch, ram.replica.queue]) : stored;
+}
 export function clearReaderReturnIfUnchanged(binding: Binding, expected: string | null) {
-  try {if (readerReturnSnapshot(binding) === expected) sessionStorage.removeItem(key(binding));} catch { /* Retain recovery when storage cannot be checked. */ }
+  try {if (readerReturnSnapshot(binding) === expected) clearReaderReturn(binding);} catch { /* Retain recovery when storage cannot be checked. */ }
 }

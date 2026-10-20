@@ -18,7 +18,7 @@ export function NoteReanchor({note, document, messages: m, onSave, onComplete, o
   const [busy, setBusy] = useState(false), [error, setError] = useState(false);
   const saving = useRef(false), root = useRef<HTMLDivElement>(null);
   const sentences = useMemo(() => readerSentences(document), [document]);
-  const {selection, clear} = useReaderSelection(root, sentences, {ids: []}, busy || suspended || !!conflict, mobile ? 'sentence' : 'text');
+  const {selection, clear} = useReaderSelection(root, sentences, {ids: []}, busy || suspended || !!conflict, mobile ? 'clause' : 'text');
   const {ranges, quote} = selectionPassage(selection, sentences);
   async function save() {
     if (saving.current || suspended || conflict || !quote) return;
@@ -32,9 +32,9 @@ export function NoteReanchor({note, document, messages: m, onSave, onComplete, o
   }
   return <form className="reader-note-editor" data-reader-selection-tools onSubmit={event => {event.preventDefault(); void save();}}>
     <blockquote>{current.quote}</blockquote><p className="reader-note-text">{current.text}</p>
-    <fieldset disabled={busy || suspended || !!conflict}><legend>{m.recoveryRange}</legend>
+    <fieldset aria-description={mobile ? m.clauseKeyboardHelp : undefined} disabled={busy || suspended || !!conflict}><legend>{m.recoveryRange}</legend>
       <PassageText root={root} sentences={sentences} selection={selection} mobile={mobile} tabIndex={0}/>
-      {quote ? <blockquote>{quote}</blockquote> : null}
+      {quote ? <blockquote aria-live="polite">{quote}</blockquote> : null}
     </fieldset>
     {conflict ? <section role="alert"><p>{m.noteConflict}</p><blockquote>{conflict.note && !conflict.note.deleted ? conflict.note.text : m.noteDeleted}</blockquote>
       {conflict.durable ? <button type="button" onClick={onRecover}>{m.reviewSync}</button> : conflict.note && !conflict.note.deleted && (conflict.note.reanchorRequired || conflict.note.inactiveAnchors.length > 0) ? <button type="button" disabled={suspended} onClick={() => {setCurrent(conflict.note!); setConflict(null); clear();}}>{m.retry}</button> : null}

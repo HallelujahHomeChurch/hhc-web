@@ -3,7 +3,7 @@ import {act, cleanup, fireEvent, render, screen} from '@testing-library/react';
 import {afterEach, expect, it, vi} from 'vitest';
 import {useReaderSelection, type ReaderSelection} from './useReaderSelection';
 const sentences=[{id:'s',componentId:'c',text:'abcdefgh'},{id:'t',componentId:'c',text:'next'}];
-function Harness({mode='text',locked=false,initial={ids:[]}}: {mode?:'text'|'sentence';locked?:boolean;initial?:ReaderSelection}) {
+function Harness({mode='text',locked=false,initial={ids:[]}}: {mode?:'text'|'clause';locked?:boolean;initial?:ReaderSelection}) {
   const root=useRef<HTMLDivElement>(null),{selection,selecting}=useReaderSelection(root,sentences,initial,locked,mode);
   return <><div ref={root} tabIndex={0}><span data-sentence-id="s" data-fragment-start="0" data-fragment-end="8">abcdefgh</span><span data-sentence-id="t" data-fragment-start="0" data-fragment-end="4">next</span><div>Margin</div></div><div>Distant</div><output>{JSON.stringify(selection)}</output>{selection.ids.length&&!selecting?<button className="reader-selection-tools">Annotate</button>:null}</>;
 }
@@ -13,34 +13,34 @@ function select(end:number) {
 }
 afterEach(()=>{cleanup();vi.useRealTimers();window.getSelection()?.removeAllRanges();});
 it('toggles sentences in document order, dismisses far away and selects again',()=>{
-  render(<Harness mode="sentence"/>);fireEvent.click(screen.getByText('next'));fireEvent.click(screen.getByText('abcdefgh'));
-  expect(screen.getByRole('status')).toHaveTextContent('{"ids":["s","t"]}');expect(window.getSelection()?.toString()).toBe('');
-  fireEvent.click(screen.getByText('abcdefgh'));expect(screen.getByRole('status')).toHaveTextContent('{"ids":["t"]}');
+  render(<Harness mode="clause"/>);fireEvent.click(screen.getByText('next'));fireEvent.click(screen.getByText('abcdefgh'));
+  expect(screen.getByRole('status')).toHaveTextContent('{"ids":["s","t"],"ranges":[{"sentenceId":"s","start":0,"end":8},{"sentenceId":"t","start":0,"end":4}]}');expect(window.getSelection()?.toString()).toBe('');
+  fireEvent.click(screen.getByText('abcdefgh'));expect(screen.getByRole('status')).toHaveTextContent('{"ids":[]}');
   fireEvent.click(screen.getByText('Distant'));expect(screen.queryByText('Annotate')).not.toBeInTheDocument();
   fireEvent.click(screen.getByText('abcdefgh'));expect(screen.getByText('Annotate')).toBeInTheDocument();
   fireEvent.click(screen.getByText('Margin'));expect(screen.queryByText('Annotate')).not.toBeInTheDocument();
 });
 it('ignores mobile scroll gestures and native selection changes',()=>{
-  render(<Harness mode="sentence"/>);const text=screen.getByText('abcdefgh');
+  render(<Harness mode="clause"/>);const text=screen.getByText('abcdefgh');
   fireEvent(text,new MouseEvent('pointerdown',{bubbles:true,clientX:10,clientY:10}));fireEvent(text,new MouseEvent('pointermove',{bubbles:true,clientX:10,clientY:90}));
   fireEvent(text,new MouseEvent('pointerup',{bubbles:true,clientX:10,clientY:90}));fireEvent.click(text);expect(screen.queryByText('Annotate')).not.toBeInTheDocument();
   select(3);expect(screen.queryByText('Annotate')).not.toBeInTheDocument();
 });
 it('preserves selection on annotation controls and locks editing',()=>{
-  const {rerender}=render(<Harness mode="sentence"/>);fireEvent.click(screen.getByText('abcdefgh'));fireEvent.click(screen.getByText('Annotate'));
-  expect(screen.getByRole('status')).toHaveTextContent('{"ids":["s"]}');rerender(<Harness mode="sentence" locked/>);fireEvent.click(screen.getByText('next'));
-  expect(screen.getByRole('status')).toHaveTextContent('{"ids":["s"]}');
+  const {rerender}=render(<Harness mode="clause"/>);fireEvent.click(screen.getByText('abcdefgh'));fireEvent.click(screen.getByText('Annotate'));
+  expect(screen.getByRole('status')).toHaveTextContent('"sentenceId":"s","start":0,"end":8');rerender(<Harness mode="clause" locked/>);fireEvent.click(screen.getByText('next'));
+  expect(screen.getByRole('status')).toHaveTextContent('"sentenceId":"s","start":0,"end":8');
 });
 it('clears captured partial ranges on device mode change',()=>{
   vi.useFakeTimers();const {rerender}=render(<Harness/>);select(3);act(()=>vi.advanceTimersByTime(200));expect(screen.getByText('Annotate')).toBeInTheDocument();
-  rerender(<Harness mode="sentence"/>);expect(screen.queryByText('Annotate')).not.toBeInTheDocument();expect(window.getSelection()?.toString()).toBe('');
+  rerender(<Harness mode="clause"/>);expect(screen.queryByText('Annotate')).not.toBeInTheDocument();expect(window.getSelection()?.toString()).toBe('');
 });
 it('preserves draft-owned exact anchors across breakpoint changes until the editor unlocks',()=>{
   const initial={ids:['s'],ranges:[{sentenceId:'s',start:1,end:3}]};
   const {rerender}=render(<Harness mode="text" locked initial={initial}/>);
-  rerender(<Harness mode="sentence" locked initial={initial}/>);
+  rerender(<Harness mode="clause" locked initial={initial}/>);
   expect(screen.getByRole('status')).toHaveTextContent(JSON.stringify(initial));
-  rerender(<Harness mode="sentence" initial={initial}/>);
+  rerender(<Harness mode="clause" initial={initial}/>);
   expect(screen.getByRole('status')).toHaveTextContent('{"ids":[]}');
 });
 it('waits for keyboard selection to finish and hides while extending',()=>{

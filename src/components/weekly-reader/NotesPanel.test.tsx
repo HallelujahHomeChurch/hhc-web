@@ -1,4 +1,4 @@
-import {fireEvent, render, screen} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {expect, it, vi} from 'vitest';
 import {getMessages} from '@/i18n/messages';
 import {NotesPanel} from './NotesPanel';
@@ -13,4 +13,15 @@ it('lists multiple private notes, keeps removed quotes, hides tombstones and jum
   fireEvent.click(screen.getByRole('button', {name: 'Go to source'})); expect(onJump).toHaveBeenCalledWith('s0');
   fireEvent.click(screen.getAllByRole('button', {name: 'Edit'})[0]); expect(onEdit).toHaveBeenCalledWith(note);
   fireEvent.click(screen.getByRole('button', {name: 'Relink note'})); expect(onReanchor).toHaveBeenCalledWith(expect.objectContaining({id: 'two'}));
+});
+
+it.each([false, true])('keeps focus in the list after deletion (adjacent=%s)', async adjacent => {
+  const messages = getMessages('en').weeklyReader;
+  const note = {id: 'one', text: 'First', sentenceIds: ['s0'], inactiveAnchors: [], quote: 'Source', version: 1, deleted: false, reanchorRequired: false, createdAt: '', updatedAt: ''};
+  const next = {...note, id: 'two', text: 'Next'};
+  const props = {messages, onJump: vi.fn(), onEdit: vi.fn(), onDelete: vi.fn(), onReanchor: vi.fn()};
+  const view = render(<NotesPanel {...props} notes={adjacent ? [note, next] : [note]}/>);
+  const button = screen.getAllByRole('button', {name: messages.noteDelete})[0]; button.focus(); fireEvent.click(button);
+  view.rerender(<NotesPanel {...props} notes={adjacent ? [next] : []}/>);
+  await waitFor(() => expect(adjacent ? screen.getByRole('button', {name: messages.noteJump}) : screen.getByRole('heading', {name: messages.notesTab})).toHaveFocus());
 });

@@ -1,0 +1,52 @@
+{
+  "kind": "zoomed-paper-300",
+  "viewport": [
+    390,
+    844
+  ],
+  "quote": "已選取 15 個字元 數字3.14,000保持完整，",
+  "boxes": [
+    {
+      "x": 0.1953125,
+      "y": 436.5625,
+      "width": 262.9296875,
+      "height": 24.2890625,
+      "top": 436.5625,
+      "right": 263.125,
+      "bottom": 460.8515625,
+      "left": 0.1953125
+    }
+  ],
+  "status": [
+    "已選取 15 個字元 數字3.14,000保持完整，",
+    ""
+  ],
+  "diagnostics": [],
+  "progress": {
+    "pageId": "p0",
+    "componentId": "c0",
+    "sentenceId": "s0",
+    "recordedAt": "2026-10-19T18:39:45.204Z",
+    "updatedAt": "2026-10-19T18:39:45.204Z"
+  },
+  "view": "{\"zoom\":3,\"direction\":\"vertical\"}",
+  "sent": {
+    "mutationId": "cca8c751-8866-4fde-99c7-bebdd95a848f",
+    "createdAt": "2026-10-19T18:39:49.366Z",
+    "documentRevision": 1,
+    "kind": "setHighlight",
+    "payload": {
+      "sentenceIds": [
+        "s0"
+      ],
+      "color": "blue",
+      "ranges": [
+        {
+          "sentenceId": "s0",
+          "start": 25,
+          "end": 40
+        }
+      ]
+    }
+  }
+}

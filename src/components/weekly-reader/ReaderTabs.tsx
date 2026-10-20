@@ -1,11 +1,11 @@
-import {useEffect, useLayoutEffect, useRef, useState, type ReactNode} from 'react';
+import {useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject} from 'react';
 import {ReaderIconButton as IconButton} from './ReaderIconButton';
 import {Home, X} from 'lucide-react';
 import {addTab, closeTab, readTabs, writeTabs, tabHref, tabKey, type ReaderTab} from '@/features/weekly-reader/workspace';
 import type {Locale} from '@/i18n/locales';
 import type {ReaderMessages} from './ReaderToolbar';
 
-export function ReaderTabs({accountId, locale, current, title, messages: m, beforeNavigate, beforeLeave, search}: {accountId: string; locale: Locale; current: ReaderTab; title?: string; messages: ReaderMessages; beforeNavigate?: () => Promise<boolean>; beforeLeave?: () => Promise<boolean>; search?: ReactNode}) {
+export function ReaderTabs({accountId, locale, current, title, messages: m, beforeNavigate, beforeLeave, search, headerRef}: {accountId: string; locale: Locale; current: ReaderTab; title?: string; messages: ReaderMessages; beforeNavigate?: () => Promise<boolean>; beforeLeave?: () => Promise<boolean>; search?: ReactNode; headerRef?: RefObject<HTMLElement | null>}) {
   const [tabs, setTabs] = useState<ReaderTab[]>([current]);
   const [busyBinding, setBusyBinding] = useState<string | null>(null);
   const navigationGeneration = useRef(0);
@@ -49,7 +49,7 @@ export function ReaderTabs({accountId, locale, current, title, messages: m, befo
     } finally {if (generation === navigationGeneration.current) setBusyBinding(null);}
   }
   const home = `/${locale}/literature-ministry`;
-  return <header className="reader-tabbar">
+  return <header ref={headerRef} className="reader-tabbar">
     <IconButton variant="ghost" icon={<Home size={21} aria-hidden="true"/>} aria-label={m.home} title={m.home} data-reader-exit isDisabled={busy} onPress={() => void navigate(home)}/>
     <nav ref={tabList} className="reader-tabs" aria-label={m.openBulletins}>
       {tabs.map(tab => {

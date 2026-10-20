@@ -1,0 +1,1729 @@
+{
+  "synthetic": true,
+  "actions": [
+    {
+      "name": "contents-in",
+      "time": 246
+    },
+    {
+      "name": "contents-out",
+      "time": 718
+    },
+    {
+      "name": "settings-in",
+      "time": 1297
+    },
+    {
+      "name": "settings-out",
+      "time": 1643
+    },
+    {
+      "name": "notes-in",
+      "time": 2167
+    },
+    {
+      "name": "tabs",
+      "time": 2658
+    },
+    {
+      "name": "notes-out",
+      "time": 2921
+    },
+    {
+      "name": "search-in",
+      "time": 3397
+    },
+    {
+      "name": "search-back",
+      "time": 3693
+    }
+  ],
+  "frames": [
+    1792432173.763488,
+    1792432173.789343,
+    1792432173.86324,
+    1792432174.015246,
+    1792432174.410436,
+    1792432174.434016,
+    1792432174.921275,
+    1792432174.959072,
+    1792432175.007798,
+    1792432175.364665,
+    1792432175.3672,
+    1792432175.412257,
+    1792432175.766497,
+    1792432175.804307,
+    1792432175.874102,
+    1792432175.931947,
+    1792432176.340143,
+    1792432176.360803,
+    1792432176.428546,
+    1792432176.644065,
+    1792432176.647493,
+    1792432177.079201,
+    1792432177.108916,
+    1792432177.112099,
+    1792432177.48509,
+    1792432177.529242,
+    1792432177.530346
+  ],
+  "samples": [
+    {
+      "time": 1220.1,
+      "phase": "contents-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1237.7,
+      "phase": "contents-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1253.7,
+      "phase": "contents-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1271,
+      "phase": "contents-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1287.4,
+      "phase": "contents-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1303.6,
+      "phase": "contents-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1321,
+      "phase": "contents-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1337.3,
+      "phase": "contents-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1354.4,
+      "phase": "contents-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 776)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1386.9,
+      "phase": "contents-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 776)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1403.9,
+      "phase": "contents-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 505.114)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1421,
+      "phase": "contents-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 304.72)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1437.7,
+      "phase": "contents-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 177.53)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1454.2,
+      "phase": "contents-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 101.079)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1470.6,
+      "phase": "contents-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 56.068)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1487.7,
+      "phase": "contents-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 28.9891)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1504.5,
+      "phase": "contents-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 14.1323)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1520.7,
+      "phase": "contents-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 6.35952)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1536.7,
+      "phase": "contents-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 2.43892)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1554.4,
+      "phase": "contents-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 0.580656)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1570.2,
+      "phase": "contents-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 0.0706199)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1587.7,
+      "phase": "contents-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1604,
+      "phase": "contents-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1620.2,
+      "phase": "contents-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1636.8,
+      "phase": "contents-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1654.4,
+      "phase": "contents-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1670.9,
+      "phase": "contents-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1687,
+      "phase": "contents-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1703.4,
+      "phase": "contents-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1720.9,
+      "phase": "contents-out",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1737.7,
+      "phase": "contents-out",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1753.4,
+      "phase": "contents-out",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1770.7,
+      "phase": "contents-out",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1787.6,
+      "phase": "contents-out",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1804.3,
+      "phase": "contents-out",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1821,
+      "phase": "contents-out",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1837.7,
+      "phase": "contents-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 0)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1853.6,
+      "phase": "contents-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 0)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1870.1,
+      "phase": "contents-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 14.04)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1887.7,
+      "phase": "contents-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 54.3454)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1904.4,
+      "phase": "contents-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 111.27)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1921,
+      "phase": "contents-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 182.464)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1937.7,
+      "phase": "contents-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 266.508)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1954.4,
+      "phase": "contents-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 361.437)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1970.1,
+      "phase": "contents-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 459.664)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 1987.7,
+      "phase": "contents-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 579.546)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2004.4,
+      "phase": "contents-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 703.045)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2021,
+      "phase": "contents-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2037,
+      "phase": "contents-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2053.6,
+      "phase": "contents-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2070.2,
+      "phase": "contents-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2087.7,
+      "phase": "contents-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2103.7,
+      "phase": "contents-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2120.3,
+      "phase": "contents-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2137.7,
+      "phase": "contents-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2153.6,
+      "phase": "contents-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2170,
+      "phase": "contents-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2187.7,
+      "phase": "contents-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2204.4,
+      "phase": "contents-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2221,
+      "phase": "contents-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2237.6,
+      "phase": "contents-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2253.4,
+      "phase": "contents-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2270.1,
+      "phase": "contents-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2287.7,
+      "phase": "settings-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2303.6,
+      "phase": "settings-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2321,
+      "phase": "settings-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2337.3,
+      "phase": "settings-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2353.5,
+      "phase": "settings-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2370.3,
+      "phase": "settings-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2387.1,
+      "phase": "settings-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2404.4,
+      "phase": "settings-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 776)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2437.6,
+      "phase": "settings-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 776)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2454.7,
+      "phase": "settings-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 505.156)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2470.4,
+      "phase": "settings-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 318.311)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2487.7,
+      "phase": "settings-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 182.338)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2504.4,
+      "phase": "settings-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 103.23)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2521,
+      "phase": "settings-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 56.9105)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2537.5,
+      "phase": "settings-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 30.1833)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2553.3,
+      "phase": "settings-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 15.4711)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2571,
+      "phase": "settings-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 6.53306)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2587.7,
+      "phase": "settings-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 2.40666)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2604,
+      "phase": "settings-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 0.653124)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2620.8,
+      "phase": "settings-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 0.0733279)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2637.3,
+      "phase": "settings-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 7.478e-07)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2654,
+      "phase": "settings-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2670,
+      "phase": "settings-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2687.3,
+      "phase": "settings-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2704.4,
+      "phase": "settings-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2721,
+      "phase": "settings-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2737.7,
+      "phase": "settings-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2753.8,
+      "phase": "settings-out",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2770.7,
+      "phase": "settings-out",
+      "sheet": "none",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2786.8,
+      "phase": "settings-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 0)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2804.1,
+      "phase": "settings-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 15.4152)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2820,
+      "phase": "settings-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 51.849)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2837.7,
+      "phase": "settings-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 111.786)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2854.3,
+      "phase": "settings-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 183.087)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2871,
+      "phase": "settings-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 267.223)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2887.6,
+      "phase": "settings-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 361.634)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2904.2,
+      "phase": "settings-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 465.763)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2921,
+      "phase": "settings-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 580.491)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2936.7,
+      "phase": "settings-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 696.376)",
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2954.4,
+      "phase": "settings-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2970.4,
+      "phase": "settings-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 2987.8,
+      "phase": "settings-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 3003.4,
+      "phase": "settings-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 3021.1,
+      "phase": "settings-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 3037.7,
+      "phase": "settings-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 3054.4,
+      "phase": "settings-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 3071.1,
+      "phase": "settings-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 3087.6,
+      "phase": "settings-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 3104.4,
+      "phase": "settings-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 3120.5,
+      "phase": "settings-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 3137.4,
+      "phase": "notes-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 3154.3,
+      "phase": "notes-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 3170.8,
+      "phase": "notes-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 3187.7,
+      "phase": "notes-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 3204.4,
+      "phase": "notes-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 3221,
+      "phase": "notes-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 3237.7,
+      "phase": "notes-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 3254.3,
+      "phase": "notes-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 776)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3304.3,
+      "phase": "notes-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 776)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3321,
+      "phase": "notes-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 510.291)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3337.1,
+      "phase": "notes-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 317.985)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3354.4,
+      "phase": "notes-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 182.138)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3370.4,
+      "phase": "notes-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 105.659)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3387.7,
+      "phase": "notes-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 56.8411)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3404.4,
+      "phase": "notes-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 29.9022)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3421,
+      "phase": "notes-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 14.7683)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3437.7,
+      "phase": "notes-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 6.52156)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3453.3,
+      "phase": "notes-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 2.58524)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3470.5,
+      "phase": "notes-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 0.663673)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3487.3,
+      "phase": "notes-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 0.0756088)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3504.3,
+      "phase": "notes-in",
+      "sheet": "matrix(1, 0, 0, 1, 0, 1.33412e-09)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3520.6,
+      "phase": "notes-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3537.6,
+      "phase": "notes-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3554,
+      "phase": "notes-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3571,
+      "phase": "notes-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3586.7,
+      "phase": "notes-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3603.8,
+      "phase": "notes-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3620,
+      "phase": "notes-in",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3637.2,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3654.3,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3670.9,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3687.3,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3703.6,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3721,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3737.1,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3753.3,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3786.7,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "time": 3803.4,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 17.3405, 0)"
+    },
+    {
+      "time": 3821,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 34.2086, 0)"
+    },
+    {
+      "time": 3836.9,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 48.3976, 0)"
+    },
+    {
+      "time": 3854.4,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 62.86, 0)"
+    },
+    {
+      "time": 3870.4,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 74.9642, 0)"
+    },
+    {
+      "time": 3887.6,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 86.6717, 0)"
+    },
+    {
+      "time": 3903.7,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 96.2569, 0)"
+    },
+    {
+      "time": 3921.1,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 104.891, 0)"
+    },
+    {
+      "time": 3937.7,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 111.147, 0)"
+    },
+    {
+      "time": 3954.3,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 115.027, 0)"
+    },
+    {
+      "time": 3970.9,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 115.992, 0)"
+    },
+    {
+      "time": 3987.6,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 115.992, 0)"
+    },
+    {
+      "time": 4004.3,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 115.992, 0)"
+    },
+    {
+      "time": 4021,
+      "phase": "tabs",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 115.992, 0)"
+    },
+    {
+      "time": 4037.3,
+      "phase": "notes-out",
+      "sheet": "none",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 115.992, 0)"
+    },
+    {
+      "time": 4054.3,
+      "phase": "notes-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 0)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 115.992, 0)"
+    },
+    {
+      "time": 4070.9,
+      "phase": "notes-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 0)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 115.992, 0)"
+    },
+    {
+      "time": 4087.6,
+      "phase": "notes-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 14.1891)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 115.992, 0)"
+    },
+    {
+      "time": 4103.9,
+      "phase": "notes-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 50.8806)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 115.992, 0)"
+    },
+    {
+      "time": 4121,
+      "phase": "notes-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 108.155)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 115.992, 0)"
+    },
+    {
+      "time": 4137.7,
+      "phase": "notes-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 179.163)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 115.992, 0)"
+    },
+    {
+      "time": 4154.4,
+      "phase": "notes-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 262.715)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 115.992, 0)"
+    },
+    {
+      "time": 4170.6,
+      "phase": "notes-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 354.23)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 115.992, 0)"
+    },
+    {
+      "time": 4186.8,
+      "phase": "notes-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 455.056)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 115.992, 0)"
+    },
+    {
+      "time": 4203.6,
+      "phase": "notes-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 568.873)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 115.992, 0)"
+    },
+    {
+      "time": 4221,
+      "phase": "notes-out",
+      "sheet": "matrix(1, 0, 0, 1, 0, 696.829)",
+      "search": null,
+      "tabs": "matrix(1, 0, 0, 1, 115.992, 0)"
+    },
+    {
+      "time": 4236.9,
+      "phase": "notes-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4253.4,
+      "phase": "notes-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4271,
+      "phase": "notes-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4286.7,
+      "phase": "notes-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4304.4,
+      "phase": "notes-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4321,
+      "phase": "notes-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4337.7,
+      "phase": "notes-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4354.3,
+      "phase": "notes-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4370.6,
+      "phase": "notes-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4386.7,
+      "phase": "notes-out",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4403.4,
+      "phase": "search-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4420.9,
+      "phase": "search-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4437.6,
+      "phase": "search-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4453.3,
+      "phase": "search-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4471,
+      "phase": "search-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4487.6,
+      "phase": "search-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4504.3,
+      "phase": "search-in",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4521,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "0",
+      "tabs": null
+    },
+    {
+      "time": 4537.2,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "0",
+      "tabs": null
+    },
+    {
+      "time": 4554.3,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "0.224942",
+      "tabs": null
+    },
+    {
+      "time": 4571,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "0.421087",
+      "tabs": null
+    },
+    {
+      "time": 4587.7,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "0.595748",
+      "tabs": null
+    },
+    {
+      "time": 4603.5,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "0.73929",
+      "tabs": null
+    },
+    {
+      "time": 4620.5,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "0.866008",
+      "tabs": null
+    },
+    {
+      "time": 4637.7,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "0.957605",
+      "tabs": null
+    },
+    {
+      "time": 4653.6,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "0.998368",
+      "tabs": null
+    },
+    {
+      "time": 4671,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "1",
+      "tabs": null
+    },
+    {
+      "time": 4687.6,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "1",
+      "tabs": null
+    },
+    {
+      "time": 4704.3,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "1",
+      "tabs": null
+    },
+    {
+      "time": 4721,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "1",
+      "tabs": null
+    },
+    {
+      "time": 4737.6,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "1",
+      "tabs": null
+    },
+    {
+      "time": 4753.9,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "1",
+      "tabs": null
+    },
+    {
+      "time": 4771,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "1",
+      "tabs": null
+    },
+    {
+      "time": 4787.7,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "1",
+      "tabs": null
+    },
+    {
+      "time": 4803.3,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "1",
+      "tabs": null
+    },
+    {
+      "time": 4820.3,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "1",
+      "tabs": null
+    },
+    {
+      "time": 4836.7,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "1",
+      "tabs": null
+    },
+    {
+      "time": 4853.6,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "1",
+      "tabs": null
+    },
+    {
+      "time": 4870.9,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "1",
+      "tabs": null
+    },
+    {
+      "time": 4886.7,
+      "phase": "search-in",
+      "sheet": null,
+      "search": "1",
+      "tabs": null
+    },
+    {
+      "time": 4904.4,
+      "phase": "search-back",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4921,
+      "phase": "search-back",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4936.7,
+      "phase": "search-back",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4954.4,
+      "phase": "search-back",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4970.6,
+      "phase": "search-back",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 4987.6,
+      "phase": "search-back",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 5004.3,
+      "phase": "search-back",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 5021,
+      "phase": "search-back",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 5037.6,
+      "phase": "search-back",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 5054.3,
+      "phase": "search-back",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 5070.9,
+      "phase": "search-back",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 5087.7,
+      "phase": "search-back",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 5104.3,
+      "phase": "search-back",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 5120.9,
+      "phase": "search-back",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 5137.7,
+      "phase": "search-back",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 5153.4,
+      "phase": "search-back",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 5170.6,
+      "phase": "search-back",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 5187.6,
+      "phase": "search-back",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 5204.2,
+      "phase": "search-back",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    },
+    {
+      "time": 5221,
+      "phase": "search-back",
+      "sheet": null,
+      "search": null,
+      "tabs": null
+    }
+  ],
+  "reduced": {
+    "animations": [],
+    "sheetAnimation": "none",
+    "tabsTransition": "0s"
+  }
+}

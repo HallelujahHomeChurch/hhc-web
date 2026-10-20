@@ -1,0 +1,41 @@
+{
+  "synthetic": true,
+  "programmaticEvents": true,
+  "actions": [
+    {
+      "at": 100,
+      "selector": "button[aria-label=\"我的筆記\"]"
+    },
+    {
+      "at": 900,
+      "text": "編輯"
+    },
+    {
+      "at": 1700,
+      "selector": ".reader-note-editor button[type=submit]"
+    },
+    {
+      "at": 1850,
+      "focus": true
+    }
+  ],
+  "frames": 11,
+  "result": {
+    "editorVisible": false,
+    "listVisible": false,
+    "notes": [
+      {
+        "id": "fixture-note",
+        "version": 2
+      }
+    ],
+    "mutations": [
+      [
+        {
+          "id": "61a4e646-95eb-4362-8d15-89b4704c0e13",
+          "kind": "editNote"
+        }
+      ]
+    ]
+  }
+}
