@@ -96,7 +96,7 @@ form.reader-note-editor {display: flex; flex-direction: column; min-height: 0; f
 .reader-note-editor-body {display: flex; flex: 1; flex-direction: column; gap: .5rem; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 3px;}
 .reader-note-editor-body > :not(textarea) {flex: none;}
 .reader-note-editor .reader-note-editor-body > blockquote {flex: 0 1 auto; min-height: 3rem; max-height: 25%; padding-block: .5rem;}
-.reader-note-editor .reader-note-editor-body textarea {flex: 1; min-height: 3.5rem; resize: none;}
+.reader-note-editor .reader-note-editor-body textarea {flex: 1; resize: none;}
 .reader-private-sheet .reader-note-editor textarea:focus-visible, .reader-private-panel .reader-note-editor textarea:focus-visible {outline-offset: -3px;}
 .reader-note-editor > footer {flex: none; justify-content: end; padding-block-start: .75rem; border-block-start: 1px solid var(--hhc-border);}
 .reader-note-editor > footer p {flex: 1; margin: 0; align-self: center; font-size: .75rem; color: var(--hhc-text-muted);}
