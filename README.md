@@ -254,3 +254,20 @@ Fresh automatic playback waits for that reserve; explicit DVR, saved playback
 state and ended short captures remain usable. The 2–3 minute end-to-end latency
 goal still requires producer/verification and
 real-device measurements; increasing holdback cannot cure sustained backlog.
+
+### Seek diagnostic rollout
+
+The member-video wrapper supplies an optional bounded diagnostic callback to
+the shared player. The current exact UI dependency (`1.0.76`) ignores it. Enable
+actual collection only after the coordinator admits SDK publication and an exact
+registry-version/lockfile upgrade through the normal consumer PR/release path.
+This source PR neither publishes the SDK nor establishes real-device acceptance.
+
+The reporter allows at most three observations per mounted player. Both the
+callback boundary and Sentry `beforeSend` strictly project allowlisted numeric
+state and error enums; player events discard automatic identity, request,
+breadcrumb, trace and error context. A bounded encoded observation survives
+Sentry's shallow normalization and is validated again before transmission.
+No media URL, recording/account/session identifier, watermark, raw error,
+headers, credentials, pixels or audio are sent. This observes rapid seeks;
+it does not fix or alter decoding, seeking, playback rate or recovery.
