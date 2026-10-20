@@ -81,6 +81,18 @@ docker build --secret id=npmrc,src="$HOME/.npmrc" -t hhc-web:local .
 ```
 
 The runtime serves `GET /health` on port `10000`.
+
+## Production image handoff
+
+The main Release runs full verification and `prepare_image` in parallel. The
+latter builds once with the existing production flags and npm/Sentry secret
+mounts, scans the resolved immutable image, then exports only its commit/digest.
+Deploy requires both jobs to succeed and checks the exact source/repository/digest
+before its existing prerequisites, what-if, Dapr smoke and rollback steps.
+PR CI retains its separate test image build/scan. Failed main verification can
+leave an unused prepared image or Sentry upload, but cannot start deployment.
+Actual timing improvement must be measured on a normal merged-main Release;
+PR CI and workflow tests do not measure production release duration.
 Startup and liveness probe this application endpoint. Readiness probes Dapr's
 `GET /v1.0/healthz` on its public health port `3501`, so a sidecar startup failure
 cannot pass readiness solely because Next.js is running. This gates readiness;
