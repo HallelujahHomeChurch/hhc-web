@@ -36,19 +36,19 @@ export function ReaderTabs({accountId, locale, current, title, messages: m, befo
     window.addEventListener('resize', revealActive);
     return () => window.removeEventListener('resize', revealActive);
   }, [tabs, key]);
+  const home = `/${locale}/literature-ministry?mode=online`;
   async function navigate(href: string, next?: ReaderTab[]) {
     if (busy) return;
     const generation = navigationGeneration.current;
     setBusyBinding(binding);
     try {
-      const guard = href === `/${locale}/literature-ministry` ? beforeLeave ?? beforeNavigate : beforeNavigate;
+      const guard = href === home ? beforeLeave ?? beforeNavigate : beforeNavigate;
       if (guard && !await guard()) return;
       if (generation !== navigationGeneration.current) return;
       if (next) {writeTabs(accountId, next); setTabs(next);}
       window.location.assign(href);
     } finally {if (generation === navigationGeneration.current) setBusyBinding(null);}
   }
-  const home = `/${locale}/literature-ministry`;
   return <header ref={headerRef} className="reader-tabbar">
     <IconButton variant="ghost" icon={<Home size={21} aria-hidden="true"/>} aria-label={m.home} title={m.home} data-reader-exit isDisabled={busy} onPress={() => void navigate(home)}/>
     <nav ref={tabList} className="reader-tabs" aria-label={m.openBulletins}>

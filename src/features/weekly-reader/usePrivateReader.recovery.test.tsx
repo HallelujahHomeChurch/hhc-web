@@ -22,7 +22,7 @@ it('shares the real Recovery retry gate with hook retry and deferred progress wi
   })};
   const {result} = renderHook(() => usePrivateReader({api, selector, value, offline: false, allowAction: () => true, onFailure: vi.fn()}));
   await waitFor(() => expect(result.current.state).toEqual(state));
-  render(<ReaderRecovery api={api} selector={selector} value={value} messages={getMessages('en').weeklyReader} runExclusive={result.current.runExclusive} onState={result.current.acceptState} pendingMutation={pending} onPendingChange={(mutation, _result, previous) => result.current.replacePending(mutation, previous?.mutationId ?? null)} onFailure={vi.fn()} onUpdated={vi.fn()}/>);
+  render(<ReaderRecovery drafts={{}} onDraftsChange={() => {}} api={api} selector={selector} value={value} messages={getMessages('en').weeklyReader} runExclusive={result.current.runExclusive} onState={result.current.acceptState} pendingMutation={pending} onPendingChange={(mutation, _result, previous) => result.current.replacePending(mutation, previous?.mutationId ?? null)} onFailure={vi.fn()} onUpdated={vi.fn()}/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
   await waitFor(() => expect(api.mutate).toHaveBeenCalledOnce());
   const progress: BulletinReaderMutation = {...pending, mutationId: 'latest-progress', kind: 'setProgress', payload: {pageId: 'p2'}};
@@ -47,7 +47,7 @@ it('keeps the actual Recovery work locked after the local deadline without repor
   const onFailure = vi.fn();
   const {result} = renderHook(() => usePrivateReader({api, selector, value, offline: true, allowAction: () => true, onFailure}));
   await waitFor(() => expect(result.current.state).toEqual(state));
-  render(<ReaderRecovery api={api} selector={selector} value={value} messages={getMessages('en').weeklyReader} runExclusive={result.current.runExclusive} pendingMutation={pending} onFailure={onFailure} onUpdated={vi.fn()}/>);
+  render(<ReaderRecovery drafts={{}} onDraftsChange={() => {}} api={api} selector={selector} value={value} messages={getMessages('en').weeklyReader} runExclusive={result.current.runExclusive} pendingMutation={pending} onFailure={onFailure} onUpdated={vi.fn()}/>);
   vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
   await act(async () => {});

@@ -4,6 +4,22 @@ import {ReaderSearch} from './ReaderSearch';
 import {readerFixture} from '@/features/weekly-reader/test-fixture';
 import {getMessages} from '@/i18n/messages';
 afterEach(cleanup);
+it('labels and jumps to the page containing a match in the second fragment of a sentence', () => {
+  const document = readerFixture().document, onJump = vi.fn(), m = getMessages('en').weeklyReader;
+  const first = document.content.components[0];
+  if (first.type !== 'backSummary') throw new Error('fixture');
+  first.items[0].blocks[0].sentences[0].spans = [{text: '甲😀前段。後段命中。', fontRole: 'body'}];
+  const slot = document.content.layoutManifest.pages[0].slots[0];
+  slot.fragments = [{sentenceId: 's0', start: 0, end: 5}];
+  document.content.layoutManifest.pages[1].slots.push({...slot, id: 'second-fragment', fragments: [{sentenceId: 's0', start: 5, end: 10}]});
+  render(<ReaderSearch document={document} onJump={onJump} messages={m}/>);
+  fireEvent.change(screen.getByRole('searchbox'), {target: {value: '命中'}});
+  fireEvent.submit(screen.getByRole('search'));
+  const result = screen.getByRole('listitem');
+  expect(result).toHaveTextContent('Page 2');
+  fireEvent.click(result.querySelector('button')!);
+  expect(onJump).toHaveBeenCalledWith('s0', 7);
+});
 it('search header keeps the close control with input outside the scrolling results', () => {
   const m = getMessages('en').weeklyReader;
   render(<ReaderSearch document={readerFixture().document} onJump={() => {}} messages={m} closeControl={<button>Back to reader</button>}/>);
@@ -26,7 +42,7 @@ it('submits explicitly and lists all matches before navigating', () => {
   expect(screen.getAllByRole('listitem')).toHaveLength(4);
   expect(onJump).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', {name: /內容2/}));
-  expect(onJump).toHaveBeenCalledWith('s2');
+  expect(onJump).toHaveBeenCalledWith('s2', 0);
   fireEvent.change(screen.getByRole('searchbox'), {target: {value: 'not in the document'}});
   fireEvent.submit(screen.getByRole('search'));
   expect(screen.getByRole('status')).toHaveTextContent(m.noResults);

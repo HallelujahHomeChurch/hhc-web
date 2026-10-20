@@ -38,7 +38,7 @@ export function SelectionToolbar({messages: m, description, count, color, busy, 
     <p role="status" className="reader-selection-count">{m.selectionCount.replace('{count}', String(count))}{description ? <span className="hhc-sr-only"> {[...description].slice(0,160).join('')}{[...description].length > 160 ? '…' : ''}</span> : null}</p>
     <div className="reader-selection-actions" role="group" aria-label={m.selectionActions}>
       <div className="reader-color-group" role="group" aria-label={m.highlightColors}>
-        {(['yellow', 'red', 'blue'] as const).map(value => <button key={value} type="button" className="reader-color" disabled={busy} aria-label={m[`${value}Highlight`]} title={m[`${value}Highlight`]} aria-pressed={color === value} onClick={() => onColor(value)}><span aria-hidden="true" data-color={value}/></button>)}
+        {(['yellow', 'red', 'blue'] as const).map(value => <button key={value} type="button" className="reader-color" disabled={busy} aria-label={m[`${value}Highlight`]} title={m[`${value}Highlight`]} aria-pressed={color === value} onClick={() => color === value ? onClear() : onColor(value)}><span aria-hidden="true" data-color={value}/></button>)}
       </div>
       <button type="button" disabled={busy || !clearable} onClick={onClear}>{m.clearHighlight}</button>
       <button type="button" onClick={onCopy}>{m.copySelection}</button>

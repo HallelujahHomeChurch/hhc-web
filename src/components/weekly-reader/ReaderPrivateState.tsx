@@ -16,6 +16,7 @@ export function ReaderPrivateState({wide, title, theme, messages: m, children, o
   const attachSheet = useCallback((node: HTMLDivElement | null) => {
     const overlay = node?.closest<HTMLElement>('.hhc-modal-overlay');
     if (!overlay) return;
+    overlay.dataset.readerSelectionTools = '';
     overlay.dataset.theme = theme; overlay.style.colorScheme = theme;
     const measure = () => {
       overlay.style.setProperty('--reader-sheet-gap', `${(headerRef?.current?.offsetHeight ?? 0) + 16}px`);
