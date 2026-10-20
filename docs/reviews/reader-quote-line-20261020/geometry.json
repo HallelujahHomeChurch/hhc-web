@@ -1,0 +1,284 @@
+[
+  {
+    "height": 844,
+    "quoteMinimum": 45.2,
+    "inputMinimum": 51.6,
+    "body": {
+      "bottom": 758,
+      "height": 660,
+      "top": 98
+    },
+    "counter": {
+      "bottom": 814.59375,
+      "height": 19.1953125,
+      "top": 795.3984375
+    },
+    "field": {
+      "bottom": 755,
+      "height": 512.8203125,
+      "top": 242.1796875
+    },
+    "focus": true,
+    "footer": {
+      "bottom": 827,
+      "height": 57,
+      "top": 770
+    },
+    "inputStyle": {
+      "borderBottom": "1px",
+      "borderTop": "1px",
+      "bottom": "12px",
+      "line": "25.6px",
+      "top": "12px"
+    },
+    "outlineOffset": "-3px",
+    "quote": {
+      "bottom": 200.5859375,
+      "height": 99.5859375,
+      "top": 101
+    },
+    "quoteStyle": {
+      "borderBottom": "1px",
+      "borderTop": "1px",
+      "bottom": "8px",
+      "line": "27.2px",
+      "top": "8px"
+    },
+    "text": "我是一個\n第二行的合成筆記"
+  },
+  {
+    "height": 400,
+    "quoteMinimum": 45.2,
+    "inputMinimum": 51.6,
+    "body": {
+      "bottom": 314,
+      "height": 216,
+      "top": 98
+    },
+    "counter": {
+      "bottom": 370.59375,
+      "height": 19.1953125,
+      "top": 351.3984375
+    },
+    "field": {
+      "bottom": 311,
+      "height": 115.90625,
+      "top": 195.09375
+    },
+    "focus": true,
+    "footer": {
+      "bottom": 383,
+      "height": 57,
+      "top": 326
+    },
+    "inputStyle": {
+      "borderBottom": "1px",
+      "borderTop": "1px",
+      "bottom": "12px",
+      "line": "25.6px",
+      "top": "12px"
+    },
+    "outlineOffset": "-3px",
+    "quote": {
+      "bottom": 153.5,
+      "height": 52.5,
+      "top": 101
+    },
+    "quoteStyle": {
+      "borderBottom": "1px",
+      "borderTop": "1px",
+      "bottom": "8px",
+      "line": "27.2px",
+      "top": "8px"
+    },
+    "text": "我是一個\n第二行的合成筆記"
+  },
+  {
+    "height": 336,
+    "quoteMinimum": 45.2,
+    "inputMinimum": 51.6,
+    "body": {
+      "bottom": 250,
+      "height": 152,
+      "top": 98
+    },
+    "counter": {
+      "bottom": 306.59375,
+      "height": 19.1953125,
+      "top": 287.3984375
+    },
+    "field": {
+      "bottom": 247,
+      "height": 56.40625,
+      "top": 190.59375
+    },
+    "focus": true,
+    "footer": {
+      "bottom": 319,
+      "height": 57,
+      "top": 262
+    },
+    "inputStyle": {
+      "borderBottom": "1px",
+      "borderTop": "1px",
+      "bottom": "12px",
+      "line": "25.6px",
+      "top": "12px"
+    },
+    "outlineOffset": "-3px",
+    "quote": {
+      "bottom": 149,
+      "height": 48,
+      "top": 101
+    },
+    "quoteStyle": {
+      "borderBottom": "1px",
+      "borderTop": "1px",
+      "bottom": "8px",
+      "line": "27.2px",
+      "top": "8px"
+    },
+    "text": "我是一個\n第二行的合成筆記"
+  },
+  {
+    "height": 300,
+    "quoteMinimum": 45.2,
+    "inputMinimum": 51.6,
+    "body": {
+      "bottom": 214,
+      "height": 116,
+      "top": 98
+    },
+    "counter": {
+      "bottom": 270.59375,
+      "height": 19.1953125,
+      "top": 251.3984375
+    },
+    "field": {
+      "bottom": 211.09375,
+      "height": 56,
+      "top": 155.09375
+    },
+    "focus": true,
+    "footer": {
+      "bottom": 283,
+      "height": 57,
+      "top": 226
+    },
+    "inputStyle": {
+      "borderBottom": "1px",
+      "borderTop": "1px",
+      "bottom": "12px",
+      "line": "25.6px",
+      "top": "12px"
+    },
+    "outlineOffset": "-3px",
+    "quote": {
+      "bottom": 113.5,
+      "height": 48,
+      "top": 65.5
+    },
+    "quoteStyle": {
+      "borderBottom": "1px",
+      "borderTop": "1px",
+      "bottom": "8px",
+      "line": "27.2px",
+      "top": "8px"
+    },
+    "text": "我是一個\n第二行的合成筆記"
+  },
+  {
+    "height": 260,
+    "quoteMinimum": 45.2,
+    "inputMinimum": 51.6,
+    "body": {
+      "bottom": 174,
+      "height": 76,
+      "top": 98
+    },
+    "counter": {
+      "bottom": 230.59375,
+      "height": 19.1953125,
+      "top": 211.3984375
+    },
+    "field": {
+      "bottom": 171.09375,
+      "height": 56,
+      "top": 115.09375
+    },
+    "focus": true,
+    "footer": {
+      "bottom": 243,
+      "height": 57,
+      "top": 186
+    },
+    "inputStyle": {
+      "borderBottom": "1px",
+      "borderTop": "1px",
+      "bottom": "12px",
+      "line": "25.6px",
+      "top": "12px"
+    },
+    "outlineOffset": "-3px",
+    "quote": {
+      "bottom": 73.5,
+      "height": 48,
+      "top": 25.5
+    },
+    "quoteStyle": {
+      "borderBottom": "1px",
+      "borderTop": "1px",
+      "bottom": "8px",
+      "line": "27.2px",
+      "top": "8px"
+    },
+    "text": "我是一個\n第二行的合成筆記"
+  },
+  {
+    "height": 336,
+    "quoteMinimum": 45.2,
+    "inputMinimum": 51.6,
+    "body": {
+      "bottom": 250,
+      "height": 152,
+      "top": 98
+    },
+    "counter": {
+      "bottom": 306.59375,
+      "height": 19.1953125,
+      "top": 287.3984375
+    },
+    "field": {
+      "bottom": 247,
+      "height": 56.40625,
+      "top": 190.59375
+    },
+    "focus": true,
+    "footer": {
+      "bottom": 319,
+      "height": 57,
+      "top": 262
+    },
+    "inputStyle": {
+      "borderBottom": "1px",
+      "borderTop": "1px",
+      "bottom": "12px",
+      "line": "25.6px",
+      "top": "12px"
+    },
+    "outlineOffset": "-3px",
+    "quote": {
+      "bottom": 149,
+      "height": 48,
+      "top": 101
+    },
+    "quoteStyle": {
+      "borderBottom": "1px",
+      "borderTop": "1px",
+      "bottom": "8px",
+      "line": "27.2px",
+      "top": "8px"
+    },
+    "text": "我是一個\n第二行的合成筆記"
+  }
+]
