@@ -22,6 +22,19 @@ function mount(offline = false) {
   const api = {renew: vi.fn(async () => value), privateState: vi.fn(async () => ({state: structuredClone(cloud)})), mutate: vi.fn(async (_s, _v, writes: BulletinReaderMutation[]) => {cloud = applyLocalMutation(cloud, writes[0], value.document); return {state: cloud, results: [{mutationId: writes[0].mutationId, status: 'applied' as const, revision: 1}]};})};
   return {...renderHook(() => usePrivateReader({api, selector, value, offline, allowAction: () => true, onFailure: vi.fn()})), api};
 }
+it('accepts more highlights and a new note after sync renews the original receipt', async () => {
+  const h = mount(); await waitFor(() => expect(h.result.current.state).not.toBeNull());
+  const renewed = {...value, access: {...value.access, receiptId: 'renewed', validatedAt: new Date(now + 1000).toISOString(), offlineValidUntil: new Date(now + 1000 + 604800000).toISOString()}};
+  h.api.renew.mockResolvedValue(renewed);
+  const highlight = (id: string, sentenceId: string): BulletinReaderMutation => ({mutationId: id, kind: 'setHighlight', documentRevision: 1, createdAt: new Date(now).toISOString(), payload: {sentenceIds: [sentenceId], color: 'yellow'}});
+  await act(async () => {await h.result.current.mutate(highlight('first', 's0'));});
+  await waitFor(() => expect(h.result.current.status).toBe('synced'));
+  await act(async () => {await h.result.current.mutate(highlight('second', 's1'));});
+  await act(async () => {await h.result.current.mutate({mutationId: 'new-note', kind: 'createNote', documentRevision: 1, createdAt: new Date(now).toISOString(), payload: {noteId: 'new', sentenceIds: ['s1'], text: 'Keep writing'}});});
+  await waitFor(() => expect(h.result.current.status).toBe('synced'));
+  expect(h.api.mutate.mock.calls.map(call => call[2][0].mutationId)).toEqual(['first', 'second', 'new-note']);
+  expect(h.result.current.state?.notes.find(note => note.id === 'new')?.text).toBe('Keep writing');
+});
 it('journals online-only writes during a slow send and applies both once without a publication download', async () => {
   const h = mount(); await waitFor(() => expect(h.result.current.state?.notes[0].text).toBe('A'));
   let finish!: () => void;
@@ -40,6 +53,27 @@ it('retains unknown durable IDs across a cold mount and retries them without ask
   const intent = edit('unknown', 'B', 1); await act(async () => {await h.result.current.mutate(intent);}); await waitFor(() => expect(h.result.current.busy).toBe(false)); h.unmount();
   const next = mount(); await waitFor(() => expect(next.result.current.status).toBe('synced'));
   expect(next.api.mutate.mock.calls[0][2]).toEqual([intent]); expect(next.result.current.state?.notes[0].text).toBe('B');
+});
+it.each([false, true])('automatically retries a transient failure without another Save or online event (memory=%s)', async memory => {
+  storage.failBind = memory;
+  const h = mount(); await waitFor(() => expect(h.result.current.state).not.toBeNull());
+  h.api.mutate.mockRejectedValueOnce(new TypeError('temporary network failure'));
+  const intent = edit('automatic-retry', 'B', 1);
+  await act(async () => {await h.result.current.mutate(intent);});
+  await waitFor(() => expect(h.result.current.status).toBe('waiting'));
+  expect(h.result.current.canRetry).toBe(memory);
+  await waitFor(() => expect(h.result.current.status).toBe('synced'), {timeout: 3000});
+  expect(h.api.mutate.mock.calls.map(call => call[2])).toEqual([[intent], [intent]]);
+  expect(h.result.current.state?.notes[0].text).toBe('B');
+});
+it('cancels a scheduled background retry when the reader unmounts', async () => {
+  const h = mount(); await waitFor(() => expect(h.result.current.state).not.toBeNull());
+  h.api.mutate.mockRejectedValue(new TypeError('network failure'));
+  await act(async () => {await h.result.current.mutate(edit('leaving', 'B', 1));});
+  await waitFor(() => expect(h.result.current.status).toBe('waiting'));
+  h.unmount();
+  await new Promise(resolve => setTimeout(resolve, 1100));
+  expect(h.api.mutate).toHaveBeenCalledOnce();
 });
 it('keeps accepted content and warns when an IDB quota failure requires memory fallback', async () => {
   const h = mount(); await waitFor(() => expect(h.result.current.state).not.toBeNull()); storage.fail = true; h.api.mutate.mockRejectedValueOnce(new TypeError('offline'));

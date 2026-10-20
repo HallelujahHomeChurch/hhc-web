@@ -828,7 +828,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
         <header><h2>{panel === 'pages' ? mobile ? m.contents : m.thumbnails : m.typography}</h2><IconButton variant="ghost" aria-label={m.close} onPress={() => closePanel()} icon={<X size={20} aria-hidden="true"/>}/></header>
         {navigationBody}
       </aside> : null}
-      {mobile ? <ReaderPrivateState isOpen={panel === 'pages' || panel === 'type'} wide={false} title={panel === 'pages' ? m.contents : m.typography} headerRef={readerHeader} theme={theme} messages={m} onClose={() => closePanel()} suspended={suspended}>{panel === 'pages' || panel === 'type' ? navigationBody : null}</ReaderPrivateState> : null}
+      {mobile ? <ReaderPrivateState compact={panel === 'type'} isOpen={panel === 'pages' || panel === 'type'} wide={false} title={panel === 'pages' ? m.contents : m.typography} headerRef={readerHeader} theme={theme} messages={m} onClose={() => closePanel()} suspended={suspended}>{panel === 'pages' || panel === 'type' ? navigationBody : null}</ReaderPrivateState> : null}
       <aside className="reader-navigation-panel reader-search-panel" role="dialog" aria-modal="true" data-panel="search" hidden={panel !== 'search'} inert={panel !== 'search'} aria-label={m.search}>
         <ReaderSearch document={value.document} mobile={reflow} onJump={jumpFromSearch} messages={m} closeControl={<IconButton variant="ghost" aria-label={m.close} onPress={() => closePanel()} icon={<ChevronLeft size={22} aria-hidden="true"/>}/>}/>
       </aside>
