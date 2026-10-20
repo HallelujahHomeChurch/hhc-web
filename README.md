@@ -248,17 +248,13 @@ Account's compatible API routes remain during rollout. Release the Account manag
 
 This change consumes the reviewed `@hallelujahhomechurch/ui/player` and
 `@hallelujahhomechurch/ui/player.css` from frontend-platform PR #135, planned
-version 1.0.76. Its player regression suite moved with the implementation; this
+version 1.1.2. Its player regression suite moved with the implementation; this
 application retains member grant, cookie renewal, watermark, telemetry, public
 media-origin and live-to-VOD orchestration tests. Studio uses the same controls
 with a separately scoped staff-preview grant.
 
-The current application registry pin is deliberately unchanged until that shared
-package is merged and published. Local integration uses its packed candidate;
-that is not a production or registry-readiness claim. Before merging this
-consumer, pin the actually published exact UI version, regenerate the registry
-lockfile, update the exact-version assertion and rerun CI. Do not merge this
-consumer while it still depends on an unpublished player subpath.
+The application pins the published shared package and registry lockfile exactly.
+Dependency upgrades must update the exact-version assertion and pass consumer CI.
 
 Live follows a point 90 seconds behind the verified playable end. The viewer
 live indicator, seekbar endpoint and explicit return action share that target.
@@ -269,11 +265,9 @@ real-device measurements; increasing holdback cannot cure sustained backlog.
 
 ### Seek diagnostic rollout
 
-The member-video wrapper supplies an optional bounded diagnostic callback to
-the shared player. The current exact UI dependency (`1.0.76`) ignores it. Enable
-actual collection only after the coordinator admits SDK publication and an exact
-registry-version/lockfile upgrade through the normal consumer PR/release path.
-This source PR neither publishes the SDK nor establishes real-device acceptance.
+The member-video wrapper supplies a bounded diagnostic callback to the published
+shared player (`1.1.2`). Collection becomes active through the normal consumer
+release. Package publication and CI do not establish real-device acceptance.
 
 The reporter allows at most three observations per mounted player. Both the
 callback boundary and Sentry `beforeSend` strictly project allowlisted numeric

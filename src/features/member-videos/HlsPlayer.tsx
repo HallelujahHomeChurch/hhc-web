@@ -10,6 +10,5 @@ export type {PlayerLabels} from '@hallelujahhomechurch/ui/player';
 export function HlsPlayer(props:HlsPlayerProps) {
   const router=useRouter();
   const [onDiagnostic]=useState(createPlayerDiagnosticReporter);
-  // Optional callback is ignored by older exact-pinned UI packages until the coordinated upgrade.
-  return <SharedHlsPlayer {...props} {...{onDiagnostic}} onNavigate={href=>router.push(href)}/>;
+  return <SharedHlsPlayer {...props} onDiagnostic={onDiagnostic} onNavigate={href=>router.push(href)}/>;
 }
