@@ -61,6 +61,7 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
   const durable = useRef(false), epoch = useRef<number | null>(null), journalVersion = useRef(0);
   const enqueueTail = useRef<Promise<void>>(Promise.resolve());
   const syncRequested = useRef(false), localWrites = useRef(new Map<string, BulletinReaderMutation>());
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null), retryDelay = useRef(1000);
   const pump = useRef<() => Promise<ReaderOutcome | undefined>>(async () => undefined);
   const controller = useRef<{key: string; request: AbortController} | null>(null);
   const active = useRef<Promise<void> | null>(null);
@@ -171,7 +172,7 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
       if (local) {journal.current = local; durable.current = true; const identity = await getOfflineIdentity(); epoch.current = identity.epoch; loaded.current = 'local';}
       if (local || !stateRef.current) publishState(local?.state ?? null);
     });
-    return () => {request.abort(new ReaderActionError('cancelled')); foreground.current?.abort(new ReaderActionError('cancelled'));};
+    return () => {if (retryTimer.current) clearTimeout(retryTimer.current); retryTimer.current = null; request.abort(new ReaderActionError('cancelled')); foreground.current?.abort(new ReaderActionError('cancelled'));};
   }, [api, accountId, issueNumber, series, contentLocale, key, attempt, exclusive, publishState, publishStatus]);
 
   function rememberPending(mutation: BulletinReaderMutation | null) {
@@ -285,8 +286,10 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
   }
   async function syncJournal(): Promise<ReaderOutcome | undefined> {
     const owner = controller.current, context = current.current;
-    if (!owner || owner.request.signal.aborted || journalBlocked.current || context.offline || !context.allowAction() || statusRef.current === 'paused') return;
+    if (!owner || owner.request.signal.aborted || journalBlocked.current || context.offline || navigator.onLine === false || !context.allowAction() || statusRef.current === 'paused') return;
     if (active.current) {syncRequested.current = true; return;}
+    if (retryTimer.current) clearTimeout(retryTimer.current);
+    retryTimer.current = null;
     syncRequested.current = false; setRetryNeeded(false);
     let outcome: ReaderOutcome | undefined;
     try {
@@ -342,10 +345,16 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
       const action = isReaderStorageFailure(error) || error instanceof ReaderActionError ? 'retain' : readerFailureAction(error);
       if (action === 'lock' || action === 'purge') journalBlocked.current = true;
       if (durable.current && (action === 'retain' || action === 'login')) await refreshJournal(owner).catch(() => {});
+      if (controller.current !== owner || owner.request.signal.aborted) return;
       publishStatus(action === 'retain' || action === 'login' ? 'waiting' : 'action');
-      setRetryNeeded(action === 'retain' || action === 'login');
+      setRetryNeeded(action === 'retain' && !durable.current || action === 'login');
+      if (action === 'retain' && journal.current?.queue.length) {
+        retryTimer.current = setTimeout(() => {retryTimer.current = null; if (controller.current === owner && !owner.request.signal.aborted) void pump.current().catch(() => {});}, retryDelay.current);
+        retryDelay.current = Math.min(30000, retryDelay.current * 2);
+      }
       throw error;
     }
+    retryDelay.current = 1000;
     return outcome;
   }
   useEffect(() => {pump.current = syncJournal;});
@@ -368,7 +377,6 @@ export function usePrivateReader({api, selector, value, offline, allowAction, on
       if (!owner || controller.current !== owner || owner.request.signal.aborted || !current.current.allowAction()) throw new ReaderActionError('cancelled');
       if (durable.current && epoch.current !== null) {
         try {
-          await bindOnlinePrivate(context.selector, current.current.value, epoch.current);
           const local = await enqueuePrivateMutation(context.selector, snapshot, epoch.current);
           committed = true;
           if (controller.current !== owner || owner.request.signal.aborted) throw new ReaderActionError('cancelled');

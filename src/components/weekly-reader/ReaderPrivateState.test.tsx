@@ -20,7 +20,8 @@ it('keeps the sheet frame within the visual viewport when the keyboard reduces a
   expect(overlay.style.getPropertyValue('--reader-sheet-height')).toBe('776px');
   visual.height = 400; visual.offsetTop = 20; visual.dispatchEvent(new Event('resize'));
   expect(overlay.style.getPropertyValue('--reader-sheet-height')).toBe('352px');
-  expect(overlay.style.getPropertyValue('--reader-sheet-bottom')).toBe('424px');
+  expect(overlay.style.getPropertyValue('--reader-viewport-top')).toBe('20px');
+  expect(overlay.style.getPropertyValue('--reader-viewport-height')).toBe('400px');
   visual.height = 844; visual.offsetTop = 0;
   Object.defineProperty(header, 'offsetHeight', {configurable: true, value: 88}); visual.dispatchEvent(new Event('resize'));
   expect(overlay.style.getPropertyValue('--reader-sheet-height')).toBe('740px');
