@@ -22,7 +22,11 @@ function step(body, name) {
 test('prepare runs alongside full verify; deploy requires both successful jobs', () => {
   const prepare = job('prepare_image');
   const deploy = job('deploy');
-  assert.doesNotMatch(prepare, /^    needs:/m);
+  for (const producer of [prepare, job('verify')]) {
+    assert.match(producer, /^    needs: agent_docs$/m);
+    assert.match(producer, /needs\.agent_docs\.result == 'success'/);
+    assert.match(producer, /needs\.agent_docs\.outputs\.docs_only != 'true'/);
+  }
   assert.match(deploy, /^    needs: \[verify, prepare_image\]$/m);
   // Default needs success gating must not be bypassed when verify fails or is cancelled.
   assert.doesNotMatch(deploy, /^    if:/m);
