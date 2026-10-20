@@ -70,9 +70,13 @@ it('reveals the focused editor inside its resized scroll area without moving foc
   vi.stubGlobal('ResizeObserver', class {constructor(callback: ResizeObserverCallback) {resized = callback;} observe() {} disconnect = disconnect;});
   const {unmount} = render(<NoteEditor messages={messages} quote="Source" onSave={vi.fn()} onComplete={vi.fn()} onCancel={vi.fn()}/>);
   const input = screen.getByRole('textbox'), body = input.parentElement!;
+  body.style.padding = '3px';
   vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 150, 350, 164));
   const bounds = vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 228, 350, 144));
-  resized([], {} as ResizeObserver); expect(body.scrollTop).toBe(58); expect(input).toHaveFocus();
+  resized([], {} as ResizeObserver); expect(body.scrollTop).toBe(61); expect(input).toHaveFocus();
+  bounds.mockReturnValue(new DOMRect(0, 150, 350, 144));
+  resized([], {} as ResizeObserver); expect(body.scrollTop).toBe(58);
+  expect(document.getElementById(input.getAttribute('aria-describedby')!)?.parentElement?.tagName).toBe('FOOTER');
   screen.getByRole('button', {name: messages.noteCancel}).focus();
   bounds.mockReturnValue(new DOMRect(0, 100, 350, 144));
   resized([], {} as ResizeObserver); expect(body.scrollTop).toBe(58);
