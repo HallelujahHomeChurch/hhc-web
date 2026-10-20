@@ -106,7 +106,21 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
       ]
       scale: {
         minReplicas: 1
-        maxReplicas: 3
+        maxReplicas: 8
+        rules: [
+          {
+            name: 'cpu-scaler'
+            custom: {
+              type: 'cpu'
+              metadata: {
+                type: 'Utilization'
+                value: '70'
+              }
+            }
+          }
+        ]
+        cooldownPeriod: 300
+        pollingInterval: 30
       }
     }
   }
