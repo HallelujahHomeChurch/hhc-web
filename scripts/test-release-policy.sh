@@ -1,5 +1,9 @@
 #!/bin/sh
 set -eu
+api_scale="$(awk '/^resource app / { in_api = 1; next } in_api && /^resource / { exit } in_api { print }' infra/main.bicep)"
+for expected in 'minReplicas: 1' 'maxReplicas: 8' "name: 'cpu-scaler'" "type: 'cpu'" "type: 'Utilization'" "value: '70'"; do
+  printf '%s\n' "$api_scale" | grep -Fq "$expected"
+done
 
 workflow=.github/workflows/release.yml
 ci_workflow=.github/workflows/ci.yml
@@ -17,11 +21,11 @@ grep -q 'IMAGE_TAG=main-${GITHUB_SHA::7}' "$workflow"
 grep -q 'docker build --secret id=npmrc' "$workflow"
 scanner='ghcr.io/aquasecurity/trivy@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969'
 test "$(grep -Fc "$scanner" "$ci_workflow")" -eq 2
-test "$(grep -Fc "$scanner" "$workflow")" -eq 6
+test "$(grep -Fc "$scanner" "$workflow")" -eq 5
 grep -Fq 'fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1' "$ci_workflow"
 grep -Fq 'image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 hhc-web:verify' "$ci_workflow"
 grep -Fq 'fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1' "$workflow"
-grep -Fq 'image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 hhc-web:verify' "$workflow"
+node --test scripts/release-image.node-test.mjs
 grep -Fq 'docker pull "$IMAGE_REF"' "$workflow"
 grep -Fq 'image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 "$IMAGE_REF"' "$workflow"
 scan_line="$(grep -nF 'name: Scan immutable image' "$workflow" | cut -d: -f1)"

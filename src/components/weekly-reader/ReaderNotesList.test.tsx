@@ -1,9 +1,14 @@
+import {useState, type ComponentProps} from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {expect, it, vi} from 'vitest';
 import {ReaderNotesList} from './ReaderNotesList';
 import {readerFixture} from '@/features/weekly-reader/test-fixture';
 import {getMessages} from '@/i18n/messages';
 import {readerSentences} from '@/features/weekly-reader/selection';
+function StatefulNotesList(props: Omit<ComponentProps<typeof ReaderNotesList>, 'view' | 'onViewChange'>) {
+ const [view, onViewChange] = useState({tab: 'notes', noteQuery: '', highlightQuery: ''});
+ return <ReaderNotesList {...props} view={view} onViewChange={onViewChange}/>;
+}
 const m=getMessages('en').weeklyReader;
 function props() {
  const doc=readerFixture().document;
@@ -14,20 +19,22 @@ function props() {
  highlights:{messages:m,highlights:[{sentenceId:'s1',quote:'內容1。',active:true,color:'yellow' as const,version:1,updatedAt:''}],sentences:readerSentences(doc),busy:false,onChange}};
 }
 it('filters the current passage and normalized text without writes, and exposes the clear exit',()=>{
- const p=props();render(<ReaderNotesList {...p}/>);
+ const p=props();render(<StatefulNotesList {...p}/>);
  expect(screen.getByText(m.currentPassage)).toBeInTheDocument();
  fireEvent.change(screen.getByRole('searchbox'),{target:{value:'abc'}});
  expect(screen.getByText('ＡＢＣ 😀')).toBeInTheDocument();
  fireEvent.change(screen.getByRole('searchbox'),{target:{value:'missing'}});
  expect(screen.getByRole('status')).toHaveTextContent('0 notes');
+ expect(screen.queryByText(m.noteEmpty)).not.toBeInTheDocument();
+ expect(screen.getByText(m.noResults)).toBeInTheDocument();
  fireEvent.click(screen.getByRole('button',{name:m.showAllNotes}));expect(p.onClearFilter).toHaveBeenCalledOnce();
  fireEvent.click(screen.getByRole('tab',{name:m.highlightsTab}));expect(p.onClearFilter).toHaveBeenCalledTimes(2);
- fireEvent.change(screen.getByRole('searchbox'),{target:{value:'missing'}});expect(screen.getByText(m.highlightsEmpty)).toBeInTheDocument();
+ fireEvent.change(screen.getByRole('searchbox'),{target:{value:'missing'}});expect(screen.getByText(m.noResults)).toBeInTheDocument();
  expect(screen.queryByRole('group',{name:m.highlightColors})).not.toBeInTheDocument();
  expect(p.highlights.onChange).not.toHaveBeenCalled();
 });
 it('removes the legacy tab and exposes a labelled clear icon without recolor controls',()=>{
- const p=props();render(<ReaderNotesList {...p} filter={null}/>);
+ const p=props();render(<StatefulNotesList {...p} filter={null}/>);
  expect(screen.queryByRole('tab',{name:m.historyTab})).not.toBeInTheDocument();
  fireEvent.click(screen.getByRole('tab',{name:m.highlightsTab}));
  expect(screen.getByRole('button',{name:m.clearHighlight})).toBeInTheDocument();
@@ -35,7 +42,7 @@ it('removes the legacy tab and exposes a labelled clear icon without recolor con
 });
 
 it('exports the currently visible IDs without modifying filters or note drafts',()=>{
- const p=props(),onExport=vi.fn();render(<ReaderNotesList {...p} onExport={onExport}/>);
+ const p=props(),onExport=vi.fn();render(<StatefulNotesList {...p} onExport={onExport}/>);
  fireEvent.change(screen.getByRole('searchbox'),{target:{value:'abc'}});
  fireEvent.click(screen.getByRole('button',{name:m.exportNotes}));expect(onExport).toHaveBeenCalledWith(['n1']);
  expect(p.notes.onEdit).not.toHaveBeenCalled();expect(p.notes.onDelete).not.toHaveBeenCalled();expect(p.onClearFilter).not.toHaveBeenCalled();

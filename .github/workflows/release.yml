@@ -54,22 +54,117 @@ jobs:
           corepack pnpm build
           corepack pnpm perf:static
           ./scripts/test-release-policy.sh
-      - name: Build image
+
+  prepare_image:
+    if: github.repository == 'HallelujahHomeChurch/hhc-web' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    outputs:
+      commit: ${{ steps.image.outputs.commit }}
+      image: ${{ steps.image.outputs.image }}
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    env:
+      ACR_NAME: alive
+      ACR_LOGIN_SERVER: alive.azurecr.io
+      IMAGE_REPOSITORY: alive/hhc-web
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      RELEASE_CONFIRMATION: ${{ github.event_name == 'push' && 'deploy-hhc-web-production' || inputs.confirmation }}
+      MEMBER_VIDEO_NAV_ENABLED: ${{ vars.MEMBER_VIDEO_NAV_ENABLED || 'false' }}
+      WEEKLY_READER_ENABLED: ${{ vars.WEEKLY_READER_ENABLED || 'false' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Validate release configuration
+        run: |
+          [[ "$GITHUB_REF" == "refs/heads/main" ]]
+          [[ "$RELEASE_CONFIRMATION" == "deploy-hhc-web-production" ]]
+          for name in AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID; do
+            test -n "${!name:-}" || { echo "Missing repository variable: ${name}" >&2; exit 1; }
+          done
+          [[ "$MEMBER_VIDEO_NAV_ENABLED" == false || "$MEMBER_VIDEO_NAV_ENABLED" == true ]]
+          [[ "$WEEKLY_READER_ENABLED" == false || "$WEEKLY_READER_ENABLED" == true ]]
+      - name: Set image tag
+        run: echo "IMAGE_TAG=main-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+      - name: Sign in to Azure with OIDC
+        uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 # v3.0.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Build and push image
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
+          umask 077
+          trap 'rm -f "$RUNNER_TEMP/npmrc"' EXIT
+          az acr login --name "$ACR_NAME"
           printf '@hallelujahhomechurch:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=%s\n' "$GITHUB_TOKEN" > "$RUNNER_TEMP/npmrc"
-          docker build --secret id=npmrc,src="$RUNNER_TEMP/npmrc" -t hhc-web:verify .
-      - name: Scan image
+          image_ref="${ACR_LOGIN_SERVER}/${IMAGE_REPOSITORY}:${IMAGE_TAG}"
+          sentry_args=()
+          if [[ -n "${SENTRY_AUTH_TOKEN:-}" && -n "${{ vars.SENTRY_ORG }}" && -n "${{ vars.SENTRY_PROJECT }}" ]]; then
+            sentry_args+=(--secret id=sentry_auth_token,env=SENTRY_AUTH_TOKEN)
+          fi
+          docker build --secret id=npmrc,src="$RUNNER_TEMP/npmrc" "${sentry_args[@]}" \
+            --build-arg NEXT_PUBLIC_SENTRY_DSN="${{ vars.SENTRY_DSN }}" \
+            --build-arg NEXT_PUBLIC_SENTRY_RELEASE="$GITHUB_SHA" \
+            --build-arg NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED="$MEMBER_VIDEO_NAV_ENABLED" \
+            --build-arg NEXT_PUBLIC_WEEKLY_READER_ENABLED="$WEEKLY_READER_ENABLED" \
+            --build-arg SENTRY_ORG="${{ vars.SENTRY_ORG }}" \
+            --build-arg SENTRY_PROJECT="${{ vars.SENTRY_PROJECT }}" \
+            -t "$image_ref" .
+          docker push "$image_ref"
+      - name: Resolve immutable image
         run: |
+          digest="$(az acr repository show --name "$ACR_NAME" \
+            --image "${IMAGE_REPOSITORY}:${IMAGE_TAG}" --query digest -o tsv --only-show-errors)"
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || exit 1
+          echo "IMAGE_REF=${ACR_LOGIN_SERVER}/${IMAGE_REPOSITORY}@${digest}" >> "$GITHUB_ENV"
+      - name: Scan immutable image
+        run: |
+          trivy_cache="$RUNNER_TEMP/trivy-cache"
+          report="$RUNNER_TEMP/trivy-hhc-web.json"
+          trap 'test ! -e "$report" || unlink "$report"' EXIT
+          mkdir -p "$trivy_cache"
+          docker pull "$IMAGE_REF"
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
-            -v "$TRIVY_CACHE:/root/.cache/trivy" \
+            -v "$trivy_cache:/root/.cache/trivy" \
             ghcr.io/aquasecurity/trivy@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
-            image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 hhc-web:verify
+            image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 "$IMAGE_REF"
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$trivy_cache:/root/.cache/trivy" \
+            -v "$RUNNER_TEMP:/evidence" \
+            ghcr.io/aquasecurity/trivy@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
+            image --severity HIGH,CRITICAL --format json \
+            --output /evidence/trivy-hhc-web.json "$IMAGE_REF"
+          fixable="$(jq '[.Results[]?.Vulnerabilities[]? | select((.Severity == "HIGH" or .Severity == "CRITICAL") and (.FixedVersion // "") != "")] | unique_by(.VulnerabilityID,.PkgName,.InstalledVersion,.FixedVersion) | length' "$report")"
+          unfixed="$(jq '[.Results[]?.Vulnerabilities[]? | select((.Severity == "HIGH" or .Severity == "CRITICAL") and (.FixedVersion // "") == "")] | unique_by(.VulnerabilityID,.PkgName,.InstalledVersion) | length' "$report")"
+          {
+            echo '### Trivy image summary'
+            echo '- Scanner: `ghcr.io/aquasecurity/trivy@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969`'
+            echo "- Artifact: \`$IMAGE_REF\`"
+            echo "- Fixable High/Critical: $fixable"
+            echo "- Unfixed High/Critical: $unfixed"
+            docker run --rm -v "$trivy_cache:/root/.cache/trivy" \
+              ghcr.io/aquasecurity/trivy@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
+              version --format json | jq -r '"- Trivy: " + .Version, "- Vulnerability DB updated: " + .VulnerabilityDB.UpdatedAt'
+          } >> "$GITHUB_STEP_SUMMARY"
+          test "$fixable" -eq 0
+      - name: Export verified immutable image
+        id: image
+        run: |
+          echo "commit=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          echo "image=$IMAGE_REF" >> "$GITHUB_OUTPUT"
 
   deploy:
-    needs: verify
+    needs: [verify, prepare_image]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production
@@ -102,8 +197,15 @@ jobs:
           done
           [[ "$MEMBER_VIDEO_NAV_ENABLED" == false || "$MEMBER_VIDEO_NAV_ENABLED" == true ]]
           [[ "$WEEKLY_READER_ENABLED" == false || "$WEEKLY_READER_ENABLED" == true ]]
-      - name: Set image tag
-        run: echo "IMAGE_TAG=main-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+      - name: Validate prepared image
+        env:
+          PREPARED_IMAGE: ${{ needs.prepare_image.outputs.image }}
+          BUILD_COMMIT: ${{ needs.prepare_image.outputs.commit }}
+        run: |
+          [[ "$GITHUB_REF" == refs/heads/main ]] || exit 1
+          [[ "$BUILD_COMMIT" == "$GITHUB_SHA" ]] || exit 1
+          [[ "$PREPARED_IMAGE" =~ ^"${ACR_LOGIN_SERVER}/${IMAGE_REPOSITORY}"@sha256:[0-9a-f]{64}$ ]] || exit 1
+          echo "IMAGE_REF=$PREPARED_IMAGE" >> "$GITHUB_ENV"
       - name: Sign in to Azure with OIDC
         uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 # v3.0.0
         with:
@@ -146,65 +248,6 @@ jobs:
           else
             echo "HAS_PREVIOUS=false" >> "$GITHUB_ENV"
           fi
-      - name: Build and push image
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        run: |
-          az acr login --name "$ACR_NAME"
-          printf '@hallelujahhomechurch:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=%s\n' "$GITHUB_TOKEN" > "$RUNNER_TEMP/npmrc"
-          image_ref="${ACR_LOGIN_SERVER}/${IMAGE_REPOSITORY}:${IMAGE_TAG}"
-          sentry_args=()
-          if [[ -n "${SENTRY_AUTH_TOKEN:-}" && -n "${{ vars.SENTRY_ORG }}" && -n "${{ vars.SENTRY_PROJECT }}" ]]; then
-            sentry_args+=(--secret id=sentry_auth_token,env=SENTRY_AUTH_TOKEN)
-          fi
-          docker build --secret id=npmrc,src="$RUNNER_TEMP/npmrc" "${sentry_args[@]}" \
-            --build-arg NEXT_PUBLIC_SENTRY_DSN="${{ vars.SENTRY_DSN }}" \
-            --build-arg NEXT_PUBLIC_SENTRY_RELEASE="$GITHUB_SHA" \
-            --build-arg NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED="$MEMBER_VIDEO_NAV_ENABLED" \
-            --build-arg NEXT_PUBLIC_WEEKLY_READER_ENABLED="$WEEKLY_READER_ENABLED" \
-            --build-arg SENTRY_ORG="${{ vars.SENTRY_ORG }}" \
-            --build-arg SENTRY_PROJECT="${{ vars.SENTRY_PROJECT }}" \
-            -t "$image_ref" .
-          docker push "$image_ref"
-      - name: Resolve immutable image
-        run: |
-          digest="$(az acr repository show --name "$ACR_NAME" \
-            --image "${IMAGE_REPOSITORY}:${IMAGE_TAG}" --query digest -o tsv --only-show-errors)"
-          [[ "$digest" == sha256:* ]]
-          echo "IMAGE_REF=${ACR_LOGIN_SERVER}/${IMAGE_REPOSITORY}@${digest}" >> "$GITHUB_ENV"
-      - name: Scan immutable image
-        run: |
-          trivy_cache="$RUNNER_TEMP/trivy-cache"
-          report="$RUNNER_TEMP/trivy-hhc-web.json"
-          trap 'test ! -e "$report" || unlink "$report"' EXIT
-          mkdir -p "$trivy_cache"
-          docker pull "$IMAGE_REF"
-          docker run --rm \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -v "$trivy_cache:/root/.cache/trivy" \
-            ghcr.io/aquasecurity/trivy@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
-            image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 "$IMAGE_REF"
-          docker run --rm \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -v "$trivy_cache:/root/.cache/trivy" \
-            -v "$RUNNER_TEMP:/evidence" \
-            ghcr.io/aquasecurity/trivy@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
-            image --severity HIGH,CRITICAL --format json \
-            --output /evidence/trivy-hhc-web.json "$IMAGE_REF"
-          fixable="$(jq '[.Results[]?.Vulnerabilities[]? | select((.Severity == "HIGH" or .Severity == "CRITICAL") and (.FixedVersion // "") != "")] | unique_by(.VulnerabilityID,.PkgName,.InstalledVersion,.FixedVersion) | length' "$report")"
-          unfixed="$(jq '[.Results[]?.Vulnerabilities[]? | select((.Severity == "HIGH" or .Severity == "CRITICAL") and (.FixedVersion // "") == "")] | unique_by(.VulnerabilityID,.PkgName,.InstalledVersion) | length' "$report")"
-          {
-            echo '### Trivy image summary'
-            echo '- Scanner: `ghcr.io/aquasecurity/trivy@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969`'
-            echo "- Artifact: \`$IMAGE_REF\`"
-            echo "- Fixable High/Critical: $fixable"
-            echo "- Unfixed High/Critical: $unfixed"
-            docker run --rm -v "$trivy_cache:/root/.cache/trivy" \
-              ghcr.io/aquasecurity/trivy@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
-              version --format json | jq -r '"- Trivy: " + .Version, "- Vulnerability DB updated: " + .VulnerabilityDB.UpdatedAt'
-          } >> "$GITHUB_STEP_SUMMARY"
-          test "$fixable" -eq 0
       - name: Preview infrastructure change
         run: |
           az deployment group what-if \

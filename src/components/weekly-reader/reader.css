@@ -93,10 +93,13 @@
 .reader-private-panel > header { flex: none; min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: 1rem; }
 .reader-note-editor, .reader-notes-list { display: grid; gap: .75rem; }
 form.reader-note-editor {display: flex; flex-direction: column; min-height: 0; flex: 1;}
-.reader-note-editor-body {display: flex; flex: 1; flex-direction: column; gap: .75rem; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 3px;}
+.reader-note-editor-body {display: flex; flex: 1; flex-direction: column; gap: .5rem; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 3px;}
 .reader-note-editor-body > :not(textarea) {flex: none;}
+.reader-note-editor .reader-note-editor-body > blockquote {flex: 0 1 auto; min-height: 3rem; max-height: 25%; padding-block: .5rem;}
 .reader-note-editor .reader-note-editor-body textarea {flex: 1; resize: none;}
+.reader-private-sheet .reader-note-editor textarea:focus-visible, .reader-private-panel .reader-note-editor textarea:focus-visible {outline-offset: -3px;}
 .reader-note-editor > footer {flex: none; justify-content: end; padding-block-start: .75rem; border-block-start: 1px solid var(--hhc-border);}
+.reader-note-editor > footer p {flex: 1; margin: 0; align-self: center; font-size: .75rem; color: var(--hhc-text-muted);}
 .reader-note-editor blockquote, .reader-notes-list blockquote { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 10rem; overflow: auto; padding: .75rem; border: 1px solid var(--hhc-border); border-radius: .5rem; background: var(--hhc-surface-raised); color: var(--hhc-text-muted); line-height: 1.7; }
 .reader-note-editor textarea { width: 100%; min-height: 9rem; resize: vertical; border: 1px solid var(--hhc-control-border); border-radius: .5rem; padding: .75rem; font-size: 1rem; color: var(--hhc-text); background: var(--hhc-surface); }
 .reader-note-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
@@ -117,6 +120,7 @@ form.reader-note-editor {display: flex; flex-direction: column; min-height: 0; f
 .reader-highlights-list article + article { border-block-start: 1px solid var(--hhc-control-border); padding-block-start: 1rem; }
 .reader-highlights-list :focus-visible { outline: 2px solid var(--hhc-control); outline-offset: 3px; }
 .reader-private-sheet button { min-height: 44px; border: 1px solid var(--hhc-control-border); border-radius: .6rem; padding: .5rem .8rem; background: var(--hhc-surface); }
+.reader-private-sheet summary {min-height: 44px; padding-block: 10px; cursor: pointer;}
 .reader-private-sheet button:disabled { opacity: .45; }
 .reader-private-sheet :focus-visible { outline: 2px solid var(--hhc-control); outline-offset: 3px; }
 .hhc-modal:has(.reader-private-sheet) .hhc-dialog__header { padding: 1rem 1rem 0; }
@@ -325,8 +329,7 @@ body:has(.weekly-reader) {padding-bottom: 0;}
 @media (prefers-reduced-motion: reduce) {.reader-loading-icon {animation: none;}}
 
 @media (max-width: 767px) {
-  .reader-document > .reader-private-feedback:has([role='alert'], [role='status'], button) { margin-top: 52px; padding: .75rem 1rem; flex: none; }
-  .reader-document:has(> .reader-private-feedback :is([role='alert'], [role='status'], button)) .reader-viewport { padding-top: 0; }
+  .reader-document > .reader-private-feedback:has([role='alert'], [role='status'], button) {position: absolute; inset: 52px 0 auto; z-index: 35; padding: .75rem 1rem; background: var(--hhc-surface);}
 }
 
 .reader-document[data-reading-mode='easy'] .reader-paper-with-notes {width: 100%; max-width: 48rem; padding-inline-end: 0;}
@@ -344,9 +347,9 @@ body:has(.weekly-reader) {padding-bottom: 0;}
 .reader-notes-browser .hhc-tabs__list {position: relative; isolation: isolate; display: flex; flex-wrap: nowrap; flex: none; gap: 0; padding: 4px; border: 0; border-radius: 12px; background: var(--hhc-surface-raised); --reader-tab: 0;}
 .reader-notes-browser .hhc-tabs__list:has(.hhc-tabs__tab:nth-child(2)[data-selected]) {--reader-tab: 1;}
 .reader-notes-browser .hhc-tabs__list:has(.hhc-tabs__tab:nth-child(3)[data-selected]) {--reader-tab: 2;}
-.reader-notes-browser .hhc-tabs__list::before {content: ""; position: absolute; z-index: -1; inset: 4px auto 4px 4px; width: calc((100% - 8px) / var(--reader-tab-count, 3)); border-radius: 9px; background: var(--hhc-surface); box-shadow: 0 1px 4px #0001; transform: translateX(calc(var(--reader-tab) * 100%)); transition: transform 180ms ease-out;}
+.reader-notes-browser .hhc-tabs__list::before {content: ""; position: absolute; z-index: -1; inset: 4px auto 4px 4px; width: calc((100% - 8px) / var(--reader-tab-count, 3)); border-radius: 9px; background: var(--hhc-primary-solid); box-shadow: 0 1px 4px #0001; transform: translateX(calc(var(--reader-tab) * 100%)); transition: transform 180ms ease-out;}
 .reader-notes-browser .hhc-tabs__tab {display: flex; justify-content: center; align-items: center; text-align: center; flex: 1; min-width: 0; min-height: 44px; white-space: normal; padding: .5rem; border: 0; border-radius: 9px;}
-.reader-notes-browser .hhc-tabs__tab[data-selected] {background: transparent; box-shadow: none; color: var(--hhc-text); font-weight: 600;}
+.reader-notes-browser .hhc-tabs__tab[data-selected] {background: transparent; box-shadow: none; color: var(--hhc-on-primary); font-weight: 600;}
 .reader-notes-browser .hhc-tabs__panel {flex: 1; min-height: 0; overflow-y: auto; scrollbar-gutter: stable; overscroll-behavior: contain; padding: 16px 2px 4px; animation: reader-content-in 120ms ease-out;}
 .reader-notes-tools {display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin-block: 0 .5rem;}
 .reader-notes-tools .reader-filter-count {margin: 0;}
@@ -377,8 +380,6 @@ body:has(.weekly-reader) {padding-bottom: 0;}
 .reader-private-content {display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0;}
 .reader-private-content > :not(.reader-notes-browser, form.reader-note-editor) {min-height: 0; overflow-y: auto;}
 .reader-private-content > .reader-loading {flex: 1; min-height: 0;}
-.reader-private-sync-slot {flex: none; min-height: 24px; text-align: end;}
-.reader-private-sync-slot .reader-sync-status {margin: 4px 0 0; font-size: .75rem;}
 .reader-private-feedback {flex: none;}
 .reader-private-panel .reader-icon-control button, .reader-private-sheet .reader-icon-control button {width: 44px; height: 44px; padding: 0; border: 0; background: transparent; border-radius: 10px;}
 .reader-private-panel .reader-icon-control button[data-hovered], .reader-private-sheet .reader-icon-control button[data-hovered] {background: var(--hhc-surface-raised);}
@@ -391,9 +392,14 @@ body:has(.weekly-reader) {padding-bottom: 0;}
 .reader-highlights-list blockquote[data-color='blue'] {border-color: #6a9bce;}
 @keyframes reader-content-in {from {opacity: 0;} to {opacity: 1;}}
 @media (max-width: 767px) {
-  /* Position the sheet inside one visual-viewport frame; keyboard panning must not be subtracted twice. */
-  .hhc-modal-overlay:has(.reader-private-sheet) {inset: var(--reader-viewport-top, 0px) 0 auto; height: var(--reader-viewport-height, 100dvh);}
+  .hhc-modal-overlay:has(.reader-private-sheet) {--reader-sheet-height: calc(var(--visual-viewport-height, 100dvh) - min(var(--reader-sheet-gap, 68px), calc(var(--visual-viewport-height, 100dvh) * .25))); inset: 0 0 auto; height: var(--visual-viewport-height, 100dvh);}
+  /* Follow the house modal's iOS scroll model; fixed frames fight native keyboard panning. */
+  .hhc-modal-overlay:has(.reader-private-sheet:not([data-compact])) {position: absolute; width: var(--page-width, 100%); height: var(--page-height, 100dvh); min-height: 100dvh; display: block; overflow: clip;}
+  .hhc-modal-overlay:has(form.reader-note-editor) {--reader-sheet-height: calc(var(--visual-viewport-height, 100dvh) - max(16px, env(safe-area-inset-top)));}
   .hhc-modal--drawer-right:has(.reader-private-sheet) {position: absolute; inset: auto 0 0;}
+  /* Keep the opaque sheet at layout height; only its controls follow the keyboard viewport. */
+  .hhc-modal--drawer-right:has(.reader-private-sheet:not([data-compact])) {position: sticky; inset: calc(var(--visual-viewport-height, 100dvh) - var(--reader-sheet-height)) 0 auto; height: calc(max(100svh, var(--page-height, 100svh)) - var(--visual-viewport-height, 100dvh) + var(--reader-sheet-height));}
+  .hhc-modal:has(.reader-private-sheet:not([data-compact])) .hhc-dialog {height: var(--reader-sheet-height); max-height: 100%;}
   .hhc-modal--drawer-right:has(.reader-private-sheet[data-compact]) {height: auto; max-height: var(--reader-sheet-height, calc(100dvh - 16px));}
   .hhc-modal:has(.reader-private-sheet[data-compact]) .hhc-dialog, .reader-private-sheet[data-compact] {height: auto;}
   .reader-private-sheet[data-compact] .reader-mode-settings {margin-bottom: 0;}
@@ -435,6 +441,7 @@ body:has(.weekly-reader) {padding-bottom: 0;}
 @keyframes reader-scrim-out {from {opacity: 1;} to {opacity: 0;}}
 @media (max-width: 767px) {
   .hhc-modal-overlay:has(.reader-private-sheet) {--reader-sheet-from: translateY(100%);}
+  .hhc-modal-overlay[data-entering] .hhc-modal:has(.reader-note-editor) {animation: reader-content-in 160ms ease-out;}
   .reader-search-panel {inset-inline: 0; width: 100%; border: 0; border-radius: 0; box-shadow: none;}
 }
 @media (prefers-reduced-motion: reduce) {

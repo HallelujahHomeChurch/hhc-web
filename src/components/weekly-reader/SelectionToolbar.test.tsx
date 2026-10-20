@@ -16,6 +16,10 @@ it('shows one three-color group first, then Clear Copy Note, with mixed and acti
   fireEvent.click(buttons[5]); expect(onNote).toHaveBeenCalledOnce();
   rerender(<SelectionToolbar {...props} color="yellow"/>);
   expect(screen.getByRole('button', {name: 'Yellow highlight'})).toHaveAttribute('aria-pressed', 'true');
+  onClear.mockClear(); onColor.mockClear();
+  fireEvent.click(screen.getByRole('button', {name: 'Yellow highlight'}));
+  expect(onClear).toHaveBeenCalledOnce();
+  expect(onColor).not.toHaveBeenCalled();
 });
 it('removes all selection actions with no selection or while a note sheet is open', () => {
   const props = {messages: getMessages('en').weeklyReader, count: 0, color: null, onColor: vi.fn(), onClear: vi.fn(), onCopy: vi.fn(), onNote: vi.fn()};

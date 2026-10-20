@@ -25,3 +25,10 @@ it.each([false, true])('keeps focus in the list after deletion (adjacent=%s)', a
   view.rerender(<NotesPanel {...props} notes={adjacent ? [next] : []}/>);
   await waitFor(() => expect(adjacent ? screen.getByRole('button', {name: messages.noteJump}) : screen.getByRole('heading', {name: messages.notesTab})).toHaveFocus());
 });
+it('jumps to the first still-active exact range rather than the sentence start', () => {
+  const onJump = vi.fn();
+  const note = {id: 'partial', text: 'My note', sentenceIds: ['s0'], ranges: [{sentenceId: 'removed', start: 1, end: 3, quote: 'old'}, {sentenceId: 's0', start: 7, end: 9, quote: '命中'}], inactiveAnchors: [], quote: '命中', version: 1, deleted: false, reanchorRequired: false, createdAt: '', updatedAt: ''};
+  render(<NotesPanel messages={getMessages('en').weeklyReader} notes={[note]} onJump={onJump} onEdit={vi.fn()} onDelete={vi.fn()} onReanchor={vi.fn()}/>);
+  fireEvent.click(screen.getByRole('button', {name: 'Go to source'}));
+  expect(onJump).toHaveBeenCalledWith('s0', 7);
+});

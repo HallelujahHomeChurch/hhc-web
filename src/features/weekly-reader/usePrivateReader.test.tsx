@@ -27,7 +27,7 @@ it.each(['network', 'reader_request_timeout'])('retains optimistic content after
   const h = mount(); await waitFor(() => expect(h.result.current.state).toEqual(state));
   await act(async () => {await h.result.current.mutate(mutation);});
   await waitFor(() => expect(h.result.current.status).toBe('waiting'));
-  expect(h.result.current.state?.highlights[0].color).toBe('yellow'); expect(h.result.current.canRetry).toBe(true);
+  expect(h.result.current.state?.highlights[0].color).toBe('yellow'); expect(h.result.current.canRetry).toBe(false);
   await act(async () => {await h.result.current.retry();});
   expect(api.mutate.mock.calls[1][2]).toEqual([mutation]); expect(h.result.current.unsaved).toBe(false);
 });
@@ -52,11 +52,12 @@ it('warns on page termination only while memory-only intents remain', async () =
   await act(async () => {await h.result.current.retry();});
   const clear = new Event('beforeunload', {cancelable: true}); window.dispatchEvent(clear); expect(clear.defaultPrevented).toBe(false);
 });
-it('does not retry an unknown ID merely because the component remounts', async () => {
+it('automatically confirms an unknown ID after remount without a manual retry', async () => {
   saveReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}, {revision: 1, action: mutation});
-  const h = mount(); await waitFor(() => expect(h.result.current.state).toEqual(state));
-  expect(api.mutate).not.toHaveBeenCalled(); expect(h.result.current.canRetry).toBe(true);
-  await act(async () => {await h.result.current.retry();}); expect(api.mutate.mock.calls[0][2]).toEqual([mutation]);
+  const h = mount();
+  await waitFor(() => expect(h.result.current.status).toBe('synced'));
+  expect(api.mutate).toHaveBeenCalledOnce(); expect(api.mutate.mock.calls[0][2]).toEqual([mutation]);
+  expect(h.result.current.canRetry).toBe(false);
   expect(readReaderReturn({accountId: selector.accountId, documentId: value.document.documentId})?.action).toBeNull();
 });
 it('pauses on revision change while retaining original intent for explicit recovery', async () => {

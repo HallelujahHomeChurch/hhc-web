@@ -24,7 +24,7 @@ export function HighlightsPanel({highlights, sentences, messages: m, busy, onCha
   return <section aria-labelledby={heading} className="reader-highlights-list">
     <p className="reader-filter-count" role="status">{m.highlightCount.replace('{count}', String(entries.length))}</p>
     <h3 className="hhc-sr-only" id={heading} ref={headingRef} tabIndex={-1}>{m.savedHighlights}</h3>
-    {!entries.length ? <p>{m.highlightsEmpty}</p> : entries.map(({range, color, quote}) => <article key={`${range.sentenceId}:${range.start}:${range.end}`} aria-label={quote}>
+    {!entries.length ? <p>{query.trim() ? m.noResults : m.highlightsEmpty}</p> : entries.map(({range, color, quote}) => <article key={`${range.sentenceId}:${range.start}:${range.end}`} aria-label={quote}>
       <blockquote data-color={color}>{quote}</blockquote>
       <div className="reader-note-actions" role="group" aria-label={quote}>
         <ReaderIconButton variant="ghost" aria-label={m.clearHighlight} isDisabled={busy} onPress={() => {void onChange(range, null).then(() => headingRef.current?.focus());}} icon={<X size={18} aria-hidden="true"/>}/>

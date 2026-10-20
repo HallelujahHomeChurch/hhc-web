@@ -1,3 +1,4 @@
+import {useState, type ComponentProps} from 'react';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {beforeEach, expect, it, vi} from 'vitest';
 import {getMessages} from '@/i18n/messages';
@@ -9,18 +10,39 @@ vi.mock('@/features/weekly-reader/upgrade', () => ({prepareReaderUpgrade: mocks.
 vi.mock('@/features/weekly-reader/offline-store', () => ({supportsOfflineReader: () => true, getOfflineIdentity: mocks.identity, readPrivateBinding: mocks.read, bindOnlinePrivate: vi.fn(), chooseReaderRecovery: mocks.choose}));
 const api = {open: vi.fn(), renew: vi.fn(), current: vi.fn(), privateState: vi.fn(), mutate: vi.fn()};
 const props = {api, value, selector: {accountId: 'account-a', issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const}, messages: getMessages('en').weeklyReader, onUpdated: vi.fn(), onFailure: vi.fn()};
+function RecoveryHarness(props: Omit<ComponentProps<typeof ReaderRecovery>, 'drafts' | 'onDraftsChange'>) {
+  const [drafts, onDraftsChange] = useState<Record<string, string>>({});
+  return <ReaderRecovery {...props} drafts={drafts} onDraftsChange={onDraftsChange}/>;
+}
 const cloud = {accountId: 'account-a', documentId: value.document.documentId, appliedRevision: 2, currentRevision: 2, notes: [], highlights: [], progress: null, conflicts: []};
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.identity.mockResolvedValue({accountId: 'account-a', epoch: 1}); mocks.read.mockResolvedValue({epoch: 1, revision: 1, onlineOnly: false, replica: null});
   mocks.prepare.mockResolvedValue({value, state: cloud, queue: [], mutations: [], recovery: [], previousRevision: 1}); mocks.finish.mockResolvedValue({value, state: cloud});
 });
+it.each(['keep-reading', 'close', 'back'] as const)('retains edited recovery text after %s and reopening', async how => {
+  const mutation = {mutationId: 'draft-note', documentRevision: 1, createdAt: '', kind: 'editNote', baseVersion: 1, payload: {noteId: 'note', text: 'Original local text'}};
+  mocks.prepare.mockResolvedValue({value, state: {...cloud, notes: [{id: 'note', text: 'Cloud text', version: 2, sentenceIds: ['s0'], deleted: false}]}, queue: [{mutation, sent: true}], mutations: [], recovery: [{mutationId: mutation.mutationId, reason: 'note_conflict'}], previousRevision: 1});
+  const closeRef = {current: null as (() => boolean) | null};
+  render(<RecoveryHarness {...props} closeRef={closeRef}/>);
+  fireEvent.click(screen.getByRole('button', {name: props.messages.reviewSync}));
+  const input = await screen.findByRole('textbox', {name: props.messages.noteText});
+  await waitFor(() => expect(input).toBeEnabled());
+  fireEvent.change(input, {target: {value: 'My newly merged text'}});
+  if (how === 'back') act(() => {closeRef.current?.();});
+  else fireEvent.click(screen.getByRole('button', {name: how === 'close' ? props.messages.noteClose : props.messages.keepReading}));
+  fireEvent.click(screen.getByRole('button', {name: props.messages.reviewSync}));
+  expect(await screen.findByRole('textbox', {name: props.messages.noteText})).toHaveValue('My newly merged text');
+  const unload = new Event('beforeunload', {cancelable: true});
+  window.dispatchEvent(unload); expect(unload.defaultPrevented).toBe(true);
+  expect(mocks.choose).not.toHaveBeenCalled();
+});
 it('shows the original historical range while requiring a fresh location after revision change', async () => {
   const mutation = {mutationId: 'historical', documentRevision: 1, createdAt: '', kind: 'restoreHighlight', payload: {historyId: 'history', sentenceIds: ['s0'], color: 'red', ranges: [{sentenceId: 's0', start: 0, end: 1}]}};
   const current = {...value, document: {...value.document, revision: 2}};
   const history = [{id: 'history', highlight: {sentenceId: 'old', quote: '甲😀乙', active: false, version: 1, updatedAt: '', color: 'red', segments: [{start: 1, end: 2, color: 'red'}]}}];
   mocks.prepare.mockResolvedValue({value: current, state: {...cloud, highlightHistory: history}, queue: [{mutation, sent: true}], mutations: [], recovery: [{mutationId: mutation.mutationId, reason: 'mapping_unavailable'}], previousRevision: 1});
-  render(<ReaderRecovery {...props}/>);
+  render(<RecoveryHarness {...props}/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
   expect(await screen.findByText('😀')).toBeInTheDocument();
   expect(screen.getByRole('button', {name: 'Keep local'})).toBeDisabled();
@@ -30,7 +52,7 @@ it('requires a new native range after revision change and retains only its exact
   const mutation = {mutationId: 'partial-old', documentRevision: 1, createdAt: '', kind: 'setHighlight', payload: {sentenceIds: ['s0'], color: 'yellow', ranges: [{sentenceId: 's0', start: 1, end: 3}]}};
   const current = {...value, document: {...value.document, revision: 2}};
   mocks.prepare.mockResolvedValue({value: current, state: cloud, queue: [{mutation, sent: true}], mutations: [], recovery: [{mutationId: mutation.mutationId, reason: 'mapping_unavailable'}], previousRevision: 1});
-  const {container} = render(<ReaderRecovery {...props}/>);
+  const {container} = render(<RecoveryHarness {...props}/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
   const keep = await screen.findByRole('button', {name: 'Keep local'});
   await waitFor(() => expect(screen.queryByText(props.messages.syncSyncing)).not.toBeInTheDocument());
@@ -53,7 +75,7 @@ it('requires explicit mobile clause reselection without silently enlarging a his
   if(component.type!=='backSummary')throw new Error('fixture');
   component.items[0].blocks[0].sentences[0].spans=[{text:'甲😀，乙。丙。',fontRole:'body'}];
   mocks.prepare.mockResolvedValue({value: current, state: cloud, queue: [{mutation, sent: true}], mutations: [], recovery: [{mutationId: mutation.mutationId, reason: 'mapping_unavailable'}], previousRevision: 1});
-  const {container} = render(<ReaderRecovery {...props} mobile/>);
+  const {container} = render(<RecoveryHarness {...props} mobile/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
   const keep = await screen.findByRole('button', {name: 'Keep local'});
   await waitFor(() => expect(screen.queryByText(props.messages.syncSyncing)).not.toBeInTheDocument());
@@ -66,7 +88,7 @@ it('requires explicit mobile clause reselection without silently enlarging a his
   expect(mocks.choose.mock.calls[0][2]).toMatchObject({documentRevision: 2, payload: {sentenceIds: ['s1'], ranges: [{sentenceId: 's1', start: 3, end: 5}]}});
 });
 it('requires explicit acceptance before switching and retains the reader on cancellation or failure', async () => {
-  render(<ReaderRecovery {...props}/>);
+  render(<RecoveryHarness {...props}/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
   await screen.findByRole('button', {name: 'Apply and synchronize'});
   expect(mocks.finish).not.toHaveBeenCalled();
@@ -83,7 +105,7 @@ it('reselects a queued note anchor without editing or duplicating its private te
   const current = {...value, document: {...value.document, revision: 2}};
   const note = {id: 'note', text: 'Private unchanged', quote: 'Original preserved', version: 3, deleted: false, sentenceIds: [], inactiveAnchors: [], reanchorRequired: true};
   mocks.prepare.mockResolvedValue({value: current, state: {...cloud, notes: [note]}, queue: [{mutation, sent: true}], mutations: [], recovery: [{mutationId: mutation.mutationId, reason: 'mapping_unavailable'}], previousRevision: 1});
-  const {container} = render(<ReaderRecovery {...props}/>);
+  const {container} = render(<RecoveryHarness {...props}/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
   const keep = await screen.findByRole('button', {name: 'Keep local'});
   await waitFor(() => expect(screen.queryByText(props.messages.syncSyncing)).not.toBeInTheDocument());
@@ -107,7 +129,7 @@ it('does not lose an unsaved action on revision update and confirms its original
   const pending = {mutationId: 'original', createdAt: new Date().toISOString(), documentRevision: 1, kind: 'createNote' as const, payload: {noteId: 'note-original', sentenceIds: ['s0'], text: 'Keep my private draft'}};
   const onPendingChange = vi.fn();
   api.mutate.mockImplementation(async (_selector, _value, mutations) => ({state: cloud, results: [{mutationId: mutations[0].mutationId, status: mutations[0].mutationId === 'original' ? 'revision_changed' : 'applied', revision: 2}]}));
-  render(<ReaderRecovery {...props} pendingMutation={pending} onPendingChange={onPendingChange}/>);
+  render(<RecoveryHarness {...props} pendingMutation={pending} onPendingChange={onPendingChange}/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
   fireEvent.click(await screen.findByRole('button', {name: 'Confirm and retry'}));
   expect(api.mutate.mock.calls[0][2][0]).toEqual(pending);
@@ -122,7 +144,7 @@ it('does not lose an unsaved action on revision update and confirms its original
 it('shows local and cloud note text and records an explicit cloud choice without discarding on cancel', async () => {
   const mutation = {mutationId: 'old', documentRevision: 1, createdAt: '', kind: 'editNote', baseVersion: 1, payload: {noteId: 'note', text: 'Local text'}};
   mocks.prepare.mockResolvedValue({value, state: {...cloud, notes: [{id: 'note', text: 'Cloud text', version: 2, sentenceIds: ['s0'], deleted: false}]}, queue: [{mutation, sent: true, result: {status: 'note_conflict'}}], mutations: [], recovery: [{mutationId: 'old', reason: 'note_conflict'}], previousRevision: 1});
-  render(<ReaderRecovery {...props}/>);
+  render(<RecoveryHarness {...props}/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
   expect(await screen.findByDisplayValue('Local text')).toBeInTheDocument();
   expect(screen.getByText('Cloud text')).toBeInTheDocument();
@@ -134,7 +156,7 @@ it('keeps the authorized original quote visible when its sentence was removed', 
   const mutation = {mutationId: 'removed', documentRevision: 1, createdAt: '', kind: 'createNote', payload: {noteId: 'note', sentenceIds: ['s0'], text: 'My draft'}};
   const current = {...value, document: {...value.document, content: {...value.document.content, components: []}, revision: 2}};
   mocks.prepare.mockResolvedValue({value: current, state: cloud, queue: [{mutation, sent: true}], mutations: [], recovery: [{mutationId: 'removed', reason: 'removed_anchor'}], previousRevision: 1});
-  render(<ReaderRecovery {...props}/>);
+  render(<RecoveryHarness {...props}/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
   expect(await screen.findByText('內容0。')).toBeInTheDocument();
   expect(screen.getByDisplayValue('My draft')).toBeInTheDocument();
@@ -152,7 +174,7 @@ it('resolves a cloud color conflict without replacing a pending private note', a
     if (mutation.kind === 'resolveHighlightMigrationConflict') resolved = true;
     return {state: cloud, results: [{mutationId: mutation.mutationId, status: resolved ? 'applied' : 'revision_changed', revision: 2}]};
   });
-  render(<ReaderRecovery {...props} pendingMutation={pending} onPendingChange={onPendingChange}/>);
+  render(<RecoveryHarness {...props} pendingMutation={pending} onPendingChange={onPendingChange}/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
   fireEvent.click(await screen.findByRole('button', {name: 'Confirm and retry'}));
   fireEvent.click(await screen.findByRole('button', {name: props.messages.yellowHighlight}));
@@ -165,7 +187,7 @@ it('shows exact partial conflict snippets and confirms replacement of the full t
   const confirm = vi.fn().mockResolvedValue(false);
   const conflict = {id: 'partial-conflict', sentenceIds: ['s0'], sources: [{sentenceId: 'old', color: 'red', quote: 'ABCDE', segments: [{start: 1, end: 3, color: 'blue'}]}]};
   mocks.prepare.mockResolvedValue({value, state: {...cloud, conflicts: [conflict]}, queue: [], mutations: [], recovery: [], previousRevision: 1});
-  render(<ReaderRecovery {...props} onConfirm={confirm}/>);
+  render(<RecoveryHarness {...props} onConfirm={confirm}/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
   expect(await screen.findByText('BC')).toHaveAttribute('data-color', 'blue');
   expect(screen.getByText('內容0。')).toBeInTheDocument();
@@ -183,7 +205,7 @@ it('publishes the final replayed state before updating the reader value', async 
   const final = {...cloud, progress: {pageId: 'p2', recordedAt: '', updatedAt: ''}};
   mocks.finish.mockResolvedValueOnce({value, state: final});
   const onState = vi.fn();
-  render(<ReaderRecovery {...props} onState={onState}/>);
+  render(<RecoveryHarness {...props} onState={onState}/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
   fireEvent.click(await screen.findByRole('button', {name: 'Apply and synchronize'}));
   await waitFor(() => expect(props.onUpdated).toHaveBeenCalledWith(value));
@@ -193,7 +215,7 @@ it('publishes the final replayed state before updating the reader value', async 
 it('does not republish an old direct prepared snapshot on Apply', async () => {
   mocks.read.mockResolvedValueOnce(null); api.current.mockResolvedValueOnce(value); api.privateState.mockResolvedValueOnce({state: cloud});
   const onState = vi.fn();
-  render(<ReaderRecovery {...props} onState={onState}/>);
+  render(<RecoveryHarness {...props} onState={onState}/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
   const apply = await screen.findByRole('button', {name: 'Apply and synchronize'});
   expect(onState).toHaveBeenCalledOnce();
@@ -208,21 +230,21 @@ it.each(['unmount', 'suspended', 'account'] as const)('rejects delayed partial-c
   const onConfirm = vi.fn(() => new Promise<boolean>(resolve => {finish = resolve;}));
   const conflict = {id: 'partial', sentenceIds: ['s0'], sources: [{sentenceId: 'old', color: 'red', quote: 'ABCDE', segments: [{start: 1, end: 3, color: 'blue'}]}]};
   mocks.prepare.mockResolvedValue({value, state: {...cloud, conflicts: [conflict]}, queue: [], mutations: [], recovery: [], previousRevision: 1});
-  const view = render(<ReaderRecovery {...props} onConfirm={onConfirm}/>);
+  const view = render(<RecoveryHarness {...props} onConfirm={onConfirm}/>);
   fireEvent.click(screen.getByRole('button', {name: props.messages.reviewSync}));
   await screen.findByText('BC');
   await waitFor(() => expect(screen.getByRole('button', {name: props.messages.yellowHighlight})).toBeEnabled());
   fireEvent.click(screen.getByRole('button', {name: props.messages.yellowHighlight}));
   fireEvent.click(screen.getByRole('button', {name: props.messages.yellowHighlight})); expect(onConfirm).toHaveBeenCalledOnce();
   if (drift === 'unmount') view.unmount();
-  else view.rerender(<ReaderRecovery {...props} onConfirm={onConfirm} suspended={drift === 'suspended'} selector={drift === 'account' ? {...props.selector, accountId: 'account-b'} : props.selector}/>);
+  else view.rerender(<RecoveryHarness {...props} onConfirm={onConfirm} suspended={drift === 'suspended'} selector={drift === 'account' ? {...props.selector, accountId: 'account-b'} : props.selector}/>);
   await act(async () => finish(true)); expect(mocks.choose).not.toHaveBeenCalled();
 });
 
 it('routes unknown bookmark retries through the supplied private executor rather than direct recovery API writes',async()=>{
  mocks.read.mockResolvedValue(null);const mutation={mutationId:'unknown-bookmark',kind:'renameBookmark' as const,documentRevision:1,createdAt:new Date().toISOString(),baseVersion:1,payload:{bookmarkId:'bookmark-a',name:'Retained name'}};
  api.current.mockResolvedValue(value);api.privateState.mockResolvedValue({state:{...cloud,appliedRevision:1,currentRevision:1,bookmarks:[]}});const onBookmarkRetry=vi.fn().mockResolvedValue({mutationId:mutation.mutationId,status:'applied',revision:1});
- render(<ReaderRecovery {...props} pendingMutation={mutation} onBookmarkRetry={onBookmarkRetry}/>);fireEvent.click(screen.getByRole('button',{name:props.messages.reviewSync}));const retry=await screen.findByRole('button',{name:props.messages.confirmRetry});await waitFor(()=>expect(retry).toBeEnabled());fireEvent.click(retry);await waitFor(()=>expect(onBookmarkRetry).toHaveBeenCalledOnce());expect(api.mutate).not.toHaveBeenCalled();
+ render(<RecoveryHarness {...props} pendingMutation={mutation} onBookmarkRetry={onBookmarkRetry}/>);fireEvent.click(screen.getByRole('button',{name:props.messages.reviewSync}));const retry=await screen.findByRole('button',{name:props.messages.confirmRetry});await waitFor(()=>expect(retry).toBeEnabled());fireEvent.click(retry);await waitFor(()=>expect(onBookmarkRetry).toHaveBeenCalledOnce());expect(api.mutate).not.toHaveBeenCalled();
 });
 
 
@@ -230,7 +252,7 @@ it('lets the shared shell close idle inline Recovery while preserving its decisi
   mocks.prepare.mockResolvedValue({value, state: cloud, queue: [], mutations: [], recovery: [], previousRevision: 1});
   const closeRef = {current: null as (() => boolean) | null};
   const onOpenChange = vi.fn();
-  render(<ReaderRecovery {...props} inline closeRef={closeRef} onOpenChange={onOpenChange}/>);
+  render(<RecoveryHarness {...props} inline closeRef={closeRef} onOpenChange={onOpenChange}/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
   await waitFor(() => expect(screen.queryByText(props.messages.syncSyncing)).not.toBeInTheDocument());
   act(() => {expect(closeRef.current?.()).toBe(true);});
