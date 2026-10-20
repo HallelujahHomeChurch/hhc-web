@@ -63,3 +63,18 @@ it.each(['en', 'ja', 'ko', 'zh-Hans', 'zh-Hant'] as const)('keeps the character 
   fireEvent.change(screen.getByRole('textbox'), {target: {value: '😀abc'}});
   expect(screen.getByText(/^4 \/ 10,000/)).toBeInTheDocument();
 });
+
+it('reveals the focused editor inside its resized scroll area without moving focus', () => {
+  let resized!: ResizeObserverCallback;
+  const disconnect = vi.fn();
+  vi.stubGlobal('ResizeObserver', class {constructor(callback: ResizeObserverCallback) {resized = callback;} observe() {} disconnect = disconnect;});
+  const {unmount} = render(<NoteEditor messages={messages} quote="Source" onSave={vi.fn()} onComplete={vi.fn()} onCancel={vi.fn()}/>);
+  const input = screen.getByRole('textbox'), body = input.parentElement!;
+  vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 150, 350, 164));
+  const bounds = vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 228, 350, 144));
+  resized([], {} as ResizeObserver); expect(body.scrollTop).toBe(58); expect(input).toHaveFocus();
+  screen.getByRole('button', {name: messages.noteCancel}).focus();
+  bounds.mockReturnValue(new DOMRect(0, 100, 350, 144));
+  resized([], {} as ResizeObserver); expect(body.scrollTop).toBe(58);
+  unmount(); expect(disconnect).toHaveBeenCalledOnce(); vi.unstubAllGlobals();
+});

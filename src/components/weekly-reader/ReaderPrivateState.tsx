@@ -17,20 +17,13 @@ export function ReaderPrivateState({wide, title, theme, messages: m, children, o
     const overlay = node?.closest<HTMLElement>('.hhc-modal-overlay');
     if (!overlay) return;
     overlay.dataset.theme = theme; overlay.style.colorScheme = theme;
-    const visual = window.visualViewport;
     const measure = () => {
-      const height = visual?.height ?? window.innerHeight;
-      const header = headerRef?.current;
-      const headerBottom = (header?.closest('.weekly-reader')?.getBoundingClientRect().top ?? 0) + (header?.offsetHeight ?? 0);
-      const gap = Math.min(height * .25, Math.max(0, headerBottom - (visual?.offsetTop ?? 0) + 16));
-      overlay.style.setProperty('--reader-sheet-height', `${Math.max(0, height - gap)}px`);
-      overlay.style.setProperty('--reader-viewport-top', `${visual?.offsetTop ?? 0}px`);
-      overlay.style.setProperty('--reader-viewport-height', `${height}px`);
+      overlay.style.setProperty('--reader-sheet-gap', `${(headerRef?.current?.offsetHeight ?? 0) + 16}px`);
     };
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
     if (headerRef?.current) observer?.observe(headerRef.current);
-    measure(); visual?.addEventListener('resize', measure); visual?.addEventListener('scroll', measure); window.addEventListener('resize', measure);
-    return () => {observer?.disconnect(); visual?.removeEventListener('resize', measure); visual?.removeEventListener('scroll', measure); window.removeEventListener('resize', measure);};
+    measure(); window.addEventListener('resize', measure);
+    return () => {observer?.disconnect(); window.removeEventListener('resize', measure);};
   }, [theme, headerRef]);
   if (wide) return <aside hidden={!isOpen} className="reader-private-panel" aria-label={title ?? m.myNotes}><header><h2>{title ?? m.myNotes}</h2><ReaderIconButton variant="ghost" aria-label={m.noteClose} onPress={onClose} icon={<X size={20} aria-hidden="true"/>}/></header>{feedback}{children}</aside>;
   return <Drawer title={(isOpen ? title : displayed.title) ?? m.myNotes} closeLabel={m.noteClose} isOpen={isOpen} onOpenChange={open => {if (!open && !suspended) onClose();}}><div className="reader-private-sheet" data-compact={(isOpen ? compact : displayed.compact) || undefined} ref={attachSheet} hidden={suspended} inert={suspended || !isOpen}>{feedback}{isOpen ? children : displayed.children}</div></Drawer>;

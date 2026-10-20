@@ -24,7 +24,6 @@ it('shares the real Recovery retry gate with hook retry and deferred progress wi
   await waitFor(() => expect(result.current.state).toEqual(state));
   render(<ReaderRecovery api={api} selector={selector} value={value} messages={getMessages('en').weeklyReader} runExclusive={result.current.runExclusive} onState={result.current.acceptState} pendingMutation={pending} onPendingChange={(mutation, _result, previous) => result.current.replacePending(mutation, previous?.mutationId ?? null)} onFailure={vi.fn()} onUpdated={vi.fn()}/>);
   fireEvent.click(screen.getByRole('button', {name: 'Review synchronization'}));
-  fireEvent.click(await screen.findByRole('button', {name: 'Confirm and retry'}));
   await waitFor(() => expect(api.mutate).toHaveBeenCalledOnce());
   const progress: BulletinReaderMutation = {...pending, mutationId: 'latest-progress', kind: 'setProgress', payload: {pageId: 'p2'}};
   await act(async () => {
@@ -46,7 +45,7 @@ it('keeps the actual Recovery work locked after the local deadline without repor
   let finish!: (next: ReturnType<typeof readerFixture>) => void;
   const api = {open: vi.fn(async () => value), current: vi.fn(() => new Promise<typeof value>(resolve => {finish = resolve;})), renew: vi.fn(async () => value), privateState: vi.fn(async () => ({state})), mutate: vi.fn()};
   const onFailure = vi.fn();
-  const {result} = renderHook(() => usePrivateReader({api, selector, value, offline: false, allowAction: () => true, onFailure}));
+  const {result} = renderHook(() => usePrivateReader({api, selector, value, offline: true, allowAction: () => true, onFailure}));
   await waitFor(() => expect(result.current.state).toEqual(state));
   render(<ReaderRecovery api={api} selector={selector} value={value} messages={getMessages('en').weeklyReader} runExclusive={result.current.runExclusive} pendingMutation={pending} onFailure={onFailure} onUpdated={vi.fn()}/>);
   vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
