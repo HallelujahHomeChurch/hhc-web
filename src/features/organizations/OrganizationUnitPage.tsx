@@ -144,7 +144,7 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
   const memberRows = visibleMembers?.items ?? []
   const childKinds = folder.unit.kind === 'church' ? ['family', 'fellowship'] as const : folder.unit.kind === 'family' ? ['small_group'] as const : []
   const columnCount = 2 + (canReadEmail ? 1 : 0) + (childKinds.length ? 1 : 0) + (canManageMembers ? 1 : 0)
-  const isReadOnlyRoster = !canManageMembers && columnCount === 2
+  const isReadOnlyRoster = columnCount === 2 && !Object.values(folder.actions).some(Boolean)
   const close = (open: boolean) => { if (!open && !pending) { setDialog(null); setAdmissionCodes([]) } }
 
   return <section className="organization-document organization-page organization-folder-page">

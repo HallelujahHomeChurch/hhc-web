@@ -307,6 +307,14 @@ it('does not apply the two-column layout to a directory with an extra unit-kind 
  expect(table).not.toHaveClass('organization-table--readonly')
 })
 
+it.each(['editUnit', 'manageResponsibilities', 'sendNotifications'])('keeps management layout when %s is available without member actions', async action => {
+ operationsApi.getManagedUnit.mockResolvedValue({unit:{id:'church',kind:'small_group',name:'Group',status:'active'},breadcrumb:[],children:[],actions:{[action]:true}})
+ mount()
+ const table = await screen.findByRole('table')
+ await within(table).findByText('Alice')
+ expect(table).not.toHaveClass('organization-table--readonly')
+})
+
  it('unmounts an open management dialog when a refresh returns read-only actions', async () => {
  const view = mount()
  await userEvent.click(await screen.findByRole('button',{name:'Add member'}))
