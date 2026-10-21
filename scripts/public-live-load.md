@@ -15,6 +15,14 @@ media and queues. Never start OBS or publish a recording from this script.
 node scripts/build-public-live-load.mjs /tmp/hhc-public-live-load-bundle
 ```
 
+CI also uploads `controlled-live-load-<commit>` with only `public-live-load.js`
+and `SHA256SUMS`, retained for two days. For device execution, download it from
+the verified normal main release with `gh run download <run> --repo
+HallelujahHomeChurch/hhc-web --name controlled-live-load-<commit> --dir <output>`.
+Check the run's exact main commit, required verification result and file SHA-256
+before injection. The device needs no package-registry credential or build tools;
+the artifact contains code, never live credentials. PR artifacts are not main releases.
+
 Inject the resulting JavaScript with the supported browser automation Page API in
 an already signed-in `https://www.alive.org.tw` page. Then invoke it explicitly:
 
