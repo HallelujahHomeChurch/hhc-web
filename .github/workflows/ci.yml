@@ -84,8 +84,25 @@ jobs:
       - name: Build image
         if: steps.changes.outputs.docs_only != 'true'
         run: |
+          umask 077
+          maps_dir=""
+          map_container=""
+          trap 'test -z "$map_container" || docker rm "$map_container" >/dev/null; test -z "$maps_dir" || rm -rf "$maps_dir"; rm -f "$RUNNER_TEMP/npmrc" "$RUNNER_TEMP/sentry-fixture"' EXIT
           printf '@hallelujahhomechurch:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=%s\n' "$GITHUB_TOKEN" > "$RUNNER_TEMP/npmrc"
-          docker build --secret id=npmrc,src="$RUNNER_TEMP/npmrc" -t hhc-web:verify .
+          # Noncredential fixture enables map generation; Docker build must never call Sentry.
+          printf fixture-not-a-credential > "$RUNNER_TEMP/sentry-fixture"
+          image_args=(--secret id=npmrc,src="$RUNNER_TEMP/npmrc"
+            --secret id=sentry_auth_token,src="$RUNNER_TEMP/sentry-fixture"
+            --build-arg SENTRY_ORG=fixture --build-arg SENTRY_PROJECT=fixture
+            --build-arg NEXT_PUBLIC_SENTRY_RELEASE="$GITHUB_SHA")
+          docker build "${image_args[@]}" --target runtime -t hhc-web:verify .
+          docker build "${image_args[@]}" --target source_maps -t hhc-web:sourcemaps-verify .
+          maps_dir="$(mktemp -d "$RUNNER_TEMP/hhc-sourcemaps-test.XXXXXX")"
+          map_container="$(docker create hhc-web:sourcemaps-verify /unused)"
+          docker cp "$map_container:/." "$maps_dir"
+          test -n "$(find "$maps_dir" -type f -name '*.map' -print -quit)"
+          docker run --rm --entrypoint /nodejs/bin/node hhc-web:verify -e \
+            'if(require("node:fs").readdirSync("/app",{recursive:true}).some(p=>p.endsWith(".map")))throw new Error("Source maps reached runtime")'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Scan image

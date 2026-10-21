@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -41,7 +41,8 @@ test('prepare runs alongside full verify; deploy requires both successful jobs',
 });
 
 test('main release builds one production image and scans that same immutable image', () => {
-  assert.equal((workflow.match(/\bdocker build\b/g) || []).length, 1);
+  assert.equal((workflow.match(/--target runtime -t/g) || []).length, 1);
+  assert.equal((workflow.match(/--target source_maps -t/g) || []).length, 1);
   assert.doesNotMatch(job('verify'), /docker build|hhc-web:verify/);
   assert.doesNotMatch(job('deploy'), /docker build|docker push/);
   const prepare = job('prepare_image');
@@ -69,7 +70,7 @@ test('production flags and npm/Sentry secret mounts survive without secret artif
   assert.match(build, /trap .*npmrc.* EXIT/);
   assert.doesNotMatch(prepare, /upload-artifact|--build-arg (?:GITHUB_TOKEN|SENTRY_AUTH_TOKEN)=/);
   const outputs = prepare.split('    outputs:\n')[1].split('    permissions:')[0];
-  assert.deepEqual(outputs.trim().split('\n').map((line) => line.trim().split(':')[0]), ['commit', 'image']);
+  assert.deepEqual(outputs.trim().split('\n').map((line) => line.trim().split(':')[0]), ['commit', 'image', 'sourcemaps']);
   const dockerfile = readFileSync(new URL('../Dockerfile', import.meta.url), 'utf8');
   assert.match(dockerfile, /--mount=type=secret,id=npmrc/);
   assert.match(dockerfile, /--mount=type=secret,id=sentry_auth_token/);
@@ -112,4 +113,45 @@ test('runtime changes stay after verify/image preparation with existing preview 
   }
   assert.match(deploy, /--parameters image="\$IMAGE_REF" provisionPermissions="\$PROVISION_PERMISSIONS"/);
   assert.match(deploy, /--image "\$PREVIOUS_IMAGE_REF"/);
+});
+
+
+test('Sentry provider failure is visible in an independent retryable job, not a deployment dependency', () => {
+  const upload=job('upload_sourcemaps');
+  assert.match(upload, /^    needs: prepare_image$/m);
+  assert.doesNotMatch(job('deploy'), /upload_sourcemaps/);
+  assert.match(upload, /needs\.prepare_image\.outputs\.sourcemaps/);
+  assert.match(upload, /sentry-cli sourcemaps upload/);
+  assert.doesNotMatch(upload, /continue-on-error|docker build|docker push|az deployment|az containerapp/);
+  const dockerfile=readFileSync(new URL('../Dockerfile',import.meta.url),'utf8');
+  assert.doesNotMatch(dockerfile,/sentry-cli sourcemaps upload/);
+  assert.match(dockerfile,/FROM scratch AS source_maps/);
+  assert.match(dockerfile,/COPY --from=stripped_build --chown=nonroot:nonroot/);
+  assert.match(upload,/org\.opencontainers\.image\.revision/);
+});
+
+
+test('source-map retry refuses another commit, repository or mutable tag', () => {
+  const guard=step(job('upload_sourcemaps'),'Validate source-map artifact');
+  const script=guard.split('        run: |\n')[1].replace(/^          /gm,'');
+  const env={PATH:process.env.PATH,GITHUB_REF:'refs/heads/main',GITHUB_SHA:'a'.repeat(40),BUILD_COMMIT:'a'.repeat(40),SOURCE_MAPS_IMAGE:`alive.azurecr.io/alive/hhc-web@sha256:${'b'.repeat(64)}`};
+  for(const change of [{BUILD_COMMIT:'c'.repeat(40)},{GITHUB_REF:'refs/heads/feature'},{SOURCE_MAPS_IMAGE:'alive.azurecr.io/alive/hhc-web:mutable'},{SOURCE_MAPS_IMAGE:`alive.azurecr.io/alive/other@sha256:${'b'.repeat(64)}`},{SOURCE_MAPS_IMAGE:env.SOURCE_MAPS_IMAGE+'\nINJECTED=value'}]){
+    assert.notEqual(spawnSync('/bin/bash',['-e','-c',script],{env:{...env,...change}}).status,0,JSON.stringify(change));
+  }
+  assert.equal(spawnSync('/bin/bash',['-e','-c',script],{env}).status,0);
+});
+
+test('a provider 502 fails only the independent upload command and retains deployment gates', () => {
+  const upload=job('upload_sourcemaps'),body=step(upload,'Upload exact private source maps');
+  const script=body.split('        run: |\n')[1].replace(/^          /gm,'');
+  const folder=mkdtempSync(join(tmpdir(),'hhc-sentry-502-')),bin=join(folder,'bin');mkdirSync(bin);
+  try{
+    writeFileSync(join(bin,'az'),'#!/bin/sh\nexit 0\n',{mode:0o700});
+    writeFileSync(join(bin,'docker'),'#!/bin/sh\ncase "$1" in image) printf "%s\\n" "$GITHUB_SHA" ;; create) echo fixture-container ;; esac\n',{mode:0o700});
+    writeFileSync(join(bin,'corepack'),'#!/bin/sh\necho "Sentry HTTP 502 fixture" >&2\nexit 1\n',{mode:0o700});
+    const result=spawnSync('/bin/bash',['-e','-c',script],{env:{PATH:bin+':'+process.env.PATH,RUNNER_TEMP:folder,GITHUB_SHA:'a'.repeat(40),SOURCE_MAPS_IMAGE:`alive.azurecr.io/alive/hhc-web@sha256:${'b'.repeat(64)}`,SENTRY_ORG:'fixture',SENTRY_PROJECT:'fixture'},encoding:'utf8'});
+    assert.equal(result.status,1,result.stderr);assert.match(result.stderr,/Sentry HTTP 502 fixture/);
+    assert.doesNotMatch(upload,/continue-on-error/);
+    assert.match(job('deploy'),/^    needs: \[verify, prepare_image\]$/m);
+  }finally{rmSync(folder,{recursive:true});}
 });

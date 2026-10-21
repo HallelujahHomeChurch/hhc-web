@@ -18,7 +18,8 @@ grep -q 'environment: production' "$workflow"
 grep -q 'id-token: write' "$workflow"
 grep -q 'packages: read' "$workflow"
 grep -q 'IMAGE_TAG=main-${GITHUB_SHA::7}' "$workflow"
-grep -q 'docker build --secret id=npmrc' "$workflow"
+grep -Fq 'image_args=(--secret id=npmrc' "$workflow"
+grep -Fq 'docker build "${image_args[@]}" --target runtime' "$workflow"
 scanner='ghcr.io/aquasecurity/trivy@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969'
 test "$(grep -Fc "$scanner" "$ci_workflow")" -eq 2
 test "$(grep -Fc "$scanner" "$workflow")" -eq 5
