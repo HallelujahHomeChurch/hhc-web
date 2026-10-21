@@ -77,6 +77,20 @@ jobs:
           corepack pnpm build
           corepack pnpm perf:static
           ./scripts/test-release-policy.sh
+      - name: Build controlled live-load artifact
+        run: |
+          node scripts/build-public-live-load.mjs "$RUNNER_TEMP/public-live-load"
+          cd "$RUNNER_TEMP/public-live-load"
+          sha256sum public-live-load.js > SHA256SUMS
+          sha256sum --check SHA256SUMS
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: controlled-live-load-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/public-live-load/public-live-load.js
+            ${{ runner.temp }}/public-live-load/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 2
 
   prepare_image:
     needs: agent_docs
