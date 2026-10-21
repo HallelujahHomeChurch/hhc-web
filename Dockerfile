@@ -30,10 +30,16 @@ RUN --mount=type=secret,id=sentry_auth_token,required=false \
   pnpm build; \
   if [ -n "$SENTRY_AUTH_TOKEN" ] && [ -n "$SENTRY_ORG" ] && [ -n "$SENTRY_PROJECT" ]; then \
     pnpm exec sentry-cli sourcemaps inject .next/static; \
-    pnpm exec sentry-cli sourcemaps upload --org "$SENTRY_ORG" --project "$SENTRY_PROJECT" \
-      --release "$NEXT_PUBLIC_SENTRY_RELEASE" .next/static; \
-    find .next -type f -name '*.map' -delete; \
   fi
+
+# Private retry artifact; never deployed as the website image.
+FROM scratch AS source_maps
+ARG NEXT_PUBLIC_SENTRY_RELEASE=
+LABEL org.opencontainers.image.revision=$NEXT_PUBLIC_SENTRY_RELEASE
+COPY --from=build /app/.next/static/ /
+
+FROM build AS stripped_build
+RUN find .next -type f -name '*.map' -delete
 
 # ponytail: temporary OpenSSL overlay; remove when the upstream runtime passes the image scan.
 FROM debian:trixie-slim@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a AS runtime-patch
@@ -55,9 +61,9 @@ ENV NODE_ENV=production \
     PORT=10000 \
     HOSTNAME=0.0.0.0
 
-COPY --from=build --chown=nonroot:nonroot /app/.next/standalone ./
-COPY --from=build --chown=nonroot:nonroot /app/.next/static ./.next/static
-COPY --from=build --chown=nonroot:nonroot /app/public ./public
+COPY --from=stripped_build --chown=nonroot:nonroot /app/.next/standalone ./
+COPY --from=stripped_build --chown=nonroot:nonroot /app/.next/static ./.next/static
+COPY --from=stripped_build --chown=nonroot:nonroot /app/public ./public
 
 EXPOSE 10000
 USER nonroot:nonroot

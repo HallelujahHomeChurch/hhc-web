@@ -87,6 +87,7 @@ jobs:
     outputs:
       commit: ${{ steps.image.outputs.commit }}
       image: ${{ steps.image.outputs.image }}
+      sourcemaps: ${{ steps.image.outputs.sourcemaps }}
     permissions:
       contents: read
       packages: read
@@ -134,15 +135,26 @@ jobs:
           if [[ -n "${SENTRY_AUTH_TOKEN:-}" && -n "${{ vars.SENTRY_ORG }}" && -n "${{ vars.SENTRY_PROJECT }}" ]]; then
             sentry_args+=(--secret id=sentry_auth_token,env=SENTRY_AUTH_TOKEN)
           fi
-          docker build --secret id=npmrc,src="$RUNNER_TEMP/npmrc" "${sentry_args[@]}" \
+          image_args=(--secret id=npmrc,src="$RUNNER_TEMP/npmrc" "${sentry_args[@]}" \
             --build-arg NEXT_PUBLIC_SENTRY_DSN="${{ vars.SENTRY_DSN }}" \
             --build-arg NEXT_PUBLIC_SENTRY_RELEASE="$GITHUB_SHA" \
             --build-arg NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED="$MEMBER_VIDEO_NAV_ENABLED" \
             --build-arg NEXT_PUBLIC_WEEKLY_READER_ENABLED="$WEEKLY_READER_ENABLED" \
             --build-arg SENTRY_ORG="${{ vars.SENTRY_ORG }}" \
-            --build-arg SENTRY_PROJECT="${{ vars.SENTRY_PROJECT }}" \
-            -t "$image_ref" .
+            --build-arg SENTRY_PROJECT="${{ vars.SENTRY_PROJECT }}")
+          docker build "${image_args[@]}" --target runtime -t "$image_ref" .
           docker push "$image_ref"
+          if [[ ${#sentry_args[@]} -gt 0 ]]; then
+            [[ "$(az acr show -n "$ACR_NAME" --query anonymousPullEnabled -o tsv --only-show-errors)" != true ]] || exit 1
+            maps_tag="${IMAGE_TAG}-sourcemaps"
+            maps_ref="${ACR_LOGIN_SERVER}/${IMAGE_REPOSITORY}:${maps_tag}"
+            # Reuse the same cached compilation; publish only static client artifacts privately.
+            docker build "${image_args[@]}" --target source_maps -t "$maps_ref" .
+            docker push "$maps_ref"
+            maps_digest="$(az acr repository show -n "$ACR_NAME" --image "${IMAGE_REPOSITORY}:${maps_tag}" --query digest -o tsv --only-show-errors)"
+            [[ "$maps_digest" =~ ^sha256:[0-9a-f]{64}$ ]] || exit 1
+            echo "SOURCE_MAPS_IMAGE_REF=${ACR_LOGIN_SERVER}/${IMAGE_REPOSITORY}@${maps_digest}" >> "$GITHUB_ENV"
+          fi
       - name: Resolve immutable image
         run: |
           digest="$(az acr repository show --name "$ACR_NAME" \
@@ -186,6 +198,62 @@ jobs:
         run: |
           echo "commit=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
           echo "image=$IMAGE_REF" >> "$GITHUB_OUTPUT"
+          echo "sourcemaps=${SOURCE_MAPS_IMAGE_REF:-}" >> "$GITHUB_OUTPUT"
+
+  upload_sourcemaps:
+    needs: prepare_image
+    if: ${{ needs.prepare_image.outputs.sourcemaps != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    env:
+      SOURCE_MAPS_IMAGE: ${{ needs.prepare_image.outputs.sourcemaps }}
+      BUILD_COMMIT: ${{ needs.prepare_image.outputs.commit }}
+      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+          package-manager-cache: false
+      - name: Validate source-map artifact
+        run: |
+          [[ "$GITHUB_REF" == refs/heads/main ]] || exit 1
+          [[ "$BUILD_COMMIT" == "$GITHUB_SHA" ]] || exit 1
+          [[ "$SOURCE_MAPS_IMAGE" =~ ^alive\.azurecr\.io/alive/hhc-web@sha256:[0-9a-f]{64}$ ]] || exit 1
+      - uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 # v3.0.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - run: corepack enable
+      - run: corepack pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload exact private source maps
+        id: upload
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          az acr login --name alive
+          docker pull "$SOURCE_MAPS_IMAGE"
+          [[ "$(docker image inspect "$SOURCE_MAPS_IMAGE" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')" == "$GITHUB_SHA" ]] || exit 1
+          maps_dir="$(mktemp -d "$RUNNER_TEMP/hhc-sourcemaps.XXXXXX")"
+          container="$(docker create "$SOURCE_MAPS_IMAGE" /unused)"
+          trap 'docker rm "$container" >/dev/null; rm -rf "$maps_dir"' EXIT
+          docker cp "$container:/." "$maps_dir"
+          corepack pnpm exec sentry-cli sourcemaps upload --org "$SENTRY_ORG" --project "$SENTRY_PROJECT" \
+            --release "$GITHUB_SHA" "$maps_dir"
+      - name: Report source-map publication
+        if: ${{ always() }}
+        run: |
+          echo "Sentry source-map upload: ${{ steps.upload.outcome }}; website deploy is independently gated by verify and prepare_image." >> "$GITHUB_STEP_SUMMARY"
 
   deploy:
     needs: [verify, prepare_image]

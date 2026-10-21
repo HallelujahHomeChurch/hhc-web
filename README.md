@@ -84,15 +84,25 @@ The runtime serves `GET /health` on port `10000`.
 
 ## Production image handoff
 
-The main Release runs full verification and `prepare_image` in parallel. The
-latter builds once with the existing production flags and npm/Sentry secret
-mounts, scans the resolved immutable image, then exports only its commit/digest.
-Deploy requires both jobs to succeed and checks the exact source/repository/digest
-before its existing prerequisites, what-if, Dapr smoke and rollback steps.
-PR CI retains its separate test image build/scan. Failed main verification can
-leave an unused prepared image or Sentry upload, but cannot start deployment.
-Actual timing improvement must be measured on a normal merged-main Release;
-PR CI and workflow tests do not measure production release duration.
+The main Release runs full verification and `prepare_image` in parallel. Image
+preparation compiles once with production flags and secret mounts, injects debug
+IDs locally, and scans the immutable runtime image. Source maps are stripped in a
+separate build stage before runtime files are copied, so no runtime layer contains
+them. The same cached compilation exports a static-only source-map image to the
+existing private ACR; it is a retry artifact, never a website runtime or public
+GitHub artifact. No new Azure resources or permissions are created.
+
+`upload_sourcemaps` pulls that exact private digest, checks its build/release ID,
+and uploads it to Sentry independently. Its failure remains a failed job with a
+summary; re-run only that failed job to retry the same maps without rebuilding or
+redeploying the website. Deploy still requires successful verification and scanned
+image preparation, with its existing artifact guard, provider preview, smoke and
+rollback. Sentry publication and runtime deployment have separate outcomes; a
+successful deployment does not imply source-map publication succeeded.
+
+PR CI uses a noncredential fixture to generate real maps without contacting Sentry,
+checks that the private artifact contains them and the runtime image does not, and
+retains its image scan. Actual release duration is measured separately.
 Startup and liveness probe this application endpoint. Readiness probes Dapr's
 `GET /v1.0/healthz` on its public health port `3501`, so a sidecar startup failure
 cannot pass readiness solely because Next.js is running. This gates readiness;
