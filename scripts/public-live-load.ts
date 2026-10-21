@@ -121,21 +121,22 @@ export async function startPublicLiveLoad(options:{recordingId:string;captureId:
       const master=parsePlaylist(await request(media!,true));requireValue(master.variants.length>0);
       const height=index%10<2?480:index%10<7?720:1080;
       const variant=[...master.variants].sort((a,b)=>Math.abs(a.height-height)-Math.abs(b.height-height))[0];
-      const playlist=scopedURL(variant.uri,media!,root),seen=new Set<string>();let initialized:string|undefined,first=true;nextAt=performance.now();
+      const playlist=scopedURL(variant.uri,media!,root);let initialized:string|undefined,lastSegment:string|undefined,first=true;nextAt=performance.now();
       while(!signal.aborted && performance.now()<deadline) {
         if(performance.now()>=renew)await authorize();
         const list=parsePlaylist(await request(playlist,true));requireValue(list.variants.length===0 && list.segments.length>0);
         if(list.init && list.init!==initialized){await request(scopedURL(list.init,playlist,root));initialized=list.init;}
-        const batch=(first?list.segments.slice(-3):list.segments).filter(s=>!seen.has(s.uri));first=false;
+        // EVENT includes pre-join history; continue after the last completed URI.
+        const anchor=first?-1:list.segments.findIndex(s=>s.uri===lastSegment);requireValue(first||anchor>=0);
+        const batch=first?list.segments.slice(-3):list.segments.slice(anchor+1);first=false;
         for(const segment of batch) {
           if(performance.now()>=deadline || signal.aborted)break;
           if(performance.now()>=renew)await authorize();
-          await request(scopedURL(segment.uri,playlist,root));seen.add(segment.uri);
+          await request(scopedURL(segment.uri,playlist,root));lastSegment=segment.uri;
           if(!active){
             active=true;stats.active++;
             if(stats.active===options.viewers){holdStarted=performance.now();setDeadline(holdStarted+holdMs);}
           }
-          if(seen.size>1024)seen.delete(seen.values().next().value!);
           nextAt+=segment.duration*1000;
           if(performance.now()-nextAt>10000)throw new Error('Generator cannot keep pace');
           await pause(nextAt-performance.now());

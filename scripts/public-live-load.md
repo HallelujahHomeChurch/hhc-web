@@ -56,6 +56,9 @@ renew before their maximum5min TTL. No credential leaves browser memory. Only
 canonical media origins and the granted session path are accepted. Unsupported
 separate audio, encryption, byte ranges or partial-segment playlists fail closed;
 this is a protocol load generator, not a decoder or general HLS implementation.
+Join at the last three EVENT segments, then follow only entries after the last
+fully downloaded URI. Earlier pre-join history is never replayed as new live media;
+a missing cursor fails closed. The cursor uses constant state even on long timelines.
 
 A HTTP failure, stale media coverage>10s, missed scope/TTL fence,10s request timeout,
 failed cookie cleanup, unexpected ENDLIST,120GB aggregate or200,000 media requests stops
