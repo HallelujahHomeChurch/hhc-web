@@ -62,7 +62,7 @@ export async function startPublicLiveLoad(options:{recordingId:string;captureId:
       else controller.abort('deadline');
     },Math.max(1,Math.ceil(at-performance.now())));
   };
-  const stats={active:0,completed:0,requests:0,bytes:0,renewals:0,maxRequestMs:0,failure:null as string|null,
+  const stats={active:0,completed:0,requests:0,bytes:0,renewals:0,maxRequestMs:0,cleanupCompleted:0,cleanupFailed:0,failure:null as string|null,
     failureDetail:null as {viewer:number;phase:string;code:string}|null};
   const boundedFetch:typeof fetch=async(input,init)=>{
     const method=init?.method ?? (input instanceof Request?input.method:'GET');
@@ -140,7 +140,8 @@ export async function startPublicLiveLoad(options:{recordingId:string;captureId:
           }
           nextAt+=segment.duration*1000;
           if(performance.now()-nextAt>10000)throw new Error('Generator cannot keep pace');
-          await pause(nextAt-performance.now());
+          // Fetch one fragment ahead so download time does not empty the playback buffer.
+          await pause(nextAt-performance.now()-segment.duration*1000);
         }
         if(list.ended)throw new Error('Live ended before planned hold');
         if(!batch.length && performance.now()>=nextAt+10000)throw new Error('Live segment progress stalled');
@@ -163,7 +164,7 @@ export async function startPublicLiveLoad(options:{recordingId:string;captureId:
     }
     finally {
       if(active)stats.active--;
-      if(media){try{await api.clearLive(media);}catch{stats.failure??='COOKIE_CLEANUP_FAILED';}}
+      if(media){try{await api.clearLive(media);stats.cleanupCompleted++;}catch{stats.cleanupFailed++;stats.failure??='COOKIE_CLEANUP_FAILED';}}
     }
   }
   try {requireValue((await session.start()).status==='authenticated' && performance.now()<deadline);}
