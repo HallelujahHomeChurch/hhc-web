@@ -73,7 +73,7 @@ it('completes every viewer across a ten-minute fractional-segment live hold and 
  vi.stubGlobal('fetch',vi.fn(async(input:string)=>{
   await new Promise(resolve=>setTimeout(resolve,10));
   const newest=2+Math.floor(performance.now()/10010);
-  const segments=Array.from({length:3},(_,i)=>`#EXTINF:10.01,\nseg-${String(newest-2+i).padStart(6,'0')}.m4s`).join('\n');
+  const segments=Array.from({length:newest+1},(_,i)=>`#EXTINF:10.01,\nseg-${String(i).padStart(6,'0')}.m4s`).join('\n');
   return new Response(input.endsWith('master.m3u8')?'#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1000000,RESOLUTION=1280x720\n720p/index.m3u8':input.endsWith('index.m3u8')?`#EXTM3U\n#EXT-X-TARGETDURATION:11\n#EXT-X-MAP:URI="init.mp4"\n${segments}`:'complete object bytes');
  }));
  const load=await startPublicLiveLoad({recordingId,captureId,viewers:8,minutes:10});
@@ -81,6 +81,31 @@ it('completes every viewer across a ten-minute fractional-segment live hold and 
  expect(load.snapshot()).toMatchObject({active:0,completed:8,failure:null});
  expect(api.liveGrant.mock.calls.length).toBeGreaterThan(16);
  expect(api.clearLive).toHaveBeenCalledTimes(8);
+});
+it.each([true,false])('follows appended EVENT media without replaying long history (advancing=%s)',async(advancing)=>{
+ setup();const requested:number[]=[];
+ vi.stubGlobal('fetch',vi.fn(async(input:string)=>{
+  const sequence=/seg-(\d+)\.m4s$/.exec(input);if(sequence)requested.push(Number(sequence[1]));
+  const newest=1200+(advancing?Math.floor(performance.now()/10010):0);
+  const segments=Array.from({length:newest+1},(_,i)=>`#EXTINF:10.01,\nseg-${String(i).padStart(6,'0')}.m4s`).join('\n');
+  return new Response(input.endsWith('master.m3u8')?'#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1000000,RESOLUTION=1280x720\n720p/index.m3u8':input.endsWith('index.m3u8')?`#EXTM3U\n#EXT-X-PLAYLIST-TYPE:EVENT\n#EXT-X-TARGETDURATION:11\n#EXT-X-MAP:URI="init.mp4"\n${segments}`:'complete object bytes');
+ }));
+ const load=await startPublicLiveLoad({recordingId,captureId,viewers:1,minutes:1});
+ await vi.advanceTimersByTimeAsync(75000);await load.done;
+ expect(requested).toEqual(advancing?[1198,1199,1200,1201,1202,1203]:[1198,1199,1200]);
+ expect(load.snapshot()).toMatchObject(advancing?{completed:1,failure:null}:{completed:0,failureDetail:{code:'MEDIA_STALLED'}});
+});
+it('fails closed if the last completed EVENT segment disappears',async()=>{
+ const original=setup();let playlists=0;
+ const fetcher=vi.fn(async(input:string,init?:RequestInit)=>{
+  const response=await original(input,init);
+  return input.endsWith('index.m3u8')&&++playlists>1?new Response((await response.text()).replace('seg-000001','seg-000002')):response;
+ });vi.stubGlobal('fetch',fetcher);
+ const load=await startPublicLiveLoad({recordingId,captureId,viewers:1,minutes:1});
+ await vi.advanceTimersByTimeAsync(35000);await load.done;
+ expect(load.snapshot()).toMatchObject({completed:0,failureDetail:{phase:'playlist',code:'INVALID_EVIDENCE'}});
+ expect(fetcher.mock.calls.some(([url])=>url.endsWith('seg-000002.m4s'))).toBe(false);
+ expect(api.clearLive).toHaveBeenCalledOnce();
 });
 it('freezes failed-run elapsed time, media hold and goodput after cleanup',async()=>{
  setup();api.clearLive.mockImplementationOnce(()=>new Promise(resolve=>setTimeout(resolve,2000)));
