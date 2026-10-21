@@ -81,6 +81,12 @@
   .organization-toolbar > .organization-actions { width: 100%; gap: .5rem; }
   .organization-toolbar > .organization-actions > button:not(.organization-settings) { flex: 1; padding-inline: .6rem; }
   .organization-table { min-width: 30rem; }
+  .organization-table--readonly { min-width: 0; }
+  .organization-table--readonly th, .organization-table--readonly td { padding-inline: .75rem; }
+  .organization-table--readonly th:first-child, .organization-table--readonly td:first-child { white-space: normal; overflow-wrap: anywhere; }
+  /* Keep the three-character type label intact; longer translations may wrap. */
+  .organization-table--readonly .organization-type-cell { min-width: calc(3em + 1.5rem); white-space: normal; overflow-wrap: anywhere; }
+  .organization-table--readonly:lang(en) .organization-type-cell { min-width: min(calc(6em + 1.5rem), 45vw); }
   .organization-toolbar > .organization-input { width: 100%; }
   .organization-heading > .organization-actions { width: 100%; }
   .organization-heading > .organization-actions > button { flex: 1; }

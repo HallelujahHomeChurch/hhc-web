@@ -144,6 +144,7 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
   const memberRows = visibleMembers?.items ?? []
   const childKinds = folder.unit.kind === 'church' ? ['family', 'fellowship'] as const : folder.unit.kind === 'family' ? ['small_group'] as const : []
   const columnCount = 2 + (canReadEmail ? 1 : 0) + (childKinds.length ? 1 : 0) + (canManageMembers ? 1 : 0)
+  const isReadOnlyRoster = columnCount === 2 && !Object.values(folder.actions).some(Boolean)
   const close = (open: boolean) => { if (!open && !pending) { setDialog(null); setAdmissionCodes([]) } }
 
   return <section className="organization-document organization-page organization-folder-page">
@@ -169,7 +170,7 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
           <span className="muted-copy" role="status">{loading ? t.refreshing : t.members + ' · ' + page}</span>
           <div className="organization-actions"><Button size="sm" isDisabled={page === 1 || loading || pending} variant="ghost" onPress={() => setPage(value => value - 1)}>{t.previous}</Button><Button size="sm" isDisabled={!visibleMembers?.nextPage || loading || pending} variant="ghost" onPress={() => setPage(value => value + 1)}>{t.next}</Button></div>
         </div>}>
-          <table className="organization-table" aria-label={t.directory} aria-busy={loading}>
+          <table className={`organization-table${isReadOnlyRoster ? ' organization-table--readonly' : ''}`} aria-label={t.directory} aria-busy={loading}>
             <thead><tr><th>{t.name}</th>{canReadEmail ? <th>{t.email}</th> : null}<th className="organization-type-cell">{t.type}</th>{childKinds.length ? <th className="organization-unit-kind-cell">{t.unitKind}</th> : null}{canManageMembers ? <th className="organization-row-action"><span className="sr-only">{t.settings}</span></th> : null}</tr></thead>
             <tbody>
               {loading&&!visibleMembers?<OrganizationRowsSkeleton columns={columnCount}/>:null}

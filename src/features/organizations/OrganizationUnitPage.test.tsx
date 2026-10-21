@@ -254,6 +254,7 @@ it('renders ordinary members as a read-only roster with no management links or a
  mount()
  const table = await screen.findByRole('table')
  await within(table).findByText('Alice')
+ expect(table).toHaveClass('organization-table--readonly')
  expect(within(table).queryByRole('link')).not.toBeInTheDocument()
  expect(within(table).getAllByRole('columnheader')).toHaveLength(2)
  expect(within(table).queryByRole('columnheader', {name: 'Email'})).not.toBeInTheDocument()
@@ -280,6 +281,7 @@ it('keeps email visible for the responsible viewer and removes it after scope is
  const view = mount()
  const table = await screen.findByRole('table')
  await within(table).findByText('alice@example.test')
+ expect(table).not.toHaveClass('organization-table--readonly')
  expect(within(table).getByRole('columnheader',{name:'Email'})).toBeInTheDocument()
  operationsApi.getManagedUnit.mockResolvedValue({...managed,actions:{}})
  // Include an old-style payload to ensure presentation also obeys fresh scope.
@@ -288,6 +290,29 @@ it('keeps email visible for the responsible viewer and removes it after scope is
  expect(table.innerHTML).not.toContain('alice@example.test')
  expect(within(table).queryByRole('columnheader',{name:'Email'})).not.toBeInTheDocument()
  expect(within(table).getByText('Alice')).toBeInTheDocument()
+ expect(table).toHaveClass('organization-table--readonly')
+
+ operationsApi.getManagedUnit.mockResolvedValue(managed)
+ view.rerender(<OrganizationUnitPage searchQuery="" />)
+ await waitFor(() => expect(table).not.toHaveClass('organization-table--readonly'))
+ expect(within(table).getByRole('columnheader',{name:'Email'})).toBeInTheDocument()
+})
+
+it('does not apply the two-column layout to a directory with an extra unit-kind column', async () => {
+ operationsApi.getManagedUnit.mockResolvedValue({unit:{id:'church',kind:'family',name:'Family',status:'active'},breadcrumb:[],children:[],actions:{}})
+ mount()
+ const table = await screen.findByRole('table')
+ await within(table).findByText('Alice')
+ expect(within(table).getAllByRole('columnheader')).toHaveLength(3)
+ expect(table).not.toHaveClass('organization-table--readonly')
+})
+
+it.each(['editUnit', 'manageResponsibilities', 'sendNotifications'])('keeps management layout when %s is available without member actions', async action => {
+ operationsApi.getManagedUnit.mockResolvedValue({unit:{id:'church',kind:'small_group',name:'Group',status:'active'},breadcrumb:[],children:[],actions:{[action]:true}})
+ mount()
+ const table = await screen.findByRole('table')
+ await within(table).findByText('Alice')
+ expect(table).not.toHaveClass('organization-table--readonly')
 })
 
  it('unmounts an open management dialog when a refresh returns read-only actions', async () => {
