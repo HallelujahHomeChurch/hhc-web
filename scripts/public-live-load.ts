@@ -140,7 +140,8 @@ export async function startPublicLiveLoad(options:{recordingId:string;captureId:
           }
           nextAt+=segment.duration*1000;
           if(performance.now()-nextAt>10000)throw new Error('Generator cannot keep pace');
-          await pause(nextAt-performance.now());
+          // Fetch one fragment ahead so download time does not empty the playback buffer.
+          await pause(nextAt-performance.now()-segment.duration*1000);
         }
         if(list.ended)throw new Error('Live ended before planned hold');
         if(!batch.length && performance.now()>=nextAt+10000)throw new Error('Live segment progress stalled');

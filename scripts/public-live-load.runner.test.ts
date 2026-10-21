@@ -18,10 +18,10 @@ afterEach(()=>{vi.restoreAllMocks();vi.useRealTimers();vi.unstubAllGlobals();vi.
 it('drains complete media bodies with credentials, holds by EXTINF, clears only its own scope',async()=>{
  const fetcher=setup();const load=await startPublicLiveLoad({recordingId,captureId,viewers:1,minutes:.01});
  await vi.advanceTimersByTimeAsync(601);await load.done;
- expect(fetcher).toHaveBeenCalledTimes(4);
+ expect(fetcher).toHaveBeenCalledTimes(5);
  expect(fetcher.mock.calls.every(([,init])=>init?.credentials==='include' && init?.redirect==='error')).toBe(true);
  expect(api.clearLive).toHaveBeenCalledExactlyOnceWith(root+'master.m3u8');
- expect(load.snapshot()).toMatchObject({active:0,completed:1,requests:4,failure:null});
+ expect(load.snapshot()).toMatchObject({active:0,completed:1,requests:5,failure:null});
  expect(load.snapshot().bytes).toBeGreaterThan(40);
 });
 it('stops all traffic after a denied media response without retrying or leaking a raw URL',async()=>{
@@ -68,13 +68,14 @@ it('aborts an in-flight media request at the overall deadline, then cleans up',a
  await vi.advanceTimersByTimeAsync(15001);await load.done;
  expect(load.snapshot()).toMatchObject({active:0,completed:0,failure:'INCOMPLETE_MEDIA_HOLD'});expect(api.clearLive).toHaveBeenCalledOnce();
 });
-it.each([10,350])('completes every viewer across a ten-minute fractional-segment live hold and renewals with %ims requests',async(latency)=>{
- setup();
+it.each([{latency:10,initialLatency:10},{latency:350,initialLatency:350},{latency:350,initialLatency:50}])('completes every viewer across a ten-minute fractional-segment live hold with latency $latency and initial $initialLatency',async({latency,initialLatency})=>{
+ setup();let requests=0;
  vi.stubGlobal('fetch',vi.fn(async(input:string,init?:RequestInit)=>{
+  const delay=++requests<=4?initialLatency:latency;
   await new Promise<void>((resolve,reject)=>{
    const signal=init?.signal;
    const abort=()=>{clearTimeout(timer);reject(signal?.reason);};
-   const timer=setTimeout(()=>{signal?.removeEventListener('abort',abort);resolve();},latency);
+   const timer=setTimeout(()=>{signal?.removeEventListener('abort',abort);resolve();},delay);
    if(signal?.aborted)abort();else signal?.addEventListener('abort',abort,{once:true});
   });
   const newest=2+Math.floor(performance.now()/10010);
@@ -97,7 +98,7 @@ it.each([true,false])('follows appended EVENT media without replaying long histo
  }));
  const load=await startPublicLiveLoad({recordingId,captureId,viewers:1,minutes:1});
  await vi.advanceTimersByTimeAsync(75000);await load.done;
- expect(requested).toEqual(advancing?[1198,1199,1200,1201,1202,1203]:[1198,1199,1200]);
+ expect(requested).toEqual(advancing?[1198,1199,1200,1201,1202,1203,1204]:[1198,1199,1200]);
  expect(load.snapshot()).toMatchObject(advancing?{completed:1,failure:null}:{completed:0,failureDetail:{code:'MEDIA_STALLED'}});
 });
 it('fails closed if the last completed EVENT segment disappears',async()=>{
