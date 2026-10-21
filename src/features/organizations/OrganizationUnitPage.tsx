@@ -139,9 +139,11 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
   if (!folder && loading) return <OrganizationDirectorySkeleton label={t.loading}/>
   if (!folder) return <section className="organization-document"><p className="form-error" role="alert">{loadError === 'forbidden' ? t.forbidden : t.loadFailed}</p><Button onPress={refresh}>{t.retry}</Button></section>
   const canManageMembers = folder.actions.manageMembers || folder.actions.manageEntitlements
+  const canReadEmail = Boolean(canManageMembers)
   const unitRows = folder.children.filter(child => !search || child.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()))
   const memberRows = visibleMembers?.items ?? []
   const childKinds = folder.unit.kind === 'church' ? ['family', 'fellowship'] as const : folder.unit.kind === 'family' ? ['small_group'] as const : []
+  const columnCount = 2 + (canReadEmail ? 1 : 0) + (childKinds.length ? 1 : 0) + (canManageMembers ? 1 : 0)
   const close = (open: boolean) => { if (!open && !pending) { setDialog(null); setAdmissionCodes([]) } }
 
   return <section className="organization-document organization-page organization-folder-page">
@@ -168,19 +170,19 @@ function UnitFolder({ unitId, query, onSearchAvailabilityChange }: {
           <div className="organization-actions"><Button size="sm" isDisabled={page === 1 || loading || pending} variant="ghost" onPress={() => setPage(value => value - 1)}>{t.previous}</Button><Button size="sm" isDisabled={!visibleMembers?.nextPage || loading || pending} variant="ghost" onPress={() => setPage(value => value + 1)}>{t.next}</Button></div>
         </div>}>
           <table className="organization-table" aria-label={t.directory} aria-busy={loading}>
-            <thead><tr><th>{t.name}</th><th>{t.email}</th><th className="organization-type-cell">{t.type}</th>{childKinds.length ? <th className="organization-unit-kind-cell">{t.unitKind}</th> : null}{canManageMembers ? <th className="organization-row-action"><span className="sr-only">{t.settings}</span></th> : null}</tr></thead>
+            <thead><tr><th>{t.name}</th>{canReadEmail ? <th>{t.email}</th> : null}<th className="organization-type-cell">{t.type}</th>{childKinds.length ? <th className="organization-unit-kind-cell">{t.unitKind}</th> : null}{canManageMembers ? <th className="organization-row-action"><span className="sr-only">{t.settings}</span></th> : null}</tr></thead>
             <tbody>
-              {loading&&!visibleMembers?<OrganizationRowsSkeleton columns={3+(childKinds.length?1:0)+(canManageMembers?1:0)}/>:null}
+              {loading&&!visibleMembers?<OrganizationRowsSkeleton columns={columnCount}/>:null}
               {unitRows.map(child => <tr className="organization-folder-row" key={child.id}>
                 <td><Link className="organization-row-link" href={organizationHref(locale, '/organizations/' + child.id)}><span>{child.name}</span></Link></td>
-                <td className="organization-email">{child.email || '—'}</td><td className="organization-type-cell">{t.unitButton}</td>{childKinds.length ? <td className="organization-unit-kind-cell">{t[child.kind]}</td> : null}
+                {canReadEmail ? <td className="organization-email">{child.email || '—'}</td> : null}<td className="organization-type-cell">{t.unitButton}</td>{childKinds.length ? <td className="organization-unit-kind-cell">{t[child.kind]}</td> : null}
                 {canManageMembers ? <td className="organization-row-action"><Link className="organization-icon-action" aria-label={t.view + ' ' + child.name} href={organizationHref(locale, '/organizations/' + child.id)}><Pencil size={16} aria-hidden="true" /></Link></td> : null}
               </tr>)}
               {memberRows.map(member => <tr key={member.memberId}>
-                <td>{canManageMembers ? <Link className="organization-row-link" href={organizationHref(locale, '/organizations/' + unitId + '/members/' + member.memberId)}><span>{member.displayName || member.email}</span></Link> : <span>{member.displayName || member.email}</span>}</td><td className="organization-email">{member.email}</td><td className="organization-type-cell">{member.isResponsible === true ? t.responsibility : t.memberButton}</td>{childKinds.length ? <td className="organization-unit-kind-cell" /> : null}
-                {canManageMembers ? <td className="organization-row-action"><Link className="organization-icon-action" aria-label={t.entitlements + ' ' + (member.displayName || member.email)} href={organizationHref(locale, '/organizations/' + unitId + '/members/' + member.memberId)}><Pencil size={16} aria-hidden="true" /></Link></td> : null}
+                <td>{canManageMembers ? <Link className="organization-row-link" href={organizationHref(locale, '/organizations/' + unitId + '/members/' + member.memberId)}><span>{member.displayName || (canReadEmail ? member.email : '')}</span></Link> : <span>{member.displayName || (canReadEmail ? member.email : '')}</span>}</td>{canReadEmail ? <td className="organization-email">{member.email}</td> : null}<td className="organization-type-cell">{member.isResponsible === true ? t.responsibility : t.memberButton}</td>{childKinds.length ? <td className="organization-unit-kind-cell" /> : null}
+                {canManageMembers ? <td className="organization-row-action"><Link className="organization-icon-action" aria-label={t.entitlements + ' ' + (member.displayName || (canReadEmail ? member.email : ''))} href={organizationHref(locale, '/organizations/' + unitId + '/members/' + member.memberId)}><Pencil size={16} aria-hidden="true" /></Link></td> : null}
               </tr>)}
-              {!loading && !memberRows.length && !unitRows.length ? <tr><td colSpan={3 + (childKinds.length ? 1 : 0) + (canManageMembers ? 1 : 0)} className="organization-empty">{search ? t.noResults : t.noMembers}</td></tr> : null}
+              {!loading && !memberRows.length && !unitRows.length ? <tr><td colSpan={columnCount} className="organization-empty">{search ? t.noResults : t.noMembers}</td></tr> : null}
             </tbody>
           </table>
         </DataTableFrame>

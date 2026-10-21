@@ -255,10 +255,39 @@ it('renders ordinary members as a read-only roster with no management links or a
  const table = await screen.findByRole('table')
  await within(table).findByText('Alice')
  expect(within(table).queryByRole('link')).not.toBeInTheDocument()
- expect(within(table).getAllByRole('columnheader')).toHaveLength(3)
+ expect(within(table).getAllByRole('columnheader')).toHaveLength(2)
+ expect(within(table).queryByRole('columnheader', {name: 'Email'})).not.toBeInTheDocument()
+ expect(table.innerHTML).not.toContain('alice@example.test')
  for (const name of ['Unit settings','Add member','Create child unit','Notifications']) expect(screen.queryByRole('button',{name})).not.toBeInTheDocument()
  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
  expect(screen.getByRole('button',{name:'Next'})).toBeInTheDocument()
+})
+
+it('renders server-redacted members without email cells or email fallback labels', async () => {
+ operationsApi.getManagedUnit.mockResolvedValue({unit:{id:'church',kind:'small_group',name:'My group',status:'active'},breadcrumb:[],children:[],actions:{}})
+ operationsApi.listManagedMembers.mockResolvedValue({items:[{memberId:'member',displayName:'Alice'},{memberId:'unnamed',displayName:'',email:'fallback@example.test'}],page:1})
+ mount()
+ const table = await screen.findByRole('table')
+ await within(table).findByText('Alice')
+ expect(table.innerHTML).not.toContain('@example.test')
+ expect(within(table).queryByRole('columnheader',{name:'Email'})).not.toBeInTheDocument()
+ expect(within(table).getAllByRole('row')[1].children).toHaveLength(2)
+})
+
+it('keeps email visible for the responsible viewer and removes it after scope is revoked', async () => {
+ const managed = {unit:{id:'church',kind:'small_group',name:'My group',status:'active'},breadcrumb:[],children:[],actions:{editUnit:true,manageMembers:true,manageEntitlements:true}}
+ operationsApi.getManagedUnit.mockResolvedValue(managed)
+ const view = mount()
+ const table = await screen.findByRole('table')
+ await within(table).findByText('alice@example.test')
+ expect(within(table).getByRole('columnheader',{name:'Email'})).toBeInTheDocument()
+ operationsApi.getManagedUnit.mockResolvedValue({...managed,actions:{}})
+ // Include an old-style payload to ensure presentation also obeys fresh scope.
+ view.rerender(<OrganizationUnitPage searchQuery="Alice" />)
+ await waitFor(() => expect(screen.queryByRole('button',{name:'Unit settings'})).not.toBeInTheDocument())
+ expect(table.innerHTML).not.toContain('alice@example.test')
+ expect(within(table).queryByRole('columnheader',{name:'Email'})).not.toBeInTheDocument()
+ expect(within(table).getByText('Alice')).toBeInTheDocument()
 })
 
  it('unmounts an open management dialog when a refresh returns read-only actions', async () => {

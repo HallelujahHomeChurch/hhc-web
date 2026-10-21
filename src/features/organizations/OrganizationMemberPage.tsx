@@ -69,10 +69,11 @@ function MemberDetail({ unitId, memberId }: { unitId: string; memberId: string }
     ? <section className="organization-document"><Link href={organizationHref(locale, '/organizations/' + unitId)}>{t.back}</Link><p className="form-error" role="alert">{loadError === 'forbidden' ? t.memberForbidden : t.loadFailed}</p>{loadError !== 'forbidden' ? <Button onPress={() => setRevision(value => value + 1)}>{t.retry}</Button> : null}</section>
     : <OrganizationMemberSkeleton label={t.loading}/>
 
+  const canReadEmail = member.actions.manageMembers || member.actions.manageEntitlements
   const currentAffiliation = member.affiliations.find(affiliation => affiliation.orgUnitId === unitId)
   return <section className="organization-document organization-page">
-    <nav className="organization-breadcrumb" aria-label={t.title}><Link href={organizationHref(locale, "/organizations")}>{t.title}</Link><ChevronRight size={14} aria-hidden="true" /><Link href={organizationHref(locale, '/organizations/' + unitId)}>{folder.unit.name}</Link><ChevronRight size={14} aria-hidden="true" /><span aria-current="page">{member.displayName || member.email}</span></nav>
-    <div className="organization-heading"><div className="page-heading"><h1>{member.displayName || member.email}</h1><p>{member.email}</p></div>
+    <nav className="organization-breadcrumb" aria-label={t.title}><Link href={organizationHref(locale, "/organizations")}>{t.title}</Link><ChevronRight size={14} aria-hidden="true" /><Link href={organizationHref(locale, '/organizations/' + unitId)}>{folder.unit.name}</Link><ChevronRight size={14} aria-hidden="true" /><span aria-current="page">{member.displayName || (canReadEmail ? member.email : '')}</span></nav>
+    <div className="organization-heading"><div className="page-heading"><h1>{member.displayName || (canReadEmail ? member.email : '')}</h1>{canReadEmail ? <p>{member.email}</p> : null}</div>
       {member.actions.manageMembers && currentAffiliation ? <div className="organization-actions"><Button variant="secondary" isDisabled={pending || refreshRequired} onPress={() => void remove(currentAffiliation)}>{t.removeAffiliation}</Button></div> : null}
     </div>
     {!endAffiliation ? mutationError : null}
