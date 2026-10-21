@@ -68,10 +68,15 @@ it('aborts an in-flight media request at the overall deadline, then cleans up',a
  await vi.advanceTimersByTimeAsync(15001);await load.done;
  expect(load.snapshot()).toMatchObject({active:0,completed:0,failure:'INCOMPLETE_MEDIA_HOLD'});expect(api.clearLive).toHaveBeenCalledOnce();
 });
-it('completes every viewer across a ten-minute fractional-segment live hold and renewals',async()=>{
+it.each([10,350])('completes every viewer across a ten-minute fractional-segment live hold and renewals with %ims requests',async(latency)=>{
  setup();
- vi.stubGlobal('fetch',vi.fn(async(input:string)=>{
-  await new Promise(resolve=>setTimeout(resolve,10));
+ vi.stubGlobal('fetch',vi.fn(async(input:string,init?:RequestInit)=>{
+  await new Promise<void>((resolve,reject)=>{
+   const signal=init?.signal;
+   const abort=()=>{clearTimeout(timer);reject(signal?.reason);};
+   const timer=setTimeout(()=>{signal?.removeEventListener('abort',abort);resolve();},latency);
+   if(signal?.aborted)abort();else signal?.addEventListener('abort',abort,{once:true});
+  });
   const newest=2+Math.floor(performance.now()/10010);
   const segments=Array.from({length:newest+1},(_,i)=>`#EXTINF:10.01,\nseg-${String(i).padStart(6,'0')}.m4s`).join('\n');
   return new Response(input.endsWith('master.m3u8')?'#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1000000,RESOLUTION=1280x720\n720p/index.m3u8':input.endsWith('index.m3u8')?`#EXTM3U\n#EXT-X-TARGETDURATION:11\n#EXT-X-MAP:URI="init.mp4"\n${segments}`:'complete object bytes');

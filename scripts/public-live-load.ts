@@ -121,7 +121,7 @@ export async function startPublicLiveLoad(options:{recordingId:string;captureId:
       const master=parsePlaylist(await request(media!,true));requireValue(master.variants.length>0);
       const height=index%10<2?480:index%10<7?720:1080;
       const variant=[...master.variants].sort((a,b)=>Math.abs(a.height-height)-Math.abs(b.height-height))[0];
-      const playlist=scopedURL(variant.uri,media!,root);let initialized:string|undefined,lastSegment:string|undefined,first=true;nextAt=performance.now();
+      const playlist=scopedURL(variant.uri,media!,root);let initialized:string|undefined,lastSegment:string|undefined,first=true;
       while(!signal.aborted && performance.now()<deadline) {
         if(performance.now()>=renew)await authorize();
         const list=parsePlaylist(await request(playlist,true));requireValue(list.variants.length===0 && list.segments.length>0);
@@ -134,8 +134,9 @@ export async function startPublicLiveLoad(options:{recordingId:string;captureId:
           if(performance.now()>=renew)await authorize();
           await request(scopedURL(segment.uri,playlist,root));lastSegment=segment.uri;
           if(!active){
-            active=true;stats.active++;
-            if(stats.active===options.viewers){holdStarted=performance.now();setDeadline(holdStarted+holdMs);}
+            // Playback time starts when the first complete fragment is available.
+            active=true;nextAt=performance.now();stats.active++;
+            if(stats.active===options.viewers){holdStarted=nextAt;setDeadline(holdStarted+holdMs);}
           }
           nextAt+=segment.duration*1000;
           if(performance.now()-nextAt>10000)throw new Error('Generator cannot keep pace');
