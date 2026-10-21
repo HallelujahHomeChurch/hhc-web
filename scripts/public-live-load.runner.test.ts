@@ -14,7 +14,7 @@ function setup(status=200){
  const fetcher=vi.fn(async(input:string,init?:RequestInit)=>{void init;return new Response(input.endsWith('master.m3u8')?'#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1000000,RESOLUTION=1280x720\n720p/index.m3u8':input.endsWith('index.m3u8')?'#EXTM3U\n#EXT-X-TARGETDURATION:10\n#EXT-X-MAP:URI="init.mp4"\n#EXTINF:10,\nseg-000001.m4s':'complete object bytes',{status});});
  vi.stubGlobal('fetch',fetcher);return fetcher;
 }
-afterEach(()=>{vi.useRealTimers();vi.unstubAllGlobals();vi.clearAllMocks();vi.restoreAllMocks();});
+afterEach(()=>{vi.restoreAllMocks();vi.useRealTimers();vi.unstubAllGlobals();vi.clearAllMocks();});
 it('drains complete media bodies with credentials, holds by EXTINF, clears only its own scope',async()=>{
  const fetcher=setup();const load=await startPublicLiveLoad({recordingId,captureId,viewers:1,minutes:.01});
  await vi.advanceTimersByTimeAsync(601);await load.done;
