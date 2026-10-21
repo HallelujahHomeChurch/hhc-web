@@ -69,6 +69,14 @@ it('rejects a direct forbidden member URL with a return link, not retry or mutat
   expect(await screen.findByRole('alert')).toHaveTextContent(messages.en.organizations.memberForbidden)
   expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute('href', '/en/organizations/unit')
   expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  expect(document.body.innerHTML).not.toContain('a@example.test')
+})
+
+it('does not render email or email fallback labels when member management actions are absent', async () => {
+ api.getManagedMember.mockResolvedValue({memberId:'member',displayName:'',email:'hidden@example.test',affiliations:[],entitlementCodes:[],actions:{}})
+ render(<OrganizationMemberPage />)
+ await screen.findByText('Member videos')
+ expect(document.body.innerHTML).not.toContain('hidden@example.test')
 })
 
 it('offers only the server-authorized Traditional bulletin and video grants', async () => {

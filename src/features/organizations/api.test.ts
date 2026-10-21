@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { OperationsApi } from './api'
+import { createOperationsClient } from '@hallelujahhomechurch/operations-client'
 
 const ok = <T>(data: T) => Promise.resolve({ data, response: new Response(null, { status: 200 }) })
 
@@ -58,4 +59,17 @@ it('sends responsible-person filtering with member search and pagination', async
   const api = new OperationsApi({ raw } as never)
   await api.listManagedMembers('unit', 'Alice', 2, undefined, true)
   expect(raw.GET).toHaveBeenCalledWith('/api/operations/manage/org-units/{unitId}/members', expect.objectContaining({ params: { path: { unitId: 'unit' }, query: { q: 'Alice', page: 2, limit: 50, responsibilityOnly: true } } }))
+})
+
+it.each([undefined, 'member@example.test'])('accepts scoped member summaries with optional email %s through the real client validator', async email => {
+ const member = {memberId:'member',displayName:'Member',...(email ? {email} : {})}
+ const fetcher = vi.fn(async () => new Response(JSON.stringify({items:[member],page:1}),{headers:{'Content-Type':'application/json'}}))
+ const api = new OperationsApi(createOperationsClient({baseUrl:'https://example.test',getAccessToken:async () => null,refreshAfterUnauthorized:async () => null,fetcher}))
+ await expect(api.listManagedMembers('unit')).resolves.toEqual({items:[member],page:1})
+})
+
+it('still rejects malformed member email values through the real client validator', async () => {
+ const fetcher = vi.fn(async () => new Response(JSON.stringify({items:[{memberId:'member',displayName:'Member',email:42}],page:1}),{headers:{'Content-Type':'application/json'}}))
+ const api = new OperationsApi(createOperationsClient({baseUrl:'https://example.test',getAccessToken:async () => null,refreshAfterUnauthorized:async () => null,fetcher}))
+ await expect(api.listManagedMembers('unit')).rejects.toMatchObject({code:'invalid_response'})
 })

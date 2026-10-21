@@ -17,7 +17,7 @@ export type OperationsAccess = Schemas['AccessSnapshot'] & { memberDetailsEligib
 export type ManagedActions = Schemas['ManagedActions']
 export type ManagedUnit = Schemas['ManagedUnit']
 export type ManagedUnitFolder = Schemas['ManagedUnitFolder']
-export type ManagedMemberPage = Omit<Schemas['ManagedMemberPage'], 'items'> & { items: (Schemas['ManagedMemberSummary'] & { isResponsible?: boolean })[] }
+export type ManagedMemberPage = Omit<Schemas['ManagedMemberPage'], 'items'> & { items: (Omit<Schemas['ManagedMemberSummary'], 'email'> & { email?: string; isResponsible?: boolean })[] }
 export type ManagedMemberView = Schemas['ManagedMemberView']
 export type ManagedJoinCandidate = Schemas['JoinCandidate']
 export type ManagedResponsibility = Schemas['UnitResponsibilityView']
@@ -172,8 +172,8 @@ function validateManagedResponse(path: string, method: string, data: unknown, st
   const object = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
   const unit = (value: unknown) => object(value) && typeof value.id === 'string' && typeof value.name === 'string' && ['church', 'family', 'small_group', 'fellowship'].includes(String(value.kind)) && ['active', 'paused', 'archived'].includes(String(value.status)) && Number.isInteger(value.version) && typeof value.updatedAt === 'string'
   const actions = (value: unknown) => object(value) && ['editUnit', 'createChild', 'archive', 'restore', 'manageMembers', 'manageResponsibilities', 'manageEntitlements', 'sendNotifications'].every(key => typeof value[key] === 'boolean')
-  const member = (value: unknown) => object(value) && typeof value.memberId === 'string' && typeof value.email === 'string' && typeof value.displayName === 'string'
-  const memberView = (value: unknown) => object(value) && member(value) && Array.isArray(value.affiliations) && Array.isArray(value.entitlementCodes) && actions(value.actions)
+  const member = (value: unknown) => object(value) && typeof value.memberId === 'string' && (value.email === undefined || typeof value.email === 'string') && typeof value.displayName === 'string'
+  const memberView = (value: unknown) => object(value) && member(value) && typeof value.email === 'string' && Array.isArray(value.affiliations) && Array.isArray(value.entitlementCodes) && actions(value.actions)
   let valid = data !== null
   if (path === '/api/operations/me/resources') valid = Array.isArray(data) && data.every(value => object(value) && ['id', 'key', 'name', 'timezone'].every(key => typeof value[key] === 'string'))
   else if (path === '/api/operations/me/access') valid = object(data) && Array.isArray(data.responsibilities)
