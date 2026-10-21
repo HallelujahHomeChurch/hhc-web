@@ -52,6 +52,7 @@ export async function startPublicLiveLoad(options:{recordingId:string;captureId:
   const controller=new AbortController(),signal=controller.signal,started=performance.now();
   const ramp=options.viewers>1?30000:0,holdMs=options.minutes*60000;
   let deadline=started+ramp+15000,holdStarted:number|undefined,timer:ReturnType<typeof setTimeout>;
+  let finished:number|undefined;
   const setDeadline=(at:number)=>{deadline=at;clearTimeout(timer);timer=setTimeout(()=>controller.abort('deadline'),Math.max(0,at-performance.now()));};
   const stats={active:0,completed:0,requests:0,bytes:0,renewals:0,maxRequestMs:0,failure:null as string|null};
   const boundedFetch:typeof fetch=async(input,init)=>{
@@ -83,7 +84,8 @@ export async function startPublicLiveLoad(options:{recordingId:string;captureId:
       requireValue(performance.now()<times.expires);expires=times.expires;renew=times.renew;stats.renewals++;
     }
     async function request(uri:string,text=false) {
-      signal.throwIfAborted();requireValue(performance.now()<expires && performance.now()<deadline);
+      if(performance.now()>=deadline)controller.abort('deadline');
+      signal.throwIfAborted();requireValue(performance.now()<expires);
       if(++stats.requests>200000)throw new Error('Request budget exceeded');
       const before=performance.now();
       const response=await boundedFetch(scopedURL(uri,media!,root),{credentials:'include',cache:'no-store',redirect:'error',referrerPolicy:'no-referrer',signal});
@@ -130,7 +132,7 @@ export async function startPublicLiveLoad(options:{recordingId:string;captureId:
         if(!batch.length && performance.now()>=nextAt+10000)throw new Error('Live segment progress stalled');
         if(!batch.length)await pause(Math.max(1000,list.segments.at(-1)!.duration*500));
       }
-      if(signal.reason==='deadline' && holdStarted!==undefined && performance.now()>=deadline && nextAt>=deadline)stats.completed++;
+      if((!signal.aborted || signal.reason==='deadline') && active && holdStarted!==undefined && performance.now()>=deadline && nextAt>=deadline)stats.completed++;
       else if(signal.reason!=='operator' && !stats.failure)fail('INCOMPLETE_MEDIA_HOLD');
     } catch(error) {
       if(plannedAbort(error)){
@@ -148,10 +150,13 @@ export async function startPublicLiveLoad(options:{recordingId:string;captureId:
   try {requireValue((await session.start()).status==='authenticated' && performance.now()<deadline);}
   catch {session.dispose();running=false;throw new Error('Existing member session is unavailable');}
   setDeadline(deadline);
-  const done=Promise.all(Array.from({length:options.viewers},(_,index)=>viewer(index))).finally(()=>{clearTimeout(timer);session.dispose();running=false;});
+  const done=Promise.all(Array.from({length:options.viewers},(_,index)=>viewer(index))).finally(()=>{finished=performance.now();clearTimeout(timer);session.dispose();running=false;});
   return {
     stop:()=>controller.abort('operator'),
-    snapshot:()=>({...stats,elapsedSeconds:Math.round((performance.now()-started)/1000),holdSeconds:holdStarted===undefined?0:Math.min(holdMs,performance.now()-holdStarted)/1000,megabitsPerSecond:stats.bytes*8/Math.max(1,performance.now()-started)/1000}),
+    snapshot:()=>{
+      const at=finished??performance.now();
+      return {...stats,elapsedSeconds:Math.round((at-started)/1000),holdSeconds:holdStarted===undefined?0:Math.min(holdMs,at-holdStarted)/1000,megabitsPerSecond:stats.bytes*8/Math.max(1,at-started)/1000};
+    },
     done,
   };
 }

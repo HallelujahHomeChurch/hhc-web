@@ -14,7 +14,7 @@ function setup(status=200){
  const fetcher=vi.fn(async(input:string,init?:RequestInit)=>{void init;return new Response(input.endsWith('master.m3u8')?'#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1000000,RESOLUTION=1280x720\n720p/index.m3u8':input.endsWith('index.m3u8')?'#EXTM3U\n#EXT-X-TARGETDURATION:10\n#EXT-X-MAP:URI="init.mp4"\n#EXTINF:10,\nseg-000001.m4s':'complete object bytes',{status});});
  vi.stubGlobal('fetch',fetcher);return fetcher;
 }
-afterEach(()=>{vi.useRealTimers();vi.unstubAllGlobals();vi.clearAllMocks();});
+afterEach(()=>{vi.useRealTimers();vi.unstubAllGlobals();vi.clearAllMocks();vi.restoreAllMocks();});
 it('drains complete media bodies with credentials, holds by EXTINF, clears only its own scope',async()=>{
  const fetcher=setup();const load=await startPublicLiveLoad({recordingId,captureId,viewers:1,minutes:.01});
  await vi.advanceTimersByTimeAsync(601);await load.done;
@@ -36,7 +36,7 @@ it('operator stop cancels paced loops and retains bounded cleanup',async()=>{
  await vi.advanceTimersByTimeAsync(1);const requests=fetcher.mock.calls.length;load.stop();await load.done;
  await vi.advanceTimersByTimeAsync(60000);
  expect(fetcher).toHaveBeenCalledTimes(requests);expect(api.clearLive).toHaveBeenCalledOnce();
- expect(load.snapshot().active).toBe(0);
+ expect(load.snapshot()).toMatchObject({active:0,completed:0});
 });
 
 it('rejects stale all-200 playlists rather than certifying idle sessions',async()=>{
@@ -57,4 +57,43 @@ it('aborts an in-flight media request at the overall deadline, then cleans up',a
  const load=await startPublicLiveLoad({recordingId,captureId,viewers:1,minutes:.01});
  await vi.advanceTimersByTimeAsync(15001);await load.done;
  expect(load.snapshot()).toMatchObject({active:0,completed:0,failure:'INCOMPLETE_MEDIA_HOLD'});expect(api.clearLive).toHaveBeenCalledOnce();
+});
+it('completes every viewer across a ten-minute fractional-segment live hold and renewals',async()=>{
+ setup();
+ vi.stubGlobal('fetch',vi.fn(async(input:string)=>{
+  await new Promise(resolve=>setTimeout(resolve,10));
+  const newest=2+Math.floor(performance.now()/10010);
+  const segments=Array.from({length:3},(_,i)=>`#EXTINF:10.01,\nseg-${String(newest-2+i).padStart(6,'0')}.m4s`).join('\n');
+  return new Response(input.endsWith('master.m3u8')?'#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1000000,RESOLUTION=1280x720\n720p/index.m3u8':input.endsWith('index.m3u8')?`#EXTM3U\n#EXT-X-TARGETDURATION:11\n#EXT-X-MAP:URI="init.mp4"\n${segments}`:'complete object bytes');
+ }));
+ const load=await startPublicLiveLoad({recordingId,captureId,viewers:8,minutes:10});
+ await vi.advanceTimersByTimeAsync(640000);await load.done;
+ expect(load.snapshot()).toMatchObject({active:0,completed:8,failure:null});
+ expect(api.liveGrant.mock.calls.length).toBeGreaterThan(16);
+ expect(api.clearLive).toHaveBeenCalledTimes(8);
+});
+it('freezes failed-run elapsed time, media hold and goodput after cleanup',async()=>{
+ setup();const load=await startPublicLiveLoad({recordingId,captureId,viewers:1,minutes:1});
+ await vi.advanceTimersByTimeAsync(21000);await load.done;
+ const stopped=load.snapshot();expect(stopped.failure).not.toBeNull();
+ await vi.advanceTimersByTimeAsync(600000);
+ expect(load.snapshot()).toEqual(stopped);
+});
+
+it.each([{duration:10,completed:1,failure:null},{duration:.1,completed:0,failure:'INCOMPLETE_MEDIA_HOLD'}])('requires media coverage when the hold clock reaches its deadline before the abort timer runs: $duration',async({duration,completed,failure})=>{
+ const original=setup();
+ vi.stubGlobal('fetch',vi.fn(async(input:string,init?:RequestInit)=>{
+  const response=await original(input,init);
+  return input.endsWith('index.m3u8')?new Response((await response.text()).replace('#EXTINF:10,',`#EXTINF:${duration},`)):response;
+ }));
+ const schedule=setTimeout;let delayed=false;
+ vi.spyOn(globalThis,'setTimeout').mockImplementation(((callback:()=>void,ms?:number,...args:unknown[])=>{
+  if(ms===600 && !delayed){delayed=true;return schedule(callback,ms+10,...args);}
+  return schedule(callback,ms,...args);
+ }) as typeof setTimeout);
+ const load=await startPublicLiveLoad({recordingId,captureId,viewers:1,minutes:.01});
+ await vi.advanceTimersByTimeAsync(601);await load.done;
+ expect(delayed).toBe(true);
+ expect(load.snapshot()).toMatchObject({active:0,completed,failure});
+ expect(api.clearLive).toHaveBeenCalledOnce();
 });

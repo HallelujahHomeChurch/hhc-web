@@ -35,7 +35,9 @@ for10min, 23+2 for10min, 47+3 for10min and 97+3 for30min. Drain one stage before
 starting another. These are independently granted playback scopes for one test
 member, not100 distinct members/devices/locations. Each protocol stage ramps over
 30s; its full hold begins only after all sessions have read their first segment.
-Startup is bounded to ramp+15s. No completed count is possible without actual
+Startup is bounded to ramp+15s. Completion uses the monotonic hold deadline and
+fully downloaded media coverage, including when the abort timer callback runs late.
+No completed count is possible without actual
 media and EXTINF coverage of the complete all-active hold.
 
 The deterministic index mix is20%480p/50%720p/30%1080p where the advertised ladder
@@ -55,7 +57,8 @@ The DOM real-player probes must separately measure decode, stalls/A-V sync, drop
 frames, seek/DVR and visible live latency; protocol success cannot replace these.
 
 Read `snapshot()` once per minute and derive interval goodput from byte deltas;
-`megabitsPerSecond` is the average including ramp/cleanup. Record concurrent active
+`megabitsPerSecond` is the average including ramp/cleanup; terminal snapshots freeze
+when cleanup finishes, so later observations cannot inflate a failed hold. Record concurrent active
 sessions, completed holds, grants (including initial grants), max full-body request duration and failure.
 A valid stage requires all requested holds completed, no failure, independent real
 player acceptance and acceptable actual API/PG/job health. Compare Mac CPU/memory
