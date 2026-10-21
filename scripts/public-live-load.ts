@@ -52,7 +52,8 @@ export async function startPublicLiveLoad(options:{recordingId:string;captureId:
   const controller=new AbortController(),signal=controller.signal,started=performance.now();
   const ramp=options.viewers>1?30000:0,holdMs=options.minutes*60000;
   let deadline=started+ramp+15000,holdStarted:number|undefined,timer:ReturnType<typeof setTimeout>;
-  let finished:number|undefined;
+  let finished:number|undefined,holdEnded:number|undefined;
+  signal.addEventListener('abort',()=>{holdEnded=performance.now();},{once:true});
   const setDeadline=(at:number)=>{deadline=at;clearTimeout(timer);timer=setTimeout(()=>controller.abort('deadline'),Math.max(0,at-performance.now()));};
   const stats={active:0,completed:0,requests:0,bytes:0,renewals:0,maxRequestMs:0,failure:null as string|null};
   const boundedFetch:typeof fetch=async(input,init)=>{
@@ -155,7 +156,7 @@ export async function startPublicLiveLoad(options:{recordingId:string;captureId:
     stop:()=>controller.abort('operator'),
     snapshot:()=>{
       const at=finished??performance.now();
-      return {...stats,elapsedSeconds:Math.round((at-started)/1000),holdSeconds:holdStarted===undefined?0:Math.min(holdMs,at-holdStarted)/1000,megabitsPerSecond:stats.bytes*8/Math.max(1,at-started)/1000};
+      return {...stats,elapsedSeconds:Math.round((at-started)/1000),holdSeconds:holdStarted===undefined?0:Math.min(holdMs,(holdEnded??at)-holdStarted)/1000,megabitsPerSecond:stats.bytes*8/Math.max(1,at-started)/1000};
     },
     done,
   };

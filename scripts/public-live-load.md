@@ -58,7 +58,8 @@ frames, seek/DVR and visible live latency; protocol success cannot replace these
 
 Read `snapshot()` once per minute and derive interval goodput from byte deltas;
 `megabitsPerSecond` is the average including ramp/cleanup; terminal snapshots freeze
-when cleanup finishes, so later observations cannot inflate a failed hold. Record concurrent active
+when cleanup finishes; hold duration stops at workload abort, excluding cleanup.
+Later observations cannot inflate a failed hold. Record concurrent active
 sessions, completed holds, grants (including initial grants), max full-body request duration and failure.
 A valid stage requires all requested holds completed, no failure, independent real
 player acceptance and acceptable actual API/PG/job health. Compare Mac CPU/memory

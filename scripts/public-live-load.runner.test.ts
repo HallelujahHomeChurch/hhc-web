@@ -73,8 +73,11 @@ it('completes every viewer across a ten-minute fractional-segment live hold and 
  expect(api.clearLive).toHaveBeenCalledTimes(8);
 });
 it('freezes failed-run elapsed time, media hold and goodput after cleanup',async()=>{
- setup();const load=await startPublicLiveLoad({recordingId,captureId,viewers:1,minutes:1});
- await vi.advanceTimersByTimeAsync(21000);await load.done;
+ setup();api.clearLive.mockImplementationOnce(()=>new Promise(resolve=>setTimeout(resolve,2000)));
+ const load=await startPublicLiveLoad({recordingId,captureId,viewers:1,minutes:1});
+ await vi.advanceTimersByTimeAsync(21000);const failedHold=load.snapshot().holdSeconds;
+ await vi.advanceTimersByTimeAsync(2000);await load.done;
+ expect(load.snapshot().holdSeconds).toBe(failedHold);
  const stopped=load.snapshot();expect(stopped.failure).not.toBeNull();
  await vi.advanceTimersByTimeAsync(600000);
  expect(load.snapshot()).toEqual(stopped);
@@ -95,5 +98,19 @@ it.each([{duration:10,completed:1,failure:null},{duration:.1,completed:0,failure
  await vi.advanceTimersByTimeAsync(601);await load.done;
  expect(delayed).toBe(true);
  expect(load.snapshot()).toMatchObject({active:0,completed,failure});
+ expect(api.clearLive).toHaveBeenCalledOnce();
+});
+
+it('classifies a crossed request deadline before a delayed abort callback without starting media',async()=>{
+ const fetcher=setup(),schedule=setTimeout;let delayed=false;
+ vi.spyOn(globalThis,'setTimeout').mockImplementation(((callback:()=>void,ms?:number,...args:unknown[])=>{
+  if(ms===15000 && !delayed){delayed=true;return schedule(callback,ms+10,...args);}
+  return schedule(callback,ms,...args);
+ }) as typeof setTimeout);
+ api.exchangeLive.mockImplementationOnce(async()=>{await new Promise(resolve=>setTimeout(resolve,15000));return root+'master.m3u8';});
+ const load=await startPublicLiveLoad({recordingId,captureId,viewers:1,minutes:.01});
+ await vi.advanceTimersByTimeAsync(15001);await load.done;
+ expect(fetcher).not.toHaveBeenCalled();
+ expect(load.snapshot()).toMatchObject({active:0,completed:0,failure:'INCOMPLETE_MEDIA_HOLD'});
  expect(api.clearLive).toHaveBeenCalledOnce();
 });
