@@ -54,7 +54,14 @@ export async function startPublicLiveLoad(options:{recordingId:string;captureId:
   let deadline=started+ramp+15000,holdStarted:number|undefined,timer:ReturnType<typeof setTimeout>;
   let finished:number|undefined,holdEnded:number|undefined;
   signal.addEventListener('abort',()=>{holdEnded=performance.now();},{once:true});
-  const setDeadline=(at:number)=>{deadline=at;clearTimeout(timer);timer=setTimeout(()=>controller.abort('deadline'),Math.max(0,at-performance.now()));};
+  // Browser timers can round down or run late; the monotonic clock owns the boundary.
+  const setDeadline=(at:number)=>{
+    deadline=at;clearTimeout(timer);
+    timer=setTimeout(()=>{
+      if(performance.now()<deadline)setDeadline(deadline);
+      else controller.abort('deadline');
+    },Math.max(1,Math.ceil(at-performance.now())));
+  };
   const stats={active:0,completed:0,requests:0,bytes:0,renewals:0,maxRequestMs:0,failure:null as string|null};
   const boundedFetch:typeof fetch=async(input,init)=>{
     const method=init?.method ?? (input instanceof Request?input.method:'GET');
@@ -68,7 +75,7 @@ export async function startPublicLiveLoad(options:{recordingId:string;captureId:
   const pause=(ms:number)=>new Promise<void>((resolve,reject)=>{
     if(signal.aborted){reject(signal.reason);return;}
     const abort=()=>{clearTimeout(timer);reject(signal.reason);};
-    const timer=setTimeout(()=>{signal.removeEventListener('abort',abort);resolve();},Math.max(0,Math.min(ms,deadline-performance.now())));
+    const timer=setTimeout(()=>{signal.removeEventListener('abort',abort);resolve();},Math.max(0,Math.ceil(Math.min(ms,deadline-performance.now()))));
     signal.addEventListener('abort',abort,{once:true});
   });
   const fail=(reason:string)=>{stats.failure??=reason;controller.abort('failure');};

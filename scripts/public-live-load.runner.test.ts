@@ -114,3 +114,15 @@ it('classifies a crossed request deadline before a delayed abort callback withou
  expect(load.snapshot()).toMatchObject({active:0,completed:0,failure:'INCOMPLETE_MEDIA_HOLD'});
  expect(api.clearLive).toHaveBeenCalledOnce();
 });
+
+it('does not end a fully covered hold when the browser rounds the abort timer down',async()=>{
+ setup();const schedule=setTimeout;let rounded=false;
+ vi.spyOn(globalThis,'setTimeout').mockImplementation(((callback:()=>void,ms?:number,...args:unknown[])=>{
+  if(ms===600 && !rounded){rounded=true;return schedule(callback,ms-.5,...args);}
+  return schedule(callback,ms,...args);
+ }) as typeof setTimeout);
+ const load=await startPublicLiveLoad({recordingId,captureId,viewers:1,minutes:.01});
+ await vi.advanceTimersByTimeAsync(601);await load.done;
+ expect(rounded).toBe(true);
+ expect(load.snapshot()).toMatchObject({active:0,completed:1,failure:null,holdSeconds:.6});
+});
