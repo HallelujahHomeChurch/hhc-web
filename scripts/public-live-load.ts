@@ -62,7 +62,8 @@ export async function startPublicLiveLoad(options:{recordingId:string;captureId:
       else controller.abort('deadline');
     },Math.max(1,Math.ceil(at-performance.now())));
   };
-  const stats={active:0,completed:0,requests:0,bytes:0,renewals:0,maxRequestMs:0,failure:null as string|null};
+  const stats={active:0,completed:0,requests:0,bytes:0,renewals:0,maxRequestMs:0,failure:null as string|null,
+    failureDetail:null as {viewer:number;phase:string;code:string}|null};
   const boundedFetch:typeof fetch=async(input,init)=>{
     const method=init?.method ?? (input instanceof Request?input.method:'GET');
     const signals=[init?.signal,input instanceof Request?input.signal:undefined,method==='DELETE'?undefined:signal,AbortSignal.timeout(10000)].filter((s):s is AbortSignal=>!!s);
@@ -83,7 +84,9 @@ export async function startPublicLiveLoad(options:{recordingId:string;captureId:
     (error===signal.reason || (error instanceof DOMException && error.name==='AbortError'));
   async function viewer(index:number) {
     const scope=crypto.randomUUID();let media:string|undefined,root='',expires=0,renew=0,active=false,nextAt=0;
+    let phase='ramp';
     async function authorize() {
+      phase='authorize';
       const requested=performance.now(),g=await api.liveGrant(options.recordingId,options.captureId,scope,signal);
       const times=validateGrant(g,options.recordingId,options.captureId,scope,requested);
       requireValue(performance.now()<times.expires);
@@ -92,6 +95,7 @@ export async function startPublicLiveLoad(options:{recordingId:string;captureId:
       requireValue(performance.now()<times.expires);expires=times.expires;renew=times.renew;stats.renewals++;
     }
     async function request(uri:string,text=false) {
+      phase=text?'playlist':'media';
       if(performance.now()>=deadline)controller.abort('deadline');
       signal.throwIfAborted();requireValue(performance.now()<expires);
       if(++stats.requests>200000)throw new Error('Request budget exceeded');
@@ -148,7 +152,12 @@ export async function startPublicLiveLoad(options:{recordingId:string;captureId:
           if(active && holdStarted!==undefined && performance.now()>=deadline && nextAt>=deadline)stats.completed++;
           else if(!stats.failure)fail('INCOMPLETE_MEDIA_HOLD');
         }
-      } else if(!stats.failure)fail('SESSION_OR_GENERATOR_FAILED');
+      } else if(!stats.failure){
+        // Only fixed categories leave memory; errors may contain capability URLs.
+        const known:Record<string,string>={'Generator cannot keep pace':'GENERATOR_BEHIND','Live segment progress stalled':'MEDIA_STALLED','Live ended before planned hold':'LIVE_ENDED','Invalid or unsupported live evidence':'INVALID_EVIDENCE','Request budget exceeded':'REQUEST_BUDGET','Byte budget exceeded':'BYTE_BUDGET'};
+        const code=error instanceof DOMException&&error.name==='TimeoutError'?'REQUEST_TIMEOUT':error instanceof TypeError?'NETWORK':error instanceof Error&&Object.hasOwn(known,error.message)?known[error.message]:'UNCLASSIFIED';
+        stats.failureDetail={viewer:index,phase,code};fail('SESSION_OR_GENERATOR_FAILED');
+      }
     }
     finally {
       if(active)stats.active--;

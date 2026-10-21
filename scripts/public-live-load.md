@@ -61,6 +61,10 @@ Read `snapshot()` once per minute and derive interval goodput from byte deltas;
 when cleanup finishes; hold duration stops at workload abort, excluding cleanup.
 Later observations cannot inflate a failed hold. Record concurrent active
 sessions, completed holds, grants (including initial grants), max full-body request duration and failure.
+For generic session/generator failures, `failureDetail` records only the viewer index,
+fixed phase and allow-listed category (timeout, network, generator lag, stalled/ended
+media, invalid evidence or budget). It never includes raw error text or URLs;
+`UNCLASSIFIED` remains unknown. Adding diagnostics does not relax acceptance limits.
 A valid stage requires all requested holds completed, no failure, independent real
 player acceptance and acceptable actual API/PG/job health. Compare Mac CPU/memory
 and measured WAN headroom at each stage; a generator limit is not cloud tier proof.

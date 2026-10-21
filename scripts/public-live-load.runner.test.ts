@@ -43,6 +43,16 @@ it('rejects stale all-200 playlists rather than certifying idle sessions',async(
  setup();const load=await startPublicLiveLoad({recordingId,captureId,viewers:1,minutes:1});
  await vi.advanceTimersByTimeAsync(21000);await load.done;
  expect(load.snapshot()).toMatchObject({active:0,completed:0,failure:'SESSION_OR_GENERATOR_FAILED'});
+ expect(load.snapshot()).toHaveProperty('failureDetail.code','MEDIA_STALLED');
+});
+it.each([['TimeoutError','REQUEST_TIMEOUT'],['TypeError','NETWORK'],['Error','UNCLASSIFIED']])('records a safe failure category for %s without saving error text or URLs',async(name,code)=>{
+ setup();const secret='https://private.example/capability?token=secret';
+ vi.stubGlobal('fetch',vi.fn(async()=>{throw name==='TypeError'?new TypeError(secret):name==='TimeoutError'?new DOMException(secret,name):new Error(secret);}));
+ const load=await startPublicLiveLoad({recordingId,captureId,viewers:1,minutes:1});
+ await vi.advanceTimersByTimeAsync(1);await load.done;
+ expect(load.snapshot()).toHaveProperty('failureDetail',{viewer:0,phase:'playlist',code});
+ expect(JSON.stringify(load.snapshot())).not.toContain(secret);
+ expect(api.clearLive).toHaveBeenCalledOnce();
 });
 it('detects a rejected DELETE through the real media API wrapper',async()=>{
  const original=setup();const {createMemberVideoApi}=await vi.importActual<typeof import('../src/features/member-videos/api')>('../src/features/member-videos/api');
