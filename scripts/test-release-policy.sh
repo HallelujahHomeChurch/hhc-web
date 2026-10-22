@@ -33,7 +33,7 @@ scan_line="$(grep -nF 'name: Scan immutable image' "$workflow" | cut -d: -f1)"
 what_if_line="$(grep -nF 'name: Preview infrastructure change' "$workflow" | cut -d: -f1)"
 test "$scan_line" -lt "$what_if_line"
 grep -q '^  set -eu;' Dockerfile
-grep -Fq 'FROM gcr.io/distroless/nodejs22-debian13@sha256:4e4fb0ce55fd73901600796ef079a9490369d2515d7da31633a91608c82ca13b AS runtime' Dockerfile
+grep -Fq 'FROM gcr.io/distroless/nodejs22-debian13@sha256:6f5d43e96551e0240e604d3b2068fd0584d9f58b64ff868cbf14fa7abc3521b4 AS runtime' Dockerfile
 grep -Fq 'CMD ["/nodejs/bin/node", "-e", "fetch(' Dockerfile
 grep -q 'az deployment group what-if' "$workflow"
 grep -q 'for path in health zh-Hant/maintenance' "$workflow"
