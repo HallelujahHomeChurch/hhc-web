@@ -1712,6 +1712,7 @@ it('keeps normal durable writes out of recovery UI throughout their background r
   state.mutate.mockImplementation(async (_selector, _value, mutations) => {await new Promise<void>(resolve => {finish = resolve;}); return {state: applyLocalMutation((await state.privateState()).state, mutations[0], readerFixture().document), results: [{mutationId: mutations[0].mutationId, status: 'applied', revision: 1}]};});
   const {container} = render(<WeeklyReader {...props}/>);
   await screen.findByText('Private weekly');
+  await waitFor(() => expect(screen.getByRole('button', {name: props.messages.myNotes})).toBeEnabled());
   const flashes: string[] = [];
   const observer = new MutationObserver(() => {const text = container.querySelector('.reader-document > .reader-private-feedback')?.textContent?.trim(); if (text) flashes.push(text);});
   observer.observe(container, {subtree: true, childList: true, characterData: true});
