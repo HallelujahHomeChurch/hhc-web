@@ -174,3 +174,13 @@ it('does not end a fully covered hold when the browser rounds the abort timer do
  expect(rounded).toBe(true);
  expect(load.snapshot()).toMatchObject({active:0,completed:1,failure:null,holdSeconds:.6});
 });
+
+it('allows a bounded 31-minute shard hold for a full 30-minute distributed overlap',async()=>{
+ setup();
+ await expect(startPublicLiveLoad({recordingId,captureId,viewers:1,minutes:31.001})).rejects.toThrow();
+ const load=await startPublicLiveLoad({recordingId,captureId,viewers:1,minutes:31});
+ await vi.advanceTimersByTimeAsync(1);
+ expect(load.snapshot()).toMatchObject({active:1,failure:null});
+ load.stop();await load.done;
+ expect(load.snapshot()).toMatchObject({active:0,cleanupCompleted:1,cleanupFailed:0,failure:null});
+});
