@@ -112,6 +112,7 @@ jobs:
             --build-arg SENTRY_ORG=fixture --build-arg SENTRY_PROJECT=fixture
             --build-arg NEXT_PUBLIC_SENTRY_RELEASE="$GITHUB_SHA")
           docker build "${image_args[@]}" --target runtime -t hhc-web:verify .
+          docker run --rm --network none --read-only --memory 128m --cpus 1 --entrypoint /nodejs/bin/node hhc-web:verify /app/diagnose-dapr-port.mjs
           docker build "${image_args[@]}" --target source_maps -t hhc-web:sourcemaps-verify .
           maps_dir="$(mktemp -d "$RUNNER_TEMP/hhc-sourcemaps-test.XXXXXX")"
           map_container="$(docker create hhc-web:sourcemaps-verify /unused)"
