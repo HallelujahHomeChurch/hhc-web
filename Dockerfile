@@ -64,6 +64,7 @@ ENV NODE_ENV=production \
 COPY --from=stripped_build --chown=nonroot:nonroot /app/.next/standalone ./
 COPY --from=stripped_build --chown=nonroot:nonroot /app/.next/static ./.next/static
 COPY --from=stripped_build --chown=nonroot:nonroot /app/public ./public
+COPY --from=stripped_build --chown=nonroot:nonroot /app/scripts/diagnose-dapr-port.mjs ./diagnose-dapr-port.mjs
 
 EXPOSE 10000
 USER nonroot:nonroot

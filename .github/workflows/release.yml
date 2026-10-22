@@ -182,6 +182,7 @@ jobs:
           trap 'test ! -e "$report" || unlink "$report"' EXIT
           mkdir -p "$trivy_cache"
           docker pull "$IMAGE_REF"
+          docker run --rm --network none --read-only --memory 128m --cpus 1 --entrypoint /nodejs/bin/node "$IMAGE_REF" /app/diagnose-dapr-port.mjs
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v "$trivy_cache:/root/.cache/trivy" \
@@ -408,6 +409,11 @@ jobs:
               exit 1
             fi
           done
+      - name: Capture candidate Dapr port evidence
+        if: ${{ failure() && steps.deploy_runtime.outcome != 'skipped' }}
+        continue-on-error: true
+        # Include kill grace in the maximum 60-second rollback delay.
+        run: timeout --kill-after=5s 55s bash scripts/collect-dapr-port.sh || echo 'Candidate port evidence unavailable; socket owner remains unknown.'
       - name: Roll back failed update
         if: ${{ failure() && steps.deploy_runtime.outcome != 'skipped' && env.HAS_PREVIOUS == 'true' }}
         run: |

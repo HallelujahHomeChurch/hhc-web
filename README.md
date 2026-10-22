@@ -108,6 +108,17 @@ Startup and liveness probe this application endpoint. Readiness probes Dapr's
 cannot pass readiness solely because Next.js is running. This gates readiness;
 it does not resolve Dapr's internal port allocation conflicts.
 
+After a failed deployment, the release workflow collects TCP 50002 socket/PID
+ownership evidence only from the matching immutable candidate image before
+rollback. The total budget, including forced termination, is at most 60 seconds;
+each replica console is bounded separately. Only the fixed helper schema reaches
+logs: TCP state/ports, UID/inode, namespaces and visible PID/executable names.
+Process arguments, environment and IP addresses are excluded, and console banners
+or errors are suppressed. Missing/inaccessible owners and diagnostic failures are
+unknown; they never prove Dapr ownership or clear the original deployment failure.
+This preserves evidence and does not fix port allocation. No live failure drill is
+required to validate the helper.
+
 ## Member video playback
 
 The navigation entry requires both `NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED=true`
