@@ -47,7 +47,7 @@ let running=false;
 export async function startPublicLiveLoad(options:{recordingId:string;captureId:string;viewers:number;minutes:number}) {
   requireValue(location.origin==='https://www.alive.org.tw' && !running);
   requireValue(/^[a-f0-9-]{36}$/.test(options.recordingId) && /^[a-f0-9]{32}$/.test(options.captureId));
-  requireValue(Number.isInteger(options.viewers) && options.viewers>=1 && options.viewers<=97 && options.minutes>0 && options.minutes<=30);
+  requireValue(Number.isInteger(options.viewers) && options.viewers>=1 && options.viewers<=97 && options.minutes>0 && options.minutes<=31);
   running=true;
   const controller=new AbortController(),signal=controller.signal,started=performance.now();
   const ramp=options.viewers>1?30000:0,holdMs=options.minutes*60000;

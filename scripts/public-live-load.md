@@ -43,6 +43,10 @@ for10min, 23+2 for10min, 47+3 for10min and 97+3 for30min. Drain one stage before
 starting another. These are independently granted playback scopes for one test
 member, not100 distinct members/devices/locations. Each protocol stage ramps over
 30s; its full hold begins only after all sessions have read their first segment.
+For an approved distributed stage, each shard may hold up to31min so staggered
+starts can still provide a measured common30min overlap. The coordinator must
+verify that overlap and the aggregate byte budget; individual shard passes alone
+are insufficient.
 Startup is bounded to ramp+15s. Completion uses the monotonic hold deadline and
 fully downloaded media coverage, including when the abort timer callback runs late.
 No completed count is possible without actual
