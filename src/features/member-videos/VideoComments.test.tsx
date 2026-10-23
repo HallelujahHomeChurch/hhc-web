@@ -122,3 +122,38 @@ it('keeps mounted avatars when pagination exceeds the 64-image preparation cache
  expect(view.container.querySelectorAll('article header img')).toHaveLength(65);
  expect(screen.getByText('Paged comment 0',{selector:'p'}).closest('article')?.querySelector('img')).toHaveAttribute('src',items[0].avatarUrl);
 });
+
+it('reveals every avatar in a bulk response above the retained cache limit',async()=>{
+ const api=fixture();const items=Array.from({length:65},(_,i)=>({...root,id:`bulk-${i}`,text:`Bulk ${i}`,replyCount:0,avatarUrl:`https://www.alive.org.tw/assets/bulk-new-${i}`}));
+ api.comments.mockResolvedValue({items});
+ const view=render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled count={65} onChanged={()=>{}}/>);
+ await screen.findByText('Bulk 64');
+ expect(view.container.querySelectorAll('article header img')).toHaveLength(65);
+});
+it('retries a mounted DOM image failure on explicit same-URL payload refresh',async()=>{
+ const api=fixture();const url='https://www.alive.org.tw/assets/retry-same-url';
+ api.comments.mockImplementation(async()=>({items:[{...root,avatarUrl:url}]}));
+ const view=render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled count={1} onChanged={()=>{}}/>);
+ await screen.findByText('Root',{selector:'p'});
+ const avatar=()=>view.container.querySelector('article header img');
+ fireEvent.error(avatar()!);expect(avatar()).toBeNull();
+ const clock=vi.spyOn(Date,'now').mockReturnValue(Date.now()+31_000);
+ fireEvent.click(screen.getByRole('button',{name:'Refresh comments'}));
+ await waitFor(()=>expect(avatar()).toHaveAttribute('src',url));
+ clock.mockRestore();
+});
+
+it('keeps all changed avatar URLs when a mutation reconciles several loaded pages',async()=>{
+ const api={...fixture(),updateComment:vi.fn().mockResolvedValue({})};let changed=false;
+ const items=()=>Array.from({length:65},(_,i)=>({...root,mine:true,id:`reconcile-${i}`,text:`Reconcile ${i}`,replyCount:0,avatarUrl:`https://www.alive.org.tw/assets/reconcile-${changed?'new':'old'}-${i}`}));
+ api.comments.mockImplementation(async(_id,options)=>({items:options.cursor?items().slice(40):items().slice(0,40),nextCursor:options.cursor?undefined:'second'}));
+ const view=render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled count={65} onChanged={()=>{}}/>);
+ await screen.findByText('Reconcile 0',{selector:'p'});fireEvent.click(screen.getByRole('button',{name:'Load more'}));await screen.findByText('Reconcile 64');
+ const first=screen.getByText('Reconcile 0',{selector:'p'}).closest('article')!;
+ fireEvent.click(within(first).getByText('Edit'));
+ changed=true;
+ fireEvent.change(within(first).getByRole('textbox'),{target:{value:'edited'}});
+ fireEvent.click(within(first).getByRole('button',{name:'Save'}));
+ await waitFor(()=>expect(first.querySelector('header img')).toHaveAttribute('src','https://www.alive.org.tw/assets/reconcile-new-0'));
+ expect(view.container.querySelectorAll('article header img')).toHaveLength(65);
+});
