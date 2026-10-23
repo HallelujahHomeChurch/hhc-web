@@ -41,6 +41,7 @@
 | `docs/superpowers/specs/2026-07-08-hhc-notification-api-design.md` | 33-65, 87-126, 536-559 | notification-api 僅負責核准訊息投遞；業務域決定收件者、同意、資格與時間。 | 16843 |
 | `docs/superpowers/specs/2026-07-08-hhc-service-catalog-and-ownership-design.md` | 51-76, 97-125, 220-240 | 服務 owner 與通知／background job 邊界；現文件沒有服事表的 owner 決議。 | 22408 |
 | `docs/superpowers/specs/2026-09-15-hhc-unified-authorization-membership-and-entitlement-design.md` | 552-623, 780-807 | scoped `OrgRoleAssignment` 與 membership/communication consent 分界；現有職分不等於服事表編輯權。 | 60088 |
+| `docs/superpowers/specs/2026-09-15-hhc-unified-authorization-membership-and-entitlement-design.md` | 177-184, 838-845 | 平台已定義 `operations-api` 為 Meeting／Occurrence／Member 資料 owner，且 MeetingOccurrence 使用穩定識別。 | 60088 |
 
 ## 可確認的 repo 事實
 
@@ -56,7 +57,7 @@
 - 未找到服事表頁面、服事項目／日期／班次／指派資料模型、專屬 API 或畫面參照。
 - 未找到「所有教會的人」在資料範圍上代表單一教會、所有教會據點、或登入會員資格的正式定義。
 - 未找到服事編輯權限對應的既有 permission/role/action code。既有 OrgRoleAssignment 不能在沒有決策的情況下代替該契約。
-- Email 提醒的觸發事件、收件者、時間、重送／取消／偏好／退信處理都沒有服事領域契約；使用者已說明通知時間尚未定案。
+- Repo 仍沒有服事 Email 的 API／投遞契約；目前使用者已確認首版於場次發布／指派完成時立即寄給服事者，已發布指派異動只通知受影響人，不寄自動提醒。完整契約由 `spec.md` 定義，不能由既有 unit notification adapter 推定。
 - 調動、公開認領、互換等已由使用者描述為需求較模糊且留待下一階段；目前階段排除，不將其寫成驗收條件。
 - repo 中 `docs/superpowers/specs/2026-07-08-hhc-web-api-design.md` 及搜尋提到的 PostgreSQL/API 通用設計可能涉及後端契約，但這次沒有把大量通用平台文件全部納入索引；若 spec 進入資料模型/API 設計再按已收斂的範圍定位。
 
@@ -65,3 +66,37 @@
 - 搜尋 `src/features`、`src/app`、`src/components/layout`、`src/components/ui`、`src/lib`、`docs/api`、`docs/superpowers/specs` 及 `docs/plans` 中 `ministry`、`服事`、`schedule`、`roster`、`responsibility`、`organization`、`notification` 等關鍵詞。
 - 相似程式主要讀取 Organizations 頁面／API／通知 dialog；通知服務設計、Service catalog、近期組織決策與授權設計讀取了與責任邊界直接相關章節。其餘文件僅關鍵字搜尋，未逐份閱讀。
 - 沒有檢查後端、其他 repository、部署環境或實際 Network/API 回應；文件內容是設計依據，不能單獨證明線上服務已實作。
+
+## 管理者訪談新增需求：相關來源
+
+以下只列可供比對的既有模式；組織人員管理與單位通知都不是服事表領域契約。`size` 為總行數。
+
+| path | lines | why | size |
+| --- | --- | --- | ---: |
+| `src/features/organizations/OrganizationUnitPage.tsx` | 35-81, 130-183, 188-229 | 成員搜尋、列表分頁、依 action flags 管理與指派 | 244 |
+| `src/features/organizations/api.ts` | 27-45, 72-96, 137-165, 171-187 | 成員查詢、責任指派與回應 action schema | 179 |
+| `src/features/organizations/OrganizationMemberPage.tsx` | 18-91 | 已選會員的資料與組織責任呈現 | 91 |
+| `src/features/organizations/OrganizationNotificationDialog.tsx` | 13-29, 42-90 | 通知預覽、送出與狀態歷史 UI | 87 |
+| `src/features/organizations/notifications-api.ts` | 1-25, 51-105 | unit 通知 preview、submit、history API adapter | 105 |
+| `docs/api/internal-notification-api.md` | 17-47, 75-105 | 內部通知 send、status、template preview 契約 | 81 |
+| `docs/superpowers/specs/2026-07-08-hhc-notification-api-design.md` | 5-65, 87-126, 536-559 | 通知服務與 calling domain 時機／收件者責任 | 424 |
+| `docs/superpowers/specs/2026-07-08-hhc-web-api-design.md` | 137-145, 203-221, 289-301 | 網站後端 adapter、outbox 與通知決策邊界 | 358 |
+| `docs/superpowers/specs/2026-07-08-hhc-account-admin-identity-rbac-lifecycle-design.md` | 141-183, 255-280 | Account API 擁有權限角色指派 | 364 |
+| `docs/superpowers/specs/2026-07-08-hhc-service-catalog-and-ownership-design.md` | 51-76, 97-125, 220-240 | 網站資料、通知及背景工作的服務 owner 範圍 | 278 |
+| `src/features/organizations/organizations.css` | 35-65, 78-104, 119-140 | 組織列表、表單與窄螢幕樣式參照 | 139 |
+| `AGENTS.md` | 1-21 | repo、分支、PR 及 Next.js 工作規則 | 21 |
+
+### 搜尋過但沒找到
+
+- 服事崗位 checklist、可編輯 checklist template、個人 checklist 完成紀錄：搜尋 `checklist`、`check list`、`checklist template`、`task template`；搜尋結果只有 runbook／平台 rollout checklist，非服事功能。產品行為已由使用者確認並記於 `spec.md`。
+- 服事人員可用／不可用時間、排班偏好或 availability API：搜尋 `availability`、`unavailable time`、`cannot serve`、`cannot attend`、`blackout`、`time off`；結果沒有服事或組織人員可用時段功能。
+- 服事次數統計、平均負擔、公平輪值、按人員平衡指派：搜尋 `service count`、`assignment count`、`workload`、`fairness`、`load balancing`、`roster`；未找到服事領域資料或統計端點。統計口徑已由使用者確認並記於 `spec.md`。
+- 聚會／崗位／服事指派資料模型與 assign API：搜尋 `meeting`、`gathering`、`service position`、`schedule`、`assignment`、`roster`、`服事`；Organizations API 只有組織會員及責任管理，沒有服事指派契約。
+- 依聚會或週次查看服事人員的篩選功能：搜尋 `filter`、`week`、`meeting`、`gathering`；Organizations 頁面有單位／會員搜尋與分頁，但沒有聚會／週次篩選。
+- 服事通知後的 checklist 入口或 checklist 通知接續 API：搜尋 `notification`、`checklist`、`service`、`assignment`；找到的通知功能是單位通知，沒有服事 checklist 觸發或完成狀態。使用者已確認首版行為，新的端到端契約列於 `spec.md`。
+
+### 搜尋範圍與限制
+
+- 搜尋 `src/features`、`src/app`、`src/components`、`src/lib`、`docs/api` 及 `docs/superpowers/specs`，使用上述英文關鍵字與「服事／排班」。
+- 已檢查 root `AGENTS.md`；本次命中的 Organizations UI 使用既有共用 UI 套件與 feature-local CSS。沒有找到其他 instructions 檔案或服事功能 demo route。
+- 未讀 hhc-web-api、account-api 或 notification-api 的其他 repository；未檢查資料庫、部署或 Network。搜尋結果不能證明外部服務不存在對應實作。

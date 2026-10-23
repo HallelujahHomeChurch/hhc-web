@@ -1,54 +1,40 @@
-# 需求摘要：服事表
+# 服事表需求 Digest
 
-## 目的
+## 來源
 
-整理使用者目前提供的服事表需求，以及 repository 中與登入會員範圍、授權、通知直接相關的平台設計依據，供 planner 收斂需求時使用。此摘要保留未決事項，不代替使用者作產品決定。
+- 本對話前段的使用者確認：登入後全教會有效會員可讀；編輯權由教會管理者指派；會員可切換清單與月曆且預設清單；服事調動／認領／交換延後。[來源：使用者回答，見對話脈絡]
+- 2026-10-20 管理者討論摘要與使用者後續收斂：管理會議與會員資料分開維護，再指派會員至場次崗位；崗位可帶 checklist 範本；要統計服事次數；會員可提交不可服事時段；管理者可依聚會及週次篩選。[來源：使用者提供的管理者討論摘要及本對話問答]
+- Repo 檢索邊界與相關既有功能見 [`index.md`](index.md)。
 
-## 關鍵事實
+## 已確認的行為與資料
 
-- 使用者希望新增「服事表」功能；所有有效教會會員登入後都能查看整間教會的服事。[使用者提供：本對話需求起點回覆及後續明確回答]
-- 使用者確認編輯者是由教會管理者指派「教會層級編輯權限」的人；可新增、編輯及刪除服事。[使用者提供：後續明確回答]
-- 使用者確認第一階段呈現列表及日曆兩種檢視，使用者可切換，預設為列表。[使用者提供：後續明確回答]
-- 使用者確認每筆服事事件是一場有日期的聚會，包含開始時間、結束時間、聚會名稱及多個服事崗位；每個崗位可指派一人或多人。[使用者提供：後續明確回答]
-- 日期逐筆建立，不支援重複／週期排程。[使用者提供：後續明確回答]
-- 使用者要求本次規格涵蓋端到端 API、資料與授權契約；具體技術設計尚待以 repo 與相關技術依據收斂。[使用者提供：後續明確回答]
-- Email 通知延至後續階段；本階段不納入通知驗收。[使用者提供：後續明確回答]
-- 調動服事、由其他人認領及交換服事均明確列為第二階段。[使用者提供：本對話需求起點回覆及後續明確回答]
-- Scout 索引記錄 repo 內未找到服事排班／服事項目領域實作或專屬 API 文件，且此 repo 為網站前端。[`docs/work/ministry-schedule/index.md:1-3`]
-- 索引列出的 Organizations 頁、adapter 與現有通知 UI 是可參照的現存功能，但索引明確指出它們不是服事表，也沒有定義新功能的產品授權規則或提醒時點。[`docs/work/ministry-schedule/index.md:9-18`, `45-52`]
+- 首版服務範圍僅為台北家教會，其他 Church 不參與；僅已登入且具台北家教會有效 ChurchMembership 的會員可查看。服事表編輯者由台北家教會管理者指派，權限限該 Church，不從單位職務自動取得。[使用者已確認]
+- 聚會／場次沿用既有 Meeting／MeetingOccurrence；可用 once 或 weekly Meeting。服事崗位、指派及 Checklist 關聯於既有 Meeting／Occurrence 識別。每個 occurrence 的服事指派逐場維護，新 occurrence 不自動複製前次指派。[使用者已確認；`docs/superpowers/specs/2026-09-15-hhc-unified-authorization-membership-and-entitlement-design.md:177-184,838-845`]
+- 人員使用既有有效會員資料，不另建服事專用人員副本。指派把會員連到某場次的崗位；每個已發布崗位至少一位會員，可多人。[使用者已確認]
+- 會員可在清單與月曆切換，預設清單；管理者能以聚會及週次篩選，檢視每週各崗位服事者。[使用者已確認]
+- 編輯者可管理聚會定義、崗位、場次、指派及 checklist 範本；可新增、修改、刪除。會員只可維護自己的不可服事時段及完成自己的 checklist。[使用者已確認編輯權及 CRUD；本次整理其餘操作]
+- 可選的 Checklist 範本掛在崗位上；指派會員到有範本的崗位後，每位會員自動取得獨立 checklist，完成狀態彼此分開，編輯者可查完成狀態。修改範本只影響之後新建的 checklist；已建 checklist 保留當時項目與完成狀態。[使用者已確認]
+- 服事通知納入第一階段。場次發布或完成指派時立即寄 Email 給該場次被指派的服事者，附上其個人 checklist 連結（無 checklist 時連至場次資料）；發布後調整指派時，只通知該次異動涉及的人；已發布 MeetingOccurrence 改時間或取消時，通知所有受影響服事者。取消場次從會員排班隱藏且不計入統計；不自動寄定時提醒。[使用者已確認]
+- 統計以「每位會員在一個崗位的一次指派」計一次；只統計已結束場次，管理者選日期範圍並可檢視人員次數與對應明細。同場兩個崗位算兩次。[使用者已確認建議口徑]
+- 會員可提交單次日期／起訖時間的不可服事時段，可修改或撤回；只有服事表編輯者可看。它只供管理者參考，不阻止指派；重複週期不可服事規則不在第一階段。[使用者已確認]
+- 調動請求、認領及互換流程留待後續階段。[使用者已確認]
+- 已發布場次或崗位的「刪除」採取消／封存而非永久刪除；保留通知與服事歷史。取消場次從會員排班隱藏且不計數；封存崗位不可再指派。[使用者已確認]
+- 時區一律採 `Asia/Taipei`，適用於 MeetingOccurrence 日期／時間、不可服事時段、週次篩選及通知時間。[使用者已確認]
 
-## 既有慣例
+## 可查證的平台事實與設計界線
 
-- 平台組織／會員設計中，`OrgUnit` 表示組織範圍；`Member` 是穩定的人員識別，領域關聯使用 `member_id`。[`docs/superpowers/specs/2026-09-15-hhc-unified-authorization-membership-and-entitlement-design.md:492-496`]
-- 平台模型允許每位 Member 有一個有效 ChurchMembership，並可有多個教會內的 family、small-group、fellowship 關係；這可作為使用者已選「有效教會會員可看全教會服事」後的模型參照，但不自行決定如何將成員資格接到服事表授權。[`docs/superpowers/specs/2026-09-15-hhc-unified-authorization-membership-and-entitlement-design.md:529-550`]
-- `OrgRoleAssignment` 是有範圍且可撤銷的角色指派；文件明確說明會員關係本身不授予管理動作，pastor 責任本身也不授予管理動作。[`docs/superpowers/specs/2026-09-15-hhc-unified-authorization-membership-and-entitlement-design.md:552-615`]
-- AccessSnapshot／前端角色摘要只供呈現與導覽；資料列表與變更仍由後端授權，前端不能自行計算權威範圍或以隱藏控制項代替授權。[`docs/superpowers/specs/2026-09-15-hhc-unified-authorization-membership-and-entitlement-design.md:878-928`, `955-964`]
-- 平台通知設計將收件者選擇、同意、業務時機、資格與訊息目的交由呼叫通知服務的業務領域；`notification-api` 負責模板、投遞、重試與投遞狀態等通知機制。[`docs/superpowers/specs/2026-07-08-hhc-notification-api-design.md:33-57`]
+- 此 repo 是網站前端，尚無服事領域 UI、資料模型、專屬 API 或 checklist／availability／統計端點；前端無法單獨完成端到端持久化與授權驗收。[`index.md`]
+- 平台架構將 `Meeting`、`occurrence`、`Member`、`ChurchMembership` 的 source of truth 放在 `operations-api`；`hhc-web-api` 擁有網站內容工作流。新增服事能力應基於既有 Operations Meeting／Occurrence，而不是在 hhc-web-api 複製聚會與時間。[`docs/superpowers/specs/2026-09-15-hhc-unified-authorization-membership-and-entitlement-design.md:177-184`](../../superpowers/specs/2026-09-15-hhc-unified-authorization-membership-and-entitlement-design.md)
+- 有效會員、Member 穩定識別、組織角色與通知責任可參考既有平台設計，但不可由 Organizations action flags 推導新服事權限。[`docs/superpowers/specs/2026-09-15-hhc-unified-authorization-membership-and-entitlement-design.md:492-624,878-965`](../../superpowers/specs/2026-09-15-hhc-unified-authorization-membership-and-entitlement-design.md)
+- 服事 domain 決定通知觸發、收件人與資源連結；通知服務負責投遞。瀏覽器不得直接呼叫內部 `notification-api`。[`docs/superpowers/specs/2026-07-08-hhc-notification-api-design.md:33-57`](../../superpowers/specs/2026-07-08-hhc-notification-api-design.md); [`docs/api/internal-notification-api.md:15-33,35-47`](../../api/internal-notification-api.md)
 
-## 介面與型別
+## 設計待落實事項（由 Spec 定義，不是產品待答問題）
 
-- 已確認的領域資料形狀為「有日期的聚會」包含開始／結束時間、聚會名稱及多個服事崗位，每個崗位指派一人或多人；日期各自建立且不支援重複排程。這些是使用者提供的需求欄位，不代表 API schema 已決定。[使用者提供：後續明確回答]
-- 已確認檢視方式為列表與日曆切換，列表為預設檢視。[使用者提供：後續明確回答]
-- 已確認查看身分為有效教會會員；編輯身分為教會管理者指派的教會層級編輯權限。[使用者提供：後續明確回答]
-- 使用者要求規格涵蓋端到端 API、資料及授權契約，但具體 endpoint、request/response、資料持久化與權限代碼尚未決定。[使用者提供：後續明確回答；`docs/work/ministry-schedule/index.md:10`, `37-40`, `54-58`]
-- 平台文件可參考 `OrgUnit`、`Member`、`OrgMembership`、`OrgRoleAssignment`、`AccessSnapshot` 等既有概念；它們不是已確認的服事表介面或權限契約。[`docs/superpowers/specs/2026-09-15-hhc-unified-authorization-membership-and-entitlement-design.md:492-550`, `552-615`, `878-928`]
-- 目前沒有服事表 API、request/response、狀態列舉或前端元件契約；索引也未找到相關專屬端點。[`docs/work/ministry-schedule/index.md:10`, `37-40`, `54-58`]
+- 定義 Operations API 的服事崗位、Occurrence 指派、checklist 範本／實例、不可服事時段及統計讀取契約；operations-api 為本需求後端邊界，notification-api 僅負責投遞。
+- 定義場次發布狀態、Email outbox／冪等、指派異動通知與 checklist 深連結，以避免存檔重試造成重複寄信。
+- 定義管理者操作稽核、刪除關聯資料策略、會員狀態變更時的既有指派處理，以及符合 `Asia/Taipei` 的日期時間 API 格式。
 
-## 矛盾
+## 未讀完與證據限制
 
-- 無。後續回答已將原先寬泛的「教會的人／有權限的人」明確收斂為有效教會會員查看、教會管理者指派之教會層級編輯者管理。[使用者提供：本對話需求起點回覆及後續明確回答]
-
-## 未知與待問
-
-- 端到端契約要落在哪個現有 service、API route 與資料 owner；Scout 索引未找到服事專屬契約。這屬待以技術資料查證／設計，不可由既有 Organization 或 notification 邊界自行推定。[使用者提供：後續明確回答；`docs/work/ministry-schedule/index.md:37-43`, `56-61`]
-- 「教會層級編輯權限」在現有授權系統中的 permission code、指派流程及後端拒絕條件尚未定義。既有平台設計要求角色／權限在後端授權，不能僅以 UI 隱藏操作實現。[使用者提供：後續明確回答；`docs/superpowers/specs/2026-09-15-hhc-unified-authorization-membership-and-entitlement-design.md:596-615`, `923-928`]
-- 刪除聚會或崗位時，既有指派的資料保留／刪除策略、稽核需求與時間時區處理尚未確認；不從「可刪除」推定具體資料生命週期。[使用者提供：後續明確回答]
-- 列表／日曆需要呈現的日期區間、排序、篩選、日曆粒度與空狀態尚未確認；已決定的僅是可切換及預設列表。[使用者提供：後續明確回答]
-- Email 通知不在本階段；通知觸發、收件者、時間及投遞規則留待後續階段決定。[使用者提供：後續明確回答]
-- 調動請求、認領及互換均屬第二階段；其流程細節不屬本階段待解問題。[使用者提供：後續明確回答]
-
-## 未讀完
-
-- 本摘要依 planner 指定讀取 Scout 索引，以及索引引用的授權／會員與通知平台設計相關章節；未逐頁閱讀索引列出的 Organizations UI/API 檔案，也未逐份閱讀其他規格文件。
-- Scout 索引記錄的搜尋涵蓋 `src/features`、`src/app`、`src/components/layout`、`src/components/ui`、`src/lib`、`docs/api`、`docs/superpowers/specs` 與 `docs/plans` 中相關關鍵字；其中多數文件僅關鍵字搜尋，未逐份閱讀。[`docs/work/ministry-schedule/index.md:63-67`]
-- 未檢查後端 repository、部署環境或實際 Network/API 回應；目前能確認的是此 repo 的索引結果與已讀平台設計文件，不代表線上服務狀態。[`docs/work/ministry-schedule/index.md:65-67`]
+- 沒有檢查 hhc-web-api、account-api 或 notification-api 的完整程式碼、schema、部署或 Network；不可宣稱 API 已存在或已上線。
+- 參照 repo 文件僅限 digest 與索引列出的段落；既有 Organizations 與通知功能僅作模式參考，不是服事表契約。
