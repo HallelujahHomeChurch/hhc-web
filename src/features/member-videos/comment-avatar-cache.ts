@@ -6,7 +6,7 @@ type Entry = {image: HTMLImageElement; ready: boolean; expires: number; pending:
 // Only public image URLs/decoded images live here, never comments or account IDs.
 const images = new Map<string, Entry>();
 
-function avatarURL(comment: RecordingComment): string | undefined {
+export function commentAvatarURL(comment: RecordingComment): string | undefined {
   if (comment.deleted || comment.hidden || !('avatarUrl' in comment) || typeof comment.avatarUrl !== 'string' || !comment.avatarUrl) return;
   try {
     const url = new URL(comment.avatarUrl, window.location.origin);
@@ -15,7 +15,7 @@ function avatarURL(comment: RecordingComment): string | undefined {
 }
 
 export function preparedCommentAvatar(comment: RecordingComment): string | undefined {
-  const url = avatarURL(comment);
+  const url = commentAvatarURL(comment);
   return url && images.get(url)?.ready ? url : undefined;
 }
 
@@ -56,6 +56,6 @@ function prepare(url: string): Promise<void> {
 }
 
 export async function prepareCommentAvatars(comments: RecordingComment[]): Promise<void> {
-  const urls = new Set(comments.map(avatarURL).filter((url): url is string => Boolean(url)));
+  const urls = new Set(comments.map(commentAvatarURL).filter((url): url is string => Boolean(url)));
   await Promise.all(Array.from(urls, prepare));
 }

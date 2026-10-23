@@ -109,3 +109,16 @@ it('keeps cold comments in the skeleton until the avatar is decoded, without an 
  await screen.findByText('Root',{selector:'p'});
  expect(view.container.querySelector('article header img')).toHaveAttribute('src','https://www.alive.org.tw/assets/cold-avatar');
 });
+
+it('keeps mounted avatars when pagination exceeds the 64-image preparation cache',async()=>{
+ const api=fixture();
+ const items=Array.from({length:65},(_,i)=>({...root,id:`paged-${i}`,text:`Paged comment ${i}`,replyCount:0,avatarUrl:`https://www.alive.org.tw/assets/paged-avatar-${i}`}));
+ api.comments.mockResolvedValueOnce({items:items.slice(0,40),nextCursor:'second'}).mockResolvedValueOnce({items:items.slice(40)});
+ const view=render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled count={65} onChanged={()=>{}}/>);
+ await screen.findByText('Paged comment 0',{selector:'p'});
+ expect(view.container.querySelectorAll('article header img')).toHaveLength(40);
+ fireEvent.click(screen.getByRole('button',{name:'Load more'}));
+ await screen.findByText('Paged comment 64');
+ expect(view.container.querySelectorAll('article header img')).toHaveLength(65);
+ expect(screen.getByText('Paged comment 0',{selector:'p'}).closest('article')?.querySelector('img')).toHaveAttribute('src',items[0].avatarUrl);
+});
