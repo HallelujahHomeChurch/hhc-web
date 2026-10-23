@@ -5,6 +5,11 @@ import type {createMemberVideoApi} from './api';
 let mobile=false;let resize:()=>void;
 beforeEach(()=>{
  mobile=false;resize=()=>{};
+ vi.stubGlobal('Image',class {
+  onload:(()=>void)|null=null;onerror:(()=>void)|null=null;
+  set src(value:string){if(value)queueMicrotask(()=>this.onload?.());}
+  decode=async()=>{};
+ });
  Object.defineProperty(window,'matchMedia',{configurable:true,value:()=>({get matches(){return mobile;},addEventListener:(_name:string,fn:()=>void)=>{resize=fn;},removeEventListener:vi.fn()})});
  HTMLDialogElement.prototype.close=function(){this.removeAttribute('open');};HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','');};
 });
@@ -65,4 +70,42 @@ it('shows initial and reply skeletons without discarding the composer draft',asy
  expect(await screen.findByText('Reply text')).toBeInTheDocument();
  expect(screen.getByPlaceholderText('Add a comment')).toHaveValue('Keep draft');
  expect(view.container.querySelector('[data-loading-layout]')).toBeNull();
+});
+
+it('uses account avatars for roots and replies, falls back on failure, and retries a changed URL',async()=>{
+ const api=fixture();const first='https://www.alive.org.tw/assets/avatar-v1',second='https://www.alive.org.tw/assets/avatar-v2';
+ api.comments.mockImplementation(async(_id,options)=>({items:options.parentId?[{...reply,avatarUrl:first}]:[{...root,avatarUrl:first}]}));
+ const view=render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled count={2} onChanged={()=>{}}/>);
+ await screen.findByText('Root',{selector:'p'});
+ const avatar=()=>view.container.querySelector('article > header')?.querySelector('img') ?? null;
+ expect(avatar()).toHaveAttribute('src',first);
+ fireEvent.click(screen.getByRole('button',{name:'1 Replies'}));await screen.findByText('Reply text');
+ expect(view.container.querySelectorAll('article header img')).toHaveLength(2);
+ fireEvent.error(avatar()!);expect(avatar()).toBeNull();
+ api.comments.mockResolvedValue({items:[{...root,avatarUrl:second}]});
+ fireEvent.click(screen.getByRole('button',{name:'Refresh comments'}));
+ await waitFor(()=>expect(avatar()).toHaveAttribute('src',second));
+});
+it('does not expose an avatar for deleted comments, including stale profile payloads',async()=>{
+ const api=fixture();api.comments.mockResolvedValue({items:[{...root,deleted:true,text:'',avatarUrl:'https://www.alive.org.tw/assets/private-old-avatar'}]});
+ const view=render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled count={1} onChanged={()=>{}}/>);
+ await waitFor(()=>expect(view.container.querySelector('article')).not.toBeNull());
+ expect(view.container.querySelector('article img')).toBeNull();
+});
+
+it('keeps cold comments in the skeleton until the avatar is decoded, without an initials flash',async()=>{
+ let decoded!:()=>void;
+ vi.stubGlobal('Image',class {
+  onload:(()=>void)|null=null;onerror:(()=>void)|null=null;
+  set src(value:string){if(value)queueMicrotask(()=>this.onload?.());}
+  decode=()=>new Promise<void>(resolve=>{decoded=resolve;});
+ });
+ const api=fixture();api.comments.mockResolvedValue({items:[{...root,avatarUrl:'https://www.alive.org.tw/assets/cold-avatar'}]});
+ const view=render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled count={1} onChanged={()=>{}}/>);
+ await waitFor(()=>expect(decoded).toBeTypeOf('function'));
+ expect(screen.queryByText('Root')).toBeNull();
+ expect(view.container.querySelector('[data-loading-layout="video-comments"]')).not.toBeNull();
+ await act(async()=>decoded());
+ await screen.findByText('Root',{selector:'p'});
+ expect(view.container.querySelector('article header img')).toHaveAttribute('src','https://www.alive.org.tw/assets/cold-avatar');
 });
