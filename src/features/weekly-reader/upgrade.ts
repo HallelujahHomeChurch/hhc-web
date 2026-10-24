@@ -56,15 +56,15 @@ export async function prepareReaderUpgrade(api: UpgradeApi, selector: ReaderSele
     if (owner.accountId !== selector.accountId || owner.epoch !== epoch) throw new Error('offline_account_changed');
     if (state.currentRevision !== current.document.revision) throw new Error('revision_changed');
     const base = previous?.confirmed ?? {...state, currentRevision: value.document.revision, appliedRevision: value.document.revision, highlights: [], notes: [], progress: null, conflicts: []};
-    const rebased = rebaseReaderMutations(pending, base, state, cloud.mappings ?? []);
+    const rebased = rebaseReaderMutations(pending, base, state, cloud.mappings ?? [], {previous: value.document, current: current.document});
     if (rebased.recovery.length) queue = await retainReaderRecoveries(selector, rebased.recovery, epoch, queue, now);
     return {onlineOnly: binding.onlineOnly, value: current, previousRevision: value.document.revision, state, queue, mutations: rebased.mutations, recovery: [...recovery, ...rebased.recovery]};
   });
 }
 
-export async function finishReaderUpgrade(api: UpgradeApi, selector: ReaderSelector, prepared: ReaderUpgrade, epoch: number, signal: AbortSignal, fetcher = globalThis.fetch.bind(globalThis), now = Date.now) {
+export async function finishReaderUpgrade(api: UpgradeApi, selector: ReaderSelector, prepared: ReaderUpgrade, epoch: number, signal: AbortSignal, fetcher = globalThis.fetch.bind(globalThis), now = Date.now, deferRecovery = false) {
   return withReaderWriter(selector.accountId, signal, async () => {
-    if (prepared.recovery.length || prepared.state.conflicts.length) throw new Error('action_required');
+    if (!deferRecovery && (prepared.recovery.length || prepared.state.conflicts.length)) throw new Error('action_required');
     let queue = prepared.queue;
     let state = prepared.state;
     for (const entry of prepared.queue) {
@@ -77,13 +77,13 @@ export async function finishReaderUpgrade(api: UpgradeApi, selector: ReaderSelec
       signal.throwIfAborted();
       queue = await (entry.resolution ? recordReaderRecoveryResult : recordReaderReplayResult)(selector, response.results[0], epoch, queue, now);
       state = response.state;
-      if (response.results[0].status !== 'applied' || state.currentRevision !== prepared.value.document.revision) throw new Error('action_required');
+      if (state.currentRevision !== prepared.value.document.revision || !deferRecovery && response.results[0].status !== 'applied') throw new Error('action_required');
     }
-    if (prepared.onlineOnly) await commitOnlineUpgrade(selector, prepared.value, state, epoch, prepared.previousRevision, queue, now);
+    if (prepared.onlineOnly) await commitOnlineUpgrade(selector, prepared.value, state, epoch, prepared.previousRevision, queue, now, deferRecovery);
     else {
       const staged = await stageOfflineSave(prepared.value, selector, fetcher, now(), signal);
       signal.throwIfAborted();
-      await commitOfflineUpgrade(staged, state, epoch, prepared.previousRevision, queue, now);
+      await commitOfflineUpgrade(staged, state, epoch, prepared.previousRevision, queue, now, deferRecovery);
     }
     return {value: prepared.value, state};
   });

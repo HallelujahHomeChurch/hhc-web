@@ -16,7 +16,7 @@ import {createReaderApi, verifyReaderAccess, type ReaderSelector} from '@/featur
 import {keyboardPageDelta, pageScale, sourcePageStart, sourcePageForSentence, swipeDirection, visibleReadingAnchor, resolveReadingAnchor, type ReadingAnchor, type ReaderZoom} from '@/features/weekly-reader/navigation';
 import {fitPaperLines} from '@/features/weekly-reader/paper-lines';
 import {isWeeklyReaderEnabled} from '@/features/weekly-reader/enabled';
-import {getOfflineIdentity, supportsOfflineReader} from '@/features/weekly-reader/offline-store';
+import {getOfflineIdentity, supportsOfflineReader, reopenRetainedIntent, reopenHighlightHistory} from '@/features/weekly-reader/offline-store';
 import {watchOfflineAccount} from '@/features/weekly-reader/offline-session';
 import {useReaderSession} from '@/features/weekly-reader/useReaderSession';
 import {useReaderSearchNavigation} from '@/features/weekly-reader/useReaderSearchNavigation';
@@ -50,6 +50,7 @@ import type {BookmarkDraft} from './BookmarksPanel';
 import {ReaderNotesList} from './ReaderNotesList';
 import {NoteExportDialog} from './NoteExportDialog';
 import {ReaderPrivateState, SyncStatus} from './ReaderPrivateState';
+import {RetainedReaderContent} from './RetainedReaderContent';
 import {ReaderRecovery} from './ReaderRecovery';
 import '@hallelujahhomechurch/ui/bulletin-paper.css';
 import '@hallelujahhomechurch/ui/bulletin-paper-v2.css';
@@ -772,7 +773,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       }).catch(actionError);
     }}>{m.confirmRetry}</button></> : null}
     </div>
-    <div ref={recoveryControl}><ReaderRecovery drafts={recoveryDrafts} onDraftsChange={setRecoveryDrafts} closeRef={recoveryClose} headerRef={readerHeader} theme={theme} onBookmarkRetry={privateReader.retry} onConfirm={description => confirmReaderAction(description, m.reviewSync, m.applyUpdate)} inline={!!notes} onOpenChange={setRecoveryOpen} onState={privateReader.acceptState} available={!privateReader.busy && (privateReader.status === 'paused' || privateReader.status === 'action' || !!privateReader.pendingMutation && isBookmarkMutation(privateReader.pendingMutation) && privateReader.canRetry)} runExclusive={privateReader.runExclusive} api={api} value={value} selector={selector} messages={m} mobile={mobile} onUpdated={next => {privateReader.reload(); onUpdated(next);}} onFailure={onFailure} suspended={suspended} pendingMutation={privateReader.pendingMutation} onPendingChange={(mutation, result, previous) => {
+    <div ref={recoveryControl}><ReaderRecovery drafts={recoveryDrafts} onDraftsChange={setRecoveryDrafts} closeRef={recoveryClose} headerRef={readerHeader} theme={theme} onBookmarkRetry={privateReader.retry} onConfirm={description => confirmReaderAction(description, m.reviewSync, m.applyUpdate)} inline={!!notes} onOpenChange={setRecoveryOpen} onState={privateReader.acceptState} available={!privateReader.busy && (privateReader.status === 'paused' || privateReader.status === 'action' || !!privateReader.retainedIntents?.length || !!privateReader.state?.highlightHistory?.length || !!privateReader.pendingMutation && isBookmarkMutation(privateReader.pendingMutation) && privateReader.canRetry)} runExclusive={privateReader.runExclusive} api={api} value={value} selector={selector} messages={m} mobile={mobile} onUpdated={next => {privateReader.reload(); onUpdated(next);}} onFailure={onFailure} suspended={suspended} pendingMutation={privateReader.pendingMutation} onPendingChange={(mutation, result, previous) => {
       if (mutation && previous && noteOperation.current?.mutation.mutationId === previous.mutationId && noteOperation.current.generation === generation.current) noteOperation.current = {...noteOperation.current, mutation};
       const remaining = privateReader.replacePending(mutation, previous?.mutationId ?? null);
       if (!mutation && previous && result) {if (isBookmarkMutation(previous)) settleBookmark(previous, result); else settleNote(previous, result);}
@@ -899,10 +900,21 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
         <button type="button" disabled={foregroundBusy} onClick={() => {if (deletion.durable) openRecovery(); else {privateReader.replacePending(null, deletion.mutationId); setDeletion(null);}}}>{deletion.durable ? m.reviewSync : m.noteCloud}</button>
         {!deletion.durable && deletion.cloud && !deletion.cloud.deleted ? <><button type="button" disabled={privateReader.busy} onClick={() => {const note = deletion.cloud!; void confirmNote('delete', note.text).then(accepted => {if (accepted) {privateReader.replacePending(null, deletion.mutationId); void deleteNote(note);}});}}>{m.noteDelete}</button><button type="button" disabled={privateReader.busy} onClick={() => {const cloud = deletion.cloud!; privateReader.replacePending(null, deletion.mutationId); setNotes(cloud); setNoteEditorState({draft: {noteId: cloud.id, baseVersion: cloud.version, text: `${cloud.text}\n\n${deletion.local.text}`}, conflict: null}); setDeletion(null);}}>{m.noteManual}</button></> : null}
       </div></section> : notes === 'list' ? <>
+      <RetainedReaderContent entries={privateReader.retainedIntents ?? []} messages={m} busy={foregroundBusy || suspended} onPosition={id => privateReader.runExclusive(async signal => {
+        const owner = await getOfflineIdentity(); signal.throwIfAborted();
+        if (owner.accountId !== selector.accountId) throw new Error('offline_account_changed');
+        await reopenRetainedIntent(selector, id, owner.epoch); signal.throwIfAborted();
+        privateReader.reload(); openRecovery();
+      })}/>
       <ReaderNotesList view={notesView} onViewChange={setNotesView} messages={m} bookmarks={{navigationBusy: foregroundBusy || suspended || !privateReader.state, document: value.document, bookmarks: privateReader.state?.bookmarks, messages: m, offline, supported: privateReader.bookmarksSupported, cacheWarning: privateReader.bookmarkCacheWarning,
           busy: privateReader.busy || privateReader.canRetry || privateReader.loadError || suspended || !privateReader.state || privateReader.status === 'paused', draft: bookmarkDraft, onDraft: setBookmarkDraft, onCurrent: captureBookmarkPosition,
           onSave: () => {void saveBookmark();}, onJump: bookmark => {void jumpBookmark(bookmark);}, onDelete: bookmark => {const draft: BookmarkDraft = {kind: 'delete', id: bookmark.id, name: bookmark.name, originalName: bookmark.name, baseVersion: bookmark.version, target: bookmark}; setBookmarkDraft(draft); void saveBookmark(draft);}}} onExport={ids => setExportRequest({ids, generation: generation.current})} exportDisabled={privateReader.busy || privateReader.loadError || privateReader.canRetry || recoveryOpen || !privateReader.state || ['paused', 'action', 'syncing'].includes(privateReader.status)} filter={noteFilter} onClearFilter={() => setNoteFilter(null)}
-        highlights={{highlights: savedHighlights, sentences, messages: m, busy: foregroundBusy || !privateReader.state || privateReader.status === 'paused' || suspended,
+        highlights={{history: privateReader.state?.highlightHistory, onRestore: id => {void privateReader.runExclusive(async signal => {
+          const owner = await getOfflineIdentity(); signal.throwIfAborted();
+          if (owner.accountId !== selector.accountId) throw new Error('offline_account_changed');
+          await reopenHighlightHistory(selector, id, owner.epoch); signal.throwIfAborted();
+          privateReader.reload(); openRecovery();
+        }).catch(onFailure);}, highlights: savedHighlights, sentences, messages: m, busy: foregroundBusy || !privateReader.state || privateReader.status === 'paused' || suspended,
           onChange: (range, color) => action({mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: value.document.revision, ...(color ? {kind: 'setHighlight' as const, payload: {sentenceIds: [range.sentenceId], ranges: [range], color}} : {kind: 'clearHighlight' as const, payload: {sentenceIds: [range.sentenceId], ranges: [range]}})})}}
         notes={{busy: foregroundBusy || suspended, messages: m, notes: privateReader.state?.notes ?? [], onReanchor: setReanchor,
           onJump: (id, start) => {void onAnchor({kind: 'sentence', id, start});}, onEdit: note => {newNoteId.current = null; setNoteEditorState(undefined); setNotes(note);},

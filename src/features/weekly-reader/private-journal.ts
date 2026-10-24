@@ -1,5 +1,6 @@
 import type {BulletinReaderMutation, BulletinReaderMutationResponse, MemberOnlineDocument} from '@hallelujahhomechurch/hhc-web-client';
 import type {PrivateReplica} from './offline-store';
+import {retainUnresolvedIntents} from './retained-intents';
 import {applyLocalMutation, verifyPrivateState} from './private-state';
 
 export function appendPrivateIntent(replica: PrivateReplica, mutation: BulletinReaderMutation, document: MemberOnlineDocument): PrivateReplica {
@@ -11,7 +12,8 @@ export function appendPrivateIntent(replica: PrivateReplica, mutation: BulletinR
   if (replica.queue.some(entry => entry.result || entry.replay || entry.resolution || entry.recoveryReason)) throw new Error('action_required');
   const state = applyLocalMutation(replica.state, mutation, document);
   const queue = mutation.kind === 'setProgress' ? replica.queue.filter(entry => entry.sent || entry.mutation.kind !== 'setProgress') : replica.queue;
-  return {...replica, state, queue: [...queue, {mutation: structuredClone(mutation), sent: false}]};
+  const entry = retainUnresolvedIntents({state, confirmed: replica.confirmed, queue: [{mutation, sent: false}]}, document, true)[0];
+  return {...replica, state, queue: [...queue, entry]};
 }
 
 export function acknowledgePrivateIntent(replica: PrivateReplica, response: BulletinReaderMutationResponse, document: MemberOnlineDocument): PrivateReplica {
@@ -32,7 +34,7 @@ export function acknowledgePrivateIntent(replica: PrivateReplica, response: Bull
       break;
     }
   }
-  return {state, confirmed: cloud, queue};
+  return {...replica, state, confirmed: cloud, queue};
 }
 
 export function isReaderStorageFailure(error: unknown) {

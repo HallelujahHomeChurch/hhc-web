@@ -259,3 +259,12 @@ it('lets the shared shell close idle inline Recovery while preserving its decisi
   expect(onOpenChange).toHaveBeenLastCalledWith(false);
   expect(mocks.choose).not.toHaveBeenCalled();
 });
+it('lets readers update with unresolved originals retained instead of requiring every item first',async()=>{
+ const mutation={mutationId:'retained',documentRevision:1,createdAt:'',kind:'createNote',payload:{noteId:'note',sentenceIds:['s0'],text:'Offline note'}};
+ mocks.prepare.mockResolvedValue({value,state:cloud,queue:[{mutation,sent:false,sourceQuote:'Old original'}],mutations:[],recovery:[{mutationId:'retained',reason:'removed_anchor'}],previousRevision:1});
+ render(<RecoveryHarness {...props}/>);fireEvent.click(screen.getByRole('button',{name:props.messages.reviewSync}));
+ expect(await screen.findByText('Old original')).toBeVisible();
+ fireEvent.click(await screen.findByRole('button',{name:props.messages.updateRetainContext}));
+ await waitFor(()=>expect(mocks.finish).toHaveBeenCalledWith(api,props.selector,expect.anything(),1,expect.any(AbortSignal),undefined,undefined,true));
+ expect(props.onUpdated).toHaveBeenCalled();expect(mocks.choose).not.toHaveBeenCalled();
+});

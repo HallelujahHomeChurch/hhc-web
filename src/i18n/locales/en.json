@@ -214,7 +214,12 @@
     "backSummary": "Summary",
     "announcements": "Announcements",
     "victoriesAndPrayers": "Victories and prayers",
-    "metadataPending": "Bulletin details have changed; you are viewing the published edition."
+    "metadataPending": "Bulletin details have changed; you are viewing the published edition.",
+    "updateRetainContext": "Update and keep original context",
+    "retainedTitle": "Retained from earlier editions",
+    "retainedHelp": "These items keep their original text on this device. You can read the new edition now and position them later.",
+    "retainedPosition": "Position in current edition",
+    "retainedExport": "Export retained content"
   },
   "site": {
     "name": "Hallelujah Home Church",
@@ -533,7 +538,27 @@
     "exitFullscreen": "Exit fullscreen",
     "fullscreenError": "Could not exit fullscreen. Retry or use your device’s back control.",
     "playbackSpeed": "Playback speed",
-    "heroTitle": "Member Videos", "heroSubtitle": "Recent gathering recordings", "selectedTitle": "Selected recording", "listTitle": "Recent recordings", "count": "{count} gatherings", "play": "Play recording", "select": "Select recording", "selected": "Selected", "playing": "Playing", "featured": "Featured", "durationUnknown": "Duration unavailable", "expires": "Available until", "loading": "Loading recordings", "preparing": "Preparing playback", "empty": "No recordings are currently available", "loadError": "Recordings are temporarily unavailable", "playError": "Unable to play right now. Please retry.", "expired": "This recording is no longer available", "retry": "Reload", "previous": "Previous", "next": "Next"
+    "heroTitle": "Member Videos",
+    "heroSubtitle": "Recent gathering recordings",
+    "selectedTitle": "Selected recording",
+    "listTitle": "Recent recordings",
+    "count": "{count} gatherings",
+    "play": "Play recording",
+    "select": "Select recording",
+    "selected": "Selected",
+    "playing": "Playing",
+    "featured": "Featured",
+    "durationUnknown": "Duration unavailable",
+    "expires": "Available until",
+    "loading": "Loading recordings",
+    "preparing": "Preparing playback",
+    "empty": "No recordings are currently available",
+    "loadError": "Recordings are temporarily unavailable",
+    "playError": "Unable to play right now. Please retry.",
+    "expired": "This recording is no longer available",
+    "retry": "Reload",
+    "previous": "Previous",
+    "next": "Next"
   },
   "privacyPolicy": {
     "heroTitle": "Privacy Policy",

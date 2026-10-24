@@ -7,7 +7,7 @@ import {readerFixture} from './test-fixture';
 import {usePrivateReader} from './usePrivateReader';
 import {applyLocalMutation} from './private-state';
 import {clearReaderReturns, saveReaderReturn, readReaderReturn, readVolatileReader, readerReturnSnapshot, clearReaderReturnIfUnchanged, hasPendingReaderReturn} from './return-state';
-import {activateOfflineAccount, readPrivateReplica, readOfflineSave, bindOnlinePrivate, seedPrivateReplica, enqueuePrivateMutation, chooseReaderRecovery, commitOnlineUpgrade, commitOfflineSave} from './offline-store';
+import {activateOfflineAccount, readPrivateReplica, readOfflineSave, bindOnlinePrivate, seedPrivateReplica, enqueuePrivateMutation, chooseReaderRecovery, commitOnlineUpgrade, commitOfflineSave, commitOfflineUpgrade} from './offline-store';
 const storage = vi.hoisted(() => ({fail: false, failBind: false}));
 vi.mock('./offline-store', async original => {const actual = await original<typeof import('./offline-store')>(); return {...actual, bindOnlinePrivate: (...args: Parameters<typeof actual.bindOnlinePrivate>) => storage.failBind ? Promise.reject(new DOMException('full', 'QuotaExceededError')) : actual.bindOnlinePrivate(...args), enqueuePrivateMutation: (...args: Parameters<typeof actual.enqueuePrivateMutation>) => storage.fail ? Promise.reject(new DOMException('full', 'QuotaExceededError')) : actual.enqueuePrivateMutation(...args)};});
 const now = Date.parse('2026-10-02T00:00:00Z'), value = readerFixture();
@@ -218,4 +218,20 @@ it('automatically confirms a return-only intent even when an offline copy exists
   await waitFor(() => expect(h.result.current.status).toBe('synced'));
   expect(h.api.mutate.mock.calls[0][2]).toEqual([intent]);
   expect(h.result.current.pendingMutation).toBeNull(); expect(h.result.current.state?.notes[0].text).toBe('B');
+});
+
+it('shows retained original context when a saved edition is reopened online and cloud state is refreshed', async()=>{
+ const epoch=await activateOfflineAccount(selector.accountId);
+ await commitOfflineSave({selector,value,resources:[],size:100,lastObservedAt:now,epoch,locked:false},epoch,now);
+ await seedPrivateReplica(selector,state,epoch,now);await enqueuePrivateMutation(selector,edit('retain-old','Unsent authored text',1),epoch,now);
+ const original=(await readPrivateReplica(selector,now))!;
+ const current={...structuredClone(value),document:{...value.document,revision:2},access:{...value.access,revision:2,currentRevision:2,receiptId:'retained-current'}};
+ const cloud={...state,currentRevision:2,appliedRevision:2};
+ await commitOfflineUpgrade({selector,value:current,resources:[],size:100,lastObservedAt:now,epoch,locked:false},cloud,epoch,1,original.queue,now,true);
+ const api={privateState:vi.fn(async()=>({state:cloud})),renew:vi.fn(async()=>current),mutate:vi.fn()};
+ const h=renderHook(()=>usePrivateReader({api,selector,value:current,offline:false,allowAction:()=>true,onFailure:vi.fn()}));
+ await waitFor(()=>expect(h.result.current.status).toBe('synced'));
+ expect(h.result.current.retainedIntents).toEqual([expect.objectContaining({sourceQuote:'內容0。',mutation:expect.objectContaining({payload:expect.objectContaining({text:'Unsent authored text'})})})]);
+ act(()=>h.result.current.reload());await waitFor(()=>expect(api.privateState).toHaveBeenCalledTimes(2));
+ await waitFor(()=>expect(h.result.current.retainedIntents).toHaveLength(1));expect(api.mutate).not.toHaveBeenCalled();
 });

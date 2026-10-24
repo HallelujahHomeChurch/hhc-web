@@ -86,3 +86,47 @@ it('does not automatically apply the other conflicting color after the first use
   expect(next.recovery).toEqual([{mutationId: second.mutationId, reason: 'color_conflict'}]);
   expect(next.mutations).toEqual([]);
 });
+it('updates without guessing an ambiguous attachment and retains its original quote through later sync and another update', async () => {
+  const {epoch, api} = await setup(), signal = new AbortController().signal;
+  api.privateState.mockResolvedValue({state: {...initial, currentRevision: 2, appliedRevision: 2}, fromRevision: 1, mappings: []});
+  let prepared = await prepareReaderUpgrade(api, selector, value, epoch, signal, () => now);
+  expect(prepared.recovery).toHaveLength(1);
+  await finishReaderUpgrade(api, selector, prepared, epoch, signal, fetchAsset, () => now, true);
+  expect(api.mutate).not.toHaveBeenCalled();
+  expect((await readOfflineSave(selector, now))?.save.value.document.revision).toBe(2);
+  let replica = (await readPrivateReplica(selector, now))!;
+  expect(replica.queue).toEqual([]);
+  const stored = await new Promise<{queue: {deferred?: boolean; recoveryReason?: string}[]}>((resolve,reject)=>{
+    const open=indexedDB.open('hhc-weekly-reader',2);
+    open.onerror=()=>reject(open.error);
+    open.onsuccess=()=>{const db=open.result,tx=db.transaction('private'),read=tx.objectStore('private').getAll();read.onsuccess=()=>resolve(read.result[0]);read.onerror=()=>reject(read.error);tx.oncomplete=()=>db.close();};
+  });
+  expect(stored.queue).toHaveLength(1);expect(stored.queue[0]).toMatchObject({deferred:true,recoveryReason:'mapping_unavailable'});
+  expect(replica.retained).toEqual([expect.objectContaining({mutation, sourceQuote: '內容0。'})]);
+  await seedPrivateReplica(selector, replica.state, epoch, now);
+  expect((await readPrivateReplica(selector, now))?.retained).toEqual(replica.retained);
+  const current = (await readOfflineSave(selector, now))!.save.value;
+  api.renew.mockResolvedValue(current);
+  api.privateState.mockResolvedValue({state: {...initial, currentRevision: 2, appliedRevision: 2}, fromRevision: 2, mappings: []});
+  prepared = await prepareReaderUpgrade(api, selector, current, epoch, signal, () => now);
+  await finishReaderUpgrade(api, selector, prepared, epoch, signal, fetchAsset, () => now);
+  replica = (await readPrivateReplica(selector, now))!;
+  expect(replica.retained?.[0].sourceQuote).toBe('內容0。');
+});
+
+it('keeps an offline note, partial original quote and chosen payload when the source disappears', async () => {
+  const {epoch, api} = await setup(), signal = new AbortController().signal;
+  const note: BulletinReaderMutation = {mutationId: crypto.randomUUID(), documentRevision: 1, createdAt: new Date(now).toISOString(), kind: 'createNote', payload: {noteId: crypto.randomUUID(), sentenceIds: ['s1'], ranges: [{sentenceId: 's1', start: 1, end: 3}], text: 'My offline note'}};
+  await enqueuePrivateMutation(selector, note, epoch, now);
+  api.privateState.mockResolvedValue({state: {...initial, currentRevision: 2, appliedRevision: 2}, fromRevision: 1, mappings: []});
+  const prepared = await prepareReaderUpgrade(api, selector, value, epoch, signal, () => now);
+  await finishReaderUpgrade(api, selector, prepared, epoch, signal, fetchAsset, () => now, true);
+  expect((await readPrivateReplica(selector, now))?.retained).toContainEqual(expect.objectContaining({mutation: note, sourceQuote: '容1'}));
+  const {hasPendingReaderWrites, reopenRetainedIntent, clearOfflineAccount} = await import('./offline-store');
+  expect(await hasPendingReaderWrites(selector.accountId)).toBe(true);
+  const reopened = await reopenRetainedIntent(selector, note.mutationId, epoch, now);
+  expect(reopened.queue[0]).toMatchObject({mutation: note, sourceQuote: '容1', recoveryReason: 'mapping_unavailable'});
+  expect(reopened.retained).toHaveLength(1);
+  await clearOfflineAccount(selector.accountId);
+  await expect(reopenRetainedIntent(selector, mutation.mutationId, epoch, now)).rejects.toThrow();
+});

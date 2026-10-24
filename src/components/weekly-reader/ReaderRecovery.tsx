@@ -44,6 +44,7 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
   useLayoutEffect(() => {current.current = {prepared, suspended, open, selector, mounted: true};});
   useLayoutEffect(() => () => {current.current.mounted = false;}, []);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const [canRetain, setCanRetain] = useState(false);
   const epoch = useRef<number | null>(null), controller = useRef<AbortController | null>(null);
   const pending = useRef(pendingMutation);
   const acknowledged = useRef<{mutationId: string; status: string} | null>(null);
@@ -58,11 +59,12 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
     finally {request.abort(); setBusy(false);}
   }
   async function prepare(signal: AbortSignal) {
+    setCanRetain(false);
     const local = supportsOfflineReader() ? await readPrivateBinding(selector).catch(() => null) : null;
     if (local && !pending.current) {
       const owner = await getOfflineIdentity();
       if (owner.accountId !== selector.accountId || owner.epoch !== local.epoch) throw new Error('offline_account_changed');
-      epoch.current = owner.epoch;
+      epoch.current = owner.epoch; setCanRetain(true);
       let next: ReaderUpgrade;
       if (local.onlineOnly && local.revision !== value.document.revision) {
         const current = await api.current(selector, value, crypto.randomUUID(), signal);
@@ -152,6 +154,11 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
     } catch {if (current.current.mounted) setError(true);}
     finally {decisionPending.current = false; if (current.current.mounted) setDeciding(false);}
   }
+  async function finish(signal: AbortSignal, deferRecovery = false) {
+    if (!prepared) return;
+    const finished = epoch.current === null ? {value: prepared.value, state: prepared.state} : await finishReaderUpgrade(api, selector, prepared, epoch.current, signal, undefined, undefined, deferRecovery);
+    signal.throwIfAborted(); if (epoch.current !== null) onState?.(finished.state); onUpdated(finished.value); changeOpen(false);
+  }
   const content = <div className="reader-private-sheet reader-recovery" hidden={suspended} inert={suspended}>
       <p>{m.recoveryHelp}</p>
       {busy ? <p role="status">{m.syncSyncing}</p> : null}
@@ -169,11 +176,9 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
           if ((original.kind === 'createNote' || original.kind === 'editNote') && text === original.payload.text) delete next[entry.mutation.mutationId];
           else next[entry.mutation.mutationId] = text;
           onDraftsChange(next);
-        }} prepared={prepared} previous={value} original={entry.resolution?.mutation ?? entry.mutation} reason={recovery.reason} messages={m} busy={busy} mobile={mobile} onChoose={mutation => void run(signal => choose(entry.mutation.mutationId, mutation, signal))}/> :
-        prepared ? <button type="button" disabled={busy || deciding} onClick={() => void run(async signal => {
-          const finished = epoch.current === null ? {value: prepared.value, state: prepared.state} : await finishReaderUpgrade(api, selector, prepared, epoch.current, signal);
-          signal.throwIfAborted(); if (epoch.current !== null) onState?.(finished.state); onUpdated(finished.value); changeOpen(false);
-        })}>{m.applyUpdate}</button> : null}
+        }} prepared={prepared} previous={value} sourceQuote={entry.sourceQuote} original={entry.resolution?.mutation ?? entry.mutation} reason={recovery.reason} messages={m} busy={busy} mobile={mobile} onChoose={mutation => void run(signal => choose(entry.mutation.mutationId, mutation, signal))}/> :
+        prepared ? <button type="button" disabled={busy || deciding} onClick={() => void run(signal => finish(signal))}>{m.applyUpdate}</button> : null}
+      {prepared && canRetain && !awaitingConfirmation && (recovery || conflict) ? <button type="button" disabled={busy || deciding} onClick={() => void run(signal => finish(signal, true))}>{m.updateRetainContext}</button> : null}
       {error ? <button type="button" disabled={busy || deciding} onClick={() => void run(prepare)}>{m.retry}</button> : null}
       <button type="button" disabled={busy || deciding} onClick={() => changeOpen(false)}>{m.keepReading}</button>
     </div>;
@@ -183,8 +188,8 @@ export function ReaderRecovery({api, value, selector, messages: m, onUpdated, on
   </>;
 }
 
-function RecoveryChoice({prepared, previous, original, reason, messages: m, busy, onChoose, mobile, draftText, onTextChange: setText}: {
-  draftText?: string; onTextChange: (text: string) => void;
+function RecoveryChoice({prepared, previous, original, sourceQuote: retainedQuote, reason, messages: m, busy, onChoose, mobile, draftText, onTextChange: setText}: {
+  sourceQuote?: string; draftText?: string; onTextChange: (text: string) => void;
   prepared: ReaderUpgrade; previous: OnlineBulletinAccess; original: BulletinReaderMutation; reason: ReaderUpgrade['recovery'][number]['reason']; messages: ReaderMessages; busy: boolean; mobile: boolean; onChoose: (mutation: BulletinReaderMutation | null) => void;
 }) {
   const sentences = useMemo(() => readerSentences(prepared.value.document), [prepared.value.document]);
@@ -197,7 +202,7 @@ function RecoveryChoice({prepared, previous, original, reason, messages: m, busy
   const previousSentences = readerSentences(previous.document);
   const sourceRanges = original.kind === 'setHighlight' || original.kind === 'clearHighlight' || original.kind === 'createNote' ? original.payload.ranges : undefined;
   const historical = original.kind === 'restoreHighlight' || original.kind === 'discardHighlightHistory' ? prepared.state.highlightHistory?.find(entry => entry.id === original.payload.historyId)?.highlight : undefined;
-  const sourceQuote = historical ? historical.segments?.length ? historical.segments.map(part => [...historical.quote].slice(part.start, part.end).join('')).join(' … ') : historical.quote : previous.document.revision === original.documentRevision ? sourceRanges ? rangeQuote(sourceRanges, previousSentences) : previousSentences.filter(sentence => sourceIds.includes(sentence.id)).map(sentence => sentence.text).join('\n') : '';
+  const sourceQuote = retainedQuote ?? (historical ? historical.segments?.length ? historical.segments.map(part => [...historical.quote].slice(part.start, part.end).join('')).join(' … ') : historical.quote : previous.document.revision === original.documentRevision ? sourceRanges ? rangeQuote(sourceRanges, previousSentences) : previousSentences.filter(sentence => sourceIds.includes(sentence.id)).map(sentence => sentence.text).join('\n') : '');
   const text = draftText ?? (original.kind === 'createNote' || original.kind === 'editNote' ? original.payload.text : '');
   const [ids, setIds] = useState<string[]>(original.kind === 'setHighlight' || original.kind === 'clearHighlight' || original.kind === 'createNote' ? original.payload.sentenceIds.filter(id => sentences.some(sentence => sentence.id === id)) : cloud?.sentenceIds ?? []);
   const [color, setColor] = useState<BulletinReaderHighlightColor>(original.kind === 'setHighlight' || original.kind === 'restoreHighlight' ? original.payload.color : 'yellow');
