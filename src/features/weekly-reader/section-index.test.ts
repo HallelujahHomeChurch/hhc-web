@@ -7,7 +7,7 @@ type Block = components['schemas']['OnlineBulletinBlock'];
 function fixture() {
   const document = {...readerFixture('zh-Hant', 'v10').document.content, contentLocale:'zh-Hant' as const, sourcePageCount:4};
   const block = (id: string, text: string): Block => ({id, style: {fontSize: 14, lineHeight: 18, indent:0, firstLineIndent:0, spaceBefore:0, spaceAfter:0}, sentences: [{id: `${id}-sentence`, source: {page: 2, box: {x: .1, y: .4, width: .3, height: .02}}, spans: [{text, fontRole: 'body'}]}]});
-  const section = (id: string, name?: string): components['schemas']['OnlineBulletinComponent'] => ({id, type: 'bodySection', bodySection: {kind: 'unknown', title: block(id, `Title ${id}`), contributors: name ? [{role: 'speaker', name: block(`${id}-name`, name)}] : [], blocks: [block(`${id}-body`, 'Body')]}});
+  const section = (id: string, name?: string): components['schemas']['ReaderComponent'] => ({id, type: 'bodySection', bodySection: {kind: 'unknown', title: block(id, `Title ${id}`), contributors: name ? [{role: 'speaker', name: block(`${id}-name`, name)}] : [], blocks: [block(`${id}-body`, 'Body')]}});
   document.components.push(section('first'), section('second', 'Beta'), section('third', 'Alpha'), section('fourth', ' Beta '));
   for (const id of ['first', 'second', 'third', 'fourth']) document.layoutManifest.pages[1].slots.push({id: `${id}-slot`, componentId: id, blockId: id, box: {x: .1, y: .4, width: .7, height: .1}, fragments: [{sentenceId: `${id}-sentence`, start: 0, end: 4}]});
   const first = document.components.find(component => component.id === 'first')!;

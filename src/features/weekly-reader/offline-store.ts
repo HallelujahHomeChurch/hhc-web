@@ -6,6 +6,7 @@ import {isBookmarkMutation} from './bookmarks';
 import {applyLocalMutation, verifyPrivateState} from './private-state';
 import {appendPrivateIntent, acknowledgePrivateIntent} from './private-journal';
 import type {ReaderRecovery} from './rebase';
+import {retainUnresolvedIntents} from './retained-intents';
 import {clearReaderReturn, clearReaderReturnIfUnchanged, readerReturnSnapshot, hasPendingReaderReturn} from './return-state';
 
 type Identity = {accountId: string | null; epoch: number};
@@ -29,8 +30,19 @@ export type OfflineSaveSummary = {
 };
 type OfflineCheck = Pick<OfflineSave, 'lastObservedAt' | 'localValidUntil' | 'epoch' | 'locked'> & {access: OnlineBulletinAccess['access']; onlineOnly?: boolean; instanceId?: string; contentHash?: string};
 type MutationResult = BulletinReaderMutationResponse['results'][number];
-export type PendingReaderMutation = {mutation: BulletinReaderMutation; sent: boolean; result?: MutationResult; replay?: BulletinReaderMutation; replayResult?: MutationResult; recoveryReason?: ReaderRecovery['reason']; resolution?: {mutation: BulletinReaderMutation | null; result?: MutationResult}};
-export type PrivateReplica = {state: BulletinReaderState; confirmed: BulletinReaderState; queue: PendingReaderMutation[]};
+export type PendingReaderMutation = {mutation: BulletinReaderMutation; sent: boolean; result?: MutationResult; replay?: BulletinReaderMutation; replayResult?: MutationResult; sourceQuote?: string; recoveryReason?: ReaderRecovery['reason']; resolution?: {mutation: BulletinReaderMutation | null; result?: MutationResult}};
+export type PrivateReplica = {state: BulletinReaderState; confirmed: BulletinReaderState; queue: PendingReaderMutation[]; retained?: PendingReaderMutation[]};
+// Older reader tabs must still see a non-empty recovery queue: otherwise their
+// cloud refresh would overwrite retained authored data. Keep one stored copy.
+type StoredPrivateReplica = Omit<PrivateReplica, 'retained' | 'queue'> & {queue: (PendingReaderMutation & {deferred?: true})[]};
+function storedReplica({retained, ...replica}: PrivateReplica): StoredPrivateReplica {
+  return {...replica, queue: [...replica.queue, ...(retained ?? []).map(entry => ({...entry, deferred: true as const, recoveryReason: entry.recoveryReason ?? 'mapping_unavailable' as const}))]};
+}
+function activeReplica(stored: StoredPrivateReplica): PrivateReplica {
+  const queue: PendingReaderMutation[] = [], retained: PendingReaderMutation[] = [];
+  for (const {deferred, ...entry} of stored.queue) (deferred ? retained : queue).push(entry);
+  return {...stored, queue, ...(retained.length ? {retained} : {})};
+}
 const stores = ['identity', 'documents', 'pointers', 'checks', 'private'];
 const offlineCheck = (save: OfflineSave): OfflineCheck => ({access: save.value.access, lastObservedAt: save.lastObservedAt, localValidUntil: save.localValidUntil, epoch: save.epoch, locked: save.locked});
 const editionKey = (selector: ReaderSelector) => [selector.accountId, selector.issueNumber, selector.series, selector.contentLocale];
@@ -186,7 +198,7 @@ export async function commitOfflineSave(staged: OfflineSave, epoch: number, cloc
     const pointer = await result(tx.objectStore('pointers').get(editionKey(staged.selector)));
     if (pointer && JSON.stringify(pointer) !== JSON.stringify(key)) {
       const previousReplica: PrivateReplica | undefined = await result(tx.objectStore('private').get(pointer));
-      if (previousReplica?.queue.length) throw new Error('offline_pending_recovery');
+      if (previousReplica?.queue.length || previousReplica?.retained?.length) throw new Error('offline_pending_recovery');
     }
     const previous: OfflineCheck | undefined = await result(tx.objectStore('checks').get(key));
     if (previous && (Date.parse(previous.access.validatedAt) > Date.parse(save.value.access.validatedAt) || previous.locked && Date.parse(previous.access.validatedAt) >= Date.parse(save.value.access.validatedAt))) throw new Error('offline_stale_receipt');
@@ -310,9 +322,9 @@ async function removalContext(tx: IDBTransaction, selector: ReaderSelector) {
   if (!save.instanceId) {save.instanceId = crypto.randomUUID(); documents.put(save, key);}
   const privateStore = tx.objectStore('private');
   const keys = (await result(privateStore.getAllKeys())).filter(candidate => sameDocument(candidate, key));
-  const queues = await Promise.all(keys.map(async candidate => [candidate, ((await result(privateStore.get(candidate))) as PrivateReplica).queue] as const));
+  const queues = await Promise.all(keys.map(async candidate => [candidate, ((await result(privateStore.get(candidate))) as PrivateReplica)] as const));
   queues.sort((a, b) => JSON.stringify(a[0]).localeCompare(JSON.stringify(b[0])));
-  return {accountId: owner.accountId, epoch: owner.epoch, pointer: JSON.stringify(key), documentId: String(key[1]), revision: save.value.access.revision, instanceId: save.instanceId, queues: JSON.stringify(queues), pending: queues.some(([, queue]) => queue.length > 0)};
+  return {accountId: owner.accountId, epoch: owner.epoch, pointer: JSON.stringify(key), documentId: String(key[1]), revision: save.value.access.revision, instanceId: save.instanceId, queues: JSON.stringify(queues), pending: queues.some(([, replica]) => replica.queue.length > 0 || !!replica.retained?.length)};
 }
 
 export async function readOfflineRemovalSnapshot(selector: ReaderSelector): Promise<OfflineRemovalSnapshot> {
@@ -374,7 +386,7 @@ export async function bindOnlinePrivate(selector: ReaderSelector, value: OnlineB
       const old: PrivateReplica | undefined = await result(tx.objectStore('private').get(pointer));
       // Fresh current access may reveal old private intents for explicit recovery;
       // it must not advance their pointer or automatically replay old anchors.
-      if (old?.queue.length) return;
+      if (old?.queue.length || old?.retained?.length) return;
     }
     if (await result(tx.objectStore('documents').get(key))) return;
     const previous: OfflineCheck | undefined = await result(tx.objectStore('checks').get(key));
@@ -418,7 +430,8 @@ async function privateContext(tx: IDBTransaction, selector: ReaderSelector, epoc
   const context: PrivateDocumentContext = {access: checked.check.access, document, epoch: owner.epoch,
     instanceId: stored?.instanceId ?? checked.check.instanceId, onlineOnly: !!checked.check.onlineOnly,
     writable: checked.status === 'available' && (!checked.check.onlineOnly || fresh && live.value.document.revision === checked.check.access.revision)};
-  const replica: PrivateReplica | undefined = await result(tx.objectStore('private').get(checked.key));
+  const storedReplicaValue: StoredPrivateReplica | undefined = await result(tx.objectStore('private').get(checked.key));
+  const replica = storedReplicaValue ? activeReplica(storedReplicaValue) : undefined;
   if (replica) verifyPrivateState(replica.state, selector.accountId, context.access.documentId, context.access.revision);
   return {key: checked.key, context, replica};
 }
@@ -471,7 +484,7 @@ export async function mergeBookmarkCache(selector: ReaderSelector, expected: Boo
     // A second tab may already have a newer acknowledgement or a newly queued note.
     const bookmarks = retainNewerBookmarks(replica.confirmed.bookmarks, cloud.bookmarks);
     const next = {...replica, state: {...replica.state, bookmarks}, confirmed: {...replica.confirmed, bookmarks}};
-    tx.objectStore('private').put(next, key);
+    tx.objectStore('private').put(storedReplica(next), key);
     return next;
   });
 }
@@ -509,8 +522,8 @@ export async function seedPrivateReplica(selector: ReaderSelector, state: Bullet
     if (replica?.queue.length) return replica;
     const bookmarks = retainNewerBookmarks(replica?.confirmed.bookmarks, state.bookmarks);
     const retained = bookmarks === undefined ? state : {...state, bookmarks};
-    const next: PrivateReplica = {state: retained, confirmed: retained, queue: []};
-    tx.objectStore('private').put(next, key);
+    const next: PrivateReplica = {...replica, state: retained, confirmed: retained, queue: []};
+    tx.objectStore('private').put(storedReplica(next), key);
     return next;
   });
 }
@@ -521,7 +534,7 @@ export async function enqueuePrivateMutation(selector: ReaderSelector, mutation:
     const {key, context, replica} = await privateContext(tx, selector, epoch, clock);
     if (!replica) throw new Error('private_state_unavailable');
     const next = appendPrivateIntent(replica, mutation, privateDocument(context));
-    tx.objectStore('private').put(next, key);
+    tx.objectStore('private').put(storedReplica(next), key);
     return next;
   });
 }
@@ -534,11 +547,11 @@ export async function claimPrivateMutation(selector: ReaderSelector, epoch: numb
     if (!replica || !first || first.result || first.replay || first.resolution || first.recoveryReason) return null;
     if (!Number.isFinite(Date.parse(first.mutation.createdAt)) || clockNow(clock) - Date.parse(first.mutation.createdAt) > 90 * 86400000) {
       first.result = {mutationId: first.mutation.mutationId, status: 'recovery_required', revision: replica.state.currentRevision};
-      tx.objectStore('private').put(replica, key);
+      tx.objectStore('private').put(storedReplica(replica), key);
       return null;
     }
     first.sent = true;
-    tx.objectStore('private').put(replica, key);
+    tx.objectStore('private').put(storedReplica(replica), key);
     return first;
   });
 }
@@ -548,7 +561,7 @@ export async function acknowledgePrivateMutation(selector: ReaderSelector, respo
     const {key, context, replica} = await privateContext(tx, selector, epoch, clock);
     if (!replica) throw new Error('private_state_unavailable');
     const next = acknowledgePrivateIntent(replica, response, privateDocument(context));
-    tx.objectStore('private').put(next, key);
+    tx.objectStore('private').put(storedReplica(next), key);
     return next;
   });
 }
@@ -560,26 +573,29 @@ export async function hasPendingReaderWrites(accountId: string, documentId?: str
     if ((await identity(tx)).accountId !== accountId) return false;
     const store = tx.objectStore('private');
     for (const key of await result(store.getAllKeys())) {
-      if (Array.isArray(key) && key[0] === accountId && (!documentId || key[1] === documentId) && ((await result(store.get(key))) as PrivateReplica).queue.length) return true;
+      if (Array.isArray(key) && key[0] === accountId && (!documentId || key[1] === documentId)) {
+        const replica = await result(store.get(key)) as PrivateReplica;
+        if (replica.queue.length || replica.retained?.length) return true;
+      }
     }
     return false;
   });
 }
 
-export async function commitOfflineUpgrade(staged: OfflineSave, state: BulletinReaderState, epoch: number, previousRevision: number, expectedQueue: readonly PendingReaderMutation[], clock: ReaderClock = Date.now) {
+export async function commitOfflineUpgrade(staged: OfflineSave, state: BulletinReaderState, epoch: number, previousRevision: number, expectedQueue: readonly PendingReaderMutation[], clock: ReaderClock = Date.now, deferRecovery = false) {
   verifyReaderAccess(staged.value, staged.selector);
   verifyPrivateState(state, staged.selector.accountId, staged.value.document.documentId, staged.value.document.revision);
-  if (state.currentRevision !== staged.value.document.revision || state.conflicts.length) throw new Error('upgrade_incomplete');
+  if (state.currentRevision !== staged.value.document.revision || !deferRecovery && state.conflicts.length) throw new Error('upgrade_incomplete');
   await privateTransaction(async tx => {
     const {key: oldKey, context: previous, replica} = await privateContext(tx, staged.selector, epoch, clock);
     if (previous.access.documentId !== state.documentId || previous.access.revision !== previousRevision || staged.value.access.revision < previousRevision || JSON.stringify(replica?.queue ?? []) !== JSON.stringify(expectedQueue)) throw new Error('offline_replica_changed');
-    if (replica?.queue.some(entry => entry.resolution ? entry.resolution.mutation && entry.resolution.result?.status !== 'applied' : (entry.replayResult ?? entry.result)?.status !== 'applied')) throw new Error('upgrade_incomplete');
+    const retained = retainUnresolvedIntents(replica, previous.document, deferRecovery);
     const save = {...staged, instanceId: crypto.randomUUID(), epoch, lastObservedAt: clockNow(clock)};
     if (accessStatus(offlineCheck(save), await identity(tx), clockNow(clock)) !== 'available') throw new Error('offline_access_expired');
     const key = documentKey(save);
     tx.objectStore('documents').put(save, key);
     tx.objectStore('checks').put(offlineCheck(save), key);
-    tx.objectStore('private').put({state, confirmed: state, queue: []} satisfies PrivateReplica, key);
+    tx.objectStore('private').put(storedReplica({state, confirmed: state, queue: [], ...(retained.length ? {retained} : {})}), key);
     tx.objectStore('pointers').put(key, editionKey(staged.selector));
     if (previousRevision !== staged.value.access.revision) {tx.objectStore('documents').delete(oldKey); tx.objectStore('checks').delete(oldKey); tx.objectStore('private').delete(oldKey);}
   });
@@ -587,21 +603,21 @@ export async function commitOfflineUpgrade(staged: OfflineSave, state: BulletinR
 }
 
 /** Commit private recovery without downloading or manufacturing an offline publication. */
-export async function commitOnlineUpgrade(selector: ReaderSelector, value: OnlineBulletinAccess, state: BulletinReaderState, epoch: number, previousRevision: number, expectedQueue: readonly PendingReaderMutation[], clock: ReaderClock = Date.now) {
+export async function commitOnlineUpgrade(selector: ReaderSelector, value: OnlineBulletinAccess, state: BulletinReaderState, epoch: number, previousRevision: number, expectedQueue: readonly PendingReaderMutation[], clock: ReaderClock = Date.now, deferRecovery = false) {
   verifyReaderAccess(value, selector);
   verifyPrivateState(state, selector.accountId, value.document.documentId, value.document.revision);
-  if (state.currentRevision !== value.document.revision || state.conflicts.length) throw new Error('upgrade_incomplete');
+  if (state.currentRevision !== value.document.revision || !deferRecovery && state.conflicts.length) throw new Error('upgrade_incomplete');
   await privateTransaction(async tx => {
     const {key: oldKey, context, replica} = await privateContext(tx, selector, epoch, clock);
     if (!context.onlineOnly || context.access.documentId !== state.documentId || context.access.revision !== previousRevision || value.document.revision < previousRevision || JSON.stringify(replica?.queue ?? []) !== JSON.stringify(expectedQueue)) throw new Error('offline_replica_changed');
-    if (replica?.queue.some(entry => entry.resolution ? entry.resolution.mutation && entry.resolution.result?.status !== 'applied' : (entry.replayResult ?? entry.result)?.status !== 'applied')) throw new Error('upgrade_incomplete');
+    const retained = retainUnresolvedIntents(replica, context.document, deferRecovery);
     const check: OfflineCheck = {access: structuredClone(value.access), epoch, locked: false, onlineOnly: true,
       instanceId: crypto.randomUUID(), contentHash: value.document.content.layoutManifest.contentHash,
       lastObservedAt: clockNow(clock), localValidUntil: localAccessDeadline(value.access, clockNow(clock))};
     if (accessStatus(check, await identity(tx), clockNow(clock)) !== 'available') throw new Error('offline_access_expired');
     const key = [selector.accountId, state.documentId, selector.series, selector.contentLocale, value.document.revision];
     tx.objectStore('checks').put(check, key);
-    tx.objectStore('private').put({state, confirmed: state, queue: []} satisfies PrivateReplica, key);
+    tx.objectStore('private').put(storedReplica({state, confirmed: state, queue: [], ...(retained.length ? {retained} : {})}), key);
     tx.objectStore('pointers').put(key, editionKey(selector));
     if (previousRevision !== value.document.revision) {tx.objectStore('checks').delete(oldKey); tx.objectStore('private').delete(oldKey);}
   });
@@ -617,7 +633,7 @@ export async function stageReaderReplay(selector: ReaderSelector, originalId: st
     if (!entry || replay.mutationId !== originalId || replay.createdAt !== entry.mutation.createdAt) throw new Error('invalid_reader_binding');
     if (entry.replay && JSON.stringify(entry.replay) !== JSON.stringify(replay) && entry.replayResult?.status !== 'revision_changed') throw new Error('replay_requires_resolution');
     entry.replay = replay; entry.replayResult = undefined;
-    tx.objectStore('private').put(replica, key);
+    tx.objectStore('private').put(storedReplica(replica), key);
     return replica.queue;
   });
 }
@@ -629,7 +645,7 @@ export async function recordReaderReplayResult(selector: ReaderSelector, resultV
     const entry = replica.queue.find(entry => entry.replay?.mutationId === resultValue.mutationId);
     if (!entry) throw new Error('invalid_reader_binding');
     entry.replayResult = resultValue;
-    tx.objectStore('private').put(replica, key);
+    tx.objectStore('private').put(storedReplica(replica), key);
     return replica.queue;
   });
 }
@@ -648,7 +664,7 @@ export async function chooseReaderRecovery(selector: ReaderSelector, originalId:
       if (mutation?.kind !== 'resolveHighlightMigrationConflict') throw new Error('invalid_reader_binding');
       replica.queue.push({mutation, sent: false});
     }
-    tx.objectStore('private').put(replica, key);
+    tx.objectStore('private').put(storedReplica(replica), key);
     return replica.queue;
   });
 }
@@ -660,7 +676,7 @@ export async function recordReaderRecoveryResult(selector: ReaderSelector, resul
     const entry = replica.queue.find(entry => entry.resolution?.mutation?.mutationId === resultValue.mutationId);
     if (!entry?.resolution) throw new Error('invalid_reader_binding');
     entry.resolution.result = resultValue;
-    tx.objectStore('private').put(replica, key);
+    tx.objectStore('private').put(storedReplica(replica), key);
     return replica.queue;
   });
 }
@@ -674,7 +690,29 @@ export async function retainReaderRecoveries(selector: ReaderSelector, recovery:
       if (!entry) throw new Error('invalid_reader_binding');
       entry.recoveryReason = item.reason;
     }
-    tx.objectStore('private').put(replica, key);
+    tx.objectStore('private').put(storedReplica(replica), key);
     return replica.queue;
+  });
+}
+
+/** Reopen one retained item only when the reader explicitly chooses to position it. */
+export async function reopenRetainedIntent(selector: ReaderSelector, mutationId: string, epoch: number, clock: ReaderClock = Date.now) {
+  return privateTransaction(async tx => {
+    const {key, replica} = await privateContext(tx, selector, epoch, clock);
+    const entry = replica?.retained?.find(entry => entry.mutation.mutationId === mutationId);
+    if (!replica || !entry || replica.queue.length) throw new Error('offline_replica_changed');
+    const next: PrivateReplica = {...replica, retained: replica.retained!.filter(item => item !== entry), queue: [{...entry, recoveryReason: entry.recoveryReason ?? 'mapping_unavailable'}]};
+    tx.objectStore('private').put(storedReplica(next), key);
+    return next;
+  });
+}
+
+export async function reopenHighlightHistory(selector: ReaderSelector, historyId: string, epoch: number, clock: ReaderClock = Date.now) {
+  return privateTransaction(async tx => {
+    const {key, replica} = await privateContext(tx, selector, epoch, clock);
+    const item = replica?.state.highlightHistory?.find(item => item.id === historyId)?.highlight;
+    if (!replica || !item || replica.queue.length) throw new Error('offline_replica_changed');
+    const mutation: BulletinReaderMutation = {mutationId: crypto.randomUUID(), createdAt: new Date(clockNow(clock)).toISOString(), documentRevision: replica.state.currentRevision, kind: 'restoreHighlight', payload: {historyId, sentenceIds: [], ranges: [], color: item.color}};
+    tx.objectStore('private').put(storedReplica({...replica, queue: [{mutation, sent: false, sourceQuote: item.quote, recoveryReason: 'mapping_unavailable'}]}), key);
   });
 }

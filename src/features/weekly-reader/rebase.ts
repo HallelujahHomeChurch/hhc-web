@@ -4,7 +4,7 @@ import {readerSentences} from './selection';
 import {rangeQuote, type ReaderTextRange} from './text-range';
 
 export type ReaderRecovery = {mutationId: string; reason: 'removed_anchor' | 'anchor_limit' | 'color_conflict' | 'note_conflict' | 'mapping_unavailable' | 'expired_mutation'};
-export function rebaseReaderMutations(pending: readonly BulletinReaderMutation[], previous: BulletinReaderState, current: BulletinReaderState, mappings: NonNullable<BulletinReaderStateResponse['mappings']>) {
+export function rebaseReaderMutations(pending: readonly BulletinReaderMutation[], previous: BulletinReaderState, current: BulletinReaderState, mappings: NonNullable<BulletinReaderStateResponse['mappings']>, documents?: {previous: MemberOnlineDocument; current: MemberOnlineDocument}) {
   if (previous.accountId !== current.accountId || previous.documentId !== current.documentId || current.currentRevision < previous.currentRevision) throw new Error('invalid_reader_binding');
   const map = new Map(mappings.map(mapping => [mapping.fromSentenceId, mapping.toSentenceIds]));
   if (map.size !== mappings.length) throw new Error('invalid_reader_mapping');
@@ -24,9 +24,17 @@ export function rebaseReaderMutations(pending: readonly BulletinReaderMutation[]
     if (isBookmarkMutation(mutation)) {recovery.push({mutationId: mutation.mutationId, reason: 'mapping_unavailable'}); continue;}
     if (mutation.documentRevision === current.currentRevision) {mutations.push(mutation); continue;}
     if ('ranges' in mutation.payload) {
-      // Published sentence mappings do not prove partial text offsets.
-      recovery.push({mutationId: mutation.mutationId, reason: 'mapping_unavailable'});
-      continue;
+      // Retain offsets only when both immutable texts and a unique mapping prove them.
+      const before = documents?.previous.revision === mutation.documentRevision ? readerSentences(documents.previous) : [];
+      const after = documents?.current.revision === current.currentRevision ? readerSentences(documents.current) : [];
+      if ((mutation.kind !== 'createNote' && mutation.kind !== 'setHighlight' && mutation.kind !== 'clearHighlight') || !mutation.payload.ranges?.length || mutation.payload.ranges.some(range => {
+        const target = map.get(range.sentenceId);
+        const source = before.filter(sentence => sentence.id === range.sentenceId), destination = after.filter(sentence => sentence.id === target?.[0]);
+        return target?.length !== 1 || [...map.values()].filter(ids => ids.includes(target[0])).length !== 1 || source.length !== 1 || destination.length !== 1 || source[0].text !== destination[0].text || range.start < 0 || range.end > [...source[0].text].length || range.start >= range.end;
+      })) {
+        recovery.push({mutationId: mutation.mutationId, reason: 'mapping_unavailable'}); continue;
+      }
+      mutation.payload.ranges = mutation.payload.ranges.map(range => ({...range, sentenceId: map.get(range.sentenceId)![0]}));
     }
     let reason: ReaderRecovery['reason'] | undefined;
     if (mutation.documentRevision !== previous.currentRevision) reason = 'mapping_unavailable';
