@@ -5,6 +5,7 @@
 :global([data-theme=dark]) .watchPage {--video-canvas:#0f0f0f;--video-ink:#f1f1f1;--video-muted:#aaa;--video-panel:#272727;--video-border:#3f3f3f;--video-hover:rgb(255 255 255 / 10%);--video-menu:#282828;--video-link:#3ea6ff;--video-on-link:#0f0f0f;}
 .watchTitle {font-size:20px;font-weight:700;line-height:28px;color:var(--video-ink,var(--color-ink));overflow-wrap:anywhere;}
 .video, .results {min-width:0;}
+.zone :global(.hhc-player-watermark) {opacity:.06;text-shadow:0 1px 1px rgb(0 0 0 / 40%);}
 .results {display:grid; gap:24px;}
 .grid {display:grid; grid-template-columns:minmax(0,1fr); gap:28px 20px;}
 .card {min-width:0; display:grid; align-content:start; gap:10px;}
