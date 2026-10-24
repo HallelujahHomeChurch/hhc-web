@@ -1,6 +1,6 @@
 # Member watch follow-up: comments, theme and timeline previews
 
-Scope: Website presentation changes and read-only analysis. No API, database,
+Scope: Website presentation changes, analysis and the separately reviewed shared-player continuation described below. No API, database,
 Redis, shared-package publication, production configuration or release change.
 The separate pool/lock remediation remains outside this incremental PR.
 
@@ -55,10 +55,14 @@ use primary. Send/reply and edited-comment Save use the existing primary-solid,
 foreground and solid-hover tokens. Disabled buttons stay neutral; destructive
 moderation actions keep their existing presentation.
 
+The initial follow-up unified foreground only. The continuation now reuses the
+same `hhc-player-loading` class as the shared player: white48px icon,900ms linear
+animation, identical drop shadow and SVG path, including reduced-motion rules.
+
 The first VOD session placeholder inherited the watch page's dark text because it
 had no foreground declaration. Once mounted, the shared player's separate loading
 overlay explicitly used white. This explains the initial black-to-white change.
-Both Website session placeholders now explicitly specify white. The live outer
+Both Website session placeholders now reuse that shared loading class. The live outer
 placeholder already used white; its inner overlay is now explicit as well.
 
 Desktop layout now uses a 1,000px two-column breakpoint, a 16px gap and a bounded
@@ -126,7 +130,7 @@ cache implementation. A cross-origin transferSize of zero is not cache-hit proof
 
 ## Low-cost recommendation: frontend first
 
-A separate implementation should start with the existing assets and infrastructure:
+The following plan was reviewed before the user authorized the shared-player continuation. Implemented scope and remaining gates are recorded below:
 
 1. After playback reaches a usable first frame, warm the VOD index once at low
    priority; avoid competing with playback startup or priming every library card.
@@ -168,6 +172,37 @@ checks to improve preview latency.
 - [Cloudflare Workers Cache API](https://developers.cloudflare.com/workers/runtime-apis/cache/)
   documents the per-data-center cache, distinct from browser caching and Redis.
 
+## Authorized continuation: loading and preview cadence
+
+The user clarified that density means how often the timeline image changes, not
+spacing between recommendation cards. On the same browser, the official22-minute
+reference and [Google I/O2025 keynote](https://www.youtube.com/watch?v=o8NiE3XMPrM)
+(about115minutes) both exposed10,000ms storyboard intervals. This is an observed
+reference, not a claim that every YouTube video uses that interval.
+
+The companion [frontend-platform PR#160](https://github.com/HallelujahHomeChurch/frontend-platform/pull/160) prepares UI1.1.5 with10-second image selection
+from the existing5-second cues. Pointer labels and seek times remain exact.
+Binary cue lookup retains unavailable-gap and clipped-range checks; no regenerated
+assets or server contract changes are needed. VOD warms its index and current/next
+sheets after usable playback, skips optional warming/neighbors in data-saving
+mode, decodes before caching and skips the60ms miss timer for cached sheets.
+Missing optional warm metadata can retry on later pointer intent. Existing live
+refresh, request concurrency, memory bounds, authorization-denial and disposal
+fences remain covered; active uncached requests are still network-bound.
+
+Actual-component synthetic browser checks showed matching initial/later loading
+properties and VOD index/two sheets loaded before first hover. With150ms injected
+network delay, cached image/time DOM updates across seven pointer positions took
+about4–9ms;5/9s retained the0s image,10/15s retained10s, and30/35s retained30s.
+The video currentTime remained0 throughout pointer movement. These are local
+observations, not production percentiles or physical-device acceptance.
+
+Release sequencing: approve/merge/publish the immutable shared UI artifact first,
+then update this Website's real registry version/integrity and rerun ordinary CI
+before its merge/release. The candidate fixture and packed-consumer checks do not
+replace that gate. Current Website manifest still pins published UI1.1.2. No
+package publication or production deployment was performed in this continuation.
+
 ## Verification
 
 See the linked PR for the final tested commit and ordinary CI result. The local
@@ -191,5 +226,5 @@ icons, neutral counts, transparent comment-reaction backgrounds and primary
 submit/hover colors were read back from computed styles.
 
 Screenshot capture timed out in Ego; DOM/geometry/style evidence is not full pixel,
-physical-keyboard, screen-reader or long-playback acceptance. No thumbnail-latency
-optimization is implemented by this PR.
+physical-keyboard, screen-reader or long-playback acceptance. The thumbnail implementation is in the companion shared-package PR; this Website
+PR retains its actual registry dependency until approved publication and pinning.
