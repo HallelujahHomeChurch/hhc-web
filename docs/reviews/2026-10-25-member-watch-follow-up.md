@@ -1,7 +1,8 @@
 # Member watch follow-up: comments, theme and timeline previews
 
 Scope: Website presentation changes, analysis and the separately reviewed shared-player continuation described below. No API, database,
-Redis, shared-package publication, production configuration or release change.
+Redis, production configuration or release-workflow changes. The reviewed
+continuation uses the normal package/Website release sequence.
 The separate pool/lock remediation remains outside this incremental PR.
 
 Source baseline: Website `27e9b7e`, published UI `1.1.2` and Website client
@@ -197,11 +198,13 @@ about4–9ms;5/9s retained the0s image,10/15s retained10s, and30/35s retained30s
 The video currentTime remained0 throughout pointer movement. These are local
 observations, not production percentiles or physical-device acceptance.
 
-Release sequencing: approve/merge/publish the immutable shared UI artifact first,
-then update this Website's real registry version/integrity and rerun ordinary CI
-before its merge/release. The candidate fixture and packed-consumer checks do not
-replace that gate. Current Website manifest still pins published UI1.1.2. No
-package publication or production deployment was performed in this continuation.
+The user approved merge/release after review and CI. Producer PR160 merged at
+`a41ee9b05529e6e4493d5376558a4a706b4df7ce`; immutable tag`v1.1.5` passed the
+[normal package release](https://github.com/HallelujahHomeChurch/frontend-platform/actions/runs/40117215247), including all renderer checks and publication. This
+Website now pins actual registry UI1.1.5 with its genuine integrity and a verified
+frozen install. All other HHC package pins remain unchanged. Normal Website CI
+must pass on that exact consumer head before merge; production deployment and
+smoke receipts are recorded in the PR separately from package publication.
 
 ## Verification
 
@@ -226,5 +229,5 @@ icons, neutral counts, transparent comment-reaction backgrounds and primary
 submit/hover colors were read back from computed styles.
 
 Screenshot capture timed out in Ego; DOM/geometry/style evidence is not full pixel,
-physical-keyboard, screen-reader or long-playback acceptance. The thumbnail implementation is in the companion shared-package PR; this Website
-PR retains its actual registry dependency until approved publication and pinning.
+physical-keyboard, screen-reader or long-playback acceptance. The thumbnail implementation is in the published companion UI1.1.5 artifact;
+this Website PR consumes its actual registry version/integrity.

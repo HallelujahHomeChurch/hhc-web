@@ -34,7 +34,7 @@
     "@hallelujahhomechurch/hhc-web-client": "1.1.4",
     "@hallelujahhomechurch/operations-client": "1.0.37",
     "@hallelujahhomechurch/preferences": "1.0.47",
-    "@hallelujahhomechurch/ui": "1.1.2",
+    "@hallelujahhomechurch/ui": "1.1.5",
     "@sentry/nextjs": "10.75.2",
     "docx": "9.12.0",
     "hls.js": "1.7.3",
