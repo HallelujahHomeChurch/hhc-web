@@ -49,8 +49,11 @@
 .title a {display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:inherit; min-height:44px;}
 
 @media(max-width:767px) {.watchPage {padding-top:0;} .watch {width:100%;} .watch > :not(.video), .watch .video > :not(:first-child) {margin-inline:12px;} .watch .video > :first-child {border-radius:0;} }
+@media(max-width:767px) {
+ .watch .video>:first-child[data-theater="true"]:not(:fullscreen):not([data-fullscreen="viewport"]) {height:auto;aspect-ratio:16/9;}
+}
 
-@media(pointer:fine) {
+@media(min-width:768px) and (pointer:fine) {
   .watch:has([data-theater="true"]) {width:100%;max-width:none;padding-inline:16px;}
   .watch:has([data-theater="true"]) .video > :first-child {grid-column:1 / -1;width:calc(100% + 32px);margin-inline:-16px;}
 }

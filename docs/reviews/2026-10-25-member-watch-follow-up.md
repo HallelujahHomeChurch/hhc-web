@@ -66,7 +66,9 @@ Desktop layout now uses a 1,000px two-column breakpoint, a 16px gap and a bounde
 640px minimum in that cap calculation for short desktop windows. Recommendation
 thumbnails use 44% of their card width instead of the prior 60% wide-screen
 rule. Comments align with the player column; theater mode spans the player across
-both columns and keeps the discussion and related videos below it.
+both columns and keeps the discussion and related videos below it. Below768px,
+a retained theater selection returns to16:9 so the sticky player cannot cover
+the mobile comment entry.
 
 For 768–999px, related videos follow the information and precede the full comment
 region. The recommendation slot is between the existing mobile comment entry and
