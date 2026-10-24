@@ -1,6 +1,6 @@
 # Member watch-page parity: implementation evidence
 
-Tracking: hhc-web#285. Base: `6d37ad19e1fe85cbc21256d791f0134e91c759c8`. API: [PR 337](https://github.com/HallelujahHomeChurch/hhc-web-api/pull/337). SDK: [PR 158](https://github.com/HallelujahHomeChurch/frontend-platform/pull/158). Implementation was directly authorized after the recorded design decisions. No merge, publication, deployment or production data operation is included.
+Tracking: hhc-web#285. Base: `6d37ad19e1fe85cbc21256d791f0134e91c759c8`. API: [PR 337](https://github.com/HallelujahHomeChurch/hhc-web-api/pull/337). SDK: [PR 158](https://github.com/HallelujahHomeChurch/frontend-platform/pull/158). Implementation was authorized after the recorded design decisions. The user later authorized coordinated production release after the pool/lock regression review. Final release receipts are recorded in the PR; no production comment/reaction writes are used for verification.
 
 ## Behavior
 
@@ -10,11 +10,13 @@ Tracking: hhc-web#285. Base: `6d37ad19e1fe85cbc21256d791f0134e91c759c8`. API: [P
 - Mobile uses a below-player reading panel with its own scroll area, fixed heading and bottom composer. Back returns to the root discussion; Close hides the panel. Drafts/scroll positions are retained and the player instance stays mounted. Short/keyboard editing uses available viewport space. Focus changes to Back/Cancel/Send keep controls stationary until the action commits.
 - An explicit threaded server contract supplies exact root totals, optional nonroot descendant totals and bounded preview profiles. Roots may use hasChildren=true when their direct-child count is unavailable; nonroots still require an exact direct count. Missing nonroot totals display “View replies”, never zero. Invalid structural metadata is rejected; the browser never guesses a tree from a partial flat page. Intermediate removed nodes redact identity/body/target while keeping descendants. Existing author-delete / staff-hide-and-restore permissions are preserved.
 
-## Candidate SDK boundary
+## Published SDK integration
 
-The Web manifest and lock still identify published SDK 1.1.0. Local verification uses the **built/packed 1.1.4 candidate from platform commit `87a56dc3fd9f74759c618b3f2a60c9cc5ab131b8`** in this worktree's ignored node_modules. The initial external source symlink worked for Vitest/TypeScript but was outside Turbopack's root; the packed candidate was unpacked inside this worktree for the build, with its already-installed dependency linked locally. No shared pnpm package was overwritten. Candidate archive SHA256: `395b0f8a8aacf912efa4122b877cf50addf6754ea5f1ee95e27b4fd1baeed1d3` (local archive identity, not registry integrity).
+API PR337 is released at `9e66956` / healthy revision `hhc-web-api--0000263`; migration and production smoke passed. SDK PR158 was merged at `81b57840560f3a521e96b4424345958a796a72a7`, tagged `v1.1.4`, and published through successful [Release packages40103487201](https://github.com/HallelujahHomeChurch/frontend-platform/actions/runs/40103487201).
 
-Normal CI and Docker install from the registry with frozen lockfiles. They cannot use this candidate. After separately approved SDK publication, pin the real exact version, generate the real registry lock entry and rerun normal Web CI. Do not merge this draft with the old SDK, invent package integrity or change CI to mask the dependency.
+The Website now pins actual registry `@hallelujahhomechurch/hhc-web-client` **1.1.4** in the manifest, real registry lockfile and exact-version test. Installed dependencies resolve to the pnpm registry package; the task-owned candidate was removed. Registry integrity: `sha512-ITz/7yFXJXQnm3u1+umLtZMmkGyUg8f8PQiPBuaoUhi6WazRk850Y6rmAfTXmpM+8m3nBWfu8P/9TiiW3ZY6QQ==`.
+
+Earlier candidate-only checks and registry build failures are historical. They were not waived or treated as green; the final frozen registry install and full Web/image CI validate the published dependency. API and SDK release workflows are both fully successful before the Website merge gate.
 
 ## Contention and async-state fixes
 
@@ -27,7 +29,7 @@ Normal CI and Docker install from the registry with frozen lockfiles. They canno
 ## Local checks after review fixes
 
 - Final `pnpm test:run --fsModuleCachePath=<fresh-task-cache>` passed **187 files /1,574 tests**, plus23 script checks and12 immutable template assets. The32-test comment suite covers duplicate/serialized reads, stale-sort cancellation, focus/Back, async cross-thread send completion, later-page422, optional totals/root fallback, invalid metadata, nested/cyclic/removal privacy and draft retention.
-- Candidate TypeScript, lint (three existing warnings), production build and static budgets passed. Current normal-registry CI is independent and remains blocked by unpublished candidate APIs.
+- Published SDK1.1.4 TypeScript, lint (three existing warnings), production build and static budgets passed. The final registry checks below supersede the pre-publication dependency block; ordinary Web/image CI remains required.
 - Fresh transforms isolated the three stale-module failures in MemberVideoZone. A remaining integration test matched both the mobile preview and updated body; its assertion now targets the body paragraph and still verifies one update call, draft reconciliation and closed editor. No runtime behavior or assertions were removed to pass checks.
 - Historical earlier green runs and concurrent-load failures are superseded by this bounded final local run; they do not establish registry or device acceptance.
 
@@ -48,3 +50,13 @@ Screenshot capture timed out through both Ego and the Chrome tab capture interfa
 Final local Ego task51 rerun at390×844 (source8a94420, candidate87a56dc) passed: empty-input focus expands to0px; blur to a comment button restores219.375px without a synthetic resize. A native pointer Back click preserves the draft and video node; reopening restores the visible draft. No horizontal overflow. Screenshot capture again timed out. Task51 and its loopback preview were closed; no Ego update was installed. This synthetic HLS still reports0:00, so no decoded playback acceptance is implied.
 
 Remaining acceptance: full 320/375/390/768/1024/1440 light/dark visual matrix, long/removed/error/menu/loading states, 200% text zoom, physical iOS/Android keyboard and safe areas, and real media continuity. Current source/DOM/unit checks do not substitute for those receipts. Ego Lite reported an available update; no upgrade was performed.
+
+## Lower-distraction watermark (authorized during release)
+
+The Website member-video zone overrides only the shared watermark visual style: opacity10%→6%, shadow0 1px2px black→0 1px1px black40%. The published player, code, count, layout, media authorization and fullscreen container remain unchanged. The same zone contains VOD/live playback and library previews. No SDK tag is modified for this site-specific style.
+
+A synthetic native WebM fixture rendered the actual RecordingWatermark component before/after. Desktop:960×540, six marks,30.72px font in both samples. Mobile:341.328×192, four marks,13.7143px in both. Computed opacity changes0.10→0.06 and shadow matches the new style. Screenshot capture still timed out; these are rendered DOM/style measurements. Production baseline before the Web release had a decoded854×480 video, readyState4, finite duration, six marks and opacity0.10; the viewer was paused and closed after checking. Final registry CI and deployed visual-style readback are separate gates.
+
+## Final registry validation
+
+After the actual1.1.4 registry install and removal of the local candidate, `pnpm install --frozen-lockfile` passed. `pnpm test:run --maxWorkers=2 --fsModuleCachePath=<fresh-task-cache>` passed187 files /1,574 tests plus23 script checks and12 immutable assets. Lint has0 errors /3 existing warnings. Production build/TypeScript and static budgets passed: CSS206,837 bytes; hero140,091 bytes; DOCX434,974 raw /124,004 gzip. The watermark adjustment is included in these checks. No dependency, CI or validation bypass was used. Exact-head PR CI/image checks and final deployment readback remain the next gates.
