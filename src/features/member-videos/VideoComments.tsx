@@ -14,7 +14,10 @@ import {LoadingBlock, LoadingStatus} from '@/components/ui/ContentLoading';
 import styles from './VideoComments.module.css';
 
 type Api = ReturnType<typeof createMemberVideoApi>;
+type CommentOptions = NonNullable<Parameters<Api['comments']>[1]>;
 type Presentation = {
+ deferBlur: (action: () => void) => void;
+ readComments: (options: CommentOptions) => ReturnType<Api['comments']>;
  mobile: boolean; thread: string | null; composer: string | null; viewer: CommentProfile;
  setScrollNode: (node: HTMLDivElement | null) => void;
  showThread: (id: string | null) => void; selectComposer: (id: string | null) => void;
@@ -26,6 +29,19 @@ export function VideoComments({api,id,locale,count,enabled,onChanged}:{api:Api;i
  const t=videoLabels(locale), auth=useAccountAuth();
  const dialog=useRef<HTMLDialogElement>(null), trigger=useRef<HTMLButtonElement>(null), scrollRef=useRef<HTMLDivElement>(null);
  const positions=useRef(new Map<string|null,number>());
+ const pointerActive=useRef(false),deferredBlur=useRef<(() => void)[]>([]),pointerTimer=useRef<ReturnType<typeof setTimeout>|undefined>(undefined);
+ const deferBlur=useCallback((action:()=>void)=>{if(pointerActive.current)deferredBlur.current.push(action);else action();},[]);
+ useEffect(()=>{
+  const end=()=>{clearTimeout(pointerTimer.current);pointerTimer.current=setTimeout(()=>{pointerActive.current=false;deferredBlur.current.splice(0).forEach(action=>action());},0);};
+  window.addEventListener('pointerup',end);window.addEventListener('pointercancel',end);window.addEventListener('blur',end);
+  return()=>{clearTimeout(pointerTimer.current);window.removeEventListener('pointerup',end);window.removeEventListener('pointercancel',end);window.removeEventListener('blur',end);};
+ },[]);
+ const readTail=useRef<Promise<unknown>>(Promise.resolve());
+ const readComments=useCallback((options:CommentOptions)=>{
+  // Queue before fetch so one discussion cannot fill SQL slots with same-user lock waiters.
+  const result=readTail.current.then(()=>{options.signal?.throwIfAborted();return api.comments(id,options);});
+  readTail.current=result.catch(()=>undefined);return result;
+ },[api,id]);
  const [mobile,setMobile]=useState(false),[open,setOpen]=useState(false),[thread,setThread]=useState<string|null>(null),[composer,setComposer]=useState<string|null>(null);
  const setScrollNode=useCallback((node:HTMLDivElement|null)=>{scrollRef.current=node;},[]);
  const [rootRevision,setRootRevision]=useState(0),[preview,setPreview]=useState(''),[composerHeight,setComposerHeight]=useState(64),[geometry,setGeometry]=useState({top:0,bottom:0});
@@ -57,10 +73,10 @@ export function VideoComments({api,id,locale,count,enabled,onChanged}:{api:Api;i
   return()=>{document.body.style.overflow=overflow;window.removeEventListener('resize',updateGeometry);node.removeEventListener('focusin',updateGeometry);node.removeEventListener('focusout',updateGeometry);window.visualViewport?.removeEventListener('resize',updateGeometry);window.visualViewport?.removeEventListener('scroll',updateGeometry);};
  },[mobile,open,updateGeometry]);
  const heading=`${count===undefined?'—':new Intl.NumberFormat(locale).format(count)} ${t.comments}`;
- const presentation={mobile,thread,composer,viewer,setScrollNode,showThread,selectComposer:setComposer,close,measureComposer:setComposerHeight};
+ const presentation={deferBlur,readComments,mobile,thread,composer,viewer,setScrollNode,showThread,selectComposer:setComposer,close,measureComposer:setComposerHeight};
  return <PresentationContext.Provider value={presentation}>
   <button ref={trigger} className={styles.mobileEntry} type="button" onClick={()=>setOpen(true)}><strong>{heading}</strong><span>{preview||(enabled?t.add:t.closed)}</span><ChevronRight aria-hidden="true"/></button>
-  <dialog ref={dialog} className={styles.surface} data-mobile={mobile} data-thread={Boolean(thread)} style={{top:geometry.top,bottom:geometry.bottom,'--comments-composer-height':`${composerHeight}px`,'--comments-bottom':`${geometry.bottom}px`} as CSSProperties} aria-label={heading} role={mobile?'dialog':'region'} onCancel={e=>{e.preventDefault();close();}} onKeyDown={e=>{if(mobile&&e.key==='Escape'&&!e.defaultPrevented){e.preventDefault();close();}}}>
+  <dialog ref={dialog} onPointerDownCapture={()=>{pointerActive.current=true;}} className={styles.surface} data-mobile={mobile} data-thread={Boolean(thread)} style={{top:geometry.top,bottom:geometry.bottom,'--comments-composer-height':`${composerHeight}px`,'--comments-bottom':`${geometry.bottom}px`} as CSSProperties} aria-label={heading} role={mobile?'dialog':'region'} onCancel={e=>{e.preventDefault();close();}} onKeyDown={e=>{if(mobile&&e.key==='Escape'&&!e.defaultPrevented){e.preventDefault();close();}}}>
    <CommentList api={api} id={id} t={t} locale={locale} enabled={enabled} revision={rootRevision} heading={heading} onPreview={setPreview} onCountChanged={onChanged}>
     {enabled?<CommentComposer api={api} id={id} t={t} active={!mobile||composer===null&&thread===null} onDone={()=>{setRootRevision(v=>v+1);onChanged();}}/>:<p>{t.closed}</p>}
    </CommentList>
@@ -71,6 +87,7 @@ export function VideoComments({api,id,locale,count,enabled,onChanged}:{api:Api;i
 function CommentComposer({api,id,t,parent,replyTo,active=true,focusOnOpen=true,onDone,onCancel}:{api:Api;id:string;t:Labels;parent?:string;replyTo?:RecordingComment;active?:boolean;focusOnOpen?:boolean;onDone:()=>void;onCancel?:()=>void}) {
  const presentation=useContext(PresentationContext);
  const {mobile,measureComposer}=presentation;
+
  const [text,setText]=useState(''),[focused,setFocused]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(false),[uncertain,setUncertain]=useState(false);
  const textarea=useRef<HTMLTextAreaElement>(null),form=useRef<HTMLFormElement>(null);
  const intent=useRef<{clientMutationId:string;parentId?:string;replyToId?:string;text:string}|null>(null);
@@ -85,7 +102,7 @@ function CommentComposer({api,id,t,parent,replyTo,active=true,focusOnOpen=true,o
  };
  const cancel=()=>{setText('');setFocused(false);onCancel?.();};
  const engaged=focused||Boolean(text)||Boolean(parent);
- return <form ref={form} className={`${styles.composer} ${parent?styles.replyComposer:''}`} hidden={!active} data-engaged={engaged} data-editing={focused||Boolean(text)} onSubmit={e=>{e.preventDefault();void send();}}>
+ return <form ref={form} className={`${styles.composer} ${parent?styles.replyComposer:''}`} hidden={!active} data-engaged={engaged} data-editing={focused} onFocus={()=>setFocused(true)} onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))presentation.deferBlur(()=>{if(!form.current?.contains(document.activeElement))setFocused(false);});}} onSubmit={e=>{e.preventDefault();void send();}}>
   <span><CommentAvatar comment={presentation.viewer} size={parent?'reply':'composer'}/></span>
   <div className={styles.composerBody}>
    <label className={styles.inputLine}>{replyTo?<span className={styles.replyTarget}>{t.replying} {replyTo.displayName}</span>:null}<span className="sr-only">{parent?t.reply:t.add}</span><textarea ref={textarea} value={text} maxLength={2000} rows={1} placeholder={parent?t.reply:t.add} disabled={busy||uncertain} onFocus={()=>setFocused(true)} onChange={e=>setText(e.target.value)}/></label>
@@ -100,43 +117,49 @@ function CommentComposer({api,id,t,parent,replyTo,active=true,focusOnOpen=true,o
 
 function checkThreadPage(items:RecordingComment[],parent:string|undefined,ancestors:string[]) {
  for(const item of items){
-  if(typeof item.directChildCount!=='number'||!Number.isSafeInteger(item.directChildCount)||item.directChildCount<0||typeof item.descendantReplyCount!=='number'||!Number.isSafeInteger(item.descendantReplyCount)||item.descendantReplyCount<0||ancestors.includes(item.id)||(parent?item.threadParentId!==parent||item.parentId!==ancestors[0]:Boolean(item.parentId||item.threadParentId)))throw new Error('Invalid threaded comment page');
+  const direct=item.directChildCount,total=item.descendantReplyCount;
+  const directValid=typeof direct==='number'&&Number.isSafeInteger(direct)&&direct>=0||direct===undefined&&item.hasChildren===true&&!item.parentId;
+  const totalValid=total===undefined&&Boolean(item.parentId)||typeof total==='number'&&Number.isSafeInteger(total)&&total>=0;
+  if(!directValid||!totalValid||ancestors.includes(item.id)||(parent?item.threadParentId!==parent||item.parentId!==ancestors[0]:Boolean(item.parentId||item.threadParentId)))throw new Error('Invalid threaded comment page');
  }
 }
 
 function CommentList({api,id,t,locale,parent,ancestors=[],enabled,revision,heading,onCountChanged,onPreview,children}:{api:Api;id:string;t:Labels;locale:string;parent?:string;ancestors?:string[];enabled:boolean;revision:number;heading?:string;onCountChanged?:()=>void;onPreview?:(text:string)=>void;children?:ReactNode}) {
- const {setScrollNode,...presentation}=useContext(PresentationContext);
+ const {setScrollNode,readComments,...presentation}=useContext(PresentationContext);
  const [items,setItems]=useState<RecordingComment[]>([]),[cursor,setCursor]=useState<string>(),[order,setOrder]=useState<'top'|'newest'>('top'),[error,setError]=useState(false),[loading,setLoading]=useState(true),[refresh,setRefresh]=useState(0);
- const request=useRef<AbortController|null>(null),[failedCursor,setFailedCursor]=useState<string>(),[expired,setExpired]=useState(false);
+ const request=useRef<AbortController|null>(null),[failedCursor,setFailedCursor]=useState<string>(),[expired,setExpired]=useState(false),[limited,setLimited]=useState(false);
  const ancestry=ancestors.join(':');
- const load=useCallback((next?:string,fresh=false)=>{
+ const load=useCallback((next?:string,fresh=false,retain?:number)=>{
   request.current?.abort();const controller=new AbortController();request.current=controller;
-  return api.comments(id,{view:'threaded',parentId:parent,cursor:next,order:parent?'oldest':order,refresh:!parent&&order==='top'&&fresh?true:undefined,signal:controller.signal}).then(async page=>{
-   checkThreadPage(page.items,parent,ancestry?ancestry.split(':'):[]);
+  const collect=async()=>{
+   let cursor=next;const items:RecordingComment[]=[];
+   do{
+    const page=await readComments({view:'threaded',parentId:parent,cursor,order:parent?'oldest':order,refresh:!parent&&order==='top'&&fresh&&!cursor?true:undefined,signal:controller.signal});
+    checkThreadPage(page.items,parent,ancestry?ancestry.split(':'):[]);items.push(...page.items);cursor=page.nextCursor;
+   }while(retain!==undefined&&cursor&&items.length<retain);
+   return {items,nextCursor:cursor};
+  };
+  return collect().then(async page=>{
    const prepared=await prepareCommentAvatars(page.items);if(controller.signal.aborted)return;
-   setItems(old=>next?[...old,...prepared.filter(item=>!old.some(v=>v.id===item.id))]:prepared);setCursor(page.nextCursor);if(!next)onPreview?.(page.items.find(item=>!item.deleted&&!item.hidden)?.text??'');setError(false);setExpired(false);
-  }).catch(error=>{if(!controller.signal.aborted){setError(true);setExpired(error?.code==='recording_comment_cursor_expired'||error?.status===400);setFailedCursor(next);}}).finally(()=>{if(!controller.signal.aborted)setLoading(false);});
- },[api,id,parent,order,onPreview,ancestry]);
+   setItems(old=>next&&retain===undefined?[...old,...prepared.filter(item=>!old.some(v=>v.id===item.id))]:prepared);setCursor(page.nextCursor);if(!next)onPreview?.(page.items.find(item=>!item.deleted&&!item.hidden)?.text??'');setError(false);setExpired(false);setLimited(false);
+  }).catch(error=>{if(!controller.signal.aborted){setError(true);setLimited(error?.code==='recording_comment_thread_too_large');setExpired(error?.code==='recording_comment_cursor_expired'||error?.status===400);setFailedCursor(next);}}).finally(()=>{if(!controller.signal.aborted)setLoading(false);});
+ },[readComments,parent,order,onPreview,ancestry]);
  useEffect(()=>{void load();return()=>request.current?.abort();},[load]);
+ const previousRevision=useRef(revision);
  useEffect(()=>{
-  if(!refresh&&!revision)return;const controller=new AbortController(),count=items.length;
-  const reconcile=async()=>{
-   try{
-    let next:string|undefined;const fresh:RecordingComment[]=[];
-    do{const page=await api.comments(id,{view:'threaded',parentId:parent,cursor:next,order:parent?'oldest':order,refresh:!parent&&order==='top'&&revision>0&&!next?true:undefined,signal:controller.signal});checkThreadPage(page.items,parent,ancestry?ancestry.split(':'):[]);fresh.push(...page.items);next=page.nextCursor;}while(next&&fresh.length<count);
-    const prepared=await prepareCommentAvatars(fresh);if(controller.signal.aborted)return;setItems(prepared);setCursor(next);setError(false);
-   }catch{if(!controller.signal.aborted)setError(true);}
-  };void reconcile();return()=>controller.abort();
-  // Explicit mutations refresh the loaded range; metric polls retain drafts and branches.
+  if(!refresh&&previousRevision.current===revision)return;
+  const changed=previousRevision.current!==revision;previousRevision.current=revision;
+  void load(undefined,changed,items.length);return()=>request.current?.abort();
+  // Explicit mutations retain loaded pages; initial mounting and order changes use the same cancellable load.
   // eslint-disable-next-line react-hooks/exhaustive-deps
  },[refresh,revision]);
  const list=<div className={styles.list}>
   {loading&&!items.length?<VideoCommentsSkeleton label={t.loading} replies={Boolean(parent)}/>:null}
   {loading&&items.length?<LoadingStatus label={t.loading}/>:null}
-  {items.map(comment=><CommentItem key={comment.id} api={api} id={id} t={t} locale={locale} comment={comment} ancestors={ancestry?ancestry.split(':'):[]} enabled={enabled} onChanged={()=>{setRefresh(v=>v+1);onCountChanged?.();}}/>)}
+  {items.map(comment=><CommentItem key={comment.id} api={api} id={id} t={t} locale={locale} comment={comment} ancestors={ancestry?ancestry.split(':'):[]} enabled={enabled} onChanged={(counts=true)=>{setRefresh(v=>v+1);if(counts)onCountChanged?.();}}/>)}
   {loading&&items.length?<div aria-busy="true"><LoadingBlock className={styles.skeletonTail}/></div>:null}
   {!loading&&!error&&!items.length&&!parent?<p>{t.empty}</p>:null}
-  {error?<p role="status">{t.error} <button type="button" onClick={()=>{setLoading(true);void load(expired?undefined:failedCursor,expired);}}>{t.retry}</button></p>:null}
+  {error?<p role="status">{limited?t.threadLimit:t.error} {!limited?<button type="button" onClick={()=>{setLoading(true);void load(expired?undefined:failedCursor,expired);}}>{t.retry}</button>:null}</p>:null}
   {cursor?<button className={styles.loadMore} type="button" disabled={loading} onClick={()=>{setLoading(true);void load(cursor);}}>{t.load}</button>:null}
  </div>;
  if(parent)return list;
@@ -154,7 +177,7 @@ function CommentList({api,id,t,locale,parent,ancestors=[],enabled,revision,headi
  </div>;
 }
 
-function CommentItem({api,id,t,locale,comment,ancestors,enabled,onChanged}:{api:Api;id:string;t:Labels;locale:string;comment:RecordingComment;ancestors:string[];enabled:boolean;onChanged:()=>void}) {
+function CommentItem({api,id,t,locale,comment,ancestors,enabled,onChanged}:{api:Api;id:string;t:Labels;locale:string;comment:RecordingComment;ancestors:string[];enabled:boolean;onChanged:(counts?:boolean)=>void}) {
  const presentation=useContext(PresentationContext),removed=comment.deleted||comment.hidden,root=comment.parentId??comment.id,isRoot=!comment.parentId;
  const [reaction,setReaction]=useState(comment.reaction??null),[likes,setLikes]=useState(comment.likes??0),[reactionBusy,setReactionBusy]=useState(false),[expanded,setExpanded]=useState(false);
  const desiredReaction=useRef<{reaction:'like'|'dislike'|null}|null>(null);
@@ -168,13 +191,13 @@ function CommentItem({api,id,t,locale,comment,ancestors,enabled,onChanged}:{api:
  };
  const action=async()=>{
   attempted.current={mode,text,revision:comment.revision};setBusy(true);setError(false);
-  try{if(mode==='edit')await api.updateComment(id,comment.id,{text,expectedRevision:comment.revision});if(mode==='delete')await api.deleteComment(id,comment.id,{expectedRevision:comment.revision});if(mode==='report'){await api.reportComment(id,comment.id,{reason});setReported(true);}setMode('none');onChanged();}
-  catch{setError(true);onChanged();}finally{setBusy(false);}
+  try{if(mode==='edit')await api.updateComment(id,comment.id,{text,expectedRevision:comment.revision});if(mode==='delete')await api.deleteComment(id,comment.id,{expectedRevision:comment.revision});if(mode==='report'){await api.reportComment(id,comment.id,{reason});setReported(true);}setMode('none');if(mode!=='report')onChanged(mode==='delete');}
+  catch{setError(true);if(mode!=='report')onChanged(mode==='delete');}finally{setBusy(false);}
  };
  const visible=replies&&(!presentation.mobile||presentation.thread===root);
  const toggle=()=>{setLoaded(true);setReplies(!visible);if(presentation.mobile&&isRoot)presentation.showThread(visible?null:root);};
  const reply=()=>{setMode('reply');if(presentation.mobile){setLoaded(true);setReplies(true);presentation.showThread(root);}presentation.selectComposer(comment.id);};
- const replyTotal=comment.descendantReplyCount??0,hasChildren=(comment.directChildCount??0)>0;
+ const replyTotal=comment.descendantReplyCount,hasChildren=(comment.directChildCount??(comment.hasChildren?1:0))>0;
  const long=comment.text.length>300||comment.text.split('\n').length>4;
  return <div className={`${styles.thread} ${isRoot?styles.rootThread:styles.replyThread}`} data-children={hasChildren} hidden={presentation.mobile&&Boolean(presentation.thread)&&isRoot&&presentation.thread!==root}>
   <article className={styles.comment} data-reply={!isRoot}>
@@ -195,6 +218,6 @@ function CommentItem({api,id,t,locale,comment,ancestors,enabled,onChanged}:{api:
    {!removed?<details className={styles.more}><summary aria-label={t.actions}><MoreVertical size={20}/></summary><div>{comment.mine?<><button type="button" onClick={()=>{setText(comment.text);setMode('edit');}}>{t.edit}</button><button type="button" onClick={()=>setMode('delete')}>{t.remove}</button></>:<button type="button" disabled={reported} onClick={()=>setMode('report')}>{reported?t.reported:t.report}</button>}</div></details>:null}
   </article>
   {loaded?<div className={styles.branch} hidden={!visible}><CommentList api={api} id={id} t={t} locale={locale} parent={comment.id} ancestors={[...ancestors,comment.id]} enabled={enabled} revision={replyRevision} onCountChanged={onChanged}/></div>:null}
-  {hasChildren?<div className={styles.branchFooter} hidden={presentation.mobile&&isRoot&&presentation.thread===root}><button className={styles.replyToggle} type="button" aria-expanded={visible} onClick={toggle}>{!visible&&comment.replyPreviewAuthors?.[0]?<><CommentAvatar comment={comment.replyPreviewAuthors[0]} size="preview"/><span aria-hidden="true">·</span></>:null}{visible?t.hideReplies:`${new Intl.NumberFormat(locale).format(replyTotal)} ${t.replies}`}{visible?<ChevronUp size={20} aria-hidden="true"/>:presentation.mobile&&isRoot?<ChevronRight size={20} aria-hidden="true"/>:<ChevronDown size={20} aria-hidden="true"/>}</button></div>:null}
+  {hasChildren?<div className={styles.branchFooter} hidden={presentation.mobile&&isRoot&&presentation.thread===root}><button className={styles.replyToggle} type="button" aria-expanded={visible} onClick={toggle}>{!visible&&comment.replyPreviewAuthors?.[0]?<><CommentAvatar comment={comment.replyPreviewAuthors[0]} size="preview"/><span aria-hidden="true">·</span></>:null}{visible?t.hideReplies:replyTotal===undefined?t.viewReplies:`${new Intl.NumberFormat(locale).format(replyTotal)} ${t.replies}`}{visible?<ChevronUp size={20} aria-hidden="true"/>:presentation.mobile&&isRoot?<ChevronRight size={20} aria-hidden="true"/>:<ChevronDown size={20} aria-hidden="true"/>}</button></div>:null}
  </div>;
 }
