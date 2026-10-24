@@ -1,7 +1,7 @@
 'use client';
 
 import {VideoInteractions} from './VideoInteractions';
-import {useCallback,useEffect,useState} from 'react';
+import {useCallback,useEffect,useState,type ReactNode} from 'react';
 import type {RecordingWatchView} from '@hallelujahhomechurch/hhc-web-client';
 import type {Locale} from '@/i18n/locales';
 import {broadcastLabels,countdownSeconds} from './broadcast';
@@ -15,7 +15,7 @@ export function BroadcastCover({api,id,title,revision}:{api:ReturnType<typeof cr
  const url=usePrivateCover({scope:api,resource:`broadcast:${id}`,revision:String(revision),load});
  return <LiveCoverSurface url={url} title={title}/>;
 }
-export function BroadcastWaitingPanel({watch,locale,api}:{watch:RecordingWatchView;locale:Locale;api:ReturnType<typeof createMemberVideoApi>}) {
+export function BroadcastWaitingPanel({watch,locale,api,recommendations}:{recommendations?:ReactNode;watch:RecordingWatchView;locale:Locale;api:ReturnType<typeof createMemberVideoApi>}) {
  const labels=broadcastLabels[locale];
  const [elapsed,setElapsed]=useState({serverNow:watch.serverNow,seconds:0});
  useEffect(()=>{const start=performance.now();const timer=window.setInterval(()=>setElapsed({serverNow:watch.serverNow,seconds:(performance.now()-start)/1000}),1000);return()=>window.clearInterval(timer);},[watch.serverNow]);
@@ -28,6 +28,6 @@ export function BroadcastWaitingPanel({watch,locale,api}:{watch:RecordingWatchVi
    <p className="absolute inset-x-3 bottom-3 rounded-lg bg-black/70 px-4 py-2 text-center" role="status" aria-live={seconds>0?'off':'polite'}>{message}</p>
   </div>
   <h1 className={zoneStyles.watchTitle}>{watch.title}</h1>
-  <VideoInteractions api={api} id={watch.recordingId} title={watch.title} locale={locale} live description={watch.description} date={watch.scheduledAt} dateKind="scheduled"/>
+  <VideoInteractions recommendations={recommendations} api={api} id={watch.recordingId} title={watch.title} locale={locale} live description={watch.description} date={watch.scheduledAt} dateKind="scheduled"/>
  </div>;
 }
