@@ -37,7 +37,7 @@ it('reconciles a committed edit after its response is lost while preserving the 
  client.comments.mockResolvedValue({items:[comment]});const updateComment=vi.fn().mockImplementation(async()=>{client.comments.mockResolvedValue({items:[{...comment,text:'Changed',revision:2}]});throw Error('Response lost')});
  render(<VideoInteractions api={{...client,updateComment} as unknown as ReturnType<typeof createMemberVideoApi>} id="r1" title="Meeting" locale="en" live/>);
  fireEvent.click(await screen.findByLabelText('Comment actions'));fireEvent.click(screen.getByRole('button',{name:'Edit'}));fireEvent.change(screen.getByLabelText('Edit'),{target:{value:'Changed'}});fireEvent.click(screen.getByRole('button',{name:'Save'}));
- await waitFor(()=>expect(screen.queryByRole('button',{name:'Save'})).toBeNull());expect(screen.getByText('Changed')).toBeInTheDocument();expect(updateComment).toHaveBeenCalledOnce();
+ await waitFor(()=>expect(screen.queryByRole('button',{name:'Save'})).toBeNull());expect(screen.getByText('Changed',{selector:'p'})).toBeInTheDocument();expect(updateComment).toHaveBeenCalledOnce();
 });
 
 it('settles metrics independently from the comment summary without showing unavailable first',async()=>{

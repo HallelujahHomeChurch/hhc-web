@@ -1,5 +1,5 @@
 'use client';
-import {createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode} from 'react';
+import {createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type ReactNode, type SetStateAction} from 'react';
 import {ArrowDownWideNarrow, ArrowLeft, ChevronDown, ChevronRight, ChevronUp, MoreVertical, RefreshCw, ThumbsDown, ThumbsUp, X} from 'lucide-react';
 import {Button, Menu} from '@hallelujahhomechurch/ui';
 import type {RecordingComment} from '@hallelujahhomechurch/hhc-web-client';
@@ -20,7 +20,7 @@ type Presentation = {
  readComments: (options: CommentOptions) => ReturnType<Api['comments']>;
  mobile: boolean; thread: string | null; composer: string | null; viewer: CommentProfile;
  setScrollNode: (node: HTMLDivElement | null) => void;
- showThread: (id: string | null) => void; selectComposer: (id: string | null) => void;
+ showThread: (id: string | null) => void; selectComposer: Dispatch<SetStateAction<string | null>>;
  close: () => void; measureComposer: (height: number) => void;
 };
 const PresentationContext = createContext<Presentation>(null!);
@@ -160,7 +160,7 @@ function CommentList({api,id,t,locale,parent,ancestors=[],enabled,revision,headi
   {loading&&items.length?<div aria-busy="true"><LoadingBlock className={styles.skeletonTail}/></div>:null}
   {!loading&&!error&&!items.length&&!parent?<p>{t.empty}</p>:null}
   {error?<p role="status">{limited?t.threadLimit:t.error} {!limited?<button type="button" onClick={()=>{setLoading(true);void load(expired?undefined:failedCursor,expired);}}>{t.retry}</button>:null}</p>:null}
-  {cursor?<button className={styles.loadMore} type="button" disabled={loading} onClick={()=>{setLoading(true);void load(cursor);}}>{t.load}</button>:null}
+  {cursor&&!limited?<button className={styles.loadMore} type="button" disabled={loading} onClick={()=>{setLoading(true);void load(cursor);}}>{t.load}</button>:null}
  </div>;
  if(parent)return list;
  const changeOrder=(next:string)=>{if((next==='top'||next==='newest')&&next!==order){setLoading(true);setOrder(next);}};
@@ -212,7 +212,7 @@ function CommentItem({api,id,t,locale,comment,ancestors,enabled,onChanged}:{api:
      </div>
     </>:null}
     {error&&mode==='none'?<p role="alert">{t.error}<button type="button" onClick={()=>desiredReaction.current?void react(desiredReaction.current.reaction??'like'):onChanged()}>{t.retry}</button></p>:null}
-    {(mode==='reply'||isRoot&&loaded)&&!removed?<CommentComposer api={api} id={id} t={t} parent={root} replyTo={comment} focusOnOpen={mode==='reply'} active={presentation.mobile?presentation.composer===comment.id&&presentation.thread===root:mode==='reply'} onCancel={()=>{setMode('none');presentation.selectComposer(presentation.thread);}} onDone={()=>{setMode('none');presentation.selectComposer(presentation.thread);setReplies(true);setLoaded(true);setReplyRevision(v=>v+1);onChanged();}}/>:null}
+    {(mode==='reply'||isRoot&&loaded)&&!removed?<CommentComposer api={api} id={id} t={t} parent={root} replyTo={comment} focusOnOpen={mode==='reply'} active={presentation.mobile?presentation.composer===comment.id&&presentation.thread===root:mode==='reply'} onCancel={()=>{setMode('none');presentation.selectComposer(presentation.thread);}} onDone={()=>{setMode('none');presentation.selectComposer(current=>current===comment.id?root:current);setReplies(true);setLoaded(true);setReplyRevision(v=>v+1);onChanged();}}/>:null}
     {['edit','report','delete'].includes(mode)&&!removed?<form className={styles.editForm} onSubmit={e=>{e.preventDefault();void action();}}>{mode==='delete'?<p>{t.confirm}</p>:<label>{mode==='edit'?t.edit:t.reason}<textarea disabled={busy} maxLength={mode==='edit'?2000:500} value={mode==='edit'?text:reason} onChange={e=>mode==='edit'?setText(e.target.value):setReason(e.target.value)}/></label>}<div className={styles.composerActions}><button type="button" disabled={busy} onClick={()=>setMode('none')}>{t.cancel}</button><button type="submit" disabled={busy||mode==='edit'&&!text.trim()||mode==='report'&&!reason.trim()}>{mode==='delete'?t.remove:mode==='report'?t.report:t.save}</button></div>{error?<p role="alert">{t.error}</p>:null}</form>:null}
    </div>
    {!removed?<details className={styles.more}><summary aria-label={t.actions}><MoreVertical size={20}/></summary><div>{comment.mine?<><button type="button" onClick={()=>{setText(comment.text);setMode('edit');}}>{t.edit}</button><button type="button" onClick={()=>setMode('delete')}>{t.remove}</button></>:<button type="button" disabled={reported} onClick={()=>setMode('report')}>{reported?t.reported:t.report}</button>}</div></details>:null}

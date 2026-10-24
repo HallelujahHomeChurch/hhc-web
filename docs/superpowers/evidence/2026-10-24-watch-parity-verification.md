@@ -8,20 +8,28 @@ Tracking: hhc-web#285. Base: `6d37ad19e1fe85cbc21256d791f0134e91c759c8`. API: [P
 - Selected thumbs fill only the SVG. Comment backgrounds remain transparent and numeric styling stays neutral. The video-like button retains its original neutral pill. Counts still update from the server acknowledgement.
 - Compact information uses localized compact views and relative age, expanding to exact views/date. Scheduled times, live viewers, unavailable values and real zero retain distinct meanings.
 - Mobile uses a below-player reading panel with its own scroll area, fixed heading and bottom composer. Back returns to the root discussion; Close hides the panel. Drafts/scroll positions are retained and the player instance stays mounted. Short/keyboard editing uses available viewport space. Focus changes to Back/Cancel/Send keep controls stationary until the action commits.
-- An explicit threaded server contract supplies direct-child/descendant counts and bounded preview profiles. Invalid/missing structural metadata is rejected; the browser never guesses a tree from a partial flat page. Intermediate removed nodes redact identity/body/target while keeping descendants. Existing author-delete / staff-hide-and-restore permissions are preserved.
+- An explicit threaded server contract supplies exact root totals, optional nonroot descendant totals and bounded preview profiles. Roots may use hasChildren=true when their direct-child count is unavailable; nonroots still require an exact direct count. Missing nonroot totals display “View replies”, never zero. Invalid structural metadata is rejected; the browser never guesses a tree from a partial flat page. Intermediate removed nodes redact identity/body/target while keeping descendants. Existing author-delete / staff-hide-and-restore permissions are preserved.
 
 ## Candidate SDK boundary
 
-The Web manifest and lock still identify published SDK 1.1.0. Local verification uses the **built/packed 1.1.4 candidate from platform commit `63267ff007d5b5e2aebaef7606107f5f8a41031c`** in this worktree's ignored node_modules. The initial external source symlink worked for Vitest/TypeScript but was outside Turbopack's root; the packed candidate was unpacked inside this worktree for the build, with its already-installed dependency linked locally. No shared pnpm package was overwritten.
+The Web manifest and lock still identify published SDK 1.1.0. Local verification uses the **built/packed 1.1.4 candidate from platform commit `87a56dc3fd9f74759c618b3f2a60c9cc5ab131b8`** in this worktree's ignored node_modules. The initial external source symlink worked for Vitest/TypeScript but was outside Turbopack's root; the packed candidate was unpacked inside this worktree for the build, with its already-installed dependency linked locally. No shared pnpm package was overwritten. Candidate archive SHA256: `395b0f8a8aacf912efa4122b877cf50addf6754ea5f1ee95e27b4fd1baeed1d3` (local archive identity, not registry integrity).
 
 Normal CI and Docker install from the registry with frozen lockfiles. They cannot use this candidate. After separately approved SDK publication, pin the real exact version, generate the real registry lock entry and rerun normal Web CI. Do not merge this draft with the old SDK, invent package integrity or change CI to mask the dependency.
 
-## Local checks
+## Contention and async-state fixes
 
-- A complete pre-final-focus-adjustment run passed **187 files / 1558 tests**, plus 23 script tests and 12 immutable template assets. Four added removal/branch regressions and the final active-sort regression are included in the subsequent 21-test comment suite, which passed.
-- Candidate TypeScript, lint (three existing warnings), production build and static budgets passed. Final full-suite/build status is recorded in the PR before closeout.
-- Switching the candidate location left stale Vitest filesystem module transforms: mocked SDK calls and class identities failed in unrelated suites. A fresh `--fsModuleCachePath` made the three affected suites pass (133 tests) and then the whole 1558-test run pass. No mocks, policies or unrelated code were weakened.
-- A later full rerun under concurrent local load had timing failures in unrelated organization/reader tests. These remain test-environment evidence until a final bounded rerun or CI result proves otherwise; they are not attributed to the layout change without evidence.
+- One cancellable per-discussion GET queue serializes branch/page/reconciliation reads. Newly opened children load once; the initial revision does not trigger a duplicate fetch. Edits refresh their containing list; reporting does not reload counts. Reply/deletion updates retain authoritative loaded ranges while refreshing ancestors sequentially. This bounds one discussion's concurrent reads, not all tabs or server clients.
+- Sort changes abort the active traversal; responses from an obsolete Top reconciliation cannot replace Newest rows/cursors, including transports that ignore AbortSignal. Queued canceled work is checked before fetch.
+- Focus leaves the empty composer when the form blurs. Pointer actions defer geometry changes until Back/Cancel/Send clicks finish; keyboard blur releases immediately.
+- Async reply completion only retargets the composer if that reply remains selected, so a draft opened in another thread survives a slow POST.
+- Typed422 traversal-limit errors preserve already loaded comments and remove both Retry and Load more for that traversal. Explicit refresh/order changes remain available. Ordinary transient503 errors retain retry behavior.
+
+## Local checks after review fixes
+
+- Final `pnpm test:run --fsModuleCachePath=<fresh-task-cache>` passed **187 files /1,574 tests**, plus23 script checks and12 immutable template assets. The32-test comment suite covers duplicate/serialized reads, stale-sort cancellation, focus/Back, async cross-thread send completion, later-page422, optional totals/root fallback, invalid metadata, nested/cyclic/removal privacy and draft retention.
+- Candidate TypeScript, lint (three existing warnings), production build and static budgets passed. Current normal-registry CI is independent and remains blocked by unpublished candidate APIs.
+- Fresh transforms isolated the three stale-module failures in MemberVideoZone. A remaining integration test matched both the mobile preview and updated body; its assertion now targets the body paragraph and still verifies one update call, draft reconciliation and closed editor. No runtime behavior or assertions were removed to pass checks.
+- Historical earlier green runs and concurrent-load failures are superseded by this bounded final local run; they do not establish registry or device acceptance.
 
 ## Browser evidence and limits
 

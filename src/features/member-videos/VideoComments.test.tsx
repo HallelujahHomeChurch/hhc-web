@@ -257,3 +257,61 @@ it('loads a new reply branch once and serializes mutation reconciliation reads',
  await screen.findByText('Reply text');await waitFor(()=>expect(api.comments.mock.calls.filter(([,options])=>options.parentId==='root')).toHaveLength(1));
  expect(maximum).toBe(1);
 });
+
+it('keeps a newly selected mobile reply draft after another thread finishes sending',async()=>{
+ mobile=true;let resolveCreate!:()=>void;
+ const first={...root,id:'first',text:'First root'},second={...root,id:'second',text:'Second root'};
+ const api=fixture();api.comments.mockImplementation(async(_id,options)=>({items:options.parentId?[]:[first,second]}));
+ api.createComment.mockImplementation(()=>new Promise<void>(resolve=>{resolveCreate=resolve;}));
+ render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" count={2} enabled onChanged={()=>{}}/>);
+ fireEvent.click(screen.getByRole('button',{name:/2 Comments/}));
+ const firstArticle=(await screen.findByText('First root',{selector:'p'})).closest('article')!;
+ fireEvent.click(within(firstArticle).getByRole('button',{name:'Reply'}));
+ fireEvent.change(within(firstArticle).getByPlaceholderText('Reply'),{target:{value:'First pending post'}});
+ fireEvent.click(within(firstArticle.querySelector('form')!).getByRole('button',{name:'Reply'}));
+ await waitFor(()=>expect(resolveCreate).toBeTypeOf('function'));
+ fireEvent.click(screen.getByRole('button',{name:'Back to comments'}));
+ const secondArticle=screen.getByText('Second root',{selector:'p'}).closest('article')!;
+ fireEvent.click(within(secondArticle).getByRole('button',{name:'Reply'}));
+ const input=within(secondArticle).getByPlaceholderText('Reply');fireEvent.change(input,{target:{value:'Retained second draft'}});
+ await act(async()=>resolveCreate());
+ expect(input.closest('form')).not.toHaveAttribute('hidden');expect(input).toHaveValue('Retained second draft');
+});
+
+it('stops pagination after a later page reaches the traversal limit',async()=>{
+ const api=fixture();api.comments.mockResolvedValueOnce({items:[root],nextCursor:'next'}).mockRejectedValueOnce({status:422,code:'recording_comment_thread_too_large'});
+ render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled onChanged={()=>{}}/>);
+ fireEvent.click(await screen.findByRole('button',{name:'Load more'}));
+ await screen.findByRole('status');expect(screen.getByText('Root',{selector:'p'})).toBeInTheDocument();
+ expect(screen.queryByRole('button',{name:'Retry'})).toBeNull();expect(screen.queryByRole('button',{name:'Load more'})).toBeNull();
+});
+
+it('renders an unknown nonroot reply total without inventing a zero count',async()=>{
+ const api=fixture();api.comments.mockImplementation(async(_id,options)=>({items:options.parentId==='reply'?[{...reply,id:'nested',threadParentId:'reply',text:'Nested reply'}]:options.parentId?[{...reply,directChildCount:1,descendantReplyCount:undefined}]:[root]}));
+ render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled onChanged={()=>{}}/>);
+ fireEvent.click(await screen.findByRole('button',{name:'1 Replies'}));
+ const toggle=await screen.findByRole('button',{name:'View replies'});expect(screen.queryByText('0 Replies')).toBeNull();
+ fireEvent.click(toggle);await screen.findByText('Nested reply');
+});
+
+it('expands a root with an exact total and the hasChildren fallback',async()=>{
+ const api=fixture();api.comments.mockImplementation(async(_id,options)=>({items:options.parentId?[reply]:[{...root,directChildCount:undefined,hasChildren:true}]}));
+ render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled onChanged={()=>{}}/>);
+ fireEvent.click(await screen.findByRole('button',{name:'1 Replies'}));await screen.findByText('Reply text');
+});
+
+it.each([
+ {...root,descendantReplyCount:undefined},
+ {...root,directChildCount:-1},
+ {...root,descendantReplyCount:0.5},
+])('rejects incomplete or invalid root metadata: %j',async item=>{
+ const api=fixture();api.comments.mockResolvedValue({items:[item]});
+ render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled onChanged={()=>{}}/>);
+ await screen.findByRole('button',{name:'Retry'});expect(screen.queryByText('Root',{selector:'p'})).toBeNull();
+});
+
+it('does not treat hasChildren as a replacement for a nonroot direct count',async()=>{
+ const api=fixture();api.comments.mockImplementation(async(_id,options)=>({items:options.parentId?[{...reply,directChildCount:undefined,hasChildren:true}]:[root]}));
+ render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled onChanged={()=>{}}/>);
+ fireEvent.click(await screen.findByRole('button',{name:'1 Replies'}));await screen.findByRole('button',{name:'Retry'});expect(screen.queryByText('Reply text')).toBeNull();
+});
