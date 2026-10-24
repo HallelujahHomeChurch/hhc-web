@@ -440,7 +440,7 @@ describe('member video gate', () => {
     expect(screen.queryByRole('heading',{level:3,name:'Recording 0'})).not.toBeInTheDocument();
     expect(screen.queryByText(/2 hours 30 minutes/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Available until/)).not.toBeInTheDocument();
-    expect(screen.getByText('Uploaded · Sep 28, 2026')).toBeInTheDocument();
+    expect(screen.getByTitle('Uploaded · Sep 28, 2026')).toBeInTheDocument();
     expect(screen.queryByRole('button',{name:'Next'})).toBeNull();
     expect(screen.getByRole('heading',{level:2,name:'Recording 0'})).toBeInTheDocument();
   });

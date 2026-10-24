@@ -2,6 +2,7 @@ import {beforeEach,it,expect,vi} from 'vitest';
 import {render,screen,fireEvent,waitFor,act,within} from '@testing-library/react';
 import {VideoComments} from './VideoComments';
 import type {createMemberVideoApi} from './api';
+import type {RecordingComment} from '@hallelujahhomechurch/hhc-web-client';
 let mobile=false;let resize:()=>void;
 beforeEach(()=>{
  mobile=false;resize=()=>{};
@@ -13,14 +14,58 @@ beforeEach(()=>{
  Object.defineProperty(window,'matchMedia',{configurable:true,value:()=>({get matches(){return mobile;},addEventListener:(_name:string,fn:()=>void)=>{resize=fn;},removeEventListener:vi.fn()})});
  HTMLDialogElement.prototype.close=function(){this.removeAttribute('open');};HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','');};
 });
-const root={id:'root',displayName:'Alice',text:'Root',createdAt:'2026-10-17T00:00:00Z',replyCount:1,revision:1,deleted:false,mine:false};
-const reply={...root,id:'reply',parentId:'root',displayName:'Bob',text:'Reply text',replyCount:0};
+const root={id:'root',displayName:'Alice',text:'Root',createdAt:'2026-10-17T00:00:00Z',replyCount:1,directChildCount:1,descendantReplyCount:1,revision:1,deleted:false,hidden:false,mine:false};
+const reply={...root,id:'reply',parentId:'root',threadParentId:'root',directChildCount:0,descendantReplyCount:0,displayName:'Bob',text:'Reply text',replyCount:0};
 function fixture(){return {comments:vi.fn().mockImplementation(async(_id,options)=>({items:options.parentId?[reply]:[root]})),createComment:vi.fn().mockResolvedValue({}),setCommentReaction:vi.fn().mockResolvedValue({likes:1,reaction:'like'})};}
+it('expands server-defined reply branches independently and retains a collapsed draft',async()=>{
+ const nested={...reply,id:'nested',threadParentId:'reply',text:'Nested reply'};
+ const api=fixture();api.comments.mockImplementation(async(_id,options)=>({items:options.parentId==='reply'?[nested]:options.parentId?[{...reply,directChildCount:1,descendantReplyCount:1}]:[{...root,descendantReplyCount:2}]}));
+ render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled onChanged={()=>{}}/>);
+ const rootToggle=await screen.findByRole('button',{name:'2 Replies'});fireEvent.click(rootToggle);
+ fireEvent.click(await screen.findByRole('button',{name:'1 Replies'}));
+ const nestedArticle=(await screen.findByText('Nested reply')).closest('article')!;
+ fireEvent.click(within(nestedArticle).getByRole('button',{name:'Reply'}));
+ fireEvent.change(within(nestedArticle).getByPlaceholderText('Reply'),{target:{value:'Retained nested draft'}});
+ const calls=api.comments.mock.calls.length;
+ fireEvent.click(rootToggle);
+ fireEvent.click(screen.getByRole('button',{name:'2 Replies'}));
+ expect(within(nestedArticle).getByPlaceholderText('Reply')).toHaveValue('Retained nested draft');
+ expect(api.comments).toHaveBeenCalledWith('r',expect.objectContaining({view:'threaded',parentId:'reply'}));
+ expect(api.comments).toHaveBeenCalledTimes(calls);
+ fireEvent.click(within(nestedArticle.querySelector('form')!).getByRole('button',{name:'Reply'}));
+ await waitFor(()=>expect(api.createComment).toHaveBeenCalledWith('r',expect.objectContaining({parentId:'root',replyToId:'nested',text:'Retained nested draft'})));
+});
+it('keeps mobile root and thread scroll positions, drafts and the same player on Back and Close',async()=>{
+ mobile=true;const api=fixture();
+ const view=render(<div data-video-watch><video data-testid="player"/><VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" count={2} enabled onChanged={()=>{}}/></div>);
+ const player=screen.getByTestId('player');vi.spyOn(player,'getBoundingClientRect').mockReturnValue(new DOMRect(0,0,390,200));
+ fireEvent.click(screen.getByRole('button',{name:/2 Comments/}));
+ await screen.findByText('Root',{selector:'p'});
+ const content=view.container.querySelector('dialog header')!.nextElementSibling as HTMLDivElement;
+ content.scrollTop=120;
+ fireEvent.click(screen.getByRole('button',{name:'1 Replies'}));
+ await screen.findByText('Reply text');expect(content.scrollTop).toBe(0);content.scrollTop=75;
+ const input=screen.getAllByPlaceholderText('Reply').find(node=>!node.closest('[hidden]'))!;
+ fireEvent.focus(input);fireEvent.change(input,{target:{value:'Thread draft'}});
+ const back=screen.getByRole('button',{name:'Back to comments'});fireEvent.pointerDown(back);fireEvent.blur(input,{relatedTarget:back});
+ expect(view.container.querySelector('dialog')?.style.top).toBe('0px');
+ fireEvent.pointerUp(back);fireEvent.click(back);expect(content.scrollTop).toBe(120);expect(view.container.querySelector('dialog')?.style.top).toBe('200px');
+ fireEvent.click(screen.getByRole('button',{name:'1 Replies'}));expect(content.scrollTop).toBe(75);
+ expect(input).toHaveValue('Thread draft');
+ fireEvent.click(screen.getByRole('button',{name:'Close'}));
+ fireEvent.click(screen.getByRole('button',{name:/2 Comments/}));
+ expect(input).toHaveValue('Thread draft');expect(screen.getByTestId('player')).toBe(player);
+});
+it('rejects legacy payloads instead of guessing a tree',async()=>{
+ const api=fixture();api.comments.mockResolvedValue({items:[{...root,directChildCount:undefined} as unknown as RecordingComment]});
+ render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled onChanged={()=>{}}/>);
+ await screen.findByRole('button',{name:'Retry'});expect(screen.queryByText('Root',{selector:'p'})).toBeNull();
+});
 it('replies to a reply within the root thread and never fetches a nested thread',async()=>{
  const api=fixture();render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" count={2} enabled onChanged={()=>{}}/>);
  fireEvent.click(await screen.findByRole('button',{name:'1 Replies'}));await screen.findByText('Reply text');
  const item=screen.getByText('Reply text').closest('article')!;fireEvent.click(within(item).getByRole('button',{name:'Reply'}));
- fireEvent.change(screen.getByPlaceholderText('Reply'),{target:{value:'Answer'}});fireEvent.click(within(item).getByRole('button',{name:'Comment'}));
+ fireEvent.change(within(item).getByPlaceholderText('Reply'),{target:{value:'Answer'}});fireEvent.click(within(item.querySelector('form')!).getByRole('button',{name:'Reply'}));
  await waitFor(()=>expect(api.createComment).toHaveBeenCalledWith('r',expect.objectContaining({parentId:'root',replyToId:'reply',text:'Answer'})));
  expect(api.comments.mock.calls.some(([,options])=>options.parentId==='reply')).toBe(false);
 });
@@ -63,8 +108,10 @@ it('shows initial and reply skeletons without discarding the composer draft',asy
  expect(view.container.querySelector('[data-loading-layout="video-comments"]')).not.toBeNull();
  expect(screen.queryByText('No comments yet.')).not.toBeInTheDocument();
  fireEvent.change(screen.getByPlaceholderText('Add a comment'),{target:{value:'Keep draft'}});
+ await waitFor(()=>expect(roots).toBeTypeOf('function'));
  await act(async()=>roots({items:[root]}));
  fireEvent.click(await screen.findByRole('button',{name:'1 Replies'}));
+ await waitFor(()=>expect(replies).toBeTypeOf('function'));
  expect(view.container.querySelector('[data-loading-layout="video-replies"]')).not.toBeNull();
  await act(async()=>replies({items:[reply]}));
  expect(await screen.findByText('Reply text')).toBeInTheDocument();
@@ -77,10 +124,10 @@ it('uses account avatars for roots and replies, falls back on failure, and retri
  api.comments.mockImplementation(async(_id,options)=>({items:options.parentId?[{...reply,avatarUrl:first}]:[{...root,avatarUrl:first}]}));
  const view=render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled count={2} onChanged={()=>{}}/>);
  await screen.findByText('Root',{selector:'p'});
- const avatar=()=>view.container.querySelector('article > header')?.querySelector('img') ?? null;
+ const avatar=()=>view.container.querySelector('article')?.querySelector('img') ?? null;
  expect(avatar()).toHaveAttribute('src',first);
  fireEvent.click(screen.getByRole('button',{name:'1 Replies'}));await screen.findByText('Reply text');
- expect(view.container.querySelectorAll('article header img')).toHaveLength(2);
+ expect(view.container.querySelectorAll('article img')).toHaveLength(2);
  fireEvent.error(avatar()!);expect(avatar()).toBeNull();
  api.comments.mockResolvedValue({items:[{...root,avatarUrl:second}]});
  fireEvent.click(screen.getByRole('button',{name:'Refresh comments'}));
@@ -107,7 +154,7 @@ it('keeps cold comments in the skeleton until the avatar is decoded, without an 
  expect(view.container.querySelector('[data-loading-layout="video-comments"]')).not.toBeNull();
  await act(async()=>decoded());
  await screen.findByText('Root',{selector:'p'});
- expect(view.container.querySelector('article header img')).toHaveAttribute('src','https://www.alive.org.tw/assets/cold-avatar');
+ expect(view.container.querySelector('article img')).toHaveAttribute('src','https://www.alive.org.tw/assets/cold-avatar');
 });
 
 it('keeps mounted avatars when pagination exceeds the 64-image preparation cache',async()=>{
@@ -116,10 +163,10 @@ it('keeps mounted avatars when pagination exceeds the 64-image preparation cache
  api.comments.mockResolvedValueOnce({items:items.slice(0,40),nextCursor:'second'}).mockResolvedValueOnce({items:items.slice(40)});
  const view=render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled count={65} onChanged={()=>{}}/>);
  await screen.findByText('Paged comment 0',{selector:'p'});
- expect(view.container.querySelectorAll('article header img')).toHaveLength(40);
+ expect(view.container.querySelectorAll('article img')).toHaveLength(40);
  fireEvent.click(screen.getByRole('button',{name:'Load more'}));
  await screen.findByText('Paged comment 64');
- expect(view.container.querySelectorAll('article header img')).toHaveLength(65);
+ expect(view.container.querySelectorAll('article img')).toHaveLength(65);
  expect(screen.getByText('Paged comment 0',{selector:'p'}).closest('article')?.querySelector('img')).toHaveAttribute('src',items[0].avatarUrl);
 });
 
@@ -128,14 +175,14 @@ it('reveals every avatar in a bulk response above the retained cache limit',asyn
  api.comments.mockResolvedValue({items});
  const view=render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled count={65} onChanged={()=>{}}/>);
  await screen.findByText('Bulk 64');
- expect(view.container.querySelectorAll('article header img')).toHaveLength(65);
+ expect(view.container.querySelectorAll('article img')).toHaveLength(65);
 });
 it('retries a mounted DOM image failure on explicit same-URL payload refresh',async()=>{
  const api=fixture();const url='https://www.alive.org.tw/assets/retry-same-url';
  api.comments.mockImplementation(async()=>({items:[{...root,avatarUrl:url}]}));
  const view=render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled count={1} onChanged={()=>{}}/>);
  await screen.findByText('Root',{selector:'p'});
- const avatar=()=>view.container.querySelector('article header img');
+ const avatar=()=>view.container.querySelector('article img');
  fireEvent.error(avatar()!);expect(avatar()).toBeNull();
  const clock=vi.spyOn(Date,'now').mockReturnValue(Date.now()+31_000);
  fireEvent.click(screen.getByRole('button',{name:'Refresh comments'}));
@@ -154,6 +201,117 @@ it('keeps all changed avatar URLs when a mutation reconciles several loaded page
  changed=true;
  fireEvent.change(within(first).getByRole('textbox'),{target:{value:'edited'}});
  fireEvent.click(within(first).getByRole('button',{name:'Save'}));
- await waitFor(()=>expect(first.querySelector('header img')).toHaveAttribute('src','https://www.alive.org.tw/assets/reconcile-new-0'));
- expect(view.container.querySelectorAll('article header img')).toHaveLength(65);
+ await waitFor(()=>expect(first.querySelector('img')).toHaveAttribute('src','https://www.alive.org.tw/assets/reconcile-new-0'));
+ expect(view.container.querySelectorAll('article img')).toHaveLength(65);
+});
+
+it.each([{...reply,threadParentId:'wrong-branch'},{...reply,id:'root'}])('rejects wrong-branch or cyclic children before rendering them: %j',async child=>{
+ const api=fixture();api.comments.mockImplementation(async(_id,options)=>({items:options.parentId?[child]:[root]}));
+ render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled onChanged={()=>{}}/>);
+ fireEvent.click(await screen.findByRole('button',{name:'1 Replies'}));await screen.findByRole('button',{name:'Retry'});
+ expect(screen.queryByText('Reply text')).toBeNull();
+});
+it.each(['deleted','hidden'])('redacts stale identity, body and target for a %s intermediate node',async flag=>{
+ const api=fixture();api.comments.mockResolvedValue({items:[{...root,[flag]:true,displayName:'Private name',text:'Private body',replyTo:{id:'target',displayName:'Private target'},avatarUrl:'https://www.alive.org.tw/assets/stale-avatar'}]});
+ const view=render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled onChanged={()=>{}}/>);
+ await waitFor(()=>expect(view.container.querySelector('article')).not.toBeNull());
+ expect(screen.queryByText(/Private/)).toBeNull();expect(view.container.querySelector('article img')).toBeNull();
+ expect(screen.queryByRole('button',{name:'Like'})).toBeNull();expect(screen.getByRole('button',{name:'1 Replies'})).toBeInTheDocument();
+});
+
+it('ignores the active mobile sort choice and loads a changed choice',async()=>{
+ mobile=true;const api=fixture();render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" count={2} enabled onChanged={()=>{}}/>);
+ fireEvent.click(screen.getByRole('button',{name:/2 Comments/}));await screen.findByText('Root',{selector:'p'});
+ const count=api.comments.mock.calls.length;fireEvent.click(screen.getByRole('button',{name:'Top comments'}));
+ expect(api.comments).toHaveBeenCalledTimes(count);expect(screen.getByRole('button',{name:'Refresh comments',hidden:true})).not.toBeDisabled();
+ fireEvent.click(screen.getByRole('button',{name:'Newest first'}));
+ await waitFor(()=>expect(api.comments).toHaveBeenLastCalledWith('r',expect.objectContaining({view:'threaded',order:'newest'})));
+});
+it('ignores a pending Top reconciliation after selecting Newest',async()=>{
+ mobile=true;let resolveTop!:(page:{items:RecordingComment[];nextCursor?:string})=>void;
+ const old={...root,text:'Old Top row'},newest={...root,id:'newest',text:'Newest row'};
+ const api=fixture();api.comments.mockResolvedValueOnce({items:[old]}).mockImplementation(async(_id,options)=>options.order==='newest'?{items:[newest]}:new Promise(resolve=>{resolveTop=resolve;}));
+ render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" count={1} enabled onChanged={()=>{}}/>);
+ fireEvent.click(screen.getByRole('button',{name:/1 Comments/}));await screen.findByText('Old Top row',{selector:'p'});
+ fireEvent.change(screen.getByPlaceholderText('Add a comment'),{target:{value:'New post'}});fireEvent.click(screen.getByRole('button',{name:'Comment'}));
+ await waitFor(()=>expect(resolveTop).toBeTypeOf('function'));
+ fireEvent.click(screen.getByRole('button',{name:'Newest first'}));
+ await act(async()=>resolveTop({items:[old],nextCursor:'top-snapshot:20'}));
+ await screen.findByText('Newest row',{selector:'p'});
+ expect(screen.getByText('Newest row',{selector:'p'})).toBeInTheDocument();expect(screen.queryByRole('button',{name:'Load more'})).toBeNull();
+});
+it('returns to below-player reading after the empty composer loses focus',async()=>{
+ mobile=true;const api=fixture();const view=render(<div data-video-watch><video data-testid="player"/><VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" count={1} enabled onChanged={()=>{}}/></div>);
+ vi.spyOn(screen.getByTestId('player'),'getBoundingClientRect').mockReturnValue(new DOMRect(0,0,390,200));
+ fireEvent.click(screen.getByRole('button',{name:/1 Comments/}));await screen.findByText('Root',{selector:'p'});
+ const dialog=view.container.querySelector('dialog')!;expect(dialog.style.top).toBe('200px');
+ await act(async()=>screen.getByPlaceholderText('Add a comment').focus());expect(dialog.style.top).toBe('0px');
+ await act(async()=>screen.getByRole('button',{name:'Like'}).focus());fireEvent(window,new Event('resize'));
+ expect(dialog.style.top).toBe('200px');expect(screen.queryByRole('button',{name:'Comment'})).toBeNull();
+});
+it('loads a new reply branch once and serializes mutation reconciliation reads',async()=>{
+ let active=0,maximum=0;const api=fixture();api.comments.mockImplementation(async(_id,options)=>{active++;maximum=Math.max(maximum,active);await Promise.resolve();active--;return {items:options.parentId?[reply]:[root]};});
+ render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled onChanged={()=>{}}/>);
+ const article=(await screen.findByText('Root',{selector:'p'})).closest('article')!;fireEvent.click(within(article).getByRole('button',{name:'Reply'}));
+ fireEvent.change(within(article).getByPlaceholderText('Reply'),{target:{value:'Answer'}});fireEvent.click(within(article.querySelector('form')!).getByRole('button',{name:'Reply'}));
+ await screen.findByText('Reply text');await waitFor(()=>expect(api.comments.mock.calls.filter(([,options])=>options.parentId==='root')).toHaveLength(1));
+ expect(maximum).toBe(1);
+});
+
+it('keeps a newly selected mobile reply draft after another thread finishes sending',async()=>{
+ mobile=true;let resolveCreate!:()=>void;
+ const first={...root,id:'first',text:'First root'},second={...root,id:'second',text:'Second root'};
+ const api=fixture();api.comments.mockImplementation(async(_id,options)=>({items:options.parentId?[]:[first,second]}));
+ api.createComment.mockImplementation(()=>new Promise<void>(resolve=>{resolveCreate=resolve;}));
+ render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" count={2} enabled onChanged={()=>{}}/>);
+ fireEvent.click(screen.getByRole('button',{name:/2 Comments/}));
+ const firstArticle=(await screen.findByText('First root',{selector:'p'})).closest('article')!;
+ fireEvent.click(within(firstArticle).getByRole('button',{name:'Reply'}));
+ fireEvent.change(within(firstArticle).getByPlaceholderText('Reply'),{target:{value:'First pending post'}});
+ fireEvent.click(within(firstArticle.querySelector('form')!).getByRole('button',{name:'Reply'}));
+ await waitFor(()=>expect(resolveCreate).toBeTypeOf('function'));
+ fireEvent.click(screen.getByRole('button',{name:'Back to comments'}));
+ const secondArticle=screen.getByText('Second root',{selector:'p'}).closest('article')!;
+ fireEvent.click(within(secondArticle).getByRole('button',{name:'Reply'}));
+ const input=within(secondArticle).getByPlaceholderText('Reply');fireEvent.change(input,{target:{value:'Retained second draft'}});
+ await act(async()=>resolveCreate());
+ expect(input.closest('form')).not.toHaveAttribute('hidden');expect(input).toHaveValue('Retained second draft');
+});
+
+it('stops pagination after a later page reaches the traversal limit',async()=>{
+ const api=fixture();api.comments.mockResolvedValueOnce({items:[root],nextCursor:'next'}).mockRejectedValueOnce({status:422,code:'recording_comment_thread_too_large'});
+ render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled onChanged={()=>{}}/>);
+ fireEvent.click(await screen.findByRole('button',{name:'Load more'}));
+ await screen.findByRole('status');expect(screen.getByText('Root',{selector:'p'})).toBeInTheDocument();
+ expect(screen.queryByRole('button',{name:'Retry'})).toBeNull();expect(screen.queryByRole('button',{name:'Load more'})).toBeNull();
+});
+
+it('renders an unknown nonroot reply total without inventing a zero count',async()=>{
+ const api=fixture();api.comments.mockImplementation(async(_id,options)=>({items:options.parentId==='reply'?[{...reply,id:'nested',threadParentId:'reply',text:'Nested reply'}]:options.parentId?[{...reply,directChildCount:1,descendantReplyCount:undefined}]:[root]}));
+ render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled onChanged={()=>{}}/>);
+ fireEvent.click(await screen.findByRole('button',{name:'1 Replies'}));
+ const toggle=await screen.findByRole('button',{name:'View replies'});expect(screen.queryByText('0 Replies')).toBeNull();
+ fireEvent.click(toggle);await screen.findByText('Nested reply');
+});
+
+it('expands a root with an exact total and the hasChildren fallback',async()=>{
+ const api=fixture();api.comments.mockImplementation(async(_id,options)=>({items:options.parentId?[reply]:[{...root,directChildCount:undefined,hasChildren:true}]}));
+ render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled onChanged={()=>{}}/>);
+ fireEvent.click(await screen.findByRole('button',{name:'1 Replies'}));await screen.findByText('Reply text');
+});
+
+it.each([
+ {...root,descendantReplyCount:undefined},
+ {...root,directChildCount:-1},
+ {...root,descendantReplyCount:0.5},
+])('rejects incomplete or invalid root metadata: %j',async item=>{
+ const api=fixture();api.comments.mockResolvedValue({items:[item]});
+ render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled onChanged={()=>{}}/>);
+ await screen.findByRole('button',{name:'Retry'});expect(screen.queryByText('Root',{selector:'p'})).toBeNull();
+});
+
+it('does not treat hasChildren as a replacement for a nonroot direct count',async()=>{
+ const api=fixture();api.comments.mockImplementation(async(_id,options)=>({items:options.parentId?[{...reply,directChildCount:undefined,hasChildren:true}]:[root]}));
+ render(<VideoComments api={api as unknown as ReturnType<typeof createMemberVideoApi>} id="r" locale="en" enabled onChanged={()=>{}}/>);
+ fireEvent.click(await screen.findByRole('button',{name:'1 Replies'}));await screen.findByRole('button',{name:'Retry'});expect(screen.queryByText('Reply text')).toBeNull();
 });

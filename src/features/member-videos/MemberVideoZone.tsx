@@ -69,7 +69,7 @@ export function MemberVideoZone({locale, messages, hero, view = 'watch', recordi
   if (access === 'available') return <AuthorizedVideoZone startAt={startAt} key={`${identity}:${recordingId ?? view}:${view==='list'?`${query}:${invalidQuery}`:''}`} locale={locale} messages={messages} hero={hero} view={view} recordingId={recordingId} query={query} invalidQuery={invalidQuery} />;
   if (auth.status === 'anonymous' || access === 'denied') return null;
   const unavailable = auth.status === 'unavailable' || access === 'unavailable';
-  if (!unavailable) return <main><div className={`bg-[image:var(--hhc-page-gradient)] ${recordingId ? zoneStyles.watchPage : 'py-10'}`}><section className={`${zoneStyles.zone} ${recordingId ? zoneStyles.watch : query ? zoneStyles.search : zoneStyles.library}`}>{recordingId ? <VideoWatchSkeleton label={messages.loading}/> : <VideoListSkeleton label={messages.loading} search={Boolean(query)}/>}</section></div></main>;
+  if (!unavailable) return <main><div className={`${recordingId?'':'bg-[image:var(--hhc-page-gradient)]'} ${recordingId ? zoneStyles.watchPage : 'py-10'}`}><section className={`${zoneStyles.zone} ${recordingId ? zoneStyles.watch : query ? zoneStyles.search : zoneStyles.library}`}>{recordingId ? <VideoWatchSkeleton label={messages.loading}/> : <VideoListSkeleton label={messages.loading} search={Boolean(query)}/>}</section></div></main>;
   return <main className="bg-[image:var(--hhc-page-gradient)] py-16"><section className="shell rounded-[14px] border border-panel-border bg-panel p-8 text-center text-ink" role={unavailable ? 'alert' : 'status'}>{unavailable ? messages.loadError : messages.loading}{unavailable ? <button type="button" className="ml-4 min-h-11 rounded-full border border-[var(--hhc-control-border)] px-5 font-semibold" onClick={() => window.location.reload()}>{messages.retry}</button> : null}</section></main>;
 }
 
@@ -381,7 +381,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
   return (
     <main>
       {!searchMode?hero:null}
-      <div className={`bg-[image:var(--hhc-page-gradient)] pb-14 ${recordingId ? zoneStyles.watchPage : 'py-10'}`}>
+      <div className={`${recordingId?'':'bg-[image:var(--hhc-page-gradient)]'} pb-14 ${recordingId ? zoneStyles.watchPage : 'py-10'}`}>
         <section className={`${zoneStyles.zone} ${recordingId ? zoneStyles.watch : searchMode ? zoneStyles.search : zoneStyles.library}`} aria-label={messages.listTitle}>
           {searchMode ? <h1 className={zoneStyles.searchHeading}>{searchLabels.results.replace('{query}',query)}</h1>:null}
           {invalidQuery&&view==='list' ? <div role="alert" className="text-ink">{searchLabels.tooLong} <Link href={videoSearchHref(locale,'')} className="underline">{searchLabels.clear}</Link></div>:null}
@@ -394,13 +394,13 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
           {recordingId&&selectedLive&&!resolver.denied?<LiveRecordingPlayer key={selectedLive.captureId} api={api} recording={selectedLive} labels={messages} liveLabels={messages.live??englishLiveLabels} locale={locale} mediaOriginSeconds={mediaOrigin} onVod={selected?.packageId===selectedLive.captureId?async bookmark=>{
             if(await start(bookmark)){setVodChosen(true);setSelectedLive(null);return true;}return false;
           }:undefined}/>:null}
-          {selected && !selectedLive && !waitingWatch && !resolver.denied ? <div ref={playerSection} className={`${zoneStyles.video} grid min-w-0 scroll-mt-28 gap-4`}>
+          {selected && !selectedLive && !waitingWatch && !resolver.denied ? <div data-video-watch ref={playerSection} className={`${zoneStyles.video} grid min-w-0 scroll-mt-28 gap-4`}>
             {playback?.recordingId === selected.id ? <HlsPlayer key={playback.url} resume={vodResume} poster={poster} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} previousHref={previousRecording ? cardLink(previousRecording.id) : undefined} nextHref={nextRecording ? cardLink(nextRecording.id) : undefined} onError={mediaError} onBookmark={rememberVod}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {poster?<img src={poster} alt={selected.title} width={1280} height={720} className="absolute inset-0 h-full w-full object-contain"/>:null}
               {preparing || recordingId && !playError ? <div className="absolute inset-0 grid place-items-center [&>svg]:h-12 [&>svg]:w-12 [&>svg]:animate-spin" role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{messages.preparing}</span></div> : !recordingId ? <button type="button" onClick={() => void start()} className="relative inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground"><Play size={18} aria-hidden="true" />{messages.play}</button> : null}
             </div>}
-            <h2 ref={playerTitle} tabIndex={-1} className="text-2xl font-semibold text-ink outline-none">{selected.title}</h2>
+            <h2 ref={playerTitle} tabIndex={-1} className={`${zoneStyles.watchTitle} outline-none`}>{selected.title}</h2>
             {recordingId?<VideoInteractions key={selected.id} api={api} id={selected.id} title={selected.title} locale={locale} live={false} currentTime={()=>video.current?.currentTime??0} durationSeconds={selected.durationSeconds??undefined} description={selected.description} date={selected.uploadedAt} dateKind="uploaded"/>:<VideoInformation description={selected.description} date={selected.uploadedAt} metrics={null} locale={locale}/>}
             {playError ? <p role="alert" className="text-sm text-primary">{playError} <button type="button" className="underline" onClick={() => void start(vodBookmark.current)}>{messages.retry}</button></p> : null}
           </div> : null}

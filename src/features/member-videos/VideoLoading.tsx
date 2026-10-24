@@ -28,7 +28,7 @@ export function VideoRecommendationsSkeleton() {
 export function VideoCommentsSkeleton({label, replies = false}: {label: string; replies?: boolean}) {
   return <div data-loading-layout={replies ? 'video-replies' : 'video-comments'}>
     <LoadingStatus label={label}/><div aria-busy="true" className={commentStyles.skeletonList}>
-      {Array.from({length: replies ? 2 : 3}, (_, index) => <div key={index} className={commentStyles.skeletonComment}>
+      {Array.from({length: replies ? 2 : 3}, (_, index) => <div key={index} className={`${commentStyles.skeletonComment} ${replies ? commentStyles.skeletonReply : ''}`}>
         <LoadingBlock className={commentStyles.skeletonAvatar}/><div><LoadingBlock className={commentStyles.skeletonName}/><LoadingBlock className={commentStyles.skeletonText}/></div>
       </div>)}
     </div>

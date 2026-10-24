@@ -6,7 +6,7 @@ type Entry = {image: HTMLImageElement; ready: boolean; expires: number; pending:
 // Only public image URLs/decoded images live here, never comments or account IDs.
 const images = new Map<string, Entry>();
 
-export function commentAvatarURL(comment: RecordingComment): string | undefined {
+export function commentAvatarURL(comment: {avatarUrl?: string; deleted?: boolean; hidden?: boolean}): string | undefined {
   if (comment.deleted || comment.hidden || !('avatarUrl' in comment) || typeof comment.avatarUrl !== 'string' || !comment.avatarUrl) return;
   try {
     const url = new URL(comment.avatarUrl, window.location.origin);
@@ -56,11 +56,14 @@ function prepare(url: string): Promise<boolean> {
 }
 
 export async function prepareCommentAvatars(comments: RecordingComment[]): Promise<RecordingComment[]> {
-  const urls = new Set(comments.map(commentAvatarURL).filter((url): url is string => Boolean(url)));
+  const urls = new Set(comments.flatMap(comment => [commentAvatarURL(comment), ...(!comment.deleted && !comment.hidden ? comment.replyPreviewAuthors?.map(commentAvatarURL) ?? [] : [])]).filter((url): url is string => Boolean(url)));
   // This batch owns its results even when another batch evicts the shared cache.
   const ready = new Map(await Promise.all(Array.from(urls, async url => [url, await prepare(url)] as const)));
   return comments.map(comment => {
     const url = commentAvatarURL(comment);
-    return {...comment, avatarUrl: url && ready.get(url) ? url : undefined};
+    return {...comment, avatarUrl: url && ready.get(url) ? url : undefined, replyPreviewAuthors: comment.deleted || comment.hidden ? undefined : comment.replyPreviewAuthors?.map(profile => {
+      const previewURL = commentAvatarURL(profile);
+      return {...profile, avatarUrl: previewURL && ready.get(previewURL) ? previewURL : undefined};
+    })};
   });
 }
