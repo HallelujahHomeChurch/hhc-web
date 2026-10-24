@@ -25,7 +25,7 @@ type Presentation = {
 };
 const PresentationContext = createContext<Presentation>(null!);
 
-export function VideoComments({api,id,locale,count,enabled,onChanged}:{api:Api;id:string;locale:string;count?:number;enabled:boolean;onChanged:()=>void}) {
+export function VideoComments({api,id,locale,count,enabled,onChanged,recommendations}:{recommendations?:ReactNode;api:Api;id:string;locale:string;count?:number;enabled:boolean;onChanged:()=>void}) {
  const t=videoLabels(locale), auth=useAccountAuth();
  const dialog=useRef<HTMLDialogElement>(null), trigger=useRef<HTMLButtonElement>(null), scrollRef=useRef<HTMLDivElement>(null);
  const positions=useRef(new Map<string|null,number>());
@@ -76,6 +76,7 @@ export function VideoComments({api,id,locale,count,enabled,onChanged}:{api:Api;i
  const presentation={deferBlur,readComments,mobile,thread,composer,viewer,setScrollNode,showThread,selectComposer:setComposer,close,measureComposer:setComposerHeight};
  return <PresentationContext.Provider value={presentation}>
   <button ref={trigger} className={styles.mobileEntry} type="button" onClick={()=>setOpen(true)}><strong>{heading}</strong><span>{preview||(enabled?t.add:t.closed)}</span><ChevronRight aria-hidden="true"/></button>
+  {recommendations}
   <dialog ref={dialog} onPointerDownCapture={()=>{pointerActive.current=true;}} className={styles.surface} data-mobile={mobile} data-thread={Boolean(thread)} style={{top:geometry.top,bottom:geometry.bottom,'--comments-composer-height':`${composerHeight}px`,'--comments-bottom':`${geometry.bottom}px`} as CSSProperties} aria-label={heading} role={mobile?'dialog':'region'} onCancel={e=>{e.preventDefault();close();}} onKeyDown={e=>{if(mobile&&e.key==='Escape'&&!e.defaultPrevented){e.preventDefault();close();}}}>
    <CommentList api={api} id={id} t={t} locale={locale} enabled={enabled} revision={rootRevision} heading={heading} onPreview={setPreview} onCountChanged={onChanged}>
     {enabled?<CommentComposer api={api} id={id} t={t} active={!mobile||composer===null&&thread===null} onDone={()=>{setRootRevision(v=>v+1);onChanged();}}/>:<p>{t.closed}</p>}
@@ -213,7 +214,7 @@ function CommentItem({api,id,t,locale,comment,ancestors,enabled,onChanged}:{api:
     </>:null}
     {error&&mode==='none'?<p role="alert">{t.error}<button type="button" onClick={()=>desiredReaction.current?void react(desiredReaction.current.reaction??'like'):onChanged()}>{t.retry}</button></p>:null}
     {(mode==='reply'||isRoot&&loaded)&&!removed?<CommentComposer api={api} id={id} t={t} parent={root} replyTo={comment} focusOnOpen={mode==='reply'} active={presentation.mobile?presentation.composer===comment.id&&presentation.thread===root:mode==='reply'} onCancel={()=>{setMode('none');presentation.selectComposer(presentation.thread);}} onDone={()=>{setMode('none');presentation.selectComposer(current=>current===comment.id?root:current);setReplies(true);setLoaded(true);setReplyRevision(v=>v+1);onChanged();}}/>:null}
-    {['edit','report','delete'].includes(mode)&&!removed?<form className={styles.editForm} onSubmit={e=>{e.preventDefault();void action();}}>{mode==='delete'?<p>{t.confirm}</p>:<label>{mode==='edit'?t.edit:t.reason}<textarea disabled={busy} maxLength={mode==='edit'?2000:500} value={mode==='edit'?text:reason} onChange={e=>mode==='edit'?setText(e.target.value):setReason(e.target.value)}/></label>}<div className={styles.composerActions}><button type="button" disabled={busy} onClick={()=>setMode('none')}>{t.cancel}</button><button type="submit" disabled={busy||mode==='edit'&&!text.trim()||mode==='report'&&!reason.trim()}>{mode==='delete'?t.remove:mode==='report'?t.report:t.save}</button></div>{error?<p role="alert">{t.error}</p>:null}</form>:null}
+    {['edit','report','delete'].includes(mode)&&!removed?<form className={styles.editForm} onSubmit={e=>{e.preventDefault();void action();}}>{mode==='delete'?<p>{t.confirm}</p>:<label>{mode==='edit'?t.edit:t.reason}<textarea disabled={busy} maxLength={mode==='edit'?2000:500} value={mode==='edit'?text:reason} onChange={e=>mode==='edit'?setText(e.target.value):setReason(e.target.value)}/></label>}<div className={styles.composerActions}><button type="button" disabled={busy} onClick={()=>setMode('none')}>{t.cancel}</button><button className={mode==='edit'?styles.submit:undefined} type="submit" disabled={busy||mode==='edit'&&!text.trim()||mode==='report'&&!reason.trim()}>{mode==='delete'?t.remove:mode==='report'?t.report:t.save}</button></div>{error?<p role="alert">{t.error}</p>:null}</form>:null}
    </div>
    {!removed?<details className={styles.more}><summary aria-label={t.actions}><MoreVertical size={20}/></summary><div>{comment.mine?<><button type="button" onClick={()=>{setText(comment.text);setMode('edit');}}>{t.edit}</button><button type="button" onClick={()=>setMode('delete')}>{t.remove}</button></>:<button type="button" disabled={reported} onClick={()=>setMode('report')}>{reported?t.reported:t.report}</button>}</div></details>:null}
   </article>

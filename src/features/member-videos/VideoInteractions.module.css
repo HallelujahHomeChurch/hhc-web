@@ -1,12 +1,13 @@
 .panel {display:grid;gap:20px;color:var(--video-ink,var(--color-ink));min-width:0;}
+.informationGroup {display:grid;gap:16px;min-width:0;}
 .actions {display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
 .buttons {display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
 .buttons button {display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 16px;border-radius:18px;background:var(--video-panel,var(--color-panel));font-size:14px;font-weight:500;}
-.buttons button[aria-pressed=true] svg {fill:currentColor;}
+.buttons button[aria-pressed=true] svg {fill:currentColor;color:var(--color-primary);}
 .buttons button span {color:var(--video-ink,var(--color-ink));}
 @media(pointer:coarse) {.buttons button {min-height:44px;}}
 .panel button:disabled {opacity:.5;cursor:not-allowed;}
-.buttons button:focus-visible,.information button:focus-visible {outline:2px solid var(--video-link,var(--color-primary));outline-offset:3px;}
+.buttons button:focus-visible,.information button:focus-visible {outline:2px solid var(--color-primary);outline-offset:3px;}
 .panel button:not(:disabled),.shareBody button:not(:disabled) {cursor:pointer;}
 .shareBody {display:grid;gap:24px;min-width:0;max-width:100%;color:var(--color-ink);}
 .platforms {display:flex;gap:16px;overflow-x:auto;padding:4px 2px 12px;}

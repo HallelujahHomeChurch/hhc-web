@@ -2,7 +2,7 @@
 .surface:not([open]),.surface [hidden] {display:none;}
 .surface button:not(:disabled),.surface summary {cursor:pointer;}
 .surface button:disabled {opacity:.5;cursor:not-allowed;}
-.surface :is(button,summary,textarea):focus-visible {outline:2px solid var(--video-link,#065fd4);outline-offset:2px;}
+.surface :is(button,summary,textarea):focus-visible {outline:2px solid var(--color-primary);outline-offset:2px;}
 .discussion {min-width:0;}
 .heading {display:flex;align-items:center;gap:24px;min-height:40px;margin-bottom:20px;}
 .heading h3 {font-size:20px;font-weight:700;line-height:28px;}
@@ -28,7 +28,7 @@
 .actions button {display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:32px;min-width:32px;padding:0 8px;border-radius:16px;background:transparent;font-size:12px;font-weight:500;line-height:18px;}
 .actions .reaction {padding:0 6px;font-weight:400;}
 .reaction svg {flex:none;fill:none;color:var(--video-ink,var(--color-ink));}
-.reaction[aria-pressed=true] svg {fill:currentColor;}
+.reaction[aria-pressed=true] svg {fill:currentColor;color:var(--color-primary);}
 .reaction span {font-size:12px;font-weight:400;color:var(--video-muted,var(--color-muted));}
 .actions button:not(.reaction):hover {background:var(--video-hover,rgba(0,0,0,.06));}
 .avatar {display:grid;place-items:center;overflow:hidden;flex:none;width:36px;height:36px;border-radius:50%;background:var(--video-panel,var(--color-panel));font-size:14px;font-weight:500;}
@@ -52,20 +52,22 @@
 .composer {display:grid;grid-template-columns:40px minmax(0,1fr);gap:16px;align-items:start;min-width:0;margin-bottom:24px;}
 .replyComposer {grid-template-columns:24px minmax(0,1fr);margin:12px 0;}
 .composerBody,.inputLine {min-width:0;max-width:100%;}
-.inputLine {display:block;padding-bottom:4px;border-bottom:1px solid var(--video-border,var(--color-panel-border));}
-.inputLine:focus-within {border-bottom:2px solid var(--video-ink,var(--color-ink));padding-bottom:3px;}
+.inputLine {display:block;padding-bottom:4px;border-bottom:1px solid var(--color-panel-border);}
+.inputLine:focus-within {border-bottom:2px solid var(--color-primary);padding-bottom:3px;}
 .composer textarea {display:block;width:100%;min-width:0;max-height:160px;resize:none;padding:0;background:transparent;border:0;font-size:14px;line-height:20px;overflow-wrap:anywhere;}
 .composer textarea::placeholder {color:var(--video-muted,var(--color-muted));}
 .composer textarea:focus-visible {outline:none;}
 .replyTarget {display:inline-block;border-radius:4px;margin-bottom:2px;padding:0 4px;background:var(--video-panel,var(--color-panel));font-size:14px;line-height:20px;overflow-wrap:anywhere;}
 .composerActions {display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:8px;}
 .composerActions button {min-height:36px;padding:0 16px;border-radius:18px;font-size:14px;font-weight:500;}
-.composerActions button:hover {background:var(--video-hover,rgba(0,0,0,.06));}
-.composerActions .submit {background:var(--video-link,#065fd4);color:var(--video-on-link,#fff);}
+.composerActions button:not(:disabled):hover {background:var(--video-hover,rgba(0,0,0,.06));}
+.composerActions .submit {background:var(--color-primary-solid);color:var(--color-primary-foreground);}
+.composerActions .submit:not(:disabled):hover {background:var(--color-primary-solid-hover);}
 .composerActions .submit:disabled {background:var(--video-panel,var(--color-panel));color:var(--video-muted,var(--color-muted));opacity:1;}
 .editForm {display:grid;gap:8px;margin-top:8px;}
 .editForm label {display:grid;gap:4px;}
-.editForm textarea {width:100%;min-height:80px;background:transparent;border-bottom:1px solid var(--video-border,var(--color-panel-border));font-size:16px;}
+.editForm textarea {width:100%;min-height:80px;background:transparent;border-bottom:1px solid var(--color-panel-border);font-size:16px;}
+.editForm textarea:focus {border-bottom-color:var(--color-primary);}
 .loadMore {justify-self:start;min-height:40px;padding:0 12px;border-radius:20px;font-size:14px;color:var(--video-link,#065fd4);}
 .skeletonList {display:grid;gap:24px;}
 .skeletonComment {display:grid;grid-template-columns:36px minmax(0,1fr);gap:16px;}

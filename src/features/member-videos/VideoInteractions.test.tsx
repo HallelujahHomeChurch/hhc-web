@@ -74,3 +74,17 @@ it('replaces first-load metrics placeholders with unavailable after a failed req
  expect(await screen.findByText('Viewing statistics unavailable')).toBeInTheDocument();
  expect(view.container.querySelector('[data-loading-layout="video-interactions"]')).toBeNull();
 });
+
+it.each(['ready','unavailable'] as const)('keeps one recommendation list while interactions become %s',async state=>{
+ const client=api();let finish!:(value:unknown)=>void,fail!:(reason:unknown)=>void;
+ client.interactions.mockReturnValue(new Promise((resolve,reject)=>{finish=resolve;fail=reject;}));
+ render(<VideoInteractions api={client as unknown as ReturnType<typeof createMemberVideoApi>} id="r1" title="Meeting" locale="en" live={false} recommendations={<nav aria-label="Other videos">Recommended recording</nav>}/>);
+ expect(screen.getAllByRole('navigation',{name:'Other videos'})).toHaveLength(1);
+ if(state==='ready')finish({liked:false,likes:2,commentsEnabled:true});else fail({code:'recording_interactions_unavailable'});
+ await waitFor(()=>expect(document.querySelector('[data-loading-layout="video-interactions"]')).toBeNull());
+ expect(screen.getAllByRole('navigation',{name:'Other videos'})).toHaveLength(1);
+ if(state==='ready'){
+  const recommendations=screen.getByRole('navigation',{name:'Other videos'}),comments=screen.getByRole('region',{name:/Comments/});
+  expect(recommendations.compareDocumentPosition(comments)&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+ }else expect(screen.queryByRole('textbox')).toBeNull();
+});

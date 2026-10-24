@@ -1,4 +1,4 @@
-vi.mock('./VideoInteractions',async()=>{const {VideoInformation}=await import('./VideoInformation');return {VideoInteractions:(props:import('react').ComponentProps<typeof VideoInformation>)=><VideoInformation {...props} metrics={null}/>};});
+vi.mock('./VideoInteractions',async()=>{const {VideoInformation}=await import('./VideoInformation');return {VideoInteractions:({children,recommendations,...props}:import('react').ComponentProps<typeof VideoInformation>&{children?:import('react').ReactNode;recommendations?:import('react').ReactNode})=><><VideoInformation {...props} metrics={null}/>{children}{recommendations}</>};});
 import {cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
 import {afterEach,expect,it,vi} from 'vitest';
 import type {ComponentProps,RefObject} from 'react';
