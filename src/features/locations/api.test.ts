@@ -54,13 +54,11 @@ describe('getLocations', () => {
     }]);
   });
 
-  it('uses the existing localized locations while the CMS request fails', async () => {
-    const client = {listLocations: async () => Promise.reject(new Error('unavailable'))} as unknown as HhcWebClient;
+  it('rejects unavailable locations rather than caching a fallback in Home', async () => {
+    const error = new Error('unavailable');
+    const client = {listLocations: async () => Promise.reject(error)} as unknown as HhcWebClient;
 
-    await expect(getLocations('ja', client)).resolves.toEqual(expect.arrayContaining([
-      expect.objectContaining({name: '台北ハレルヤ・ホームチャーチ'}),
-      expect.objectContaining({name: '中壢ハレルヤ・ホームチャーチ'})
-    ]));
+    await expect(getLocations('ja', client)).rejects.toBe(error);
     expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'locations.list', level: 'warning', tags: {locale: 'ja'}});
   });
 });

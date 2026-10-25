@@ -83,7 +83,11 @@ describe('localized route metadata site layout', () => {
     const metadata = await generate();
 
     expect(metadata.title).toBe(title);
-    expect(mocks.getSiteLayout).toHaveBeenCalledWith('ja');
+    if (_name === 'home') {
+      expect(mocks.getSiteLayout).toHaveBeenCalledWith('ja', undefined, {allowFallback: false});
+    } else {
+      expect(mocks.getSiteLayout).toHaveBeenCalledWith('ja');
+    }
     if (metadata.openGraph) expect(metadata.openGraph).toMatchObject({siteName: 'CMS 公開サイト名'});
   });
 

@@ -114,7 +114,15 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
               type: 'cpu'
               metadata: {
                 type: 'Utilization'
-                value: '70'
+                value: '50'
+              }
+            }
+          }
+          {
+            name: 'http-scaler'
+            http: {
+              metadata: {
+                concurrentRequests: '20'
               }
             }
           }

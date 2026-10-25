@@ -33,7 +33,6 @@ export async function getHomePage(locale: Locale, client: HhcWebClient = publicC
   } catch (error) {
     if (isPageAvailabilityError(error)) {
       captureHandledError(error, {operation: 'page.home', level: 'warning', tags: {locale}});
-      return migrationHome(locale);
     }
     throw error;
   }
@@ -92,16 +91,6 @@ function assertPage(page: PublicEditorialPage, locale: Locale, key: PublicEditor
 
 function result<T>(page: PublicEditorialPage, content: T): PageResult<T> {
   return {content, availableLocales: [...page.availableLocales], indexable: page.indexable, source: 'cms'};
-}
-
-function migrationHome(locale: Locale): HomePageResult {
-  const home = getMessages(locale).home;
-  return {template: 'home.v1', source: 'migration-fallback', indexable: true, availableLocales: [...productLocales], content: {
-    heroTitle: home.heroTitle, heroSubtitle: home.heroSubtitle, newsTitle: home.newsTitle, moreNews: home.moreNews,
-    weeklyTitle: home.weeklyTitle, downloadWeekly: home.downloadWeekly, videosTitle: home.videosTitle,
-    videosSubtitle: home.videosSubtitle, watchMore: home.watchMore, aboutTitle: home.aboutTitle,
-    aboutBody: home.aboutBody, aboutCta: home.aboutCta, locationsTitle: home.locationsTitle, mapLink: home.mapLink
-  }};
 }
 
 function migrationAbout(locale: Locale): PageResult<AboutContent> {

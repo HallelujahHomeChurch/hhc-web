@@ -39,16 +39,16 @@ describe('getHomeContent', () => {
     expect(content.videosFailed).toBe(false);
   });
 
-  it('marks both sections failed when the Home endpoint fails', async () => {
-    const getHome = vi.fn().mockRejectedValue(new Error('home unavailable'));
+  it('rejects a failed Home request so ISR retains the successful page', async () => {
+    const error = new Error('home unavailable');
+    const getHome = vi.fn().mockRejectedValue(error);
     const listPublicContent = vi.fn();
 
-    const content = await getHomeContent('en', {getHome, listPublicContent} as unknown as HhcWebClient);
+    await expect(getHomeContent('en', {getHome, listPublicContent} as unknown as HhcWebClient)).rejects.toBe(error);
 
     expect(getHome).toHaveBeenCalledWith('en');
     expect(getHome).toHaveBeenCalledTimes(1);
     expect(listPublicContent).not.toHaveBeenCalled();
-    expect(content).toEqual({news: [], videos: [], newsFailed: true, videosFailed: true});
     expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'home.content', tags: {locale: 'en', phase: 'fetch'}});
   });
 });
@@ -56,6 +56,6 @@ describe('getHomeContent', () => {
 it('classifies malformed response mapping separately from request failure',async()=>{
  captureHandledError.mockClear();
  const getHome=vi.fn().mockResolvedValue({news:null,videos:[]});
- expect(await getHomeContent('en',{getHome} as unknown as HhcWebClient)).toMatchObject({newsFailed:true,videosFailed:true});
+ await expect(getHomeContent('en',{getHome} as unknown as HhcWebClient)).rejects.toBeInstanceOf(TypeError);
  expect(captureHandledError).toHaveBeenCalledWith(expect.anything(),{operation:'home.content',tags:{locale:'en',phase:'map'}});
 });
