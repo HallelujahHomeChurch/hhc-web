@@ -74,8 +74,6 @@ jobs:
       - run: |
           corepack pnpm test:run
           corepack pnpm lint
-          corepack pnpm build
-          corepack pnpm perf:static
           ./scripts/test-release-policy.sh
       - name: Build controlled live-load artifact
         run: |
@@ -208,6 +206,12 @@ jobs:
               version --format json | jq -r '"- Trivy: " + .Version, "- Vulnerability DB updated: " + .VulnerabilityDB.UpdatedAt'
           } >> "$GITHUB_STEP_SUMMARY"
           test "$fixable" -eq 0
+      - name: Check static budgets on the immutable production image
+        run: |
+          docker run --rm --network none --read-only --memory 256m --cpus 1 \
+            -v "$PWD/src:/app/src:ro" \
+            -v "$PWD/scripts/check-static-budgets.mjs:/check-static-budgets.mjs:ro" \
+            --entrypoint /nodejs/bin/node "$IMAGE_REF" /check-static-budgets.mjs --require-build
       - name: Export verified immutable image
         id: image
         run: |

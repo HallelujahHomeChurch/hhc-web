@@ -51,6 +51,9 @@ if (heroSize > maxHeroBytes) {
 
 const chunksPath = path.join(root, '.next/static/chunks');
 const scripts = await readdir(chunksPath).then(names => names.filter(name => name.endsWith('.js'))).catch(() => []);
+if (process.argv.includes('--require-build') && scripts.length === 0) {
+  failures.push('Production JavaScript chunks missing from build');
+}
 const exportChunks = [];
 for (const name of scripts) {
   const bytes = await readFile(path.join(chunksPath, name));

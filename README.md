@@ -82,6 +82,13 @@ docker build --secret id=npmrc,src="$HOME/.npmrc" -t hhc-web:local .
 
 The runtime serves `GET /health` on port `10000`.
 
+CI and release run the full tests and lint, then compile Next.js inside the runtime
+image build. Static budgets inspect that image's actual JavaScript, CSS and public
+assets, with source font declarations mounted read-only; missing compiled chunks
+fail verification. Release checks use the immutable production image and its build
+configuration. A second host compilation is unnecessary. New commits supersede
+only older runs of the same PR; production releases are never cancelled this way.
+
 ### Public Home rendering
 
 Public Home pages use on-demand ISR with a 60-second revalidation interval.
