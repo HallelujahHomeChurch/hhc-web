@@ -65,6 +65,12 @@ export function verifyReaderAccess(value: OnlineBulletinAccess, expected: Reader
   for (const asset of content.layoutManifest.assets) {
     if (!knownAssets.some(known => known.url === asset.url && known.sha256 === asset.sha256 && known.kind === asset.kind)) throw new Error('update_required');
   }
+  let imageBytes = 0;
+  for (const component of content.components) for (const picture of component.illustrations ?? []) {
+    if (content.layoutManifest.rendererVersion !== 'v11' || !picture.png || picture.png.length > 2796204 || !/^iVBORw0KGgo[A-Za-z0-9+/]*={0,2}$/.test(picture.png)) throw new Error('invalid_reader_image');
+    imageBytes += picture.sizeBytes;
+    if (!Number.isSafeInteger(picture.sizeBytes) || picture.sizeBytes < 1 || imageBytes > 2097152) throw new Error('invalid_reader_image');
+  }
   const pageIds = new Set<string>();
   for (const page of content.pages) {
     if (pageIds.has(page.id) || !Number.isFinite(page.width) || !Number.isFinite(page.height) || page.width <= 0 || page.height <= 0 ||

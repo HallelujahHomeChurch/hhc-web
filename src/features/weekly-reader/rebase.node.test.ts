@@ -85,3 +85,14 @@ it('uses explicit current anchors and cloud version for manual recovery, never r
   expect(() => manualReaderRecovery(highlight, cloud, document, {sentenceIds: ['removed'], text: '', color: 'blue'})).toThrow('invalid_reader_anchor');
   expect(manualReaderRecovery(highlight, cloud, document, {sentenceIds: ['s0', 's0'], text: '', color: 'blue'})).toMatchObject({payload: {sentenceIds: ['s0'], color: 'blue'}});
 });
+
+it('automatically keeps partial Unicode offsets only with exact immutable text and a unique mapping',()=>{
+ const previous=readerFixture().document,current=structuredClone(previous);current.revision=2;
+ const before={...state,documentId:previous.documentId},after={...before,currentRevision:2,appliedRevision:2};
+ const mutation:BulletinReaderMutation={...base,mutationId:'partial-proof',kind:'setHighlight',payload:{sentenceIds:['s0'],ranges:[{sentenceId:'s0',start:1,end:3}],color:'yellow'}};
+ const mappings=[{fromSentenceId:'s0',toSentenceIds:['s0']}];
+ const result=rebaseReaderMutations([mutation],before,after,mappings,{previous,current});
+ expect(result.recovery).toEqual([]);expect(result.mutations[0]).toMatchObject({documentRevision:2,payload:mutation.payload});
+ const component=current.content.components[0];if(component.type!=='backSummary')throw new Error('fixture');component.items[0].blocks[0].sentences[0].spans[0].text='改過的原文';
+ expect(rebaseReaderMutations([mutation],before,after,mappings,{previous,current}).recovery).toHaveLength(1);
+})

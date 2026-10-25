@@ -6,8 +6,8 @@ import type {ReaderSentence} from '@/features/weekly-reader/selection';
 import type {ReaderTextRange} from '@/features/weekly-reader/text-range';
 import type {ReaderMessages} from './ReaderToolbar';
 
-export function HighlightsPanel({highlights, sentences, messages: m, busy, onChange, query = ''}: {
-  query?: string;
+export function HighlightsPanel({highlights, sentences, messages: m, busy, onChange, history, onRestore, query = ''}: {
+  query?: string; history?: BulletinReaderState['highlightHistory']; onRestore?: (id: string) => void;
   highlights: BulletinReaderState['highlights']; sentences: readonly ReaderSentence[]; messages: ReaderMessages; busy: boolean;
   onChange: (range: ReaderTextRange, color: BulletinReaderHighlightColor | null) => Promise<void>;
 }) {
@@ -30,5 +30,6 @@ export function HighlightsPanel({highlights, sentences, messages: m, busy, onCha
         <ReaderIconButton variant="ghost" aria-label={m.clearHighlight} isDisabled={busy} onPress={() => {void onChange(range, null).then(() => headingRef.current?.focus());}} icon={<X size={18} aria-hidden="true"/>}/>
       </div>
     </article>)}
+    {history?.some(item => item.highlight) && <section><h3>{m.retainedTitle}</h3><p>{m.retainedHelp}</p>{history.filter(item => item.highlight?.quote.normalize('NFKC').toLowerCase().includes(query.normalize('NFKC').trim().toLowerCase())).map(item => <article key={item.id}><blockquote>{item.highlight!.quote}</blockquote>{onRestore && <button type="button" disabled={busy} onClick={() => onRestore(item.id)}>{m.retainedPosition}</button>}</article>)}</section>}
   </section>;
 }

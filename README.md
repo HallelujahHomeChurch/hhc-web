@@ -298,3 +298,24 @@ Sentry's shallow normalization and is validated again before transmission.
 No media URL, recording/account/session identifier, watermark, raw error,
 headers, credentials, pixels or audio are sent. This observes rapid seeks;
 it does not fix or alter decoding, seeking, playback rate or recovery.
+
+
+## Bulletin replacement continuity
+
+A reader can accept a newer edition while keeping ambiguous offline changes and
+their original quotations in the issue's personal collection. Proven unique
+text/range matches rebase automatically; retained items can be read, exported or
+optionally positioned later. Possibly-sent requests still resolve their original
+fingerprints before rebase. Account, receipt, epoch and atomic replacement checks
+remain enforced; logout/removal includes retained unsynchronized work.
+
+Retained intents use a single backward-safe stored queue representation: older
+reader tabs still encounter an unresolved recovery entry and cannot silently
+replace authored data during cloud refresh. New readers keep these separate from
+the active write queue. No database-version reset or reader-data purge is needed.
+
+This source PR requires the reviewed shared UI/SDK to be normally published and
+pinned with real registry locks before merge. Local packed candidates are not a
+package release or installed-device/offline acceptance. Ship consumer support
+before activating V11 conversions, and start rollout with the accepted previous
+issue; no bulk latest/old-issue reconversion is implied.
