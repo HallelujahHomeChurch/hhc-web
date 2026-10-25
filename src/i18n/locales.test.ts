@@ -38,10 +38,10 @@ describe('locales', () => {
   it('pins exact HHC frontend integration artifacts (registry resolution remains a release gate)', () => {
     expect(Object.fromEntries(Object.entries(packageJson.dependencies).filter(([name]) => name.startsWith('@hallelujahhomechurch/')))).toEqual({
       '@hallelujahhomechurch/account-client': '1.0.67',
-      '@hallelujahhomechurch/hhc-web-client': '1.1.4',
+      '@hallelujahhomechurch/hhc-web-client': '1.1.9',
       '@hallelujahhomechurch/operations-client': '1.0.37',
       '@hallelujahhomechurch/preferences': '1.0.47',
-      '@hallelujahhomechurch/ui': '1.1.8'
+      '@hallelujahhomechurch/ui': '1.1.9'
     });
   });
 
