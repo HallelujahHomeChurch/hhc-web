@@ -44,7 +44,7 @@ export default async function LocaleLayout({children, params}: LocaleLayoutProps
           <StatementProvider locale={rawLocale} labels={messages.site.statement}>
           <div data-locale={rawLocale} lang={rawLocale}>
             <TranslationNotice locale={rawLocale} message={messages.site.translationNotice} dismissLabel={messages.site.translationNoticeDismiss} regionLabel={messages.site.translationNoticeRegion} />
-            <Suspense fallback={null}><AnalyticsBoundary locale={rawLocale}>{children}</AnalyticsBoundary></Suspense>
+            <Suspense fallback={children}><AnalyticsBoundary locale={rawLocale}>{children}</AnalyticsBoundary></Suspense>
           </div>
           </StatementProvider>
         </InitialLoadingBoundary>

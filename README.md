@@ -82,6 +82,25 @@ docker build --secret id=npmrc,src="$HOME/.npmrc" -t hhc-web:local .
 
 The runtime serves `GET /health` on port `10000`.
 
+### Public Home rendering
+
+Public Home pages use on-demand ISR with a 60-second revalidation interval.
+Builds do not require a reachable CMS. Successful HTML and RSC output is reused;
+failed Home, layout or legacy-location reads do not replace the last successful
+page with an empty or migration fallback. Without a successful cache entry, an
+upstream failure returns an error and a later request can retry.
+The analytics Suspense fallback retains the server-rendered content while its
+search-parameter hook hydrates; caching must not turn Home into an empty shell.
+
+Revalidation is request-driven and runs in the background; 60 seconds is not a
+hard publication/removal deadline. Native Link prefetch and browser back/forward
+may reuse client-side content independently. Caches are per replica; private and
+member reads retain their existing authorization and no-store policies.
+
+The deployment template keeps 0.5 vCPU / 1GiB and 1–8 replicas, with CPU utilization
+target 50% and HTTP target 20. Either rule can request scale-out. Rule evaluation
+and replica startup take time; the HTTP target is not a request admission limit.
+
 ## Production image handoff
 
 The main Release runs full verification and `prepare_image` in parallel. Image

@@ -11,11 +11,11 @@ const fallbackLinks: SiteExternalLinks = {
   musicYoutube: 'https://youtube.com/@gkpmusic777?si=JqJyfjM8FCmWD5MY'
 };
 
-export async function getSiteLayout(locale: Locale, client: HhcWebClient = publicContentClient()): Promise<SiteLayout> {
-  return resolveSiteLayout(locale, client);
+export async function getSiteLayout(locale: Locale, client: HhcWebClient = publicContentClient(), {allowFallback = true} = {}): Promise<SiteLayout> {
+  return resolveSiteLayout(locale, client, allowFallback);
 }
 
-async function resolveSiteLayout(locale: Locale, client: HhcWebClient): Promise<SiteLayout> {
+async function resolveSiteLayout(locale: Locale, client: HhcWebClient, allowFallback: boolean): Promise<SiteLayout> {
   try {
     const home = await client.getPublicPage('home', locale);
     if (home.pageKey === 'home' && home.template === 'home.v2' && home.content.template === 'home.v2' && home.routePath === '/' && home.resolvedLocale === locale && home.availableLocales.includes(locale)) {
@@ -23,12 +23,12 @@ async function resolveSiteLayout(locale: Locale, client: HhcWebClient): Promise<
     }
   } catch (error) {
     captureHandledError(error, {operation: 'site_layout.home_projection', level: 'warning', tags: {locale}});
-    return legacyLayout(locale, client);
+    if (!allowFallback) throw error;
   }
-  return legacyLayout(locale, client);
+  return legacyLayout(locale, client, allowFallback);
 }
 
-async function legacyLayout(locale: Locale, client: HhcWebClient): Promise<SiteLayout> {
+async function legacyLayout(locale: Locale, client: HhcWebClient, allowFallback: boolean): Promise<SiteLayout> {
   try {
     const layout = await client.getSiteLayout(locale);
     return {...layout, legal: layout.legal.map((item) =>
@@ -38,6 +38,7 @@ async function legacyLayout(locale: Locale, client: HhcWebClient): Promise<SiteL
     )};
   } catch (error) {
     captureHandledError(error, {operation: 'site_layout.legacy', level: 'warning', tags: {locale}});
+    if (!allowFallback) throw error;
     return configuredLayout(locale, fallbackLinks, 0, '');
   }
 }

@@ -5,7 +5,7 @@ import {mapVideoItem} from '@/features/videos/api';
 import type {Locale} from '@/i18n/locales';
 import {captureHandledError} from '@/lib/observability';
 
-export async function getHomeContent(locale: Locale, client: HhcWebClient = publicContentClient(true)) {
+export async function getHomeContent(locale: Locale, client: HhcWebClient = publicContentClient()) {
   let phase = 'fetch';
   try {
     const home = await client.getHome(locale);
@@ -18,6 +18,7 @@ export async function getHomeContent(locale: Locale, client: HhcWebClient = publ
     };
   } catch (error) {
     captureHandledError(error, {operation: 'home.content', tags: {locale, phase}});
-    return {news: [], videos: [], newsFailed: true, videosFailed: true};
+    // A failed ISR regeneration must retain the last successful page.
+    throw error;
   }
 }
