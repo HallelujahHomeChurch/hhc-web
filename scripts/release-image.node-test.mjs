@@ -34,10 +34,20 @@ test('prepare runs alongside full verify; deploy requires both successful jobs',
   assert.match(prepare, /github\.repository == 'HallelujahHomeChurch\/hhc-web'/);
   assert.match(prepare, /^    environment: production$/m);
   assert.match(prepare, /id-token: write/);
-  for (const command of ['test:run', 'lint', 'build', 'perf:static']) {
+  for (const command of ['test:run', 'lint']) {
     assert.ok(job('verify').includes(`corepack pnpm ${command}`));
   }
   assert.match(job('verify'), /fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1/);
+  assert.doesNotMatch(job('verify'), /corepack pnpm (?:build|perf:static)/);
+  const budget = step(prepare, 'Check static budgets on the immutable production image');
+  assert.ok(budget.includes('"$IMAGE_REF" /check-static-budgets.mjs --require-build'));
+  assert.ok(budget.includes('-v "$PWD/src:/app/src:ro"'));
+  assert.doesNotMatch(budget, /if:|continue-on-error:|\|\| true/);
+  assert.ok(prepare.indexOf('name: Scan immutable image') < prepare.indexOf('name: Check static budgets'));
+  assert.ok(prepare.indexOf('name: Check static budgets') < prepare.indexOf('name: Export verified immutable image'));
+  const dockerfile = readFileSync(new URL('../Dockerfile', import.meta.url), 'utf8');
+  assert.match(dockerfile, /pnpm build;/);
+
 });
 
 test('main release builds one production image and scans that same immutable image', () => {
