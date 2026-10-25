@@ -24,6 +24,12 @@ type HomePageProps = {
 
 export const revalidate = 60;
 
+// Empty child params inherit the locale layout's build paths. This invalid locale
+// reaches notFound before Home's CMS reads, leaving real pages to on-demand ISR.
+export function generateStaticParams() {
+  return [{locale: '__home_isr__'}];
+}
+
 async function getLocale(params: Promise<{locale: string}>): Promise<Locale> {
   const {locale} = await params;
   if (!isLocale(locale)) {
@@ -35,7 +41,7 @@ async function getLocale(params: Promise<{locale: string}>): Promise<Locale> {
 export async function generateMetadata({params}: HomePageProps): Promise<Metadata> {
   const locale = await getLocale(params);
   setRequestLocale(locale);
-  const [page, layout] = await Promise.all([homePage(locale), getSiteLayout(locale)]);
+  const [page, layout] = await Promise.all([homePage(locale), getSiteLayout(locale, undefined, {allowFallback: false})]);
   const description = page.content.heroSubtitle || layout.seoDescriptionFallback;
   return getEditorialMetadata({locale, path: '/', title: layout.seoTitleSuffix, socialTitle: `${layout.seoTitleSuffix} | ${page.content.heroTitle}`, description, siteName: layout.siteName, availableLocales: page.availableLocales, indexable: page.indexable});
 }
@@ -44,7 +50,7 @@ export default async function HomePage({params}: HomePageProps) {
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
-  const [page, home, layout] = await Promise.all([homePage(locale), getHomeContent(locale), getSiteLayout(locale)]);
+  const [page, home, layout] = await Promise.all([homePage(locale), getHomeContent(locale), getSiteLayout(locale, undefined, {allowFallback: false})]);
   const locations = page.template === 'home.v2'
     ? page.content.locations.toSorted((left, right) => left.sortOrder - right.sortOrder).map(({key, name, address, mapHref}) => ({id: key, name, address, mapHref}))
     : await getLocations(locale);

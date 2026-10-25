@@ -34,6 +34,22 @@ const publishedLayout: SiteLayout = {
 };
 
 describe('getSiteLayout', () => {
+  it('rejects Home projection failures when the caller disables fallback for ISR', async () => {
+    const error = new Error('projection unavailable');
+    const getLegacyLayout = vi.fn().mockResolvedValue(publishedLayout);
+    const client = {getPublicPage: vi.fn().mockRejectedValue(error), getSiteLayout: getLegacyLayout} as unknown as HhcWebClient;
+
+    await expect(getSiteLayout('ja', client, {allowFallback: false})).rejects.toBe(error);
+    expect(getLegacyLayout).not.toHaveBeenCalled();
+  });
+
+  it('rejects legacy layout failures when Home disables fallback for ISR', async () => {
+    const error = new Error('layout unavailable');
+    const client = {getPublicPage: async () => ({...homeV2Page(), template: 'home.v1'}), getSiteLayout: async () => {throw error;}} as unknown as HhcWebClient;
+
+    await expect(getSiteLayout('ja', client, {allowFallback: false})).rejects.toBe(error);
+  });
+
   it('composes v2 layout from typed locale config and Home-projected links without the deprecated request', async () => {
     const requestLayout = vi.fn();
     const client = {

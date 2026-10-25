@@ -61,10 +61,10 @@ describe('fixed editorial page adapters', () => {
   it.each([
     new TypeError('network unavailable'),
     new HhcWebApiError(503, 'service_unavailable', 'unavailable')
-  ])('uses migration-only static fallback for Home and About availability failures: %s', async (error) => {
+  ])('rejects Home availability failures for ISR and preserves the About fallback: %s', async (error) => {
     const client = rejectingClient(error);
 
-    await expect(getHomePage('ja', client)).resolves.toMatchObject({content: homeContent('ja').data, source: 'migration-fallback'});
+    await expect(getHomePage('ja', client)).rejects.toBe(error);
     await expect(getAboutPage('ko', client)).resolves.toMatchObject({content: aboutContent('ko').data, source: 'migration-fallback'});
     expect(captureHandledError).toHaveBeenCalledWith(error, {operation: 'page.home', level: 'warning', tags: {locale: 'ja'}});
     expect(captureHandledError).toHaveBeenCalledWith(error, {operation: 'page.about', level: 'warning', tags: {locale: 'ko'}});
