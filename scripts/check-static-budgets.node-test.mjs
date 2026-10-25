@@ -28,8 +28,8 @@ async function fixture({bodyFontPreload = false, cssBytes = 0, displayFontPreloa
   return root;
 }
 
-function run(root) {
-  return spawnSync(process.execPath, [checker], {
+function run(root, ...args) {
+  return spawnSync(process.execPath, [checker, ...args], {
     cwd: path.resolve('.'),
     encoding: 'utf8',
     env: {...process.env, HHC_STATIC_BUDGET_ROOT: root}
@@ -121,4 +121,18 @@ test('bounds the lazy DOCX chunk in both raw and gzip bytes', async (t) => {
   }
   await writeFile(filename, 'unrelated application chunk');
   assert.match(run(root).stderr, /DOCX export chunk missing/);
+});
+
+
+test('image verification requires compiled JavaScript and its DOCX export', async (t) => {
+  const root = await fixture();
+  t.after(() => rm(root, {recursive: true, force: true}));
+  assert.notEqual(run(root, '--require-build').status, 0);
+  assert.match(run(root, '--require-build').stderr, /Production JavaScript chunks missing/);
+  const chunks = path.join(root, '.next/static/chunks');
+  await mkdir(chunks, {recursive: true});
+  await writeFile(path.join(chunks, 'app.js'), 'application');
+  assert.match(run(root, '--require-build').stderr, /DOCX export chunk missing/);
+  await writeFile(path.join(chunks, 'export.js'), 'docProps/core.xml');
+  assert.equal(run(root, '--require-build').status, 0);
 });

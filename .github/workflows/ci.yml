@@ -7,6 +7,11 @@ permissions:
   contents: read
   packages: read
 
+# Supersede only older verification of the same PR.
+concurrency:
+  group: hhc-web-ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   agent_docs:
     runs-on: ubuntu-latest
@@ -76,10 +81,6 @@ jobs:
         if: steps.changes.outputs.docs_only != 'true'
       - run: corepack pnpm lint
         if: steps.changes.outputs.docs_only != 'true'
-      - run: corepack pnpm build
-        if: steps.changes.outputs.docs_only != 'true'
-      - run: corepack pnpm perf:static
-        if: steps.changes.outputs.docs_only != 'true'
       - name: Build controlled live-load artifact
         if: steps.changes.outputs.docs_only != 'true'
         run: |
@@ -122,6 +123,13 @@ jobs:
             'if(require("node:fs").readdirSync("/app",{recursive:true}).some(p=>p.endsWith(".map")))throw new Error("Source maps reached runtime")'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check static budgets on the verified image
+        if: steps.changes.outputs.docs_only != 'true'
+        run: |
+          docker run --rm --network none --read-only --memory 256m --cpus 1 \
+            -v "$PWD/src:/app/src:ro" \
+            -v "$PWD/scripts/check-static-budgets.mjs:/check-static-budgets.mjs:ro" \
+            --entrypoint /nodejs/bin/node hhc-web:verify /check-static-budgets.mjs --require-build
       - name: Scan image
         if: steps.changes.outputs.docs_only != 'true'
         run: |

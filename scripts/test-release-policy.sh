@@ -27,6 +27,20 @@ grep -Fq 'fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-co
 grep -Fq 'image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 hhc-web:verify' "$ci_workflow"
 grep -Fq 'fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1' "$workflow"
 node --test scripts/release-image.node-test.mjs
+node --test scripts/check-static-budgets.node-test.mjs
+for file in "$ci_workflow" "$workflow"; do
+  grep -Fq '/check-static-budgets.mjs --require-build' "$file"
+  grep -Fq -- '-v "$PWD/src:/app/src:ro"' "$file"
+  if grep -Eq '^ +corepack pnpm (build|perf:static)$|run: corepack pnpm (build|perf:static)$' "$file"; then
+    echo 'Static budgets must inspect the built image without another host compilation' >&2
+    exit 1
+  fi
+done
+budget_line="$(grep -nF 'name: Check static budgets on the immutable production image' "$workflow" | cut -d: -f1)"
+export_line="$(grep -nF 'name: Export verified immutable image' "$workflow" | cut -d: -f1)"
+test "$budget_line" -lt "$export_line"
+grep -Fq 'needs: [verify, prepare_image]' "$workflow"
+grep -Fq "cancel-in-progress: \${{ github.event_name == 'pull_request' }}" "$ci_workflow"
 grep -Fq 'docker pull "$IMAGE_REF"' "$workflow"
 grep -Fq 'image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 "$IMAGE_REF"' "$workflow"
 scan_line="$(grep -nF 'name: Scan immutable image' "$workflow" | cut -d: -f1)"
