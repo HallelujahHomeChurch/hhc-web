@@ -7,6 +7,8 @@ describe('member capacity model', () => {
     expect(deck).toEqual(operationDeck(randomSequence(0)));
     expect(deck).not.toEqual(operationDeck(randomSequence(1)));
     expect(Object.fromEntries(Object.keys(weights).map(op => [op, deck.filter(value => value === op).length]))).toEqual(weights);
+    const hot = Array.from({length: 1000}, (_, flow) => randomSequence(flow)()).filter(value => value < .8).length;
+    expect(hot).toBeGreaterThan(750); expect(hot).toBeLessThan(850);
   });
   it('keeps slow failed attempts in percentiles and the error denominator', () => {
     const rows: Sample[] = Array.from({length: 100}, (_, i) => ({kind: 'operation', name: 'reader_open', flow: 0, startMs: i, durationMs: i >= 98 ? 5000 : 100, ok: i < 98}));

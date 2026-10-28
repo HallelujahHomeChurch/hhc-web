@@ -143,7 +143,7 @@ export async function startMemberCapacity(options: Options) {
       const accountId = session.user.id;
       const authState = await auth.start(); requireValue(authState.status === 'authenticated');
       await Promise.all(Array.from({length: options.flows}, async (_, flow) => {
-        const random = randomSequence(flow), pick = <T>(items: T[]) => items[random() < .8 ? 0 : Math.floor(random() * items.length)];
+        const random = randomSequence(flow), pick = <T>(items: T[]) => items[items.length === 1 || random() < .8 ? 0 : 1 + Math.floor(random() * (items.length - 1))];
         const issue = pick(options.issues), writerIssue = options.issues.find(i => i.writable)!, recording = pick(options.recordings);
         const selector: ReaderSelector = {accountId, issueNumber: issue.issueNumber, series: 'general', contentLocale: 'zh-Hant'};
         const writerSelector: ReaderSelector = {...selector, issueNumber: writerIssue.issueNumber};

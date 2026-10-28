@@ -16,7 +16,7 @@ export function sloReason(samples: readonly Sample[], minimum = 100) {
 }
 
 export function randomSequence(flow: number, seed = 20261029) {
-  let state = (seed ^ (flow + 1)) >>> 0;
+  let state = (seed ^ Math.imul(flow + 1, 0x9e3779b1)) >>> 0;
   return () => {
     state ^= state << 13; state ^= state >>> 17; state ^= state << 5;
     return (state >>> 0) / 4294967296;
