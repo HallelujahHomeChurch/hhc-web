@@ -1,6 +1,6 @@
 export const weights = {bulletin_catalog: 15, reader_open: 15, reader_sync: 20, media_catalog: 15, media_play: 20, account_read: 10, pdf_download: 5} as const;
 export type Operation = keyof typeof weights;
-export type Sample = {kind: 'operation' | 'request' | 'background'; name: string; flow: number; startMs: number; durationMs: number; ok: boolean; status?: number; error?: 'timeout' | 'network' | 'aborted' | 'http' | 'validation'};
+export type Sample = {kind: 'operation' | 'request' | 'background'; name: string; flow: number; startMs: number; durationMs: number; ok: boolean; status?: number; bytes?: number; firstByteMs?: number; error?: 'timeout' | 'network' | 'aborted' | 'http' | 'validation'};
 
 export function errorCategory(error: unknown): Sample['error'] {
   return error instanceof DOMException && error.name === 'TimeoutError' ? 'timeout' :
@@ -8,11 +8,25 @@ export function errorCategory(error: unknown): Sample['error'] {
       error instanceof TypeError ? 'network' : 'validation';
 }
 
-export function sloReason(samples: readonly Sample[], minimum = 100) {
+export function sloReason(samples: readonly Sample[], minimum = 1000) {
   if (samples.length < minimum) return null;
   const summary = summarize(samples);
   if (summary.errors / summary.attempts > .005) return 'error_rate';
   return summary.p95Ms! > 1000 || summary.p99Ms! > 2000 ? 'latency_slo' : null;
+}
+
+export function requestMetricName(url: URL, method: string, family: string) {
+  if (['account.read', 'account.token', 'recording.read'].includes(family)) return family + '.' + url.pathname.split('/').at(-1);
+  if (family === 'media.cookie') return family + '.' + method.toLowerCase();
+  return family;
+}
+
+export function isBulkTransfer(name: string) {
+  return ['pdf.file', 'media.segment', 'media.playlist', 'recording.read.cover'].includes(name);
+}
+
+export function isApiSample(sample: Sample) {
+  return sample.kind === 'request' && !isBulkTransfer(sample.name);
 }
 
 export function randomSequence(flow: number, seed = 20261029) {

@@ -5,7 +5,7 @@ import {bookmarkTargets} from '../src/features/weekly-reader/bookmarks';
 import {createMemberVideoApi} from '../src/features/member-videos/api';
 import {createProtectedFetch} from '../src/features/weekly/api';
 import {parsePlaylist, scopedURL} from './public-live-load';
-import {errorCategory, gateValid, operationDeck, randomSequence, requestFamily, sloReason, summarize, weights, type Gate, type Operation, type Sample} from './member-capacity-model';
+import {errorCategory, gateValid, operationDeck, randomSequence, requestFamily, requestMetricName, isApiSample, isBulkTransfer, sloReason, summarize, weights, type Gate, type Operation, type Sample} from './member-capacity-model';
 
 type Options = {
   runId: string; scopeHash: string; gate: Gate; flows: number; seconds: number; mode: 'baseline' | 'mixed';
@@ -71,7 +71,7 @@ export async function startMemberCapacity(options: Options) {
   const stop = (code = 'operator') => {reason ??= code; if (!signal.aborted) abort.abort(code);};
   const check = () => {
     if (!gateValid(gate, options.scopeHash, Date.now())) stop('safety_gate');
-    if (performance.now() >= workloadEnd) stop(holdStarted === null ? 'ramp_timeout' : 'duration');
+    if (holdStarted === null && performance.now() >= workloadEnd) stop('ramp_timeout');
     signal.throwIfAborted();
   };
   const pause = (ms: number, stopSignal = signal) => new Promise<void>((resolve, reject) => {
@@ -92,9 +92,10 @@ export async function startMemberCapacity(options: Options) {
     if (!cleanup) check();
     if (requests >= options.remainingRequests - (cleanup ? 0 : options.flows)) {stop('request_budget'); throw new Error('request_budget');}
     requests++; inFlight++;
-    const before = performance.now(); let status = 0, ok = false, error: Sample['error'];
+    const before = performance.now(); let received = 0, firstByteMs: number | undefined;
+    let status = 0, ok = false, error: Sample['error'];
     try {
-      const timeout = AbortSignal.timeout(5000);
+      const timeout = AbortSignal.timeout(isBulkTransfer(requestMetricName(url, request.method, family)) ? 60000 : 5000);
       const response = await fetch(request, {redirect: 'error', signal: AbortSignal.any([request.signal, timeout, ...(cleanup ? [] : [signal])])});
       status = response.status;
       if (status === 429) stop('rate_limit_429');
@@ -103,7 +104,8 @@ export async function startMemberCapacity(options: Options) {
       if (reader) try {
         for (;;) {
           const chunk = await reader.read(); if (chunk.done) break;
-          size += chunk.value.byteLength; bytes += chunk.value.byteLength;
+          firstByteMs ??= performance.now() - before;
+          size += chunk.value.byteLength; received += chunk.value.byteLength; bytes += chunk.value.byteLength;
           if (bytes > options.remainingBytes || size > 64 * 1024 ** 2) {stop('byte_budget'); await reader.cancel(); throw new Error('byte_budget');}
           chunks.push(chunk.value);
         }
@@ -116,7 +118,7 @@ export async function startMemberCapacity(options: Options) {
       return new Response([204, 205, 304].includes(status) ? null : body, {status, headers: response.headers});
     } catch (failure) {error ??= errorCategory(failure); throw failure;
     } finally {
-      inFlight--; samples.push({kind: 'request', name: family, flow: -1, startMs: before - started, durationMs: performance.now() - before, ok, status, ...(error ? {error} : {})});
+      inFlight--; samples.push({kind: 'request', name: requestMetricName(url, request.method, family), flow: -1, startMs: before - started, durationMs: performance.now() - before, ok, status, bytes: received, ...(firstByteMs === undefined ? {} : {firstByteMs}), ...(error ? {error} : {})});
     }
   };
   const account = createAccountSessionClient({baseUrl: '/api/account/v1', fetcher: boundedFetch});
@@ -128,9 +130,9 @@ export async function startMemberCapacity(options: Options) {
       check();
       const recent = samples.filter(s => s.startMs >= performance.now() - started - 30000 && s.kind === 'request');
       if (recent.filter(s => s.status! >= 500 || s.error === 'timeout').length >= 3 && recent.filter(s => !s.ok).length / recent.length > .02) stop('http_error_safety');
-      const foreground = samples.filter(s => s.kind === 'operation' && holdStarted !== null && s.startMs >= holdStarted - started);
+      const foreground = samples.filter(s => isApiSample(s) && holdStarted !== null && s.startMs >= holdStarted - started);
       if (sloReason(foreground)) stop('overall_slo');
-      for (const name of new Set(foreground.map(s => s.name))) if (sloReason(foreground.filter(s => s.name === name))) stop('operation_slo');
+      for (const name of new Set(foreground.map(s => s.name))) if (sloReason(foreground.filter(s => s.name === name))) stop('api_slo');
     } catch { /* The abort signal owns shutdown. */ }
   }, 1000);
   let nextTick = performance.now() + 1000;
@@ -299,6 +301,7 @@ export async function startMemberCapacity(options: Options) {
           do {
             const deck = options.mode === 'baseline' ? Object.keys(weights) as Operation[] : operationDeck(random);
             for (const name of deck) {
+              if (holdStarted !== null && performance.now() >= workloadEnd) break;
               check();
               if (name === 'reader_sync') {
                 const kinds: SyncKind[] = options.mode === 'baseline' ? ['bookmark', 'note', 'progress', 'state', 'bookmark', 'note'] : [(['bookmark', 'note', 'progress', 'state'] as SyncKind[])[Math.floor(random() * 4)]];
@@ -312,7 +315,7 @@ export async function startMemberCapacity(options: Options) {
               }
               if (options.mode !== 'baseline') await pause((3 + 9 * random()) * 1000 + (name === 'reader_open' ? (15 + 30 * random()) * 1000 : 0));
             }
-          } while (options.mode !== 'baseline');
+          } while (options.mode !== 'baseline' && performance.now() < workloadEnd);
         } catch {if (!signal.aborted) stop('operation_failed');}
         finally {
           if (joined) active--;
@@ -344,6 +347,7 @@ export async function startMemberCapacity(options: Options) {
       }));
     } catch {if (!signal.aborted) stop('bootstrap_failed');}
     finally {
+      if (options.mode === 'mixed' && !reason) reason = 'duration';
       await Promise.allSettled([...outstanding]); clearInterval(clock); clearInterval(scheduler);
       cleanupInProgress++;
       try {
@@ -368,7 +372,7 @@ export async function startMemberCapacity(options: Options) {
     snapshot() {
       const steady = samples.filter(s => holdStarted !== null && s.startMs >= holdStarted - started && s.startMs < workloadEnd - started);
       const summary = (kind: Sample['kind']) => Object.fromEntries([...new Set(steady.filter(s => s.kind === kind).map(s => s.name))].map(name => [name, summarize(steady.filter(s => s.kind === kind && s.name === name))]));
-      return {runId: options.runId, sessionModel: 'one-existing-session', flows: options.flows, active, playing, inFlight, requests, bytes, reason, finished: finishedAt !== null, elapsedMs: (finishedAt ?? performance.now()) - started, holdStartMs: holdStarted === null ? null : holdStarted - started, holdElapsedMs: holdStarted === null ? 0 : Math.min(workloadEnd, finishedAt ?? performance.now()) - holdStarted, maxSchedulerLagMs, cleanupFailures, playbackHolds: {...playbackHolds}, overall: summarize(steady.filter(s => s.kind === 'operation')), httpOverall: summarize(steady.filter(s => s.kind === 'request')), allPhasesOverall: summarize(samples.filter(s => s.kind === 'operation')), operations: summary('operation'), background: summary('background'), routes: summary('request')};
+      return {runId: options.runId, sessionModel: 'one-existing-session', flows: options.flows, active, playing, inFlight, requests, bytes, reason, finished: finishedAt !== null, elapsedMs: (finishedAt ?? performance.now()) - started, holdStartMs: holdStarted === null ? null : holdStarted - started, holdElapsedMs: holdStarted === null ? 0 : Math.min(workloadEnd, finishedAt ?? performance.now()) - holdStarted, maxSchedulerLagMs, cleanupFailures, playbackHolds: {...playbackHolds}, apiOverall: summarize(steady.filter(isApiSample)), apiRoutes: Object.fromEntries([...new Set(steady.filter(isApiSample).map(s => s.name))].map(name => [name, summarize(steady.filter(s => isApiSample(s) && s.name === name))])), overall: summarize(steady.filter(s => s.kind === 'operation')), httpOverall: summarize(steady.filter(s => s.kind === 'request')), allPhasesOverall: summarize(samples.filter(s => s.kind === 'operation')), operations: summary('operation'), background: summary('background'), routes: summary('request')};
     },
     evidence() {return samples.map(s => ({...s, phase: options.mode === 'baseline' ? 'baseline' : holdStarted === null || s.startMs < holdStarted - started ? 'ramp' : s.startMs >= workloadEnd - started ? 'drain' : 'hold'}));},
     cleanupLedger() {return {runId: options.runId, pendingProgressIssues: [...progressWrites.keys()], pendingObjects: privateLedgers.filter(l => l.bookmarks.size || l.notes.size).map(l => ({issueId: l.issueId, bookmarkIds: [...l.bookmarks.keys()], noteIds: [...l.notes.keys()]}))};},

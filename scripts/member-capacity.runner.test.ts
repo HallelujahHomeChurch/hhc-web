@@ -98,3 +98,12 @@ it('cleans up an acknowledged own bookmark after an interrupted delete', async (
   const first = fake.reader.mutate.mock.calls[0][2][0], cleanup = fake.reader.mutate.mock.calls[4][2][0];
   expect(cleanup.kind).toBe('deleteBookmark'); expect(cleanup.payload.bookmarkId).toBe(first.payload.bookmarkId);
 });
+
+it('drains a started media operation at hold expiry without cancelling it', async () => {
+  setup();
+  // A one-second baseline reaches playback before expiry, then drains that operation.
+  const load = await startMemberCapacity({...options(), seconds: 1}), timer = keepGate(load);
+  await vi.advanceTimersByTimeAsync(100000); await load.done; clearInterval(timer);
+  expect(load.snapshot()).toMatchObject({finished: true, reason: null, cleanupFailures: 0, playbackHolds: {completed: 1, interrupted: 0, failed: 0}});
+  expect(fake.client.createBulletinDownloadJob).not.toHaveBeenCalled();
+});

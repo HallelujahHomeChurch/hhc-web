@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {gateValid, operationDeck, randomSequence, requestFamily, sloReason, summarize, weights, type Sample} from './member-capacity-model';
+import {gateValid, isApiSample, requestMetricName, operationDeck, randomSequence, requestFamily, sloReason, summarize, weights, type Sample} from './member-capacity-model';
 
 describe('member capacity model', () => {
   it('replays a weighted stateful choice deck without sharing flow randomness', () => {
@@ -25,11 +25,19 @@ describe('member capacity model', () => {
     expect(gateValid({...gate, ready: false}, hash, 1000)).toBe(false);
   });
   it('does not promote small samples to a capacity pass and detects latency or errors', () => {
-    const rows: Sample[] = Array.from({length: 100}, () => ({kind: 'operation', name: 'reader_open', flow: 0, startMs: 0, durationMs: 1000, ok: true}));
+    const rows: Sample[] = Array.from({length: 1000}, () => ({kind: 'operation', name: 'reader_open', flow: 0, startMs: 0, durationMs: 1000, ok: true}));
     expect(sloReason(rows)).toBeNull();
-    expect(sloReason(rows.slice(0, 99).map(s => ({...s, durationMs: 5000})))).toBeNull();
+    expect(sloReason(rows.slice(0, 999).map(s => ({...s, durationMs: 5000})))).toBeNull();
     expect(sloReason(rows.map(s => ({...s, durationMs: 1001})))).toBe('latency_slo');
-    expect(sloReason(rows.map((s, i) => ({...s, ok: i !== 0})))).toBe('error_rate');
+    expect(sloReason(rows.map((s, i) => ({...s, ok: i >= 6})))).toBe('error_rate');
+  });
+  it('retains control API latency while excluding only transfer bodies', () => {
+    const row: Sample = {kind: 'request', name: 'media.cookie.post', flow: 0, startMs: 0, durationMs: 5000, ok: true};
+    for (const name of ['media.cookie.post', 'recording.grant', 'pdf.create', 'pdf.status', 'reader.state']) expect(isApiSample({...row, name})).toBe(true);
+    for (const name of ['pdf.file', 'media.segment', 'media.playlist', 'recording.read.cover']) expect(isApiSample({...row, name})).toBe(false);
+    expect(isApiSample({...row, kind: 'operation'})).toBe(false);
+    expect(requestMetricName(new URL('https://www.alive.org.tw/api/member/recordings/id/watch'), 'GET', 'recording.read')).toBe('recording.read.watch');
+    expect(requestMetricName(new URL('https://www.alive.org.tw/api/member/recordings/id/comments'), 'GET', 'recording.read')).toBe('recording.read.comments');
   });
   it('exports fixed route families without IDs, query tokens or provider URLs', () => {
     const origin = 'https://www.alive.org.tw';

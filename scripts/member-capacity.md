@@ -63,3 +63,15 @@ corepack pnpm exec tsc --noEmit
 The runner fixture mocks upstream clients and uses synthetic complete response
 bodies. It is not a production integration or a live-readiness claim. Repository
 checks, PR CI, runtime admission and real acceptance are separate evidence.
+
+## Revised API-only latency gate
+
+Bulk PDF bodies, recording cover images, HLS playlists and segments remain actual
+load and retain timings/errors/bytes, but are excluded from the API latency pool.
+Session, CSRF/token, recording watch/interactions/metrics/comments and cookie
+methods have separate sanitized endpoint labels. All other control APIs, including
+PDF job creation/status and media authorization, remain in aggregate and per-API
+p95 ≤ 1000 ms / p99 ≤ 2000 ms gates. Each gate requires 1000 attempts before a
+latency verdict; insufficient coverage is never a final capacity pass.
+Logical operation timing remains diagnostic. Normal hold expiry stops new
+operations and drains already-started operations; safety stops still abort promptly.
