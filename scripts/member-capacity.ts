@@ -16,6 +16,36 @@ type Options = {
 const requireValue = (ok: unknown) => {if (!ok) throw new Error('invalid_load_evidence');};
 let running = false;
 
+// Read-only fixture discovery never returns identity, credentials or private state.
+export async function inspectMemberFixtures() {
+  requireValue(location.origin === 'https://www.alive.org.tw' && !running);
+  const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 30000);
+  let attempts = 0, receivedBytes = 0;
+  const fetcher: typeof fetch = async (input, init) => {
+    requireValue(++attempts <= 20);
+    const request = new Request(input instanceof Request ? input : new URL(String(input), location.origin), init);
+    const family = requestFamily(new URL(request.url), request.method, location.origin);
+    requireValue(['account.read', 'account.token', 'bulletin.discovery', 'reader.state', 'recording.list'].includes(family));
+    const response = await fetch(request, {signal: AbortSignal.any([request.signal, controller.signal, AbortSignal.timeout(5000)]), redirect: 'error'});
+    const body = await response.arrayBuffer(); receivedBytes += body.byteLength; requireValue(receivedBytes <= 10 * 1024 ** 2);
+    return new Response(body, {status: response.status, headers: response.headers});
+  };
+  const account = createAccountSessionClient({baseUrl: '/api/account/v1', fetcher}), auth = createBrowserAccountAuthRuntime({client: account});
+  try {
+    const state = await auth.start(); requireValue(state.status === 'authenticated');
+    const client = createHhcWebClient({baseUrl: '/api', getAccessToken: () => null, fetcher: createProtectedFetch(auth, fetcher)});
+    const discovery = await client.listOnlineBulletinDiscovery({series: 'general', locale: 'zh-Hant', limit: 6, offset: 0, signal: controller.signal});
+    const bulletins = [];
+    for (const edition of discovery.items.filter(e => e.onlineRevision)) {
+      const value = await client.getReaderState({issueId: edition.issueId, series: 'general', locale: 'zh-Hant', fromRevision: edition.onlineRevision!, signal: controller.signal});
+      requireValue(state.status === 'authenticated' && value.state.accountId === state.session.user.id);
+      bulletins.push({issueId: edition.issueId, issueNumber: edition.issueNumber, emptyPrivateState: !value.state.progress && !value.state.highlights.length && !value.state.notes.length && !value.state.bookmarks?.length && !value.state.conflicts.length});
+    }
+    const recordings = await client.listMemberRecordingsPage({limit: 12, signal: controller.signal});
+    return {authenticated: true, attempts, receivedBytes, bulletins, recordings: recordings.items.map(r => ({id: r.id, durationSeconds: r.durationSeconds, expiresAt: r.expiresAt}))};
+  } finally {clearTimeout(timer); auth.dispose();}
+}
+
 // Loading the bundle is inert. A fresh external safety gate is required to start.
 export async function startMemberCapacity(options: Options) {
   requireValue(location.origin === 'https://www.alive.org.tw' && !running);

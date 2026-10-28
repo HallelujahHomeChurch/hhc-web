@@ -1,5 +1,5 @@
 import {afterEach, expect, it, vi} from 'vitest';
-import {startMemberCapacity} from './member-capacity';
+import {inspectMemberFixtures, startMemberCapacity} from './member-capacity';
 import {readerFixture} from '../src/features/weekly-reader/test-fixture';
 import {applyLocalMutation} from '../src/features/weekly-reader/private-state';
 import type {BulletinReaderMutation, BulletinReaderState} from '@hallelujahhomechurch/hhc-web-client';
@@ -52,6 +52,9 @@ it('executes the actual pinned clients against synthetic HTTP contracts, includi
     if (new RegExp(`/api/member/recordings/${recording}/(watch|interactions|metrics|comments|heartbeat)$`).test(path)) return json({});
     throw new Error('Unexpected synthetic route');
   });
+  const inspected = await inspectMemberFixtures();
+  expect(inspected.bulletins).toEqual([{issueId: id, issueNumber: 1739, emptyPrivateState: true}]);
+  expect(JSON.stringify(inspected)).not.toContain(value.access.accountId);
   const load = await startMemberCapacity({runId: 'offline-real-client', scopeHash: hash, gate: {scopeHash: hash, observedAt: Date.now(), deadline: Date.now() + 300000, ready: true}, flows: 1, seconds: 120, mode: 'baseline', issues: [{issueId: id, issueNumber: 1739, writable: true}], recordings: [{id: recording, analyticsApproved: true}], remainingRequests: 2000, remainingBytes: 10 * 1024 ** 2});
   const gate = setInterval(() => load.updateGate({scopeHash: hash, observedAt: Date.now(), deadline: Date.now() + 300000, ready: true}), 1000);
   await vi.advanceTimersByTimeAsync(100000); await load.done; clearInterval(gate);
