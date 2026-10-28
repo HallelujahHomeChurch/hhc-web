@@ -58,7 +58,7 @@ it('executes the actual pinned clients against synthetic HTTP contracts, includi
   const load = await startMemberCapacity({runId: 'offline-real-client', scopeHash: hash, gate: {scopeHash: hash, observedAt: Date.now(), deadline: Date.now() + 300000, ready: true}, flows: 1, seconds: 120, mode: 'baseline', issues: [{issueId: id, issueNumber: 1739, writable: true}], recordings: [{id: recording, analyticsApproved: true}], remainingRequests: 2000, remainingBytes: 10 * 1024 ** 2});
   const gate = setInterval(() => load.updateGate({scopeHash: hash, observedAt: Date.now(), deadline: Date.now() + 300000, ready: true}), 1000);
   await vi.advanceTimersByTimeAsync(100000); await load.done; clearInterval(gate);
-  expect(load.snapshot()).toMatchObject({finished: true, reason: null, cleanupFailures: 0, overall: {attempts: 7, errors: 0}});
+  expect(load.snapshot()).toMatchObject({finished: true, reason: null, cleanupFailures: 0, overall: {attempts: 12, errors: 0}});
   expect(state.progress).toBeNull(); expect(state.notes.every(n => n.deleted)).toBe(true); expect(state.bookmarks!.every(b => b.deleted)).toBe(true);
   expect(paths.some(p => p.endsWith('/online/access'))).toBe(true);
   expect(load.cleanupLedger()).toMatchObject({pendingProgressIssues: [], pendingObjects: []});

@@ -54,7 +54,7 @@ export async function startMemberCapacity(options: Options) {
   requireValue(options.mode === 'mixed' || options.mode === 'baseline' && options.flows === 1);
   requireValue(options.issues.length > 0 && options.issues.every(i => /^[a-f0-9-]{36}$/.test(i.issueId) && Number.isInteger(i.issueNumber)));
   requireValue(options.recordings.length > 0 && options.recordings.every(r => /^[a-f0-9-]{36}$/.test(r.id) && r.analyticsApproved));
-  requireValue(options.issues.every(i => i.writable) && options.remainingRequests > options.flows * 2 && options.remainingRequests <= 200000 && options.remainingBytes > 0 && options.remainingBytes <= 30 * 1024 ** 3);
+  requireValue(options.issues.some(i => i.writable) && options.remainingRequests > options.flows * 2 && options.remainingRequests <= 200000 && options.remainingBytes > 0 && options.remainingBytes <= 30 * 1024 ** 3);
   running = true;
   const started = performance.now();
   let holdStarted: number | null = options.mode === 'baseline' ? started : null;
@@ -67,7 +67,7 @@ export async function startMemberCapacity(options: Options) {
   const samples: Sample[] = [], outstanding = new Set<Promise<unknown>>();
   const progressBaselines = new Map<string, {selector: ReaderSelector; document: OnlineBulletinAccess; progress: BulletinReaderState['progress']} >();
   const progressWrites = new Map<string, string>();
-  const privateLedgers: {issueId: string; bookmarks: Map<string, number | null>; notes: Set<string>}[] = [];
+  const privateLedgers: {issueId: string; bookmarks: Map<string, number | null>; notes: Map<string, number | null>}[] = [];
   const stop = (code = 'operator') => {reason ??= code; if (!signal.aborted) abort.abort(code);};
   const check = () => {
     if (!gateValid(gate, options.scopeHash, Date.now())) stop('safety_gate');
@@ -130,7 +130,7 @@ export async function startMemberCapacity(options: Options) {
       if (recent.filter(s => s.status! >= 500 || s.error === 'timeout').length >= 3 && recent.filter(s => !s.ok).length / recent.length > .02) stop('http_error_safety');
       const foreground = samples.filter(s => s.kind === 'operation' && holdStarted !== null && s.startMs >= holdStarted - started);
       if (sloReason(foreground)) stop('overall_slo');
-      for (const name of Object.keys(weights)) if (sloReason(foreground.filter(s => s.name === name))) stop('operation_slo');
+      for (const name of new Set(foreground.map(s => s.name))) if (sloReason(foreground.filter(s => s.name === name))) stop('operation_slo');
     } catch { /* The abort signal owns shutdown. */ }
   }, 1000);
   let nextTick = performance.now() + 1000;
@@ -144,43 +144,62 @@ export async function startMemberCapacity(options: Options) {
       const authState = await auth.start(); requireValue(authState.status === 'authenticated');
       await Promise.all(Array.from({length: options.flows}, async (_, flow) => {
         const random = randomSequence(flow), pick = <T>(items: T[]) => items[random() < .8 ? 0 : Math.floor(random() * items.length)];
-        const issue = pick(options.issues), recording = pick(options.recordings);
+        const issue = pick(options.issues), writerIssue = options.issues.find(i => i.writable)!, recording = pick(options.recordings);
         const selector: ReaderSelector = {accountId, issueNumber: issue.issueNumber, series: 'general', contentLocale: 'zh-Hant'};
-        let document: OnlineBulletinAccess | undefined;
+        const writerSelector: ReaderSelector = {...selector, issueNumber: writerIssue.issueNumber};
+        let document: OnlineBulletinAccess | undefined, writerDocument: OnlineBulletinAccess | undefined;
         const ownedBookmarks = new Map<string, number | null>();
-        const ownedNotes = new Set<string>();
-        privateLedgers.push({issueId: issue.issueId, bookmarks: ownedBookmarks, notes: ownedNotes});
+        const ownedNotes = new Map<string, number | null>();
+        privateLedgers.push({issueId: writerIssue.issueId, bookmarks: ownedBookmarks, notes: ownedNotes});
         const uuid = () => crypto.randomUUID();
         async function open() {
           document = await readerApi.open(selector, {clientRequestId: uuid()}, signal);
           requireValue(document.document.issueId === issue.issueId);
-          const state = await readerApi.privateState(selector, document, signal);
-          if (!progressBaselines.has(issue.issueId)) progressBaselines.set(issue.issueId, {selector, document, progress: state.state.progress});
+          await readerApi.privateState(selector, document, signal);
         }
         async function mutate(mutations: BulletinReaderMutation[]) {
-          requireValue(issue.writable && document);
-          const result = await readerApi.mutate(selector, document!, mutations, signal);
+          requireValue(writerIssue.writable && writerDocument);
+          const result = await readerApi.mutate(writerSelector, writerDocument!, mutations, signal);
           requireValue(result.results.every(r => r.status === 'applied'));
           return result;
         }
-        async function sync() {
-          if (!document) await open();
-          const target = bookmarkTargets(document!.document)[0]; requireValue(target);
-          const id = uuid(), revision = document!.document.revision;
-          ownedBookmarks.set(id, null);
-          const created = await mutate([{mutationId: uuid(), createdAt: new Date().toISOString(), documentRevision: revision, kind: 'createBookmark', payload: {bookmarkId: id, name: `load-${options.runId.slice(0, 32)}-${flow}`, ...target}}]);
-          const bookmark = created.state.bookmarks?.find(b => b.id === id); requireValue(bookmark && !bookmark.deleted);
-          ownedBookmarks.set(id, bookmark!.version);
-          await mutate([{mutationId: uuid(), createdAt: new Date().toISOString(), documentRevision: revision, kind: 'deleteBookmark', baseVersion: bookmark!.version, payload: {bookmarkId: id}}]);
-          ownedBookmarks.delete(id);
-          await readerApi.privateState(selector, document!, signal);
-          const noteId = uuid(); ownedNotes.add(noteId);
-          const note = await mutate([{mutationId: uuid(), createdAt: new Date().toISOString(), documentRevision: revision, kind: 'createNote', payload: {noteId, sentenceIds: [target.sentenceId], text: `Synthetic capacity-test note ${options.runId}-${flow}`}}]);
-          const saved = note.state.notes.find(n => n.id === noteId && !n.deleted); requireValue(saved);
-          await mutate([{mutationId: uuid(), createdAt: new Date().toISOString(), documentRevision: revision, kind: 'deleteNote', baseVersion: saved!.version, payload: {noteId}}]);
-          ownedNotes.delete(noteId);
-          const createdAt = new Date().toISOString(); progressWrites.set(issue.issueId, createdAt);
-          await mutate([{mutationId: uuid(), createdAt, documentRevision: revision, kind: 'setProgress', payload: {pageId: target.pageId, sentenceId: target.sentenceId}}]);
+        type SyncKind = 'bookmark' | 'note' | 'progress' | 'state';
+        async function sync(kind: SyncKind) {
+          if (!writerDocument) {
+            writerDocument = await readerApi.open(writerSelector, {clientRequestId: uuid()}, signal);
+            requireValue(writerDocument.document.issueId === writerIssue.issueId);
+            const state = await readerApi.privateState(writerSelector, writerDocument, signal);
+            if (!progressBaselines.has(writerIssue.issueId)) progressBaselines.set(writerIssue.issueId, {selector: writerSelector, document: writerDocument, progress: state.state.progress});
+          }
+          const target = bookmarkTargets(writerDocument!.document)[0]; requireValue(target);
+          const revision = writerDocument!.document.revision;
+          if (kind === 'state') return readerApi.privateState(writerSelector, writerDocument!, signal);
+          if (kind === 'progress') {
+            const createdAt = new Date().toISOString(); progressWrites.set(writerIssue.issueId, createdAt);
+            return mutate([{mutationId: uuid(), createdAt, documentRevision: revision, kind: 'setProgress', payload: {pageId: target.pageId, sentenceId: target.sentenceId}}]);
+          }
+          if (kind === 'bookmark') {
+            const existing = ownedBookmarks.keys().next().value;
+            if (existing) {
+              const version = ownedBookmarks.get(existing); requireValue(version);
+              await mutate([{mutationId: uuid(), createdAt: new Date().toISOString(), documentRevision: revision, kind: 'deleteBookmark', baseVersion: version!, payload: {bookmarkId: existing}}]);
+              ownedBookmarks.delete(existing); return;
+            }
+            const id = uuid(); ownedBookmarks.set(id, null);
+            const created = await mutate([{mutationId: uuid(), createdAt: new Date().toISOString(), documentRevision: revision, kind: 'createBookmark', payload: {bookmarkId: id, name: `load-${options.runId.slice(0, 32)}-${flow}`, ...target}}]);
+            const bookmark = created.state.bookmarks?.find(b => b.id === id && !b.deleted); requireValue(bookmark);
+            ownedBookmarks.set(id, bookmark!.version); return;
+          }
+          const existing = ownedNotes.keys().next().value;
+          if (existing) {
+            const version = ownedNotes.get(existing); requireValue(version);
+            await mutate([{mutationId: uuid(), createdAt: new Date().toISOString(), documentRevision: revision, kind: 'deleteNote', baseVersion: version!, payload: {noteId: existing}}]);
+            ownedNotes.delete(existing); return;
+          }
+          const id = uuid(); ownedNotes.set(id, null);
+          const created = await mutate([{mutationId: uuid(), createdAt: new Date().toISOString(), documentRevision: revision, kind: 'createNote', payload: {noteId: id, sentenceIds: [target.sentenceId], text: `Synthetic capacity-test note ${options.runId}-${flow}`}}]);
+          const saved = created.state.notes.find(n => n.id === id && !n.deleted); requireValue(saved);
+          ownedNotes.set(id, saved!.version);
         }
         async function catalog() {
           const page = await mediaApi.listPage({limit: 12, signal});
@@ -271,7 +290,7 @@ export async function startMemberCapacity(options: Options) {
         }
         const actions: Record<Operation, () => Promise<unknown>> = {
           bulletin_catalog: () => client.listOnlineBulletinDiscovery({series: 'general', locale: 'zh-Hant', limit: 12, offset: 0, ...(random() < .3 ? {issueNumber: issue.issueNumber} : {}), signal}),
-          reader_open: open, reader_sync: sync, media_catalog: catalog, media_play: play, account_read: () => account.getSession(), pdf_download: pdf,
+          reader_open: open, reader_sync: () => sync('state'), media_catalog: catalog, media_play: play, account_read: () => account.getSession(), pdf_download: pdf,
         };
         let joined = false;
         try {
@@ -281,31 +300,39 @@ export async function startMemberCapacity(options: Options) {
             const deck = options.mode === 'baseline' ? Object.keys(weights) as Operation[] : operationDeck(random);
             for (const name of deck) {
               check();
-              const value = await measured('operation', name, flow, actions[name]);
-              if (name === 'media_play') await (value as Awaited<ReturnType<typeof play>>).playback;
+              if (name === 'reader_sync') {
+                const kinds: SyncKind[] = options.mode === 'baseline' ? ['bookmark', 'note', 'progress', 'state', 'bookmark', 'note'] : [(['bookmark', 'note', 'progress', 'state'] as SyncKind[])[Math.floor(random() * 4)]];
+                for (const kind of kinds) {
+                  const verb = kind === 'bookmark' ? ownedBookmarks.size ? 'delete' : 'create' : kind === 'note' ? ownedNotes.size ? 'delete' : 'create' : kind === 'progress' ? 'save' : 'read';
+                  await measured('operation', `reader_sync.${kind}.${verb}`, flow, () => sync(kind));
+                }
+              } else {
+                const value = await measured('operation', name, flow, actions[name]);
+                if (name === 'media_play') await (value as Awaited<ReturnType<typeof play>>).playback;
+              }
               if (options.mode !== 'baseline') await pause((3 + 9 * random()) * 1000 + (name === 'reader_open' ? (15 + 30 * random()) * 1000 : 0));
             }
           } while (options.mode !== 'baseline');
         } catch {if (!signal.aborted) stop('operation_failed');}
         finally {
           if (joined) active--;
-          if (document && (ownedBookmarks.size || ownedNotes.size)) {
+          if (writerDocument && (ownedBookmarks.size || ownedNotes.size)) {
             cleanupInProgress++;
             try {
               const cleanupSignal = AbortSignal.timeout(5000);
-              const state = await readerApi.privateState(selector, document, cleanupSignal);
+              const state = await readerApi.privateState(writerSelector, writerDocument, cleanupSignal);
               for (const id of ownedBookmarks.keys()) {
                 const item = state.state.bookmarks?.find(b => b.id === id);
                 if (item && !item.deleted) {
-                  const result = await readerApi.mutate(selector, document, [{mutationId: uuid(), createdAt: new Date().toISOString(), documentRevision: document.document.revision, kind: 'deleteBookmark', baseVersion: item.version, payload: {bookmarkId: id}}], cleanupSignal);
+                  const result = await readerApi.mutate(writerSelector, writerDocument, [{mutationId: uuid(), createdAt: new Date().toISOString(), documentRevision: writerDocument.document.revision, kind: 'deleteBookmark', baseVersion: item.version, payload: {bookmarkId: id}}], cleanupSignal);
                   requireValue(result.results.every(r => r.status === 'applied'));
                 }
                 if (item) ownedBookmarks.delete(id); else cleanupFailures++;
               }
-              for (const id of ownedNotes) {
+              for (const id of ownedNotes.keys()) {
                 const item = state.state.notes.find(n => n.id === id);
                 if (item && !item.deleted) {
-                  const result = await readerApi.mutate(selector, document, [{mutationId: uuid(), createdAt: new Date().toISOString(), documentRevision: document.document.revision, kind: 'deleteNote', baseVersion: item.version, payload: {noteId: id}}], cleanupSignal);
+                  const result = await readerApi.mutate(writerSelector, writerDocument, [{mutationId: uuid(), createdAt: new Date().toISOString(), documentRevision: writerDocument.document.revision, kind: 'deleteNote', baseVersion: item.version, payload: {noteId: id}}], cleanupSignal);
                   requireValue(result.results.every(r => r.status === 'applied'));
                 }
                 if (item) ownedNotes.delete(id); else cleanupFailures++;
@@ -344,6 +371,6 @@ export async function startMemberCapacity(options: Options) {
       return {runId: options.runId, sessionModel: 'one-existing-session', flows: options.flows, active, playing, inFlight, requests, bytes, reason, finished: finishedAt !== null, elapsedMs: (finishedAt ?? performance.now()) - started, holdStartMs: holdStarted === null ? null : holdStarted - started, holdElapsedMs: holdStarted === null ? 0 : Math.min(workloadEnd, finishedAt ?? performance.now()) - holdStarted, maxSchedulerLagMs, cleanupFailures, playbackHolds: {...playbackHolds}, overall: summarize(steady.filter(s => s.kind === 'operation')), httpOverall: summarize(steady.filter(s => s.kind === 'request')), allPhasesOverall: summarize(samples.filter(s => s.kind === 'operation')), operations: summary('operation'), background: summary('background'), routes: summary('request')};
     },
     evidence() {return samples.map(s => ({...s, phase: options.mode === 'baseline' ? 'baseline' : holdStarted === null || s.startMs < holdStarted - started ? 'ramp' : s.startMs >= workloadEnd - started ? 'drain' : 'hold'}));},
-    cleanupLedger() {return {runId: options.runId, pendingProgressIssues: [...progressWrites.keys()], pendingObjects: privateLedgers.filter(l => l.bookmarks.size || l.notes.size).map(l => ({issueId: l.issueId, bookmarkIds: [...l.bookmarks.keys()], noteIds: [...l.notes]}))};},
+    cleanupLedger() {return {runId: options.runId, pendingProgressIssues: [...progressWrites.keys()], pendingObjects: privateLedgers.filter(l => l.bookmarks.size || l.notes.size).map(l => ({issueId: l.issueId, bookmarkIds: [...l.bookmarks.keys()], noteIds: [...l.notes.keys()]}))};},
   };
 }

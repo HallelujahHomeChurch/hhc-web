@@ -56,8 +56,8 @@ it('is inert until explicit invocation and rejects an absent safety gate before 
 it('covers every baseline operation, drains real bodies, paces media, and exports no credentials or target IDs', async () => {
   const fetcher = setup(); const load = await startMemberCapacity(options()), timer = keepGate(load);
   await vi.advanceTimersByTimeAsync(100000); await load.done; clearInterval(timer);
-  expect(load.snapshot()).toMatchObject({finished: true, reason: null, active: 0, playing: 0, overall: {attempts: 7, errors: 0}});
-  expect(Object.keys(load.snapshot().operations)).toHaveLength(7);
+  expect(load.snapshot()).toMatchObject({finished: true, reason: null, active: 0, playing: 0, overall: {attempts: 12, errors: 0}});
+  expect(Object.keys(load.snapshot().operations)).toHaveLength(12);
   expect(fake.reader.mutate).toHaveBeenCalledTimes(6); expect(fake.media.clear).toHaveBeenCalledExactlyOnceWith(root + 'master.m3u8');
   expect(fake.media.heartbeat).toHaveBeenCalled(); expect(fetcher.mock.calls.length).toBeGreaterThan(8);
   const evidence = JSON.stringify({summary: load.snapshot(), samples: load.evidence()});
@@ -91,10 +91,10 @@ it('fails closed on a byte budget and never labels partial response data as succ
 });
 it('cleans up an acknowledged own bookmark after an interrupted delete', async () => {
   setup(); const actual = fake.reader.mutate.getMockImplementation()!; let calls = 0;
-  fake.reader.mutate.mockImplementation(async (...args) => {if (++calls === 2) throw new TypeError('synthetic failure'); return actual(...args);});
+  fake.reader.mutate.mockImplementation(async (...args) => {if (++calls === 4) throw new TypeError('synthetic failure'); return actual(...args);});
   const load = await startMemberCapacity(options()); await vi.advanceTimersByTimeAsync(1); await load.done;
   expect(load.snapshot()).toMatchObject({reason: 'operation_failed', cleanupFailures: 0, finished: true});
-  expect(fake.reader.mutate).toHaveBeenCalledTimes(3);
-  const first = fake.reader.mutate.mock.calls[0][2][0], cleanup = fake.reader.mutate.mock.calls[2][2][0];
+  expect(fake.reader.mutate).toHaveBeenCalledTimes(7);
+  const first = fake.reader.mutate.mock.calls[0][2][0], cleanup = fake.reader.mutate.mock.calls[4][2][0];
   expect(cleanup.kind).toBe('deleteBookmark'); expect(cleanup.payload.bookmarkId).toBe(first.payload.bookmarkId);
 });

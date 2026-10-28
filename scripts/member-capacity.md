@@ -20,13 +20,13 @@ Do not export cookies, tokens, raw errors, grants or signed media URLs.
 The model uses one real login with independently scoped active flows. It does not
 represent distinct members, independent login sessions, login bursts or their
 cache/authorization/watermark costs. Each seeded deck has the fixed mix in
-`member-capacity-model.ts`. A baseline executes each operation once; the mixed
+`member-capacity-model.ts`. A baseline covers every operation, measuring individual private-state commands separately; the mixed
 hold starts after all flows have entered, with a bounded ramp deadline. Ramp and
 hold samples remain separately identifiable. Every attempted operation and HTTP
 request is retained, including failures and interrupted work. Record both the
 all-phase and hold summaries; do not average stage percentiles.
 
-Reader writes require explicitly designated writable fixtures and an exclusive
+Reader writes use a separately designated writable document and require explicitly designated writable fixtures and an exclusive
 private-state slot. Created bookmark/note IDs are unique to the run. Cleanup
 deletes only those items; an uncertain or failed cleanup remains visible in the
 ledger. Original progress remains in memory and is restored only when the current
