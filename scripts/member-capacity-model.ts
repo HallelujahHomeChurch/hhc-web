@@ -2,6 +2,18 @@ export const weights = {bulletin_catalog: 15, reader_open: 15, reader_sync: 20, 
 export type Operation = keyof typeof weights;
 export type Sample = {kind: 'operation' | 'request' | 'background'; name: string; flow: number; startMs: number; durationMs: number; ok: boolean; status?: number; bytes?: number; firstByteMs?: number; error?: 'timeout' | 'network' | 'aborted' | 'http' | 'validation'};
 
+// Bound teardown separately so a stopped cohort does not create a request burst.
+export function createCleanupQueue() {
+  const lanes: Promise<void>[] = Array.from({length: 4}, () => Promise.resolve());
+  let next = 0;
+  return (work: () => Promise<void>) => {
+    const lane = next++ % lanes.length;
+    const result = lanes[lane].then(work);
+    lanes[lane] = result.catch(() => {});
+    return result;
+  };
+}
+
 export function errorCategory(error: unknown): Sample['error'] {
   return error instanceof DOMException && error.name === 'TimeoutError' ? 'timeout' :
     error instanceof DOMException && error.name === 'AbortError' || typeof error === 'string' ? 'aborted' :

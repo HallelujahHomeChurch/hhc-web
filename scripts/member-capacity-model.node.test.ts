@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {gateValid, isApiSample, requestMetricName, operationDeck, randomSequence, requestFamily, sloReason, summarize, weights, type Sample} from './member-capacity-model';
+import {createCleanupQueue, gateValid, isApiSample, requestMetricName, operationDeck, randomSequence, requestFamily, sloReason, summarize, weights, type Sample} from './member-capacity-model';
 
 describe('member capacity model', () => {
   it('replays a weighted stateful choice deck without sharing flow randomness', () => {
@@ -52,4 +52,23 @@ it('removes only playback from the mixed deck and preserves remaining relative w
   const deck = operationDeck(randomSequence(0), true);
   expect(deck).toHaveLength(80); expect(deck).not.toContain('media_play');
   for (const [name, count] of Object.entries(weights)) if (name !== 'media_play') expect(deck.filter(value => value === name)).toHaveLength(count);
+});
+
+it('bounds cleanup to four lanes and continues after a failed cleanup', async () => {
+  const queue = createCleanupQueue(), releases: (() => void)[] = [];
+  const gates = Array.from({length: 12}, () => new Promise<void>(resolve => releases.push(resolve)));
+  let active = 0, maximum = 0, started = 0;
+  const jobs = gates.map((gate, index) => queue(async () => {
+    active++; started++; maximum = Math.max(maximum, active);
+    await gate; active--;
+    if (index === 0) throw new Error('cleanup fixture');
+  }));
+  const settled = Promise.allSettled(jobs);
+  await Promise.resolve(); expect(started).toBe(4);
+  for (let batch = 0; batch < 3; batch++) {
+    for (let i = batch * 4; i < batch * 4 + 4; i++) releases[i]();
+    await Promise.allSettled(jobs.slice(batch * 4, batch * 4 + 4));
+  }
+  expect(maximum).toBe(4); expect(active).toBe(0); expect(started).toBe(12);
+  expect((await settled).filter(result => result.status === 'rejected')).toHaveLength(1);
 });

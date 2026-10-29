@@ -5,7 +5,7 @@ import {bookmarkTargets} from '../src/features/weekly-reader/bookmarks';
 import {createMemberVideoApi} from '../src/features/member-videos/api';
 import {createProtectedFetch} from '../src/features/weekly/api';
 import {parsePlaylist, scopedURL} from './public-live-load';
-import {errorCategory, gateValid, operationDeck, randomSequence, requestFamily, requestMetricName, isApiSample, isBulkTransfer, sloReason, summarize, weights, type Gate, type Operation, type Sample} from './member-capacity-model';
+import {createCleanupQueue, errorCategory, gateValid, operationDeck, randomSequence, requestFamily, requestMetricName, isApiSample, isBulkTransfer, sloReason, summarize, weights, type Gate, type Operation, type Sample} from './member-capacity-model';
 
 type Options = {
   runId: string; scopeHash: string; gate: Gate; flows: number; seconds: number; mode: 'baseline' | 'mixed';
@@ -141,6 +141,7 @@ export async function startMemberCapacity(options: Options) {
   let nextTick = performance.now() + 1000;
   const scheduler = setInterval(() => {maxSchedulerLagMs = Math.max(maxSchedulerLagMs, performance.now() - nextTick); nextTick = performance.now() + 1000;}, 1000);
 
+  const cleanupQueued = createCleanupQueue();
   const done = (async () => {
     try {
       const session = await account.getSession(); requireValue(session.authenticated);
@@ -322,7 +323,7 @@ export async function startMemberCapacity(options: Options) {
         } catch {if (!signal.aborted) stop('operation_failed');}
         finally {
           if (joined) active--;
-          if (writerDocument && (ownedBookmarks.size || ownedNotes.size)) {
+          if (writerDocument && (ownedBookmarks.size || ownedNotes.size)) await cleanupQueued(async () => {
             cleanupInProgress++;
             try {
               const cleanupSignal = AbortSignal.timeout(5000);
@@ -345,7 +346,7 @@ export async function startMemberCapacity(options: Options) {
               }
             } catch {cleanupFailures++;}
             finally {cleanupInProgress--;}
-          }
+          });
         }
       }));
     } catch {if (!signal.aborted) stop('bootstrap_failed');}
