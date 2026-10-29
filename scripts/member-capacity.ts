@@ -323,30 +323,33 @@ export async function startMemberCapacity(options: Options) {
         } catch {if (!signal.aborted) stop('operation_failed');}
         finally {
           if (joined) active--;
-          if (writerDocument && (ownedBookmarks.size || ownedNotes.size)) await cleanupQueued(async () => {
-            cleanupInProgress++;
-            try {
-              const cleanupSignal = AbortSignal.timeout(5000);
-              const state = await readerApi.privateState(writerSelector, writerDocument, cleanupSignal);
-              for (const id of ownedBookmarks.keys()) {
-                const item = state.state.bookmarks?.find(b => b.id === id);
-                if (item && !item.deleted) {
-                  const result = await readerApi.mutate(writerSelector, writerDocument, [{mutationId: uuid(), createdAt: new Date().toISOString(), documentRevision: writerDocument.document.revision, kind: 'deleteBookmark', baseVersion: item.version, payload: {bookmarkId: id}}], cleanupSignal);
-                  requireValue(result.results.every(r => r.status === 'applied'));
+          if (writerDocument && (ownedBookmarks.size || ownedNotes.size)) {
+            const cleanupDocument = writerDocument;
+            await cleanupQueued(async () => {
+              cleanupInProgress++;
+              try {
+                const cleanupSignal = AbortSignal.timeout(5000);
+                const state = await readerApi.privateState(writerSelector, cleanupDocument, cleanupSignal);
+                for (const id of ownedBookmarks.keys()) {
+                  const item = state.state.bookmarks?.find(b => b.id === id);
+                  if (item && !item.deleted) {
+                    const result = await readerApi.mutate(writerSelector, cleanupDocument, [{mutationId: uuid(), createdAt: new Date().toISOString(), documentRevision: cleanupDocument.document.revision, kind: 'deleteBookmark', baseVersion: item.version, payload: {bookmarkId: id}}], cleanupSignal);
+                    requireValue(result.results.every(r => r.status === 'applied'));
+                  }
+                  if (item) ownedBookmarks.delete(id); else cleanupFailures++;
                 }
-                if (item) ownedBookmarks.delete(id); else cleanupFailures++;
-              }
-              for (const id of ownedNotes.keys()) {
-                const item = state.state.notes.find(n => n.id === id);
-                if (item && !item.deleted) {
-                  const result = await readerApi.mutate(writerSelector, writerDocument, [{mutationId: uuid(), createdAt: new Date().toISOString(), documentRevision: writerDocument.document.revision, kind: 'deleteNote', baseVersion: item.version, payload: {noteId: id}}], cleanupSignal);
-                  requireValue(result.results.every(r => r.status === 'applied'));
+                for (const id of ownedNotes.keys()) {
+                  const item = state.state.notes.find(n => n.id === id);
+                  if (item && !item.deleted) {
+                    const result = await readerApi.mutate(writerSelector, cleanupDocument, [{mutationId: uuid(), createdAt: new Date().toISOString(), documentRevision: cleanupDocument.document.revision, kind: 'deleteNote', baseVersion: item.version, payload: {noteId: id}}], cleanupSignal);
+                    requireValue(result.results.every(r => r.status === 'applied'));
+                  }
+                  if (item) ownedNotes.delete(id); else cleanupFailures++;
                 }
-                if (item) ownedNotes.delete(id); else cleanupFailures++;
-              }
-            } catch {cleanupFailures++;}
-            finally {cleanupInProgress--;}
-          });
+              } catch {cleanupFailures++;}
+              finally {cleanupInProgress--;}
+            });
+          }
         }
       }));
     } catch {if (!signal.aborted) stop('bootstrap_failed');}
