@@ -107,3 +107,30 @@ it('drains a started media operation at hold expiry without cancelling it', asyn
   expect(load.snapshot()).toMatchObject({finished: true, reason: null, cleanupFailures: 0, playbackHolds: {completed: 1, interrupted: 0, failed: 0}});
   expect(fake.client.createBulletinDownloadJob).not.toHaveBeenCalled();
 });
+
+it.each(['2026-10-29T00:29:43.220Z', '2026-10-29T00:29:43.000Z'])('restores own progress when the server trims timestamp zeros (%s)', async stamp => {
+  setup(); vi.setSystemTime(new Date(stamp));
+  const read = fake.reader.privateState.getMockImplementation()!;
+  fake.reader.privateState.mockImplementation(async (...args) => {
+    const result = await read(...args);
+    if (result.state.progress) result.state.progress.recordedAt = result.state.progress.recordedAt.replace(/(\.\d*?)0+Z$/, '$1Z').replace('.Z', 'Z');
+    return result;
+  });
+  const load = await startMemberCapacity(options()), timer = keepGate(load);
+  await vi.advanceTimersByTimeAsync(100000); await load.done; clearInterval(timer);
+  expect(load.snapshot().cleanupFailures).toBe(0);
+  expect(load.cleanupLedger().pendingProgressIssues).toEqual([]);
+});
+
+it.each(['2020-01-01T00:00:00Z', 'invalid'])('does not restore progress with an unowned timestamp (%s)', async stamp => {
+  setup(); const read = fake.reader.privateState.getMockImplementation()!;
+  fake.reader.privateState.mockImplementation(async (...args) => {
+    const result = await read(...args);
+    if (result.state.progress) result.state.progress.recordedAt = stamp;
+    return result;
+  });
+  const load = await startMemberCapacity(options()), timer = keepGate(load);
+  await vi.advanceTimersByTimeAsync(100000); await load.done; clearInterval(timer);
+  expect(load.snapshot().cleanupFailures).toBe(1);
+  expect(load.cleanupLedger().pendingProgressIssues).toEqual([issueId]);
+});

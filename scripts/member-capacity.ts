@@ -356,7 +356,7 @@ export async function startMemberCapacity(options: Options) {
           const cleanupSignal = AbortSignal.timeout(5000);
           const state = await readerApi.privateState(baseline.selector, baseline.document, cleanupSignal);
           // Refuse a known outside write; restoration still requires an exclusive fixture.
-          if (state.state.progress?.recordedAt !== progressWrites.get(id)) {cleanupFailures++; continue;}
+          if (Date.parse(state.state.progress?.recordedAt ?? '') !== Date.parse(progressWrites.get(id)!)) {cleanupFailures++; continue;}
           const result = await readerApi.mutate(baseline.selector, baseline.document, [{mutationId: crypto.randomUUID(), createdAt: new Date().toISOString(), documentRevision: baseline.document.document.revision, kind: 'setProgress', payload: baseline.progress ? {pageId: baseline.progress.pageId, componentId: baseline.progress.componentId, sentenceId: baseline.progress.sentenceId} : {}}], cleanupSignal);
           requireValue(result.results.every(r => r.status === 'applied'));
           progressWrites.delete(id);
