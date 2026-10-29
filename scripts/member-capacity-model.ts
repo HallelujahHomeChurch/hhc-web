@@ -38,8 +38,8 @@ export function randomSequence(flow: number, seed = 20261029) {
   };
 }
 
-export function operationDeck(random: () => number): Operation[] {
-  const deck = (Object.entries(weights) as [Operation, number][]).flatMap(([op, count]) => Array<Operation>(count).fill(op));
+export function operationDeck(random: () => number, skipVideoPlayback = false): Operation[] {
+  const deck = (Object.entries(weights) as [Operation, number][]).filter(([op]) => !skipVideoPlayback || op !== 'media_play').flatMap(([op, count]) => Array<Operation>(count).fill(op));
   for (let i = deck.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1));
     [deck[i], deck[j]] = [deck[j], deck[i]];

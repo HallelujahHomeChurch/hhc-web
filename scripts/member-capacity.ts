@@ -9,6 +9,7 @@ import {errorCategory, gateValid, operationDeck, randomSequence, requestFamily, 
 
 type Options = {
   runId: string; scopeHash: string; gate: Gate; flows: number; seconds: number; mode: 'baseline' | 'mixed';
+  skipVideoPlayback?: boolean;
   issues: {issueId: string; issueNumber: number; writable: boolean}[];
   recordings: {id: string; analyticsApproved: boolean}[];
   remainingRequests: number; remainingBytes: number;
@@ -52,6 +53,7 @@ export async function startMemberCapacity(options: Options) {
   requireValue(/^[a-zA-Z0-9-]{1,80}$/.test(options.runId) && gateValid(options.gate, options.scopeHash, Date.now()));
   requireValue(Number.isInteger(options.flows) && options.flows >= 1 && options.flows <= 1000 && options.seconds > 0 && options.seconds <= 3600);
   requireValue(options.mode === 'mixed' || options.mode === 'baseline' && options.flows === 1);
+  requireValue(options.skipVideoPlayback === undefined || typeof options.skipVideoPlayback === 'boolean');
   requireValue(options.issues.length > 0 && options.issues.every(i => /^[a-f0-9-]{36}$/.test(i.issueId) && Number.isInteger(i.issueNumber)));
   requireValue(options.recordings.length > 0 && options.recordings.every(r => /^[a-f0-9-]{36}$/.test(r.id) && r.analyticsApproved));
   requireValue(options.issues.some(i => i.writable) && options.remainingRequests > options.flows * 2 && options.remainingRequests <= 200000 && options.remainingBytes > 0 && options.remainingBytes <= 30 * 1024 ** 3);
@@ -88,6 +90,7 @@ export async function startMemberCapacity(options: Options) {
   const boundedFetch: typeof fetch = async (input, init) => {
     const request = new Request(input instanceof Request ? input : new URL(String(input), location.origin), init);
     const url = new URL(request.url), family = requestFamily(url, request.method, location.origin);
+    requireValue(!options.skipVideoPlayback || !family.startsWith('media.') && !['recording.grant', 'recording.heartbeat'].includes(family));
     const cleanup = request.method === 'DELETE' && family === 'media.cookie' || cleanupInProgress > 0 && ['reader.state', 'reader.mutations', 'account.read', 'account.token'].includes(family);
     if (!cleanup) check();
     if (requests >= options.remainingRequests - (cleanup ? 0 : options.flows)) {stop('request_budget'); throw new Error('request_budget');}
@@ -299,7 +302,7 @@ export async function startMemberCapacity(options: Options) {
           await pause(flow / options.flows * (options.mode === 'baseline' ? 0 : 30000)); active++; joined = true;
           if (holdStarted === null && active === options.flows) {holdStarted = performance.now(); workloadEnd = holdStarted + options.seconds * 1000;}
           do {
-            const deck = options.mode === 'baseline' ? Object.keys(weights) as Operation[] : operationDeck(random);
+            const deck = options.mode === 'baseline' ? (Object.keys(weights) as Operation[]).filter(name => !options.skipVideoPlayback || name !== 'media_play') : operationDeck(random, options.skipVideoPlayback);
             for (const name of deck) {
               if (holdStarted !== null && performance.now() >= workloadEnd) break;
               check();
@@ -372,7 +375,7 @@ export async function startMemberCapacity(options: Options) {
     snapshot() {
       const steady = samples.filter(s => holdStarted !== null && s.startMs >= holdStarted - started && s.startMs < workloadEnd - started);
       const summary = (kind: Sample['kind']) => Object.fromEntries([...new Set(steady.filter(s => s.kind === kind).map(s => s.name))].map(name => [name, summarize(steady.filter(s => s.kind === kind && s.name === name))]));
-      return {runId: options.runId, sessionModel: 'one-existing-session', flows: options.flows, active, playing, inFlight, requests, bytes, reason, finished: finishedAt !== null, elapsedMs: (finishedAt ?? performance.now()) - started, holdStartMs: holdStarted === null ? null : holdStarted - started, holdElapsedMs: holdStarted === null ? 0 : Math.min(workloadEnd, finishedAt ?? performance.now()) - holdStarted, maxSchedulerLagMs, cleanupFailures, playbackHolds: {...playbackHolds}, apiOverall: summarize(steady.filter(isApiSample)), apiRoutes: Object.fromEntries([...new Set(steady.filter(isApiSample).map(s => s.name))].map(name => [name, summarize(steady.filter(s => isApiSample(s) && s.name === name))])), overall: summarize(steady.filter(s => s.kind === 'operation')), httpOverall: summarize(steady.filter(s => s.kind === 'request')), allPhasesOverall: summarize(samples.filter(s => s.kind === 'operation')), operations: summary('operation'), background: summary('background'), routes: summary('request')};
+      return {runId: options.runId, workload: options.skipVideoPlayback ? 'member-api-with-pdf' : 'member-with-playback', sessionModel: 'one-existing-session', flows: options.flows, active, playing, inFlight, requests, bytes, reason, finished: finishedAt !== null, elapsedMs: (finishedAt ?? performance.now()) - started, holdStartMs: holdStarted === null ? null : holdStarted - started, holdElapsedMs: holdStarted === null ? 0 : Math.min(workloadEnd, finishedAt ?? performance.now()) - holdStarted, maxSchedulerLagMs, cleanupFailures, playbackHolds: {...playbackHolds}, apiOverall: summarize(steady.filter(isApiSample)), apiRoutes: Object.fromEntries([...new Set(steady.filter(isApiSample).map(s => s.name))].map(name => [name, summarize(steady.filter(s => isApiSample(s) && s.name === name))])), overall: summarize(steady.filter(s => s.kind === 'operation')), httpOverall: summarize(steady.filter(s => s.kind === 'request')), allPhasesOverall: summarize(samples.filter(s => s.kind === 'operation')), operations: summary('operation'), background: summary('background'), routes: summary('request')};
     },
     evidence() {return samples.map(s => ({...s, phase: options.mode === 'baseline' ? 'baseline' : holdStarted === null || s.startMs < holdStarted - started ? 'ramp' : s.startMs >= workloadEnd - started ? 'drain' : 'hold'}));},
     cleanupLedger() {return {runId: options.runId, pendingProgressIssues: [...progressWrites.keys()], pendingObjects: privateLedgers.filter(l => l.bookmarks.size || l.notes.size).map(l => ({issueId: l.issueId, bookmarkIds: [...l.bookmarks.keys()], noteIds: [...l.notes.keys()]}))};},

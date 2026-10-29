@@ -48,3 +48,8 @@ describe('member capacity model', () => {
     }
   });
 });
+it('removes only playback from the mixed deck and preserves remaining relative weights', () => {
+  const deck = operationDeck(randomSequence(0), true);
+  expect(deck).toHaveLength(80); expect(deck).not.toContain('media_play');
+  for (const [name, count] of Object.entries(weights)) if (name !== 'media_play') expect(deck.filter(value => value === name)).toHaveLength(count);
+});

@@ -26,6 +26,16 @@ hold samples remain separately identifiable. Every attempted operation and HTTP
 request is retained, including failures and interrupted work. Record both the
 all-phase and hold summaries; do not average stage percentiles.
 
+Set `skipVideoPlayback: true` for a separately authorized member-API/PDF scenario.
+It removes `media_play` from both the baseline and mixed deck, preserving the
+relative weights of all remaining operations. Recording catalog/detail/cover reads,
+reader synchronization, account queries and complete PDF downloads remain active.
+Playback grants, media cookies, HLS transfers and playback heartbeats are also
+rejected at the request boundary in this mode. `snapshot().workload` identifies
+`member-api-with-pdf`; the default remains `member-with-playback`. Do not combine
+the two scenarios or claim video-viewing capacity from the playback-excluded run.
+The independent real-player checks below apply only to playback-included scopes.
+
 Reader writes use a separately designated writable document and require explicitly designated writable fixtures and an exclusive
 private-state slot. Created bookmark/note IDs are unique to the run. Cleanup
 deletes only those items; an uncertain or failed cleanup remains visible in the

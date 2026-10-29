@@ -134,3 +134,14 @@ it.each(['2020-01-01T00:00:00Z', 'invalid'])('does not restore progress with an 
   expect(load.snapshot().cleanupFailures).toBe(1);
   expect(load.cleanupLedger().pendingProgressIssues).toEqual([issueId]);
 });
+it('skips video playback while retaining catalog, reader synchronization and complete PDF delivery', async () => {
+  const fetcher = setup(); const load = await startMemberCapacity({...options(), skipVideoPlayback: true}), timer = keepGate(load);
+  await vi.advanceTimersByTimeAsync(100000); await load.done; clearInterval(timer);
+  expect(load.snapshot()).toMatchObject({workload: 'member-api-with-pdf', finished: true, reason: null, playing: 0, overall: {attempts: 11, errors: 0}, playbackHolds: {started: 0}});
+  expect(load.snapshot().operations).not.toHaveProperty('media_play');
+  for (const fn of [fake.media.grant, fake.media.exchange, fake.media.heartbeat, fake.media.clear]) expect(fn).not.toHaveBeenCalled();
+  expect(fake.media.listPage).toHaveBeenCalled(); expect(fake.reader.mutate).toHaveBeenCalledTimes(6);
+  expect(fake.client.createBulletinDownloadJob).toHaveBeenCalledOnce();
+  expect(fetcher.mock.calls.some(([request]) => request.url.includes('/file?'))).toBe(true);
+  expect(fetcher.mock.calls.every(([request]) => new URL(request.url).origin === location.origin)).toBe(true);
+});
