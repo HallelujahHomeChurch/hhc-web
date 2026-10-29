@@ -12,7 +12,8 @@ export function sloReason(samples: readonly Sample[], minimum = 1000) {
   if (samples.length < minimum) return null;
   const summary = summarize(samples);
   if (summary.errors / summary.attempts > .005) return 'error_rate';
-  return summary.p95Ms! > 1000 || summary.p99Ms! > 2000 ? 'latency_slo' : null;
+  // Capacity exploration records latency; the coordinator evaluates sustained degradation against prior stages.
+  return null;
 }
 
 export function requestMetricName(url: URL, method: string, family: string) {

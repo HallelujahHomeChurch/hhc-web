@@ -75,3 +75,15 @@ p95 ≤ 1000 ms / p99 ≤ 2000 ms gates. Each gate requires 1000 attempts before
 latency verdict; insufficient coverage is never a final capacity pass.
 Logical operation timing remains diagnostic. Normal hold expiry stops new
 operations and drains already-started operations; safety stops still abort promptly.
+
+
+## Capacity exploration supersedes fixed latency acceptance
+
+The latest authorized objective is the sustainable capacity boundary. The 1/2-second
+lines remain experience references only and do not stop a run. API percentiles,
+sample counts and completed throughput are retained per stage. The coordinator
+must review each stage before increasing load: hold when latency degrades, allow
+bounded stabilization for scaling, repeat sustained degradation, then refine
+between the last sustainable and degraded levels. No automatic ladder should
+advance without that review. Sparse samples cannot prove a percentile verdict.
+Functional, error-rate, policy, generator and service-resource guards remain.

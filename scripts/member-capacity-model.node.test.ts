@@ -24,11 +24,11 @@ describe('member capacity model', () => {
     expect(gateValid({...gate, deadline: 1000}, hash, 1000)).toBe(false);
     expect(gateValid({...gate, ready: false}, hash, 1000)).toBe(false);
   });
-  it('does not promote small samples to a capacity pass and detects latency or errors', () => {
+  it('does not stop capacity exploration at a fixed latency and retains the error gate', () => {
     const rows: Sample[] = Array.from({length: 1000}, () => ({kind: 'operation', name: 'reader_open', flow: 0, startMs: 0, durationMs: 1000, ok: true}));
     expect(sloReason(rows)).toBeNull();
     expect(sloReason(rows.slice(0, 999).map(s => ({...s, durationMs: 5000})))).toBeNull();
-    expect(sloReason(rows.map(s => ({...s, durationMs: 1001})))).toBe('latency_slo');
+    expect(sloReason(rows.map(s => ({...s, durationMs: 10000})))).toBeNull();
     expect(sloReason(rows.map((s, i) => ({...s, ok: i >= 6})))).toBe('error_rate');
   });
   it('retains control API latency while excluding only transfer bodies', () => {
