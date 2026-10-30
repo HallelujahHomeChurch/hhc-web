@@ -350,7 +350,11 @@ issue; no bulk latest/old-issue reconversion is implied.
 
 `publicContentClient()` is scoped to one content resolution. Its first read starts
 one 35-second deadline shared by fallback reads on that client, covering headers
-and body consumption. This is a conservative compatibility ceiling based on the
+and body consumption. The adapter buffers public JSON before returning it to the
+SDK and bounds its own wait even when Next detaches revalidation from the caller
+signal. Next-owned background revalidation may continue after the caller stops
+waiting; this is not a guarantee that its network work is cancelled. This is a
+conservative compatibility ceiling based on the
 public API server's 30-second response write limit plus 5 seconds for transport/body
 completion, not a measured latency target. Go WriteTimeout does not bound handler
 or SQL execution; the client deadline bounds this SSR resolution. Do not store this client globally:

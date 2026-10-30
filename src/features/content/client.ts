@@ -14,12 +14,27 @@ function contentFetch(fresh: boolean): typeof fetch {
     if (init?.signal) signals.push(init.signal);
     const signal = AbortSignal.any(signals);
     signal.throwIfAborted();
-    // Keep the deadline alive after headers: SDK JSON/body reads must also abort.
-    return fetch(input, {
-      ...init,
-      signal,
-      ...(fresh ? {cache: 'no-store'} : {next: {revalidate: 60}})
-    } as RequestInit & {next?: {revalidate: number}});
+    // Next can detach cache revalidation from the caller's signal. Bound our
+    // wait independently, including the public JSON body, without disabling ISR.
+    return new Promise<Response>((resolve, reject) => {
+      const abort = () => {
+        signal.removeEventListener('abort', abort);
+        reject(signal.reason);
+      };
+      signal.addEventListener('abort', abort, {once: true});
+      const read = async () => {
+        const response = await fetch(input, {
+          ...init,
+          signal,
+          ...(fresh ? {cache: 'no-store'} : {next: {revalidate: 60}})
+        } as RequestInit & {next?: {revalidate: number}});
+        const body = response.body === null ? null : await response.arrayBuffer();
+        return new Response(body, {
+          status: response.status, statusText: response.statusText, headers: response.headers
+        });
+      };
+      void read().then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
+    });
   };
 }
 

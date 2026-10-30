@@ -1,4 +1,5 @@
 import {createServer} from 'node:http';
+import {createPatchedFetcher} from 'next/dist/server/lib/patch-fetch';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {publicContentClient} from './client';
 
@@ -20,6 +21,25 @@ describe('public content transport', () => {
     expect(transport).toHaveBeenCalledTimes(1);
     expect(transport.mock.lastCall![1]).toMatchObject({headers: {'X-Test': 'kept'}, ...(fresh ? {cache: 'no-store'} : {next: {revalidate: 60}})});
     expect(transport.mock.lastCall![1].signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it.each([204, 205, 304])('preserves bodyless status %s and headers', async (status) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, {status, headers: {'X-Test': 'kept'}})));
+    const response = await fetcher()('http://content.test');
+    expect(response.status).toBe(status);
+    expect(response.headers.get('X-Test')).toBe('kept');
+    expect(response.body).toBeNull();
+  });
+
+  it('preserves HTTP error status, status text and JSON without reclassification', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{"code":"forbidden"}', {
+      status: 403, statusText: 'Forbidden', headers: {'Content-Type': 'application/json'}
+    })));
+    const response = await fetcher()('http://content.test');
+    expect(response.status).toBe(403);
+    expect(response.statusText).toBe('Forbidden');
+    expect(response.ok).toBe(false);
+    await expect(response.json()).resolves.toEqual({code: 'forbidden'});
   });
 
   it.each(['request', 'init'])('does not send an already cancelled %s', async (source) => {
@@ -57,6 +77,58 @@ describe('public content transport', () => {
     expect(transport).toHaveBeenCalledTimes(1);
   });
 
+  it.each([false, true])('bounds framework work that ignores cancellation (body=%s)', async (body) => {
+    const controller = new AbortController();
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValue(controller.signal);
+    vi.stubGlobal('fetch', vi.fn(() => body
+      ? Promise.resolve(new Response(new ReadableStream()))
+      : new Promise(() => {})));
+    const result = fetcher()('http://content.test');
+    controller.abort(new DOMException('deadline', 'TimeoutError'));
+    await expect(result).rejects.toMatchObject({name: 'TimeoutError'});
+  });
+
+  it.each([false, true])('bounds real Next foreground revalidation with a detached signal (body=%s)', async (body) => {
+    const deadline = new AbortController();
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValue(deadline.signal);
+    let finishHeaders!: (response: Response) => void;
+    let finishBody!: () => void;
+    const upstream = vi.fn<typeof fetch>(() => body
+      ? Promise.resolve(new Response(new ReadableStream({start(controller) { finishBody = () => controller.close(); }})))
+      : new Promise((resolve) => { finishHeaders = resolve; }));
+    // Exercise the installed Next implementation, not a mock of its fetch logic.
+    // A legacy ISR consumer waits for the stale fetch entry to revalidate.
+    const workStore = {
+      isStaticGeneration: true, isRevalidate: true, route: '/content-test',
+      pendingRevalidates: {} as Record<string, Promise<unknown>>,
+      incrementalCache: {
+        generateCacheKey: async () => 'content-key', lock: async () => () => {},
+        get: vi.fn(async () => ({isStale: true, value: {kind: 'FETCH', revalidate: 60, data: {
+          headers: {'content-type': 'application/json'}, body: Buffer.from('{}').toString('base64'),
+          status: 200, url: 'http://content.test'
+        }}})),
+        set: async () => {}
+      }
+    };
+    const stores = {
+      workAsyncStorage: {getStore: () => workStore},
+      workUnitAsyncStorage: {getStore: () => ({type: 'prerender-legacy', revalidate: 60, expire: Infinity, stale: Infinity, tags: []})}
+    } as unknown as Parameters<typeof createPatchedFetcher>[1];
+    vi.stubGlobal('fetch', createPatchedFetcher(upstream, stores));
+    // openapi-fetch passes Request, while our adapter adds signal and next in init.
+    const result = fetcher()(new Request('http://content.test'));
+    const rejected = expect(result).rejects.toMatchObject({name: 'TimeoutError'});
+    await vi.waitFor(() => expect(upstream).toHaveBeenCalledTimes(1));
+    expect(workStore.incrementalCache.get).toHaveBeenCalledTimes(1);
+    deadline.abort(new DOMException('deadline', 'TimeoutError'));
+    await rejected;
+    expect(upstream.mock.lastCall![1]?.signal).toBeUndefined();
+    expect((upstream.mock.lastCall![0] as Request).signal.aborted).toBe(false);
+    // Next owns this detached work. Finish it so the test leaves no pending read.
+    if (body) finishBody(); else finishHeaders(new Response('{}'));
+    await Promise.all(Object.values(workStore.pendingRevalidates));
+  });
+
   it.each([false, true])('aborts a real stalled response, including after headers (headers=%s)', async (headers) => {
     const nativeTimeout = AbortSignal.timeout.bind(AbortSignal);
     vi.spyOn(AbortSignal, 'timeout').mockImplementation(() => nativeTimeout(500));
@@ -68,9 +140,7 @@ describe('public content transport', () => {
       const address = server.address();
       if (!address || typeof address === 'string') throw new Error('missing test address');
       const read = fetcher();
-      const response = read(`http://127.0.0.1:${address.port}`);
-      // Prove that receiving headers does not end the deadline.
-      const result = headers ? (await response).json() : response;
+      const result = read(`http://127.0.0.1:${address.port}`).then((response) => response.json());
       await expect(result).rejects.toMatchObject({name: 'TimeoutError'});
     } finally {
       server.closeAllConnections();
