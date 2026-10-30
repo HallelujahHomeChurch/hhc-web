@@ -351,8 +351,9 @@ issue; no bulk latest/old-issue reconversion is implied.
 `publicContentClient()` is scoped to one content resolution. Its first read starts
 one 35-second deadline shared by fallback reads on that client, covering headers
 and body consumption. This is a conservative compatibility ceiling based on the
-public API server's 30-second write timeout plus 5 seconds for transport/body
-completion, not a measured latency target. Do not store this client globally:
+public API server's 30-second response write limit plus 5 seconds for transport/body
+completion, not a measured latency target. Go WriteTimeout does not bound handler
+or SQL execution; the client deadline bounds this SSR resolution. Do not store this client globally:
 create it per resolution as the existing feature adapters do. An exhausted
 budget rejects subsequent fallback requests before sending them; no retries are
 added. Request and fetch-init cancellation signals are both honored.

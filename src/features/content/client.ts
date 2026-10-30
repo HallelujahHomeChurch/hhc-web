@@ -1,6 +1,7 @@
 import {createHhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
 
-// Public API writes have a 30s server deadline; allow 5s for transport/body delivery.
+// Match the API response write limit (30s) plus 5s transport/body margin.
+// WriteTimeout is not a handler or SQL deadline; this bounds the SSR resolution.
 const contentTimeoutMs = 35_000;
 
 function contentFetch(fresh: boolean): typeof fetch {
