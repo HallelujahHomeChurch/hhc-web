@@ -23,7 +23,7 @@ export class PageNotFoundError extends Error {}
 export class PageProjectionError extends Error {}
 
 export function isPageAvailabilityError(error: unknown): boolean {
-  return error instanceof TypeError || (error instanceof HhcWebApiError && error.status >= 500 && error.status < 600);
+  return error instanceof TypeError || (error instanceof DOMException && error.name === 'TimeoutError') || (error instanceof HhcWebApiError && error.status >= 500 && error.status < 600);
 }
 
 export async function getHomePage(locale: Locale, client: HhcWebClient = publicContentClient()): Promise<HomePageResult> {

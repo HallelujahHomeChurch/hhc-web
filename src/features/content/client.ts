@@ -1,14 +1,31 @@
 import {createHhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
 
-const cachedFetch: typeof fetch = (input, init) => fetch(input, {
-  ...init,
-  next: {revalidate: 60}
-} as RequestInit & {next: {revalidate: number}});
+// Public API writes have a 30s server deadline; allow 5s for transport/body delivery.
+const contentTimeoutMs = 35_000;
+
+function contentFetch(fresh: boolean): typeof fetch {
+  // One resolution may try a legacy projection; it shares the original budget.
+  let deadline: AbortSignal | undefined;
+  return async (input, init) => {
+    deadline ??= AbortSignal.timeout(contentTimeoutMs);
+    const signals = [deadline];
+    if (input instanceof Request) signals.push(input.signal);
+    if (init?.signal) signals.push(init.signal);
+    const signal = AbortSignal.any(signals);
+    signal.throwIfAborted();
+    // Keep the deadline alive after headers: SDK JSON/body reads must also abort.
+    return fetch(input, {
+      ...init,
+      signal,
+      ...(fresh ? {cache: 'no-store'} : {next: {revalidate: 60}})
+    } as RequestInit & {next?: {revalidate: number}});
+  };
+}
 
 export function publicContentClient(fresh = false) {
   return createHhcWebClient({
     baseUrl: process.env.HHC_WEB_API_BASE_URL ?? process.env.NEXT_PUBLIC_HHC_WEB_API_BASE_URL ?? 'http://127.0.0.1:8081/api',
     getAccessToken: () => null,
-    fetcher: fresh ? (input, init) => fetch(input, {...init, cache: 'no-store'}) : cachedFetch
+    fetcher: contentFetch(fresh)
   });
 }

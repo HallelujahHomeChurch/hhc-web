@@ -345,3 +345,29 @@ pinned with real registry locks before merge. Local packed candidates are not a
 package release or installed-device/offline acceptance. Ship consumer support
 before activating V11 conversions, and start rollout with the accepted previous
 issue; no bulk latest/old-issue reconversion is implied.
+
+### Public SSR content deadline
+
+`publicContentClient()` is scoped to one content resolution. Its first read starts
+one 35-second deadline shared by fallback reads on that client, covering headers
+and body consumption. This is a conservative compatibility ceiling based on the
+public API server's 30-second write timeout plus 5 seconds for transport/body
+completion, not a measured latency target. Do not store this client globally:
+create it per resolution as the existing feature adapters do. An exhausted
+budget rejects subsequent fallback requests before sending them; no retries are
+added. Request and fetch-init cancellation signals are both honored.
+
+Cached reads keep `next.revalidate: 60`; fresh reads keep `cache: 'no-store'`.
+Explicit cancellation opts out of Next's render request memoization, while the
+persistent Data Cache remains enabled for cached reads. Home failures still
+propagate for ISR to retain the last successful page; About treats timeout as
+an availability failure under its existing migration fallback. This budget is
+per content resolution, not an entire page render or stream deadline. Gateway's
+60-second proxy read timeout measures inactivity, not total response duration.
+
+The release scans each immutable runtime image once for vulnerabilities and
+secrets. The same versioned report supplies the gate and summary; malformed,
+wrong-artifact and failed scanner output fail closed. High/Critical secrets and
+vulnerabilities with fixed status or a fixed version block release; unfixed
+vulnerabilities remain summarized. Source scans, image startup/static checks,
+sourcemaps and rollback remain separate.

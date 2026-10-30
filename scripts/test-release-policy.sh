@@ -22,7 +22,7 @@ grep -Fq 'image_args=(--secret id=npmrc' "$workflow"
 grep -Fq 'docker build "${image_args[@]}" --target runtime' "$workflow"
 scanner='ghcr.io/aquasecurity/trivy@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969'
 test "$(grep -Fc "$scanner" "$ci_workflow")" -eq 2
-test "$(grep -Fc "$scanner" "$workflow")" -eq 5
+test "$(grep -Fc "$scanner" "$workflow")" -eq 3
 grep -Fq 'fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1' "$ci_workflow"
 grep -Fq 'image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 hhc-web:verify' "$ci_workflow"
 grep -Fq 'fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1' "$workflow"
@@ -42,7 +42,8 @@ test "$budget_line" -lt "$export_line"
 grep -Fq 'needs: [verify, prepare_image]' "$workflow"
 grep -Fq "cancel-in-progress: \${{ github.event_name == 'pull_request' }}" "$ci_workflow"
 grep -Fq 'docker pull "$IMAGE_REF"' "$workflow"
-grep -Fq 'image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 "$IMAGE_REF"' "$workflow"
+test "$(grep -Fc 'sh scripts/scan-image.sh "$IMAGE_REF"' "$workflow")" -eq 1
+python3 scripts/test-trivy-report.py
 scan_line="$(grep -nF 'name: Scan immutable image' "$workflow" | cut -d: -f1)"
 what_if_line="$(grep -nF 'name: Preview infrastructure change' "$workflow" | cut -d: -f1)"
 test "$scan_line" -lt "$what_if_line"

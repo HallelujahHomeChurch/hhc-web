@@ -57,7 +57,7 @@ test('main release builds one production image and scans that same immutable ima
   assert.doesNotMatch(job('deploy'), /docker build|docker push/);
   const prepare = job('prepare_image');
   assert.match(prepare, /\[\[ "\$digest" =~ \^sha256:\[0-9a-f\]\{64\}\$ \]\]/);
-  assert.match(prepare, /image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 "\$IMAGE_REF"/);
+  assert.match(prepare, /sh scripts\/scan-image\.sh "\$IMAGE_REF"/);
   assert.ok(prepare.indexOf('name: Scan immutable image') < prepare.indexOf('name: Export verified immutable image'));
   assert.match(step(prepare, 'Export verified immutable image'), /echo "commit=\$GITHUB_SHA" >> "\$GITHUB_OUTPUT"/);
   assert.match(step(prepare, 'Export verified immutable image'), /echo "image=\$IMAGE_REF" >> "\$GITHUB_OUTPUT"/);
