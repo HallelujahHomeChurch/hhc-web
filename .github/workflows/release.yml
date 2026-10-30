@@ -186,6 +186,11 @@ jobs:
               ghcr.io/aquasecurity/trivy@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
               version --format json | jq -r '"- Trivy: " + .Version, "- Vulnerability DB updated: " + .VulnerabilityDB.UpdatedAt'
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify SSR tracing on the immutable image
+        run: |
+          docker run --rm --network none --memory 512m --cpus 1 \
+            -v "$PWD/scripts/test-content-tracing.mjs:/test-content-tracing.mjs:ro" \
+            --entrypoint /nodejs/bin/node "$IMAGE_REF" /test-content-tracing.mjs /app/server.js
       - name: Check static budgets on the immutable production image
         run: |
           docker run --rm --network none --read-only --memory 256m --cpus 1 \
@@ -275,12 +280,14 @@ jobs:
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       RELEASE_CONFIRMATION: ${{ github.event_name == 'push' && 'deploy-hhc-web-production' || inputs.confirmation }}
       PROVISION_PERMISSIONS: "false"
+      SENTRY_TRACES_SAMPLE_RATE: ${{ vars.SENTRY_TRACES_SAMPLE_RATE || '0.01' }}
       MEMBER_VIDEO_NAV_ENABLED: ${{ vars.MEMBER_VIDEO_NAV_ENABLED || 'false' }}
       WEEKLY_READER_ENABLED: ${{ vars.WEEKLY_READER_ENABLED || 'false' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Validate release configuration
         run: |
+          node -e 'const raw=process.env.SENTRY_TRACES_SAMPLE_RATE; const rate=Number(raw); if (!raw?.trim() || !Number.isFinite(rate) || rate<0 || rate>0.1) throw new Error("SENTRY_TRACES_SAMPLE_RATE must be between 0 and 0.1");'
           [[ "$GITHUB_REF" == "refs/heads/main" ]]
           [[ "$RELEASE_CONFIRMATION" == "deploy-hhc-web-production" ]]
           for name in AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID; do
@@ -344,7 +351,7 @@ jobs:
           az deployment group what-if \
             --resource-group "$RESOURCE_GROUP" \
             --template-file infra/main.bicep \
-            --parameters image="$IMAGE_REF" provisionPermissions="$PROVISION_PERMISSIONS" \
+            --parameters image="$IMAGE_REF" provisionPermissions="$PROVISION_PERMISSIONS" sentryTracesSampleRate="$SENTRY_TRACES_SAMPLE_RATE" \
             --validation-level Provider \
             --result-format ResourceIdOnly \
             --only-show-errors
@@ -355,7 +362,7 @@ jobs:
             --name "hhc-web-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
             --resource-group "$RESOURCE_GROUP" \
             --template-file infra/main.bicep \
-            --parameters image="$IMAGE_REF" provisionPermissions="$PROVISION_PERMISSIONS" \
+            --parameters image="$IMAGE_REF" provisionPermissions="$PROVISION_PERMISSIONS" sentryTracesSampleRate="$SENTRY_TRACES_SAMPLE_RATE" \
             --only-show-errors --output none
       - name: Wait for revision
         run: |

@@ -29,6 +29,8 @@ grep -Fq 'fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-co
 node --test scripts/release-image.node-test.mjs
 node --test scripts/check-static-budgets.node-test.mjs
 for file in "$ci_workflow" "$workflow"; do
+  grep -Fq '/test-content-tracing.mjs /app/server.js' "$file"
+  grep -Fq -- '--network none --memory 512m --cpus 1' "$file"
   grep -Fq '/check-static-budgets.mjs --require-build' "$file"
   grep -Fq -- '-v "$PWD/src:/app/src:ro"' "$file"
   if grep -Eq '^ +corepack pnpm (build|perf:static)$|run: corepack pnpm (build|perf:static)$' "$file"; then

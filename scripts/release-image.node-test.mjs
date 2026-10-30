@@ -165,3 +165,25 @@ test('a provider 502 fails only the independent upload command and retains deplo
     assert.match(job('deploy'),/^    needs: \[verify, prepare_image\]$/m);
   }finally{rmSync(folder,{recursive:true});}
 });
+
+
+test('trace sampling is validated, persisted by both deployment paths, and restored with the previous revision', () => {
+  const deploy = job('deploy');
+  assert.ok(deploy.includes("SENTRY_TRACES_SAMPLE_RATE: ${{ vars.SENTRY_TRACES_SAMPLE_RATE || '0.01' }}"));
+  const guard = step(deploy, 'Validate release configuration').split('\n').find(line => line.trim().startsWith('node -e')).trim();
+  for (const value of ['0', '0.001', '0.01', '0.1']) {
+    assert.equal(spawnSync('/bin/bash', ['-e', '-c', guard], {env: {...process.env, SENTRY_TRACES_SAMPLE_RATE: value}}).status, 0);
+  }
+  for (const value of ['', ' ', '-0.01', '0.11', 'NaN', 'Infinity', 'garbage']) {
+    assert.notEqual(spawnSync('/bin/bash', ['-e', '-c', guard], {env: {...process.env, SENTRY_TRACES_SAMPLE_RATE: value}}).status, 0);
+  }
+  for (const name of ['Preview infrastructure change', 'Deploy']) {
+    assert.ok(step(deploy, name).includes('sentryTracesSampleRate="$SENTRY_TRACES_SAMPLE_RATE"'));
+  }
+  const infra = readFileSync(new URL('../infra/main.bicep', import.meta.url), 'utf8');
+  assert.match(infra, /param sentryTracesSampleRate string = '0.01'/);
+  assert.match(infra, /name: 'SENTRY_TRACES_SAMPLE_RATE'\s+value: sentryTracesSampleRate/);
+  const rollback = step(deploy, 'Roll back failed update');
+  assert.ok(rollback.includes('--from-revision "$PREVIOUS_READY_REVISION"'));
+  assert.doesNotMatch(rollback, /SENTRY_TRACES_SAMPLE_RATE|set-env-vars/);
+});

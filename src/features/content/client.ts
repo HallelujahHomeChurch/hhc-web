@@ -1,4 +1,6 @@
 import {createHhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
+import {startSpan} from '@sentry/nextjs';
+import {publicContentBaseUrl} from './config';
 
 // Match the API response write limit (30s) plus 5s transport/body margin.
 // WriteTimeout is not a handler or SQL deadline; this bounds the SSR resolution.
@@ -16,7 +18,10 @@ function contentFetch(fresh: boolean): typeof fetch {
     signal.throwIfAborted();
     // Next can detach cache revalidation from the caller's signal. Bound our
     // wait independently, including the public JSON body, without disabling ISR.
-    return new Promise<Response>((resolve, reject) => {
+    return startSpan({
+      name: 'public-content.read', op: 'content.read',
+      attributes: {'content.cache_policy': fresh ? 'no-store' : 'revalidate'}
+    }, () => new Promise<Response>((resolve, reject) => {
       const abort = () => {
         signal.removeEventListener('abort', abort);
         reject(signal.reason);
@@ -26,6 +31,7 @@ function contentFetch(fresh: boolean): typeof fetch {
         const response = await fetch(input, {
           ...init,
           signal,
+          redirect: 'error',
           ...(fresh ? {cache: 'no-store'} : {next: {revalidate: 60}})
         } as RequestInit & {next?: {revalidate: number}});
         const body = response.body === null ? null : await response.arrayBuffer();
@@ -34,13 +40,13 @@ function contentFetch(fresh: boolean): typeof fetch {
         });
       };
       void read().then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
-    });
+    }));
   };
 }
 
 export function publicContentClient(fresh = false) {
   return createHhcWebClient({
-    baseUrl: process.env.HHC_WEB_API_BASE_URL ?? process.env.NEXT_PUBLIC_HHC_WEB_API_BASE_URL ?? 'http://127.0.0.1:8081/api',
+    baseUrl: publicContentBaseUrl(),
     getAccessToken: () => null,
     fetcher: contentFetch(fresh)
   });

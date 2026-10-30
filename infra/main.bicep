@@ -6,6 +6,8 @@ param containerRegistryName string = 'alive'
 @minLength(1)
 param image string
 param provisionPermissions bool = true
+@description('Server trace probability; release validates 0 through 0.1. Zero disables trace export.')
+param sentryTracesSampleRate string = '0.01'
 
 var acrPullRole = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
 
@@ -66,6 +68,10 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
           name: 'hhc-web'
           image: image
           env: [
+            {
+              name: 'SENTRY_TRACES_SAMPLE_RATE'
+              value: sentryTracesSampleRate
+            }
             {
               name: 'HHC_WEB_API_BASE_URL'
               value: 'http://127.0.0.1:3500/v1.0/invoke/hhc-web-api/method/api'

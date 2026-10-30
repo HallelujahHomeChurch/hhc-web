@@ -376,3 +376,73 @@ wrong-artifact and failed scanner output fail closed. High/Critical secrets and
 vulnerabilities with fixed status or a fixed version block release; unfixed
 vulnerabilities remain summarized. Source scans, image startup/static checks,
 sourcemaps and rollback remain separate.
+
+### Server content tracing and its trust boundary
+
+The existing Sentry 10.75.2 server SDK records `public-content.read` spans around
+bounded content reads and native `http.client` spans for actual network work.
+An active request context is the parent; work without one starts a new trace.
+Next background revalidation can outlive the request. Server-only
+`traceLifecycle: 'stream'` sends completed spans independently so these late
+children are not lost when the request ends. It uses the installed SDK, not a
+custom context store or worker. Browser tracing remains unchanged.
+
+The pinned Sentry SDK extracts `sentry-trace`, while its `propagateTraceparent`
+option adds W3C output. [Gateway PR #214](https://github.com/HallelujahHomeChurch/api-gateway/pull/214)
+therefore derives a canonical Sentry header **only for the website upstream**
+from its validated W3C context, and removes incoming baggage/tracestate. This
+bridge is diagnostic context, never authenticated identity or audit provenance.
+Without it, the site still serves content and starts a new trace; continuity
+requires both changes. Website-first deployment is compatible, then the Gateway
+bridge completes the chain. Direct private callers are not a replacement for
+that public trust boundary.
+
+Only the configured content API origin and path boundary receive trace headers.
+The SDK adds W3C/Sentry/baggage at the native transport, after Next computes its
+cache key; no visitor ID or dynamic trace header is added to cached fetch input,
+and no `next/headers` call changes static rendering. Cache hits have a local read
+span but no fictitious network span. Stale refreshes use the triggering active
+context or a new root, not the cache creator's identity. The real network span
+records a single validated API response `X-Request-ID` as `hhc.api_request_id`
+(the existing `[A-Za-z0-9._:-]{1,128}` diagnostic contract). It does not generate
+mutation audit IDs. Producer redirects fail instead of following trace context
+to another service. Existing error handling and the shared 35-second budget
+remain in effect; Next-owned background network work may continue after the
+caller stops waiting.
+
+Server tracing defaults to a **1% probability**, configured by optional
+`SENTRY_TRACES_SAMPLE_RATE` in `[0, 0.1]`; invalid values fail startup when Sentry
+is enabled. Zero disables trace export while preserving error reporting.
+The release workflow reads the repository variable of the same name, validates
+it before Azure actions, and passes it to the service-owned Bicep environment.
+The existing rollback copies the previous ready revision, including its prior
+environment; it does not reapply the candidate sampling value. Repository Bicep
+and the central infrastructure owner still require the documented ownership
+handoff before either owner changes this setting outside this release path.
+The sampler does not inherit an inbound sampled flag. The Gateway must also
+remove baggage: Sentry's incoming `sample_rand` can otherwise influence the
+random draw. This is a sampling probability, not a hard quota. For 10,000
+independent roots, 1% means about 100 sampled traces in expectation. If each
+sampled trace averages F framework spans, R content-read spans and M actual
+network spans, expected export is about `100 × (F + R + M)` spans (for example,
+F=3/R=2/M=1 gives about 600). Cache hits reduce M. These are planning examples,
+not measured volume or cost savings; error-event reporting is unchanged.
+
+Optional server-only `SENTRY_DSN` overrides the existing public DSN fallback.
+The configured repository DSN was verified as a Sentry SaaS ingest endpoint
+without exposing its value. The [pinned SDK option](https://github.com/getsentry/sentry-javascript/blob/10.75.2/packages/core/src/types/options.ts)
+and [official streamed-span documentation](https://docs.sentry.io/platforms/javascript/guides/node/tracing/streamed-spans/)
+support this lifecycle. Streamed spans bypass `beforeSendTransaction`, so
+`beforeSendSpan` applies the existing text redaction and strips user fields,
+request payloads/headers and URL query attributes before span-v2 serialization.
+
+`server-tracing.node.test.ts` exercises real SDK exports and installed Next
+cache/revalidation code, including late completion, concurrent parents, exact
+propagation targets, redirects, invalid response IDs and serialized privacy.
+`scripts/test-content-tracing.mjs` runs the built Next server with local API and
+Sentry fixtures, proving gateway-compatible 01/00 contexts, new-root fallback,
+shared Data Cache and actual span-v2 HTTP payloads. CI and release run it against
+their existing image with network disabled; it does not build another artifact
+or contact Sentry production. Production sampling volume, SaaS ingestion/UI,
+actual scheduled ISR and end-to-end rollout smoke remain release acceptance;
+Go API diagnostic correlation is not a claim that those APIs export spans.
