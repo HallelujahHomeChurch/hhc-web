@@ -60,6 +60,7 @@ describe('Sentry spans and actual content wire', () => {
   const keyHeaders: Headers[] = [];
   let stale = false;
   let responseIdentity: string | string[] | undefined;
+  let responseIdentityHeaders: Record<string, string | string[]> | undefined;
   let unitType = 'prerender-legacy';
   const workStore = {
     isStaticGeneration: true, route: '/trace-fixture', pendingRevalidates: {} as Record<string, Promise<unknown>>,
@@ -79,9 +80,9 @@ describe('Sentry spans and actual content wire', () => {
       const responseId = `._:api-${wire.length + 1}`;
       wire.push({url: request.url!, responseId, headers: request.headers});
       if (request.url?.includes('locale=zh-Hans')) {
-        response.writeHead(302, {Location: `${externalBase}/external`, 'X-Request-ID': 'api-redirect'}).end();
+        response.writeHead(302, {Location: `${externalBase}/external`, 'X-HHC-Request-ID': 'api-redirect'}).end();
       } else {
-        response.writeHead(200, {'Content-Type': 'application/json', 'X-Request-ID': responseIdentity ?? responseId}).end('{"data":[]}');
+        response.writeHead(200, {'Content-Type': 'application/json', ...(responseIdentityHeaders ?? {'X-HHC-Request-ID': responseIdentity ?? responseId})}).end('{"data":[]}');
       }
     });
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -210,6 +211,33 @@ describe('Sentry spans and actual content wire', () => {
         expect(span.attributes?.['hhc.api_request_id']).toBeUndefined();
       }
     } finally { responseIdentity = undefined; }
+  });
+
+  it('prefers the CMS response identity and falls back only when it is absent', async () => {
+    const cases: Array<{headers: Record<string, string | string[]>; expected?: string}> = [
+      {headers: {'X-HHC-Request-ID': 'cms-id'}, expected: 'cms-id'},
+      {headers: {'x-hhc-request-id': 'lowercase-id'}, expected: 'lowercase-id'},
+      {headers: {'X-Request-ID': 'legacy-id'}, expected: 'legacy-id'},
+      {headers: {'X-HHC-Request-ID': 'cms-id', 'X-Request-ID': 'legacy-id'}, expected: 'cms-id'},
+      {headers: {'X-HHC-Request-ID': 'bad value', 'X-Request-ID': 'legacy-id'}},
+      {headers: {'X-HHC-Request-ID': '', 'X-Request-ID': 'legacy-id'}},
+      {headers: {'X-HHC-Request-ID': ['first', 'second'], 'X-Request-ID': 'legacy-id'}},
+      {headers: {'X-Request-ID': ['first', 'second']}},
+      {headers: {'X-Request-ID': 'bad value'}},
+      {headers: {'X-Request-ID': 'x'.repeat(129)}},
+      {headers: {}}
+    ];
+    try {
+      for (const {headers, expected} of cases) {
+        responseIdentityHeaders = headers;
+        await Sentry.startNewTrace(() => publicContentClient(true).listLocations('ko'));
+        const spanId = String(wire.at(-1)!.headers.traceparent).split('-')[2];
+        await Sentry.flush(1000);
+        const span = exportedSpans().find((span) => span.span_id === spanId)!;
+        expect(span).toBeDefined();
+        expect(span.attributes?.['hhc.api_request_id']?.value).toBe(expected);
+      }
+    } finally { responseIdentityHeaders = undefined; }
   });
 
   it('creates an independent operation without a request parent and never propagates outside the target', async () => {

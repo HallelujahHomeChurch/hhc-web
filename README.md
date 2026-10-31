@@ -407,8 +407,10 @@ cache key; no visitor ID or dynamic trace header is added to cached fetch input,
 and no `next/headers` call changes static rendering. Cache hits have a local read
 span but no fictitious network span. Stale refreshes use the triggering active
 context or a new root, not the cache creator's identity. The real network span
-records a single validated API response `X-Request-ID` as `hhc.api_request_id`
-(the existing `[A-Za-z0-9._:-]{1,128}` diagnostic contract). It does not generate
+records a single validated CMS response `X-HHC-Request-ID` as `hhc.api_request_id`
+(the existing `[A-Za-z0-9._:-]{1,128}` diagnostic contract). Legacy `X-Request-ID`
+is used only when the canonical header is absent; malformed or duplicate canonical
+values never fall back to it. It does not generate
 mutation audit IDs. Producer redirects fail instead of following trace context
 to another service. Existing error handling and the shared 35-second budget
 remain in effect; Next-owned background network work may continue after the

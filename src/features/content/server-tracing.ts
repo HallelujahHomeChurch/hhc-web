@@ -30,11 +30,16 @@ export function contentServerTracing() {
     integrations: [Sentry.nativeNodeFetchIntegration({
       responseHook(span, {request, response}) {
         if (!target.test(`${request.origin}${request.path}`)) return;
-        const ids: string[] = [];
+        const canonical: string[] = [];
+        const legacy: string[] = [];
         for (let i = 0; i < response.headers.length; i += 2) {
-          if (response.headers[i].toString().toLowerCase() === 'x-request-id') ids.push(response.headers[i + 1].toString());
+          const name = response.headers[i].toString().toLowerCase();
+          if (name === 'x-hhc-request-id') canonical.push(response.headers[i + 1].toString());
+          else if (name === 'x-request-id') legacy.push(response.headers[i + 1].toString());
         }
         // Read the API's diagnostic identity only on real network responses, not cache hits.
+        // An invalid canonical header must not be rescued by a legacy value.
+        const ids = canonical.length ? canonical : legacy;
         if (ids.length === 1 && /^[A-Za-z0-9._:-]{1,128}$/.test(ids[0])) {
           span.setAttribute('hhc.api_request_id', ids[0]);
         }
