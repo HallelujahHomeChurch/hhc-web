@@ -383,13 +383,17 @@ jobs:
       - name: Verify through gateway Dapr
         run: |
           for path in health zh-Hant/maintenance; do
+            # Leave 15s of the existing console budget for connection/teardown.
+            probe_timeout=45
+            [[ "$path" == health ]] && probe_timeout=5
             ready=false
             for attempt in {1..12}; do
+              console_status=0
               output="$(timeout 60s script -q -e -c \
-                "az containerapp exec -g \"$RESOURCE_GROUP\" -n \"$API_GATEWAY_APP_NAME\" --command \"/usr/bin/wget -S -O - http://127.0.0.1:3500/v1.0/invoke/hhc-web/method/${path}\"" \
-                /dev/null 2>&1)" || true
+                "az containerapp exec -g \"$RESOURCE_GROUP\" -n \"$API_GATEWAY_APP_NAME\" --command \"/bin/sh -c \\\"/usr/bin/timeout -s KILL ${probe_timeout} /usr/bin/wget -T ${probe_timeout} -S -O - http://127.0.0.1:3500/v1.0/invoke/hhc-web/method/${path} && echo && echo ROLLOUT_WEB_OK\\\"\"" \
+                /dev/null 2>&1)" || console_status=$?
               output="${output//$'\r'/}"
-              if grep -Eq 'HTTP/1\.[01][[:space:]]+200' <<< "$output"; then
+              if [[ "$console_status" == 0 ]] && grep -Eq 'HTTP/1\.[01][[:space:]]+200' <<< "$output" && grep -Fxq 'ROLLOUT_WEB_OK' <<< "$output"; then
                 ready=true
                 break
               fi

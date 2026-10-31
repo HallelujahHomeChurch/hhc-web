@@ -187,3 +187,18 @@ test('trace sampling is validated, persisted by both deployment paths, and resto
   assert.ok(rollback.includes('--from-revision "$PREVIOUS_READY_REVISION"'));
   assert.doesNotMatch(rollback, /SENTRY_TRACES_SAMPLE_RATE|set-env-vars/);
 });
+
+
+test('remote probes finish within the console budget and cannot accept a partial HTTP 200', () => {
+  const probe = step(job('deploy'), 'Verify through gateway Dapr');
+  assert.ok(probe.includes('probe_timeout=45'));
+  assert.ok(probe.includes('[[ "$path" == health ]] && probe_timeout=5'));
+  assert.ok(probe.includes('/usr/bin/timeout -s KILL ${probe_timeout} /usr/bin/wget -T ${probe_timeout}'));
+  assert.ok(probe.includes('|| console_status=$?'));
+  assert.ok(probe.includes('if [[ "$console_status" == 0 ]] && grep'));
+  const condition = probe.split('\n').find(line => line.trim().startsWith('if [[')).trim();
+  for (const [console_status, output, expected] of [['0', 'HTTP/1.1 200 OK\nROLLOUT_WEB_OK', 0], ['0', 'HTTP/1.1 200 OK', 1], ['137', 'HTTP/1.1 200 OK', 1], ['0', 'HTTP/1.1 503 Unavailable', 1]]) {
+    const result = spawnSync('/bin/bash', ['-c', `${condition} exit 0; else exit 1; fi`], {env: {...process.env, console_status, output}});
+    assert.equal(result.status, expected);
+  }
+});
