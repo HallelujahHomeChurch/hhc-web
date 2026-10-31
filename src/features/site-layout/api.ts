@@ -1,3 +1,4 @@
+import {cache} from 'react';
 import type {HhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
 import {publicContentClient} from '@/features/content/client';
 import type {Locale} from '@/i18n/locales';
@@ -11,8 +12,14 @@ const fallbackLinks: SiteExternalLinks = {
   musicYoutube: 'https://youtube.com/@gkpmusic777?si=JqJyfjM8FCmWD5MY'
 };
 
-export async function getSiteLayout(locale: Locale, client: HhcWebClient = publicContentClient(), {allowFallback = true} = {}): Promise<SiteLayout> {
-  return resolveSiteLayout(locale, client, allowFallback);
+// Header, footer, metadata and page bodies each ask for the layout. Content reads
+// carry an AbortSignal, which opts them out of Next's fetch dedupe, so memoize the
+// default-client resolution per server request instead.
+const resolveDefaultSiteLayout = cache((locale: Locale, allowFallback: boolean) =>
+  resolveSiteLayout(locale, publicContentClient(), allowFallback));
+
+export async function getSiteLayout(locale: Locale, client?: HhcWebClient, {allowFallback = true} = {}): Promise<SiteLayout> {
+  return client ? resolveSiteLayout(locale, client, allowFallback) : resolveDefaultSiteLayout(locale, allowFallback);
 }
 
 async function resolveSiteLayout(locale: Locale, client: HhcWebClient, allowFallback: boolean): Promise<SiteLayout> {

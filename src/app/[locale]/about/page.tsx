@@ -13,12 +13,15 @@ import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import {getEditorialMetadata} from '@/lib/seo';
 import {captureHandledError} from '@/lib/observability';
+import {onDemandLocaleParams} from '@/lib/on-demand-locale-params';
 
 type AboutPageProps = {
   params: Promise<{locale: string}>;
 };
 
 export const revalidate = 60;
+
+export const generateStaticParams = onDemandLocaleParams;
 
 async function getLocale(params: Promise<{locale: string}>): Promise<Locale> {
   const {locale} = await params;

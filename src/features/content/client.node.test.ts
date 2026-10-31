@@ -73,7 +73,7 @@ describe('public content transport', () => {
     await read('http://content.test');
     controller.abort(new DOMException('deadline', 'TimeoutError'));
     await expect(read('http://content.test/legacy')).rejects.toMatchObject({name: 'TimeoutError'});
-    expect(timeout).toHaveBeenCalledExactlyOnceWith(35_000);
+    expect(timeout).toHaveBeenCalledExactlyOnceWith(10_000);
     expect(transport).toHaveBeenCalledTimes(1);
   });
 

@@ -156,3 +156,16 @@ test('rejects a client chunk that bundles several locale catalogs', async (t) =>
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Client chunk page\.js bundles 2 locale catalogs \(en, ja\)/);
 });
+
+test('rejects prerendered HTML that baked in CMS fallback content', async (t) => {
+  const root = await fixture();
+  t.after(() => rm(root, {recursive: true, force: true}));
+  const pages = path.join(root, '.next/server/app/en');
+  await mkdir(pages, {recursive: true});
+  await writeFile(path.join(pages, 'maintenance.html'), '<main>ok</main>');
+  assert.equal(run(root).status, 0);
+  await writeFile(path.join(pages, 'about.html'), '<main data-cms-fallback="about"></main>');
+  const result = run(root);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Prerendered en\/about\.html contains CMS fallback content/);
+});

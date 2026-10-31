@@ -322,6 +322,11 @@
         "clear": "Clear search",
         "tooLong": "Search accepts one query of up to 100 characters."
       }
+    },
+    "pageError": {
+      "title": "This page is temporarily unavailable",
+      "body": "Please try again in a moment, or return to the home page.",
+      "retry": "Try again"
     }
   },
   "home": {

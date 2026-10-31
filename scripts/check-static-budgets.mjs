@@ -88,6 +88,14 @@ for (const name of scripts) {
     failures.push(`Client chunk ${name} bundles ${bundled.length} locale catalogs (${bundled.join(', ')}); pass the current locale's strings from the server`);
   }
 }
+// The build has no content API: prerendered HTML must never carry built-in CMS fallback content.
+const prerenderPath = path.join(root, '.next/server/app');
+const prerendered = await readdir(prerenderPath, {recursive: true}).then(names => names.filter(name => name.endsWith('.html'))).catch(() => []);
+for (const name of prerendered) {
+  if ((await readFile(path.join(prerenderPath, name), 'utf8')).includes('data-cms-fallback=')) {
+    failures.push(`Prerendered ${name} contains CMS fallback content; render CMS-backed pages on demand`);
+  }
+}
 const generatedCssBytes = await readdir(chunksPath, {withFileTypes: true})
   .then(async (entries) => {
     const sizes = await Promise.all(entries.filter((entry) => entry.isFile() && entry.name.endsWith('.css')).map((entry) => stat(path.join(chunksPath, entry.name)).then(({size}) => size)));

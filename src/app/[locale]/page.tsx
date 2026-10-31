@@ -17,6 +17,7 @@ import {getSiteLayout} from '@/features/site-layout/api';
 import {getMessages} from '@/i18n/messages';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getEditorialMetadata} from '@/lib/seo';
+import {onDemandLocaleParams} from '@/lib/on-demand-locale-params';
 
 type HomePageProps = {
   params: Promise<{locale: string}>;
@@ -24,11 +25,7 @@ type HomePageProps = {
 
 export const revalidate = 60;
 
-// Empty child params inherit the locale layout's build paths. This invalid locale
-// reaches notFound before Home's CMS reads, leaving real pages to on-demand ISR.
-export function generateStaticParams() {
-  return [{locale: '__home_isr__'}];
-}
+export const generateStaticParams = onDemandLocaleParams;
 
 async function getLocale(params: Promise<{locale: string}>): Promise<Locale> {
   const {locale} = await params;
