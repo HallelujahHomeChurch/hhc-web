@@ -39,7 +39,7 @@ const api = createServer((request, response) => {
   calls.push({path: url.pathname, locale: url.searchParams.get('locale'), headers: request.headers});
   const locale = url.searchParams.get('locale') ?? 'en';
   response.setHeader('Content-Type', 'application/json');
-  response.setHeader('X-Request-ID', `fixture-${calls.length}`);
+  response.setHeader('X-HHC-Request-ID', `fixture-${calls.length}`);
   if (url.pathname.endsWith('/news')) {
     response.end(JSON.stringify({data: [], meta: {page: Number(url.searchParams.get('page') ?? 1), pageSize: 12, total: 0}}));
   } else if (url.pathname.endsWith('/site-layout')) {
