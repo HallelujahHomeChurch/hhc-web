@@ -1,4 +1,5 @@
 import {getMessages} from '@/i18n/messages'
+import type {Locale} from '@/i18n/locales'
 
 
 const organizationBaseMessages = {
@@ -133,3 +134,6 @@ export const messages = {
  ja:{organizations:organizationMessages.ja,site:{notifications:organizationCopy.ja.notificationButton}},
  ko:{organizations:organizationMessages.ko,site:{notifications:organizationCopy.ko.notificationButton}},
 } as const
+
+/** One locale's management copy; resolved on the server so client chunks carry a single locale. */
+export type OrganizationMessages = (typeof messages)[Locale]

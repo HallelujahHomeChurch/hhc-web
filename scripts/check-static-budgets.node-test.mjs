@@ -136,3 +136,23 @@ test('image verification requires compiled JavaScript and its DOCX export', asyn
   await writeFile(path.join(chunks, 'export.js'), 'docProps/core.xml');
   assert.equal(run(root, '--require-build').status, 0);
 });
+
+test('rejects a client chunk that bundles several locale catalogs', async (t) => {
+  const root = await fixture();
+  t.after(() => rm(root, {recursive: true, force: true}));
+  const locales = path.join(root, 'src/i18n/locales');
+  const chunks = path.join(root, '.next/static/chunks');
+  await mkdir(locales, {recursive: true});
+  await mkdir(chunks, {recursive: true});
+  const catalog = (prefix) => ({site: Object.fromEntries(Array.from({length: 12}, (_, index) => [`key${index}`, `${prefix} catalog phrase number ${index}`]))});
+  await writeFile(path.join(locales, 'en.json'), JSON.stringify(catalog('English')));
+  await writeFile(path.join(locales, 'ja.json'), JSON.stringify(catalog('Japanese')));
+  await writeFile(path.join(chunks, 'export.js'), 'docProps/core.xml');
+  const phrases = (prefix) => Object.values(catalog(prefix).site).join('|');
+  await writeFile(path.join(chunks, 'page.js'), phrases('English'));
+  assert.equal(run(root).status, 0, run(root).stderr);
+  await writeFile(path.join(chunks, 'page.js'), `${phrases('English')}${phrases('Japanese')}`);
+  const result = run(root);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Client chunk page\.js bundles 2 locale catalogs \(en, ja\)/);
+});

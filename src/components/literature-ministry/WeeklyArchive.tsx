@@ -11,7 +11,6 @@ import {formatIssueNumber, resolveWeeklyCopy} from '@/features/weekly/format';
 import {readerUrl, resolveEdition} from '@/features/weekly/resolve-edition';
 import {weeklyEntryTarget, targetQuery, type WeeklyEntryTarget} from '@/features/weekly/entry-target';
 import {isWeeklyReaderEnabled} from '@/features/weekly-reader/enabled';
-import {getMessages} from '@/i18n/messages';
 import {weeklyEditionLabels, type WeeklyIssue, type WeeklyIssuePage} from '@/features/weekly/types';
 import type {Locale} from '@/i18n/locales';
 import {useAccountIdentity, useBulletinAccess, useBulletinAuthorization} from '@/components/layout/AccountControl';
@@ -39,6 +38,10 @@ type WeeklyArchiveMessages = {
   retry: string;
   empty: string;
   readOnline: string;
+  downloadPdf: string;
+  onlineUnavailable: string;
+  pdfUnavailable: string;
+  pdfFallback: string;
 };
 
 type WeeklyArchiveProps = {locale: Locale; messages: WeeklyArchiveMessages};
@@ -157,7 +160,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
               <h3 className="mt-4 text-[18px] font-semibold text-muted" aria-live="polite">{latestState === 'ready' ? messages.empty : messages.loading}</h3>
           )}
           </div>
-          {latestState === 'ready' && latestIssue?.versions.length ? <VersionLinks mode={entryMode} locale={locale} readOnlineLabel={messages.readOnline} issue={latestIssue} workflow={api} preparingLabel={messages.downloading} readyLabel={messages.downloadReady} errorLabel={messages.downloadError} /> : null}
+          {latestState === 'ready' && latestIssue?.versions.length ? <VersionLinks labels={messages} mode={entryMode} locale={locale} readOnlineLabel={messages.readOnline} issue={latestIssue} workflow={api} preparingLabel={messages.downloading} readyLabel={messages.downloadReady} errorLabel={messages.downloadError} /> : null}
         </aside> : null}
 
       <div>
@@ -176,7 +179,7 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
                   {copy ? <h4 lang={copy.locale} className="text-lg font-semibold leading-snug text-ink">{copy.title}</h4> : null}
                   {copy?.subtitle ? <p lang={copy.locale} className="mt-1 text-sm leading-relaxed text-muted">{copy.subtitle}</p> : null}
                 </div>
-                <VersionLinks mode={entryMode} locale={locale} readOnlineLabel={messages.readOnline} issue={issue} workflow={api} preparingLabel={messages.downloading} readyLabel={messages.downloadReady} errorLabel={messages.downloadError} />
+                <VersionLinks labels={messages} mode={entryMode} locale={locale} readOnlineLabel={messages.readOnline} issue={issue} workflow={api} preparingLabel={messages.downloading} readyLabel={messages.downloadReady} errorLabel={messages.downloadError} />
               </article>
             ) : null;
           }) : archiveState === 'ready' ? <p className="text-muted">{messages.empty}</p> : archiveState === 'error' ? <div><p role="alert" className="text-muted">{messages.loadError}</p><button type="button" className="mt-3 min-h-11 rounded-full border border-panel-border px-5" onClick={() => setRetryKey(value => value + 1)}>{messages.retry}</button></div> : <WeeklyArchiveSkeleton label={messages.loading}/>}
@@ -201,18 +204,18 @@ export function WeeklyArchive({locale, messages}: WeeklyArchiveProps) {
         <p className="mt-3 max-w-[620px] text-base leading-relaxed text-muted">{messages.archiveIntro}</p>
         {availableSeries.length > 1 ? <nav aria-label={messages.eyebrow} className="mt-5 inline-flex rounded-full border border-panel-border bg-panel p-1">{availableSeries.map((value) => <a key={value} aria-current={series === value ? 'page' : undefined} className={`inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${series === value ? 'bg-primary text-primary-foreground' : 'text-muted hover:text-ink'}`} href={getPageHref(locale, value, 1, mode)}>{value === 'general' ? messages.general : messages.children}</a>)}</nav> : null}
       </header>
-      {!readerEnabled && searchParams.get('mode') === 'online' ? <p role="status" className="text-muted">{getMessages(locale).literatureMinistry.onlineUnavailable}</p> : null}
+      {!readerEnabled && searchParams.get('mode') === 'online' ? <p role="status" className="text-muted">{messages.onlineUnavailable}</p> : null}
       <Tabs label={messages.archiveTitle} selectedKey={mode} onSelectionChange={(key) => router.replace(getPageHref(locale, series, page, key === 'pdf' ? 'pdf' : 'online', target), {scroll: false})} items={[
-        {id: 'pdf', label: getMessages(locale).literatureMinistry.downloadPdf, content: content('pdf')},
+        {id: 'pdf', label: messages.downloadPdf, content: content('pdf')},
         ...(readerEnabled ? [{id: 'online', label: messages.readOnline, content: content('online')}] : [])
       ]}/>
     </section>
   );
 }
 
-function VersionLinks({mode, locale, readOnlineLabel, issue, workflow, preparingLabel, readyLabel, errorLabel}: {mode: EntryMode; locale: Locale; readOnlineLabel: string; issue: WeeklyIssue; workflow: WeeklyBulletinApi; preparingLabel: string; readyLabel: string; errorLabel: string}) {
+function VersionLinks({labels, mode, locale, readOnlineLabel, issue, workflow, preparingLabel, readyLabel, errorLabel}: {labels: Pick<WeeklyArchiveMessages, 'downloadPdf' | 'onlineUnavailable' | 'pdfUnavailable' | 'pdfFallback'>; mode: EntryMode; locale: Locale; readOnlineLabel: string; issue: WeeklyIssue; workflow: WeeklyBulletinApi; preparingLabel: string; readyLabel: string; errorLabel: string}) {
   const {editions} = useBulletinAccess();
-  const m = getMessages(locale).literatureMinistry;
+  const m = labels;
   const versions = issue.versions.filter(version => editions.some(edition => edition.series === version.series && edition.locale === version.locale)
     && (mode === 'pdf' ? version.pdfPublished !== false : Boolean(readerUrl(locale, version))));
   const selected = versions[0] ? resolveEdition({uiLocale: locale, series: versions[0].series, authorizedEditions: editions, publishedEditions: versions})?.version : undefined;

@@ -1,5 +1,6 @@
 import {Dialog} from '@hallelujahhomechurch/ui';
 import {OrganizationsGate} from '@/features/organizations/OrganizationsGate';
+import {messages as organizationMessages} from '@/features/organizations/messages';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, describe, expect, it, vi} from 'vitest';
@@ -79,7 +80,7 @@ describe('AccountControl', () => {
   it.each(['allowed', 'revoked', 'failed'] as const)('preserves a draft during same-owner refresh, then applies %s qualification', async result => {
     const fetcher = vi.fn().mockImplementation(async () => Response.json(managedAccessSnapshot));
     vi.stubGlobal('fetch', fetcher);
-    render(<AccountControlProvider client={sessionClient([])} labels={labels}><OrganizationsGate locale="en"><Dialog isOpen onOpenChange={() => {}} title="Draft notification" closeLabel="Close"><label>Draft subject<input defaultValue="" /></label></Dialog></OrganizationsGate></AccountControlProvider>);
+    render(<AccountControlProvider client={sessionClient([])} labels={labels}><OrganizationsGate locale="en" messages={organizationMessages["en"]}><Dialog isOpen onOpenChange={() => {}} title="Draft notification" closeLabel="Close"><label>Draft subject<input defaultValue="" /></label></Dialog></OrganizationsGate></AccountControlProvider>);
     const input = await screen.findByRole('textbox', {name: 'Draft subject'});
     await userEvent.type(input, 'Keep my unsent draft');
     let resolve!: (value: Response) => void;
