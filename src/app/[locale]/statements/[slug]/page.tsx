@@ -1,4 +1,5 @@
 import type {Metadata} from 'next';
+import {cache} from 'react';
 import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
 import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
@@ -7,19 +8,21 @@ import {StatementBody} from '@/components/statements/StatementBody';
 import {publicContentClient} from '@/features/content/client';
 import {getNewsBySlug} from '@/features/news/api';
 import {getSiteLayout} from '@/features/site-layout/api';
-import {isLocale} from '@/i18n/locales';
+import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
 import {siteConfig} from '@/lib/site';
 
 type Props = {params: Promise<{locale: string; slug: string}>};
 export const dynamic = 'force-dynamic';
+// Metadata and page render share one uncached statement read per request.
+const readStatement = cache((locale: Locale, slug: string) => getNewsBySlug(locale, slug, publicContentClient(true)));
 async function load(params: Props['params']) {
   const {locale, slug} = await params;
   if (!isLocale(locale)) notFound();
   setRequestLocale(locale);
   try {
-    const news = await getNewsBySlug(locale, slug, publicContentClient(true));
+    const news = await readStatement(locale, slug);
     if (news.kind !== 'statement') notFound();
     return {news, locale, slug};
   } catch (error) {

@@ -13,10 +13,13 @@ import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import {getAlternates, getLocalizedPath, getOpenGraphLocale} from '@/lib/seo';
 import {siteConfig} from '@/lib/site';
+import {onDemandLocaleParams} from '@/lib/on-demand-locale-params';
 
 type LiteratureMinistryPageProps = {
   params: Promise<{locale: string}>;
 };
+
+export const generateStaticParams = onDemandLocaleParams;
 
 async function getLocale(params: Promise<{locale: string}>): Promise<Locale> {
   const {locale} = await params;

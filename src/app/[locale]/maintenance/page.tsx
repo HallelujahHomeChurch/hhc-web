@@ -5,10 +5,13 @@ import {LegalPageShell} from '@/components/legal/LegalPageShell';
 import {getSiteLayout} from '@/features/site-layout/api';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
+import {onDemandLocaleParams} from '@/lib/on-demand-locale-params';
 
 type MaintenancePageProps = {
   params: Promise<{locale: string}>;
 };
+
+export const generateStaticParams = onDemandLocaleParams;
 
 async function getLocale(params: MaintenancePageProps['params']): Promise<Locale> {
   const {locale} = await params;

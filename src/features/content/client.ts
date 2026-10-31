@@ -2,9 +2,11 @@ import {createHhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
 import {startSpan} from '@sentry/nextjs';
 import {publicContentBaseUrl} from './config';
 
-// Match the API response write limit (30s) plus 5s transport/body margin.
-// WriteTimeout is not a handler or SQL deadline; this bounds the SSR resolution.
-const contentTimeoutMs = 35_000;
+// Bounds one SSR content resolution (including a legacy-projection retry).
+// Public projection reads are p99.9 < 0.5s in production (7-day hhc-web-api
+// request logs, 2026-10-31); a request still waiting after 10s is an upstream
+// incident, and holding it longer only queues render work on a 0.5 vCPU replica.
+const contentTimeoutMs = 10_000;
 
 function contentFetch(fresh: boolean): typeof fetch {
   // One resolution may try a legacy projection; it shares the original budget.
