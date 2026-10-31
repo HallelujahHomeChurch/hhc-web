@@ -118,7 +118,7 @@ test('deploy executes the actual prepared-artifact guard before any Azure action
 test('runtime changes stay after verify/image preparation with existing preview smoke and rollback', () => {
   assert.doesNotMatch(job('prepare_image'), /az deployment group|az containerapp/);
   const deploy = job('deploy');
-  for (const name of ['Capture current state', 'Preview infrastructure change', 'Deploy', 'Wait for revision', 'Verify through gateway Dapr', 'Roll back failed update']) {
+  for (const name of ['Capture current state', 'Preview infrastructure change', 'Deploy', 'Wait for revision', 'Verify public website', 'Roll back failed update']) {
     step(deploy, name);
   }
   assert.match(deploy, /--parameters image="\$IMAGE_REF" sentryTracesSampleRate="\$SENTRY_TRACES_SAMPLE_RATE"/);
@@ -190,16 +190,10 @@ test('trace sampling is validated, persisted by both deployment paths, and resto
 });
 
 
-test('remote probes finish within the console budget and cannot accept a partial HTTP 200', () => {
-  const probe = step(job('deploy'), 'Verify through gateway Dapr');
-  assert.ok(probe.includes('probe_timeout=45'));
-  assert.ok(probe.includes('[[ "$path" == health ]] && probe_timeout=5'));
-  assert.ok(probe.includes('/usr/bin/timeout -s KILL ${probe_timeout} /usr/bin/wget -T ${probe_timeout}'));
-  assert.ok(probe.includes('|| console_status=$?'));
-  assert.ok(probe.includes('if [[ "$console_status" == 0 ]] && grep'));
-  const condition = probe.split('\n').find(line => line.trim().startsWith('if [[')).trim();
-  for (const [console_status, output, expected] of [['0', 'HTTP/1.1 200 OK\nROLLOUT_WEB_OK', 0], ['0', 'HTTP/1.1 200 OK', 1], ['137', 'HTTP/1.1 200 OK', 1], ['0', 'HTTP/1.1 503 Unavailable', 1]]) {
-    const result = spawnSync('/bin/bash', ['-c', `${condition} exit 0; else exit 1; fi`], {env: {...process.env, console_status, output}});
-    assert.equal(result.status, expected);
-  }
+test('release uses ARM identity and public HTTP without remote execution', () => {
+  const deploy = job('deploy');
+  assert.doesNotMatch(deploy, /containerapp exec|collect-dapr-port/);
+  assert.match(step(deploy, 'Wait for revision'), /python3 scripts\/verify-release-runtime.py/);
+  assert.match(step(deploy, 'Verify public website'), /verify-public-release.sh/);
+  assert.match(step(deploy, 'Roll back failed update'), /steps.recovery.outputs.required == 'true'/);
 });

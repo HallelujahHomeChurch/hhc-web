@@ -450,3 +450,19 @@ their existing image with network disabled; it does not build another artifact
 or contact Sentry production. Production sampling volume, SaaS ingestion/UI,
 actual scheduled ISR and end-to-end rollout smoke remain release acceptance;
 Go API diagnostic correlation is not a claim that those APIs export spans.
+
+
+### Release verification without remote execution
+
+The release verifies the exact immutable image and candidate revision through ACA
+metadata (ready, active, Healthy, Running and 100% serving traffic where ingress is
+configured), then retains the public HTTP acceptance contracts. It creates no
+verifier resource and opens no Azure console. Public channel or contract failures
+block acceptance; they do not by themselves prove the application is unhealthy.
+Recovery requires a successfully observed failed deployment or the exact candidate
+in Failed/Degraded/Unhealthy state. ARM query failures and incomplete identity/traffic
+proof remain unverified and fail the release without automatic rollback.
+Existing database/migration and resource-specific recovery boundaries remain.
+This gate does not claim an in-container socket inspection or private Dapr
+invocation proof. No merge/deployment or live recovery evidence follows from local
+fixture tests.

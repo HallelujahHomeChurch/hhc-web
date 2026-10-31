@@ -1,5 +1,6 @@
 #!/bin/sh
 set -eu
+python3 scripts/test-release-runtime.py
 api_scale="$(awk '/^resource app / { in_api = 1; next } in_api && /^resource / { exit } in_api { print }' infra/main.bicep)"
 for expected in 'minReplicas: 1' 'maxReplicas: 8' "name: 'cpu-scaler'" "type: 'cpu'" "type: 'Utilization'" "value: '50'" "name: 'http-scaler'" 'http: {' "concurrentRequests: '20'"; do
   printf '%s\n' "$api_scale" | grep -Fq "$expected"
@@ -53,10 +54,10 @@ grep -q '^  set -eu;' Dockerfile
 grep -Fq 'FROM gcr.io/distroless/nodejs22-debian13@sha256:6f5d43e96551e0240e604d3b2068fd0584d9f58b64ff868cbf14fa7abc3521b4 AS runtime' Dockerfile
 grep -Fq 'CMD ["/nodejs/bin/node", "-e", "fetch(' Dockerfile
 grep -q 'az deployment group what-if' "$workflow"
-grep -q 'for path in health zh-Hant/maintenance' "$workflow"
-grep -q 'for attempt in {1..12}' "$workflow"
-grep -q 'sleep 5' "$workflow"
-grep -q 'v1.0/invoke/hhc-web/method/${path}' "$workflow"
+! grep -q 'containerapp exec' "$workflow"
+grep -Fq 'python3 scripts/verify-release-runtime.py' "$workflow"
+grep -Fq 'bash scripts/verify-public-release.sh' "$workflow"
+grep -Fq "steps.recovery.outputs.required == 'true'" "$workflow"
 grep -q 'PREVIOUS_READY_REVISION' "$workflow"
 grep -q 'PREVIOUS_IMAGE_REF=' "$workflow"
 grep -q -- '--image "$PREVIOUS_IMAGE_REF"' "$workflow"
