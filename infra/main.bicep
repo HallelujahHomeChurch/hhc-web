@@ -5,9 +5,8 @@ param containerAppEnvironmentName string = 'alive-env'
 param containerRegistryName string = 'alive'
 @minLength(1)
 param image string
-param provisionPermissions bool = true
-
-var acrPullRole = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
+@description('Server trace probability; release validates 0 through 0.1. Zero disables trace export.')
+param sentryTracesSampleRate string = '0.01'
 
 resource environment 'Microsoft.App/managedEnvironments@2024-03-01' existing = {
   name: containerAppEnvironmentName
@@ -17,19 +16,8 @@ resource registry 'Microsoft.ContainerRegistry/registries@2023-07-01' existing =
   name: containerRegistryName
 }
 
-resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
   name: 'hhc-web-identity'
-  location: location
-}
-
-resource acrPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (provisionPermissions) {
-  name: guid(registry.id, identity.id, 'acr-pull')
-  scope: registry
-  properties: {
-    principalId: identity.properties.principalId
-    principalType: 'ServicePrincipal'
-    roleDefinitionId: acrPullRole
-  }
 }
 
 resource app 'Microsoft.App/containerApps@2025-01-01' = {
@@ -66,6 +54,10 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
           name: 'hhc-web'
           image: image
           env: [
+            {
+              name: 'SENTRY_TRACES_SAMPLE_RATE'
+              value: sentryTracesSampleRate
+            }
             {
               name: 'HHC_WEB_API_BASE_URL'
               value: 'http://127.0.0.1:3500/v1.0/invoke/hhc-web-api/method/api'
@@ -132,9 +124,6 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
       }
     }
   }
-  dependsOn: [
-    acrPull
-  ]
 }
 
 output appName string = app.name

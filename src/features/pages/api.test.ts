@@ -60,6 +60,7 @@ describe('fixed editorial page adapters', () => {
 
   it.each([
     new TypeError('network unavailable'),
+    new DOMException('content deadline exceeded', 'TimeoutError'),
     new HhcWebApiError(503, 'service_unavailable', 'unavailable')
   ])('rejects Home availability failures for ISR and preserves the About fallback: %s', async (error) => {
     const client = rejectingClient(error);
@@ -73,7 +74,8 @@ describe('fixed editorial page adapters', () => {
   it.each([
     new HhcWebApiError(200, 'invalid_response', 'invalid response'),
     new HhcWebApiError(403, 'forbidden', 'forbidden'),
-    new Error('plain failure')
+    new Error('plain failure'),
+    new DOMException('caller cancelled', 'AbortError')
   ])('fails loud instead of falling back for non-availability failures: %s', async (error) => {
     await expect(getHomePage('ja', rejectingClient(error))).rejects.toBe(error);
     await expect(getAboutPage('ko', rejectingClient(error))).rejects.toBe(error);

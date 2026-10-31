@@ -123,6 +123,12 @@ jobs:
             'if(require("node:fs").readdirSync("/app",{recursive:true}).some(p=>p.endsWith(".map")))throw new Error("Source maps reached runtime")'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify SSR tracing on the built image
+        if: steps.changes.outputs.docs_only != 'true'
+        run: |
+          docker run --rm --network none --memory 512m --cpus 1 \
+            -v "$PWD/scripts/test-content-tracing.mjs:/test-content-tracing.mjs:ro" \
+            --entrypoint /nodejs/bin/node hhc-web:verify /test-content-tracing.mjs /app/server.js
       - name: Check static budgets on the verified image
         if: steps.changes.outputs.docs_only != 'true'
         run: |

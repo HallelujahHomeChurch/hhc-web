@@ -72,6 +72,25 @@ export function sanitizeSentryEvent(event: Record<string, unknown>): Record<stri
   return sanitized
 }
 
+// Streamed spans bypass beforeSendTransaction; keep the same text scrubbing and
+// remove request payloads/headers and URL query attributes before serialization.
+export function sanitizeSentrySpan(span: Record<string, unknown>): Record<string, unknown> {
+  const sanitized = sanitizeValue(span) as Record<string, unknown>
+  delete sanitized.user
+  delete sanitized.request
+  if (sanitized.attributes && typeof sanitized.attributes === 'object') {
+    const attributes = sanitized.attributes as Record<string, unknown>
+    for (const key of Object.keys(attributes)) {
+      if (key === 'url.query' || /^user[._]/i.test(key) || /^http\.(request|response)\.(header|cookie|body)/i.test(key)) {
+        delete attributes[key]
+      } else if (['url.full', 'http.url', 'http.target', 'url.path'].includes(key) && typeof attributes[key] === 'string') {
+        attributes[key] = attributes[key].split(/[?#]/, 1)[0]
+      }
+    }
+  }
+  return sanitized
+}
+
 export const sanitizeBreadcrumb = (breadcrumb: Breadcrumb) => sanitizeValue(breadcrumb) as Breadcrumb
 
 type ErrorContext = {

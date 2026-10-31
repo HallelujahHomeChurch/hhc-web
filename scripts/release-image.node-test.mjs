@@ -57,7 +57,7 @@ test('main release builds one production image and scans that same immutable ima
   assert.doesNotMatch(job('deploy'), /docker build|docker push/);
   const prepare = job('prepare_image');
   assert.match(prepare, /\[\[ "\$digest" =~ \^sha256:\[0-9a-f\]\{64\}\$ \]\]/);
-  assert.match(prepare, /image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 "\$IMAGE_REF"/);
+  assert.match(prepare, /sh scripts\/scan-image\.sh "\$IMAGE_REF"/);
   assert.ok(prepare.indexOf('name: Scan immutable image') < prepare.indexOf('name: Export verified immutable image'));
   assert.match(step(prepare, 'Export verified immutable image'), /echo "commit=\$GITHUB_SHA" >> "\$GITHUB_OUTPUT"/);
   assert.match(step(prepare, 'Export verified immutable image'), /echo "image=\$IMAGE_REF" >> "\$GITHUB_OUTPUT"/);
@@ -121,7 +121,8 @@ test('runtime changes stay after verify/image preparation with existing preview 
   for (const name of ['Capture current state', 'Preview infrastructure change', 'Deploy', 'Wait for revision', 'Verify through gateway Dapr', 'Roll back failed update']) {
     step(deploy, name);
   }
-  assert.match(deploy, /--parameters image="\$IMAGE_REF" provisionPermissions="\$PROVISION_PERMISSIONS"/);
+  assert.match(deploy, /--parameters image="\$IMAGE_REF" sentryTracesSampleRate="\$SENTRY_TRACES_SAMPLE_RATE"/);
+  assert.doesNotMatch(deploy, /provisionPermissions|PROVISION_PERMISSIONS/);
   assert.match(deploy, /--image "\$PREVIOUS_IMAGE_REF"/);
 });
 
@@ -164,4 +165,41 @@ test('a provider 502 fails only the independent upload command and retains deplo
     assert.doesNotMatch(upload,/continue-on-error/);
     assert.match(job('deploy'),/^    needs: \[verify, prepare_image\]$/m);
   }finally{rmSync(folder,{recursive:true});}
+});
+
+
+test('trace sampling is validated, persisted by both deployment paths, and restored with the previous revision', () => {
+  const deploy = job('deploy');
+  assert.ok(deploy.includes("SENTRY_TRACES_SAMPLE_RATE: ${{ vars.SENTRY_TRACES_SAMPLE_RATE || '0.01' }}"));
+  const guard = step(deploy, 'Validate release configuration').split('\n').find(line => line.trim().startsWith('node -e')).trim();
+  for (const value of ['0', '0.001', '0.01', '0.1']) {
+    assert.equal(spawnSync('/bin/bash', ['-e', '-c', guard], {env: {...process.env, SENTRY_TRACES_SAMPLE_RATE: value}}).status, 0);
+  }
+  for (const value of ['', ' ', '-0.01', '0.11', 'NaN', 'Infinity', 'garbage']) {
+    assert.notEqual(spawnSync('/bin/bash', ['-e', '-c', guard], {env: {...process.env, SENTRY_TRACES_SAMPLE_RATE: value}}).status, 0);
+  }
+  for (const name of ['Preview infrastructure change', 'Deploy']) {
+    assert.ok(step(deploy, name).includes('sentryTracesSampleRate="$SENTRY_TRACES_SAMPLE_RATE"'));
+  }
+  const infra = readFileSync(new URL('../infra/main.bicep', import.meta.url), 'utf8');
+  assert.match(infra, /param sentryTracesSampleRate string = '0.01'/);
+  assert.match(infra, /name: 'SENTRY_TRACES_SAMPLE_RATE'\s+value: sentryTracesSampleRate/);
+  const rollback = step(deploy, 'Roll back failed update');
+  assert.ok(rollback.includes('--from-revision "$PREVIOUS_READY_REVISION"'));
+  assert.doesNotMatch(rollback, /SENTRY_TRACES_SAMPLE_RATE|set-env-vars/);
+});
+
+
+test('remote probes finish within the console budget and cannot accept a partial HTTP 200', () => {
+  const probe = step(job('deploy'), 'Verify through gateway Dapr');
+  assert.ok(probe.includes('probe_timeout=45'));
+  assert.ok(probe.includes('[[ "$path" == health ]] && probe_timeout=5'));
+  assert.ok(probe.includes('/usr/bin/timeout -s KILL ${probe_timeout} /usr/bin/wget -T ${probe_timeout}'));
+  assert.ok(probe.includes('|| console_status=$?'));
+  assert.ok(probe.includes('if [[ "$console_status" == 0 ]] && grep'));
+  const condition = probe.split('\n').find(line => line.trim().startsWith('if [[')).trim();
+  for (const [console_status, output, expected] of [['0', 'HTTP/1.1 200 OK\nROLLOUT_WEB_OK', 0], ['0', 'HTTP/1.1 200 OK', 1], ['137', 'HTTP/1.1 200 OK', 1], ['0', 'HTTP/1.1 503 Unavailable', 1]]) {
+    const result = spawnSync('/bin/bash', ['-c', `${condition} exit 0; else exit 1; fi`], {env: {...process.env, console_status, output}});
+    assert.equal(result.status, expected);
+  }
 });
