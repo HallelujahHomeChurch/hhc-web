@@ -74,6 +74,14 @@ class RuntimeVerification(unittest.TestCase):
                 self.assertEqual(runtime.main(), 0)
                 self.assertEqual(Path(folder, 'output').read_text(), 'required=' + required + '\n')
 
+    def test_confirmed_negative_stops_without_sleep_or_publishing_candidate(self):
+        with tempfile.TemporaryDirectory() as folder, patch.dict(os.environ, {'RESOURCE_GROUP': 'fixture', 'GITHUB_ENV': folder + '/env', 'CANDIDATE_REVISION': APP['latest'], 'APP_NAME': 'hhc-web', 'IMAGE_REF': IMAGE}), patch.object(runtime.sys, 'argv', ['runtime']), patch.object(runtime, 'observe', wraps=runtime.observe) as probe, patch.object(runtime, 'azure', side_effect=[APP, {**REVISION, 'running': 'Failed'}]) as azure, patch.object(runtime.time, 'sleep') as sleep:
+            self.assertEqual(runtime.main(), 10)
+            self.assertEqual(probe.call_count, 1)
+            self.assertEqual(azure.call_count, 2)
+            sleep.assert_not_called()
+            self.assertFalse(Path(folder, 'env').exists())
+
     def test_verification_pins_candidate_and_bounds_pending_state(self):
         with tempfile.TemporaryDirectory() as folder, patch.dict(os.environ, {'GITHUB_ENV': folder + '/env', 'APP_NAME': 'hhc-web', 'IMAGE_REF': IMAGE}), patch.object(runtime.sys, 'argv', ['runtime']), patch.object(runtime, 'observe', return_value=(0, APP['latest'])):
             self.assertEqual(runtime.main(), 0)

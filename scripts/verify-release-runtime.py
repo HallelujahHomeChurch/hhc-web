@@ -86,6 +86,8 @@ def main():
                         with open(os.environ['GITHUB_ENV'], 'a') as output:
                             output.write('CANDIDATE_REVISION=' + revision + '\n')
                     break
+                if result == 10:
+                    break
                 if attempt < 59:
                     time.sleep(10)
     except (ValueError, KeyError, TypeError, AttributeError, OSError, subprocess.TimeoutExpired):
