@@ -32,6 +32,16 @@ class RuntimeVerification(unittest.TestCase):
         for rule in [{'revisionName': APP['latest'], 'weight': 100}, {'latestRevision': True, 'weight': 100}]:
             self.assertEqual(self.observe(app={**APP, 'ingress': True, 'traffic': [rule]}), 0)
 
+    def test_running_states_and_strict_traffic_schema(self):
+        self.assertEqual(self.observe(revision={**REVISION, 'running': 'RunningAtMaxScale'}), 0)
+        for running in ('Failed', 'Degraded'):
+            self.assertEqual(self.observe(revision={**REVISION, 'running': running}), 10)
+        for traffic in [[{'latestRevision': True, 'weight': 100}, {'revisionName': 'old', 'weight': 10}],
+                        [{'latestRevision': True, 'weight': '100'}], [{'latestRevision': True, 'weight': True}],
+                        [{'latestRevision': True, 'revisionName': 'old', 'weight': 100}],
+                        [{'latestRevision': 'true', 'weight': 100}], [{'weight': 100}], [None]]:
+            self.assertEqual(self.observe(app={**APP, 'ingress': True, 'traffic': traffic}), 20)
+
     def test_stale_identity_or_incomplete_traffic_is_unverified(self):
         for state in [{**APP, 'ready': 'old'}, {**APP, 'latest': 'old'}, {**APP, 'ingress': True, 'traffic': []},
                       {**APP, 'ingress': True, 'traffic': [{'revisionName': 'old', 'weight': 100}]}]:

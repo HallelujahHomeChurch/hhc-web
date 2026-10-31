@@ -29,15 +29,31 @@ def observe(app, revision, image):
                     '{active:properties.active,health:properties.healthState,provisioning:properties.provisioningState,running:properties.runningState,images:properties.template.containers[].image}')
     if runtime['images'] != [image]:
         return 20, revision
-    if runtime['provisioning'] == 'Failed' or runtime['health'] == 'Unhealthy':
+    if (runtime['provisioning'] == 'Failed' or runtime['health'] == 'Unhealthy' or
+            runtime['running'] in ('Failed', 'Degraded')):
         return 10, revision
     traffic = state['traffic']
-    # Apps without ingress are reached through the existing public gateway/Dapr path.
-    serving = (state['ingress'] is False and app == 'hhc-web') or (isinstance(traffic, list) and sum(
-        entry.get('weight', 0) for entry in traffic
-        if entry.get('revisionName') == revision or entry.get('latestRevision') is True) == 100)
+    if state['ingress'] is False and app == 'hhc-web':
+        serving = traffic is None
+    else:
+        if state['ingress'] is not True or not isinstance(traffic, list) or not traffic:
+            return 20, revision
+        total = 0
+        for entry in traffic:
+            if not isinstance(entry, dict) or type(entry.get('weight')) is not int or not 0 <= entry['weight'] <= 100:
+                return 20, revision
+            latest = entry.get('latestRevision', False)
+            named = entry.get('revisionName')
+            if type(latest) is not bool or (named is not None and not isinstance(named, str)):
+                return 20, revision
+            if latest and named is not None or not latest and not named:
+                return 20, revision
+            if entry['weight'] > 0 and not (latest or named == revision):
+                return 20, revision
+            total += entry['weight']
+        serving = total == 100
     if (state['ready'] == revision and runtime['active'] is True and
-            runtime['health'] == 'Healthy' and runtime['running'] == 'Running' and serving):
+            runtime['health'] == 'Healthy' and runtime['running'] in ('Running', 'RunningAtMaxScale') and serving):
         return 0, revision
     return 20, revision
 
