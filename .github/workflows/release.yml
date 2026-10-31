@@ -364,52 +364,21 @@ jobs:
             --parameters image="$IMAGE_REF" sentryTracesSampleRate="$SENTRY_TRACES_SAMPLE_RATE" \
             --only-show-errors --output none
       - name: Wait for revision
-        run: |
-          for attempt in {1..60}; do
-            latest="$(az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
-              --query properties.latestRevisionName -o tsv --only-show-errors)"
-            ready="$(az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
-              --query properties.latestReadyRevisionName -o tsv --only-show-errors)"
-            if [[ -n "$latest" && "$latest" == "$ready" ]]; then
-              image="$(az containerapp revision show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
-                --revision "$ready" --query properties.template.containers[0].image -o tsv --only-show-errors)"
-              [[ "$image" == "$IMAGE_REF" ]] && exit 0
-            fi
-            sleep 10
-          done
-          echo "HHC web did not become ready" >&2
-          exit 1
-      - name: Verify through gateway Dapr
-        run: |
-          for path in health zh-Hant/maintenance; do
-            # Leave 15s of the existing console budget for connection/teardown.
-            probe_timeout=45
-            [[ "$path" == health ]] && probe_timeout=5
-            ready=false
-            for attempt in {1..12}; do
-              console_status=0
-              output="$(timeout 60s script -q -e -c \
-                "az containerapp exec -g \"$RESOURCE_GROUP\" -n \"$API_GATEWAY_APP_NAME\" --command \"/bin/sh -c \\\"/usr/bin/timeout -s KILL ${probe_timeout} /usr/bin/wget -T ${probe_timeout} -S -O - http://127.0.0.1:3500/v1.0/invoke/hhc-web/method/${path} && echo && echo ROLLOUT_WEB_OK\\\"\"" \
-                /dev/null 2>&1)" || console_status=$?
-              output="${output//$'\r'/}"
-              if [[ "$console_status" == 0 ]] && grep -Eq 'HTTP/1\.[01][[:space:]]+200' <<< "$output" && grep -Fxq 'ROLLOUT_WEB_OK' <<< "$output"; then
-                ready=true
-                break
-              fi
-              sleep 5
-            done
-            if [[ "$ready" != true ]]; then
-              printf '%s\n' "$output"
-              exit 1
-            fi
-          done
-      - name: Capture candidate Dapr port evidence
+        run: python3 scripts/verify-release-runtime.py
+      - name: Verify public website
+        run: bash scripts/verify-public-release.sh
+      - name: Classify recovery
+        id: recovery
         if: ${{ failure() && steps.deploy_runtime.outcome != 'skipped' }}
-        continue-on-error: true
-        # Include kill grace in the maximum 60-second rollback delay.
-        run: timeout --kill-after=5s 55s bash scripts/collect-dapr-port.sh || echo 'Candidate port evidence unavailable; socket owner remains unknown.'
+        env:
+          DEPLOY_OUTCOME: ${{ steps.deploy_runtime.outcome }}
+        run: |
+          if [[ "$DEPLOY_OUTCOME" == failure ]]; then
+            export FAILED_DEPLOYMENTS="[\"hhc-web-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}\"]"
+          fi
+          python3 scripts/verify-release-runtime.py recovery
       - name: Roll back failed update
-        if: ${{ failure() && steps.deploy_runtime.outcome != 'skipped' && env.HAS_PREVIOUS == 'true' }}
+        if: ${{ failure() && steps.recovery.outputs.required == 'true' && env.HAS_PREVIOUS == 'true' }}
         run: |
           az containerapp revision copy \
             -g "$RESOURCE_GROUP" \
@@ -418,3 +387,11 @@ jobs:
             --image "$PREVIOUS_IMAGE_REF" \
             --revision-suffix "rollback-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
             --only-show-errors --output none
+      - name: Verify recovered runtime
+        if: ${{ failure() && steps.recovery.outputs.required == 'true' && env.HAS_PREVIOUS == 'true' }}
+        env:
+          IMAGE_REF: ${{ env.PREVIOUS_IMAGE_REF }}
+          CANDIDATE_REVISION: ''
+        run: |
+          python3 scripts/verify-release-runtime.py
+          bash scripts/verify-public-release.sh

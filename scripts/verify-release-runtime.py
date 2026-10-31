@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+"""Read-only ACA release verification: 0 healthy, 10 negative, 20 unverified."""
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+
+
+def azure(*args):
+    result = subprocess.run(['az', *args, '-o', 'json', '--only-show-errors'],
+                            capture_output=True, text=True, timeout=60)
+    if result.returncode:
+        raise ValueError('ARM verification unavailable')
+    return json.loads(result.stdout)
+
+
+def observe(app, revision, image):
+    if not re.fullmatch(r'alive\.azurecr\.io/alive/[a-z0-9-]+@sha256:[a-f0-9]{64}', image):
+        raise ValueError('immutable image required')
+    state = azure('containerapp', 'show', '-g', os.environ['RESOURCE_GROUP'], '-n', app,
+                  '--query', '{latest:properties.latestRevisionName,ready:properties.latestReadyRevisionName,ingress:properties.configuration.ingress != null,traffic:properties.configuration.ingress.traffic}')
+    revision = revision or state['latest']
+    if not isinstance(revision, str) or not re.fullmatch(re.escape(app) + r'--[a-z0-9-]+', revision) or revision != state['latest']:
+        return 20, revision
+    runtime = azure('containerapp', 'revision', 'show', '-g', os.environ['RESOURCE_GROUP'],
+                    '-n', app, '--revision', revision, '--query',
+                    '{active:properties.active,health:properties.healthState,provisioning:properties.provisioningState,running:properties.runningState,images:properties.template.containers[].image}')
+    if runtime['images'] != [image]:
+        return 20, revision
+    if runtime['provisioning'] == 'Failed' or runtime['health'] == 'Unhealthy':
+        return 10, revision
+    traffic = state['traffic']
+    # Apps without ingress are reached through the existing public gateway/Dapr path.
+    serving = (state['ingress'] is False and app == 'hhc-web') or (isinstance(traffic, list) and sum(
+        entry.get('weight', 0) for entry in traffic
+        if entry.get('revisionName') == revision or entry.get('latestRevision') is True) == 100)
+    if (state['ready'] == revision and runtime['active'] is True and
+            runtime['health'] == 'Healthy' and runtime['running'] == 'Running' and serving):
+        return 0, revision
+    return 20, revision
+
+
+def recovery():
+    # A failed ARM request alone is not proof a deployment failed.
+    deployments = json.loads(os.environ.get('FAILED_DEPLOYMENTS', '[]'))
+    for deployment in deployments:
+        state = azure('deployment', 'group', 'show', '-g', os.environ['RESOURCE_GROUP'],
+                      '-n', deployment, '--query', 'properties.provisioningState')
+        if state == 'Failed':
+            return 10
+    result, _ = observe(os.environ.get('APP_NAME') or os.environ['API_APP_NAME'],
+                   os.environ.get('CANDIDATE_REVISION', ''), os.environ['IMAGE_REF'])
+    return result
+
+
+def main():
+    recovering = sys.argv[1:] == ['recovery']
+    result = 20
+    try:
+        if recovering:
+            result = recovery()
+        else:
+            for attempt in range(60):
+                result, revision = observe(os.environ.get('APP_NAME') or os.environ['API_APP_NAME'],
+                                 os.environ.get('CANDIDATE_REVISION', ''), os.environ['IMAGE_REF'])
+                if result == 0:
+                    if os.environ.get('GITHUB_ENV'):
+                        with open(os.environ['GITHUB_ENV'], 'a') as output:
+                            output.write('CANDIDATE_REVISION=' + revision + '\n')
+                    break
+                if attempt < 59:
+                    time.sleep(10)
+    except (ValueError, KeyError, TypeError, AttributeError, OSError, subprocess.TimeoutExpired):
+        result = 20
+    if recovering:
+        if os.environ.get('GITHUB_OUTPUT'):
+            with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+                output.write('required=' + ('true' if result == 10 else 'false') + '\n')
+        print(json.dumps({'event': 'release_recovery_decision', 'result': result,
+                          'rollback': result == 10}))
+        return 0
+    if result == 20:
+        print('::error::Release verification unavailable; candidate remains unaccepted')
+    print(json.dumps({'event': 'release_runtime_verification', 'result': result}))
+    return result
+
+
+if __name__ == '__main__':
+    sys.exit(main())
