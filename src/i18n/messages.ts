@@ -16,3 +16,9 @@ export const messagesByLocale = {
 export function getMessages(locale: ProductLocale) {
   return messagesByLocale[locale];
 }
+
+/** Series labels for client components that must not import every locale catalog. */
+export function bulletinSeriesLabels(locale: ProductLocale) {
+  const {general, children} = messagesByLocale[locale].literatureMinistry;
+  return {general, children};
+}

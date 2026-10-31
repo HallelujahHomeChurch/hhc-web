@@ -92,7 +92,9 @@ export default async function HomePage({params}: HomePageProps) {
                 error: messages.home.weeklyLoadError,
                 readOnline: messages.home.weeklyReadOnline,
                 empty: messages.home.weeklyEmpty,
-                retry: messages.home.retry
+                retry: messages.home.retry,
+                downloadPdf: messages.literatureMinistry.downloadPdf,
+                pdfFallback: messages.literatureMinistry.pdfFallback
               }}
             />
           </SectionCard>

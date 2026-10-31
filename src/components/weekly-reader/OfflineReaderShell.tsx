@@ -4,16 +4,16 @@ import {bulletinEditions} from '@hallelujahhomechurch/preferences';
 import type {Locale} from '@/i18n/locales';
 import type {ReaderMessages} from './ReaderToolbar';
 import {WeeklyReader} from './WeeklyReader';
-import {OfflineContentPage} from './OfflineContentPage';
+import {OfflineContentPage, type BulletinSeriesLabels} from './OfflineContentPage';
 import {ReaderLoading} from './ReaderLoading';
 
 const subscribePath = (changed: () => void) => {window.addEventListener('popstate', changed); return () => window.removeEventListener('popstate', changed);};
 const currentPath = () => window.location.pathname;
 const serverPath = () => null;
 
-export function OfflineReaderShell({locale, messages}: {locale: Locale; messages: ReaderMessages}) {
+export function OfflineReaderShell({locale, messages, seriesLabels}: {locale: Locale; messages: ReaderMessages; seriesLabels: BulletinSeriesLabels}) {
   const path = useSyncExternalStore(subscribePath, currentPath, serverPath);
-  if (path === `/${locale}/literature-ministry/offline`) return <OfflineContentPage locale={locale} messages={messages}/>;
+  if (path === `/${locale}/literature-ministry/offline`) return <OfflineContentPage locale={locale} messages={messages} seriesLabels={seriesLabels}/>;
   const match = path?.match(/^\/(zh-Hant|zh-Hans|en|ja|ko)\/literature-ministry\/([1-9]\d{0,8})\/read\/(general|children)\/(zh-Hant|zh-Hans|en)$/);
   const edition = match && match[1] === locale ? bulletinEditions.find(edition => edition.series === match[3] && edition.locale === match[4]) : null;
   if (path === null) return <main className="weekly-reader"><ReaderLoading label={messages.loading} showHeader/></main>;

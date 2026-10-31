@@ -10,11 +10,10 @@ import type {SiteLayout} from '@/features/site-layout/types'
 import {OrganizationsGate} from './OrganizationsGate'
 import {OrganizationsSearchContext} from './OrganizationsSearch'
 import {OrganizationRootsSkeleton,OrganizationDirectorySkeleton,OrganizationMemberSkeleton} from './OrganizationLoading'
-import {organizationMessages} from './messages'
-import {organizationCopy} from './messages'
+import type {OrganizationMessages} from './messages'
 import './organizations.css'
 
-export function OrganizationsShell({locale, layout, children}: {locale: Locale; layout: SiteLayout; children: ReactNode}) {
+export function OrganizationsShell({locale, layout, messages, heroTitle, heroSubtitle, children}: {locale: Locale; layout: SiteLayout; messages: OrganizationMessages; heroTitle: string; heroSubtitle: string; children: ReactNode}) {
   const pathname = usePathname()
   const owner = useAccountIdentity()
   const access = useOrganizationsAccess()
@@ -28,12 +27,11 @@ export function OrganizationsShell({locale, layout, children}: {locale: Locale; 
   const setAvailable = useCallback((status: {unitId: string; available: boolean}) => {
     if (currentScope.current === scope && status.unitId === unitId) setAvailability({scope, available: status.available})
   }, [scope, unitId])
-  const copy = organizationCopy[locale]
   return <OrganizationsSearchContext.Provider value={{query: search.scope === scope ? search.query : '', setQuery: query => setSearch({scope, query}), available: access.status === 'allowed' && Boolean(unitId) && availability.scope === scope && availability.available, setAvailable}}>
     <SiteHeader layout={layout} locale={locale} pathname={pathname} />
-    <OrganizationsGate locale={locale} loadingFallback={pathname===root?<OrganizationRootsSkeleton label={organizationMessages[locale].loading}/>:pathname.includes('/members/')?<OrganizationMemberSkeleton label={organizationMessages[locale].loading}/>:<OrganizationDirectorySkeleton label={organizationMessages[locale].loading}/>}>
+    <OrganizationsGate locale={locale} messages={messages} loadingFallback={pathname===root?<OrganizationRootsSkeleton label={messages.organizations.loading}/>:pathname.includes('/members/')?<OrganizationMemberSkeleton label={messages.organizations.loading}/>:<OrganizationDirectorySkeleton label={messages.organizations.loading}/>}>
       <main className="organizations">
-        {pathname === root ? <AboutHero locale={locale} imageUrl={layout.bannerImageUrl} title={copy.heroTitle} subtitle={copy.heroSubtitle} /> : null}
+        {pathname === root ? <AboutHero locale={locale} imageUrl={layout.bannerImageUrl} title={heroTitle} subtitle={heroSubtitle} /> : null}
         <div className="organizations-main">{children}</div>
       </main>
     </OrganizationsGate>

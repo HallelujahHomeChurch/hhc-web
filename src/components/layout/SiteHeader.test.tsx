@@ -11,6 +11,7 @@ import {AccountControlProvider, BulletinAccessGate, useAccountAuth} from './Acco
 import {SiteHeader} from './SiteHeader';
 import {InitialLoadingBoundary} from './InitialLoadingBoundary';
 import {OrganizationsGate} from '@/features/organizations/OrganizationsGate';
+import {messages as organizationMessages} from '@/features/organizations/messages';
 
 const searchRouter = vi.hoisted(() => ({push:vi.fn(), replace:vi.fn()}));
 vi.mock('next/navigation',()=>({useRouter:()=>searchRouter}));
@@ -148,7 +149,7 @@ describe('SiteHeader', () => {
       <AccountControlProvider client={client} labels={accountLabels}>
         <InitialLoadingBoundary label="Restoring"><SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant" /></InitialLoadingBoundary>
         <Status /><BulletinAccessGate><span>Private bulletin</span></BulletinAccessGate>
-        <OrganizationsGate locale="zh-Hant"><span>Private management</span></OrganizationsGate>
+        <OrganizationsGate locale="zh-Hant" messages={organizationMessages["zh-Hant"]}><span>Private management</span></OrganizationsGate>
       </AccountControlProvider>
     </NextIntlClientProvider>);
     expect(screen.getAllByRole('link', {name: '文字事工'})).toHaveLength(2);

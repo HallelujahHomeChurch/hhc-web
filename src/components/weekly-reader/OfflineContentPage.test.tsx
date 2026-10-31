@@ -1,7 +1,7 @@
 import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import {beforeEach, expect, it, vi} from 'vitest';
 import {readerFixture} from '@/features/weekly-reader/test-fixture';
-import {getMessages} from '@/i18n/messages';
+import {bulletinSeriesLabels, getMessages} from '@/i18n/messages';
 import {OfflineContentPage} from './OfflineContentPage';
 const store = vi.hoisted(() => ({supportsOfflineReader: () => true, getOfflineIdentity: vi.fn(), listOfflineSaves: vi.fn(), readOfflineSave: vi.fn(), removeOfflineSave: vi.fn(), readOfflineRemovalSnapshot: vi.fn()}));
 const identity = vi.hoisted(() => ({accountId: null as string | null, changed: () => {}}));
@@ -19,7 +19,7 @@ beforeEach(() => {
   store.readOfflineRemovalSnapshot.mockResolvedValue(snapshot); store.removeOfflineSave.mockResolvedValue(undefined);
 });
 it('lists locked downloads without private text and removes only after the house dialog accepts the exact snapshot', async () => {
-  render(<OfflineContentPage locale="en" messages={m}/>);
+  render(<OfflineContentPage locale="en" seriesLabels={bulletinSeriesLabels("en")} messages={m}/>);
   const link = await screen.findByRole('link', {name: /1739 · General bulletin/});
   expect(link).toHaveAttribute('href', '/en/literature-ministry/1739/read/general/zh-Hant');
   expect(screen.getByText(m.offlineLocked)).toBeInTheDocument();
@@ -33,7 +33,7 @@ it('lists locked downloads without private text and removes only after the house
 });
 it('shows the unsynced warning and cancels without removing', async () => {
   store.readOfflineRemovalSnapshot.mockResolvedValue({...snapshot, pending: true});
-  render(<OfflineContentPage locale="en" messages={m}/>);
+  render(<OfflineContentPage locale="en" seriesLabels={bulletinSeriesLabels("en")} messages={m}/>);
   fireEvent.click(await screen.findByRole('button', {name: m.removeOffline}));
   const dialog = await screen.findByRole('alertdialog'); expect(dialog).toHaveTextContent(m.unsyncedWarning);
   expect(store.readOfflineRemovalSnapshot).toHaveBeenCalledWith(save.selector);
@@ -43,7 +43,7 @@ it('shows the unsynced warning and cancels without removing', async () => {
 });
 it('retains the download and reloads after a stale decision or a storage failure', async () => {
   store.removeOfflineSave.mockRejectedValue(new Error('offline_replica_changed'));
-  render(<OfflineContentPage locale="en" messages={m}/>);
+  render(<OfflineContentPage locale="en" seriesLabels={bulletinSeriesLabels("en")} messages={m}/>);
   fireEvent.click(await screen.findByRole('button', {name: m.removeOffline}));
   fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', {name: m.removeOffline}));
   expect(await screen.findByRole('alert')).toHaveTextContent(m.offlineError);
@@ -54,11 +54,11 @@ it.each(['account', 'owner', 'unmount'] as const)('invalidates a pending snapsho
   let finish!: (value: unknown) => void;
   store.readOfflineRemovalSnapshot.mockReturnValue(new Promise(resolve => {finish = resolve;}));
   identity.accountId = 'account-a';
-  const view = render(<OfflineContentPage locale="en" messages={m}/>);
+  const view = render(<OfflineContentPage locale="en" seriesLabels={bulletinSeriesLabels("en")} messages={m}/>);
   fireEvent.click(await screen.findByRole('button', {name: m.removeOffline}));
   fireEvent.click(screen.getByRole('button', {name: m.removeOffline}));
   expect(store.readOfflineRemovalSnapshot).toHaveBeenCalledOnce();
-  if (change === 'account') {identity.accountId = 'account-b'; view.rerender(<OfflineContentPage locale="en" messages={m}/>);}
+  if (change === 'account') {identity.accountId = 'account-b'; view.rerender(<OfflineContentPage locale="en" seriesLabels={bulletinSeriesLabels("en")} messages={m}/>);}
   else if (change === 'owner') act(() => identity.changed());
   else view.unmount();
   await act(async () => finish(snapshot));
@@ -68,9 +68,9 @@ it('hides previous-account downloads immediately and discards their pending list
   let finish!: (value: unknown[]) => void;
   store.listOfflineSaves.mockReturnValueOnce(new Promise(resolve => {finish = resolve;}));
   identity.accountId = 'account-a';
-  const view = render(<OfflineContentPage locale="en" messages={m}/>);
+  const view = render(<OfflineContentPage locale="en" seriesLabels={bulletinSeriesLabels("en")} messages={m}/>);
   await waitFor(() => expect(finish).toBeDefined());
-  identity.accountId = 'account-b'; view.rerender(<OfflineContentPage locale="en" messages={m}/>);
+  identity.accountId = 'account-b'; view.rerender(<OfflineContentPage locale="en" seriesLabels={bulletinSeriesLabels("en")} messages={m}/>);
   await act(async () => finish([save]));
   expect(screen.queryByRole('link', {name: /1739 · General bulletin/})).not.toBeInTheDocument();
 });
@@ -78,7 +78,7 @@ it('hides previous-account downloads immediately and discards their pending list
 it('discards a pending listing on offline-owner notification even before auth changes', async () => {
   let finish!: (value: unknown[]) => void;
   store.listOfflineSaves.mockReturnValueOnce(new Promise(resolve => {finish = resolve;}));
-  render(<OfflineContentPage locale="en" messages={m}/>);
+  render(<OfflineContentPage locale="en" seriesLabels={bulletinSeriesLabels("en")} messages={m}/>);
   await waitFor(() => expect(finish).toBeDefined());
   store.getOfflineIdentity.mockResolvedValue({accountId: null, epoch: 2});
   act(() => identity.changed());

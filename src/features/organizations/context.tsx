@@ -6,16 +6,16 @@ import {useAccountAuthorization, useAccountIdentity} from '@/components/layout/A
 import type {Locale} from '@/i18n/locales'
 import {OperationsApi} from './api'
 import {UnitNotificationsApi} from './notifications-api'
-import {messages} from './messages'
+import type {OrganizationMessages} from './messages'
 
-const Context = createContext<{locale: Locale; operationsApi: OperationsApi; unitNotificationsApi: UnitNotificationsApi} | null>(null)
-export function OrganizationClientsProvider({locale, children}: {locale: Locale; children: ReactNode}) {
+const Context = createContext<{locale: Locale; messages: OrganizationMessages; operationsApi: OperationsApi; unitNotificationsApi: UnitNotificationsApi} | null>(null)
+export function OrganizationClientsProvider({locale, messages, children}: {locale: Locale; messages: OrganizationMessages; children: ReactNode}) {
   const authorization = useAccountAuthorization()
   const owner = useAccountIdentity()
-  const value = useMemo(() => ({locale, owner,
+  const value = useMemo(() => ({locale, messages, owner,
     operationsApi: new OperationsApi(createOperationsClient({baseUrl: '', ...authorization, fetcher: (input, init) => fetch(input, {...init, cache: 'no-store'})})),
     unitNotificationsApi: new UnitNotificationsApi(authorization),
-  }), [locale, authorization, owner])
+  }), [locale, messages, authorization, owner])
   return <Context.Provider value={value}>{children}</Context.Provider>
 }
 export function useOrganizationApi() {
@@ -24,6 +24,6 @@ export function useOrganizationApi() {
   return context
 }
 export function useOrganizationMessages() {
-  const {locale} = useOrganizationApi()
-  return {locale, messages: messages[locale]}
+  const {locale, messages} = useOrganizationApi()
+  return {locale, messages}
 }

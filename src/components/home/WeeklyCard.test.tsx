@@ -2,6 +2,8 @@ import {act, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {WeeklyCard} from './WeeklyCard';
+import {getMessages} from '@/i18n/messages';
+import type {Locale} from '@/i18n/locales';
 
 const captureHandledError = vi.hoisted(() => vi.fn());
 const auth = vi.hoisted(()=>({status:'authenticated',id:'member'}));
@@ -15,7 +17,8 @@ vi.mock('@/components/layout/AccountControl', () => ({
 }));
 vi.mock('@/lib/observability', () => ({captureHandledError}));
 
-const messages = {general: 'General', children: "Children's", loading: 'Loading', downloading: 'Preparing download', downloadReady: 'Ready', downloadError: 'Download unavailable', error: 'Unavailable', retry: 'Retry', readOnline:'Read online', empty:'No bulletins'};
+const baseMessages = {general: 'General', children: "Children's", loading: 'Loading', downloading: 'Preparing download', downloadReady: 'Ready', downloadError: 'Download unavailable', error: 'Unavailable', retry: 'Retry', readOnline:'Read online', empty:'No bulletins'};
+const messagesFor = (locale: Locale) => ({...baseMessages, downloadPdf: getMessages(locale).literatureMinistry.downloadPdf, pdfFallback: getMessages(locale).literatureMinistry.pdfFallback});
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -31,7 +34,7 @@ describe('WeeklyCard', () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(discoveryResponse([bulletin]));
     vi.stubGlobal('fetch', fetcher);
 
-    render(<WeeklyCard locale="en" ctaLabel="Download weekly" messages={messages} />);
+    render(<WeeklyCard locale="en" ctaLabel="Download weekly" messages={messagesFor("en")} />);
 
     expect(await screen.findByRole('button', {name: 'Download PDF: 繁中'})).toHaveTextContent('Download PDF · 繁中');
     expect(screen.queryByRole('button', {name: /English/})).not.toBeInTheDocument();
@@ -45,7 +48,7 @@ describe('WeeklyCard', () => {
   it('shows authorized Hans download and reading actions on a Traditional Chinese interface', async () => {
     access.editions = [{series: 'general', locale: 'zh-Hans'}];
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(discoveryResponse([{...bulletin, locale: 'zh-Hans', title: '简体周报'}], true)));
-    render(<WeeklyCard locale="zh-Hant" ctaLabel="下載 PDF" messages={messages} />);
+    render(<WeeklyCard locale="zh-Hant" ctaLabel="下載 PDF" messages={messagesFor("zh-Hant")} />);
 
     expect(await screen.findByRole('button', {name: '下載 PDF: 简中'})).toHaveTextContent('下載 PDF · 简中');
     expect(screen.getByText('简体周报')).toBeVisible();
@@ -58,7 +61,7 @@ describe('WeeklyCard', () => {
     vi.stubGlobal('fetch', vi.fn()
       .mockResolvedValueOnce(Response.json({}, {status: 403}))
       .mockResolvedValueOnce(discoveryResponse([bulletin])));
-    render(<WeeklyCard locale="en" ctaLabel="Download" messages={messages} />);
+    render(<WeeklyCard locale="en" ctaLabel="Download" messages={messagesFor("en")} />);
 
     expect(await screen.findByText('Unavailable')).toBeInTheDocument();
     expect(captureHandledError).toHaveBeenCalledWith(expect.anything(), {operation: 'weekly.latest', tags: {locale: 'en', series: 'general'}});
@@ -69,7 +72,7 @@ describe('WeeklyCard', () => {
   it('aborts the protected request on unmount', async () => {
     const fetcher = vi.fn<typeof fetch>(() => new Promise<Response>(() => undefined));
     vi.stubGlobal('fetch', fetcher);
-    const {unmount} = render(<WeeklyCard locale="en" ctaLabel="Download" messages={messages} />);
+    const {unmount} = render(<WeeklyCard locale="en" ctaLabel="Download" messages={messagesFor("en")} />);
 
     await waitFor(() => expect(fetcher).toHaveBeenCalledOnce());
     const request = fetcher.mock.calls[0]?.[0] as Request;
@@ -83,7 +86,7 @@ describe('WeeklyCard', () => {
     const general = {...bulletin, issueNumber: 1301};
     vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockImplementation(async (input) => discoveryResponse([(input as Request).url.includes('series=children') ? children : general])));
 
-    render(<WeeklyCard locale="en" ctaLabel="Download" messages={messages} />);
+    render(<WeeklyCard locale="en" ctaLabel="Download" messages={messagesFor("en")} />);
     expect(await screen.findByText('Issue 1301')).toBeInTheDocument();
     const generalTab = screen.getByRole('tab', {name: 'General'});
     expect(generalTab).toHaveAttribute('aria-selected', 'true');
@@ -98,7 +101,7 @@ describe('WeeklyCard', () => {
   it('shows one matched-language Download and Online action instead of all three editions',async()=>{
     access.editions=[{series:'general',locale:'zh-Hant'},{series:'general',locale:'zh-Hans'},{series:'general',locale:'en'}];
     vi.stubGlobal('fetch',vi.fn().mockResolvedValue(discoveryResponse([bulletin,{...bulletin,locale:'zh-Hans'},{...bulletin,locale:'en'}],true)));
-    render(<WeeklyCard locale="en" ctaLabel="Download" messages={messages}/>);
+    render(<WeeklyCard locale="en" ctaLabel="Download" messages={messagesFor("en")}/>);
     expect(await screen.findByRole('link',{name:'Read online'})).toHaveAttribute('href','/en/literature-ministry/1737/read/general/en');
     expect(screen.getAllByRole('button',{name:/Download PDF:/})).toHaveLength(1);
     expect(screen.getByRole('button',{name:'Download PDF: English'})).toBeInTheDocument();
@@ -119,10 +122,10 @@ function discoveryResponse(items: (typeof bulletin)[], online=false) {
 it('reserves the homepage slot while checking and removes it for an anonymous visitor',()=>{
  auth.status='checking';access.editions=[];
  const fetcher=vi.fn();vi.stubGlobal('fetch',fetcher);
- const view=render(<WeeklyCard locale="en" ctaLabel="Download" messages={messages}/>);
+ const view=render(<WeeklyCard locale="en" ctaLabel="Download" messages={messagesFor("en")}/>);
  expect(view.container.querySelector('[data-weekly-card] [data-loading-layout="weekly-home"]')).not.toBeNull();
  expect(fetcher).not.toHaveBeenCalled();
- auth.status='anonymous';view.rerender(<WeeklyCard locale="en" ctaLabel="Download" messages={messages}/>);
+ auth.status='anonymous';view.rerender(<WeeklyCard locale="en" ctaLabel="Download" messages={messagesFor("en")}/>);
  expect(view.container.querySelector('[data-weekly-card]')).toBeNull();
 });
 
@@ -130,9 +133,9 @@ it('ignores a rejected request from the previous account after the new account i
  let rejectOld!:(reason:Error)=>void;
  const fetcher=vi.fn<typeof fetch>().mockImplementationOnce(()=>new Promise((_resolve,reject)=>{rejectOld=reject})).mockImplementation(async()=>discoveryResponse([bulletin]));
  vi.stubGlobal('fetch',fetcher);
- const view=render(<WeeklyCard locale="en" ctaLabel="Download" messages={messages}/>);
+ const view=render(<WeeklyCard locale="en" ctaLabel="Download" messages={messagesFor("en")}/>);
  await waitFor(()=>expect(fetcher).toHaveBeenCalledOnce());
- auth.id='other-member';view.rerender(<WeeklyCard locale="en" ctaLabel="Download" messages={messages}/>);
+ auth.id='other-member';view.rerender(<WeeklyCard locale="en" ctaLabel="Download" messages={messagesFor("en")}/>);
  await screen.findByText('週報');
  await act(async()=>rejectOld(new Error('late old failure')));
  expect(screen.getByText('週報')).toBeInTheDocument();

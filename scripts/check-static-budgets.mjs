@@ -65,6 +65,29 @@ const exportGzipBytes = exportChunks.reduce((total, bytes) => total + gzipSync(b
 if (exportBytes > 512 * 1024 || exportGzipBytes > 160 * 1024) {
   failures.push(`DOCX export exceeds 512 KiB raw / 160 KiB gzip: ${exportBytes} / ${exportGzipBytes} bytes`);
 }
+// Client chunks must not carry other locales' catalogs; pass the current locale's strings from the server.
+const localesPath = path.join(root, 'src/i18n/locales');
+const catalogNames = await readdir(localesPath).then(names => names.filter(name => name.endsWith('.json')).sort()).catch(() => []);
+const catalogLeaves = value => typeof value === 'string' ? [value] : Object.values(value ?? {}).flatMap(catalogLeaves);
+const catalogs = await Promise.all(catalogNames.map(async name => ({
+  locale: name.slice(0, -'.json'.length),
+  strings: new Set(catalogLeaves(JSON.parse(await readFile(path.join(localesPath, name), 'utf8'))))
+})));
+const catalogMarkers = catalogs.map(({locale, strings}) => ({
+  locale,
+  markers: [...strings]
+    .filter(text => text.length >= 16 && !/["'\\\n]/.test(text) && catalogs.every(other => other.locale === locale || !other.strings.has(text)))
+    .slice(0, 40)
+})).filter(({markers}) => markers.length >= 10);
+for (const name of scripts) {
+  const text = await readFile(path.join(chunksPath, name), 'utf8');
+  const bundled = catalogMarkers
+    .filter(({markers}) => markers.filter(marker => text.includes(marker)).length * 2 >= markers.length)
+    .map(({locale}) => locale);
+  if (bundled.length > 1) {
+    failures.push(`Client chunk ${name} bundles ${bundled.length} locale catalogs (${bundled.join(', ')}); pass the current locale's strings from the server`);
+  }
+}
 const generatedCssBytes = await readdir(chunksPath, {withFileTypes: true})
   .then(async (entries) => {
     const sizes = await Promise.all(entries.filter((entry) => entry.isFile() && entry.name.endsWith('.css')).map((entry) => stat(path.join(chunksPath, entry.name)).then(({size}) => size)));

@@ -7,16 +7,17 @@ import {getOfflineIdentity, readOfflineRemovalSnapshot, listOfflineSaves, readOf
 import {watchOfflineAccount} from '@/features/weekly-reader/offline-session';
 import type {Locale} from '@/i18n/locales';
 import {localeLabels} from '@/i18n/locales';
-import {getMessages} from '@/i18n/messages';
 import type {ReaderMessages} from './ReaderToolbar';
 import './reader.css';
 
-export function OfflineContentPage({locale, messages: m}: {locale: Locale; messages: ReaderMessages}) {
+export type BulletinSeriesLabels = {general: string; children: string};
+
+export function OfflineContentPage({locale, messages: m, seriesLabels}: {locale: Locale; messages: ReaderMessages; seriesLabels: BulletinSeriesLabels}) {
   const accountId = useAccountIdentity();
-  return <OfflineContentList key={accountId ?? ''} accountId={accountId} locale={locale} messages={m}/>;
+  return <OfflineContentList key={accountId ?? ''} accountId={accountId} locale={locale} messages={m} seriesLabels={seriesLabels}/>;
 }
 
-function OfflineContentList({accountId, locale, messages: m}: {accountId: string | null; locale: Locale; messages: ReaderMessages}) {
+function OfflineContentList({accountId, locale, messages: m, seriesLabels}: {accountId: string | null; locale: Locale; messages: ReaderMessages; seriesLabels: BulletinSeriesLabels}) {
   const [savedItems, setItems] = useState<{save: OfflineSaveSummary; available: boolean}[]>([]);
   // Auth can change before the asynchronous offline-account purge completes.
   const items = savedItems.filter(({save}) => !accountId || save.selector.accountId === accountId);
@@ -67,7 +68,7 @@ function OfflineContentList({accountId, locale, messages: m}: {accountId: string
     <AlertDialog isOpen={!!decision} title={m.removeOffline} description={<span ref={node => {const overlay = node?.closest<HTMLElement>('.hhc-modal-overlay'); if (overlay) overlay.dataset.readerExit = '';}}>{decision?.snapshot.pending ? m.unsyncedWarning : m.offlineRemoveConfirm}</span>} cancelLabel={m.noteCancel} closeLabel={m.close} confirmLabel={m.removeOffline} confirmVariant="danger" onConfirm={confirmRemoval} onOpenChange={open => {if (!open && !pending.current) setDecision(null);}}/>
     <a className="reader-back" href={`/${locale}/literature-ministry`}>{m.back}</a><h1>{m.offlineContent}</h1>
     {!enabled ? <p>{m.unavailable}</p> : !items.length ? <p>{m.offlineEmpty}</p> : <ul className="reader-offline-list">{items.map(({save, available}) => <li key={`${save.documentId}:${save.revision}`}>
-      <a href={`/${locale}/literature-ministry/${save.selector.issueNumber}/read/${save.selector.series}/${save.selector.contentLocale}`}>{save.selector.issueNumber} · {getMessages(locale).literatureMinistry[save.selector.series]} · {localeLabels[save.selector.contentLocale]}</a>
+      <a href={`/${locale}/literature-ministry/${save.selector.issueNumber}/read/${save.selector.series}/${save.selector.contentLocale}`}>{save.selector.issueNumber} · {seriesLabels[save.selector.series]} · {localeLabels[save.selector.contentLocale]}</a>
       <p>{m.offlineRevision} {save.revision} · {m.offlineSize} {new Intl.NumberFormat(locale, {maximumFractionDigits: 1}).format(save.size / 1024)} KB</p>
       <p>{m.offlineExpiry} {new Intl.DateTimeFormat(locale, {dateStyle: 'short', timeStyle: 'short'}).format(new Date(save.offlineValidUntil))}</p>
       {!available ? <p>{m.offlineLocked}</p> : null}
