@@ -108,6 +108,10 @@ The deployment template keeps 0.5 vCPU / 1GiB and 1–8 replicas, with CPU utili
 target 50% and HTTP target 20. Either rule can request scale-out. Rule evaluation
 and replica startup take time; the HTTP target is not a request admission limit.
 
+The service template manages only the Website Container App. Its managed identity,
+ACR access and shared environment belong to azure-infra and are referenced as
+existing resources; release does not redeploy them.
+
 ## Production image handoff
 
 The main Release runs full verification and `prepare_image` in parallel. Image

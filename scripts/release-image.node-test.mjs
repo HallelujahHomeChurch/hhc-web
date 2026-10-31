@@ -121,7 +121,8 @@ test('runtime changes stay after verify/image preparation with existing preview 
   for (const name of ['Capture current state', 'Preview infrastructure change', 'Deploy', 'Wait for revision', 'Verify through gateway Dapr', 'Roll back failed update']) {
     step(deploy, name);
   }
-  assert.match(deploy, /--parameters image="\$IMAGE_REF" provisionPermissions="\$PROVISION_PERMISSIONS"/);
+  assert.match(deploy, /--parameters image="\$IMAGE_REF" sentryTracesSampleRate="\$SENTRY_TRACES_SAMPLE_RATE"/);
+  assert.doesNotMatch(deploy, /provisionPermissions|PROVISION_PERMISSIONS/);
   assert.match(deploy, /--image "\$PREVIOUS_IMAGE_REF"/);
 });
 
