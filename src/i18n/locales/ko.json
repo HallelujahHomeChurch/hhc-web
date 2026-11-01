@@ -257,12 +257,11 @@
     "translationNoticeDismiss": "번역 안내 닫기",
     "translationNoticeRegion": "번역 안내",
     "lineBrowser": {
-      "region": "브라우저 열기 안내",
-      "title": "기본 브라우저에서 보기",
-      "description": "현재 LINE에서 보고 있습니다. 더 안정적으로 이용하려면 기본 브라우저에서 열어 주세요.",
+      "title": "기본 브라우저에서 열기",
+      "description": "교회 웹사이트를 계속 보려면 기본 브라우저에서 열어 주세요. 취소하면 원래 콘텐츠를 열지 않고 이 페이지에 머무릅니다.",
       "open": "기본 브라우저에서 열기",
-      "later": "여기에서 계속",
-      "close": "안내를 닫고 이 페이지에 머무르기",
+      "cancel": "취소",
+      "retry": "안내 다시 보기",
       "manual": "열리지 않으면 LINE 메뉴에서 브라우저로 열기를 선택해 주세요."
     },
     "privacyPolicy": "개인정보 처리방침",

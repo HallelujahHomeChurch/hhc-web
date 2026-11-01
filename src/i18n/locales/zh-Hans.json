@@ -257,12 +257,11 @@
     "translationNoticeDismiss": "关闭翻译提示",
     "translationNoticeRegion": "翻译提示",
     "lineBrowser": {
-      "region": "浏览器打开提示",
-      "title": "改用默认浏览器浏览",
-      "description": "当前通过 LINE 打开；建议使用默认浏览器，以获得更稳定的使用体验。",
-      "open": "使用默认浏览器打开",
-      "later": "留在这里",
-      "close": "关闭浏览器提示并留在此页",
+      "title": "使用默认浏览器打开",
+      "description": "请使用默认浏览器继续浏览教会网站。取消后将留在此页，不会打开原来的内容。",
+      "open": "打开默认浏览器",
+      "cancel": "取消",
+      "retry": "重新打开提示",
       "manual": "如果没有自动打开，请从 LINE 菜单选择「在浏览器中打开」。"
     },
     "privacyPolicy": "隐私权",

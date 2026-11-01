@@ -1,7 +1,10 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {readFileSync} from 'node:fs';
 import {renderToStaticMarkup} from 'react-dom/server';
-import RootLayout, {generateMetadata} from './layout';
+import RootLayout from './layout';
+import {generateMetadata} from './[locale]/layout';
+
+vi.mock('next-intl/server', () => ({setRequestLocale: vi.fn()}));
 
 const navigation = vi.hoisted(() => ({pathname: '/ja/about'}));
 
@@ -32,6 +35,11 @@ describe('RootLayout', () => {
 
   it('sets the document language from the localized route', () => {
     expect(renderToStaticMarkup(<RootLayout><main /></RootLayout>)).toContain('<html lang="ja"');
+  });
+
+  it('sets the language for the standalone handoff route', () => {
+    navigation.pathname = '/line-browser/ko';
+    expect(renderToStaticMarkup(<RootLayout><main /></RootLayout>)).toContain('<html lang="ko"');
   });
 
   it('leaves the language undetermined on the neutral root route', () => {

@@ -15,7 +15,6 @@ import type {SiteLayout} from '@/features/site-layout/types';
 import type {Locale} from '@/i18n/locales';
 import {isIPhoneDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 import {StatementStrip} from '@/components/statements/StatementStrip';
-import {LineBrowserNotice, useLineBrowserNotice} from './LineBrowserNotice';
 import {AccountControlScope, AccountControlView, useNavigationPresentation, useAccountIdentity} from './AccountControl';
 
 export type SiteHeaderProps = {
@@ -57,7 +56,6 @@ export function SiteHeader(props: SiteHeaderProps) {
 }
 
 function SiteHeaderContent({layout, locale, pathname, showNavigation = true, searchQuery = ''}: SiteHeaderProps) {
-  const lineNotice = useLineBrowserNotice(pathname);
   const t = useTranslations('site');
   const homeHref = `/${locale}`;
   const navigation = useNavigationPresentation();
@@ -169,7 +167,7 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
             </div>
           </div>
         </header>
-        {lineNotice.visible ? <LineBrowserNotice pathname={pathname} onClose={lineNotice.close} /> : <StatementStrip />}
+        <StatementStrip />
       </div>
       {showNavigation ? <nav className="site-mobile-tab-bar" style={{gridTemplateColumns: `repeat(${mobileNavItems.length + 1}, minmax(0, 1fr))`}} aria-label={t('nav.menu')} data-mobile-hidden={!mobileChromeVisible} data-iphone-standalone={iphoneStandalone || undefined}>
         {mobileNavItems.map((item, index) => {

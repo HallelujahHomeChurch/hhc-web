@@ -1,3 +1,6 @@
+import type {Metadata} from 'next';
+import {getSiteLayout} from '@/features/site-layout/api';
+import {siteConfig} from '@/lib/site';
 import {LegalRequiredNavigation} from '@/components/legal/LegalRequiredNavigation';
 import {Suspense} from 'react';
 import {AnalyticsBoundary} from '@/components/layout/AnalyticsBoundary';
@@ -10,6 +13,29 @@ import {InitialLoadingBoundary} from '@/components/layout/InitialLoadingBoundary
 import {StatementProvider} from '@/components/statements/StatementProvider';
 import {TranslationNotice} from '@/components/layout/TranslationNotice';
 import {ReaderServiceWorker} from '@/components/weekly-reader/ReaderServiceWorker';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const layout = await getSiteLayout('zh-Hant');
+  return {
+    metadataBase: new URL(siteConfig.url),
+    title: siteConfig.name,
+    description: layout.seoDescriptionFallback,
+    openGraph: {
+      type: 'website',
+      title: siteConfig.name,
+      description: layout.seoDescriptionFallback,
+      siteName: siteConfig.name,
+      url: siteConfig.url,
+      images: [{url: siteConfig.defaultOgImage, width: 1200, height: 630, alt: siteConfig.name}]
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: siteConfig.name,
+      description: layout.seoDescriptionFallback,
+      images: [siteConfig.defaultOgImage]
+    }
+  };
+}
 
 type LocaleLayoutProps = {
   children: React.ReactNode;

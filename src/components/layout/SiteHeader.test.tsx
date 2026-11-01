@@ -16,14 +16,7 @@ import {messages as organizationMessages} from '@/features/organizations/message
 const searchRouter = vi.hoisted(() => ({push:vi.fn(), replace:vi.fn()}));
 vi.mock('next/navigation',()=>({useRouter:()=>searchRouter}));
 
-const statementStripState = vi.hoisted(() => ({active: false, notice: false}));
-
-vi.mock('@/components/statements/StatementProvider', () => ({
-  useStatement: () => statementStripState.notice ? {
-    statement: {href: '/zh-Hant/statements/current', resolvedLocale: 'zh-Hant', title: '最新聲明'},
-    labels: {readFull: '閱讀全文'}
-  } : null
-}));
+const statementStripState = vi.hoisted(() => ({active: false}));
 
 vi.mock('@/components/statements/StatementStrip', () => ({
   StatementStrip: () => statementStripState.active ? <aside aria-label="Statement notice">Statement</aside> : null
@@ -74,7 +67,6 @@ beforeEach(() => {
 
 afterEach(() => {
   statementStripState.active = false;
-  statementStripState.notice = false;
   sessionStorage.clear();
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
@@ -175,43 +167,6 @@ describe('SiteHeader', () => {
     expect(JSON.parse(localStorage.getItem('hhc:navigation:www-web')!).sources.operations.ids).toEqual([]);
   });
 
-  it('shows the LINE notice instead of the statement strip and restores the strip on dismissal', async () => {
-    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 LINE/15.0.0');
-    statementStripState.active = true;
-    window.history.replaceState({}, '', '/zh-Hant/news?source=line#article');
-    render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
-      <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/news" sessionClient={anonymousSessionClient} />
-    </NextIntlClientProvider>);
-
-    const notice = await screen.findByRole('complementary', {name: '瀏覽器開啟提示'});
-    expect(screen.queryByRole('complementary', {name: 'Statement notice'})).not.toBeInTheDocument();
-    expect(within(notice).getByRole('link', {name: '開啟預設瀏覽器'})).toHaveAttribute('href', 'http://localhost:3000/zh-Hant/news?source=line&openExternalBrowser=1#article');
-    fireEvent.click(within(notice).getByRole('button', {name: '關閉瀏覽器提示並留在此頁'}));
-    expect(screen.getByRole('complementary', {name: 'Statement notice'})).toBeInTheDocument();
-  });
-
-  it('follows the statement suppression rule on legal pages', () => {
-    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 LINE/15.0.0');
-    render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
-      <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/privacy-policy" sessionClient={anonymousSessionClient} />
-    </NextIntlClientProvider>);
-    expect(screen.queryByRole('complementary', {name: '瀏覽器開啟提示'})).not.toBeInTheDocument();
-  });
-
-  it('keeps an active statement link inside the LINE notice except on statement detail pages', async () => {
-    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 LINE/15.0.0');
-    statementStripState.notice = true;
-    const {rerender} = render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
-      <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/news" sessionClient={anonymousSessionClient} />
-    </NextIntlClientProvider>);
-
-    const notice = await screen.findByRole('complementary', {name: '瀏覽器開啟提示'});
-    expect(within(notice).getByRole('link', {name: '最新聲明 · 閱讀全文 →'})).toHaveAttribute('href', '/zh-Hant/statements/current');
-    rerender(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
-      <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/statements/current" sessionClient={anonymousSessionClient} />
-    </NextIntlClientProvider>);
-    expect(within(notice).queryByRole('link', {name: '最新聲明 · 閱讀全文 →'})).not.toBeInTheDocument();
-  });
   it('keeps the banner and active statement in one top chrome wrapper', () => {
     statementStripState.active = true;
     const {container} = render(
@@ -607,23 +562,6 @@ describe('SiteHeader', () => {
     expect(screen.queryByRole('navigation', {name: '選單'})).not.toBeInTheDocument();
     expect(screen.getByRole('link', {name: /哈利路亞家教會/})).toHaveAttribute('href', '/zh-Hant');
     expect(await screen.findByRole('button', {name: '帳號選單'})).toBeInTheDocument();
-  });
-
-  it('keeps LINE dismissal after a page remount when session storage is unavailable', async () => {
-    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 LINE/15.0.0');
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('storage denied'); });
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('storage denied'); });
-    const first = render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
-      <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/news" sessionClient={anonymousSessionClient} />
-    </NextIntlClientProvider>);
-    const notice = await screen.findByRole('complementary', {name: '瀏覽器開啟提示'});
-    fireEvent.click(within(notice).getByRole('button', {name: '關閉瀏覽器提示並留在此頁'}));
-    first.unmount();
-
-    render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}>
-      <SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/about" sessionClient={anonymousSessionClient} />
-    </NextIntlClientProvider>);
-    expect(screen.queryByRole('complementary', {name: '瀏覽器開啟提示'})).not.toBeInTheDocument();
   });
 });
 

@@ -231,6 +231,18 @@ search and subtitle indexing are outside this change. UI and SDK 1.0.49 must be
 published and pinned with a fresh registry lockfile before this draft can merge;
 local preview dependencies are never committed.
 
+## LINE browser handoff
+
+LINE page requests use a separate branded handoff route before the normal page,
+Account providers or CMS metadata render. An internal rewrite keeps the original
+browser URL, including its query and fragment, for the external-browser link.
+Cancel and Escape leave the branded page with retry and manual LINE-menu guidance;
+they never enable the original page. Ordinary browsers and link-preview agents
+retain normal routing. API, static assets, health and the OAuth callback are not
+intercepted. Handoff responses are private/no-store and noindex. Account and Admin
+have independent browser policies. Actual iOS/Android LINE transfer behavior still
+requires device acceptance.
+
 ## Office integration
 
 The HTTPS-only Windows Docker Desktop stack is documented in
