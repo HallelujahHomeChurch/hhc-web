@@ -30,7 +30,6 @@ import {UpcomingBroadcasts} from './UpcomingBroadcasts';
 import {VideoListSkeleton, VideoRecommendationsSkeleton, VideoWatchSkeleton} from './VideoLoading';
 import {LoadingStatus} from '@/components/ui/ContentLoading';
 import {ThumbnailPreview} from './ThumbnailPreview';
-import {clearLineVideoTarget, rememberLineVideoTarget} from '@/lib/line-browser-handoff';
 
 export type Messages = {
   live?: LiveLabels;
@@ -62,8 +61,6 @@ export function MemberVideoZone({locale, messages, hero, view = 'watch', recordi
   const identity=useAccountIdentity();
   const access = useVideoAccess();
   useEffect(() => {
-    if (auth.status === 'anonymous') rememberLineVideoTarget();
-    if (auth.status === 'authenticated') clearLineVideoTarget();
     if (auth.status === 'anonymous' || access === 'denied') router.replace(`/${locale}`);
   }, [access, auth.status, locale, router]);
   if (access === 'available') return <AuthorizedVideoZone startAt={startAt} key={`${identity}:${recordingId ?? view}:${view==='list'?`${query}:${invalidQuery}`:''}`} locale={locale} messages={messages} hero={hero} view={view} recordingId={recordingId} query={query} invalidQuery={invalidQuery} />;
