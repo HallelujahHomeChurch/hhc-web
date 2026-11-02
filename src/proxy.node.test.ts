@@ -20,7 +20,7 @@ describe('LINE browser routing', () => {
     expect(unstable_doesMiddlewareMatch({config, nextConfig: {}, url})).toBe(false);
   });
 
-  it.each(['Mozilla/5.0 Safari/605.1.15', 'Mozilla/5.0 Chrome/140.0', '', 'facebookexternalhit/1.1'])('keeps ordinary browsers and link previews on the original page: %s', userAgent => {
+  it.each(['Mozilla/5.0 Safari/605.1.15', 'Mozilla/5.0 Chrome/140.0', '', 'facebookexternalhit/1.1', 'facebookexternalhit/1.1;line-poker/1.0', 'line-poker/1.0'])('keeps ordinary browsers and link previews on the original page: %s', userAgent => {
     const response = proxy(new NextRequest('https://www.alive.org.tw/en/news?openExternalBrowser=1', {headers: {'user-agent': userAgent}}));
     expect(isRewrite(response)).toBe(false);
   });

@@ -507,6 +507,7 @@
     "empty": "公開済みの週報はまだありません。"
   },
   "memberVideos": {
+    "shareDescription": "この動画の視聴には、視聴権限のある会員としてログインが必要です。",
     "theaterMode": "シアターモード",
     "exitTheaterMode": "シアターモードを終了",
     "settingsBack": "戻る",

@@ -7,14 +7,19 @@ import {SiteHeaderServer} from '@/components/layout/SiteHeaderServer';
 import {MemberVideoZone} from '@/features/member-videos/MemberVideoZone';
 import {isLocale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
+import {recordingIdPattern, recordingShareMetadata} from '@/features/member-videos/share-metadata';
 
 type PageProps = {searchParams?:Promise<{t?:string|string[]}>;params: Promise<{locale: string; id: string}>};
-export const metadata: Metadata = {robots: {index: false, follow: false}};
+export async function generateMetadata({params}: PageProps): Promise<Metadata> {
+  const {locale, id} = await params;
+  if (!isLocale(locale) || !recordingIdPattern.test(id)) notFound();
+  return recordingShareMetadata(locale, id);
+}
 
 export default async function MemberVideoWatchPage({params,searchParams}: PageProps) {
   const {locale, id} = await params;
   const startAt=videoStartTime((await searchParams)?.t);
-  if (!isLocale(locale) || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id)) notFound();
+  if (!isLocale(locale) || !recordingIdPattern.test(id)) notFound();
   setRequestLocale(locale);
   const messages=getMessages(locale);
   const pathname = `/${locale}/member-videos/${id}`;

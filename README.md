@@ -480,3 +480,12 @@ Existing database/migration and resource-specific recovery boundaries remain.
 This gate does not claim an in-container socket inspection or private Dapr
 invocation proof. No merge/deployment or live recovery evidence follows from local
 fixture tests.
+
+## Recording link previews
+
+Individual member-video pages render a public title and selected cover via the
+CMS recording-preview projection, with a fixed membership description. Page
+and image responses request noindex and no-store; public fields remain readable
+by bots and sharing services can retain their own cached cards. Playback and
+member APIs still enforce authentication/entitlement. The video library entrance
+is unchanged. Unavailable previews fall back to the generic site card.
