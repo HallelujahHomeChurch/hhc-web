@@ -507,6 +507,7 @@
     "empty": "目前尚未發布週報。"
   },
   "memberVideos": {
+    "shareDescription": "此影片僅限具觀看權限的會員登入後觀看。",
     "theaterMode": "劇院模式",
     "exitTheaterMode": "結束劇院模式",
     "settingsBack": "返回",
