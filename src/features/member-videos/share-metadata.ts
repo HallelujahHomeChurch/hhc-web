@@ -7,13 +7,31 @@ import {siteConfig} from '@/lib/site';
 
 export const recordingIdPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 
-export async function recordingShareMetadata(locale: Locale, id: string): Promise<Metadata> {
+export const videoPublicIdPattern = /^[A-Za-z0-9_-]{11}$/;
+
+export async function legacyVideoPath(id: string): Promise<string | undefined> {
+  if (!recordingIdPattern.test(id)) return;
+  const response = await fetch(`${publicContentBaseUrl().replace(/\/$/, '')}/recording-previews/${id}`, {
+    cache: 'no-store', credentials: 'omit', redirect: 'error', signal: AbortSignal.timeout(3000)
+  });
+  if (!response.ok) return;
+  return response.headers.get('Link')?.match(/^<(\/video\/[A-Za-z0-9_-]{11})>; rel="canonical"$/)?.[1];
+}
+
+export function recordingShareMetadata(locale: Locale, id: string): Promise<Metadata> {
+  return shareMetadata(locale, id, false);
+}
+export function videoShareMetadata(id: string): Promise<Metadata> {
+  return shareMetadata('zh-Hant', id, true);
+}
+async function shareMetadata(locale: Locale, id: string, short: boolean): Promise<Metadata> {
   const messages = getMessages(locale);
   let title = messages.memberVideos.selectedTitle;
   let image: string = siteConfig.defaultOgImage;
-  if (recordingIdPattern.test(id)) {
+  const previewPath = `${short ? 'video' : 'recording'}-previews/${id}`;
+  if ((short ? videoPublicIdPattern : recordingIdPattern).test(id)) {
     try {
-      const response = await fetch(`${publicContentBaseUrl().replace(/\/$/, '')}/recording-previews/${id}`, {
+      const response = await fetch(`${publicContentBaseUrl().replace(/\/$/, '')}/${previewPath}`, {
         cache: 'no-store', credentials: 'omit', redirect: 'error', signal: AbortSignal.timeout(3000)
       });
       if (response.ok) {
@@ -22,7 +40,7 @@ export async function recordingShareMetadata(locale: Locale, id: string): Promis
           typeof body.data === 'object' && body.data !== null && 'title' in body.data &&
           typeof body.data.title === 'string' && body.data.title.trim() && [...body.data.title].length <= 180) {
           title = body.data.title;
-          image = `/api/recording-previews/${id}/cover`;
+          image = `/api/${previewPath}/cover`;
         }
       }
     } catch {
@@ -30,7 +48,7 @@ export async function recordingShareMetadata(locale: Locale, id: string): Promis
     }
   }
   const description = messages.memberVideos.shareDescription;
-  const url = `${siteConfig.url}/${locale}/member-videos/${id}`;
+  const url = short ? `${siteConfig.url}/video/${id}` : `${siteConfig.url}/${locale}/member-videos/${id}`;
   const imageUrl = new URL(image, siteConfig.url).href;
   return {
     title,

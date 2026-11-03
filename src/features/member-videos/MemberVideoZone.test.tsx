@@ -10,6 +10,7 @@ import {PrivateCoverCache} from '@/lib/private-cover-cache';
 import {PrivateCoverProvider} from '@/lib/use-private-cover';
 
 const state = vi.hoisted(() => ({access: 'loading', auth: 'checking'}));
+const signIn = vi.hoisted(() => vi.fn());
 const list = vi.hoisted(() => vi.fn());
 const videoApi = vi.hoisted(() => ({watch:vi.fn(),upcoming:vi.fn(),broadcastCover:vi.fn(),liveCover:vi.fn(),listPage:vi.fn(),liveList:vi.fn().mockResolvedValue([]),cover:vi.fn(),list: vi.fn(), grant: vi.fn(), exchange: vi.fn(), clear: vi.fn().mockResolvedValue(undefined)}));
 const liveSession = vi.hoisted(()=>({playback:null,closed:false,pending:false,error:false,start:vi.fn(),remember:vi.fn(),bookmark:{current:undefined}}));
@@ -22,6 +23,7 @@ const packageId = 'a'.repeat(32);
 const playbackUrl = `https://media.alive.org.tw/videos/r1/packages/${packageId}/sessions/scope/master.m3u8`;
 vi.mock('next/navigation', () => ({useRouter: () => router}));
 vi.mock('@/components/layout/AccountControl', () => ({
+  useAccountSignIn: () => signIn,
   useAccountIdentity: () => 'member',
   useAccountAuth: () => ({status: state.auth}),
   useVideoAccess: () => state.access,
@@ -756,4 +758,24 @@ it.each(['ready','empty','error'] as const)('keeps recommendation loading indepe
  expect(screen.getByRole('heading',{name:'Direct watch'})).toBeVisible();
  if(outcome==='ready')expect(screen.getByRole('link',{name:'Another gathering'})).toBeVisible();
  if(outcome==='error')expect(screen.getByText(messages.loadError)).toBeVisible();
+});
+
+
+it('keeps an anonymous short-video visitor on the sign-in destination', () => {
+ state.auth='anonymous';state.access='denied';
+ render(<MemberVideoZone publicId="FA0AoBO02uU" locale="en" messages={{...messages,signIn:'Sign in',shareDescription:'Sign in to watch'}} hero={null}/>);
+ fireEvent.click(screen.getByRole('button',{name:'Sign in'}));
+ expect(signIn).toHaveBeenCalled();expect(replace).not.toHaveBeenCalled();
+});
+
+it('resolves the short locator while retaining the UUID for playback',async()=>{
+ state.auth='authenticated';state.access='available';
+ const recording={id:'r1',publicId:'FA0AoBO02uU',title:'Canonical video',packageId,uploadedAt:null,expiresAt:new Date(Date.now()+86400000).toISOString(),featured:false};
+ list.mockResolvedValue([recording]);
+ videoApi.watch.mockResolvedValue({recordingId:'r1',publicId:'FA0AoBO02uU',view:'vod',recording,live:null,title:recording.title,serverNow:new Date().toISOString(),scheduledAt:null,stateRevision:1});
+ render(<MemberVideoZone publicId="FA0AoBO02uU" locale="en" messages={messages} hero={null}/>);
+ await screen.findByRole('heading',{name:'Canonical video'});
+ expect(videoApi.watch).toHaveBeenCalledWith('FA0AoBO02uU',expect.any(AbortSignal));
+ await waitFor(()=>expect(videoApi.grant).toHaveBeenCalled());
+ expect(videoApi.grant.mock.calls.every(call=>call[0]==='r1')).toBe(true);
 });

@@ -26,6 +26,8 @@ const nextConfig: NextConfig = {
     ]
   },
   headers: async () => [
+    {source: '/video/:id', headers: [{key: 'Cache-Control', value: 'private, no-store'}, {key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive'}]},
+    {source: '/:locale/video/:id', headers: [{key: 'Cache-Control', value: 'private, no-store'}, {key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive'}]},
     {source: '/:locale/member-videos/:id', headers: [{key: 'Cache-Control', value: 'private, no-store'}, {key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive'}]},
     {source: '/:locale/organizations/:path*', headers: [{key: 'Cache-Control', value: 'private, no-store'}, {key: 'X-Robots-Tag', value: 'noindex, nofollow'}]},
     {source: '/:locale/literature-ministry/offline/reader-shell', headers: [{key: 'X-HHC-Reader-Shell', value: 'public'}, {key: 'X-Robots-Tag', value: 'noindex, nofollow'}]},

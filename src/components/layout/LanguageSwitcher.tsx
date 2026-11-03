@@ -34,7 +34,7 @@ export function LanguageSwitcher({label, locale, pathname, navigate = (href) => 
           setNavigating(true);
           setSelectedLocale(nextLocale);
           document.cookie = getLocaleCookie(nextLocale);
-          navigate(replaceLocale(pathname, nextLocale));
+          navigate(replaceLocale(pathname.startsWith('/video/') ? window.location.pathname + window.location.search + window.location.hash : pathname, nextLocale));
         }}
       />
     </div>
