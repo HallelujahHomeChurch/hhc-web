@@ -11,17 +11,15 @@ type CoverApi=ReturnType<typeof createMemberVideoApi>;
 export function useLiveRecordingCover(api:CoverApi,recording:MemberLiveRecording,enabled=true){
   const {id,captureId,coverRevision,createdAt}=recording;
   const load=useCallback((signal:AbortSignal)=>api.liveCover(id,captureId,signal),[api,id,captureId]);
-  return usePrivateCover({scope:api,resource:`live:${id}:${captureId}`,revision:coverRevision??'',expiresAt:Date.parse(createdAt)+24*60*60*1000,enabled:enabled&&Boolean(coverRevision),keepPrevious:true,load});
+  const url=usePrivateCover({scope:api,resource:`live:${id}:${captureId}:${recording.coverMode??'unknown'}`,revision:coverRevision??'',expiresAt:Date.parse(createdAt)+24*60*60*1000,enabled:enabled&&Boolean(coverRevision),keepPrevious:true,retry:true,load});
+  return url??(recording.coverMode==='auto'?'/assets/brand/church-live-v1.jpg':undefined);
 }
 
 export function LiveCoverSurface({url,title,containerRef}:{url?:string;title:string;containerRef?:RefObject<HTMLDivElement|null>}){
   return <div ref={containerRef} className="grid aspect-video place-items-center overflow-hidden rounded-lg bg-panel text-muted">
-    {/* Private object URLs bypass the public optimizer. The fallback is public HHC branding. */}
+    {/* Private object URLs bypass the public optimizer. Only automatic mode receives the public church fallback. */}
     {/* eslint-disable-next-line @next/next/no-img-element */}
-    {url?<img src={url} alt={title} width={1280} height={720} loading="lazy" className="h-full w-full object-cover"/>:<div className="flex items-center gap-3" aria-label="HHC">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/assets/brand/logo.png" alt="" width={56} height={56} className="size-14 object-contain"/><span className="text-2xl font-semibold tracking-widest">HHC</span>
-    </div>}
+    {url?<img src={url} alt={title} width={1280} height={720} loading="lazy" className="h-full w-full object-cover"/>:<Play size={28} aria-hidden="true"/>}
   </div>;
 }
 export function LiveRecordingCover({api,recording}:{api:CoverApi;recording:MemberLiveRecording}){

@@ -66,3 +66,11 @@ it('does not download a live card cover before it approaches the viewport',async
  expect(liveCover).toHaveBeenCalledOnce();
  vi.unstubAllGlobals();
 });
+
+it.each(['auto','custom'] as const)('uses church fallback only for %s selection while image is pending',(mode)=>{
+ const api={liveCover:vi.fn()} as unknown as ReturnType<typeof createMemberVideoApi>;
+ render(<LiveRecordingCover api={api} recording={{...recording,coverRevision:undefined,coverMode:mode}}/>);
+ const image=screen.queryByRole('img',{name:recording.title});
+ if(mode==='auto')expect(image).toHaveAttribute('src','/assets/brand/church-live-v1.jpg');else expect(image).toBeNull();
+ expect(api.liveCover).not.toHaveBeenCalled();
+});
