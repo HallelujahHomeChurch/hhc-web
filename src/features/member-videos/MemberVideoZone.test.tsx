@@ -178,7 +178,7 @@ describe('VOD audio mode',()=>{
   render(<MemberVideoZone locale="en" messages={messages} hero={null}/>);const play=await screen.findByRole('button',{name:'Play'});vi.useFakeTimers();await act(async()=>{fireEvent.click(play);});
   await act(async()=>{await vi.advanceTimersByTimeAsync(5000);});
   const visibility=vi.spyOn(document,'visibilityState','get').mockReturnValue('hidden');fireEvent(document,new Event('visibilitychange'));
-  await act(async()=>{await vi.advanceTimersByTimeAsync(5*60000);});expect(videoApi.grant).toHaveBeenCalledTimes(2);
+  await act(async()=>{await vi.advanceTimersByTimeAsync(5*60000);});expect(videoApi.grant).toHaveBeenCalledTimes(2);expect(screen.queryByText('Cannot play')).toBeNull();
   visibility.mockReturnValue('visible');fireEvent(document,new Event('visibilitychange'));
   for(const delay of [15000,30000,60000,120000])await act(async()=>{await vi.advanceTimersByTimeAsync(delay);});
   expect(videoApi.grant).toHaveBeenCalledTimes(6);await act(async()=>{await vi.advanceTimersByTimeAsync(5*60000);});expect(videoApi.grant).toHaveBeenCalledTimes(6);

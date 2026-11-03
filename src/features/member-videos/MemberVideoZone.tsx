@@ -151,7 +151,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
     const current=media.current;
     const bookmark=snapshotVod();
     bookmarkFrozen.current=true;
-    current?.pause();setVodResume(bookmark);setAudioMode(next);
+    current?.pause();mediaFailureReported.current=false;setPlayError('');setVodResume(bookmark);setAudioMode(next);
   };
   useEffect(()=>{bookmarkFrozen.current=false;},[audioMode]);
   const playerTitle = useRef<HTMLHeadingElement>(null);
@@ -370,7 +370,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
       inFlight = true;if(!readiness)window.clearTimeout(timer);
       try {
         await renew(playback, controller.signal);
-        if (!controller.signal.aborted) setPlayError('');
+        if (!controller.signal.aborted&&!readiness) setPlayError('');
       } catch (error) {
         if (controller.signal.aborted) return;
         captureHandledError(error, {operation: 'member-videos.renew'});
@@ -387,7 +387,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
         } else if(!readiness) {
           timer = window.setTimeout(() => void run(), 60_000);
         }
-        setPlayError(messages.playError);
+        if(!readiness||Date.now()>=expiry)setPlayError(messages.playError);
       } finally {
         inFlight = false;
         if(readiness&&canRenew&&!controller.signal.aborted&&Date.now()>=renewalAt)timer=window.setTimeout(()=>void run(),60000);
@@ -441,9 +441,10 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   }, [messages.playError,mediaOrigin,diagnostic]);
 
   const audioError=useCallback((bookmark?:PlayerBookmark)=>{
+    diagnostic('error',media.current,grantGeneration.current);
     bookmarkFrozen.current=true;
     media.current?.pause();setVodResume(bookmark??vodBookmark.current);setAudioMode(false);
-  },[]);
+  },[diagnostic]);
 
   const selectedIndex = recordings?.findIndex(item => item.id === selectedId) ?? -1;
   const previousRecording = selectedIndex > 0 ? recordings?.[selectedIndex - 1] : undefined;
