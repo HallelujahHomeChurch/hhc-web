@@ -35,7 +35,7 @@
     "@hallelujahhomechurch/hhc-web-client": "1.1.9",
     "@hallelujahhomechurch/operations-client": "1.0.37",
     "@hallelujahhomechurch/preferences": "1.0.47",
-    "@hallelujahhomechurch/ui": "1.1.9",
+    "@hallelujahhomechurch/ui": "1.1.10",
     "@sentry/nextjs": "10.75.2",
     "docx": "9.12.0",
     "hls.js": "1.7.3",
@@ -62,7 +62,7 @@
     "msw": "^2.14.6",
     "tailwindcss": "4.3.2",
     "typescript": "6.0.3",
-    "vitest": "5.0.5",
-    "vite": "8.1.6"
+    "vite": "8.1.6",
+    "vitest": "5.0.5"
   }
 }
