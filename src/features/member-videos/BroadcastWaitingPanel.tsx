@@ -28,6 +28,6 @@ export function BroadcastWaitingPanel({watch,locale,api,recommendations}:{recomm
    <p className="absolute inset-x-3 bottom-3 rounded-lg bg-black/70 px-4 py-2 text-center" role="status" aria-live={seconds>0?'off':'polite'}>{message}</p>
   </div>
   <h1 className={zoneStyles.watchTitle}>{watch.title}</h1>
-  <VideoInteractions recommendations={recommendations} api={api} id={watch.recordingId} title={watch.title} locale={locale} live description={watch.description} date={watch.scheduledAt} dateKind="scheduled"/>
+  <VideoInteractions recommendations={recommendations} api={api} id={watch.recordingId} publicId={watch.publicId} title={watch.title} locale={locale} live description={watch.description} date={watch.scheduledAt} dateKind="scheduled"/>
  </div>;
 }

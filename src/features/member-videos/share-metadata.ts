@@ -7,7 +7,8 @@ import {siteConfig} from '@/lib/site';
 
 export const recordingIdPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 
-export const videoPublicIdPattern = /^[A-Za-z0-9_-]{11}$/;
+import {videoPublicIdPattern} from './share';
+export {videoPublicIdPattern} from './share';
 
 export async function legacyVideoPath(id: string): Promise<string | undefined> {
   if (!recordingIdPattern.test(id)) return;

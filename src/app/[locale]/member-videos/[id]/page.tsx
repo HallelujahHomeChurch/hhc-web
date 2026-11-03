@@ -2,13 +2,15 @@ import {videoStartTime} from '@/features/member-videos/share';
 import type {Metadata} from 'next';
 import {notFound, permanentRedirect} from 'next/navigation';
 import {isLocale} from '@/i18n/locales';
-import {legacyVideoPath, recordingIdPattern, recordingShareMetadata} from '@/features/member-videos/share-metadata';
+import {legacyVideoPath, recordingIdPattern, videoShareMetadata} from '@/features/member-videos/share-metadata';
 
 type PageProps = {searchParams?:Promise<{t?:string|string[]}>;params: Promise<{locale: string; id: string}>};
 export async function generateMetadata({params}: PageProps): Promise<Metadata> {
   const {locale, id} = await params;
   if (!isLocale(locale) || !recordingIdPattern.test(id)) notFound();
-  return recordingShareMetadata(locale, id);
+  const canonical=await legacyVideoPath(id);
+  if(!canonical)notFound();
+  return videoShareMetadata(canonical.slice('/video/'.length));
 }
 
 export default async function MemberVideoWatchPage({params,searchParams}: PageProps) {

@@ -18,6 +18,7 @@ import {VideoInteractions} from './VideoInteractions';
 import {usePlaybackTelemetry} from './usePlaybackTelemetry';
 import {HlsPlayer, type PlayerLabels} from './HlsPlayer';
 
+import {videoWatchPath} from './share';
 import {playerClock} from './PlayerChrome';
 import {LiveRecordingCover,RecordingCover,useRecordingCover} from './RecordingCover';
 import {LiveRecordingPlayer,liveViewerLabel,englishLiveLabels,type LiveLabels} from './LiveRecordingPlayer';
@@ -376,7 +377,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   const visibleItems = recordingId ? otherRecordings.slice(0, 10) : otherRecordings;
   const recommendationsPending = Boolean(recordingId) && !visibleItems.length && !liveItems.length && (recordings === null && !loadError || livePending);
   const liveLabels=messages.live??englishLiveLabels;
-  const cardLink=(id:string)=>`/${locale}/member-videos/${encodeURIComponent(id)}`;
+  const cardLink=(item:{id:string;publicId?:string})=>videoWatchPath(locale,item.id,item.publicId);
   usePlaybackTelemetry(api,selected?.id,video,Boolean(playback&&!selectedLive&&!resolver.denied));
   const searchMode=view==='list'&&Boolean(query||invalidQuery);
   const searchLabels=messages.search??{results:'Results for {query}',empty:'No results for {query}',clear:'Clear search',tooLong:'Search accepts one query of up to 100 characters.'};
@@ -389,25 +390,25 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
             <div className={recordingId ? zoneStyles.recommendations : searchMode ? zoneStyles.searchList : zoneStyles.grid}>
               {recordingId&&watch&&recommendationsPending?<VideoRecommendationsSkeleton/>:null}
               {liveItems.map(item=><article id={`recording-${item.id}`} key={item.captureId} className={zoneStyles.card}>
-                <Link href={cardLink(item.id)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
+                <Link href={cardLink(item)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
                   <ThumbnailPreview api={api} recording={item} labels={messages} enabled={view==='list'} activeId={hoveredRecording} onActive={setHoveredRecording}>
                   <LiveRecordingCover api={api} recording={item}/>
                   </ThumbnailPreview>
                   <span className={`${zoneStyles.badge} ${item.liveState==='live'?zoneStyles.liveBadge:zoneStyles.stateBadge}`}>{liveBadge(item)}</span>
                 </Link>
-                <div className={zoneStyles.info}><h3 className={zoneStyles.title}><Link href={cardLink(item.id)} aria-label={`${item.title} — ${liveBadge(item)}`}>{item.title}</Link></h3><p className={zoneStyles.date}>{(messages.liveStartedDate??'{date}').replace('{date}',formatDate(item.startedAt??item.createdAt,locale))}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}</div>
+                <div className={zoneStyles.info}><h3 className={zoneStyles.title}><Link href={cardLink(item)} aria-label={`${item.title} — ${liveBadge(item)}`}>{item.title}</Link></h3><p className={zoneStyles.date}>{(messages.liveStartedDate??'{date}').replace('{date}',formatDate(item.startedAt??item.createdAt,locale))}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}</div>
               </article>)}
               {view==='list'&&!invalidQuery&&!loadError&&livePending?<VideoListSkeleton label={messages.loading} search={searchMode}/>:null}
               {view==='list'&&!invalidQuery?<UpcomingBroadcasts api={api} locale={locale} onPresenceChange={setUpcomingPresent} query={query} excludeIds={liveItems.map(item=>item.id)} onPageState={setUpcomingState} loadMoreLabel={messages.loadMore??'Load more'} loading={messages.loading} retry={messages.retry}/>:null}
               {view==='list'&&!invalidQuery&&!loadError&&!livePending&&(!recordings||upcomingState.initialState==='loading')?<VideoListSkeleton label={messages.loading} search={searchMode}/>:null}
               {(view!=='list'||upcomingState.complete&&!livePending?visibleItems:[]).map(item=><article id={`recording-${item.id}`} key={item.id} className={zoneStyles.card}>
-                <Link href={cardLink(item.id)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
+                <Link href={cardLink(item)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
                   <ThumbnailPreview api={api} recording={item} labels={messages} enabled={view==='list'} activeId={hoveredRecording} onActive={setHoveredRecording}>
                   <RecordingCover api={api} id={item.id} title={item.title} expiresAt={item.expiresAt} revision={coverRevision(item)}/>
                   </ThumbnailPreview>
                   {item.durationSeconds ? <span className={zoneStyles.duration}>{playerClock(item.durationSeconds)}</span>:null}
                 </Link>
-                <div className={zoneStyles.info}><h3 className={zoneStyles.title}>{view==='list'||recordingId ? <Link href={cardLink(item.id)}>{item.title}</Link>:item.title}</h3><p className={zoneStyles.date}>{formatDate(item.uploadedAt,locale)}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}
+                <div className={zoneStyles.info}><h3 className={zoneStyles.title}>{view==='list'||recordingId ? <Link href={cardLink(item)}>{item.title}</Link>:item.title}</h3><p className={zoneStyles.date}>{formatDate(item.uploadedAt,locale)}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}
                   {view!=='list'&&!recordingId ? <button type="button" className="min-h-11 justify-self-start text-primary underline focus-visible:outline-2 focus-visible:outline-primary" onClick={()=>select(item.id)}>{messages.select}</button>:null}
                 </div>
               </article>)}
@@ -431,13 +432,13 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
             if(await start(bookmark)){setVodChosen(true);setSelectedLive(null);return true;}return false;
           }:undefined}/>:null}
           {selected && !selectedLive && !waitingWatch && !resolver.denied ? <div data-video-watch ref={playerSection} className={`${zoneStyles.video} grid min-w-0 scroll-mt-28 gap-4`}>
-            {playback?.recordingId === selected.id ? <HlsPlayer key={playback.url} resume={vodResume} poster={poster} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} previousHref={previousRecording ? cardLink(previousRecording.id) : undefined} nextHref={nextRecording ? cardLink(nextRecording.id) : undefined} onError={mediaError} onBookmark={rememberVod}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950">
+            {playback?.recordingId === selected.id ? <HlsPlayer key={playback.url} resume={vodResume} poster={poster} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} previousHref={previousRecording ? cardLink(previousRecording) : undefined} nextHref={nextRecording ? cardLink(nextRecording) : undefined} onError={mediaError} onBookmark={rememberVod}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {poster?<img src={poster} alt={selected.title} width={1280} height={720} className="absolute inset-0 h-full w-full object-contain"/>:null}
               {preparing || recordingId && !playError ? <div className="hhc-player-loading" role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{messages.preparing}</span></div> : !recordingId ? <button type="button" onClick={() => void start()} className="relative inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground"><Play size={18} aria-hidden="true" />{messages.play}</button> : null}
             </div>}
             <h2 ref={playerTitle} tabIndex={-1} className={`${zoneStyles.watchTitle} outline-none`}>{selected.title}</h2>
-            {recordingId?<VideoInteractions recommendations={recommendations} key={selected.id} api={api} id={selected.id} title={selected.title} locale={locale} live={false} currentTime={()=>video.current?.currentTime??0} durationSeconds={selected.durationSeconds??undefined} description={selected.description} date={selected.uploadedAt} dateKind="uploaded"/>:<VideoInformation description={selected.description} date={selected.uploadedAt} metrics={null} locale={locale}/>}
+            {recordingId?<VideoInteractions recommendations={recommendations} key={selected.id} api={api} id={selected.id} publicId={selected.publicId} title={selected.title} locale={locale} live={false} currentTime={()=>video.current?.currentTime??0} durationSeconds={selected.durationSeconds??undefined} description={selected.description} date={selected.uploadedAt} dateKind="uploaded"/>:<VideoInformation description={selected.description} date={selected.uploadedAt} metrics={null} locale={locale}/>}
             {playError ? <p role="alert" className="text-sm text-primary">{playError} <button type="button" className="underline" onClick={() => void start(vodBookmark.current)}>{messages.retry}</button></p> : null}
           </div> : null}
           {!inlineRecommendations?recommendations:null}

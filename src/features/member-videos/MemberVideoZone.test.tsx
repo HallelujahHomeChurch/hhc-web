@@ -74,6 +74,16 @@ beforeEach(() => {
 });
 afterEach(() => {cleanup();vi.useRealTimers();vi.restoreAllMocks();});
 
+it('uses public IDs for VOD and live cards while preserving UUID identity',async()=>{
+ state.auth='authenticated';state.access='available';
+ list.mockResolvedValue([{id:'r1',publicId:'aB_012-xyzQ',title:'Short VOD',packageId}]);
+ videoApi.liveList.mockResolvedValue([{id:'r2',publicId:'Ab_012-xyzQ',captureId:packageId,title:'Short live',liveState:'live',createdAt:'2026-10-07T00:00:00Z'}]);
+ render(<MemberVideoZone locale="ja" messages={messages} hero={null} view="list"/>);
+ expect(await screen.findByRole('link',{name:'Short VOD'})).toHaveAttribute('href','/video/aB_012-xyzQ');
+ expect(screen.getByRole('link',{name:/Short live/})).toHaveAttribute('href','/video/Ab_012-xyzQ');
+ expect(videoApi.grant).not.toHaveBeenCalled();
+});
+
 describe('member video gate', () => {
   it.each([['anonymous', 'loading'], ['authenticated', 'denied']])('keeps the %s/%s home redirect', async (auth, access) => {
     state.auth = auth; state.access = access;

@@ -67,3 +67,10 @@ it('distinguishes initial loading from ready scheduled pagination and errors',as
  await act(async()=>resolve({items:[{recordingId:'scheduled',title:'Next service',stateRevision:1,view:'waiting'}],nextCursor:'next'}));
  expect(onPageState).toHaveBeenLastCalledWith(expect.objectContaining({initialState:'ready',complete:false}));
 });
+
+it('uses the same short ID in upcoming title and thumbnail links',async()=>{
+ const api={upcoming:vi.fn().mockResolvedValue({items:[{recordingId:'r1',publicId:'aB_012-xyzQ',title:'Short meeting',stateRevision:1}],nextCursor:null}),broadcastCover:vi.fn().mockRejectedValue(new Error('none'))} as unknown as ReturnType<typeof createMemberVideoApi>;
+ const {container}=render(<UpcomingBroadcasts api={api} locale="ja" loading="Loading" retry="Retry"/>);
+ expect(await screen.findByRole('link',{name:'Short meeting'})).toHaveAttribute('href','/video/aB_012-xyzQ');
+ expect(container.querySelector('a[aria-hidden="true"]')).toHaveAttribute('href','/video/aB_012-xyzQ');
+});
