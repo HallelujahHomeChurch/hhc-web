@@ -172,9 +172,9 @@ describe('VOD audio mode',()=>{
    await act(async()=>{await vi.advanceTimersByTimeAsync(300000);});expect(videoApi.grant).toHaveBeenCalledTimes(becomesReady?3:6);
   })();
  });
- it('keeps readiness failures within the budget and stops checks while hidden',async()=>{
-  state.auth='authenticated';state.access='available';list.mockResolvedValue([{id:'r1',title:'Readiness failure',packageId}]);
-  videoApi.grant.mockResolvedValueOnce({packageId,expiresAt:new Date(Date.now()+3600000).toISOString(),audioState:'pending'}).mockRejectedValue(new Error('offline'));videoApi.exchange.mockResolvedValue(playbackUrl);
+ it.each([false,true])('keeps readiness failures bounded while hidden, including capped expiry: %s',async capped=>{
+  state.auth='authenticated';state.access='available';const expiresAt=new Date(Date.now()+(capped?15*60000:3600000)).toISOString();list.mockResolvedValue([{id:'r1',title:'Readiness failure',packageId,expiresAt:capped?expiresAt:null}]);
+  videoApi.grant.mockResolvedValueOnce({packageId,expiresAt,audioState:'pending'}).mockRejectedValue(new Error('offline'));videoApi.exchange.mockResolvedValue(playbackUrl);
   render(<MemberVideoZone locale="en" messages={messages} hero={null}/>);const play=await screen.findByRole('button',{name:'Play'});vi.useFakeTimers();await act(async()=>{fireEvent.click(play);});
   await act(async()=>{await vi.advanceTimersByTimeAsync(5000);});
   const visibility=vi.spyOn(document,'visibilityState','get').mockReturnValue('hidden');fireEvent(document,new Event('visibilitychange'));
