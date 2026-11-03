@@ -6,9 +6,9 @@ import {generateMetadata} from './[locale]/layout';
 
 vi.mock('next-intl/server', () => ({setRequestLocale: vi.fn()}));
 
-const navigation = vi.hoisted(() => ({pathname: '/ja/about'}));
+const navigation = vi.hoisted(() => ({pathname: '/ja/about', locale: undefined as string | undefined}));
 
-vi.mock('next/navigation', () => ({usePathname: () => navigation.pathname}));
+vi.mock('next/navigation', () => ({usePathname: () => navigation.pathname, useParams: () => ({locale: navigation.locale})}));
 vi.mock('@/features/site-layout/api', () => ({getSiteLayout: async () => ({
   locale: 'zh-Hant',
   siteName: 'CMS 中文站',
@@ -31,6 +31,7 @@ vi.mock('@/features/site-layout/api', () => ({getSiteLayout: async () => ({
 describe('RootLayout', () => {
   beforeEach(() => {
     navigation.pathname = '/ja/about';
+    navigation.locale = undefined;
   });
 
   it('sets the document language from the localized route', () => {
@@ -39,6 +40,11 @@ describe('RootLayout', () => {
 
   it('sets the language for the standalone handoff route', () => {
     navigation.pathname = '/line-browser/ko';
+    expect(renderToStaticMarkup(<RootLayout><main /></RootLayout>)).toContain('<html lang="ko"');
+  });
+
+  it('uses the resolved route locale for a rewritten canonical video', () => {
+    navigation.pathname = '/video/FA0AoBO02uU'; navigation.locale = 'ko';
     expect(renderToStaticMarkup(<RootLayout><main /></RootLayout>)).toContain('<html lang="ko"');
   });
 

@@ -47,3 +47,26 @@ describe('single-recording public share metadata', () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 });
+
+it('uses locale-independent canonical short metadata without sending personal preference headers', async () => {
+  const {videoShareMetadata} = await import('./share-metadata');
+  const fetcher=vi.fn().mockResolvedValue(Response.json({data:{title:'Source title'}}));
+  vi.stubGlobal('fetch',fetcher);
+  const metadata=await videoShareMetadata('FA0AoBO02uU');
+  expect(metadata.alternates).toMatchObject({canonical:'https://www.alive.org.tw/video/FA0AoBO02uU'});
+  expect(metadata.openGraph).toMatchObject({title:'Source title',images:[{url:'https://www.alive.org.tw/api/video-previews/FA0AoBO02uU/cover'}]});
+  expect(fetcher.mock.calls[0][1]).toMatchObject({credentials:'omit',cache:'no-store'});
+  expect(fetcher.mock.calls[0][1].headers).toBeUndefined();
+});
+
+it('accepts only eligible exact relative canonical Link headers for legacy redirects', async () => {
+  const {legacyVideoPath} = await import('./share-metadata');
+  vi.stubGlobal('fetch',vi.fn().mockResolvedValue(Response.json({data:{title:'title'}},{headers:{Link:'</video/FA0AoBO02uU>; rel="canonical"'}})));
+  expect(await legacyVideoPath(id)).toBe('/video/FA0AoBO02uU');
+  for(const link of ['<https://evil.test/video/FA0AoBO02uU>; rel="canonical"','</video/FA0AoBO02uU?token=x>; rel="canonical"','</video/short>; rel="canonical"']) {
+    vi.stubGlobal('fetch',vi.fn().mockResolvedValue(Response.json({}, {headers:{Link:link}})));
+    expect(await legacyVideoPath(id)).toBeUndefined();
+  }
+  vi.stubGlobal('fetch',vi.fn().mockResolvedValue(new Response('',{status:404,headers:{Link:'</video/FA0AoBO02uU>; rel="canonical"'}})));
+  expect(await legacyVideoPath(id)).toBeUndefined();
+});

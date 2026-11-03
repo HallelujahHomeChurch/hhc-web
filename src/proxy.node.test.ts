@@ -38,3 +38,24 @@ describe('LINE browser routing', () => {
     expect(getRewrittenUrl(response)).toBe('https://www.alive.org.tw/line-browser/ja?source=line');
   });
 });
+
+ describe('canonical video locale resolution', () => {
+  it.each(['zh-Hant','zh-Hans','en','ja','ko'])('rewrites %s without changing the public URL', locale => {
+    const response = proxy(new NextRequest('https://www.alive.org.tw/video/FA0AoBO02uU?t=42', {headers: {cookie:`hhc_locale=${locale}`, 'accept-language':'en'}}));
+    expect(getRewrittenUrl(response)).toBe(`https://www.alive.org.tw/${locale}/video/FA0AoBO02uU?t=42`);
+    expect(response.headers.get('location')).toBeNull();
+    expect(response.headers.get('cache-control')).toBe('private, no-store');
+  });
+  it.each([['ja','ja'],['fr','zh-Hant'],['zh-CN','zh-Hans']])('uses browser language %s for a first visitor', (language, locale) => {
+    expect(getRewrittenUrl(proxy(new NextRequest('https://www.alive.org.tw/video/FA0AoBO02uU', {headers:{'accept-language':language}})))).toContain(`/${locale}/video/`);
+  });
+  it('keeps the LINE browser isolated and lets its crawler read metadata', () => {
+    expect(getRewrittenUrl(proxy(new NextRequest('https://www.alive.org.tw/video/FA0AoBO02uU?t=9', {headers:{'user-agent':line,'accept-language':'ko'}})))).toBe('https://www.alive.org.tw/line-browser/ko?t=9');
+    expect(getRewrittenUrl(proxy(new NextRequest('https://www.alive.org.tw/video/FA0AoBO02uU', {headers:{'user-agent':'line-poker/1.0'}})))).toContain('/zh-Hant/video/');
+  });
+  it('preserves old locale intent for the redirect', () => {
+    const old = proxy(new NextRequest('https://www.alive.org.tw/ja/member-videos/11111111-1111-1111-1111-111111111111'));
+    expect(old.headers.get('set-cookie')).toContain('hhc_locale=ja');
+
+  });
+ });

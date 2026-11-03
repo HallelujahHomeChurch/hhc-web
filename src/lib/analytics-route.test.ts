@@ -7,6 +7,7 @@ it('normalizes only public routes and excludes private or token-bearing destinat
     '/en/privacy-policy',
     '/en/terms-of-use',
     '/en/member-videos',
+    '/video/FA0AoBO02uU',
     '/en/newsletter/unsubscribe',
     '/en/literature-ministry/read/secret',
     '/en/statements/private',

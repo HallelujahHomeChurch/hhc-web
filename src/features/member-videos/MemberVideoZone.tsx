@@ -8,8 +8,8 @@ import zoneStyles from './MemberVideoZone.module.css';
 import {LoaderCircle, Play} from 'lucide-react';
 import type {MemberLiveRecording, MemberRecording, MemberRecordingPlayback} from '@hallelujahhomechurch/hhc-web-client';
 import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
-import {useAccountAuth, useAccountIdentity, useBulletinAuthorization, useVideoAccess} from '@/components/layout/AccountControl';
-import type {Locale} from '@/i18n/locales';
+import {useAccountAuth, useAccountSignIn, useAccountIdentity, useBulletinAuthorization, useVideoAccess} from '@/components/layout/AccountControl';
+import {getLocaleCookie, type Locale} from '@/i18n/locales';
 import {captureHandledError} from '@/lib/observability';
 import {createMemberVideoApi} from './api';
 import {videoSearchHref,videoSearchRefreshEvent,type VideoSearchLabels} from './search';
@@ -32,6 +32,7 @@ import {LoadingStatus} from '@/components/ui/ContentLoading';
 import {ThumbnailPreview} from './ThumbnailPreview';
 
 export type Messages = {
+  signIn?: string; shareDescription?: string;
   live?: LiveLabels;
   search?: VideoSearchLabels;
   backToList?: string; otherVideos?: string; unavailable?: string;
@@ -44,7 +45,7 @@ type ActivePlayback = {recordingId: string; scopeId: string; grant: MemberRecord
 const pageSize = 12;
 // Default automatic covers belong to the immutable recording package.
 const coverRevision=(recording:MemberRecording|undefined)=>recording?.selectedCoverId||(recording?.packageId?`auto:${recording.packageId}`:undefined);
-type ZoneProps = {startAt?:number;locale: Locale; messages: Messages; hero: ReactNode; view?: 'list' | 'watch'; recordingId?: string;query?: string;invalidQuery?: boolean};
+type ZoneProps = {publicId?:string;startAt?:number;locale: Locale; messages: Messages; hero: ReactNode; view?: 'list' | 'watch'; recordingId?: string;query?: string;invalidQuery?: boolean};
 
 function newestFirst(items: MemberRecording[]) {
   return [...items].sort((a, b) => (b.uploadedAt ?? '').localeCompare(a.uploadedAt ?? '') || b.id.localeCompare(a.id));
@@ -55,22 +56,26 @@ function formatDate(value: string | null, locale: Locale) {
   return new Intl.DateTimeFormat(locale, {timeZone: 'Asia/Taipei', year: 'numeric', month: 'long', day: 'numeric'}).format(new Date(value));
 }
 
-export function MemberVideoZone({locale, messages, hero, view = 'watch', recordingId, query = '', invalidQuery = false,startAt}: ZoneProps) {
+export function MemberVideoZone({locale, messages, hero, view = 'watch', recordingId, publicId, query = '', invalidQuery = false,startAt}: ZoneProps) {
   const router = useRouter();
   const auth = useAccountAuth();
+  const signIn = useAccountSignIn();
+  useEffect(() => { document.cookie = getLocaleCookie(locale); }, [locale]);
   const identity=useAccountIdentity();
   const access = useVideoAccess();
   useEffect(() => {
-    if (auth.status === 'anonymous' || access === 'denied') router.replace(`/${locale}`);
-  }, [access, auth.status, locale, router]);
-  if (access === 'available') return <AuthorizedVideoZone startAt={startAt} key={`${identity}:${recordingId ?? view}:${view==='list'?`${query}:${invalidQuery}`:''}`} locale={locale} messages={messages} hero={hero} view={view} recordingId={recordingId} query={query} invalidQuery={invalidQuery} />;
+    if (!publicId && (auth.status === 'anonymous' || access === 'denied')) router.replace(`/${locale}`);
+  }, [access, auth.status, locale, router, publicId]);
+  if (access === 'available') return <AuthorizedVideoZone publicId={publicId} startAt={startAt} key={`${identity}:${publicId ?? recordingId ?? view}:${view==='list'?`${query}:${invalidQuery}`:''}`} locale={locale} messages={messages} hero={hero} view={view} recordingId={recordingId} query={query} invalidQuery={invalidQuery} />;
+  if (publicId && auth.status === 'anonymous') return <main className="shell py-16"><section className="rounded-2xl border border-panel-border bg-panel p-8 text-center"><h1 className="text-2xl font-semibold">{messages.selectedTitle}</h1><p className="mt-4 text-muted">{messages.shareDescription}</p><button type="button" className="mt-5 min-h-11 rounded-full bg-primary-solid px-5 font-semibold text-primary-foreground" onClick={() => void signIn?.()}>{messages.signIn}</button></section></main>;
+  if (publicId && access === 'denied') return <main className="shell py-16" role="alert">{messages.unavailable ?? messages.expired}</main>;
   if (auth.status === 'anonymous' || access === 'denied') return null;
   const unavailable = auth.status === 'unavailable' || access === 'unavailable';
-  if (!unavailable) return <main><div className={`${recordingId?'':'bg-[image:var(--hhc-page-gradient)]'} ${recordingId ? zoneStyles.watchPage : 'py-10'}`}><section className={`${zoneStyles.zone} ${recordingId ? zoneStyles.watch : query ? zoneStyles.search : zoneStyles.library}`}>{recordingId ? <VideoWatchSkeleton label={messages.loading}/> : <VideoListSkeleton label={messages.loading} search={Boolean(query)}/>}</section></div></main>;
+  if (!unavailable) return <main><div className={`${recordingId||publicId?'':'bg-[image:var(--hhc-page-gradient)]'} ${(recordingId||publicId) ? zoneStyles.watchPage : 'py-10'}`}><section className={`${zoneStyles.zone} ${(recordingId||publicId) ? zoneStyles.watch : query ? zoneStyles.search : zoneStyles.library}`}>{recordingId||publicId ? <VideoWatchSkeleton label={messages.loading}/> : <VideoListSkeleton label={messages.loading} search={Boolean(query)}/>}</section></div></main>;
   return <main className="bg-[image:var(--hhc-page-gradient)] py-16"><section className="shell rounded-[14px] border border-panel-border bg-panel p-8 text-center text-ink" role={unavailable ? 'alert' : 'status'}>{unavailable ? messages.loadError : messages.loading}{unavailable ? <button type="button" className="ml-4 min-h-11 rounded-full border border-[var(--hhc-control-border)] px-5 font-semibold" onClick={() => window.location.reload()}>{messages.retry}</button> : null}</section></main>;
 }
 
-function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query = '', invalidQuery = false,startAt}: ZoneProps) {
+function AuthorizedVideoZone({locale, messages, hero, view, recordingId: internalRecordingId, publicId, query = '', invalidQuery = false,startAt}: ZoneProps) {
   const router = useRouter();
   const authorization = useBulletinAuthorization();
   const identity = useAccountIdentity();
@@ -87,8 +92,9 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId, query =
   const [vodResume,setVodResume]=useState<PlayerBookmark|undefined>(undefined);
   const [legacySelectedLive,setSelectedLive]=useState<MemberLiveRecording|null>(null);
   const [retry, setRetry] = useState(0);
-  const resolver=useBroadcastWatch(api,recordingId,retry);
+  const resolver=useBroadcastWatch(api,publicId ?? internalRecordingId,retry);
   const watch=resolver.watch;
+  const recordingId=publicId ? watch?.recordingId ?? publicId : internalRecordingId;
   const mediaOrigin=watch?.mediaStartSeconds??null,mediaDuration=watch?.durationSeconds??null;
   const selectedLive=resolver.denied||vodChosen||recordingId&&!watch?null:watch?watch.live??(['processing','vod'].includes(watch.view)?resolver.lastLive:null):legacySelectedLive;
   const waitingWatch=watch&&!['live','vod'].includes(watch.view)?watch:null;

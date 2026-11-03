@@ -45,7 +45,7 @@ export function createMemberVideoApi(authorization: Authorization, fetcher: Fetc
     reportComment: client.reportRecordingComment,
     heartbeat: client.recordPlaybackHeartbeat,
     metrics: client.getMemberRecordingMetrics,
-    watch:(id:string,signal?:AbortSignal)=>client.resolveRecordingWatch(id,signal),
+    watch:(id:string,signal?:AbortSignal)=>/^[A-Za-z0-9_-]{11}$/.test(id) ? client.resolveVideoWatch(id,signal) : client.resolveRecordingWatch(id,signal),
     upcoming:(options:{cursor?:string;limit?:number;q?:string;signal?:AbortSignal}={})=>client.listMemberBroadcasts(options),
     async broadcastCover(id:string,signal?:AbortSignal) {
       const blob=await client.getMemberBroadcastCover(id,signal);
