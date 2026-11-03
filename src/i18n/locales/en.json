@@ -498,6 +498,11 @@
     "empty": "No weekly papers have been published yet."
   },
   "memberVideos": {
+    "audioUnavailable": "Audio unavailable",
+    "audioCheck": "Check audio availability",
+    "audioOnly": "Audio only",
+    "videoMode": "Video",
+    "audioPreparing": "Audio preparing",
     "shareDescription": "Sign in with an eligible membership to watch this video.",
     "theaterMode": "Theater mode",
     "exitTheaterMode": "Exit theater mode",

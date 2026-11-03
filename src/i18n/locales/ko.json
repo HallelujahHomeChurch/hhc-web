@@ -507,6 +507,11 @@
     "empty": "아직 게시된 주보가 없습니다."
   },
   "memberVideos": {
+    "audioUnavailable": "오디오를 사용할 수 없음",
+    "audioCheck": "오디오 다시 확인",
+    "audioOnly": "오디오만",
+    "videoMode": "동영상",
+    "audioPreparing": "오디오 준비 중",
     "shareDescription": "이 동영상을 시청하려면 시청 권한이 있는 회원으로 로그인해야 합니다.",
     "theaterMode": "영화관 모드",
     "exitTheaterMode": "영화관 모드 종료",

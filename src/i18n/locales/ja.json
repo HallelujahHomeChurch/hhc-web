@@ -507,6 +507,11 @@
     "empty": "公開済みの週報はまだありません。"
   },
   "memberVideos": {
+    "audioUnavailable": "音声は利用できません",
+    "audioCheck": "音声を再確認",
+    "audioOnly": "音声のみ",
+    "videoMode": "動画",
+    "audioPreparing": "音声を準備中",
     "shareDescription": "この動画の視聴には、視聴権限のある会員としてログインが必要です。",
     "theaterMode": "シアターモード",
     "exitTheaterMode": "シアターモードを終了",

@@ -7,12 +7,12 @@ import type {RecordingHeartbeatInput} from '@hallelujahhomechurch/hhc-web-client
 export function playbackCredit(previous: number, current: number, elapsed: number, playing: boolean) {
   return playing && current > previous ? Math.max(0, Math.min(2000, elapsed)) : 0;
 }
-export function usePlaybackTelemetry(api: ReturnType<typeof createMemberVideoApi>, id: string | undefined, video: RefObject<HTMLVideoElement | null>, enabled: boolean) {
+export function usePlaybackTelemetry(api: ReturnType<typeof createMemberVideoApi>, id: string | undefined, video: RefObject<HTMLMediaElement | null>, enabled: boolean) {
   useEffect(() => {
     if (!id || !enabled || !api.heartbeat) return;
     const abort = new AbortController(), session = crypto.randomUUID();
     let sequence = 0, delta = 0, previous = 0, last = performance.now(), ticks = 0, wasPlaying = false, sending = false, disabled = false;
-    const send = async (media: HTMLVideoElement) => {
+    const send = async (media: HTMLMediaElement) => {
       if (sending || disabled || abort.signal.aborted) return;
       const state: RecordingHeartbeatInput['state'] = media.ended ? 'ended' : media.paused ? 'paused' : media.readyState < 2 || media.seeking ? 'waiting' : 'playing';
       const credit = delta; delta = 0; sending = true;
