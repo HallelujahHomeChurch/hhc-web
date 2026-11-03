@@ -507,11 +507,6 @@
     "empty": "目前尚未发布周报。"
   },
   "memberVideos": {
-    "audioUnavailable": "音频尚未提供",
-    "audioCheck": "重新检查音频",
-    "audioOnly": "纯音频",
-    "videoMode": "视频",
-    "audioPreparing": "音频准备中",
     "shareDescription": "此视频仅限具观看权限的会员登录后观看。",
     "theaterMode": "影院模式",
     "exitTheaterMode": "退出影院模式",

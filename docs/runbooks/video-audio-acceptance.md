@@ -15,18 +15,20 @@ or sent by this diagnostic. Disable with `sessionStorage.removeItem(...)` and
 reload; the event buffer does not persist across page loads.
 
 For each available physical device (iPhone Chrome, Safari, Android Chrome), record
-browser/OS, mode switches, lock/unlock times, headphone/phone interruption,
+browser/OS, normal playback, seeking and rate changes, lock/unlock times, headphone/phone interruption,
 network changes and whether media progresses across the old grant expiry. Compare
 buffered ranges and accepted generations before assigning an authorization cause
 to a stall. A shortened expiry fixture verifies a path, not hour-long stability.
 The previously declined 90-minute session must not be started automatically.
 
-Pending/processing audio is checked at most five times per playback scope, after
-5, 15, 30, 60 and 120 seconds. Hidden pages suspend these readiness checks. The
-existing serialized grant/Cookie renewal path remains the only authority path;
-manual recheck remains available. Missing/failed derivatives are unavailable,
-not an assertion that historical generation has been scheduled.
+The normal video controls own the audible media. There are no audio mode,
+preparation status or manual readiness controls. Derivative readiness is captured
+when opening a playback session; later readiness does not replace running media,
+especially in a hidden page. Ordinary authorization renewal continues unchanged.
+Missing derivatives retain ordinary video playback; they do not prove lockscreen
+support. Revocation, expiry and unmount stop both sound and video.
 
-Current evidence is synthetic local producer output and automated session tests.
-Physical lockscreen, real Account/CMS/Cookie/Worker integration and the prior
-68.510-second progress discrepancy remain unaccepted until measured.
+Acceptance must start using the normal Play button, then lock the phone without
+another interaction. Verify sound continues, lockscreen pause/resume works, and
+unlocking restores synchronized video. Previous manual-audio-mode checks are not
+acceptance of this corrected user experience.
