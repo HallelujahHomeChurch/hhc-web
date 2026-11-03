@@ -8,6 +8,7 @@ import Image from 'next/image';
 import {BookOpenText, Newspaper, PlaySquare, UsersRound} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 import {VideoSearchField} from '@/features/member-videos/VideoSearchField';
+import {videoPublicIdPattern} from '@/features/member-videos/share';
 import {OrganizationsSearch} from '@/features/organizations/OrganizationsSearch';
 import {ExpandableSearchField} from '@hallelujahhomechurch/ui';
 import type {AccountSessionClient} from '@hallelujahhomechurch/account-client';
@@ -74,8 +75,9 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
     navItems.find(item => item.key === 'organizations')
   ].filter((item): item is typeof navItems[number] => Boolean(item));
   const videoRoot = `/${locale}/member-videos`;
-  const videoWatchPage = (pathname.startsWith(`${videoRoot}/`) && pathname !== `${videoRoot}/`) || ((pathname === videoRoot || pathname === `${videoRoot}/`) && Boolean(searchQuery.trim()));
-  const videoSearchEnabled = pathname === videoRoot || pathname.startsWith(`${videoRoot}/`);
+  const shortVideoPage = pathname.startsWith('/video/') && videoPublicIdPattern.test(pathname.slice('/video/'.length));
+  const videoWatchPage = shortVideoPage || (pathname.startsWith(`${videoRoot}/`) && pathname !== `${videoRoot}/`) || ((pathname === videoRoot || pathname === `${videoRoot}/`) && Boolean(searchQuery.trim()));
+  const videoSearchEnabled = shortVideoPage || pathname === videoRoot || pathname.startsWith(`${videoRoot}/`);
   const searchKey = `${pathname}:${searchQuery}`;
   const [searchState, setSearchState] = useState({pathname:searchKey, open: false});
   const searchOpen = searchState.pathname === searchKey && searchState.open;

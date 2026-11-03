@@ -84,6 +84,7 @@ describe('SiteHeader', () => {
     ['/zh-Hant/member-videos','/zh-Hant','首頁'],
     ['/zh-Hant/member-videos/','/zh-Hant','首頁'],
     ['/zh-Hant/member-videos/r1','/zh-Hant/member-videos','影音專區'],
+    ['/video/aB_012-xyzQ','/zh-Hant/member-videos','影音專區'],
     ['/zh-Hant/member-videos-other','/zh-Hant','首頁'],
     ['/zh-Hant/news','/zh-Hant','首頁']
   ])('routes the brand from %s to %s',(pathname,href,label)=>{
@@ -94,8 +95,8 @@ describe('SiteHeader', () => {
     expect(screen.queryByRole('link',{name:'首頁'})).not.toBeInTheDocument();
   });
 
-  it('keeps video search available on the video route before qualification resolves', async () => {
-    render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname="/zh-Hant/member-videos" sessionClient={anonymousSessionClient} /></NextIntlClientProvider>);
+  it.each(['/zh-Hant/member-videos','/video/aB_012-xyzQ'])('keeps video search available on %s before qualification resolves', async pathname => {
+    render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname={pathname} sessionClient={anonymousSessionClient} /></NextIntlClientProvider>);
     const search = screen.getByRole('button', {name: '搜尋影片'});
     fireEvent.click(search);
     const input = await screen.findByRole('searchbox', {name: '搜尋影片'});
@@ -565,7 +566,7 @@ describe('SiteHeader', () => {
   });
 });
 
-it.each(['/zh-Hant','/zh-Hant/news','/zh-Hant/member-videos-other'])('shows a disabled search on other routes: %s',pathname=>{
+it.each(['/zh-Hant','/zh-Hant/news','/zh-Hant/member-videos-other','/video/short','/video/aB_012-xyzQ/extra'])('shows a disabled search on other routes: %s',pathname=>{
  render(<NextIntlClientProvider locale="zh-Hant" messages={zhHant}><SiteHeader layout={layout} locale="zh-Hant" pathname={pathname} sessionClient={anonymousSessionClient}/></NextIntlClientProvider>);
  expect(screen.getByRole('button',{name:'搜尋（尚未開放）'})).toBeDisabled();
 });
