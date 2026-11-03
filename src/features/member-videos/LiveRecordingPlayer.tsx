@@ -45,7 +45,7 @@ export function LiveRecordingPlayer({api,recording,labels,liveLabels,locale,onVo
    {playable?(session.pending||!session.error?<div className="hhc-player-loading" role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{labels.loading}</span></div>:<p>{labels.playError}</p>):<p role="status">{session.closed?(session.expired?liveLabels.expired:liveLabels.failed):liveLabels[state]}</p>}
   </div>}
   <h2 className={zoneStyles.watchTitle}>{recording.title}</h2>
-  <VideoInteractions recommendations={recommendations} key={recording.id} api={api} id={recording.id} title={recording.title} locale={locale} live={state==='live'||state==='recovering'} description={recording.description} date={recording.startedAt??recording.createdAt} dateKind="live">
+  <VideoInteractions recommendations={recommendations} key={recording.id} api={api} id={recording.id} publicId={recording.publicId} title={recording.title} locale={locale} live={state==='live'||state==='recovering'} description={recording.description} date={recording.startedAt??recording.createdAt} dateKind="live">
   {!['live','recovering'].includes(state)||session.closed?<p role="status" className="text-sm text-muted">{session.closed?(session.expired?liveLabels.expired:liveLabels.failed):liveLabels[state]}</p>:null}
   {grant?.replayUntil?<p className="text-sm text-muted">{liveLabels.replayUntil.replace('{time}',new Intl.DateTimeFormat(locale,{dateStyle:'short',timeStyle:'short'}).format(new Date(grant.replayUntil)))}</p>:null}
   </VideoInteractions>

@@ -1,3 +1,8 @@
+export const videoPublicIdPattern=/^[A-Za-z0-9_-]{11}$/;
+export function videoWatchPath(locale:string,id:string,publicId?:string){
+ return publicId&&videoPublicIdPattern.test(publicId)?`/video/${publicId}`:`/${locale}/member-videos/${encodeURIComponent(id)}`;
+}
+
 export function videoStartTime(value: string | string[] | undefined): number | undefined {
   if (typeof value !== 'string' || !/^(0|[1-9]\d{0,5})$/.test(value)) return;
   const seconds=Number(value);

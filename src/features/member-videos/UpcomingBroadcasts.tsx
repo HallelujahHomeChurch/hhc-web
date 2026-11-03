@@ -1,4 +1,5 @@
 'use client';
+import {videoWatchPath} from './share';
 
 import {useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
@@ -57,11 +58,11 @@ export function UpcomingBroadcasts({api,locale,query='',excludeIds=[],onPageStat
  useEffect(()=>{onPageState?.({ids:items.map(item=>item.recordingId),complete:loaded&&cursor===null,initialState:loaded?'ready':error?'error':'loading'});},[items,cursor,loaded,error,onPageState]);
  return <>
   {items.filter(item=>!excludeIds.includes(item.recordingId)).map(item=><article key={item.recordingId} className={styles.card}>
-   <Link href={`/${locale}/member-videos/${item.recordingId}`} className={styles.thumbnail} aria-hidden="true" tabIndex={-1}>
+   <Link href={videoWatchPath(locale,item.recordingId,item.publicId)} className={styles.thumbnail} aria-hidden="true" tabIndex={-1}>
     <BroadcastCover coverMode={item.coverMode} api={api} id={item.recordingId} title={item.title} revision={item.cover?`cover:${item.cover.revision}`:`state:${item.stateRevision}`}/>
     <span className={`${styles.badge} ${styles.stateBadge}`}>{labels.upcoming}</span>
    </Link>
-   <div className={styles.info}><h3 className={styles.title}><Link href={`/${locale}/member-videos/${item.recordingId}`}>{item.title}</Link></h3>
+   <div className={styles.info}><h3 className={styles.title}><Link href={videoWatchPath(locale,item.recordingId,item.publicId)}>{item.title}</Link></h3>
     {item.scheduledAt?<p className={styles.date}><time dateTime={item.scheduledAt}>{new Intl.DateTimeFormat(locale,{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Taipei'}).format(new Date(item.scheduledAt))}</time></p>:null}
    </div>
   </article>)}
