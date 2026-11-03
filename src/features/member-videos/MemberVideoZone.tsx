@@ -18,7 +18,6 @@ import {VideoInteractions} from './VideoInteractions';
 import {createPlaybackDiagnostics} from './playback-diagnostics';
 import {usePlaybackTelemetry} from './usePlaybackTelemetry';
 import {HlsPlayer, type PlayerLabels} from './HlsPlayer';
-import {AudioPlayer} from '@hallelujahhomechurch/ui/player';
 
 import {videoWatchPath} from './share';
 import {playerClock} from './PlayerChrome';
@@ -36,7 +35,6 @@ import {ThumbnailPreview} from './ThumbnailPreview';
 
 export type Messages = {
   signIn?: string; shareDescription?: string;
-  audioOnly?:string; videoMode?:string; audioPreparing?:string; audioUnavailable?:string; audioCheck?:string;
   live?: LiveLabels;
   search?: VideoSearchLabels;
   backToList?: string; otherVideos?: string; unavailable?: string;
@@ -45,7 +43,7 @@ export type Messages = {
   preparing: string; empty: string; loadError: string; playError: string; expired: string;
   retry: string; previous: string; next: string; loadMore?:string; liveStartedDate?:string; uploadedDate: string; description: string;
 } & PlayerLabels;
-type ActivePlayback = {recordingId: string; scopeId: string; grant: MemberRecordingPlayback; url: string};
+type ActivePlayback = {recordingId: string; scopeId: string; grant: MemberRecordingPlayback; url: string; backgroundAudio: boolean};
 const pageSize = 12;
 const readyAudio=(grant:MemberRecordingPlayback)=>grant.audio?.version==='aac-hls-v1'&&grant.audio.playlistPath==='audio/aac-hls-v1/index.m3u8';
 // Default automatic covers belong to the immutable recording package.
@@ -112,8 +110,9 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   const moreAttempt=useRef<AbortController|null>(null), morePending=useRef(false);
   const [playback, setPlayback] = useState<ActivePlayback | null>(null);
   const playbackRef = useRef<ActivePlayback | null>(null);
-  const video = useRef<HTMLVideoElement>(null),audio=useRef<HTMLAudioElement>(null);
+  const video = useRef<HTMLVideoElement>(null);
   const media=useRef<HTMLMediaElement|null>(null);
+  const pausePlayback=useCallback(()=>{media.current?.pause();if(video.current!==media.current)video.current?.pause();},[]);
   const diagnostic=useMemo(()=>createPlaybackDiagnostics(),[]),grantGeneration=useRef(0);
   const cookieOperations=useRef(Promise.resolve());
   const clearCookie=useCallback((url:string)=>{
@@ -137,23 +136,16 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   const [preparing, setPreparing] = useState(false);
   const [playError, setPlayError] = useState('');
   const attempt = useRef<AbortController | null>(null);
-  const [audioMode,setAudioMode]=useState(false),[audioChecking,setAudioChecking]=useState(false);
-  const renewNow=useRef<(()=>Promise<void>)|null>(null),audioChecks=useRef({scope:'',attempts:0});
-  const checkAudio=useCallback(async()=>{const run=renewNow.current;if(!run)return;setAudioChecking(true);try{await run();}finally{setAudioChecking(false);}},[]);
-  useEffect(()=>{media.current=audio.current??video.current;});
-  const audioUrl=playback&&readyAudio(playback.grant)?new URL('audio/aac-hls-v1/index.m3u8',playback.url).href:undefined;
+  const [audioFailureScope,setAudioFailureScope]=useState<string|null>(null),failedAudioScope=useRef<string|null>(null);
+  const backgroundAudio=Boolean(playback?.backgroundAudio&&audioFailureScope!==playback?.scopeId);
+  useEffect(()=>{bookmarkFrozen.current=false;},[backgroundAudio,playback?.url]);
+  const audioUrl=playback&&backgroundAudio?new URL('audio/aac-hls-v1/index.m3u8',playback.url).href:undefined;
+  const currentResume=useRef(vodResume);
+  useEffect(()=>{currentResume.current=vodResume;},[vodResume]);
   const snapshotVod=useCallback(()=>{
-    const current=media.current,saved=vodBookmark.current??vodResume;
+    const current=media.current,saved=vodBookmark.current??currentResume.current;
     return current?{...saved,time:current.readyState?current.currentTime:saved?.time??current.currentTime,rate:current.readyState?current.playbackRate:saved?.rate??current.playbackRate,paused:saved?.paused??current.paused,quality:saved?.quality??'auto',intent:'dvr' as const}:saved;
-  },[vodResume]);
-  const switchMode=(next:boolean)=>{
-    if(next&&!audioUrl)return;
-    const current=media.current;
-    const bookmark=snapshotVod();
-    bookmarkFrozen.current=true;
-    current?.pause();mediaFailureReported.current=false;setPlayError('');setVodResume(bookmark);setAudioMode(next);
-  };
-  useEffect(()=>{bookmarkFrozen.current=false;},[audioMode]);
+  },[]);
   const playerTitle = useRef<HTMLHeadingElement>(null);
   const playerSection = useRef<HTMLDivElement>(null);
 
@@ -268,9 +260,9 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   useEffect(() => {playbackRef.current = playback;}, [playback]);
   useEffect(() => () => {
     attempt.current?.abort();
-    media.current?.pause();
+    pausePlayback();
     if (playbackRef.current) clearCookie(playbackRef.current.url);
-  }, [api,clearCookie]);
+  }, [api,clearCookie,pausePlayback]);
 
   const selected = resolver.denied ? undefined : recordingId ? watch?.recording??undefined : recordings?.find((recording) => recording.id === selectedId);
   useEffect(()=>{vodBookmark.current=undefined;bookmarkFrozen.current=false;},[identity,selected?.id,selected?.packageId]);
@@ -280,12 +272,11 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
     attempt.current?.abort();
     attempt.current = null;
     setPreparing(false);
-    media.current?.pause();
+    pausePlayback();
     if (playbackRef.current) clearCookie(playbackRef.current.url);
     playbackRef.current = null;
     setPlayback(null);
     setPlayError('');
-    setAudioMode(false);
     setSelectedId(id);
     queueMicrotask(() => {
       playerTitle.current?.focus({preventScroll: true});
@@ -303,7 +294,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
     const controller = new AbortController();
     attempt.current = controller;
     if (playbackRef.current) clearCookie(playbackRef.current.url);
-    media.current?.pause();
+    pausePlayback();
     playbackRef.current = null;
     setPlayback(null);
     setPreparing(true);
@@ -312,7 +303,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
       const scopeId = crypto.randomUUID();
       const grant = await api.grant(selected.id, scopeId, selected.packageId, controller.signal);
       const url = await exchangeCookie(grant, controller.signal);
-      if (!controller.signal.aborted) {bookmarkFrozen.current=false;diagnostic('accepted',media.current,++grantGeneration.current,(Date.parse(grant.expiresAt)-Date.now())/1000);setVodResume(resume?mapBroadcastBookmark(resume,mediaOrigin,mediaDuration):startAt!==undefined?{time:Math.min(startAt,selected.durationSeconds??startAt),paused:false,rate:1,quality:'auto',intent:'dvr'}:undefined);setPlayback({recordingId: selected.id, scopeId, grant, url});return true;}
+      if (!controller.signal.aborted) {bookmarkFrozen.current=false;diagnostic('accepted',media.current,++grantGeneration.current,(Date.parse(grant.expiresAt)-Date.now())/1000);setVodResume(resume?mapBroadcastBookmark(resume,mediaOrigin,mediaDuration):startAt!==undefined?{time:Math.min(startAt,selected.durationSeconds??startAt),paused:false,rate:1,quality:'auto',intent:'dvr'}:undefined);setPlayback({recordingId: selected.id, scopeId, grant, url, backgroundAudio:readyAudio(grant)});return true;}
     } catch (error) {
       if (!controller.signal.aborted) {
         if (error instanceof HhcWebApiError && error.status === 401) {router.replace(`/${locale}`); return;}
@@ -325,7 +316,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
     } finally {
       if (!controller.signal.aborted) setPreparing(false);
     }
-  }, [selected, preparing, api, locale, router, resolveMissing, messages.playError,mediaOrigin,mediaDuration,startAt,clearCookie,exchangeCookie,diagnostic]);
+  }, [selected, preparing, api, locale, router, resolveMissing, messages.playError,mediaOrigin,mediaDuration,startAt,clearCookie,exchangeCookie,diagnostic,pausePlayback]);
 
   useEffect(() => {
     if (!recordingId || !selected || selectedLive || waitingWatch || resolver.denied || automaticAttempt.current === selected.id) return;
@@ -337,13 +328,16 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
     const grant = await api.grant(current.recordingId, current.scopeId, current.grant.packageId, signal);
     const url = await exchangeCookie(grant, signal);
     if (url !== current.url) throw new Error('Media URL changed during renewal');
-    if (!signal.aborted) {
-      if(audio.current&&!readyAudio(grant)){
-        const bookmark=snapshotVod();bookmarkFrozen.current=true;audio.current.pause();setVodResume(bookmark);setAudioMode(false);
+    const active=playbackRef.current;
+    if (!signal.aborted&&active?.scopeId===current.scopeId) {
+      const backgroundAudio=active.backgroundAudio&&readyAudio(grant);
+      if(active.backgroundAudio&&!backgroundAudio&&failedAudioScope.current!==active.scopeId){
+        const bookmark=snapshotVod();bookmarkFrozen.current=true;pausePlayback();setVodResume(bookmark);
       }
-      if(playbackRef.current?.scopeId===current.scopeId){const next={...current,grant};playbackRef.current=next;diagnostic('accepted',media.current,++grantGeneration.current,(Date.parse(grant.expiresAt)-Date.now())/1000);setPlayback(next);}
+      const next={...active,grant,backgroundAudio};playbackRef.current=next;
+      diagnostic('accepted',media.current,++grantGeneration.current,(Date.parse(grant.expiresAt)-Date.now())/1000);setPlayback(next);
     }
-  }, [api,snapshotVod,exchangeCookie,diagnostic]);
+  }, [api,snapshotVod,exchangeCookie,diagnostic,pausePlayback]);
 
   useEffect(() => {
     if (!playback) return;
@@ -358,42 +352,40 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
       if(playbackRef.current?.grant!==playback.grant)return;
       diagnostic('expired',media.current,grantGeneration.current);
       controller.abort();
-      media.current?.pause();
+      pausePlayback();
       clearCookie(playback.url);
       playbackRef.current = null;
       setPlayback(null);
       setPlayError(messages.expired);
     };
     const expiryTimer = window.setTimeout(expire, Math.max(0,expiry-Date.now()));
-    const run = async (readiness=false) => {
+    const run = async () => {
       if (inFlight || controller.signal.aborted) return;
-      inFlight = true;if(!readiness)window.clearTimeout(timer);
+      inFlight = true;window.clearTimeout(timer);
       try {
         await renew(playback, controller.signal);
-        if (!controller.signal.aborted&&!readiness) setPlayError('');
+        if (!controller.signal.aborted) setPlayError('');
       } catch (error) {
         if (controller.signal.aborted) return;
         captureHandledError(error, {operation: 'member-videos.renew'});
         if (error instanceof HhcWebApiError && (error.status === 401 || error.status === 403 || error.status === 404 || error.status === 409 || error.status === 412)) {
-          media.current?.pause();
+          pausePlayback();
           clearCookie(playback.url);
           diagnostic('denied',media.current,grantGeneration.current);playbackRef.current=null;setPlayback(null);setPlayError(messages.playError);
           if (error.status === 401) router.replace(`/${locale}`);
           else try { await resolveMissing(controller.signal); } catch { /* retry remains available */ }
         } else if (Date.now() >= expiry) {
-          media.current?.pause();
+          pausePlayback();
           clearCookie(playback.url);
-          setPlayback(null);
-        } else if(!readiness) {
+          playbackRef.current=null;setPlayback(null);
+        } else {
           timer = window.setTimeout(() => void run(), 60_000);
         }
-        if(!readiness||Date.now()>=expiry)setPlayError(messages.playError);
+        setPlayError(messages.playError);
       } finally {
         inFlight = false;
-        if(readiness&&canRenew&&!controller.signal.aborted&&Date.now()>=renewalAt)timer=window.setTimeout(()=>void run(),60000);
       }
     };
-    const check=()=>run(true);renewNow.current=check;
     if (canRenew) timer = window.setTimeout(() => void run(), Math.max(1_000, renewalAt - Date.now()));
     const visible = () => {
       if (document.visibilityState !== 'visible') return;
@@ -405,21 +397,8 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
     };
     document.addEventListener('visibilitychange', visible);
     window.addEventListener('online', visible);
-    return () => {if(renewNow.current===check)renewNow.current=null;controller.abort(); window.clearTimeout(timer); window.clearTimeout(expiryTimer); document.removeEventListener('visibilitychange', visible); window.removeEventListener('online', visible);};
-  }, [api, locale, messages.playError, messages.expired, playback, recordings, renew, resolveMissing, router,clearCookie,diagnostic]);
-
-  useEffect(()=>{
-    if(!playback||audioUrl||!['pending','processing'].includes(playback.grant.audioState??''))return;
-    if(audioChecks.current.scope!==playback.scopeId)audioChecks.current={scope:playback.scopeId,attempts:0};
-    const delays=[5000,15000,30000,60000,120000];let timer=0,cancelled=false;
-    const schedule=()=>{
-      window.clearTimeout(timer);
-      if(cancelled||document.visibilityState==='hidden'||audioChecks.current.attempts>=delays.length)return;
-      timer=window.setTimeout(()=>{audioChecks.current.attempts++;void checkAudio().finally(schedule);},delays[audioChecks.current.attempts]);
-    };
-    schedule();document.addEventListener('visibilitychange',schedule);
-    return()=>{cancelled=true;window.clearTimeout(timer);document.removeEventListener('visibilitychange',schedule);};
-  },[playback,audioUrl,checkAudio]);
+    return () => {controller.abort(); window.clearTimeout(timer); window.clearTimeout(expiryTimer); document.removeEventListener('visibilitychange', visible); window.removeEventListener('online', visible);};
+  }, [api, locale, messages.playError, messages.expired, playback, recordings, renew, resolveMissing, router,clearCookie,diagnostic,pausePlayback]);
 
   useEffect(()=>{
     const element=media.current;if(!element)return;
@@ -427,24 +406,24 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
     const handlers=events.map(event=>{const handler=()=>diagnostic(event,element,grantGeneration.current);element.addEventListener(event,handler);return()=>element.removeEventListener(event,handler);});
     const visible=()=>diagnostic('visibility',element,grantGeneration.current);document.addEventListener('visibilitychange',visible);
     return()=>{for(const remove of handlers)remove();document.removeEventListener('visibilitychange',visible);};
-  },[audioMode,playback?.url,diagnostic]);
+  },[backgroundAudio,playback?.url,diagnostic]);
 
   const mediaError = useCallback((bookmark?:PlayerBookmark) => {
     diagnostic('error',media.current,grantGeneration.current);
     if(!bookmarkFrozen.current){if(bookmark)vodBookmark.current={...bookmark,mediaOriginSeconds:mediaOrigin??0};bookmarkFrozen.current=true;}
-    media.current?.pause();
+    pausePlayback();
+    const current=playbackRef.current;
+    if(current?.backgroundAudio&&failedAudioScope.current!==current.scopeId){
+      setVodResume(bookmark??vodBookmark.current);bookmarkFrozen.current=false;
+      // Keep transport fallback separate from authority so in-flight renewal is not aborted.
+      failedAudioScope.current=current.scopeId;setAudioFailureScope(current.scopeId);return;
+    }
     setPlayError(messages.playError);
     if (!mediaFailureReported.current) {
       mediaFailureReported.current = true;
       captureHandledError(new Error('Member video media playback failed'), {operation: 'member-videos.media'});
     }
-  }, [messages.playError,mediaOrigin,diagnostic]);
-
-  const audioError=useCallback((bookmark?:PlayerBookmark)=>{
-    diagnostic('error',media.current,grantGeneration.current);
-    bookmarkFrozen.current=true;
-    media.current?.pause();setVodResume(bookmark??vodBookmark.current);setAudioMode(false);
-  },[diagnostic]);
+  }, [messages.playError,mediaOrigin,diagnostic,pausePlayback]);
 
   const selectedIndex = recordings?.findIndex(item => item.id === selectedId) ?? -1;
   const previousRecording = selectedIndex > 0 ? recordings?.[selectedIndex - 1] : undefined;
@@ -510,8 +489,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
             if(await start(bookmark)){setVodChosen(true);setSelectedLive(null);return true;}return false;
           }:undefined}/>:null}
           {selected && !selectedLive && !waitingWatch && !resolver.denied ? <div data-video-watch ref={playerSection} className={`${zoneStyles.video} grid min-w-0 scroll-mt-28 gap-4`}>
-            {playback?.recordingId===selected.id?<div className="flex gap-2"><button type="button" className="min-h-11 rounded-full border border-panel-border px-4" aria-pressed={!audioMode} onClick={()=>{if(audioMode)switchMode(false);}}>{messages.videoMode??'Video'}</button><button type="button" className="min-h-11 rounded-full border border-panel-border px-4 disabled:opacity-50" aria-pressed={audioMode} disabled={!audioUrl} onClick={()=>{if(!audioMode)switchMode(true);}}>{audioUrl?messages.audioOnly??'Audio only':['pending','processing'].includes(playback.grant.audioState??'')?messages.audioPreparing??'Audio preparing':messages.audioUnavailable??'Audio unavailable'}</button>{!audioUrl?<button type="button" className="min-h-11 px-4 underline disabled:opacity-50" disabled={audioChecking} onClick={()=>void checkAudio()}>{audioChecking?messages.loading:messages.audioCheck??'Check audio availability'}</button>:null}</div>:null}
-            {playback?.recordingId === selected.id ? audioMode&&audioUrl?<div className="rounded-[14px] border border-panel-border bg-panel p-6"><AudioPlayer key={audioUrl} audioRef={audio} playbackUrl={audioUrl} title={selected.title} artwork={poster} resume={vodResume} labels={{playbackSpeed:messages.playbackSpeed,tapToPlay:messages.tapToPlay??messages.play}} onBookmark={rememberVod} onError={audioError}/></div>:<HlsPlayer key={playback.url} resume={vodResume} poster={poster} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} previousHref={previousRecording ? cardLink(previousRecording) : undefined} nextHref={nextRecording ? cardLink(nextRecording) : undefined} onError={mediaError} onBookmark={rememberVod}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950">
+            {playback?.recordingId === selected.id ? <HlsPlayer key={`${playback.url}:${backgroundAudio}`} backgroundAudioUrl={audioUrl} playbackMediaRef={media} resume={vodResume} poster={poster} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} previousHref={previousRecording ? cardLink(previousRecording) : undefined} nextHref={nextRecording ? cardLink(nextRecording) : undefined} onError={mediaError} onBookmark={rememberVod}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {poster?<img src={poster} alt={selected.title} width={1280} height={720} className="absolute inset-0 h-full w-full object-contain"/>:null}
               {preparing || recordingId && !playError ? <div className="hhc-player-loading" role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{messages.preparing}</span></div> : !recordingId ? <button type="button" onClick={() => void start()} className="relative inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground"><Play size={18} aria-hidden="true" />{messages.play}</button> : null}

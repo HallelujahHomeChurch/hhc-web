@@ -157,8 +157,8 @@ The navigation entry requires both `NEXT_PUBLIC_MEMBER_VIDEO_NAV_ENABLED=true`
 authorization boundary; list, grant, and media requests retain their checks.
 
 The focused player supports Space/K, arrows (5 seconds), J/L (10 seconds), M,
-and F. Desktop surface double-click toggles fullscreen without issuing playback
-commands; surface single-click waits 500ms for click arbitration, while keyboard
+and F. Surface single-click toggles playback immediately; double-click restores
+the preceding playback/live-follow intent before toggling fullscreen. Keyboard
 and toolbar actions remain immediate. Form controls keep native keyboard behavior.
 The settings menu has playback-speed and quality submenus, selected checkmarks,
 keyboard navigation and a back action, contained within the fullscreen player.
@@ -177,6 +177,12 @@ they never silently mute. Media-error Retry retains the latest position, pause
 intent, speed and quality, including commands during rendition reattachment.
 Finished VOD exposes Replay without starting another recording or acquiring a
 new session. Live end-of-stream retains DVR and the explicit recording handoff.
+
+For recordings with a ready audio derivative in the initial playback grant, the
+normal controls drive continuous audio and synchronized video. Backgrounding pauses
+video presentation while audio continues; returning synchronizes the picture. No
+mode switch or readiness UI is shown. Recordings without a ready derivative retain
+ordinary video playback. Physical lockscreen behavior requires device acceptance.
 
 Timeline previews lazily request `previews/index.vtt` and bounded 160×90 sprites
 inside the same authenticated playback session. Asset API generates them from
