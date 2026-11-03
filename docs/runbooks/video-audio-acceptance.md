@@ -32,3 +32,8 @@ Acceptance must start using the normal Play button, then lock the phone without
 another interaction. Verify sound continues, lockscreen pause/resume works, and
 unlocking restores synchronized video. Previous manual-audio-mode checks are not
 acceptance of this corrected user experience.
+
+Foreground recovery must remain smooth for at least 20 seconds without reloading
+the page. The initial iPhone Safari check confirmed uninterrupted lockscreen
+sound but found persistent picture stutter after unlock, resolved only by reload.
+Retest that failure specifically; sound alone does not pass acceptance.
