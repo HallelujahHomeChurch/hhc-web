@@ -1,4 +1,5 @@
-vi.mock('./VideoInteractions',async()=>{const {VideoInformation}=await import('./VideoInformation');return {VideoInteractions:({children,recommendations,...props}:import('react').ComponentProps<typeof VideoInformation>&{children?:import('react').ReactNode;recommendations?:import('react').ReactNode})=><><VideoInformation {...props} metrics={null}/>{children}{recommendations}</>};});
+const interactions=vi.hoisted(()=>vi.fn());
+vi.mock('./VideoInteractions',async()=>{const {VideoInformation}=await import('./VideoInformation');return {VideoInteractions:({children,recommendations,...props}:import('react').ComponentProps<typeof VideoInformation>&{children?:import('react').ReactNode;recommendations?:import('react').ReactNode})=>{interactions(props);return <><VideoInformation {...props} metrics={null}/>{children}{recommendations}</>;}};});
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {MemberVideoZone} from './MemberVideoZone';
@@ -46,7 +47,7 @@ beforeEach(() => {
   state.access = 'loading'; state.auth = 'checking';
   liveSession.bookmark.current=undefined;
   list.mockReset(); replace.mockReset();
-  captureHandledError.mockReset();
+  captureHandledError.mockReset();interactions.mockClear();
   list.mockResolvedValue([]);
   videoApi.list.mockReset().mockImplementation(list);
   videoApi.listPage.mockReset().mockImplementation(async()=>({items:await list(),nextCursor:null}));
@@ -87,7 +88,7 @@ it('uses public IDs for VOD and live cards while preserving UUID identity',async
 describe('VOD audio mode',()=>{
  it('switches one source with the same session and restores position, rate and pause',async()=>{
   state.auth='authenticated';state.access='available';
-  list.mockResolvedValue([{id:'r1',title:'Audio meeting',packageId}]);
+  list.mockResolvedValue([{id:'r1',publicId:'aB_012-xyzQ',title:'Audio meeting',packageId}]);
   videoApi.grant.mockResolvedValue({packageId,watermarkCode:'trace',expiresAt:new Date(Date.now()+3600000).toISOString(),audio:{version:'aac-hls-v1',playlistPath:'audio/aac-hls-v1/index.m3u8'}});
   videoApi.exchange.mockResolvedValue(playbackUrl);
   const {container}=render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);
@@ -100,6 +101,8 @@ describe('VOD audio mode',()=>{
   Object.defineProperty(audio,'duration',{configurable:true,value:120});fireEvent.loadedMetadata(audio);
   expect(audio.currentTime).toBe(42);expect(audio.playbackRate).toBe(1.5);
   audio.currentTime=64;fireEvent.timeUpdate(audio);
+  expect(interactions.mock.lastCall?.[0].publicId).toBe('aB_012-xyzQ');
+  expect(interactions.mock.lastCall?.[0].currentTime()).toBe(64);
   fireEvent.click(screen.getByRole('button',{name:'Video'}));
   const restored=container.querySelector('video')!;fireEvent.loadedMetadata(restored);
   expect(container.querySelector('audio')).toBeNull();expect(restored.currentTime).toBe(64);expect(restored.playbackRate).toBe(1.5);
