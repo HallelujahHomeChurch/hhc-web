@@ -96,26 +96,35 @@ it.each(['pending','ready',undefined])('keeps the original player UI without aud
 
 describe('transparent VOD background playback',()=>{
  const derivative={version:'aac-hls-v1',playlistPath:'audio/aac-hls-v1/index.m3u8'};
- const position=(audio:HTMLAudioElement,time=64)=>{Object.defineProperty(audio,'duration',{configurable:true,value:120});Object.defineProperty(audio,'readyState',{configurable:true,value:4});fireEvent.loadedMetadata(audio);audio.currentTime=time;audio.playbackRate=1.5;fireEvent.rateChange(audio);fireEvent.timeUpdate(audio);};
- it('uses the ready audio clock for sharing without a second visible player or mode controls',async()=>{
+ const position=(audio:HTMLMediaElement,time=64)=>{Object.defineProperty(audio,'duration',{configurable:true,value:120});Object.defineProperty(audio,'readyState',{configurable:true,value:4});fireEvent.loadedMetadata(audio);audio.currentTime=time;audio.playbackRate=1.5;fireEvent.rateChange(audio);fireEvent.timeUpdate(audio);};
+ it('uses the foreground video clock for sharing without a second visible player or mode controls',async()=>{
   state.auth='authenticated';state.access='available';list.mockResolvedValue([{id:'r1',publicId:'aB_012-xyzQ',title:'Background meeting',packageId}]);
   videoApi.grant.mockResolvedValue({packageId,expiresAt:new Date(Date.now()+3600000).toISOString(),audio:derivative});videoApi.exchange.mockResolvedValue(playbackUrl);
   const {container}=render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);
-  await screen.findByLabelText('Background meeting');const audio=container.querySelector('audio')!;expect(audio).not.toBeNull();await waitFor(()=>expect(audio.src).toBe(playbackUrl.replace('master.m3u8',derivative.playlistPath)));position(audio);
+  await screen.findByLabelText('Background meeting');const audio=container.querySelector('audio')!;expect(audio).not.toBeNull();await waitFor(()=>expect(audio.src).toBe(playbackUrl.replace('master.m3u8',derivative.playlistPath)));position(container.querySelector('video')!);audio.currentTime=12;
   expect(container.querySelector('video')).not.toBeNull();expect(audio.controls).toBe(false);
   expect(interactions.mock.lastCall?.[0].publicId).toBe('aB_012-xyzQ');expect(interactions.mock.lastCall?.[0].currentTime()).toBe(64);
   expect(videoApi.grant).toHaveBeenCalledOnce();expect(videoApi.exchange).toHaveBeenCalledOnce();
  });
- it.each(['ready','denied','denied-stalled','removed'])('renews the audible owner and immediately stops unsafe playback: %s',async outcome=>{
+ it.each([['ready',false],['denied',false],['denied-stalled',false],['removed',false],['ready',true],['denied',true],['denied-stalled',true],['removed',true]] as const)('renews the audible owner and immediately stops unsafe playback: %s, hidden=%s',async(outcome,hidden)=>{
   state.auth='authenticated';state.access='available';list.mockResolvedValue([{id:'r1',title:'Renew background',packageId}]);
   let count=0;videoApi.grant.mockImplementation(async()=>{count++;if(count>1&&outcome.startsWith('denied'))throw new HhcWebApiError(403,'forbidden','Denied');return{packageId,expiresAt:new Date(Date.now()+3600000).toISOString(),audio:count===2&&outcome==='removed'?undefined:derivative};});videoApi.exchange.mockResolvedValue(playbackUrl);
   const {container}=render(<MemberVideoZone locale="en" messages={messages} hero={null}/>);const play=await screen.findByRole('button',{name:'Play'});vi.useFakeTimers();await act(async()=>{fireEvent.click(play);});
-  const audio=container.querySelector('audio')!,originalVideo=container.querySelector('video')!;position(audio);const loads=vi.mocked(HTMLMediaElement.prototype.load).mock.calls.length;
+  const audio=container.querySelector('audio')!,originalVideo=container.querySelector('video')!;position(originalVideo);if(hidden){vi.spyOn(document,'visibilityState','get').mockReturnValue('hidden');fireEvent(document,new Event('visibilitychange'));position(audio,80);}const expectedTime=hidden?80:64;const loads=vi.mocked(HTMLMediaElement.prototype.load).mock.calls.length;
   if(outcome==='denied-stalled')videoApi.list.mockImplementation(()=>new Promise(()=>{}));
   await act(async()=>{await vi.advanceTimersByTimeAsync(45*60000);});expect(videoApi.grant).toHaveBeenCalledTimes(2);
-  if(outcome==='ready'){expect(container.querySelector('audio')).toBe(audio);expect(container.querySelector('video')).toBe(originalVideo);expect(audio.currentTime).toBe(64);expect(HTMLMediaElement.prototype.load).toHaveBeenCalledTimes(loads);}
+  if(outcome==='ready'){expect(container.querySelector('audio')).toBe(audio);expect(container.querySelector('video')).toBe(originalVideo);expect((hidden?audio:originalVideo).currentTime).toBe(expectedTime);expect(HTMLMediaElement.prototype.load).toHaveBeenCalledTimes(loads);}
   if(outcome.startsWith('denied')){expect(container.querySelector('audio')).toBeNull();expect(container.querySelector('video')).toBeNull();expect(videoApi.clear).toHaveBeenCalledWith(playbackUrl);const paused=vi.mocked(HTMLMediaElement.prototype.pause).mock.contexts;expect(paused).toContain(audio);expect(paused).toContain(originalVideo);}
-  if(outcome==='removed'){expect(container.querySelector('audio')).toBeNull();const video=container.querySelector('video')!;fireEvent.loadedMetadata(video);expect(video.currentTime).toBe(64);expect(video.playbackRate).toBe(1.5);await act(async()=>{await vi.advanceTimersByTimeAsync(45*60000);});expect(container.querySelector('audio')).toBeNull();expect(container.querySelector('video')).toBe(video);}
+  if(outcome==='removed'){expect(container.querySelector('audio')).toBeNull();const video=container.querySelector('video')!;fireEvent.loadedMetadata(video);expect(video.currentTime).toBe(expectedTime);expect(video.playbackRate).toBe(1.5);await act(async()=>{await vi.advanceTimersByTimeAsync(45*60000);});expect(container.querySelector('audio')).toBeNull();expect(container.querySelector('video')).toBe(video);}
+ });
+ it.each(['removed','denied'])('preserves the fixed return bookmark or stops both transports during recovery: %s',async outcome=>{
+  state.auth='authenticated';state.access='available';list.mockResolvedValue([{id:'r1',title:'Returning renewal',packageId}]);let count=0;
+  videoApi.grant.mockImplementation(async()=>{if(++count>1&&outcome==='denied')throw new HhcWebApiError(403,'forbidden','Denied');return {packageId,expiresAt:new Date(Date.now()+3600000).toISOString(),audio:count===1?derivative:undefined};});videoApi.exchange.mockResolvedValue(playbackUrl);
+  const {container}=render(<MemberVideoZone locale="en" messages={messages} hero={null}/>);const play=await screen.findByRole('button',{name:'Play'});vi.useFakeTimers();await act(async()=>{fireEvent.click(play);});
+  const video=container.querySelector('video')!,audio=container.querySelector('audio')!;position(video,20);const visibility=vi.spyOn(document,'visibilityState','get').mockReturnValue('hidden');fireEvent(document,new Event('visibilitychange'));position(audio,84);Object.defineProperty(video,'seeking',{configurable:true,value:true});visibility.mockReturnValue('visible');fireEvent(document,new Event('visibilitychange'));audio.currentTime=99;
+  expect(video.currentTime).toBe(84);await act(async()=>{await vi.advanceTimersByTimeAsync(45*60000);});
+  if(outcome==='denied'){expect(container.querySelector('video')).toBeNull();expect(container.querySelector('audio')).toBeNull();expect(vi.mocked(HTMLMediaElement.prototype.pause).mock.contexts).toEqual(expect.arrayContaining([video,audio]));}
+  else{expect(container.querySelector('audio')).toBeNull();const replacement=container.querySelector('video')!;fireEvent.loadedMetadata(replacement);expect(replacement.currentTime).toBe(84);expect(replacement.playbackRate).toBe(1.5);}
  });
  it('serializes expiry cleanup after an in-flight cookie exchange and removes both media',async()=>{
   state.auth='authenticated';state.access='available';list.mockResolvedValue([{id:'r1',title:'Cookie order',packageId}]);videoApi.clear.mockClear();
@@ -126,19 +135,29 @@ describe('transparent VOD background playback',()=>{
   expect(container.querySelector('audio')).toBeNull();expect(container.querySelector('video')).toBeNull();expect(videoApi.clear).not.toHaveBeenCalled();
   await act(async()=>{finish(playbackUrl);});expect(videoApi.clear).toHaveBeenCalledWith(playbackUrl);expect(container.querySelector('audio')).toBeNull();
  });
- it('falls back to ordinary video once at the audio bookmark, without a new grant',async()=>{
+ it.each([false,true])('falls back once at the active owner bookmark without a new grant, hidden=%s',async hidden=>{
   state.auth='authenticated';state.access='available';list.mockResolvedValue([{id:'r1',title:'Fallback',packageId}]);videoApi.grant.mockResolvedValue({packageId,expiresAt:new Date(Date.now()+3600000).toISOString(),audio:derivative});videoApi.exchange.mockResolvedValue(playbackUrl);
-  const {container}=render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);await screen.findByLabelText('Fallback');const audio=container.querySelector('audio')!;await waitFor(()=>expect(audio.src).toBe(playbackUrl.replace('master.m3u8',derivative.playlistPath)));position(audio,42);fireEvent.error(audio);
-  expect(container.querySelector('audio')).toBeNull();const video=container.querySelector('video')!;fireEvent.loadedMetadata(video);expect(video.currentTime).toBe(42);expect(video.playbackRate).toBe(1.5);expect(videoApi.grant).toHaveBeenCalledOnce();
+  const {container}=render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);await screen.findByLabelText('Fallback');const audio=container.querySelector('audio')!;await waitFor(()=>expect(audio.src).toBe(playbackUrl.replace('master.m3u8',derivative.playlistPath)));position(container.querySelector('video')!,42);if(hidden){vi.spyOn(document,'visibilityState','get').mockReturnValue('hidden');fireEvent(document,new Event('visibilitychange'));}position(audio,64);fireEvent.error(audio);
+  expect(container.querySelector('audio')).toBeNull();const video=container.querySelector('video')!;fireEvent.loadedMetadata(video);expect(video.currentTime).toBe(hidden?64:42);expect(video.playbackRate).toBe(1.5);expect(videoApi.grant).toHaveBeenCalledOnce();
   Object.defineProperty(video,'error',{configurable:true,value:{code:2}});fireEvent.error(video);expect(await screen.findByText('Cannot play')).toBeVisible();expect(container.querySelector('audio')).toBeNull();
  });
  it('keeps an in-flight renewal valid when audio falls back to video',async()=>{
   state.auth='authenticated';state.access='available';list.mockResolvedValue([{id:'r1',title:'Fallback renewal',packageId}]);videoApi.clear.mockClear();
   videoApi.grant.mockImplementation(async()=>({packageId,expiresAt:new Date(Date.now()+3600000).toISOString(),audio:derivative}));let finish!:(url:string)=>void;
   videoApi.exchange.mockResolvedValueOnce(playbackUrl).mockImplementationOnce(()=>new Promise<string>(resolve=>{finish=resolve;}));
-  const {container}=render(<MemberVideoZone locale="en" messages={messages} hero={null}/>);const play=await screen.findByRole('button',{name:'Play'});vi.useFakeTimers();await act(async()=>{fireEvent.click(play);});await act(async()=>{position(container.querySelector('audio')!,42);});
+  const {container}=render(<MemberVideoZone locale="en" messages={messages} hero={null}/>);const play=await screen.findByRole('button',{name:'Play'});vi.useFakeTimers();await act(async()=>{fireEvent.click(play);});await act(async()=>{position(container.querySelector('video')!,42);});
   await act(async()=>{await vi.advanceTimersByTimeAsync(45*60000);});await act(async()=>{fireEvent.error(container.querySelector('audio')!);});expect(container.querySelector('audio')).toBeNull();
   await act(async()=>{finish(playbackUrl);});expect(videoApi.clear).not.toHaveBeenCalled();expect(container.querySelector('audio')).toBeNull();expect(container.querySelector('video')).not.toBeNull();
+ });
+ it('records only the current owner media events across handoff',async()=>{
+  sessionStorage.setItem('hhc.playbackDiagnostics','1');
+  try{
+   state.auth='authenticated';state.access='available';list.mockResolvedValue([{id:'r1',title:'Owner diagnostics',packageId}]);videoApi.grant.mockResolvedValue({packageId,expiresAt:new Date(Date.now()+3600000).toISOString(),audio:derivative});videoApi.exchange.mockResolvedValue(playbackUrl);
+   const {container}=render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);await screen.findByLabelText('Owner diagnostics');const video=container.querySelector('video')!,audio=container.querySelector('audio')!;
+   await waitFor(()=>expect(audio.src).toBe(playbackUrl.replace('master.m3u8',derivative.playlistPath)));position(video,30);audio.currentTime=5;
+   const events=window.hhcPlaybackDiagnostics!.events;events.length=0;fireEvent.waiting(video);fireEvent.waiting(audio);expect(events.map(event=>[event.event,event.currentTime])).toEqual([['waiting',30]]);
+   const visibility=vi.spyOn(document,'visibilityState','get').mockReturnValue('hidden');fireEvent(document,new Event('visibilitychange'));audio.currentTime=45;events.length=0;fireEvent.waiting(audio);fireEvent.waiting(video);expect(events.map(event=>[event.event,event.currentTime])).toEqual([['waiting',45]]);visibility.mockReturnValue('visible');fireEvent(document,new Event('visibilitychange'));events.length=0;fireEvent.waiting(video);fireEvent.waiting(audio);expect(events.map(event=>[event.event,event.currentTime])).toEqual([['waiting',45]]);
+  }finally{sessionStorage.removeItem('hhc.playbackDiagnostics');delete window.hhcPlaybackDiagnostics;}
  });
  it.each([false,true])('does not poll readiness or replace a running video when later audio becomes ready, hidden=%s',async hidden=>{
   state.auth='authenticated';state.access='available';list.mockResolvedValue([{id:'r1',title:'Late ready',packageId}]);let calls=0;

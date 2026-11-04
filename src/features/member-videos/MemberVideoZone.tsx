@@ -401,10 +401,11 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   }, [api, locale, messages.playError, messages.expired, playback, recordings, renew, resolveMissing, router,clearCookie,diagnostic,pausePlayback]);
 
   useEffect(()=>{
-    const element=media.current;if(!element)return;
+    const section=playerSection.current;if(!section)return;
     const events=['loadedmetadata','waiting','stalled','playing','pause','ratechange','seeking','seeked','timeupdate'] as const;
-    const handlers=events.map(event=>{const handler=()=>diagnostic(event,element,grantGeneration.current);element.addEventListener(event,handler);return()=>element.removeEventListener(event,handler);});
-    const visible=()=>diagnostic('visibility',element,grantGeneration.current);document.addEventListener('visibilitychange',visible);
+    // Media events do not bubble; capture lets diagnostics follow the current owner after handoff.
+    const handlers=events.map(event=>{const handler=(value:Event)=>{if(value.target===media.current)diagnostic(event,media.current,grantGeneration.current);};section.addEventListener(event,handler,true);return()=>section.removeEventListener(event,handler,true);});
+    const visible=()=>diagnostic('visibility',media.current,grantGeneration.current);document.addEventListener('visibilitychange',visible);
     return()=>{for(const remove of handlers)remove();document.removeEventListener('visibilitychange',visible);};
   },[backgroundAudio,playback?.url,diagnostic]);
 
