@@ -84,7 +84,7 @@ it.each(['ready','unavailable'] as const)('keeps one recommendation list while i
  await waitFor(()=>expect(document.querySelector('[data-loading-layout="video-interactions"]')).toBeNull());
  expect(screen.getAllByRole('navigation',{name:'Other videos'})).toHaveLength(1);
  if(state==='ready'){
-  const recommendations=screen.getByRole('navigation',{name:'Other videos'}),comments=screen.getByRole('region',{name:/Comments/});
+  const recommendations=screen.getByRole('navigation',{name:'Other videos'}),comments=await screen.findByRole('region',{name:/Comments/});
   expect(recommendations.compareDocumentPosition(comments)&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
  }else expect(screen.queryByRole('textbox')).toBeNull();
 });
