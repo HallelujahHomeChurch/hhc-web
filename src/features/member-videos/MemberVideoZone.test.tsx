@@ -101,9 +101,8 @@ describe('transparent VOD background playback',()=>{
   state.auth='authenticated';state.access='available';list.mockResolvedValue([{id:'r1',publicId:'aB_012-xyzQ',title:'Background meeting',packageId}]);
   videoApi.grant.mockResolvedValue({packageId,expiresAt:new Date(Date.now()+3600000).toISOString(),audio:derivative});videoApi.exchange.mockResolvedValue(playbackUrl);
   const {container}=render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);
-  await screen.findByLabelText('Background meeting');const audio=container.querySelector('audio')!;expect(audio).not.toBeNull();position(audio);
+  await screen.findByLabelText('Background meeting');const audio=container.querySelector('audio')!;expect(audio).not.toBeNull();await waitFor(()=>expect(audio.src).toBe(playbackUrl.replace('master.m3u8',derivative.playlistPath)));position(audio);
   expect(container.querySelector('video')).not.toBeNull();expect(audio.controls).toBe(false);
-  expect(audio.src).toBe(playbackUrl.replace('master.m3u8',derivative.playlistPath));
   expect(interactions.mock.lastCall?.[0].publicId).toBe('aB_012-xyzQ');expect(interactions.mock.lastCall?.[0].currentTime()).toBe(64);
   expect(videoApi.grant).toHaveBeenCalledOnce();expect(videoApi.exchange).toHaveBeenCalledOnce();
  });
@@ -129,7 +128,7 @@ describe('transparent VOD background playback',()=>{
  });
  it('falls back to ordinary video once at the audio bookmark, without a new grant',async()=>{
   state.auth='authenticated';state.access='available';list.mockResolvedValue([{id:'r1',title:'Fallback',packageId}]);videoApi.grant.mockResolvedValue({packageId,expiresAt:new Date(Date.now()+3600000).toISOString(),audio:derivative});videoApi.exchange.mockResolvedValue(playbackUrl);
-  const {container}=render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);await screen.findByLabelText('Fallback');position(container.querySelector('audio')!,42);fireEvent.error(container.querySelector('audio')!);
+  const {container}=render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>);await screen.findByLabelText('Fallback');const audio=container.querySelector('audio')!;await waitFor(()=>expect(audio.src).toBe(playbackUrl.replace('master.m3u8',derivative.playlistPath)));position(audio,42);fireEvent.error(audio);
   expect(container.querySelector('audio')).toBeNull();const video=container.querySelector('video')!;fireEvent.loadedMetadata(video);expect(video.currentTime).toBe(42);expect(video.playbackRate).toBe(1.5);expect(videoApi.grant).toHaveBeenCalledOnce();
   Object.defineProperty(video,'error',{configurable:true,value:{code:2}});fireEvent.error(video);expect(await screen.findByText('Cannot play')).toBeVisible();expect(container.querySelector('audio')).toBeNull();
  });
