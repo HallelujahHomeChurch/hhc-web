@@ -43,3 +43,9 @@ before locking, with normal audio. Verify the initial 20 seconds first, then
 lock/unlock; the foreground-only check does not cover this failure. On native-HLS
 capable ManagedMediaSource browsers, companion video uses the existing native HLS
 backend. Confirm the new diagnostic backend is native before comparing recovery.
+
+## Foreground/background handoff acceptance
+
+Foreground sound and picture must come from the same video element. Audio is muted standby; hidden audio becomes the owner. Return restores a fixed bookmark before the video resumes. A brief lock/unlock handoff pause was accepted on the synthetic iPhone prototype; it is not a license for persistent drift, stutter or repeated seeks. Never add continuous rate correction to hide synchronization failures.
+
+On the actual authorized recording, first perform several playing and paused seeks and a speed change. Check sharing uses the foreground video clock, and hidden controls/renewal use the active audio clock. Lock20seconds and unlock; observe20seconds of sustained synchronized playback. Pause during recovery and rapidly re-hide; the last user intent must win. Verify ordinary recordings without derivatives retain normal playback and no new mode/status/recheck UI. Synthetic or desktop success does not replace physical production acceptance.
