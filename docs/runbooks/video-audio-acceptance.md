@@ -37,3 +37,9 @@ Foreground recovery must remain smooth for at least 20 seconds without reloading
 the page. The initial iPhone Safari check confirmed uninterrupted lockscreen
 sound but found persistent picture stutter after unlock, resolved only by reload.
 Retest that failure specifically; sound alone does not pass acceptance.
+
+A later iPhone report reproduced picture stutter immediately after a fresh reload,
+before locking, with normal audio. Verify the initial 20 seconds first, then
+lock/unlock; the foreground-only check does not cover this failure. On native-HLS
+capable ManagedMediaSource browsers, companion video uses the existing native HLS
+backend. Confirm the new diagnostic backend is native before comparing recovery.
