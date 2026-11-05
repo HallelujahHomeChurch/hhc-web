@@ -4,10 +4,10 @@ import {HhcWebApiError, type MemberLivePlayback} from '@hallelujahhomechurch/hhc
 import {useLivePlayback} from './useLivePlayback';
 
 const id='11111111-1111-4111-8111-111111111111', capture='a'.repeat(32);
-function setup(){
+function setup(onStop?:()=>void){
  vi.useFakeTimers();vi.setSystemTime(new Date('2026-10-07T00:00:00Z'));
  const api={liveGrant:vi.fn(async (_id:string,_capture:string,scope:string):Promise<MemberLivePlayback>=>({recordingId:id,captureId:capture,playbackScopeId:scope,mediaUrl:`https://media.alive.org.tw/videos/${id}/captures/${capture}/sessions/${scope}/master.m3u8`,exchangeCredential:'secret',serverNow:new Date(Date.now()+3600000).toISOString(),issuedAt:new Date(Date.now()+3600000).toISOString(),expiresAt:new Date(Date.now()+3900000).toISOString(),captureExpiresAt:new Date(Date.now()+86400000).toISOString(),replayUntil:null,stopAcceptedAt:null,terminalReason:null,liveState:'live',progress:{revision:3,firstSequence:0,lastSequence:2,mediaEndSeconds:90,lastAdvancedAt:null,endedAt:null,ended:false},watermarkCode:'trace'})),exchangeLive:vi.fn(async(g:MemberLivePlayback)=>g.mediaUrl),clearLive:vi.fn().mockResolvedValue(undefined)};
- return {api,...renderHook(()=>useLivePlayback(api,id,capture))};
+ return {api,...renderHook(()=>useLivePlayback(api,id,capture,false,onStop))};
 }
 afterEach(()=>{cleanup();vi.useRealTimers();});
 it('renews five-minute grants at four minutes using server time without remounting or changing scope',async()=>{
@@ -72,4 +72,16 @@ it('closes as expired at the server replay deadline without a wake event',async(
  await act(()=>result.current.start());await act(()=>vi.advanceTimersByTimeAsync(30000));
  expect(result.current.closed).toBe(true);expect(result.current.expired).toBe(true);expect(result.current.playback).toBeNull();
  expect(api.liveGrant).toHaveBeenCalledTimes(1);
+});
+
+ it.each(['expiry','revoked','unmount'] as const)('stops the active owner synchronously before cookie cleanup on %s',async reason=>{
+ const events:string[]=[],onStop=vi.fn(()=>events.push('stop'));
+ const {api,result,unmount}=setup(onStop);await act(()=>result.current.start());
+ api.clearLive.mockImplementation(async()=>{events.push('clear');});
+ if(reason==='unmount'){unmount();await act(async()=>{});}
+ else {
+  api.liveGrant.mockRejectedValue(reason==='revoked'?new HhcWebApiError(403,'forbidden','Denied'):new Error('offline'));
+  await act(()=>vi.advanceTimersByTimeAsync(reason==='revoked'?240000:300000));
+ }
+ expect(onStop).toHaveBeenCalledTimes(1);expect(events).toEqual(['stop','clear']);
 });

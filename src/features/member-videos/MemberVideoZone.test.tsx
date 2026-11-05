@@ -738,8 +738,9 @@ it('retains a paused non-1x DVR origin through pending End projection and VOD ha
   const video=await screen.findByLabelText('End DVR',{selector:'video'}) as HTMLVideoElement;
   await waitFor(()=>expect(video.src).toBe(playbackUrl));
   Object.defineProperty(video,'seekable',{configurable:true,value:{length:1,start:()=>0,end:()=>1500}});
+  Object.defineProperty(video,'readyState',{configurable:true,value:4});
   fireEvent.loadedMetadata(video);fireEvent.seeked(video);
-  act(()=>{video.currentTime=1000;video.playbackRate=1.5;fireEvent.pause(video);fireEvent.timeUpdate(video);});
+  act(()=>{video.currentTime=1000;video.playbackRate=1.5;fireEvent.rateChange(video);fireEvent.pause(video);fireEvent.timeUpdate(video);});
   videoApi.watch.mockResolvedValue({...base,view:'processing',mediaStartSeconds:null,durationSeconds:null,live:null,recording:null});
   await act(async()=>fireEvent(document,new Event('visibilitychange')));
   fireEvent.timeUpdate(video);
