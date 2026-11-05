@@ -351,7 +351,8 @@ jobs:
               echo "PREVIOUS_IMAGE_REF=$(resolve_image_ref "$image")"
             } >> "$GITHUB_ENV"
           else
-            echo "HAS_PREVIOUS=false" >> "$GITHUB_ENV"
+            echo "Existing production hhc-web could not be read" >&2
+            exit 1
           fi
       - name: Preview infrastructure change
         env:
@@ -385,10 +386,11 @@ jobs:
         id: verify_private_ingress
         run: |
           configuration="$(az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" --only-show-errors \
-            --query 'properties.configuration.{ingress:ingress,dapr:dapr}' -o json)"
+            --query "{ingress:properties.configuration.ingress,dapr:properties.configuration.dapr,enabled:properties.template.containers[0].env[?name=='HHC_WEB_INGRESS_AUTH'].value,credentialRef:properties.template.containers[0].env[?name=='HHC_WEB_GATEWAY_TOKEN'].secretRef}" -o json)"
           jq -e 'type == "object" and has("ingress") and has("dapr")' <<<"$configuration" >/dev/null
           if ! jq -e '.ingress.external == false and .ingress.allowInsecure == false
-            and .ingress.targetPort == 10001 and .dapr.enabled == true and .dapr.appPort == 10000' <<<"$configuration" >/dev/null; then
+            and .ingress.targetPort == 10001 and .dapr.enabled == true and .dapr.appPort == 10000
+            and .enabled == ["true"] and .credentialRef == ["hhc-web-gateway-token"]' <<<"$configuration" >/dev/null; then
             echo 'confirmed_mismatch=true' >> "$GITHUB_OUTPUT"
             exit 1
           fi
