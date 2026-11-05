@@ -112,7 +112,8 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   const playbackRef = useRef<ActivePlayback | null>(null);
   const video = useRef<HTMLVideoElement>(null);
   const media=useRef<HTMLMediaElement|null>(null);
-  const pausePlayback=useCallback(()=>{media.current?.pause();if(video.current!==media.current)video.current?.pause();},[]);
+  const playbackPause=useRef<(()=>void)|null>(null);
+  const pausePlayback=useCallback(()=>{if(playbackPause.current){playbackPause.current();return;}media.current?.pause();if(video.current!==media.current)video.current?.pause();},[]);
   const diagnostic=useMemo(()=>createPlaybackDiagnostics(),[]),grantGeneration=useRef(0);
   const cookieOperations=useRef(Promise.resolve());
   const clearCookie=useCallback((url:string)=>{
@@ -490,7 +491,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
             if(await start(bookmark)){setVodChosen(true);setSelectedLive(null);return true;}return false;
           }:undefined}/>:null}
           {selected && !selectedLive && !waitingWatch && !resolver.denied ? <div data-video-watch ref={playerSection} className={`${zoneStyles.video} grid min-w-0 scroll-mt-28 gap-4`}>
-            {playback?.recordingId === selected.id ? <HlsPlayer key={`${playback.url}:${backgroundAudio}`} backgroundAudioUrl={audioUrl} playbackMediaRef={media} resume={vodResume} poster={poster} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} previousHref={previousRecording ? cardLink(previousRecording) : undefined} nextHref={nextRecording ? cardLink(nextRecording) : undefined} onError={mediaError} onBookmark={rememberVod}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950">
+            {playback?.recordingId === selected.id ? <HlsPlayer key={`${playback.url}:${backgroundAudio}`} backgroundAudioUrl={audioUrl} playbackMediaRef={media} playbackPauseRef={playbackPause} resume={vodResume} poster={poster} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} previousHref={previousRecording ? cardLink(previousRecording) : undefined} nextHref={nextRecording ? cardLink(nextRecording) : undefined} onError={mediaError} onBookmark={rememberVod}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {poster?<img src={poster} alt={selected.title} width={1280} height={720} className="absolute inset-0 h-full w-full object-contain"/>:null}
               {preparing || recordingId && !playError ? <div className="hhc-player-loading" role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{messages.preparing}</span></div> : !recordingId ? <button type="button" onClick={() => void start()} className="relative inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground"><Play size={18} aria-hidden="true" />{messages.play}</button> : null}
