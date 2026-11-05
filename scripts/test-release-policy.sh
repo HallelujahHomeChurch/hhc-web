@@ -78,7 +78,11 @@ grep -A2 "type: 'Liveness'" "$infra" | grep -Fq "httpGet: { path: '/health', por
 grep -A2 "type: 'Readiness'" "$infra" | grep -Fq "httpGet: { path: '/v1.0/healthz', port: 3501 }"
 grep -q "minReplicas: 1" "$infra"
 
-if grep -q 'external:' "$infra"; then
-  echo 'hhc-web must remain internal and be reached through Dapr' >&2
-  exit 1
-fi
+grep -Fq 'external: false' "$infra"
+! grep -Fq 'external: true' "$infra"
+grep -Fq 'targetPort: 10001' "$infra"
+grep -Fq 'allowInsecure: false' "$infra"
+grep -Fq 'appPort: 10000' "$infra"
+grep -Fq "secretRef: 'hhc-web-gateway-token'" "$infra"
+grep -Fq 'enableInternalIngress=false' "$workflow"
+grep -Fq 'PREVIOUS_INTERNAL_INGRESS' "$workflow"

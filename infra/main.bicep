@@ -5,6 +5,9 @@ param containerAppEnvironmentName string = 'alive-env'
 param containerRegistryName string = 'alive'
 @minLength(1)
 param image string
+param enableInternalIngress bool = true
+@secure()
+param internalGatewayToken string = ''
 @description('Server trace probability; release validates 0 through 0.1. Zero disables trace export.')
 param sentryTracesSampleRate string = '0.01'
 
@@ -34,6 +37,18 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
     workloadProfileName: 'Consumption'
     configuration: {
       activeRevisionsMode: 'Single'
+      ingress: enableInternalIngress ? {
+        external: false
+        targetPort: 10001
+        transport: 'auto'
+        allowInsecure: false
+      } : null
+      secrets: enableInternalIngress ? [
+        {
+          name: 'hhc-web-gateway-token'
+          value: internalGatewayToken
+        }
+      ] : []
       dapr: {
         enabled: true
         appId: 'hhc-web'
@@ -62,6 +77,16 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
               name: 'HHC_WEB_API_BASE_URL'
               value: 'http://127.0.0.1:3500/v1.0/invoke/hhc-web-api/method/api'
             }
+            ...(enableInternalIngress ? [
+              {
+                name: 'HHC_WEB_INGRESS_AUTH'
+                value: 'true'
+              }
+              {
+                name: 'HHC_WEB_GATEWAY_TOKEN'
+                secretRef: 'hhc-web-gateway-token'
+              }
+            ] : [])
           ]
           resources: {
             cpu: json('0.5')

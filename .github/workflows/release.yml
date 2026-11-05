@@ -337,7 +337,15 @@ jobs:
               --query properties.latestReadyRevisionName -o tsv --only-show-errors)"
             image="$(az containerapp revision show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
               --revision "$revision" --query properties.template.containers[0].image -o tsv --only-show-errors)"
+            target_port="$(az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
+              --query properties.configuration.ingress.targetPort -o tsv --only-show-errors)"
+            [[ -z "$target_port" || "$target_port" == 10001 ]]
+            previous_rate="$(az containerapp revision show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
+              --revision "$revision" --query "properties.template.containers[0].env[?name=='SENTRY_TRACES_SAMPLE_RATE'].value | [0]" -o tsv --only-show-errors)"
+            [[ "$previous_rate" =~ ^[0-9]+([.][0-9]+)?$ ]]
             {
+              echo "PREVIOUS_INTERNAL_INGRESS=$([[ "$target_port" == 10001 ]] && echo true || echo false)"
+              echo "PREVIOUS_SENTRY_TRACES_SAMPLE_RATE=$previous_rate"
               echo "HAS_PREVIOUS=true"
               echo "PREVIOUS_READY_REVISION=$revision"
               echo "PREVIOUS_IMAGE_REF=$(resolve_image_ref "$image")"
@@ -346,25 +354,39 @@ jobs:
             echo "HAS_PREVIOUS=false" >> "$GITHUB_ENV"
           fi
       - name: Preview infrastructure change
+        env:
+          HHC_WEB_GATEWAY_TOKEN: ${{ secrets.HHC_WEB_GATEWAY_TOKEN }}
         run: |
+          [[ "$HHC_WEB_GATEWAY_TOKEN" =~ ^[0-9a-f]{64}$ ]]
           az deployment group what-if \
             --resource-group "$RESOURCE_GROUP" \
             --template-file infra/main.bicep \
             --parameters image="$IMAGE_REF" sentryTracesSampleRate="$SENTRY_TRACES_SAMPLE_RATE" \
+                         internalGatewayToken="$HHC_WEB_GATEWAY_TOKEN" \
             --validation-level Provider \
             --result-format ResourceIdOnly \
             --only-show-errors
       - name: Deploy
+        env:
+          HHC_WEB_GATEWAY_TOKEN: ${{ secrets.HHC_WEB_GATEWAY_TOKEN }}
         id: deploy_runtime
         run: |
+          [[ "$HHC_WEB_GATEWAY_TOKEN" =~ ^[0-9a-f]{64}$ ]]
           az deployment group create \
             --name "hhc-web-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
             --resource-group "$RESOURCE_GROUP" \
             --template-file infra/main.bicep \
             --parameters image="$IMAGE_REF" sentryTracesSampleRate="$SENTRY_TRACES_SAMPLE_RATE" \
+                         internalGatewayToken="$HHC_WEB_GATEWAY_TOKEN" \
             --only-show-errors --output none
       - name: Wait for revision
         run: python3 scripts/verify-release-runtime.py
+      - name: Verify private ingress configuration
+        run: |
+          az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" --only-show-errors \
+            --query 'properties.configuration.{ingress:ingress,dapr:dapr}' -o json |
+            jq -e '.ingress.external == false and .ingress.allowInsecure == false
+              and .ingress.targetPort == 10001 and .dapr.enabled == true and .dapr.appPort == 10000' >/dev/null
       - name: Verify public website
         run: bash scripts/verify-public-release.sh
       - name: Classify recovery
@@ -380,6 +402,16 @@ jobs:
       - name: Roll back failed update
         if: ${{ failure() && steps.recovery.outputs.required == 'true' && env.HAS_PREVIOUS == 'true' }}
         run: |
+          if [[ "$PREVIOUS_INTERNAL_INGRESS" == false ]]; then
+            # Revision copy cannot restore app-scoped ingress or secrets.
+            az deployment group create \
+              --name "hhc-web-rollback-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+              --resource-group "$RESOURCE_GROUP" --template-file infra/main.bicep \
+              --parameters image="$PREVIOUS_IMAGE_REF" sentryTracesSampleRate="$PREVIOUS_SENTRY_TRACES_SAMPLE_RATE" \
+                           enableInternalIngress=false \
+              --only-show-errors --output none
+            exit 0
+          fi
           az containerapp revision copy \
             -g "$RESOURCE_GROUP" \
             -n "$APP_NAME" \

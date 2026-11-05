@@ -186,7 +186,11 @@ test('trace sampling is validated, persisted by both deployment paths, and resto
   assert.match(infra, /name: 'SENTRY_TRACES_SAMPLE_RATE'\s+value: sentryTracesSampleRate/);
   const rollback = step(deploy, 'Roll back failed update');
   assert.ok(rollback.includes('--from-revision "$PREVIOUS_READY_REVISION"'));
-  assert.doesNotMatch(rollback, /SENTRY_TRACES_SAMPLE_RATE|set-env-vars/);
+  const capture = step(deploy, 'Capture current state');
+  assert.match(capture, /PREVIOUS_SENTRY_TRACES_SAMPLE_RATE=\$previous_rate/);
+  assert.match(rollback, /sentryTracesSampleRate="\$PREVIOUS_SENTRY_TRACES_SAMPLE_RATE"/);
+  assert.match(rollback, /enableInternalIngress=false/);
+  assert.doesNotMatch(rollback, /"\$SENTRY_TRACES_SAMPLE_RATE"|set-env-vars/);
 });
 
 
