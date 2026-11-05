@@ -186,7 +186,11 @@ test('trace sampling is validated, persisted by both deployment paths, and resto
   assert.match(infra, /name: 'SENTRY_TRACES_SAMPLE_RATE'\s+value: sentryTracesSampleRate/);
   const rollback = step(deploy, 'Roll back failed update');
   assert.ok(rollback.includes('--from-revision "$PREVIOUS_READY_REVISION"'));
-  assert.doesNotMatch(rollback, /SENTRY_TRACES_SAMPLE_RATE|set-env-vars/);
+  const capture = step(deploy, 'Capture current state');
+  assert.match(capture, /PREVIOUS_SENTRY_TRACES_SAMPLE_RATE=\$previous_rate/);
+  assert.match(rollback, /sentryTracesSampleRate="\$PREVIOUS_SENTRY_TRACES_SAMPLE_RATE"/);
+  assert.match(rollback, /enableInternalIngress=false/);
+  assert.doesNotMatch(rollback, /"\$SENTRY_TRACES_SAMPLE_RATE"|set-env-vars/);
 });
 
 
@@ -196,4 +200,8 @@ test('release uses ARM identity and public HTTP without remote execution', () =>
   assert.match(step(deploy, 'Wait for revision'), /python3 scripts\/verify-release-runtime.py/);
   assert.match(step(deploy, 'Verify public website'), /verify-public-release.sh/);
   assert.match(step(deploy, 'Roll back failed update'), /steps.recovery.outputs.required == 'true'/);
+  assert.match(step(deploy, 'Verify private ingress configuration'), /confirmed_mismatch=true/);
+  assert.match(step(deploy, 'Classify recovery'), /CONFIRMED_INGRESS_MISMATCH.+PREVIOUS_INTERNAL_INGRESS/);
+  assert.match(step(deploy, 'Verify recovered runtime'), /\.ingress == null/);
+
 });
