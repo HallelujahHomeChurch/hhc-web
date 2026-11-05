@@ -382,11 +382,16 @@ jobs:
       - name: Wait for revision
         run: python3 scripts/verify-release-runtime.py
       - name: Verify private ingress configuration
+        id: verify_private_ingress
         run: |
-          az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" --only-show-errors \
-            --query 'properties.configuration.{ingress:ingress,dapr:dapr}' -o json |
-            jq -e '.ingress.external == false and .ingress.allowInsecure == false
-              and .ingress.targetPort == 10001 and .dapr.enabled == true and .dapr.appPort == 10000' >/dev/null
+          configuration="$(az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" --only-show-errors \
+            --query 'properties.configuration.{ingress:ingress,dapr:dapr}' -o json)"
+          jq -e 'type == "object" and has("ingress") and has("dapr")' <<<"$configuration" >/dev/null
+          if ! jq -e '.ingress.external == false and .ingress.allowInsecure == false
+            and .ingress.targetPort == 10001 and .dapr.enabled == true and .dapr.appPort == 10000' <<<"$configuration" >/dev/null; then
+            echo 'confirmed_mismatch=true' >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
       - name: Verify public website
         run: bash scripts/verify-public-release.sh
       - name: Classify recovery
@@ -394,7 +399,12 @@ jobs:
         if: ${{ failure() && steps.deploy_runtime.outcome != 'skipped' }}
         env:
           DEPLOY_OUTCOME: ${{ steps.deploy_runtime.outcome }}
+          CONFIRMED_INGRESS_MISMATCH: ${{ steps.verify_private_ingress.outputs.confirmed_mismatch }}
         run: |
+          if [[ "$CONFIRMED_INGRESS_MISMATCH" == true && "$PREVIOUS_INTERNAL_INGRESS" == false ]]; then
+            echo 'required=true' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if [[ "$DEPLOY_OUTCOME" == failure ]]; then
             export FAILED_DEPLOYMENTS="[\"hhc-web-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}\"]"
           fi
@@ -426,4 +436,9 @@ jobs:
           CANDIDATE_REVISION: ''
         run: |
           python3 scripts/verify-release-runtime.py
+          if [[ "$PREVIOUS_INTERNAL_INGRESS" == false ]]; then
+            az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" --only-show-errors \
+              --query 'properties.configuration.{ingress:ingress,secretNames:secrets[].name}' -o json |
+              jq -e '.ingress == null and ((.secretNames // []) | index("hhc-web-gateway-token") == null)' >/dev/null
+          fi
           bash scripts/verify-public-release.sh

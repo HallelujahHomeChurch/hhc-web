@@ -200,4 +200,8 @@ test('release uses ARM identity and public HTTP without remote execution', () =>
   assert.match(step(deploy, 'Wait for revision'), /python3 scripts\/verify-release-runtime.py/);
   assert.match(step(deploy, 'Verify public website'), /verify-public-release.sh/);
   assert.match(step(deploy, 'Roll back failed update'), /steps.recovery.outputs.required == 'true'/);
+  assert.match(step(deploy, 'Verify private ingress configuration'), /confirmed_mismatch=true/);
+  assert.match(step(deploy, 'Classify recovery'), /CONFIRMED_INGRESS_MISMATCH.+PREVIOUS_INTERNAL_INGRESS/);
+  assert.match(step(deploy, 'Verify recovered runtime'), /\.ingress == null/);
+
 });
