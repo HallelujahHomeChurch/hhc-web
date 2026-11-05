@@ -1,10 +1,12 @@
 vi.mock('./VideoInteractions',()=>({VideoInteractions:({children}:{children:import('react').ReactNode})=><>{children}</>}));
 import {StrictMode,type ComponentProps} from 'react';
+import type {HlsPlayerProps} from '@hallelujahhomechurch/ui/player';
 import {act,cleanup,render,screen,waitFor} from '@testing-library/react';
 import {afterEach,expect,it,vi} from 'vitest';
 import {HhcWebApiError,type MemberLivePlayback} from '@hallelujahhomechurch/hhc-web-client';
 import {LiveRecordingPlayer,englishLiveLabels} from './LiveRecordingPlayer';
-vi.mock('./HlsPlayer',()=>({HlsPlayer:()=> <div data-testid="live-video"/>}));
+const player=vi.hoisted(()=>({props:null as HlsPlayerProps|null}));
+vi.mock('./HlsPlayer',()=>({HlsPlayer:(props:HlsPlayerProps)=>{player.props=props;return <div data-testid="live-video"/>;}}));
 const id='11111111-1111-4111-8111-111111111111',capture='a'.repeat(32);
 function setup(state='live'){
  const api={liveGrant:vi.fn(async(_id:string,_capture:string,scope:string):Promise<MemberLivePlayback>=>{const now=Date.now();return({recordingId:id,captureId:capture,playbackScopeId:scope,mediaUrl:`https://media.alive.org.tw/videos/${id}/captures/${capture}/sessions/${scope}/master.m3u8`,exchangeCredential:'test',serverNow:new Date(now).toISOString(),issuedAt:new Date(now).toISOString(),expiresAt:new Date(now+300000).toISOString(),captureExpiresAt:new Date(now+86400000).toISOString(),replayUntil:null,stopAcceptedAt:null,terminalReason:null,liveState:'live',progress:{revision:3,firstSequence:0,lastSequence:2,mediaEndSeconds:90,lastAdvancedAt:null,endedAt:null,ended:false},watermarkCode:'trace'});}),exchangeLive:vi.fn(async(g:MemberLivePlayback)=>g.mediaUrl),clearLive:vi.fn().mockResolvedValue(undefined)};
@@ -46,4 +48,18 @@ it('a late exchange cleanup cannot clear the newly active same-scope cookie',asy
  view.rerender(<LiveRecordingPlayer {...props} api={{...api} as unknown as ComponentProps<typeof LiveRecordingPlayer>['api']}/>);
  await act(async()=>{release();});await screen.findByTestId('live-video');expect(cookie).toBe(true);
  view.unmount();await act(async()=>{});expect(cookie).toBe(false);
+});
+
+it('uses only the existing same-session low rendition for live background playback',async()=>{
+ const {props}=setup();render(<LiveRecordingPlayer {...props}/>);await screen.findByTestId('live-video');
+ expect(player.props?.backgroundAudioUrl).toBe(new URL('480p/index.m3u8',player.props!.playbackUrl).href);
+ expect(player.props?.playbackMode).toBe('live');expect(player.props?.playbackMediaRef).toBeDefined();
+ expect(player.props?.playbackPauseRef).toBeDefined();
+});
+it('stops through the shared authority command when a live renewal is revoked',async()=>{
+ vi.useFakeTimers();const {api,props}=setup();render(<LiveRecordingPlayer {...props}/>);await act(async()=>{});
+ const stop=vi.fn();player.props!.playbackPauseRef!.current=stop;
+ api.liveGrant.mockRejectedValue(new HhcWebApiError(403,'forbidden','Denied'));
+ await act(()=>vi.advanceTimersByTimeAsync(240000));
+ expect(stop).toHaveBeenCalledTimes(1);expect(screen.queryByTestId('live-video')).toBeNull();
 });

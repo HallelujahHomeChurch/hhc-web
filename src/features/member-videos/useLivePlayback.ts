@@ -8,9 +8,11 @@ import type {PlayerBookmark} from './live-player';
 type LiveApi=Pick<ReturnType<typeof createMemberVideoApi>,'liveGrant'|'exchangeLive'|'clearLive'>;
 type Playback={grant:MemberLivePlayback;url:string};
 
-export function useLivePlayback(api:LiveApi,recordingId:string,captureId:string,awaitingMedia=false){
+export function useLivePlayback(api:LiveApi,recordingId:string,captureId:string,awaitingMedia=false,onStop?:()=>void){
  const [playback,setPlayback]=useState<Playback|null>(null),[pending,setPending]=useState(false),[error,setError]=useState(false),[closed,setClosed]=useState(false),[expired,setExpired]=useState(false);
  const bookmark=useRef<PlayerBookmark|undefined>(undefined),scope=useRef<string|null>(null);
+ const stopPlayback=useRef(onStop);
+ useEffect(()=>{stopPlayback.current=onStop;},[onStop]);
  const readiness=useRef(awaitingMedia);
  useEffect(()=>{readiness.current=awaitingMedia;},[awaitingMedia]);
  const cookieOperations=useRef(Promise.resolve()),activePlayback=useRef<Playback|null>(null);
@@ -28,6 +30,7 @@ export function useLivePlayback(api:LiveApi,recordingId:string,captureId:string,
   };
   const clear=()=>{
    if(!active)return;
+   stopPlayback.current?.();
    const url=active.url;if(activePlayback.current===active)activePlayback.current=null;active=null;setPlayback(null);
    clearCookie(url);
   };
@@ -83,7 +86,7 @@ export function useLivePlayback(api:LiveApi,recordingId:string,captureId:string,
   return()=>{
    controller.abort();window.clearTimeout(renewTimer);window.clearTimeout(expiryTimer);
    document.removeEventListener('visibilitychange',wake);window.removeEventListener('pageshow',wake);window.removeEventListener('online',wake);
-   if(active){const url=active.url;if(activePlayback.current===active)activePlayback.current=null;active=null;clearCookie(url);}
+   if(active){stopPlayback.current?.();const url=active.url;if(activePlayback.current===active)activePlayback.current=null;active=null;clearCookie(url);}
   };
  },[api,recordingId,captureId]);
  return {playback,pending,error,closed,expired,bookmark,remember,start};

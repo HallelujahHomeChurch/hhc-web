@@ -26,7 +26,9 @@ export function LiveRecordingPlayer({api,recording,labels,liveLabels,locale,onVo
  // Pending End projections omit the origin; the mounted capture keeps its coordinates.
  if(!sameCapture||origin.seconds!==mediaOriginSeconds)setOrigin({recordingId:recording.id,captureId:recording.captureId,seconds:mediaOriginSeconds});
  const awaitingMedia=recording.liveState==='starting'&&recording.progress.lastSequence<2;
- const session=useLivePlayback(api,recording.id,recording.captureId,awaitingMedia),video=useRef<HTMLVideoElement>(null);
+ const video=useRef<HTMLVideoElement>(null),media=useRef<HTMLMediaElement>(null),pause=useRef<(()=>void)|null>(null);
+ const stopPlayback=useCallback(()=>{if(pause.current){pause.current();return;}media.current?.pause();if(video.current!==media.current)video.current?.pause();},[]);
+ const session=useLivePlayback(api,recording.id,recording.captureId,awaitingMedia,stopPlayback);
  const [mediaError,setMediaError]=useState(false),[playerRevision,setPlayerRevision]=useState(0),[switching,setSwitching]=useState(false),[vodError,setVodError]=useState(false);
  const {remember,start:prepareLive,playback:livePlayback}=session;
  const onError=useCallback((bookmark?:PlayerBookmark)=>{if(bookmark)remember({...bookmark,mediaOriginSeconds});setMediaError(true);},[remember,mediaOriginSeconds]);
@@ -37,11 +39,11 @@ export function LiveRecordingPlayer({api,recording,labels,liveLabels,locale,onVo
  const poster=useLiveRecordingCover(api,recording,playable);
  useEffect(()=>{if(playable&&!livePlayback)void prepareLive();},[api,recording.id,recording.captureId,playable,awaitingMedia,livePlayback,prepareLive]);
  const verifiedEnd=Math.max(0,Math.max(recording.progress.mediaEndSeconds,grant?.progress.mediaEndSeconds??0)-mediaOriginSeconds);
- usePlaybackTelemetry(api,recording.id,video,Boolean(session.playback&&playable));
+ usePlaybackTelemetry(api,recording.id,media,Boolean(session.playback&&playable));
  const continueVod=async()=>{if(!onVod||switching)return;setSwitching(true);setVodError(false);try{setVodError(!await onVod(session.bookmark.current));}catch{setVodError(true);}finally{setSwitching(false);}};
  const retry=async()=>{const rebuild=mediaError;setMediaError(false);await session.start();if(rebuild)setPlayerRevision(value=>value+1);};
  return <div data-video-watch className={`${zoneStyles.video} grid min-w-0 gap-4`}>
-  {session.playback&&playable?<HlsPlayer key={`${session.playback.url}:${playerRevision}`} playbackMode="live" poster={poster} playbackUrl={session.playback.url} videoRef={video} title={recording.title} labels={labels} availableQualities={['480p','720p','1080p']} watermark={session.playback.grant.watermarkCode} onError={onError} onBookmark={onBookmark} resume={session.bookmark.current} live={{verifiedEnd,ended:state==='ending'||state==='ended',canFollow:state==='live'||state==='recovering',label:liveViewerLabel(state,liveLabels),backToLive:liveLabels.backToLive,liveLabel:liveLabels.liveNow??liveLabels.live}}/>:<div className="relative isolate grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950 text-white"><div className="absolute inset-0 -z-10" aria-hidden="true"><LiveCoverSurface url={poster} title={recording.title}/></div>
+  {session.playback&&playable?<HlsPlayer key={`${session.playback.url}:${playerRevision}`} playbackMode="live" backgroundAudioUrl={new URL('480p/index.m3u8',session.playback.url).href} playbackMediaRef={media} playbackPauseRef={pause} poster={poster} playbackUrl={session.playback.url} videoRef={video} title={recording.title} labels={labels} availableQualities={['480p','720p','1080p']} watermark={session.playback.grant.watermarkCode} onError={onError} onBookmark={onBookmark} resume={session.bookmark.current} live={{verifiedEnd,ended:state==='ending'||state==='ended',canFollow:state==='live'||state==='recovering',label:liveViewerLabel(state,liveLabels),backToLive:liveLabels.backToLive,liveLabel:liveLabels.liveNow??liveLabels.live}}/>:<div className="relative isolate grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950 text-white"><div className="absolute inset-0 -z-10" aria-hidden="true"><LiveCoverSurface url={poster} title={recording.title}/></div>
    {playable?(session.pending||!session.error?<div className="hhc-player-loading" role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{labels.loading}</span></div>:<p>{labels.playError}</p>):<p role="status">{session.closed?(session.expired?liveLabels.expired:liveLabels.failed):liveLabels[state]}</p>}
   </div>}
   <h2 className={zoneStyles.watchTitle}>{recording.title}</h2>
