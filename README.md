@@ -202,6 +202,12 @@ video presentation while audio continues; returning synchronizes the picture. No
 mode switch or readiness UI is shown. Recordings without a ready derivative retain
 ordinary video playback. Physical lockscreen behavior requires device acceptance.
 
+Live playback uses the same protected session's 480p HLS rendition for background
+audio, retaining its video bandwidth. Controls, DVR position, live-follow intent
+and telemetry follow the active media element; session expiry, revocation and
+unmount stop both elements. Locking and unlocking can briefly pause playback.
+This adds no mode switch or separate audio-production requirement for live streams.
+
 Timeline previews lazily request `previews/index.vtt` and bounded 160×90 sprites
 inside the same authenticated playback session. Asset API generates them from
 validated HLS, including existing ready packages. A missing preview does not
@@ -331,11 +337,10 @@ and routes are noindex/nofollow and excluded from sitemap and analytics.
 Gateway must release the exact WWW management/notification allowlist before WWW;
 Account's compatible API routes remain during rollout. Release the Account management UI removal last. Business APIs and notification click destinations are unchanged.
 
-### Shared live player (candidate)
+### Shared live player
 
-This change consumes the reviewed `@hallelujahhomechurch/ui/player` and
-`@hallelujahhomechurch/ui/player.css` from frontend-platform PR #135, planned
-version 1.1.2. Its player regression suite moved with the implementation; this
+The application consumes `@hallelujahhomechurch/ui/player` and
+`@hallelujahhomechurch/ui/player.css`. Its player regression suite lives with the implementation; this
 application retains member grant, cookie renewal, watermark, telemetry, public
 media-origin and live-to-VOD orchestration tests. Studio uses the same controls
 with a separately scoped staff-preview grant.
