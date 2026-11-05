@@ -66,10 +66,12 @@ COPY --from=stripped_build --chown=nonroot:nonroot /app/.next/static ./.next/sta
 COPY --from=stripped_build --chown=nonroot:nonroot /app/public ./public
 COPY --from=stripped_build --chown=nonroot:nonroot /app/scripts/diagnose-dapr-port.mjs ./diagnose-dapr-port.mjs
 
-EXPOSE 10000
+COPY --chown=nonroot:nonroot scripts/internal-ingress.mjs scripts/start-ingress.mjs ./
+
+EXPOSE 10000 10001
 USER nonroot:nonroot
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD ["/nodejs/bin/node", "-e", "fetch('http://127.0.0.1:10000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
 
-CMD ["server.js"]
+CMD ["start-ingress.mjs", "server.js"]

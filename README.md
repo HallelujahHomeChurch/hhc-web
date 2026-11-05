@@ -80,6 +80,24 @@ corepack pnpm build
 docker build --secret id=npmrc,src="$HOME/.npmrc" -t hhc-web:local .
 ```
 
+The image includes an optional internal HTTPS receiving listener on port 10001.
+ACA terminates TLS before this listener. It forwards streamed HTTP to the
+unchanged Next/Dapr app port 10000. The receiving listener stays inactive unless
+`HHC_WEB_INGRESS_AUTH=true`. Enable it only with a valid 64-character lowercase
+hex `HHC_WEB_GATEWAY_TOKEN` and optional `HHC_WEB_GATEWAY_TOKEN_NEXT` for rotation.
+Malformed enabled configuration fails startup. This source change does not
+enable ACA ingress or select the listener in Gateway.
+
+Direct requests use `X-HHC-Web-Gateway-Token`. The listener rejects missing,
+wrong, repeated and mixed Dapr credentials, then removes service credentials and
+Dapr caller headers before forwarding. Exact GET/HEAD `/health` stays probeable.
+The original Dapr app channel remains separate. This preserves Next's internal
+image-optimization requests, which omit request headers. The image fixture
+checks authenticated SSR, assets, local image optimization and SIGTERM drain. The Node wire
+test covers body/path encoding, Range/206, redirect passthrough and cancellation.
+Use a reviewed producer ingress/credential preview and verify both listener and
+Dapr paths before switching any Gateway route.
+
 The runtime serves `GET /health` on port `10000`.
 
 CI and release run the full tests and lint, then compile Next.js inside the runtime
