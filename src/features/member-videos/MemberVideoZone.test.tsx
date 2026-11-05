@@ -874,3 +874,20 @@ it('resolves the short locator while retaining the UUID for playback',async()=>{
  await waitFor(()=>expect(videoApi.grant).toHaveBeenCalled());
  expect(videoApi.grant.mock.calls.every(call=>call[0]==='r1')).toBe(true);
 });
+
+it.each([false,true])('preserves lock handoff unless an authority expiry intervenes: %s',async expire=>{
+ const playing=new WeakSet<HTMLMediaElement>();let hidden=false;
+ vi.spyOn(document,'visibilityState','get').mockImplementation(()=>hidden?'hidden':'visible');
+ vi.spyOn(HTMLMediaElement.prototype,'paused','get').mockImplementation(function(this:HTMLMediaElement){return !playing.has(this);});
+ vi.spyOn(HTMLMediaElement.prototype,'readyState','get').mockReturnValue(4);
+ vi.spyOn(HTMLMediaElement.prototype,'duration','get').mockReturnValue(120);
+ vi.mocked(HTMLMediaElement.prototype.play).mockImplementation(function(this:HTMLMediaElement){playing.add(this);this.dispatchEvent(new Event('play'));return Promise.resolve();});
+ vi.mocked(HTMLMediaElement.prototype.pause).mockImplementation(function(this:HTMLMediaElement){if(playing.delete(this))this.dispatchEvent(new Event('pause'));});
+ state.auth='authenticated';state.access='available';list.mockResolvedValue([{id:'r1',title:'Lock interruption',packageId}]);
+ videoApi.grant.mockResolvedValueOnce({packageId,expiresAt:new Date(Date.now()+3600000).toISOString(),audio:{version:'aac-hls-v1',playlistPath:'audio/aac-hls-v1/index.m3u8'}}).mockImplementation(()=>new Promise(()=>{}));videoApi.exchange.mockResolvedValue(playbackUrl);
+ const {container}=render(<MemberVideoZone locale="en" messages={messages} hero={null}/>);const play=await screen.findByRole('button',{name:'Play'});vi.useFakeTimers();await act(async()=>fireEvent.click(play));
+ const video=container.querySelector('video')!,audio=container.querySelector('audio')!;fireEvent.canPlay(video);fireEvent.click(screen.getByRole('button',{name:'Play or pause'}));expect(video.paused).toBe(false);
+ act(()=>{playing.delete(audio);playing.delete(video);video.dispatchEvent(new Event('pause'));});
+ act(()=>{if(expire)vi.advanceTimersByTime(3600000);hidden=true;document.dispatchEvent(new Event('visibilitychange'));expect(audio.paused).toBe(expire);});
+ if(expire)expect(container.querySelector('video')).toBeNull();else expect(audio.muted).toBe(false);
+});
