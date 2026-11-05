@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {createServer} from 'node:http';
+import {createServer, get} from 'node:http';
 import {spawn} from 'node:child_process';
 import {resolve, dirname} from 'node:path';
 import {setTimeout as delay} from 'node:timers/promises';
@@ -60,19 +60,28 @@ await new Promise((resolve) => reservation.listen(0, '127.0.0.1', resolve));
 const port = reservation.address().port;
 await new Promise((resolve) => reservation.close(resolve));
 let output = '';
-const child = spawn(process.execPath, ['--import', 'data:text/javascript,Math.random=()=>0.05', entry], {
-  cwd: dirname(entry), stdio: ['ignore', 'pipe', 'pipe'],
+let shutdownRequested = false;
+const ingressReservation = createServer();
+await new Promise(resolve => ingressReservation.listen(0, '127.0.0.1', resolve));
+const ingressPort = ingressReservation.address().port;
+await new Promise(resolve => ingressReservation.close(resolve));
+const gatewayToken = 'a'.repeat(64);
+const sidecarToken = 'b'.repeat(64);
+const child = spawn(process.execPath, ['--import', 'data:text/javascript,Math.random=()=>0.05', resolve(dirname(entry), 'start-ingress.mjs'), entry], {
+  cwd: dirname(entry), detached: true, stdio: ['ignore', 'pipe', 'pipe'],
   env: {...process.env, HOSTNAME: '127.0.0.1', PORT: String(port), NODE_ENV: 'production', NEXT_TELEMETRY_DISABLED: '1',
+    HHC_WEB_INGRESS_PORT: String(ingressPort), HHC_WEB_INGRESS_AUTH: 'true', HHC_WEB_GATEWAY_TOKEN: gatewayToken, APP_API_TOKEN: sidecarToken,
     HHC_WEB_API_BASE_URL: `http://127.0.0.1:${apiPort}/producer/api`,
     SENTRY_DSN: `http://fixture@127.0.0.1:${apiPort}/1`, NEXT_PUBLIC_SENTRY_DSN: `http://fixture@127.0.0.1:${apiPort}/1`, SENTRY_TRACES_SAMPLE_RATE: '0.1'}
 });
 child.stdout.on('data', (data) => { output = (output + data).slice(-6000); });
 child.stderr.on('data', (data) => { output = (output + data).slice(-6000); });
-const origin = `http://127.0.0.1:${port}`;
+const origin = `http://127.0.0.1:${ingressPort}`;
+const daprOrigin = `http://127.0.0.1:${port}`;
 async function visit(locale, trace, page = 1, sampled = '1', bridge = true) {
-  const response = await fetch(`${origin}/${locale}/news?page=${page}&token=wire-secret-token&email=wire-person@example.invalid`, {
+  const response = await fetch(`${trace ? origin : daprOrigin}/${locale}/news?page=${page}&token=wire-secret-token&email=wire-person@example.invalid`, {
     // Gateway derives the Sentry compatibility header from validated W3C only.
-    headers: trace ? {traceparent: `00-${trace}-1234567890123456-0${sampled}`, ...(bridge ? {'sentry-trace': `${trace}-1234567890123456-${sampled}`} : {}), authorization: 'Bearer wire-secret-auth', cookie: 'fixture=wire-secret-cookie'} : {}, signal: AbortSignal.timeout(15000)
+    headers: trace ? {'x-hhc-web-gateway-token': gatewayToken, traceparent: `00-${trace}-1234567890123456-0${sampled}`, ...(bridge ? {'sentry-trace': `${trace}-1234567890123456-${sampled}`} : {}), authorization: 'Bearer wire-secret-auth', cookie: 'fixture=wire-secret-cookie'} : {'dapr-api-token': sidecarToken}, signal: AbortSignal.timeout(15000)
   });
   await response.arrayBuffer();
   assert.equal(response.status, 200, 'SSR fixture must render');
@@ -85,6 +94,18 @@ try {
     await delay(100);
   }
   assert.ok(ready, 'Next runtime did not start');
+  const asset = '/assets/weekly/v1/manifest.json';
+  for (const path of ['/en/news', asset, '/_next/static/example.js']) {
+    const denied = await fetch(origin + path, {redirect: 'manual', headers: {'dapr-caller-app-id': 'api-gateway'}, signal: AbortSignal.timeout(5000)});
+    assert.equal(denied.status, 401, `unauthenticated request to ${path}`);
+    await denied.arrayBuffer();
+  }
+  const assetResponse = await fetch(origin + asset, {headers: {'x-hhc-web-gateway-token': gatewayToken}, signal: AbortSignal.timeout(5000)});
+  assert.equal(assetResponse.status, 200, 'authorized static asset');
+  await assetResponse.arrayBuffer();
+  const optimized = await fetch(origin + '/_next/image?url=%2Fassets%2Fbrand%2Flogo.png&w=64&q=75', {headers: {'x-hhc-web-gateway-token': gatewayToken}, signal: AbortSignal.timeout(5000)});
+  assert.equal(optimized.status, 200, 'authorized local Next image optimization');
+  await optimized.arrayBuffer();
   const first = '11111111111111111111111111111111';
   const second = '22222222222222222222222222222222';
   await Promise.all([visit('en', first), visit('ja', second, 2, '0')]);
@@ -112,16 +133,47 @@ try {
   if (envelopeError) throw envelopeError;
   assert.ok(spanPayloads.some((span) => span.name === 'public-content.read'), 'Missing real runtime span-v2 export');
   const serialized = JSON.stringify(spanPayloads);
-  for (const value of ['wire-secret-token', 'wire-person@example.invalid', 'wire-secret-auth', 'wire-secret-cookie']) assert.ok(!serialized.includes(value), `Span payload leaked ${value}`);
+  for (const value of ['wire-secret-token', 'wire-person@example.invalid', 'wire-secret-auth', 'wire-secret-cookie', gatewayToken, sidecarToken]) assert.ok(!serialized.includes(value), `Span payload leaked ${value}`);
   assert.ok(spanPayloads.some((span) => span.attributes?.['hhc.api_request_id']?.value?.startsWith('fixture-')), 'API request identity must appear on a real outgoing span');
-  console.log('Built Next SSR context, shared Data Cache, span-v2 export and privacy passed');
+  await new Promise((resolve, reject) => {
+    const font = '/assets/weekly/v1/body-ba497525931c22348ff17863ecd1b49a0d54010145cd2f2adce115505dbde7b0.woff2';
+    const request = get(origin + font, {
+      headers: {'x-hhc-web-gateway-token': gatewayToken}, signal: AbortSignal.timeout(10000),
+    }, response => {
+      let bytes = 0;
+      response.once('data', () => {
+        response.pause();
+        shutdownRequested = true;
+        child.kill('SIGTERM');
+        setTimeout(() => response.resume(), 100);
+      });
+      response.on('data', chunk => { bytes += chunk.length; });
+      response.on('error', reject);
+      response.on('end', () => {
+        try {
+          assert.equal(response.statusCode, 200, 'drain asset status');
+          assert.ok(bytes > 1024 * 1024, 'large response exercises drain');
+          assert.equal(bytes, Number(response.headers['content-length']), 'SIGTERM must preserve the response');
+          resolve();
+        } catch (error) { reject(error); }
+      });
+    });
+    request.on('error', reject);
+  });
+  if (child.exitCode === null && child.signalCode === null) {
+    await Promise.race([new Promise(resolve => child.once('exit', resolve)), delay(25000, undefined, {ref: false})]);
+  }
+  assert.equal(child.exitCode, 0, 'supervisor must exit cleanly after draining');
+  console.log('Built Next SSR, credential isolation, image optimization, SIGTERM drain and trace privacy passed');
 } catch (error) {
   console.error(output);
   throw error;
 } finally {
-  child.kill('SIGTERM');
-  await Promise.race([new Promise((resolve) => child.once('exit', resolve)), delay(2000)]);
-  if (child.exitCode === null) child.kill('SIGKILL');
+  if (!shutdownRequested) child.kill('SIGTERM');
+  if (child.exitCode === null && child.signalCode === null) {
+    await Promise.race([new Promise((resolve) => child.once('exit', resolve)), delay(25000, undefined, {ref: false})]);
+    if (child.exitCode === null && child.signalCode === null) process.kill(-child.pid, 'SIGKILL');
+  }
   api.closeAllConnections();
   await new Promise((resolve) => api.close(resolve));
 }

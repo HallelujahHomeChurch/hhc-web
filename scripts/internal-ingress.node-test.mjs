@@ -1,0 +1,124 @@
+import assert from 'node:assert/strict';
+import {spawn, spawnSync} from 'node:child_process';
+import {createServer} from 'node:http';
+import {test} from 'node:test';
+import {setTimeout as delay} from 'node:timers/promises';
+
+const current = 'a'.repeat(64);
+const next = 'b'.repeat(64);
+const modulePath = new URL('./internal-ingress.mjs', import.meta.url).pathname;
+
+test('internal ingress preserves wire contracts and rejects untrusted credentials', {timeout: 15000}, async t => {
+  let received;
+  let cancelled;
+  const cancellation = new Promise(resolve => { cancelled = resolve; });
+  const upstream = createServer((req, res) => {
+    received = req.headers;
+    if (req.url === '/stream') {
+      res.writeHead(200);
+      res.write('started');
+      res.on('close', cancelled);
+      return;
+    }
+    if (req.url === '/redirect') {
+      res.writeHead(307, {Location: 'https://destination.invalid/'});
+      res.end();
+      return;
+    }
+    const chunks = [];
+    req.on('data', chunk => chunks.push(chunk));
+    req.on('end', () => {
+      res.writeHead(req.headers.range ? 206 : 200, {'Content-Type': 'application/json'});
+      res.end(JSON.stringify({method: req.method, url: req.url, body: Buffer.concat(chunks).toString()}));
+    });
+  });
+  await new Promise(resolve => upstream.listen(0, '127.0.0.1', resolve));
+  t.after(() => { upstream.closeAllConnections(); upstream.close(); });
+  const reservation = createServer();
+  await new Promise(resolve => reservation.listen(0, '127.0.0.1', resolve));
+  const port = reservation.address().port;
+  await new Promise(resolve => reservation.close(resolve));
+  const child = spawn(process.execPath, ['--input-type=module', '-e', `import {startInternalIngress} from ${JSON.stringify(modulePath)}; await startInternalIngress();`], {
+    env: {...process.env, HHC_WEB_INGRESS_AUTH: 'true', HHC_WEB_GATEWAY_TOKEN: current,
+      HHC_WEB_GATEWAY_TOKEN_NEXT: next, HHC_WEB_INGRESS_PORT: String(port), PORT: String(upstream.address().port)},
+    stdio: 'ignore',
+  });
+  t.after(async () => {
+    child.kill('SIGTERM');
+    await Promise.race([new Promise(resolve => child.once('exit', resolve)), delay(1000)]);
+    if (child.exitCode === null) child.kill('SIGKILL');
+  });
+  const origin = `http://127.0.0.1:${port}`;
+  let ready = false;
+  for (let i = 0; i < 50; i++) {
+    try {
+      const response = await fetch(origin + '/health', {signal: AbortSignal.timeout(300)});
+      await response.arrayBuffer();
+      if (response.ok) { ready = true; break; }
+    } catch {}
+    await delay(20);
+  }
+  assert.ok(ready);
+  for (const headers of [
+    {}, {'dapr-caller-app-id': 'api-gateway'}, {'x-hhc-web-gateway-token': 'bad'},
+    {'x-hhc-web-gateway-token': `${current},${current}`},
+    {'x-hhc-web-gateway-token': current, 'dapr-api-token': 'anything'},
+  ]) {
+    const response = await fetch(origin + '/private', {headers});
+    assert.equal(response.status, 401);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    await response.arrayBuffer();
+  }
+  for (const token of [current, next]) {
+    const response = await fetch(origin + '/wire%2Fpath?a=%2B&b=two', {
+      method: 'POST', body: 'body-bytes',
+      headers: {'x-hhc-web-gateway-token': token, 'dapr-caller-app-id': 'forged', 'x-fixture': 'kept'},
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {method: 'POST', url: '/wire%2Fpath?a=%2B&b=two', body: 'body-bytes'});
+    assert.equal(received['x-hhc-web-gateway-token'], undefined);
+    assert.equal(received['dapr-caller-app-id'], undefined);
+    assert.equal(received['x-fixture'], 'kept');
+  }
+  const range = await fetch(origin + '/range', {headers: {'x-hhc-web-gateway-token': current, Range: 'bytes=0-1'}});
+  assert.equal(range.status, 206);
+  assert.equal(received.range, 'bytes=0-1');
+  await range.arrayBuffer();
+  const redirect = await fetch(origin + '/redirect', {redirect: 'manual', headers: {'x-hhc-web-gateway-token': current}});
+  assert.equal(redirect.status, 307);
+  assert.equal(redirect.headers.get('location'), 'https://destination.invalid/');
+  await redirect.arrayBuffer();
+  const controller = new AbortController();
+  const stream = await fetch(origin + '/stream', {signal: controller.signal, headers: {'x-hhc-web-gateway-token': current}});
+  await stream.body.getReader().read();
+  controller.abort();
+  await Promise.race([cancellation, delay(1000).then(() => { throw new Error('upstream cancellation was not propagated'); })]);
+  await new Promise(resolve => upstream.close(resolve));
+  const failed = await fetch(origin + '/failure', {headers: {'x-hhc-web-gateway-token': current}});
+  assert.equal(failed.status, 502);
+  await failed.arrayBuffer();
+});
+
+
+test('invalid enabled configuration stops startup and disabled mode opens no listener', () => {
+  for (const changes of [
+    {HHC_WEB_INGRESS_AUTH: 'invalid'},
+    {HHC_WEB_GATEWAY_TOKEN: ''},
+    {HHC_WEB_GATEWAY_TOKEN_NEXT: 'wrong'},
+    {HHC_WEB_INGRESS_PORT: '10000'},
+    {HHC_WEB_INGRESS_PORT: 'NaN'},
+  ]) {
+    const result = spawnSync(process.execPath, ['--input-type=module', '-e', `import {startInternalIngress} from ${JSON.stringify(modulePath)}; await startInternalIngress();`], {
+      env: {...process.env, HHC_WEB_INGRESS_AUTH: 'true', HHC_WEB_GATEWAY_TOKEN: current,
+        HHC_WEB_GATEWAY_TOKEN_NEXT: next, PORT: '10000', HHC_WEB_INGRESS_PORT: '10001', ...changes},
+      encoding: 'utf8', timeout: 1000,
+    });
+    assert.notEqual(result.status, 0);
+    assert.ok(!result.stderr.includes(current));
+  }
+  const disabled = spawnSync(process.execPath, ['--input-type=module', '-e', `import {startInternalIngress} from ${JSON.stringify(modulePath)}; await startInternalIngress();`], {
+    env: {...process.env, HHC_WEB_INGRESS_AUTH: 'false'},
+    timeout: 1000,
+  });
+  assert.equal(disabled.status, 0);
+});
