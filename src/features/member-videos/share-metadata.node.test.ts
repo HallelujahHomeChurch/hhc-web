@@ -50,7 +50,7 @@ describe('single-recording public share metadata', () => {
 
 it('uses the private public origin for canonical short metadata without personal preference headers', async () => {
   const base = 'https://hhc-web-api.internal.fixture.eastasia.azurecontainerapps.io/api';
-  vi.stubEnv('HHC_WEB_PUBLIC_API_BASE_URL', base);
+  vi.stubEnv('HHC_WEB_API_BASE_URL', base);
   const {videoShareMetadata} = await import('./share-metadata');
   const fetcher=vi.fn().mockResolvedValue(Response.json({data:{title:'Source title'}}));
   vi.stubGlobal('fetch',fetcher);

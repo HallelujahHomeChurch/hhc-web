@@ -26,13 +26,12 @@ describe('public content transport', () => {
   it('selects the reviewed public HTTPS base and preserves an explicit client origin', () => {
     const privateBase = 'https://hhc-web-api.internal.fixture.eastasia.azurecontainerapps.io/api';
     const dapr = 'http://127.0.0.1:3500/v1.0/invoke/hhc-web-api/method/api';
-    vi.stubEnv('HHC_WEB_API_BASE_URL', dapr);
-    vi.stubEnv('HHC_WEB_PUBLIC_API_BASE_URL', privateBase);
+    vi.stubEnv('HHC_WEB_API_BASE_URL', privateBase);
     publicContentClient();
     expect(constructor.mock.lastCall![0].baseUrl).toBe(privateBase);
     publicContentClient(false, dapr);
     expect(constructor.mock.lastCall![0].baseUrl).toBe(dapr);
-    vi.stubEnv('HHC_WEB_PUBLIC_API_BASE_URL', undefined);
+    vi.stubEnv('HHC_WEB_API_BASE_URL', dapr);
     publicContentClient();
     expect(constructor.mock.lastCall![0].baseUrl).toBe(dapr);
   });

@@ -91,15 +91,41 @@ class RuntimeVerification(unittest.TestCase):
             self.assertEqual(probe.call_count, 60)
             self.assertEqual(sleep.call_count, 59)
 
+    def test_gateway_preflight_rejects_unverified_state_without_retry(self):
+        with patch.dict(os.environ, {'APP_NAME': 'api-gateway', 'IMAGE_REF': IMAGE}), patch.object(runtime.sys, 'argv', ['runtime', 'preflight']), patch.object(runtime, 'observe', return_value=(20, 'api-gateway--candidate')) as probe, patch.object(runtime.time, 'sleep') as sleep:
+            self.assertEqual(runtime.main(), 20)
+            probe.assert_called_once()
+            sleep.assert_not_called()
+
 
 class PublicVerification(unittest.TestCase):
     def test_public_transport_status_and_complete_html(self):
-        for code, status, body, expected in [(0, '200', '<html>complete</html>', 0), (6, '000', '', 20), (0, '503', '<html>edge</html>', 20), (0, '200', '<html>truncated', 20)]:
+        valid_weekly = '{"version":"v1","assets":[{}]}'
+        good = (0, '200', '<html>complete</html>')
+        cases = [(*good, valid_weekly, '204', 0),
+                 (6, '000', '', valid_weekly, '204', 20),
+                 (0, '503', '<html>edge</html>', valid_weekly, '204', 20),
+                 (0, '200', '<html>truncated', valid_weekly, '204', 20),
+                 (*good, '<html>edge</html>', '204', 20),
+                 (*good, valid_weekly, '401', 20)]
+        for code, status, body, weekly, csp, expected in cases:
             with tempfile.TemporaryDirectory() as folder:
                 tool = Path(folder, 'curl')
-                tool.write_text('#!/bin/sh\nwhile [ "$1" != --output ]; do shift; done\nprintf "%s" "$BODY" >"$2"\nprintf "%s" "$STATUS"\nexit "$CODE"\n')
+                tool.write_text('''#!/bin/sh
+case "$*" in
+  *csp-report) printf "%s" "$CSP"; exit 0 ;;
+  *manifest.json*) body="$WEEKLY"; status=""; code=0 ;;
+  *) body="$BODY"; status="$STATUS"; code="$CODE" ;;
+esac
+while [ "$#" -gt 0 ] && [ "$1" != --output ]; do shift; done
+[ "$#" -ge 2 ] || exit 2
+printf "%s" "$body" >"$2"
+printf "%s" "$status"
+exit "$code"
+''')
                 tool.chmod(0o755)
-                env = {**os.environ, 'PATH': folder + os.pathsep + os.environ['PATH'], 'CODE': str(code), 'STATUS': status, 'BODY': body}
+                env = {**os.environ, 'PATH': folder + os.pathsep + os.environ['PATH'], 'CODE': str(code),
+                       'STATUS': status, 'BODY': body, 'WEEKLY': weekly, 'CSP': csp}
                 result = runtime.subprocess.run(['bash', 'scripts/verify-public-release.sh'], env=env, capture_output=True, text=True)
                 self.assertEqual(result.returncode, expected, result.stderr)
 

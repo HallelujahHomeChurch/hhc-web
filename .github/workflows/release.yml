@@ -178,7 +178,6 @@ jobs:
           trivy_cache="$RUNNER_TEMP/trivy-cache"
           mkdir -p "$trivy_cache"
           docker pull "$IMAGE_REF"
-          docker run --rm --network none --read-only --memory 128m --cpus 1 --entrypoint /nodejs/bin/node "$IMAGE_REF" /app/diagnose-dapr-port.mjs
           sh scripts/scan-image.sh "$IMAGE_REF"
           {
             echo '- Scanner: `ghcr.io/aquasecurity/trivy@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969`'
@@ -283,7 +282,6 @@ jobs:
       HHC_WEB_HISTORY_PRIVATE_HTTPS: ${{ vars.HHC_WEB_HISTORY_PRIVATE_HTTPS || 'false' }}
       HHC_WEB_ABOUT_PRIVATE_HTTPS: ${{ vars.HHC_WEB_ABOUT_PRIVATE_HTTPS || 'false' }}
       HHC_WEB_NEWS_PRIVATE_HTTPS: ${{ vars.HHC_WEB_NEWS_PRIVATE_HTTPS || 'false' }}
-      HHC_WEB_PUBLIC_CMS_PRIVATE_HTTPS: ${{ vars.HHC_WEB_PUBLIC_CMS_PRIVATE_HTTPS || 'false' }}
       MEMBER_VIDEO_NAV_ENABLED: ${{ vars.MEMBER_VIDEO_NAV_ENABLED || 'false' }}
       WEEKLY_READER_ENABLED: ${{ vars.WEEKLY_READER_ENABLED || 'false' }}
     steps:
@@ -301,7 +299,6 @@ jobs:
           [[ "$HHC_WEB_HISTORY_PRIVATE_HTTPS" == false || "$HHC_WEB_HISTORY_PRIVATE_HTTPS" == true ]]
           [[ "$HHC_WEB_ABOUT_PRIVATE_HTTPS" == false || "$HHC_WEB_ABOUT_PRIVATE_HTTPS" == true ]]
           [[ "$HHC_WEB_NEWS_PRIVATE_HTTPS" == false || "$HHC_WEB_NEWS_PRIVATE_HTTPS" == true ]]
-          [[ "$HHC_WEB_PUBLIC_CMS_PRIVATE_HTTPS" == false || "$HHC_WEB_PUBLIC_CMS_PRIVATE_HTTPS" == true ]]
       - name: Validate prepared image
         env:
           PREPARED_IMAGE: ${{ needs.prepare_image.outputs.image }}
@@ -326,6 +323,17 @@ jobs:
             --query id -o tsv --only-show-errors)"
           [[ "$(az role assignment list --scope "$registry" --assignee-object-id "$principal" \
             --query "[?roleDefinitionName=='AcrPull'] | length(@)" -o tsv --only-show-errors)" == "1" ]]
+          gateway="$(az containerapp show -g "$RESOURCE_GROUP" -n "$API_GATEWAY_APP_NAME" --only-show-errors \
+            --query "{latest:properties.latestRevisionName,ready:properties.latestReadyRevisionName,image:properties.template.containers[0].image,credential:properties.template.containers[0].env[?name=='HHC_WEB_GATEWAY_TOKEN'].secretRef}" -o json)"
+          jq -e '.latest == .ready and (.ready | type == "string") and .credential == ["hhc-web-gateway-token"]' <<<"$gateway" >/dev/null
+          gateway_revision="$(jq -r .ready <<<"$gateway")"
+          gateway_image="$(jq -r .image <<<"$gateway")"
+          APP_NAME="$API_GATEWAY_APP_NAME" IMAGE_REF="$gateway_image" CANDIDATE_REVISION="$gateway_revision" \
+            GITHUB_ENV= python3 scripts/verify-release-runtime.py preflight
+          cms="$(az containerapp show -g "$RESOURCE_GROUP" -n hhc-web-api --only-show-errors \
+            --query "{latest:properties.latestRevisionName,ready:properties.latestReadyRevisionName,ingress:properties.configuration.ingress}" -o json)"
+          jq -e '.latest == .ready and (.ready | type == "string") and .ingress.external == false and .ingress.allowInsecure == false and
+            (.ingress.fqdn | test("^hhc-web-api[.]internal[.][a-z0-9-]+[.][a-z0-9-]+[.]azurecontainerapps[.]io$"))' <<<"$cms" >/dev/null
       - name: Capture current state
         run: |
           resolve_image_ref() {
@@ -341,13 +349,15 @@ jobs:
           }
 
           if az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" --only-show-errors --output none 2>/dev/null; then
-            revision="$(az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
-              --query properties.latestReadyRevisionName -o tsv --only-show-errors)"
+            current="$(az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" --only-show-errors \
+              --query "{ready:properties.latestReadyRevisionName,port:properties.configuration.ingress.targetPort,dapr:properties.configuration.dapr.enabled}" -o json)"
+            revision="$(jq -r .ready <<<"$current")"
             image="$(az containerapp revision show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
               --revision "$revision" --query properties.template.containers[0].image -o tsv --only-show-errors)"
-            target_port="$(az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
-              --query properties.configuration.ingress.targetPort -o tsv --only-show-errors)"
+            target_port="$(jq -r '.port // empty' <<<"$current")"
             [[ -z "$target_port" || "$target_port" == 10001 ]]
+            previous_dapr="$(jq -r .dapr <<<"$current")"
+            [[ "$previous_dapr" == true || "$previous_dapr" == false ]]
             previous_rate="$(az containerapp revision show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
               --revision "$revision" --query "properties.template.containers[0].env[?name=='SENTRY_TRACES_SAMPLE_RATE'].value | [0]" -o tsv --only-show-errors)"
             [[ "$previous_rate" =~ ^[0-9]+([.][0-9]+)?$ ]]
@@ -357,17 +367,18 @@ jobs:
             previous_news_base="$(az containerapp revision show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
               --revision "$revision" --query "properties.template.containers[0].env[?name=='HHC_WEB_NEWS_API_BASE_URL'].value | [0]" -o tsv --only-show-errors)"
             [[ -z "$previous_news_base" || "$previous_news_base" =~ ^https://hhc-web-api\.internal\.[a-z0-9-]+\.[a-z0-9-]+\.azurecontainerapps\.io/api$ ]]
-            previous_public_base="$(az containerapp revision show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
-              --revision "$revision" --query "properties.template.containers[0].env[?name=='HHC_WEB_PUBLIC_API_BASE_URL'].value | [0]" -o tsv --only-show-errors)"
-            [[ -z "$previous_public_base" || "$previous_public_base" =~ ^https://hhc-web-api\.internal\.[a-z0-9-]+\.[a-z0-9-]+\.azurecontainerapps\.io/api$ ]]
+            previous_history_base="$(az containerapp revision show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
+              --revision "$revision" --query "properties.template.containers[0].env[?name=='HHC_WEB_HISTORY_API_BASE_URL'].value | [0]" -o tsv --only-show-errors)"
+            [[ -z "$previous_history_base" || "$previous_history_base" =~ ^https://hhc-web-api\.internal\.[a-z0-9-]+\.[a-z0-9-]+\.azurecontainerapps\.io/api$ ]]
             {
               echo "PREVIOUS_INTERNAL_INGRESS=$([[ "$target_port" == 10001 ]] && echo true || echo false)"
+              echo "PREVIOUS_DAPR=$previous_dapr"
               echo "PREVIOUS_SENTRY_TRACES_SAMPLE_RATE=$previous_rate"
               echo "HAS_PREVIOUS=true"
               echo "PREVIOUS_READY_REVISION=$revision"
               echo "PREVIOUS_ABOUT_API_BASE_URL=$previous_about_base"
               echo "PREVIOUS_NEWS_API_BASE_URL=$previous_news_base"
-              echo "PREVIOUS_PUBLIC_API_BASE_URL=$previous_public_base"
+              echo "PREVIOUS_HISTORY_API_BASE_URL=$previous_history_base"
               echo "PREVIOUS_IMAGE_REF=$(resolve_image_ref "$image")"
             } >> "$GITHUB_ENV"
           else
@@ -384,10 +395,10 @@ jobs:
             --template-file infra/main.bicep \
             --parameters image="$IMAGE_REF" sentryTracesSampleRate="$SENTRY_TRACES_SAMPLE_RATE" \
                          internalGatewayToken="$HHC_WEB_GATEWAY_TOKEN" \
+                         enableDapr=false \
                          enableHistoryPrivateHttps="$HHC_WEB_HISTORY_PRIVATE_HTTPS" \
                          enableAboutPrivateHttps="$HHC_WEB_ABOUT_PRIVATE_HTTPS" \
                          enableNewsPrivateHttps="$HHC_WEB_NEWS_PRIVATE_HTTPS" \
-                         enablePublicCmsPrivateHttps="$HHC_WEB_PUBLIC_CMS_PRIVATE_HTTPS" \
             --validation-level Provider \
             --result-format ResourceIdOnly \
             --only-show-errors
@@ -403,10 +414,10 @@ jobs:
             --template-file infra/main.bicep \
             --parameters image="$IMAGE_REF" sentryTracesSampleRate="$SENTRY_TRACES_SAMPLE_RATE" \
                          internalGatewayToken="$HHC_WEB_GATEWAY_TOKEN" \
+                         enableDapr=false \
                          enableHistoryPrivateHttps="$HHC_WEB_HISTORY_PRIVATE_HTTPS" \
                          enableAboutPrivateHttps="$HHC_WEB_ABOUT_PRIVATE_HTTPS" \
                          enableNewsPrivateHttps="$HHC_WEB_NEWS_PRIVATE_HTTPS" \
-                         enablePublicCmsPrivateHttps="$HHC_WEB_PUBLIC_CMS_PRIVATE_HTTPS" \
             --only-show-errors --output none
       - name: Wait for revision
         run: python3 scripts/verify-release-runtime.py
@@ -414,10 +425,12 @@ jobs:
         id: verify_private_ingress
         run: |
           configuration="$(az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" --only-show-errors \
-            --query "{ingress:properties.configuration.ingress,dapr:properties.configuration.dapr,enabled:properties.template.containers[0].env[?name=='HHC_WEB_INGRESS_AUTH'].value,credentialRef:properties.template.containers[0].env[?name=='HHC_WEB_GATEWAY_TOKEN'].secretRef}" -o json)"
+            --query "{ingress:properties.configuration.ingress,dapr:properties.configuration.dapr,enabled:properties.template.containers[0].env[?name=='HHC_WEB_INGRESS_AUTH'].value,credentialRef:properties.template.containers[0].env[?name=='HHC_WEB_GATEWAY_TOKEN'].secretRef,cms:properties.template.containers[0].env[?name=='HHC_WEB_API_BASE_URL'].value,readiness:properties.template.containers[0].probes[?type=='Readiness'].httpGet.{path:path,port:port}}" -o json)"
           jq -e 'type == "object" and has("ingress") and has("dapr")' <<<"$configuration" >/dev/null
           if ! jq -e '.ingress.external == false and .ingress.allowInsecure == false
-            and .ingress.targetPort == 10001 and .dapr.enabled == true and .dapr.appPort == 10000
+            and .ingress.targetPort == 10001 and .dapr.enabled == false
+            and (.cms | length == 1 and (.[0] | test("^https://hhc-web-api[.]internal[.][a-z0-9-]+[.][a-z0-9-]+[.]azurecontainerapps[.]io/api$")))
+            and .readiness == [{"path":"/health","port":10001}]
             and .enabled == ["true"] and .credentialRef == ["hhc-web-gateway-token"]' <<<"$configuration" >/dev/null; then
             echo 'confirmed_mismatch=true' >> "$GITHUB_OUTPUT"
             exit 1
@@ -431,7 +444,7 @@ jobs:
           DEPLOY_OUTCOME: ${{ steps.deploy_runtime.outcome }}
           CONFIRMED_INGRESS_MISMATCH: ${{ steps.verify_private_ingress.outputs.confirmed_mismatch }}
         run: |
-          if [[ "$CONFIRMED_INGRESS_MISMATCH" == true && "$PREVIOUS_INTERNAL_INGRESS" == false ]]; then
+          if [[ "$CONFIRMED_INGRESS_MISMATCH" == true && ( "$PREVIOUS_INTERNAL_INGRESS" == false || "$PREVIOUS_DAPR" == true ) ]]; then
             echo 'required=true' >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -441,14 +454,25 @@ jobs:
           python3 scripts/verify-release-runtime.py recovery
       - name: Roll back failed update
         if: ${{ failure() && steps.recovery.outputs.required == 'true' && env.HAS_PREVIOUS == 'true' }}
+        env:
+          HHC_WEB_GATEWAY_TOKEN: ${{ secrets.HHC_WEB_GATEWAY_TOKEN }}
         run: |
-          if [[ "$PREVIOUS_INTERNAL_INGRESS" == false ]]; then
-            # Revision copy cannot restore app-scoped ingress or secrets.
+          if [[ "$PREVIOUS_INTERNAL_INGRESS" == false || "$PREVIOUS_DAPR" == true ]]; then
+            # Revision copy cannot restore app-scoped Dapr or ingress.
+            if [[ "$PREVIOUS_INTERNAL_INGRESS" == true ]]; then
+              [[ "$HHC_WEB_GATEWAY_TOKEN" =~ ^[0-9a-f]{64}$ ]]
+            else
+              HHC_WEB_GATEWAY_TOKEN=''
+            fi
             az deployment group create \
               --name "hhc-web-rollback-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
               --resource-group "$RESOURCE_GROUP" --template-file infra/main.bicep \
               --parameters image="$PREVIOUS_IMAGE_REF" sentryTracesSampleRate="$PREVIOUS_SENTRY_TRACES_SAMPLE_RATE" \
-                           enableInternalIngress=false \
+                           enableInternalIngress="$PREVIOUS_INTERNAL_INGRESS" enableDapr="$PREVIOUS_DAPR" \
+                           internalGatewayToken="$HHC_WEB_GATEWAY_TOKEN" \
+                           enableHistoryPrivateHttps="$([[ -n "$PREVIOUS_HISTORY_API_BASE_URL" ]] && echo true || echo false)" \
+                           enableAboutPrivateHttps="$([[ -n "$PREVIOUS_ABOUT_API_BASE_URL" ]] && echo true || echo false)" \
+                           enableNewsPrivateHttps="$([[ -n "$PREVIOUS_NEWS_API_BASE_URL" ]] && echo true || echo false)" \
               --only-show-errors --output none
             exit 0
           fi
@@ -465,10 +489,10 @@ jobs:
           else
             remove+=(HHC_WEB_NEWS_API_BASE_URL)
           fi
-          if [[ -n "$PREVIOUS_PUBLIC_API_BASE_URL" ]]; then
-            restore+=("HHC_WEB_PUBLIC_API_BASE_URL=$PREVIOUS_PUBLIC_API_BASE_URL")
+          if [[ -n "$PREVIOUS_HISTORY_API_BASE_URL" ]]; then
+            restore+=("HHC_WEB_HISTORY_API_BASE_URL=$PREVIOUS_HISTORY_API_BASE_URL")
           else
-            remove+=(HHC_WEB_PUBLIC_API_BASE_URL)
+            remove+=(HHC_WEB_HISTORY_API_BASE_URL)
           fi
           binding=()
           if (( ${#remove[@]} )); then binding+=(--remove-env-vars "${remove[@]}"); fi
@@ -487,6 +511,9 @@ jobs:
           CANDIDATE_REVISION: ''
         run: |
           python3 scripts/verify-release-runtime.py
+          previous_dapr="$(az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" --only-show-errors \
+            --query properties.configuration.dapr.enabled -o json)"
+          [[ "$previous_dapr" == "$PREVIOUS_DAPR" ]]
           if [[ "$PREVIOUS_INTERNAL_INGRESS" == false ]]; then
             az containerapp show -g "$RESOURCE_GROUP" -n "$APP_NAME" --only-show-errors \
               --query 'properties.configuration.{ingress:ingress,secretNames:secrets[].name}' -o json |

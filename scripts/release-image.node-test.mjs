@@ -189,7 +189,7 @@ test('trace sampling is validated, persisted by both deployment paths, and resto
   const capture = step(deploy, 'Capture current state');
   assert.match(capture, /PREVIOUS_SENTRY_TRACES_SAMPLE_RATE=\$previous_rate/);
   assert.match(rollback, /sentryTracesSampleRate="\$PREVIOUS_SENTRY_TRACES_SAMPLE_RATE"/);
-  assert.match(rollback, /enableInternalIngress=false/);
+  assert.match(rollback, /enableInternalIngress="\$PREVIOUS_INTERNAL_INGRESS"/);
   assert.doesNotMatch(rollback, /"\$SENTRY_TRACES_SAMPLE_RATE"|set-env-vars[^\n]*SENTRY_TRACES_SAMPLE_RATE/);
 });
 
@@ -236,23 +236,36 @@ test('News defaults off and restores its captured transport during rollback', ()
   const script = rollback.split('        run: |\n')[1].replace(/^          /gm, '');
   const base = 'https://hhc-web-api.internal.fixture.eastasia.azurecontainerapps.io/api';
   const result = spawnSync('/bin/bash', ['-e', '-c', 'az() { printf "%s\\n" "$@"; }\n' + script], {
-    env: {...process.env, PREVIOUS_INTERNAL_INGRESS: 'true', PREVIOUS_ABOUT_API_BASE_URL: base, PREVIOUS_NEWS_API_BASE_URL: '', PREVIOUS_PUBLIC_API_BASE_URL: base},
+    env: {...process.env, PREVIOUS_INTERNAL_INGRESS: 'true', PREVIOUS_DAPR: 'false', PREVIOUS_ABOUT_API_BASE_URL: base, PREVIOUS_NEWS_API_BASE_URL: '', PREVIOUS_HISTORY_API_BASE_URL: base},
     encoding: 'utf8'
   });
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /--remove-env-vars\nHHC_WEB_NEWS_API_BASE_URL\n--set-env-vars\nHHC_WEB_ABOUT_API_BASE_URL=.*\nHHC_WEB_PUBLIC_API_BASE_URL=/);
+  assert.match(result.stdout, /--remove-env-vars\nHHC_WEB_NEWS_API_BASE_URL\n--set-env-vars\nHHC_WEB_ABOUT_API_BASE_URL=.*\nHHC_WEB_HISTORY_API_BASE_URL=/);
 });
 
-test('the shared public CMS HTTPS setting is default-off and reviewed before deploy', () => {
+test('the existing owner CD switches both transports and can restore app-level Dapr', () => {
   const deploy = job('deploy');
-  assert.ok(deploy.includes("HHC_WEB_PUBLIC_CMS_PRIVATE_HTTPS: ${{ vars.HHC_WEB_PUBLIC_CMS_PRIVATE_HTTPS || 'false' }}"));
   for (const name of ['Preview infrastructure change', 'Deploy']) {
-    assert.ok(step(deploy, name).includes('enablePublicCmsPrivateHttps="$HHC_WEB_PUBLIC_CMS_PRIVATE_HTTPS"'));
+    assert.ok(step(deploy, name).includes('enableDapr=false'));
   }
+  const prerequisites = step(deploy, 'Verify runtime prerequisites');
+  assert.match(prerequisites, /credential == \["hhc-web-gateway-token"\]/);
+  assert.match(prerequisites, /CANDIDATE_REVISION="\$gateway_revision".*\n.*verify-release-runtime.py preflight/);
   const infra = readFileSync(new URL('../infra/main.bicep', import.meta.url), 'utf8');
-  assert.match(infra, /param enablePublicCmsPrivateHttps bool = false/);
-  assert.match(step(deploy, 'Capture current state'), /PREVIOUS_PUBLIC_API_BASE_URL=\$previous_public_base/);
-  assert.ok(step(deploy, 'Roll back failed update').includes('remove+=(HHC_WEB_PUBLIC_API_BASE_URL)'));
+  assert.match(infra, /name: 'HHC_WEB_API_BASE_URL'\s+value: enableDapr[\s\S]*?: 'https:\/\/hhc-web-api\.internal\./);
+  assert.match(step(deploy, 'Capture current state'), /PREVIOUS_DAPR=\$previous_dapr/);
+  const rollback = step(deploy, 'Roll back failed update').split('        run: |\n')[1].replace(/^          /gm, '');
+  const result = spawnSync('/bin/bash', ['-e', '-c', 'az() { printf "%s\\n" "$@"; }\n' + rollback], {
+    env: {...process.env, PREVIOUS_INTERNAL_INGRESS: 'true', PREVIOUS_DAPR: 'true',
+      HHC_WEB_GATEWAY_TOKEN: 'a'.repeat(64), PREVIOUS_HISTORY_API_BASE_URL: 'https://fixture/api',
+      PREVIOUS_ABOUT_API_BASE_URL: '', PREVIOUS_NEWS_API_BASE_URL: 'https://fixture/api'},
+    encoding: 'utf8'
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /deployment\ngroup\ncreate/);
+  assert.match(result.stdout, /enableInternalIngress=true\nenableDapr=true/);
+  assert.match(result.stdout, /enableHistoryPrivateHttps=true\nenableAboutPrivateHttps=false\nenableNewsPrivateHttps=true/);
+  assert.match(step(deploy, 'Verify private ingress configuration'), /\.dapr.enabled == false/);
 });
 
 test('release uses ARM identity and public HTTP without remote execution', () => {
@@ -265,4 +278,23 @@ test('release uses ARM identity and public HTTP without remote execution', () =>
   assert.match(step(deploy, 'Classify recovery'), /CONFIRMED_INGRESS_MISMATCH.+PREVIOUS_INTERNAL_INGRESS/);
   assert.match(step(deploy, 'Verify recovered runtime'), /\.ingress == null/);
 
+});
+
+test('website readback rejects any remaining Dapr binding or wrong readiness probe', () => {
+  const verify = step(job('deploy'), 'Verify private ingress configuration')
+    .split('        run: |\n')[1].replace(/^          /gm, '');
+  const good = {
+    ingress: {external: false, allowInsecure: false, targetPort: 10001}, dapr: {enabled: false},
+    enabled: ['true'], credentialRef: ['hhc-web-gateway-token'],
+    cms: ['https://hhc-web-api.internal.fixture.eastasia.azurecontainerapps.io/api'],
+    readiness: [{path: '/health', port: 10001}],
+  };
+  for (const [fixture, expected] of [[good, 0], [{...good, dapr: {enabled: true}}, 1],
+    [{...good, readiness: [{path: '/health', port: 3501}]}, 1],
+    [{...good, cms: ['https://example.test/api']}, 1]]) {
+    const result = spawnSync('/bin/bash', ['-e', '-c', 'az() { printf "%s\\n" "$CONFIGURATION"; }\n' + verify], {
+      env: {...process.env, GITHUB_OUTPUT: '/dev/null', CONFIGURATION: JSON.stringify(fixture)}, encoding: 'utf8',
+    });
+    assert.equal(result.status, expected, result.stderr);
+  }
 });

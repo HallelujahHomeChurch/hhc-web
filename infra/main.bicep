@@ -6,10 +6,10 @@ param containerRegistryName string = 'alive'
 @minLength(1)
 param image string
 param enableInternalIngress bool = true
+param enableDapr bool = true
 param enableHistoryPrivateHttps bool = false
 param enableAboutPrivateHttps bool = false
 param enableNewsPrivateHttps bool = false
-param enablePublicCmsPrivateHttps bool = false
 @secure()
 param internalGatewayToken string = ''
 @description('Server trace probability; release validates 0 through 0.1. Zero disables trace export.')
@@ -54,7 +54,7 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
         }
       ] : []
       dapr: {
-        enabled: true
+        enabled: enableDapr
         appId: 'hhc-web'
         appPort: 10000
         appProtocol: 'http'
@@ -79,7 +79,9 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             }
             {
               name: 'HHC_WEB_API_BASE_URL'
-              value: 'http://127.0.0.1:3500/v1.0/invoke/hhc-web-api/method/api'
+              value: enableDapr
+                ? 'http://127.0.0.1:3500/v1.0/invoke/hhc-web-api/method/api'
+                : 'https://hhc-web-api.internal.${environment.properties.defaultDomain}/api'
             }
             ...(enableHistoryPrivateHttps ? [
               {
@@ -96,12 +98,6 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             ...(enableNewsPrivateHttps ? [
               {
                 name: 'HHC_WEB_NEWS_API_BASE_URL'
-                value: 'https://hhc-web-api.internal.${environment.properties.defaultDomain}/api'
-              }
-            ] : [])
-            ...(enablePublicCmsPrivateHttps ? [
-              {
-                name: 'HHC_WEB_PUBLIC_API_BASE_URL'
                 value: 'https://hhc-web-api.internal.${environment.properties.defaultDomain}/api'
               }
             ] : [])
@@ -139,8 +135,7 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             }
             {
               type: 'Readiness'
-              // Dapr must accept incoming invocation before the revision becomes ready.
-              httpGet: { path: '/v1.0/healthz', port: 3501 }
+              httpGet: { path: '/health', port: enableInternalIngress ? 10001 : 10000 }
               initialDelaySeconds: 20
               periodSeconds: 10
               timeoutSeconds: 3
