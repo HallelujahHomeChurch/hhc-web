@@ -281,6 +281,7 @@ jobs:
       RELEASE_CONFIRMATION: ${{ github.event_name == 'push' && 'deploy-hhc-web-production' || inputs.confirmation }}
       SENTRY_TRACES_SAMPLE_RATE: ${{ vars.SENTRY_TRACES_SAMPLE_RATE || '0.01' }}
       HHC_WEB_HISTORY_PRIVATE_HTTPS: ${{ vars.HHC_WEB_HISTORY_PRIVATE_HTTPS || 'false' }}
+      HHC_WEB_ABOUT_PRIVATE_HTTPS: ${{ vars.HHC_WEB_ABOUT_PRIVATE_HTTPS || 'false' }}
       MEMBER_VIDEO_NAV_ENABLED: ${{ vars.MEMBER_VIDEO_NAV_ENABLED || 'false' }}
       WEEKLY_READER_ENABLED: ${{ vars.WEEKLY_READER_ENABLED || 'false' }}
     steps:
@@ -296,6 +297,7 @@ jobs:
           [[ "$MEMBER_VIDEO_NAV_ENABLED" == false || "$MEMBER_VIDEO_NAV_ENABLED" == true ]]
           [[ "$WEEKLY_READER_ENABLED" == false || "$WEEKLY_READER_ENABLED" == true ]]
           [[ "$HHC_WEB_HISTORY_PRIVATE_HTTPS" == false || "$HHC_WEB_HISTORY_PRIVATE_HTTPS" == true ]]
+          [[ "$HHC_WEB_ABOUT_PRIVATE_HTTPS" == false || "$HHC_WEB_ABOUT_PRIVATE_HTTPS" == true ]]
       - name: Validate prepared image
         env:
           PREPARED_IMAGE: ${{ needs.prepare_image.outputs.image }}
@@ -345,11 +347,15 @@ jobs:
             previous_rate="$(az containerapp revision show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
               --revision "$revision" --query "properties.template.containers[0].env[?name=='SENTRY_TRACES_SAMPLE_RATE'].value | [0]" -o tsv --only-show-errors)"
             [[ "$previous_rate" =~ ^[0-9]+([.][0-9]+)?$ ]]
+            previous_about_base="$(az containerapp revision show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
+              --revision "$revision" --query "properties.template.containers[0].env[?name=='HHC_WEB_ABOUT_API_BASE_URL'].value | [0]" -o tsv --only-show-errors)"
+            [[ -z "$previous_about_base" || "$previous_about_base" =~ ^https://hhc-web-api\.internal\.[a-z0-9-]+\.[a-z0-9-]+\.azurecontainerapps\.io/api$ ]]
             {
               echo "PREVIOUS_INTERNAL_INGRESS=$([[ "$target_port" == 10001 ]] && echo true || echo false)"
               echo "PREVIOUS_SENTRY_TRACES_SAMPLE_RATE=$previous_rate"
               echo "HAS_PREVIOUS=true"
               echo "PREVIOUS_READY_REVISION=$revision"
+              echo "PREVIOUS_ABOUT_API_BASE_URL=$previous_about_base"
               echo "PREVIOUS_IMAGE_REF=$(resolve_image_ref "$image")"
             } >> "$GITHUB_ENV"
           else
@@ -367,6 +373,7 @@ jobs:
             --parameters image="$IMAGE_REF" sentryTracesSampleRate="$SENTRY_TRACES_SAMPLE_RATE" \
                          internalGatewayToken="$HHC_WEB_GATEWAY_TOKEN" \
                          enableHistoryPrivateHttps="$HHC_WEB_HISTORY_PRIVATE_HTTPS" \
+                         enableAboutPrivateHttps="$HHC_WEB_ABOUT_PRIVATE_HTTPS" \
             --validation-level Provider \
             --result-format ResourceIdOnly \
             --only-show-errors
@@ -383,6 +390,7 @@ jobs:
             --parameters image="$IMAGE_REF" sentryTracesSampleRate="$SENTRY_TRACES_SAMPLE_RATE" \
                          internalGatewayToken="$HHC_WEB_GATEWAY_TOKEN" \
                          enableHistoryPrivateHttps="$HHC_WEB_HISTORY_PRIVATE_HTTPS" \
+                         enableAboutPrivateHttps="$HHC_WEB_ABOUT_PRIVATE_HTTPS" \
             --only-show-errors --output none
       - name: Wait for revision
         run: python3 scripts/verify-release-runtime.py
@@ -428,11 +436,16 @@ jobs:
               --only-show-errors --output none
             exit 0
           fi
+          # Supplying an image to revision copy can inherit current container env.
+          binding=(--remove-env-vars HHC_WEB_ABOUT_API_BASE_URL)
+          if [[ -n "$PREVIOUS_ABOUT_API_BASE_URL" ]]; then
+            binding=(--set-env-vars "HHC_WEB_ABOUT_API_BASE_URL=$PREVIOUS_ABOUT_API_BASE_URL")
+          fi
           az containerapp revision copy \
             -g "$RESOURCE_GROUP" \
             -n "$APP_NAME" \
             --from-revision "$PREVIOUS_READY_REVISION" \
-            --image "$PREVIOUS_IMAGE_REF" \
+            --image "$PREVIOUS_IMAGE_REF" "${binding[@]}" \
             --revision-suffix "rollback-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
             --only-show-errors --output none
       - name: Verify recovered runtime

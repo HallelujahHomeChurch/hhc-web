@@ -1,6 +1,6 @@
 import type {HhcWebClient, PageContent, PublicEditorialPage} from '@hallelujahhomechurch/hhc-web-client';
 import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
-import {describe, expect, it, vi} from 'vitest';
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import {getMessages} from '@/i18n/messages';
 import {productLocales, type Locale} from '@/i18n/locales';
 import {getAboutPage, getHomePage, getLegalPage, PageNotFoundError, PageProjectionError} from './api';
@@ -89,6 +89,54 @@ describe('fixed editorial page adapters', () => {
     const fixture = {...pageFixture('about', 'ja', aboutContent('ja')), indexable: false, availableLocales: ['zh-Hant', 'ja'] as Locale[]};
 
     await expect(getAboutPage('ja', clientWith(fixture))).resolves.toMatchObject({indexable: false, availableLocales: ['zh-Hant', 'ja']});
+  });
+});
+
+describe('About document transport', () => {
+  const privateBase = 'https://hhc-web-api.internal.example.eastasia.azurecontainerapps.io/api';
+  const daprBase = 'http://127.0.0.1:3500/v1.0/invoke/hhc-web-api/method/api';
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it('switches only the published About document and preserves the existing fetch options', async () => {
+    vi.stubEnv('HHC_WEB_ABOUT_API_BASE_URL', privateBase);
+    vi.stubEnv('HHC_WEB_API_BASE_URL', daprBase);
+    const fetch = vi.fn<typeof globalThis.fetch>()
+      .mockImplementationOnce(async () => Response.json({data: pageFixture('about', 'ja', aboutContent('ja'))}))
+      .mockImplementationOnce(async () => Response.json({data: pageFixture('home', 'ja', homeContent('ja'))}));
+    vi.stubGlobal('fetch', fetch);
+
+    await expect(getAboutPage('ja')).resolves.toMatchObject({source: 'cms'});
+    await expect(getHomePage('ja')).resolves.toMatchObject({source: 'cms'});
+    expect(fetch.mock.calls.map(([request]) => (request as Request).url)).toEqual([
+      privateBase + '/pages/about?locale=ja',
+      daprBase + '/pages/home?locale=ja'
+    ]);
+    expect((fetch.mock.calls[0][0] as Request).headers.get('authorization')).toBeNull();
+    expect(fetch.mock.calls[0][1]).toMatchObject({redirect: 'error', next: {revalidate: 60}, signal: expect.any(AbortSignal)});
+  });
+
+  it('keeps Dapr by default', async () => {
+    vi.stubEnv('HHC_WEB_ABOUT_API_BASE_URL', undefined);
+    vi.stubEnv('HHC_WEB_API_BASE_URL', daprBase);
+    const fetch = vi.fn<typeof globalThis.fetch>()
+      .mockImplementationOnce(async () => Response.json({data: pageFixture('about', 'en', aboutContent('en'))}));
+    vi.stubGlobal('fetch', fetch);
+
+    await getAboutPage('en');
+    expect((fetch.mock.calls[0][0] as Request).url).toBe(daprBase + '/pages/about?locale=en');
+  });
+
+  it('does not retry the private route on an availability failure', async () => {
+    vi.stubEnv('HHC_WEB_ABOUT_API_BASE_URL', privateBase);
+    const fetch = vi.fn<typeof globalThis.fetch>().mockRejectedValue(new TypeError('private transport failed'));
+    vi.stubGlobal('fetch', fetch);
+
+    await expect(getAboutPage('en')).resolves.toMatchObject({source: 'migration-fallback'});
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 });
 
