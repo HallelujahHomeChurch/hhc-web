@@ -11,6 +11,7 @@ import {IDBFactory} from 'fake-indexeddb';
 import {PrivateCoverCache} from '@/lib/private-cover-cache';
 import {PrivateCoverProvider} from '@/lib/use-private-cover';
 
+const authorization = vi.hoisted(() => ({getAccessToken: async () => 'token', refreshAfterUnauthorized: async () => null}));
 const state = vi.hoisted(() => ({access: 'loading', auth: 'checking'}));
 const signIn = vi.hoisted(() => vi.fn());
 const list = vi.hoisted(() => vi.fn());
@@ -29,9 +30,9 @@ vi.mock('@/components/layout/AccountControl', () => ({
   useAccountIdentity: () => 'member',
   useAccountAuth: () => ({status: state.auth}),
   useVideoAccess: () => state.access,
-  useBulletinAuthorization: () => ({getAccessToken: async () => 'token', refreshAfterUnauthorized: async () => null})
+  useBulletinAuthorization: () => authorization
 }));
-vi.mock('./api', () => ({createMemberVideoApi: () => videoApi}));
+vi.mock('./api', () => ({createMemberVideoApi: () => ({...videoApi})}));
 vi.mock('hls.js',()=>({default:class {static isSupported(){return false;}}}));
 
 const messages = {
@@ -946,8 +947,27 @@ describe('persistent member playback', () => {
       expect(videoApi.clear).toHaveBeenCalledTimes(clears);
       view.rerender(<Fixture watch/>);
       await waitFor(() => expect(video?.closest('[data-presentation]')).toHaveAttribute('data-presentation', 'watch'));
+      expect(videoApi.clear).toHaveBeenCalledTimes(clears);
+      expect(videoApi.grant).toHaveBeenCalledTimes(grants);
       expect(view.container.querySelector('video')).toBe(video);
       expect(view.container.querySelector('audio')).toBe(audio);
+      if (kind === 'vod') {
+        vi.useFakeTimers();
+        let exchanged!: (url: string) => void;
+        videoApi.exchange.mockImplementationOnce(() => new Promise<string>(resolve => { exchanged = resolve; }));
+        videoApi.grant.mockResolvedValue({packageId, expiresAt: new Date(Date.now() + 7200000).toISOString(), audio: {version: 'aac-hls-v1', playlistPath: 'audio/aac-hls-v1/index.m3u8'}});
+        vi.setSystemTime(Date.now() + 45 * 60000);
+        await act(async () => { window.dispatchEvent(new Event('online')); });
+        expect(exchanged).toBeDefined();
+        view.rerender(<Fixture watch={false}/>);
+        view.rerender(<Fixture watch/>);
+        await act(async () => {});
+        await act(async () => { exchanged(playbackUrl); });
+        expect(videoApi.clear).toHaveBeenCalledTimes(clears);
+        expect(view.container.querySelector('video')).toBe(video);
+        expect(view.container.querySelector('audio')).toBe(audio);
+        vi.useRealTimers();
+      }
       state.auth = 'anonymous';
       state.access = 'denied';
       view.rerender(<Fixture watch={false}/>);

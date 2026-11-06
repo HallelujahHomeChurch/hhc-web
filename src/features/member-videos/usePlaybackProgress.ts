@@ -1,17 +1,23 @@
 'use client';
 
-import {useCallback, useEffect, useRef, type RefObject} from 'react';
+import {useCallback, useEffect, useLayoutEffect, useRef, type RefObject} from 'react';
 import {usePersistentPlayback} from './PlaybackProvider';
 import {createPlaybackProgress, type ProgressAPI} from './playback-progress-session';
 
 export function usePlaybackProgress(api: ProgressAPI, id: string | undefined, version: string | undefined,
   surface: RefObject<HTMLDivElement | null>, media: RefObject<HTMLMediaElement | null>, enabled: boolean) {
+  const currentApi = useRef(api);
+  useLayoutEffect(() => { currentApi.current = api; }, [api]);
   const registerPlayback = usePersistentPlayback()?.registerPlayback;
   const sync = useRef<ReturnType<typeof createPlaybackProgress> | undefined>(undefined);
   useEffect(() => {
     if (!id || !version || !enabled || !surface.current) return;
     const abort = new AbortController();
-    const current = createPlaybackProgress(api, id, version, abort.signal);
+    const current = createPlaybackProgress({
+      progress: (...args) => currentApi.current.progress(...args),
+      claimProgress: (...args) => currentApi.current.claimProgress(...args),
+      saveProgress: (...args) => currentApi.current.saveProgress(...args),
+    }, id, version, abort.signal);
     sync.current = current;
     const element = surface.current;
     const save = (keepalive = false) => {
@@ -45,6 +51,6 @@ export function usePlaybackProgress(api: ProgressAPI, id: string | undefined, ve
       element.removeEventListener('playing', playing, true);
       events.forEach(event => element.removeEventListener(event, changed, true));
     };
-  }, [api, id, version, surface, media, enabled, registerPlayback]);
+  }, [id, version, surface, media, enabled, registerPlayback]);
   return useCallback((kind: Parameters<ReturnType<typeof createPlaybackProgress>['prepare']>[0], signal?: AbortSignal) => sync.current?.prepare(kind, signal), []);
 }
