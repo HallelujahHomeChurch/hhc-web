@@ -33,6 +33,12 @@ export async function startInternalIngress() {
     return result;
   }
   const server = createServer((req, res) => {
+    // Closing the listener still lets active sockets send another request.
+    if (!server.listening) {
+      res.writeHead(503, {'Cache-Control': 'no-store', Connection: 'close'});
+      res.end();
+      return;
+    }
     const probe = (req.method === 'GET' || req.method === 'HEAD') && req.url === '/health';
     if (!probe && !authorized(req)) {
       res.writeHead(401, {'Cache-Control': 'no-store'});
