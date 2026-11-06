@@ -45,7 +45,8 @@ export function PersistentVod({previousHref, nextHref, initialBookmark, onMinimi
           poster={poster} videoRef={session.video} playbackUrl={playback.url}
           availableQualities={(playback.grant.renditions ?? []).map(rendition => rendition.name)}
           watermark={playback.grant.watermarkCode} title={selected.title} labels={messages}
-          previousHref={previousHref} nextHref={nextHref} onMinimize={onMinimize} onPlayIntent={kind=>{void prepareProgress(kind);}} onError={session.mediaError} onBookmark={session.rememberVod}/>
+          previousHref={previousHref} nextHref={nextHref} onMinimize={onMinimize} onMinimizeMove={controls?.setMinimizeOffset}
+          mini={controls && !controls.inWatch ? {onExpand: controls.expand, expandLabel: controls.labels.expand} : undefined} onPlayIntent={kind=>{void prepareProgress(kind);}} onError={session.mediaError} onBookmark={session.rememberVod}/>
       : <div className="grid aspect-video place-items-center bg-neutral-950 text-white">
           {session.playError
             ? <button type="button" onClick={() => void start(session.vodBookmark.current, prepareProgress)}>{messages.retry}</button>

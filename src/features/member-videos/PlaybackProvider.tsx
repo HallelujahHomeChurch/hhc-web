@@ -1,8 +1,10 @@
 'use client';
 
 import {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
+import {useRouter} from 'next/navigation';
 import Link from 'next/link';
-import {ArrowUpRight, X} from 'lucide-react';
+import styles from './mini-player.module.css';
+import {X} from 'lucide-react';
 import {useAccountIdentity, useAccountAuth, useVideoAccess} from '@/components/layout/AccountControl';
 import {useMediaDocument} from '@/components/layout/MediaDocument';
 import type {ContinuityLabels} from './ContinueWatching';
@@ -16,6 +18,8 @@ type PlaybackControl = {
   activeHref: string | undefined;
   labels: ContinuityLabels;
   inWatch: boolean;
+  expand: () => void;
+  setMinimizeOffset: (offset: number) => void;
   start: (playback: Playback, explicit?: boolean) => void;
   setSlot: (key: string, element: HTMLElement | null) => void;
   close: (key: string) => void;
@@ -45,6 +49,8 @@ export function PlaybackProvider({children, locale, labels}: Props) {
 }
 
 function MemberPlaybackProvider({children, labels, member}: Props & {member: string | null}) {
+  const router = useRouter();
+  const [minimizeOffset, setMinimizeOffset] = useState(0);
   const [playback, setPlayback] = useState<Playback | null>(null);
   const [slot, setWatchSlot] = useState<Slot | null>(null);
   const [closed, setClosed] = useState<string>();
@@ -78,6 +84,7 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
   }, [closed, previousPlaybackKey]);
   const setSlot = useCallback((key: string, element: HTMLElement | null) => {
     setWatchSlot(current => element ? {key, element} : current?.key === key ? null : current);
+    if (!element) setMinimizeOffset(0);
     if (!element) setClosed(current => current === key ? undefined : current);
   }, []);
   const close = useCallback((key: string) => {
@@ -101,16 +108,17 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
   }, [activeKey, close, member]);
   const watchSlot = playback && slot?.key === playback.key ? slot.element : null;
   const inWatch = Boolean(watchSlot);
-  const controls = useMemo(() => ({activeKey, activeHref, start, setSlot, close, labels, inWatch, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll}), [activeKey, activeHref, start, setSlot, close, labels, inWatch, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll]);
+  const expand = useCallback(() => { if (activeHref) router.push(activeHref); }, [activeHref, router]);
+  const controls = useMemo(() => ({activeKey, activeHref, start, setSlot, close, labels, inWatch, expand, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll}), [activeKey, activeHref, start, setSlot, close, labels, inWatch, expand, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll]);
 
   return <Context.Provider value={member ? controls : null}>
     {children}
-    {member && playback && <PlaybackHost watchSlot={watchSlot} onClose={closeActive} moveLabel={labels.move} resizeLabel={labels.resize}>
+    {member && playback && <PlaybackHost watchSlot={watchSlot} minimizeOffset={minimizeOffset} onClose={closeActive} moveLabel={labels.move} resizeLabel={labels.resize}>
       <div key={playback.key}>{playback.player}</div>
-      {!watchSlot && <div className="absolute right-0 top-0 z-10 flex rounded-bl-lg bg-black/80 text-white">
-        <Link href={playback.href} aria-label={`${labels.expand} · ${playback.title}`} className="grid size-11 place-items-center"><ArrowUpRight size={20}/></Link>
+      {!watchSlot && <div className="absolute right-1 top-1 z-10 rounded-full bg-black/60 text-white">
         <button type="button" aria-label={labels.close} className="grid size-11 place-items-center" onClick={closeActive}><X size={20}/></button>
       </div>}
+      {!watchSlot && <Link href={playback.href} className={styles.caption}>{playback.title}</Link>}
     </PlaybackHost>}
   </Context.Provider>;
 }

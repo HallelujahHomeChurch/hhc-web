@@ -5,6 +5,7 @@ import {PlaybackProvider, usePersistentPlayback} from './PlaybackProvider';
 import {clearResumeDismissals, dismissResume, isResumeDismissed} from './resume-dismissal';
 
 const account = vi.hoisted(() => ({status: 'authenticated', access: 'available'}));
+vi.mock('next/navigation', () => ({useRouter: () => ({push: vi.fn()})}));
 vi.mock('@/components/layout/AccountControl', () => ({useAccountIdentity: () => 'member', useAccountAuth: () => ({status: account.status}), useVideoAccess: () => account.access}));
 vi.mock('@/components/layout/MediaDocument', () => ({useMediaDocument: () => ({privateMediaReady: true})}));
 vi.mock('./ContinueWatching', () => ({ContinueWatching: () => <aside>Historical resume</aside>}));
