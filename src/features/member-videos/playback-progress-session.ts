@@ -5,6 +5,25 @@ export type ProgressAPI = Pick<ReturnType<typeof createMemberVideoApi>, 'progres
 type Intent = {snapshot: RecordingProgressRead; kind: RecordingProgressClaim['startKind']};
 const statusOf = (error: unknown) => (error as {status?: number} | null)?.status;
 
+function deadline(signals: readonly AbortSignal[], ms: number) {
+  const controller = new AbortController();
+  const cancel = () => controller.abort();
+  let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; cancel(); }, ms);
+  for (const signal of new Set(signals)) {
+    if (signal.aborted) cancel();
+    else signal.addEventListener('abort', cancel, {once: true});
+  }
+  return {
+    signal: controller.signal,
+    timedOut: () => timedOut,
+    dispose() {
+      clearTimeout(timer);
+      for (const signal of new Set(signals)) signal.removeEventListener('abort', cancel);
+    },
+  };
+}
+
 export function createPlaybackProgress(api: ProgressAPI, id: string, version: string, signal: AbortSignal) {
   const sessionId = crypto.randomUUID();
   let intent: Intent | undefined;
@@ -70,9 +89,9 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
     for (const delay of [0, 5000, 10000, 20000]) {
       if (delay) await new Promise(resolve => setTimeout(resolve, delay));
       if (revision !== intentRevision || signal.aborted || (delay && !navigator.onLine)) return;
-      const timeout = AbortSignal.timeout(4000);
+      const timeout = deadline([signal], 4000);
       try {
-        const claimed = await api.claimProgress(id, claim, AbortSignal.any([signal, timeout]));
+        const claimed = await api.claimProgress(id, claim, timeout.signal);
         if (revision !== intentRevision || signal.aborted) return;
         owner = claimed;
         sequence = claimed.sequence;
@@ -84,8 +103,8 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
         return;
       } catch {
         // A timeout can hide an accepted claim. Replay only the original intent.
-        if (!timeout.aborted) return;
-      }
+        if (!timeout.timedOut()) return;
+      } finally { timeout.dispose(); }
     }
   }
 
@@ -95,14 +114,16 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
       intent = undefined;
       pendingPosition = undefined;
       preparing = true;
+      const timeout = deadline([signal, startSignal], 1500);
       try {
-        const snapshot = await api.progress(id, AbortSignal.any([signal, startSignal, AbortSignal.timeout(1500)]));
+        const snapshot = await api.progress(id, timeout.signal);
         if (revision !== intentRevision || signal.aborted || startSignal.aborted ||
           (snapshot.mediaVersion !== version && !snapshot.mediaVersion.startsWith(`${version}:`))) return;
         intent = {snapshot, kind};
         if (kind === 'resume' && !snapshot.progress?.completed && version.startsWith('vod:')) return snapshot.progress?.positionSeconds;
       } catch { /* Playback authorization remains independent of progress availability. */ }
       finally {
+        timeout.dispose();
         if (revision === intentRevision) {
           preparing = false;
           if (pendingPosition !== undefined) void playing(pendingPosition);
