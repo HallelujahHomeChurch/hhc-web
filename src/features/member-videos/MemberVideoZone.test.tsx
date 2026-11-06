@@ -893,3 +893,68 @@ it.each([false,true])('preserves lock handoff unless an authority expiry interve
  act(()=>{if(expire)vi.advanceTimersByTime(3600000);hidden=true;document.dispatchEvent(new Event('visibilitychange'));expect(audio.paused).toBe(expire);});
  if(expire)expect(container.querySelector('video')).toBeNull();else expect(audio.muted).toBe(false);
 });
+
+describe('persistent member playback', () => {
+  const labels = {
+    resume: 'Continue watching', live: 'Return to live', close: 'Close player',
+    expand: 'Expand player', minimize: 'Minimize player', move: 'Move player', resize: 'Resize player',
+  };
+
+  it.each(['vod', 'live'] as const)('keeps the mounted %s media through route changes and removes it on logout', async (kind) => {
+    const {PlaybackProvider} = await import('./PlaybackProvider');
+    state.auth = 'authenticated';
+    state.access = 'available';
+    const title = 'Persistent meeting';
+    const captureId = 'b'.repeat(32);
+    const vod = {id: 'r1', title, packageId, durationSeconds: 120};
+    const live = {
+      id: 'r1', title, captureId, liveState: 'live', createdAt: new Date().toISOString(),
+      progress: {lastSequence: 8, mediaEndSeconds: 130},
+    };
+    list.mockResolvedValue(kind === 'vod' ? [vod] : []);
+    videoApi.liveList.mockResolvedValue(kind === 'live' ? [live] : []);
+    videoApi.watch.mockResolvedValue({
+      recordingId: 'r1', view: kind, recording: kind === 'vod' ? vod : null,
+      live: kind === 'live' ? live : null, serverNow: new Date().toISOString(), stateRevision: 1,
+    });
+    const expiresAt = new Date(Date.now() + 3600000).toISOString();
+    videoApi.grant.mockResolvedValue({packageId, expiresAt, audio: {version: 'aac-hls-v1', playlistPath: 'audio/aac-hls-v1/index.m3u8'}});
+    videoApi.exchange.mockResolvedValue(playbackUrl);
+    if (kind === 'live') Object.assign(liveSession, {playback: {url: playbackUrl, grant: {
+      liveState: 'live', progress: live.progress, expiresAt,
+    }}});
+    function Fixture({watch}: {watch: boolean}) {
+      return <PlaybackProvider locale="en" labels={labels}>
+        {watch ? <MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/> : <main>Another route</main>}
+      </PlaybackProvider>;
+    }
+    try {
+      const view = render(<Fixture watch/>);
+      await screen.findByLabelText(title);
+      const video = view.container.querySelector('video');
+      const audio = view.container.querySelector('audio');
+      expect(video).not.toBeNull();
+      expect(audio).not.toBeNull();
+      expect(video?.closest('[data-presentation]')).toHaveAttribute('data-presentation', 'watch');
+      const grants = videoApi.grant.mock.calls.length;
+      const clears = videoApi.clear.mock.calls.length;
+      view.rerender(<Fixture watch={false}/>);
+      expect(video?.closest('[data-presentation]')).toHaveAttribute('data-presentation', 'mini');
+      expect(view.container.querySelector('video')).toBe(video);
+      expect(view.container.querySelector('audio')).toBe(audio);
+      expect(videoApi.grant).toHaveBeenCalledTimes(grants);
+      expect(videoApi.clear).toHaveBeenCalledTimes(clears);
+      view.rerender(<Fixture watch/>);
+      await waitFor(() => expect(video?.closest('[data-presentation]')).toHaveAttribute('data-presentation', 'watch'));
+      expect(view.container.querySelector('video')).toBe(video);
+      expect(view.container.querySelector('audio')).toBe(audio);
+      state.auth = 'anonymous';
+      state.access = 'denied';
+      view.rerender(<Fixture watch={false}/>);
+      expect(view.container.querySelector('video')).toBeNull();
+      expect(view.container.querySelector('audio')).toBeNull();
+    } finally {
+      liveSession.playback = null;
+    }
+  });
+});

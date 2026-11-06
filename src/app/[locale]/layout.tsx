@@ -1,3 +1,4 @@
+import {PlaybackProvider} from '@/features/member-videos/PlaybackProvider';
 import type {Metadata} from 'next';
 import {getSiteLayout} from '@/features/site-layout/api';
 import {siteConfig} from '@/lib/site';
@@ -49,7 +50,7 @@ export function generateStaticParams() {
 
 async function getMessages(locale: Locale) {
   const messages = (await import(`../../i18n/locales/${locale}.json`)).default;
-  return {site: messages.site};
+  return {site: messages.site, continuity: messages.memberVideos.continuity};
 }
 
 export default async function LocaleLayout({children, params}: LocaleLayoutProps) {
@@ -67,6 +68,7 @@ export default async function LocaleLayout({children, params}: LocaleLayoutProps
       <ReaderServiceWorker/>
       <AccountControlProvider labels={messages.site.account}>
         <MediaDocumentProvider>
+        <PlaybackProvider locale={rawLocale} labels={messages.continuity}>
         <LegalRequiredNavigation />
         <InitialLoadingBoundary label={messages.site.loading}>
           <StatementProvider locale={rawLocale} labels={messages.site.statement}>
@@ -76,6 +78,7 @@ export default async function LocaleLayout({children, params}: LocaleLayoutProps
           </div>
           </StatementProvider>
         </InitialLoadingBoundary>
+        </PlaybackProvider>
         </MediaDocumentProvider>
       </AccountControlProvider>
     </NextIntlClientProvider>

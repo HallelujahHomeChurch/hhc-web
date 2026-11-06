@@ -32,3 +32,11 @@ The shared UI started at 1.1.19. Regression tests reproduced the missing marker 
 ## Local load probe
 
 One disposable PostgreSQL 17 run staggered 100 synthetic accounts at 150 ms intervals, first with existing playback heartbeat only and then with heartbeat plus progress. The progress store measured p95 82.9 ms and p99 143.4 ms, with zero connection-pool wait recorded. The heartbeat-only baseline had two transaction-capacity rejections and much higher tail latency, so this run does not pass the capacity gate. Repeat under controlled host load with lock-wait and HTTP latency measurements before enabling progress traffic.
+
+## Frontend integration and release checkpoint
+
+- Shared planning baseline `73ee1af2a1ff828d72421a73626f45ff4ce04a6f`, website base `b672e75db4de79346e55f05320de7ce54a36d928`. Engineering work is tracked in [hhc-web #352](https://github.com/HallelujahHomeChurch/hhc-web/issues/352).
+- One account-fenced layout host owns live and VOD media. Watch and mini change geometry on the same video/audio nodes. Component tests exercise both, including logout. The Chromium progress fixture uses two isolated contexts, actual media clocks and a synthetic progress API, and confirms that B takes ownership after playing while stale A writes stop and A's clock advances.
+- The 100-account PostgreSQL 17 rerun used 150 ms stagger, ten open connections, and one interval each for heartbeat-only and heartbeat plus progress. Heartbeat p95/p99 were 10.1/15.2 ms and 11.1/13.0 ms respectively. Progress p95/p99 were 5.9/7.6 ms. Neither run had capacity rejections or pool waits. This is repository-level latency on the local host. HTTP end-to-end latency and lock waits were not measured.
+- Gateway's earlier image gate failed on zlib CVE-2026-85091. [Gateway #259](https://github.com/HallelujahHomeChurch/api-gateway/pull/259) patched the base. The rebased [Gateway #258](https://github.com/HallelujahHomeChurch/api-gateway/pull/258) passed CI, including the candidate-image scan and runtime routing verification.
+- Remaining acceptance includes native iPhone edge gestures, background audio ownership through two grant renewals, live transition, and the real-device soak. Synthetic browser playback uses a canvas media stream.

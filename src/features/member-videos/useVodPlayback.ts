@@ -87,7 +87,7 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
   }, [clearCookie, pausePlayback]);
 
   const automaticAttempt = useRef<string|null>(null);
-  const start = useCallback(async (resume?:PlayerBookmark) => {
+  const start = useCallback(async (resume?:PlayerBookmark, prepareProgress?: (kind: "resume" | "at", signal: AbortSignal) => Promise<number | undefined> | undefined) => {
     if (!selected || preparing) return false;
     automaticAttempt.current = selected.id;
     mediaFailureReported.current = false;
@@ -102,10 +102,12 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
     setPreparing(true);
     setPlayError('');
     try {
+      const savedPosition = await prepareProgress?.(startAt !== undefined || resume ? "at" : "resume", controller.signal);
+      controller.signal.throwIfAborted();
       const scopeId = crypto.randomUUID();
       const grant = await api.grant(selected.id, scopeId, selected.packageId, controller.signal);
       const url = await exchangeCookie(grant, controller.signal);
-      if (!controller.signal.aborted) {bookmarkFrozen.current=false;diagnostic('accepted',media.current,++grantGeneration.current,(Date.parse(grant.expiresAt)-Date.now())/1000);setVodResume(resume?mapBroadcastBookmark(resume,mediaOrigin,mediaDuration):startAt!==undefined?{time:Math.min(startAt,selected.durationSeconds??startAt),paused:false,rate:1,quality:'auto',intent:'dvr'}:undefined);const accepted={recordingId:selected.id,scopeId,grant,url,backgroundAudio:readyAudio(grant)};playbackRef.current=accepted;setPlayback(accepted);return true;}
+      if (!controller.signal.aborted) {bookmarkFrozen.current=false;diagnostic('accepted',media.current,++grantGeneration.current,(Date.parse(grant.expiresAt)-Date.now())/1000);setVodResume(resume?mapBroadcastBookmark(resume,mediaOrigin,mediaDuration):startAt!==undefined||savedPosition!==undefined?{time:Math.min(startAt??savedPosition!,selected.durationSeconds??Infinity),paused:false,rate:1,quality:'auto',intent:'dvr'}:undefined);const accepted={recordingId:selected.id,scopeId,grant,url,backgroundAudio:readyAudio(grant)};playbackRef.current=accepted;setPlayback(accepted);return true;}
     } catch (error) {
       if (!controller.signal.aborted) {
         if (error instanceof HhcWebApiError && error.status === 401) {router.replace(`/${locale}`); return;}
@@ -136,11 +138,12 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
     }
   }, [api,snapshotVod,exchangeCookie,diagnostic,pausePlayback]);
 
+  const recordingDeadline = recordings?.find(item => item.id === playback?.recordingId)?.expiresAt;
   useEffect(() => {
     if (!playback) return;
     const controller = new AbortController();
     const expiry = Date.parse(playback.grant.expiresAt);
-    const deadline = Date.parse(recordings?.find(item => item.id === playback.recordingId)?.expiresAt ?? '');
+    const deadline = Date.parse(recordingDeadline ?? '');
     const canRenew = !Number.isFinite(deadline) || expiry < deadline;
     const renewalAt = Math.min(Date.now() + 45 * 60_000, expiry - 10 * 60_000);
     let timer = 0;
@@ -195,7 +198,7 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
     document.addEventListener('visibilitychange', visible);
     window.addEventListener('online', visible);
     return () => {controller.abort(); window.clearTimeout(timer); window.clearTimeout(expiryTimer); document.removeEventListener('visibilitychange', visible); window.removeEventListener('online', visible);};
-  }, [api, locale, messages.playError, messages.expired, playback, recordings, renew, resolveMissing, router,clearCookie,diagnostic,pausePlayback]);
+  }, [api, locale, messages.playError, messages.expired, playback, recordingDeadline, renew, resolveMissing, router,clearCookie,diagnostic,pausePlayback]);
 
   useEffect(()=>{
     const section=playerSection.current;if(!section)return;
