@@ -1,13 +1,14 @@
 import * as Sentry from '@sentry/nextjs';
-import {publicContentBaseUrl} from './config';
+import {historyPrivateContentBaseUrl, publicContentBaseUrl} from './config';
 
-export function contentTraceTarget(baseUrl = publicContentBaseUrl()) {
+export function contentTraceTarget(baseUrl = publicContentBaseUrl(), exactPath = false) {
   const url = new URL(baseUrl);
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
     throw new Error('Public content API tracing requires an HTTP base URL without credentials, query or fragment');
   }
   const base = `${url.origin}${url.pathname.replace(/\/$/, '')}`;
-  return new RegExp(`^${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:/|\\?|$)`);
+  const boundary = exactPath ? '(?:\\?|$)' : '(?:/|\\?|$)';
+  return new RegExp(`^${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}${boundary}`);
 }
 
 export function serverTraceSampleRate(value = process.env.SENTRY_TRACES_SAMPLE_RATE) {
@@ -19,17 +20,19 @@ export function serverTraceSampleRate(value = process.env.SENTRY_TRACES_SAMPLE_R
 }
 
 export function contentServerTracing() {
-  const target = contentTraceTarget();
+  const targets = [contentTraceTarget()];
+  const privateHistory = historyPrivateContentBaseUrl();
+  if (privateHistory) targets.push(contentTraceTarget(`${privateHistory}/history`, true));
   const rate = serverTraceSampleRate();
   return {
     // A remote sampled=1 is not authority to increase this service's budget.
     tracesSampler: () => rate,
     traceLifecycle: 'stream' as const,
     propagateTraceparent: true,
-    tracePropagationTargets: [target],
+    tracePropagationTargets: targets,
     integrations: [Sentry.nativeNodeFetchIntegration({
       responseHook(span, {request, response}) {
-        if (!target.test(`${request.origin}${request.path}`)) return;
+        if (!targets.some((target) => target.test(`${request.origin}${request.path}`))) return;
         const canonical: string[] = [];
         const legacy: string[] = [];
         for (let i = 0; i < response.headers.length; i += 2) {

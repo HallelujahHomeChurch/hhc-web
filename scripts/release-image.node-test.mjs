@@ -194,6 +194,17 @@ test('trace sampling is validated, persisted by both deployment paths, and resto
 });
 
 
+test('About history HTTPS defaults off and preview uses the deployment setting', () => {
+  const deploy = job('deploy');
+  assert.ok(deploy.includes("HHC_WEB_HISTORY_PRIVATE_HTTPS: ${{ vars.HHC_WEB_HISTORY_PRIVATE_HTTPS || 'false' }}"));
+  for (const name of ['Preview infrastructure change', 'Deploy']) {
+    assert.ok(step(deploy, name).includes('enableHistoryPrivateHttps="$HHC_WEB_HISTORY_PRIVATE_HTTPS"'));
+  }
+  const infra = readFileSync(new URL('../infra/main.bicep', import.meta.url), 'utf8');
+  assert.match(infra, /param enableHistoryPrivateHttps bool = false/);
+  assert.match(infra, /enableHistoryPrivateHttps \? \[\s+{\s+name: 'HHC_WEB_HISTORY_API_BASE_URL'/);
+});
+
 test('release uses ARM identity and public HTTP without remote execution', () => {
   const deploy = job('deploy');
   assert.doesNotMatch(deploy, /containerapp exec|collect-dapr-port/);

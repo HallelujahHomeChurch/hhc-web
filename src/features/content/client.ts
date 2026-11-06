@@ -46,9 +46,9 @@ function contentFetch(fresh: boolean): typeof fetch {
   };
 }
 
-export function publicContentClient(fresh = false) {
+export function publicContentClient(fresh = false, baseUrl = publicContentBaseUrl()) {
   return createHhcWebClient({
-    baseUrl: publicContentBaseUrl(),
+    baseUrl,
     getAccessToken: () => null,
     fetcher: contentFetch(fresh)
   });
