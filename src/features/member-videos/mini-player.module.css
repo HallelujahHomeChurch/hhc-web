@@ -73,7 +73,7 @@
 
 .host[data-presentation='mini'] :global(.hhc-player-skipGroup),
 .host[data-presentation='mini'] :global(.hhc-player-volumeControl),
-.host[data-presentation='mini'] :global(.hhc-player-rightControls),
+.host[data-presentation='mini'] :global(.hhc-player-rightControls) > :not(:last-child),
 .host[data-presentation='mini'] :global(.hhc-player-topControls) {
   display: none;
 }
