@@ -95,3 +95,22 @@ it('honors Retry-After, replaces the pending write and skips unchanged positions
     vi.useRealTimers();
   }
 });
+
+it('sends a final keepalive with a higher sequence while an earlier write is in flight', async () => {
+  const {createPlaybackProgress} = await import('./playback-progress-session');
+  const controller = new AbortController();
+  const api = {
+    progress: vi.fn().mockResolvedValue({mediaVersion: version, claimToken: 'token', progress: null}),
+    claimProgress: vi.fn().mockResolvedValue({generation: 'owner', mediaVersion: version, positionSeconds: 0, sequence: 0}),
+    saveProgress: vi.fn().mockImplementationOnce(() => new Promise(() => {})).mockResolvedValue({accepted: true, sequence: 2}),
+  };
+  const sync = createPlaybackProgress(api, 'recording', version, controller.signal);
+  await sync.prepare('resume');
+  await sync.playing(0);
+  void sync.save(4, 'playing');
+  sync.flush(8, 'paused');
+  controller.abort();
+  expect(api.saveProgress).toHaveBeenLastCalledWith('recording',
+    expect.objectContaining({sequence: 2, positionSeconds: 8, generation: 'owner'}),
+    {keepalive: true});
+});

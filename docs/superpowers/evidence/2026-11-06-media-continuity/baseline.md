@@ -40,3 +40,9 @@ One disposable PostgreSQL 17 run staggered 100 synthetic accounts at 150 ms inte
 - The 100-account PostgreSQL 17 rerun used 150 ms stagger, ten open connections, and one interval each for heartbeat-only and heartbeat plus progress. Heartbeat p95/p99 were 10.1/15.2 ms and 11.1/13.0 ms respectively. Progress p95/p99 were 5.9/7.6 ms. Neither run had capacity rejections or pool waits. This is repository-level latency on the local host. HTTP end-to-end latency and lock waits were not measured.
 - Gateway's earlier image gate failed on zlib CVE-2026-85091. [Gateway #259](https://github.com/HallelujahHomeChurch/api-gateway/pull/259) patched the base. The rebased [Gateway #258](https://github.com/HallelujahHomeChurch/api-gateway/pull/258) passed CI, including the candidate-image scan and runtime routing verification.
 - Remaining acceptance includes native iPhone edge gestures, background audio ownership through two grant renewals, live transition, and the real-device soak. Synthetic browser playback uses a canvas media stream.
+
+A second disposable-database run sampled lock waits every 25 ms. Neither
+heartbeat-only nor mixed traffic observed a lock waiter in 594 samples per
+interval, and neither recorded a pool wait or a capacity rejection. Progress
+p95/p99 were 8.0/9.5 ms. This sampling cannot exclude lock waits shorter than its
+sampling interval.

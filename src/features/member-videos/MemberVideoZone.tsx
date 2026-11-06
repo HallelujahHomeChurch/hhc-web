@@ -265,15 +265,27 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   }, [api, recordingId]);
   const returnToLibrary = persistent?.returnToLibrary;
   const takeLibraryScroll = persistent?.takeLibraryScroll;
+  const pendingLibraryScroll = useRef<number | undefined>(undefined);
   const minimize = useCallback(() => {
     const fallback = `/${locale}/member-videos`;
     router.push(returnToLibrary?.(fallback).href ?? fallback, {scroll: false});
   }, [router, locale, returnToLibrary]);
   useEffect(() => {
     if (view !== 'list' || !recordings || livePending) return;
-    const scroll = takeLibraryScroll?.();
-    if (scroll !== undefined) requestAnimationFrame(() => window.scrollTo({top: scroll}));
-  }, [view, recordings, livePending, takeLibraryScroll]);
+    const saved = takeLibraryScroll?.();
+    if (saved !== undefined) pendingLibraryScroll.current = saved;
+    const scroll = pendingLibraryScroll.current;
+    if (scroll === undefined) return;
+    const frame = requestAnimationFrame(() => {
+      if (scroll > document.documentElement.scrollHeight - window.innerHeight && nextCursor && !moreError) {
+        if (!moreLoading) void loadMore();
+        return;
+      }
+      pendingLibraryScroll.current = undefined;
+      window.scrollTo({top: scroll});
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [view, recordings, livePending, takeLibraryScroll, nextCursor, moreError, moreLoading, loadMore]);
   const minimizeLabel = persistent?.labels.minimize;
   const descriptor = useMemo(() => {
     if (!recordingId || !activeKey || resolver.denied) return;
