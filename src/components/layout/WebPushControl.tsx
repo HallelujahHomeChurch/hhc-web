@@ -160,7 +160,7 @@ async function registerSubscription(subscription: PushSubscription, locale: Loca
     if (cooldown?.fingerprint === fingerprint && cooldown.timestamp > Date.now()) return false;
 
     const existing = pendingRegistrations.get(fingerprint);
-    if (existing) return existing;
+    if (existing) return await existing;
 
     const lease = storedFingerprint(registrationLeaseKey);
     if (lease?.fingerprint === fingerprint && lease.timestamp > Date.now()) return false;
@@ -191,11 +191,23 @@ async function registerSubscription(subscription: PushSubscription, locale: Loca
       }
     });
     pendingRegistrations.set(fingerprint, pending);
-    return pending;
+    return await pending;
   } catch (error) {
     captureHandledError(error, {operation: 'push.registration', level: 'warning', tags: {locale}});
     return false;
   }
+}
+
+async function reconcileSubscription(
+  subscription: PushSubscription,
+  locale: Locale,
+  account: ReturnType<typeof useAccountAuth>,
+  isActive: () => boolean
+) {
+  if (!isActive()) return false;
+  const anonymousCleanup = account.status === 'anonymous' ? bindInstallationToAccount(account) : undefined;
+  if (!await registerSubscription(subscription, locale) || !isActive()) return false;
+  return anonymousCleanup ?? bindInstallationToAccount(account);
 }
 
 function capturePushError(error: unknown, operation: string, locale: Locale) {
@@ -237,11 +249,8 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
         vapidPublicKey.current = config.vapidPublicKey;
         const subscription = await serviceWorker.pushManager.getSubscription();
         if (subscription) {
-          void Promise.all([
-            registerSubscription(subscription, locale),
-            bindInstallationToAccount(account)
-          ]).then(([registered, bound]) => {
-            if (active) setBindingPending(!registered || !bound);
+          void reconcileSubscription(subscription, locale, account, () => active).then((synced) => {
+            if (active) setBindingPending(!synced);
           });
         } else clearPushSyncState();
         if (active) setState(Notification.permission === 'denied' ? 'denied' : subscription ? 'on' : 'off');
@@ -270,23 +279,26 @@ export function WebPushControl({labels, locale, autoPrompt = false}: WebPushCont
 
   useEffect(() => {
     if (!bindingPending || state !== 'on') return;
+    let active = true;
     const timer = window.setTimeout(() => {
       void registration.current?.pushManager.getSubscription().then(async (subscription) => {
+        if (!active) return;
         if (!subscription) {
           setBindingPending(false);
           return;
         }
-        const [registered, bound] = await Promise.all([
-          registerSubscription(subscription, locale),
-          bindInstallationToAccount(account)
-        ]);
-        setBindingPending(!registered || !bound);
+        const synced = await reconcileSubscription(subscription, locale, account, () => active);
+        if (active) setBindingPending(!synced);
       }).catch((error) => {
+        if (!active) return;
         capturePushError(error, 'push.retry', locale);
         setState('error');
       });
     }, 30000);
-    return () => window.clearTimeout(timer);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
   }, [account, bindingPending, locale, state]);
 
   if (state === 'unsupported') return null;
