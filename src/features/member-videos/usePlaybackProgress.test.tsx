@@ -68,3 +68,30 @@ it('lets B claim only after playing and stops stale A writes while A keeps playi
   expect(pause).not.toHaveBeenCalled();
   pause.mockRestore();
 });
+
+it('honors Retry-After, replaces the pending write and skips unchanged positions', async () => {
+  const {createPlaybackProgress} = await import('./playback-progress-session');
+  vi.useFakeTimers();
+  const controller = new AbortController();
+  try {
+    const api = {
+      progress: vi.fn().mockResolvedValue({mediaVersion: version, claimToken: 'token', progress: null}),
+      claimProgress: vi.fn().mockResolvedValue({generation: 'owner', mediaVersion: version, positionSeconds: 0, sequence: 0}),
+      saveProgress: vi.fn().mockRejectedValueOnce({status: 429, retryAfter: '2'}).mockResolvedValue({accepted: true, sequence: 2}),
+    };
+    const sync = createPlaybackProgress(api, 'recording', version, controller.signal);
+    await sync.prepare('resume');
+    await sync.playing(0);
+    await sync.save(4, 'playing');
+    await sync.save(8, 'playing');
+    await vi.advanceTimersByTimeAsync(1999);
+    expect(api.saveProgress).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(api.saveProgress.mock.calls.map(([, update]) => update.positionSeconds)).toEqual([4, 8]);
+    await sync.save(8, 'playing');
+    expect(api.saveProgress).toHaveBeenCalledTimes(2);
+  } finally {
+    controller.abort();
+    vi.useRealTimers();
+  }
+});
