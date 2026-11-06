@@ -114,3 +114,21 @@ it('sends a final keepalive with a higher sequence while an earlier write is in 
     expect.objectContaining({sequence: 2, positionSeconds: 8, generation: 'owner'}),
     {keepalive: true});
 });
+
+it('returns control to playback when a progress lookup never settles', async () => {
+  const {createPlaybackProgress} = await import('./playback-progress-session');
+  vi.useFakeTimers();
+  const controller = new AbortController();
+  try {
+    const api = {progress: vi.fn(() => new Promise<never>(() => {})), claimProgress: vi.fn(), saveProgress: vi.fn()};
+    const sync = createPlaybackProgress(api, 'recording', version, controller.signal);
+    const prepared = sync.prepare('resume');
+    await vi.advanceTimersByTimeAsync(1500);
+    await expect(prepared).resolves.toBeUndefined();
+    await sync.playing(10);
+    expect(api.claimProgress).not.toHaveBeenCalled();
+  } finally {
+    controller.abort();
+    vi.useRealTimers();
+  }
+});

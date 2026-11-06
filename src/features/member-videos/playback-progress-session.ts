@@ -7,7 +7,9 @@ const statusOf = (error: unknown) => (error as {status?: number} | null)?.status
 
 function deadline(signals: readonly AbortSignal[], ms: number) {
   const controller = new AbortController();
-  const cancel = () => controller.abort();
+  let finish!: () => void;
+  const canceled = new Promise<undefined>(resolve => { finish = () => resolve(undefined); });
+  const cancel = () => { controller.abort(); finish(); };
   let timedOut = false;
   const timer = setTimeout(() => { timedOut = true; cancel(); }, ms);
   for (const signal of new Set(signals)) {
@@ -16,6 +18,7 @@ function deadline(signals: readonly AbortSignal[], ms: number) {
   }
   return {
     signal: controller.signal,
+    canceled,
     timedOut: () => timedOut,
     dispose() {
       clearTimeout(timer);
@@ -91,7 +94,11 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
       if (revision !== intentRevision || signal.aborted || (delay && !navigator.onLine)) return;
       const timeout = deadline([signal], 4000);
       try {
-        const claimed = await api.claimProgress(id, claim, timeout.signal);
+        const claimed = await Promise.race([api.claimProgress(id, claim, timeout.signal), timeout.canceled]);
+        if (!claimed) {
+          if (timeout.timedOut()) continue;
+          return;
+        }
         if (revision !== intentRevision || signal.aborted) return;
         owner = claimed;
         sequence = claimed.sequence;
@@ -116,8 +123,8 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
       preparing = true;
       const timeout = deadline([signal, startSignal], 1500);
       try {
-        const snapshot = await api.progress(id, timeout.signal);
-        if (revision !== intentRevision || signal.aborted || startSignal.aborted ||
+        const snapshot = await Promise.race([api.progress(id, timeout.signal), timeout.canceled]);
+        if (!snapshot || revision !== intentRevision || signal.aborted || startSignal.aborted ||
           (snapshot.mediaVersion !== version && !snapshot.mediaVersion.startsWith(`${version}:`))) return;
         intent = {snapshot, kind};
         if (kind === 'resume' && !snapshot.progress?.completed && version.startsWith('vod:')) return snapshot.progress?.positionSeconds;
