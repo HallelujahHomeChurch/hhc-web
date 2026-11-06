@@ -18,11 +18,12 @@ function contentFetch(fresh: boolean): typeof fetch {
     if (init?.signal) signals.push(init.signal);
     const signal = AbortSignal.any(signals);
     signal.throwIfAborted();
+    const noStore = fresh || (init?.cache ?? (input instanceof Request ? input.cache : undefined)) === 'no-store';
     // Next can detach cache revalidation from the caller's signal. Bound our
     // wait independently, including the public JSON body, without disabling ISR.
     return startSpan({
       name: 'public-content.read', op: 'content.read',
-      attributes: {'content.cache_policy': fresh ? 'no-store' : 'revalidate'}
+      attributes: {'content.cache_policy': noStore ? 'no-store' : 'revalidate'}
     }, () => new Promise<Response>((resolve, reject) => {
       const abort = () => {
         signal.removeEventListener('abort', abort);
@@ -34,7 +35,7 @@ function contentFetch(fresh: boolean): typeof fetch {
           ...init,
           signal,
           redirect: 'error',
-          ...(fresh ? {cache: 'no-store'} : {next: {revalidate: 60}})
+          ...(noStore ? {cache: 'no-store'} : {next: {revalidate: 60}})
         } as RequestInit & {next?: {revalidate: number}});
         const body = response.body === null ? null : await response.arrayBuffer();
         return new Response(body, {

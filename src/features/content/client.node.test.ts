@@ -11,7 +11,7 @@ function fetcher(fresh = false): typeof fetch {
   return constructor.mock.lastCall![0].fetcher;
 }
 
-afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); constructor.mockClear(); });
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); constructor.mockClear(); });
 
 describe('public content transport', () => {
   it.each([false, true])('preserves the cache policy (fresh=%s) without retries', async (fresh) => {
@@ -21,6 +21,28 @@ describe('public content transport', () => {
     expect(transport).toHaveBeenCalledTimes(1);
     expect(transport.mock.lastCall![1]).toMatchObject({headers: {'X-Test': 'kept'}, ...(fresh ? {cache: 'no-store'} : {next: {revalidate: 60}})});
     expect(transport.mock.lastCall![1].signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('selects the reviewed public HTTPS base and preserves an explicit client origin', () => {
+    const privateBase = 'https://hhc-web-api.internal.fixture.eastasia.azurecontainerapps.io/api';
+    const dapr = 'http://127.0.0.1:3500/v1.0/invoke/hhc-web-api/method/api';
+    vi.stubEnv('HHC_WEB_API_BASE_URL', privateBase);
+    publicContentClient();
+    expect(constructor.mock.lastCall![0].baseUrl).toBe(privateBase);
+    publicContentClient(false, dapr);
+    expect(constructor.mock.lastCall![0].baseUrl).toBe(dapr);
+    vi.stubEnv('HHC_WEB_API_BASE_URL', dapr);
+    publicContentClient();
+    expect(constructor.mock.lastCall![0].baseUrl).toBe(dapr);
+  });
+
+  it.each(['request', 'init'])('keeps explicit %s no-store without adding conflicting ISR', async (source) => {
+    const transport = vi.fn().mockResolvedValue(new Response('{}'));
+    vi.stubGlobal('fetch', transport);
+    const input = new Request('http://content.test/legal/common', source === 'request' ? {cache: 'no-store'} : {});
+    await fetcher()(input, source === 'init' ? {cache: 'no-store'} : undefined);
+    expect(transport.mock.lastCall![1]).toMatchObject({cache: 'no-store', redirect: 'error'});
+    expect(transport.mock.lastCall![1]).not.toHaveProperty('next');
   });
 
   it.each([204, 205, 304])('preserves bodyless status %s and headers', async (status) => {

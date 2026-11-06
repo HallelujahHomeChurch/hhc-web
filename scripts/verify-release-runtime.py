@@ -73,12 +73,14 @@ def recovery():
 
 def main():
     recovering = sys.argv[1:] == ['recovery']
+    preflight = sys.argv[1:] == ['preflight']
     result = 20
     try:
         if recovering:
             result = recovery()
         else:
-            for attempt in range(60):
+            attempts = 1 if preflight else 60
+            for attempt in range(attempts):
                 result, revision = observe(os.environ.get('APP_NAME') or os.environ['API_APP_NAME'],
                                  os.environ.get('CANDIDATE_REVISION', ''), os.environ['IMAGE_REF'])
                 if result == 0:
@@ -88,7 +90,7 @@ def main():
                     break
                 if result == 10:
                     break
-                if attempt < 59:
+                if attempt + 1 < attempts:
                     time.sleep(10)
     except (ValueError, KeyError, TypeError, AttributeError, OSError, subprocess.TimeoutExpired):
         result = 20

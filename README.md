@@ -156,21 +156,11 @@ successful deployment does not imply source-map publication succeeded.
 PR CI uses a noncredential fixture to generate real maps without contacting Sentry,
 checks that the private artifact contains them and the runtime image does not, and
 retains its image scan. Actual release duration is measured separately.
-Startup and liveness probe this application endpoint. Readiness probes Dapr's
-`GET /v1.0/healthz` on its public health port `3501`, so a sidecar startup failure
-cannot pass readiness solely because Next.js is running. This gates readiness;
-it does not resolve Dapr's internal port allocation conflicts.
-
-After a failed deployment, the release workflow collects TCP 50002 socket/PID
-ownership evidence only from the matching immutable candidate image before
-rollback. The total budget, including forced termination, is at most 60 seconds;
-each replica console is bounded separately. Only the fixed helper schema reaches
-logs: TCP state/ports, UID/inode, namespaces and visible PID/executable names.
-Process arguments, environment and IP addresses are excluded, and console banners
-or errors are suppressed. Missing/inaccessible owners and diagnostic failures are
-unknown; they never prove Dapr ownership or clear the original deployment failure.
-This preserves evidence and does not fix port allocation. No live failure drill is
-required to validate the helper.
+Production releases require a healthy serving Gateway revision with the website
+credential bound. Gateway sends website traffic to private HTTPS and Next.js uses
+private CMS HTTPS for server-rendered content. The readiness probe reaches Next.js
+through the private ingress listener on port `10001`. The existing release smoke
+checks the public website, Admin weekly assets and CSP reporting.
 
 ## Member video playback
 
