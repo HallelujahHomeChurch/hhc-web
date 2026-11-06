@@ -40,7 +40,7 @@ export function LiveRecordingPlayer({api,recording,labels,liveLabels,locale,onVo
  const playable=!session.closed&&!['failed','expired','aborted'].includes(state);
  const poster=useLiveRecordingCover(api,recording,playable);
  const prepareProgress=usePlaybackProgress(api,recording.id,`live:${recording.captureId}`,playerSection,media,Boolean(surfaceOnly&&playable));
- useEffect(()=>{if(surfaceOnly&&playable)void prepareProgress('resume');},[surfaceOnly,playable,recording.id,recording.captureId,prepareProgress]);
+ useEffect(()=>{if(surfaceOnly&&playable&&!awaitingMedia)void prepareProgress('resume');},[surfaceOnly,playable,awaitingMedia,recording.id,recording.captureId,prepareProgress]);
  useEffect(()=>{if(playable&&!livePlayback)void prepareLive();},[api,recording.id,recording.captureId,playable,awaitingMedia,livePlayback,prepareLive]);
  const verifiedEnd=Math.max(0,Math.max(recording.progress.mediaEndSeconds,grant?.progress.mediaEndSeconds??0)-mediaOriginSeconds);
  usePlaybackTelemetry(api,recording.id,media,Boolean(session.playback&&playable));
