@@ -29,6 +29,8 @@ function deadline(signals: readonly AbortSignal[], ms: number) {
 
 export function createPlaybackProgress(api: ProgressAPI, id: string, version: string, signal: AbortSignal) {
   const sessionId = crypto.randomUUID();
+  let currentVersion = version;
+  let observedGeneration: string | undefined;
   let intent: Intent | undefined;
   let owner: RecordingProgressOwner | undefined;
   let sequence = 0;
@@ -116,6 +118,7 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
   }
 
   return {
+    identity: () => ({recordingId: id, mediaVersion: currentVersion, sessionId, generation: owner?.generation ?? observedGeneration}),
     async prepare(kind: Intent['kind'], startSignal: AbortSignal = signal) {
       const revision = ++intentRevision;
       intent = undefined;
@@ -126,6 +129,8 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
         const snapshot = await Promise.race([api.progress(id, timeout.signal), timeout.canceled]);
         if (!snapshot || revision !== intentRevision || signal.aborted || startSignal.aborted ||
           (snapshot.mediaVersion !== version && !snapshot.mediaVersion.startsWith(`${version}:`))) return;
+        currentVersion = snapshot.mediaVersion;
+        observedGeneration = snapshot.progress?.mediaVersion === snapshot.mediaVersion ? snapshot.progress.generation : undefined;
         intent = {snapshot, kind};
         if (kind === 'resume' && !snapshot.progress?.completed && version.startsWith('vod:')) return snapshot.progress?.positionSeconds;
       } catch { /* Playback authorization remains independent of progress availability. */ }

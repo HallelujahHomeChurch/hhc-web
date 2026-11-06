@@ -1,21 +1,19 @@
 'use client';
 
-import {createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode} from 'react';
+import {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import Link from 'next/link';
 import {ArrowUpRight, X} from 'lucide-react';
-import {useAccountIdentity, useVideoAccess} from '@/components/layout/AccountControl';
+import {useAccountIdentity, useAccountAuth, useVideoAccess} from '@/components/layout/AccountControl';
 import {useMediaDocument} from '@/components/layout/MediaDocument';
 import type {ContinuityLabels} from './ContinueWatching';
 import {PlaybackHost} from './PlaybackHost';
+import {bindResumeDismissalAccount, clearResumeDismissals, dismissResume, type ResumeIdentity} from './resume-dismissal';
 
 type Playback = {key: string; href: string; title: string; player: ReactNode};
 type Slot = {key: string; element: HTMLElement};
 type PlaybackControl = {
   activeKey: string | undefined;
   activeHref: string | undefined;
-  resumeDismissed: string | undefined;
-  dismissResume: (generation: string) => void;
-  closedRecording: boolean;
   labels: ContinuityLabels;
   inWatch: boolean;
   start: (playback: Playback, explicit?: boolean) => void;
@@ -24,7 +22,7 @@ type PlaybackControl = {
   rememberLibrary: (href: string, scroll: number) => void;
   returnToLibrary: (fallback: string) => {href: string; scroll: number};
   takeLibraryScroll: () => number | undefined;
-  registerPlayback: (flush: () => void, time: () => number) => () => void;
+  registerPlayback: (flush: () => void, time: () => number, identity: () => ResumeIdentity) => () => void;
   currentTime: () => number;
 };
 
@@ -36,6 +34,11 @@ type Props = {children: ReactNode; locale: string; labels: ContinuityLabels};
 export function PlaybackProvider({children, locale, labels}: Props) {
   const identity = useAccountIdentity();
   const access = useVideoAccess();
+  const auth = useAccountAuth();
+  useEffect(() => {
+    if (auth.status === 'anonymous') clearResumeDismissals();
+    else if (identity) bindResumeDismissalAccount(identity);
+  }, [identity, auth.status]);
   const {privateMediaReady} = useMediaDocument();
   const member = access === 'available' && privateMediaReady ? identity : null;
   return <MemberPlaybackProvider member={member} locale={locale} labels={labels}>{children}</MemberPlaybackProvider>;
@@ -44,14 +47,12 @@ export function PlaybackProvider({children, locale, labels}: Props) {
 function MemberPlaybackProvider({children, labels, member}: Props & {member: string | null}) {
   const [playback, setPlayback] = useState<Playback | null>(null);
   const [slot, setWatchSlot] = useState<Slot | null>(null);
-  const [dismissed, dismiss] = useState<string>();
   const [closed, setClosed] = useState<string>();
   const [owner, setOwner] = useState(member);
   if (member !== owner) {
     setOwner(member);
     setPlayback(null);
     setWatchSlot(null);
-    dismiss(undefined);
     setClosed(undefined);
   }
   const library = useRef<{member: string | null; href: string; scroll: number} | undefined>(undefined);
@@ -67,7 +68,7 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
     restoreScroll.current = undefined;
     return value;
   }, []);
-  const playbackAccess = useRef<{flush: () => void; time: () => number} | null>(null);
+  const playbackAccess = useRef<{flush: () => void; time: () => number; identity: () => ResumeIdentity} | null>(null);
   const previousPlaybackKey = playback?.key;
   const start = useCallback((next: Playback, explicit = false) => {
     if (!explicit && closed === next.key) return;
@@ -84,18 +85,23 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
     setClosed(key);
     setPlayback(current => current?.key === key ? null : current);
   }, [previousPlaybackKey]);
-  const registerPlayback = useCallback((flush: () => void, time: () => number) => {
-    const value = {flush, time};
+  const registerPlayback = useCallback((flush: () => void, time: () => number, identity: () => ResumeIdentity) => {
+    const value = {flush, time, identity};
     playbackAccess.current = value;
     return () => { if (playbackAccess.current === value) playbackAccess.current = null; };
   }, []);
   const currentTime = useCallback(() => playbackAccess.current?.time() ?? 0, []);
   const activeKey = playback?.key;
   const activeHref = playback?.href;
-  const closeActive = useCallback(() => { if (activeKey) close(activeKey); }, [activeKey, close]);
+  const closeActive = useCallback(() => {
+    if (!activeKey) return;
+    const identity = playbackAccess.current?.identity();
+    if (member && identity) dismissResume(member, identity);
+    close(activeKey);
+  }, [activeKey, close, member]);
   const watchSlot = playback && slot?.key === playback.key ? slot.element : null;
   const inWatch = Boolean(watchSlot);
-  const controls = useMemo(() => ({resumeDismissed: dismissed, dismissResume: dismiss, closedRecording: Boolean(closed), activeKey, activeHref, start, setSlot, close, labels, inWatch, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll}), [dismissed, closed, activeKey, activeHref, start, setSlot, close, labels, inWatch, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll]);
+  const controls = useMemo(() => ({activeKey, activeHref, start, setSlot, close, labels, inWatch, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll}), [activeKey, activeHref, start, setSlot, close, labels, inWatch, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll]);
 
   return <Context.Provider value={member ? controls : null}>
     {children}
