@@ -104,10 +104,11 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
     try {
       const savedPosition = await prepareProgress?.(startAt !== undefined || resume ? "at" : "resume", controller.signal);
       controller.signal.throwIfAborted();
+      const initialTime = startAt ?? savedPosition;
       const scopeId = crypto.randomUUID();
       const grant = await api.grant(selected.id, scopeId, selected.packageId, controller.signal);
       const url = await exchangeCookie(grant, controller.signal);
-      if (!controller.signal.aborted) {bookmarkFrozen.current=false;diagnostic('accepted',media.current,++grantGeneration.current,(Date.parse(grant.expiresAt)-Date.now())/1000);setVodResume(resume?mapBroadcastBookmark(resume,mediaOrigin,mediaDuration):startAt!==undefined||savedPosition!==undefined?{time:Math.min(startAt??savedPosition!,selected.durationSeconds??Infinity),paused:false,rate:1,quality:'auto',intent:'dvr'}:undefined);const accepted={recordingId:selected.id,scopeId,grant,url,backgroundAudio:readyAudio(grant)};playbackRef.current=accepted;setPlayback(accepted);return true;}
+      if (!controller.signal.aborted) {bookmarkFrozen.current=false;diagnostic('accepted',media.current,++grantGeneration.current,(Date.parse(grant.expiresAt)-Date.now())/1000);setVodResume(resume?mapBroadcastBookmark(resume,mediaOrigin,mediaDuration):initialTime!==undefined?{time:Math.min(initialTime,selected.durationSeconds??initialTime),paused:false,rate:1,quality:'auto',intent:'dvr'}:undefined);const accepted={recordingId:selected.id,scopeId,grant,url,backgroundAudio:readyAudio(grant)};playbackRef.current=accepted;setPlayback(accepted);return true;}
     } catch (error) {
       if (!controller.signal.aborted) {
         if (error instanceof HhcWebApiError && error.status === 401) {router.replace(`/${locale}`); return;}

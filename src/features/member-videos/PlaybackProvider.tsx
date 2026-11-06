@@ -2,10 +2,11 @@
 
 import {createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode} from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import {ArrowUpRight, X} from 'lucide-react';
 import {useAccountIdentity, useVideoAccess} from '@/components/layout/AccountControl';
 import {useMediaDocument} from '@/components/layout/MediaDocument';
-import {ContinueWatching, type ContinuityLabels} from './ContinueWatching';
+import type {ContinuityLabels} from './ContinueWatching';
 import {PlaybackHost} from './PlaybackHost';
 
 type Playback = {key: string; href: string; title: string; player: ReactNode};
@@ -24,6 +25,8 @@ type PlaybackControl = {
   registerPlayback: (flush: () => void, time: () => number) => () => void;
   currentTime: () => number;
 };
+const ContinueWatching = dynamic(() => import('./ContinueWatching').then(module => module.ContinueWatching), {ssr: false});
+
 const Context = createContext<PlaybackControl | null>(null);
 export const usePersistentPlayback = () => useContext(Context);
 

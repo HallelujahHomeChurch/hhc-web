@@ -37,8 +37,10 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
         owner = undefined;
         next = undefined;
       } else {
-        const delay = Number((error as {retryAfter?: string} | null)?.retryAfter);
-        retryAt = Date.now() + (Number.isFinite(delay) && delay > 0 ? delay * 1000 : [5000, 10000, 20000, 30000][Math.min(attempt++, 3)]);
+        const retryAfter = (error as {retryAfter?: string} | null)?.retryAfter;
+        const seconds = Number(retryAfter);
+        const delay = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(retryAfter ?? '') - Date.now();
+        retryAt = Date.now() + (Number.isFinite(delay) && delay > 0 ? delay : [5000, 10000, 20000, 30000][Math.min(attempt++, 3)]);
         next ??= update;
       }
     } finally {
