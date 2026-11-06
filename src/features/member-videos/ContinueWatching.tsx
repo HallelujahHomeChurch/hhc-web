@@ -10,6 +10,7 @@ import {LiveCoverSurface} from './RecordingCover';
 import {usePrivateCover} from '@/lib/use-private-cover';
 import styles from './mini-player.module.css';
 import {videoWatchPath} from './share';
+import {usePersistentPlayback} from './PlaybackProvider';
 
 export type ContinuityLabels = {resume: string; live: string; close: string; expand: string; minimize: string; move: string; resize: string};
 
@@ -72,7 +73,7 @@ export function ContinueWatching({member, locale, labels, dismissed, dismiss}: {
   const href = videoWatchPath(locale, item.recordingId, item.publicId);
   const minutes = Math.floor(item.positionSeconds / 60);
   const position = `${minutes}:${String(Math.floor(item.positionSeconds % 60)).padStart(2, '0')}`;
-  return <aside className={`${styles.resumeCard} fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-30 w-64 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-panel-border bg-panel text-ink shadow-lg`}>
+  return <aside className={`${styles.resumeCard} relative mb-6 w-64 max-w-full overflow-hidden rounded-xl border border-panel-border bg-panel text-ink shadow-lg`}>
     <button type="button" className="absolute right-0 top-0 z-10 grid size-11 place-items-center rounded-bl-lg bg-black/80 text-white"
       aria-label={labels.close} onClick={() => {
         dismiss(item.generation);
@@ -87,4 +88,11 @@ export function ContinueWatching({member, locale, labels, dismissed, dismiss}: {
       </div>
     </Link>
   </aside>;
+}
+
+export function LibraryContinueWatching({member, locale}: {member: string; locale: string}) {
+  const playback = usePersistentPlayback();
+  if (!playback || playback.activeKey || playback.closedRecording) return null;
+  return <ContinueWatching member={member} locale={locale} labels={playback.labels}
+    dismissed={playback.resumeDismissed} dismiss={playback.dismissResume}/>;
 }

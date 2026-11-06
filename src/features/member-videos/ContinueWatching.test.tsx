@@ -32,3 +32,13 @@ it('shows the saved position without mounting media and dismisses only that gene
   await act(async () => {});
   expect(screen.queryByRole('link')).toBeNull();
 });
+
+it('renders resume in the library flow rather than a viewport overlay', async () => {
+  api.continueWatching.mockResolvedValue({item: {
+    title: 'Inline recording', recordingId: 'inline-recording', publicId: 'aB_012-xyzQ',
+    mode: 'vod', mediaVersion: 'vod:package', positionSeconds: 65, generation: 'inline',
+  }});
+  const view = render(<ContinueWatching member="inline" locale="en" labels={labels} dismiss={vi.fn()}/>);
+  await screen.findByRole('link', {name: /Inline recording/});
+  expect(view.container.querySelector('aside')).not.toHaveClass('fixed');
+});

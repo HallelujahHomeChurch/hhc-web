@@ -19,6 +19,18 @@ const videoApi = vi.hoisted(() => ({watch:vi.fn(),upcoming:vi.fn(),broadcastCove
 const liveSession = vi.hoisted(()=>({playback:null,closed:false,pending:false,error:false,start:vi.fn(),remember:vi.fn(),bookmark:{current:undefined}}));
 vi.mock('./useLivePlayback',()=>({useLivePlayback:()=>liveSession}));
 const router = vi.hoisted(() => ({replace: vi.fn(),push:vi.fn()}));
+const navigate = vi.hoisted(() => vi.fn());
+vi.mock('next/link', () => ({default: ({href, onNavigate, onClick, prefetch, ...props}: import('react').ComponentProps<typeof import('next/link').default>) => {
+  void prefetch;
+  return <a {...props} href={typeof href === 'string' ? href : '#'} onClick={event => {
+    onClick?.(event);
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || props.target === '_blank') return;
+    event.preventDefault();
+    const preventDefault = vi.fn();
+    onNavigate?.({preventDefault});
+    if (!preventDefault.mock.calls.length) navigate(href);
+  }}/>;
+}}));
 const replace = router.replace;
 const captureHandledError = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/observability', () => ({captureHandledError}));
@@ -48,7 +60,7 @@ const messages = {
 beforeEach(() => {
   state.access = 'loading'; state.auth = 'checking';
   liveSession.bookmark.current=undefined;
-  list.mockReset(); replace.mockReset();
+  list.mockReset(); replace.mockReset(); navigate.mockReset();
   captureHandledError.mockReset();interactions.mockClear();
   list.mockResolvedValue([]);
   videoApi.list.mockReset().mockImplementation(list);
@@ -900,6 +912,42 @@ describe('persistent member playback', () => {
     resume: 'Continue watching', live: 'Return to live', close: 'Close player',
     expand: 'Expand player', minimize: 'Minimize player', move: 'Move player', resize: 'Resize player',
   };
+
+  it('navigates a different thumbnail to its watch page and stops the prior player before resolution', async () => {
+    const {PlaybackProvider} = await import('./PlaybackProvider');
+    state.auth = 'authenticated'; state.access = 'available';
+    const a = {id: 'r1', title: 'First recording', publicId: 'aB_012-xyzQ', packageId};
+    const b = {id: 'r2', title: 'Second recording', publicId: 'bB_012-xyzQ', packageId: 'b'.repeat(32)};
+    list.mockResolvedValue([a, b]);
+    videoApi.upcoming.mockResolvedValue({items: [], nextCursor: null});
+    videoApi.grant.mockResolvedValue({packageId, expiresAt: new Date(Date.now() + 3600000).toISOString()});
+    videoApi.exchange.mockResolvedValue(playbackUrl);
+    function Fixture({route}: {route: 'r1' | 'r2' | 'list'}) {
+      return <PlaybackProvider locale="en" labels={labels}>
+        <MemberVideoZone locale="en" messages={messages} hero={null} view={route === 'list' ? 'list' : 'watch'} recordingId={route === 'list' ? undefined : route}/>
+      </PlaybackProvider>;
+    }
+    const view = render(<Fixture route="r1"/>);
+    await screen.findByLabelText(a.title);
+    const video = view.container.querySelector('video');
+    view.rerender(<Fixture route="list"/>);
+    await screen.findByRole('link', {name: b.title});
+    const thumbnail = view.container.querySelector<HTMLAnchorElement>('a[aria-hidden="true"][href="/video/bB_012-xyzQ"]')!;
+    expect(thumbnail).not.toBeNull();
+    fireEvent.click(thumbnail, {ctrlKey: true});
+    expect(navigate).not.toHaveBeenCalled();
+    expect(videoApi.grant).toHaveBeenCalledTimes(1);
+    fireEvent.click(thumbnail);
+    expect(navigate).toHaveBeenCalledWith('/video/bB_012-xyzQ');
+    await act(async () => {});
+    expect(view.container.querySelector('video')).toBe(video);
+    expect(videoApi.grant).toHaveBeenCalledTimes(1);
+    videoApi.watch.mockImplementation(() => new Promise(() => {}));
+    view.rerender(<Fixture route="r2"/>);
+    await act(async () => {});
+    expect(view.container.querySelector('video')).toBeNull();
+    expect(screen.queryByLabelText(a.title)).toBeNull();
+  });
 
   it.each(['vod', 'live'] as const)('keeps the mounted %s media through route changes and removes it on logout', async (kind) => {
     const {PlaybackProvider} = await import('./PlaybackProvider');
