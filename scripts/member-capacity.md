@@ -1,0 +1,99 @@
+# Stateful member capacity probe
+
+This explicitly invoked browser bundle reuses the pinned Account runtime, member
+clients, reader validation and the existing restricted HLS parser. Importing it
+does not issue requests. It is not imported by the product UI.
+
+Build with `node scripts/build-member-capacity.mjs /absolute/output/directory`.
+Use only a verified bundle in an already authenticated production WWW page, with
+an independently reviewed scope and continuously refreshed external safety gate.
+The gate must match the scope hash, remain at most ten seconds old, and expire
+within the authorized window. A human authorization alone is not a ready gate.
+
+`startMemberCapacity(options)` returns `done`, `snapshot()`, `evidence()`,
+`cleanupLedger()`, `updateGate(next)` and `stop()`. The coordinator owns the
+exclusive generator lock, aggregate request/byte ledger across stages, actual
+service/queue/database monitoring, Mac CPU/memory/WAN calibration, and stage
+admission. Pass only the remaining aggregate budgets, never a reset budget.
+Do not export cookies, tokens, raw errors, grants or signed media URLs.
+
+The model uses one real login with independently scoped active flows. It does not
+represent distinct members, independent login sessions, login bursts or their
+cache/authorization/watermark costs. Each seeded deck has the fixed mix in
+`member-capacity-model.ts`. A baseline covers every operation, measuring individual private-state commands separately; the mixed
+hold starts after all flows have entered, with a bounded ramp deadline. Ramp and
+hold samples remain separately identifiable. Every attempted operation and HTTP
+request is retained, including failures and interrupted work. Record both the
+all-phase and hold summaries; do not average stage percentiles.
+
+Set `skipVideoPlayback: true` for a separately authorized member-API/PDF scenario.
+It removes `media_play` from both the baseline and mixed deck, preserving the
+relative weights of all remaining operations. Recording catalog/detail/cover reads,
+reader synchronization, account queries and complete PDF downloads remain active.
+Playback grants, media cookies, HLS transfers and playback heartbeats are also
+rejected at the request boundary in this mode. `snapshot().workload` identifies
+`member-api-with-pdf`; the default remains `member-with-playback`. Do not combine
+the two scenarios or claim video-viewing capacity from the playback-excluded run.
+The independent real-player checks below apply only to playback-included scopes.
+
+Reader writes use a separately designated writable document and require explicitly designated writable fixtures and an exclusive
+private-state slot. Created bookmark/note IDs are unique to the run. Cleanup
+deletes only those items; an uncertain or failed cleanup remains visible in the
+ledger. Original progress remains in memory and is restored only when the current
+timestamp matches the last test write. This is not a server-side compare-and-swap;
+do not use a document that the account may concurrently edit. Never publish the
+private cleanup ledger or replace an unrelated progress update.
+
+Media requires independently approved analytics side effects and VOD long enough
+for the requested dwell. The runner drains complete muxed audio/video bodies and
+paces segments by EXTINF. Unsupported HLS (including separate audio, encryption,
+byte ranges and live playlists) fails closed, rather than omitting that traffic.
+Confirm the actual fixture format first. A protocol probe does not decode video;
+independent real-player startup, buffering, audio, seek and dropped-frame evidence
+is required. Normal token refresh and playback-grant renewal remain active.
+
+PDF timing includes preparation, polling and the complete file. A fast job-create
+response is not a completed download. Same-account warm PDF reuse is not evidence
+of different members' cold watermark capacity.
+
+The browser stops on stale admission, timeout/budgets, 429 or an operation failure.
+SLO/error summaries are checked independently of request status; low-sample
+results never establish a final percentile. An operation failure is a safety stop,
+not proof of a capacity ceiling. Terminal partial/cancelled samples remain in the
+evidence. A final capacity pass additionally requires the external statistical,
+resource, recovery and minimum-sample gates.
+
+Focused offline checks:
+
+```sh
+corepack pnpm exec vitest run scripts/member-capacity-model.node.test.ts scripts/member-capacity.runner.test.ts
+corepack pnpm exec tsc --noEmit
+```
+
+The runner fixture mocks upstream clients and uses synthetic complete response
+bodies. It is not a production integration or a live-readiness claim. Repository
+checks, PR CI, runtime admission and real acceptance are separate evidence.
+
+## Revised API-only latency gate
+
+Bulk PDF bodies, recording cover images, HLS playlists and segments remain actual
+load and retain timings/errors/bytes, but are excluded from the API latency pool.
+Session, CSRF/token, recording watch/interactions/metrics/comments and cookie
+methods have separate sanitized endpoint labels. All other control APIs, including
+PDF job creation/status and media authorization, remain in aggregate and per-API
+p95 ≤ 1000 ms / p99 ≤ 2000 ms gates. Each gate requires 1000 attempts before a
+latency verdict; insufficient coverage is never a final capacity pass.
+Logical operation timing remains diagnostic. Normal hold expiry stops new
+operations and drains already-started operations; safety stops still abort promptly.
+
+
+## Capacity exploration supersedes fixed latency acceptance
+
+The latest authorized objective is the sustainable capacity boundary. The 1/2-second
+lines remain experience references only and do not stop a run. API percentiles,
+sample counts and completed throughput are retained per stage. The coordinator
+must review each stage before increasing load: hold when latency degrades, allow
+bounded stabilization for scaling, repeat sustained degradation, then refine
+between the last sustainable and degraded levels. No automatic ladder should
+advance without that review. Sparse samples cannot prove a percentile verdict.
+Functional, error-rate, policy, generator and service-resource guards remain.
