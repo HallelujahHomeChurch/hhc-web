@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import {spawn, spawnSync} from 'node:child_process';
+import {once} from 'node:events';
 import {createServer} from 'node:http';
+import {createConnection} from 'node:net';
+import {startInternalIngress} from './internal-ingress.mjs';
 import {test} from 'node:test';
 import {setTimeout as delay} from 'node:timers/promises';
 
@@ -157,4 +160,66 @@ test('invalid enabled configuration stops startup and disabled mode opens no lis
     timeout: 1000,
   });
   assert.equal(disabled.status, 0);
+});
+
+
+test('draining completes the active response and refuses pipelined requests', {timeout: 5000}, async t => {
+  const forwarded = [];
+  let activeResponse;
+  const upstream = createServer((req, res) => {
+    forwarded.push(req.url);
+    if (req.url !== '/stream') {
+      res.end('unexpected');
+      return;
+    }
+    activeResponse = res;
+    res.writeHead(200, {'Content-Length': 11});
+    res.write('before');
+  });
+  await new Promise(resolve => upstream.listen(0, '127.0.0.1', resolve));
+  t.after(() => { upstream.closeAllConnections(); upstream.close(); });
+  const reservation = createServer();
+  await new Promise(resolve => reservation.listen(0, '127.0.0.1', resolve));
+  const port = reservation.address().port;
+  await new Promise(resolve => reservation.close(resolve));
+
+  const env = process.env;
+  process.env = {...env, HHC_WEB_INGRESS_AUTH: 'true', HHC_WEB_GATEWAY_TOKEN: current,
+    HHC_WEB_GATEWAY_TOKEN_NEXT: next, HHC_WEB_INGRESS_PORT: String(port), PORT: String(upstream.address().port)};
+  t.after(() => { process.env = env; });
+  const ingress = await startInternalIngress();
+  t.after(() => { ingress.closeAllConnections(); ingress.close(); });
+
+  const socket = createConnection(port, '127.0.0.1');
+  t.after(() => socket.destroy());
+  socket.setEncoding('utf8');
+  await once(socket, 'connect');
+  let wire = '';
+  let receivedBefore, receivedBoth;
+  const before = new Promise(resolve => { receivedBefore = resolve; });
+  const both = new Promise(resolve => { receivedBoth = resolve; });
+  socket.on('data', chunk => {
+    wire += chunk;
+    if (wire.includes('\r\n\r\nbefore')) receivedBefore();
+    if (/beforeafterHTTP\/1\.1 [\s\S]*?\r\n\r\n/.test(wire)) receivedBoth();
+  });
+  const request = path => `GET ${path} HTTP/1.1\r\nHost: localhost\r\nX-HHC-Web-Gateway-Token: ${current}\r\n\r\n`;
+  socket.write(request('/stream'));
+  await before;
+  const drained = once(ingress, 'close');
+  ingress.close();
+  const second = once(ingress, 'request');
+  const closed = once(socket, 'close');
+  socket.write(request('/late'));
+  await second;
+  activeResponse.end('after');
+  await both;
+  socket.end();
+  await closed;
+  await drained;
+
+  assert.match(wire, /^HTTP\/1\.1 200 [\s\S]*?\r\n\r\nbeforeafterHTTP\/1\.1 503 /);
+  assert.match(wire, /cache-control: no-store/i);
+  assert.match(wire, /connection: close/i);
+  assert.deepEqual(forwarded, ['/stream']);
 });
