@@ -29,7 +29,7 @@ function markAnalyticsStarted() {
 
 const MediaDocumentContext = createContext({
   analyticsAllowed: true,
-  privateMediaReady: true,
+  privateMediaReady: false,
   markAnalyticsStarted: () => {},
 });
 

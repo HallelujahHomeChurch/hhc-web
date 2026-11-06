@@ -1,4 +1,5 @@
 const interactions=vi.hoisted(()=>vi.fn());
+vi.mock('@/components/layout/MediaDocument', () => ({useMediaDocument: () => ({privateMediaReady: true})}));
 vi.mock('./VideoInteractions',async()=>{const {VideoInformation}=await import('./VideoInformation');return {VideoInteractions:({children,recommendations,...props}:import('react').ComponentProps<typeof VideoInformation>&{children?:import('react').ReactNode;recommendations?:import('react').ReactNode})=>{interactions(props);return <><VideoInformation {...props} metrics={null}/>{children}{recommendations}</>;}};});
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react';
