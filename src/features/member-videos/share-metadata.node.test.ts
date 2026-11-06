@@ -4,7 +4,7 @@ import {productLocales} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 
 const id = '11111111-1111-1111-1111-111111111111';
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe('single-recording public share metadata', () => {
   it.each(productLocales)('uses only the public title and selected cover for %s', async locale => {
@@ -48,14 +48,17 @@ describe('single-recording public share metadata', () => {
   });
 });
 
-it('uses locale-independent canonical short metadata without sending personal preference headers', async () => {
+it('uses the private public origin for canonical short metadata without personal preference headers', async () => {
+  const base = 'https://hhc-web-api.internal.fixture.eastasia.azurecontainerapps.io/api';
+  vi.stubEnv('HHC_WEB_PUBLIC_API_BASE_URL', base);
   const {videoShareMetadata} = await import('./share-metadata');
   const fetcher=vi.fn().mockResolvedValue(Response.json({data:{title:'Source title'}}));
   vi.stubGlobal('fetch',fetcher);
   const metadata=await videoShareMetadata('FA0AoBO02uU');
   expect(metadata.alternates).toMatchObject({canonical:'https://www.alive.org.tw/video/FA0AoBO02uU'});
   expect(metadata.openGraph).toMatchObject({title:'Source title',images:[{url:'https://www.alive.org.tw/api/video-previews/FA0AoBO02uU/cover'}]});
-  expect(fetcher.mock.calls[0][1]).toMatchObject({credentials:'omit',cache:'no-store'});
+  expect(fetcher.mock.calls[0][0]).toBe(base + '/video-previews/FA0AoBO02uU');
+  expect(fetcher.mock.calls[0][1]).toMatchObject({credentials:'omit',cache:'no-store',redirect:'error'});
   expect(fetcher.mock.calls[0][1].headers).toBeUndefined();
 });
 

@@ -9,6 +9,7 @@ param enableInternalIngress bool = true
 param enableHistoryPrivateHttps bool = false
 param enableAboutPrivateHttps bool = false
 param enableNewsPrivateHttps bool = false
+param enablePublicCmsPrivateHttps bool = false
 @secure()
 param internalGatewayToken string = ''
 @description('Server trace probability; release validates 0 through 0.1. Zero disables trace export.')
@@ -95,6 +96,12 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             ...(enableNewsPrivateHttps ? [
               {
                 name: 'HHC_WEB_NEWS_API_BASE_URL'
+                value: 'https://hhc-web-api.internal.${environment.properties.defaultDomain}/api'
+              }
+            ] : [])
+            ...(enablePublicCmsPrivateHttps ? [
+              {
+                name: 'HHC_WEB_PUBLIC_API_BASE_URL'
                 value: 'https://hhc-web-api.internal.${environment.properties.defaultDomain}/api'
               }
             ] : [])
