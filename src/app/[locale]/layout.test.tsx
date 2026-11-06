@@ -5,6 +5,7 @@ import {join} from 'node:path';
 import {AccountControlView} from '@/components/layout/AccountControl';
 import LocaleLayout, {generateStaticParams} from './layout';
 
+vi.mock('next/navigation', async importOriginal => ({...await importOriginal<typeof import('next/navigation')>(), useRouter: () => ({push: vi.fn()})}));
 vi.mock('next-intl/server', () => ({setRequestLocale: vi.fn()}));
 vi.mock('@/lib/browser-bootstrap', () => ({
   clearSharedAccountSession: vi.fn(),
