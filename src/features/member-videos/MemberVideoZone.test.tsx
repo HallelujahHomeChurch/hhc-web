@@ -909,7 +909,7 @@ it.each([false,true])('preserves lock handoff unless an authority expiry interve
 
 describe('persistent member playback', () => {
   const labels = {
-    resume: 'Continue watching', live: 'Return to live', close: 'Close player',
+    removeResume: 'Remove from continue watching', resume: 'Continue watching', live: 'Return to live', close: 'Close player',
     expand: 'Expand player', minimize: 'Minimize player', move: 'Move player', resize: 'Resize player',
   };
 
