@@ -20,6 +20,11 @@ test('internal ingress preserves wire contracts and rejects untrusted credential
       res.on('close', cancelled);
       return;
     }
+    if (req.url.startsWith('/upstream-timeout')) {
+      res.writeHead(504);
+      res.end();
+      return;
+    }
     if (req.url === '/redirect') {
       res.writeHead(307, {Location: 'https://destination.invalid/'});
       res.end();
@@ -38,11 +43,14 @@ test('internal ingress preserves wire contracts and rejects untrusted credential
   await new Promise(resolve => reservation.listen(0, '127.0.0.1', resolve));
   const port = reservation.address().port;
   await new Promise(resolve => reservation.close(resolve));
+  const diagnostics = [];
   const child = spawn(process.execPath, ['--input-type=module', '-e', `import {startInternalIngress} from ${JSON.stringify(modulePath)}; await startInternalIngress();`], {
     env: {...process.env, HHC_WEB_INGRESS_AUTH: 'true', HHC_WEB_GATEWAY_TOKEN: current,
       HHC_WEB_GATEWAY_TOKEN_NEXT: next, HHC_WEB_INGRESS_PORT: String(port), PORT: String(upstream.address().port)},
-    stdio: 'ignore',
+    stdio: ['ignore', 'ignore', 'pipe'],
   });
+  child.stderr.setEncoding('utf8');
+  child.stderr.on('data', chunk => diagnostics.push(chunk));
   t.after(async () => {
     child.kill('SIGTERM');
     await Promise.race([new Promise(resolve => child.once('exit', resolve)), delay(1000)]);
@@ -88,15 +96,43 @@ test('internal ingress preserves wire contracts and rejects untrusted credential
   assert.equal(redirect.status, 307);
   assert.equal(redirect.headers.get('location'), 'https://destination.invalid/');
   await redirect.arrayBuffer();
+  const traceId = '2'.repeat(32);
+  const headers = {
+    'x-hhc-web-gateway-token': current,
+    'x-hhc-request-id': '1'.repeat(32),
+    traceparent: `00-${traceId}-${'3'.repeat(16)}-01`,
+    cookie: 'fixture=private-cookie',
+  };
+  const timeout = await fetch(origin + '/upstream-timeout?credential=private-query', {headers});
+  assert.equal(timeout.status, 504);
+  await timeout.arrayBuffer();
   const controller = new AbortController();
-  const stream = await fetch(origin + '/stream', {signal: controller.signal, headers: {'x-hhc-web-gateway-token': current}});
+  const stream = await fetch(origin + '/stream', {signal: controller.signal, headers});
   await stream.body.getReader().read();
   controller.abort();
   await Promise.race([cancellation, delay(1000).then(() => { throw new Error('upstream cancellation was not propagated'); })]);
   await new Promise(resolve => upstream.close(resolve));
-  const failed = await fetch(origin + '/failure', {headers: {'x-hhc-web-gateway-token': current}});
+  const failed = await fetch(origin + '/failure', {headers});
   assert.equal(failed.status, 502);
   await failed.arrayBuffer();
+  const invalidId = await fetch(origin + '/failure', {headers: {...headers, 'x-hhc-request-id': current}});
+  assert.equal(invalidId.status, 502);
+  await invalidId.arrayBuffer();
+  for (let i = 0; i < 20 && diagnostics.join('').trim().split('\n').length < 3; i++) await delay(20);
+  const output = diagnostics.join('').trim();
+  assert.ok(output, 'expected private ingress failure diagnostics');
+  assert.ok(!output.includes(current) && !output.includes('private-cookie') && !output.includes('private-query'));
+  const events = output.split('\n').map(line => JSON.parse(line));
+  assert.equal(events.length, 3);
+  for (const event of events) {
+    assert.equal(event.event, 'hhc_web_internal_ingress_failure');
+    assert.equal(event.request_id, headers['x-hhc-request-id']);
+    assert.equal(event.trace_id, traceId);
+    assert.ok(event.elapsed_ms >= 0);
+  }
+  assert.ok(events.some(event => event.outcome === 'upstream_response' && event.upstream_status === 504 && event.header_ms >= 0));
+  assert.ok(events.some(event => event.outcome === 'downstream_closed' && event.upstream_status === 200));
+  assert.ok(events.some(event => event.outcome === 'upstream_error' && event.status === 502 && event.header_ms === null));
 });
 
 

@@ -95,6 +95,11 @@ The original Dapr app channel remains separate. This preserves Next's internal
 image-optimization requests, which omit request headers. The image fixture
 checks authenticated SSR, assets, local image optimization and SIGTERM drain. The Node wire
 test covers body/path encoding, Range/206, redirect passthrough and cancellation.
+For authenticated Gateway requests with a valid request ID, the listener emits
+one `hhc_web_internal_ingress_failure` event on 5xx or an incomplete response.
+The event distinguishes a Next response, an upstream transport error and a
+downstream close. It includes bounded correlation and elapsed/header timings
+without the URL, headers, credentials or raw error.
 Use a reviewed producer ingress/credential preview and verify both listener and
 Dapr paths before switching any Gateway route.
 
