@@ -11,7 +11,7 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
   let owner: RecordingProgressOwner | undefined;
   let sequence = 0;
   let writing = false;
-  let next: {positionSeconds: number; state: RecordingProgressUpdate['state']; keepalive: boolean} | undefined;
+  let next: {positionSeconds: number; state: RecordingProgressUpdate['state']} | undefined;
   let retryAt = 0;
   let retryTimer: ReturnType<typeof setTimeout> | undefined;
   let acknowledged: Pick<RecordingProgressUpdate, 'positionSeconds' | 'state'> | undefined;
@@ -32,7 +32,7 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
       await api.saveProgress(id, {
         sessionId, generation: owner.generation, mediaVersion: owner.mediaVersion,
         sequence: ++sequence, positionSeconds: update.positionSeconds, state: update.state,
-      }, update.keepalive ? {keepalive: true} : {signal});
+      }, {signal});
       if (owner === writingOwner) acknowledged = update;
       attempt = 0;
     } catch (error) {
@@ -110,10 +110,23 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
       }
     },
     playing,
-    save(positionSeconds: number, state: RecordingProgressUpdate['state'], keepalive = false) {
+    save(positionSeconds: number, state: RecordingProgressUpdate['state']) {
       if (!owner || !Number.isFinite(positionSeconds) || positionSeconds < 0) return;
-      next = {positionSeconds, state, keepalive};
+      next = {positionSeconds, state};
       return drain();
+    },
+    flush(positionSeconds: number, state: RecordingProgressUpdate['state']) {
+      if (!owner || !Number.isFinite(positionSeconds) || positionSeconds < 0 || signal.aborted || Date.now() < retryAt ||
+        (!writing && acknowledged?.positionSeconds === positionSeconds && acknowledged.state === state)) return;
+      const writingOwner = owner;
+      next = undefined;
+      // A terminal keepalive can outlive an older request. Its newer sequence fences that request.
+      void api.saveProgress(id, {
+        sessionId, generation: owner.generation, mediaVersion: owner.mediaVersion,
+        sequence: ++sequence, positionSeconds, state,
+      }, {keepalive: true}).catch(error => {
+        if (owner === writingOwner && statusOf(error) === 409) owner = undefined;
+      });
     },
   };
 }

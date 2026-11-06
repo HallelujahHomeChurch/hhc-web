@@ -17,7 +17,9 @@ export function usePlaybackProgress(api: ProgressAPI, id: string | undefined, ve
     const save = (keepalive = false) => {
       const active = media.current;
       if (!active || active.readyState < 1) return;
-      void current.save(active.currentTime, active.ended ? 'ended' : active.paused ? 'paused' : active.seeking || active.readyState < 2 ? 'waiting' : 'playing', keepalive);
+      const state = active.ended ? 'ended' : active.paused ? 'paused' : active.seeking || active.readyState < 2 ? 'waiting' : 'playing';
+      if (keepalive) current.flush(active.currentTime, state);
+      else void current.save(active.currentTime, state);
     };
     const playing = (event: Event) => {
       const active = media.current;

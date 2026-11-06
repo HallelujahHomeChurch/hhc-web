@@ -66,11 +66,14 @@ function MemberPlaybackProvider({children, locale, labels, member}: Props & {mem
     restoreScroll.current = undefined;
     return value;
   }, []);
+  const playbackAccess = useRef<{flush: () => void; time: () => number} | null>(null);
+  const previousPlaybackKey = playback?.key;
   const start = useCallback((next: Playback, explicit = false) => {
     if (!explicit && closed === next.key) return;
+    if (previousPlaybackKey && previousPlaybackKey !== next.key) playbackAccess.current?.flush();
     setPlayback(next);
     if (explicit) setClosed(undefined);
-  }, [closed]);
+  }, [closed, previousPlaybackKey]);
   const setSlot = useCallback((key: string, element: HTMLElement | null) => {
     setWatchSlot(current => element ? {key, element} : current?.key === key ? null : current);
     if (!element) setClosed(current => current === key ? undefined : current);
@@ -79,7 +82,6 @@ function MemberPlaybackProvider({children, locale, labels, member}: Props & {mem
     setClosed(key);
     setPlayback(current => current?.key === key ? null : current);
   }, []);
-  const playbackAccess = useRef<{flush: () => void; time: () => number} | null>(null);
   const registerPlayback = useCallback((flush: () => void, time: () => number) => {
     const value = {flush, time};
     playbackAccess.current = value;
