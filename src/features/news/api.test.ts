@@ -1,4 +1,5 @@
-import {describe, expect, it} from 'vitest';
+import {afterEach, describe, expect, it, vi} from 'vitest';
+import {publicContentClient} from '@/features/content/client';
 import type {HhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
 import {getNews, getNewsBySlug, getNewsPage} from './api';
 
@@ -88,5 +89,51 @@ describe('getNews', () => {
       items: [{title: '消息', requestedLocale: 'zh-Hant', resolvedLocale: 'zh-Hant', availableLocales: ['zh-Hant']}],
       meta: {page: 2, pageSize: 12, total: 25}
     });
+  });
+});
+
+describe('ordinary News transport', () => {
+  const privateBase = 'https://hhc-web-api.internal.example.eastasia.azurecontainerapps.io/api';
+  const daprBase = 'http://127.0.0.1:3500/v1.0/invoke/hhc-web-api/method/api';
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it('switches paged list and default detail while keeping the explicit no-store reader on Dapr', async () => {
+    vi.stubEnv('HHC_WEB_NEWS_API_BASE_URL', privateBase);
+    vi.stubEnv('HHC_WEB_API_BASE_URL', daprBase);
+    const item = {id: 'one', title: 'Published'};
+    const fetch = vi.fn<typeof globalThis.fetch>()
+      .mockImplementationOnce(async () => Response.json({data: [item], meta: {page: 2, pageSize: 12, total: 25}}))
+      .mockImplementation(async () => Response.json({data: item}));
+    vi.stubGlobal('fetch', fetch);
+
+    await expect(getNewsPage('ja', 2, 12)).resolves.toMatchObject({meta: {page: 2, pageSize: 12, total: 25}});
+    await getNewsBySlug('en', 'ordinary-news');
+    await getNewsBySlug('en', 'statement', publicContentClient(true));
+
+    expect(fetch.mock.calls.map(([request]) => (request as Request).url)).toEqual([
+      privateBase + '/news?locale=ja&page=2&pageSize=12',
+      privateBase + '/news/ordinary-news?locale=en',
+      daprBase + '/news/statement?locale=en'
+    ]);
+    for (const [request, init] of fetch.mock.calls.slice(0, 2)) {
+      expect((request as Request).headers.get('authorization')).toBeNull();
+      expect(init).toMatchObject({redirect: 'error', next: {revalidate: 60}});
+    }
+    expect(fetch.mock.calls[2][1]).toMatchObject({redirect: 'error', cache: 'no-store'});
+  });
+
+  it('keeps default detail on Dapr with the flag off and propagates 404', async () => {
+    vi.stubEnv('HHC_WEB_NEWS_API_BASE_URL', undefined);
+    vi.stubEnv('HHC_WEB_API_BASE_URL', daprBase);
+    const fetch = vi.fn<typeof globalThis.fetch>()
+      .mockImplementation(async () => Response.json({code: 'not_found'}, {status: 404}));
+    vi.stubGlobal('fetch', fetch);
+
+    await expect(getNewsBySlug('en', 'absent')).rejects.toMatchObject({status: 404});
+    expect((fetch.mock.calls[0][0] as Request).url).toBe(daprBase + '/news/absent?locale=en');
   });
 });

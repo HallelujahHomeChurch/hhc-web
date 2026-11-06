@@ -282,6 +282,7 @@ jobs:
       SENTRY_TRACES_SAMPLE_RATE: ${{ vars.SENTRY_TRACES_SAMPLE_RATE || '0.01' }}
       HHC_WEB_HISTORY_PRIVATE_HTTPS: ${{ vars.HHC_WEB_HISTORY_PRIVATE_HTTPS || 'false' }}
       HHC_WEB_ABOUT_PRIVATE_HTTPS: ${{ vars.HHC_WEB_ABOUT_PRIVATE_HTTPS || 'false' }}
+      HHC_WEB_NEWS_PRIVATE_HTTPS: ${{ vars.HHC_WEB_NEWS_PRIVATE_HTTPS || 'false' }}
       MEMBER_VIDEO_NAV_ENABLED: ${{ vars.MEMBER_VIDEO_NAV_ENABLED || 'false' }}
       WEEKLY_READER_ENABLED: ${{ vars.WEEKLY_READER_ENABLED || 'false' }}
     steps:
@@ -298,6 +299,7 @@ jobs:
           [[ "$WEEKLY_READER_ENABLED" == false || "$WEEKLY_READER_ENABLED" == true ]]
           [[ "$HHC_WEB_HISTORY_PRIVATE_HTTPS" == false || "$HHC_WEB_HISTORY_PRIVATE_HTTPS" == true ]]
           [[ "$HHC_WEB_ABOUT_PRIVATE_HTTPS" == false || "$HHC_WEB_ABOUT_PRIVATE_HTTPS" == true ]]
+          [[ "$HHC_WEB_NEWS_PRIVATE_HTTPS" == false || "$HHC_WEB_NEWS_PRIVATE_HTTPS" == true ]]
       - name: Validate prepared image
         env:
           PREPARED_IMAGE: ${{ needs.prepare_image.outputs.image }}
@@ -350,12 +352,16 @@ jobs:
             previous_about_base="$(az containerapp revision show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
               --revision "$revision" --query "properties.template.containers[0].env[?name=='HHC_WEB_ABOUT_API_BASE_URL'].value | [0]" -o tsv --only-show-errors)"
             [[ -z "$previous_about_base" || "$previous_about_base" =~ ^https://hhc-web-api\.internal\.[a-z0-9-]+\.[a-z0-9-]+\.azurecontainerapps\.io/api$ ]]
+            previous_news_base="$(az containerapp revision show -g "$RESOURCE_GROUP" -n "$APP_NAME" \
+              --revision "$revision" --query "properties.template.containers[0].env[?name=='HHC_WEB_NEWS_API_BASE_URL'].value | [0]" -o tsv --only-show-errors)"
+            [[ -z "$previous_news_base" || "$previous_news_base" =~ ^https://hhc-web-api\.internal\.[a-z0-9-]+\.[a-z0-9-]+\.azurecontainerapps\.io/api$ ]]
             {
               echo "PREVIOUS_INTERNAL_INGRESS=$([[ "$target_port" == 10001 ]] && echo true || echo false)"
               echo "PREVIOUS_SENTRY_TRACES_SAMPLE_RATE=$previous_rate"
               echo "HAS_PREVIOUS=true"
               echo "PREVIOUS_READY_REVISION=$revision"
               echo "PREVIOUS_ABOUT_API_BASE_URL=$previous_about_base"
+              echo "PREVIOUS_NEWS_API_BASE_URL=$previous_news_base"
               echo "PREVIOUS_IMAGE_REF=$(resolve_image_ref "$image")"
             } >> "$GITHUB_ENV"
           else
@@ -374,6 +380,7 @@ jobs:
                          internalGatewayToken="$HHC_WEB_GATEWAY_TOKEN" \
                          enableHistoryPrivateHttps="$HHC_WEB_HISTORY_PRIVATE_HTTPS" \
                          enableAboutPrivateHttps="$HHC_WEB_ABOUT_PRIVATE_HTTPS" \
+                         enableNewsPrivateHttps="$HHC_WEB_NEWS_PRIVATE_HTTPS" \
             --validation-level Provider \
             --result-format ResourceIdOnly \
             --only-show-errors
@@ -391,6 +398,7 @@ jobs:
                          internalGatewayToken="$HHC_WEB_GATEWAY_TOKEN" \
                          enableHistoryPrivateHttps="$HHC_WEB_HISTORY_PRIVATE_HTTPS" \
                          enableAboutPrivateHttps="$HHC_WEB_ABOUT_PRIVATE_HTTPS" \
+                         enableNewsPrivateHttps="$HHC_WEB_NEWS_PRIVATE_HTTPS" \
             --only-show-errors --output none
       - name: Wait for revision
         run: python3 scripts/verify-release-runtime.py
@@ -437,10 +445,21 @@ jobs:
             exit 0
           fi
           # Supplying an image to revision copy can inherit current container env.
-          binding=(--remove-env-vars HHC_WEB_ABOUT_API_BASE_URL)
+          remove=()
+          restore=()
           if [[ -n "$PREVIOUS_ABOUT_API_BASE_URL" ]]; then
-            binding=(--set-env-vars "HHC_WEB_ABOUT_API_BASE_URL=$PREVIOUS_ABOUT_API_BASE_URL")
+            restore+=("HHC_WEB_ABOUT_API_BASE_URL=$PREVIOUS_ABOUT_API_BASE_URL")
+          else
+            remove+=(HHC_WEB_ABOUT_API_BASE_URL)
           fi
+          if [[ -n "$PREVIOUS_NEWS_API_BASE_URL" ]]; then
+            restore+=("HHC_WEB_NEWS_API_BASE_URL=$PREVIOUS_NEWS_API_BASE_URL")
+          else
+            remove+=(HHC_WEB_NEWS_API_BASE_URL)
+          fi
+          binding=()
+          if (( ${#remove[@]} )); then binding+=(--remove-env-vars "${remove[@]}"); fi
+          if (( ${#restore[@]} )); then binding+=(--set-env-vars "${restore[@]}"); fi
           az containerapp revision copy \
             -g "$RESOURCE_GROUP" \
             -n "$APP_NAME" \

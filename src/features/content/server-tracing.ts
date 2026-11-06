@@ -23,6 +23,8 @@ export function contentServerTracing() {
   const targets = [contentTraceTarget()];
   const privateHistory = privateContentBaseUrl('HHC_WEB_HISTORY_API_BASE_URL');
   const privateAbout = privateContentBaseUrl('HHC_WEB_ABOUT_API_BASE_URL');
+  const privateNews = privateContentBaseUrl('HHC_WEB_NEWS_API_BASE_URL');
+  if (privateNews) targets.push(contentTraceTarget(`${privateNews}/news`));
   if (privateAbout) targets.push(contentTraceTarget(`${privateAbout}/pages/about`, true));
   if (privateHistory) targets.push(contentTraceTarget(`${privateHistory}/history`, true));
   const rate = serverTraceSampleRate();
