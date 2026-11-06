@@ -11,6 +11,7 @@ import {IDBFactory} from 'fake-indexeddb';
 import {PrivateCoverCache} from '@/lib/private-cover-cache';
 import {PrivateCoverProvider} from '@/lib/use-private-cover';
 
+const authorization = vi.hoisted(() => ({getAccessToken: async () => 'token', refreshAfterUnauthorized: async () => null}));
 const state = vi.hoisted(() => ({access: 'loading', auth: 'checking'}));
 const signIn = vi.hoisted(() => vi.fn());
 const list = vi.hoisted(() => vi.fn());
@@ -18,6 +19,18 @@ const videoApi = vi.hoisted(() => ({watch:vi.fn(),upcoming:vi.fn(),broadcastCove
 const liveSession = vi.hoisted(()=>({playback:null,closed:false,pending:false,error:false,start:vi.fn(),remember:vi.fn(),bookmark:{current:undefined}}));
 vi.mock('./useLivePlayback',()=>({useLivePlayback:()=>liveSession}));
 const router = vi.hoisted(() => ({replace: vi.fn(),push:vi.fn()}));
+const navigate = vi.hoisted(() => vi.fn());
+vi.mock('next/link', () => ({default: ({href, onNavigate, onClick, prefetch, ...props}: import('react').ComponentProps<typeof import('next/link').default>) => {
+  void prefetch;
+  return <a {...props} href={typeof href === 'string' ? href : '#'} onClick={event => {
+    onClick?.(event);
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || props.target === '_blank') return;
+    event.preventDefault();
+    const preventDefault = vi.fn();
+    onNavigate?.({preventDefault});
+    if (!preventDefault.mock.calls.length) navigate(href);
+  }}/>;
+}}));
 const replace = router.replace;
 const captureHandledError = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/observability', () => ({captureHandledError}));
@@ -29,9 +42,9 @@ vi.mock('@/components/layout/AccountControl', () => ({
   useAccountIdentity: () => 'member',
   useAccountAuth: () => ({status: state.auth}),
   useVideoAccess: () => state.access,
-  useBulletinAuthorization: () => ({getAccessToken: async () => 'token', refreshAfterUnauthorized: async () => null})
+  useBulletinAuthorization: () => authorization
 }));
-vi.mock('./api', () => ({createMemberVideoApi: () => videoApi}));
+vi.mock('./api', () => ({createMemberVideoApi: () => ({...videoApi})}));
 vi.mock('hls.js',()=>({default:class {static isSupported(){return false;}}}));
 
 const messages = {
@@ -47,7 +60,7 @@ const messages = {
 beforeEach(() => {
   state.access = 'loading'; state.auth = 'checking';
   liveSession.bookmark.current=undefined;
-  list.mockReset(); replace.mockReset();
+  list.mockReset(); replace.mockReset(); navigate.mockReset();
   captureHandledError.mockReset();interactions.mockClear();
   list.mockResolvedValue([]);
   videoApi.list.mockReset().mockImplementation(list);
@@ -900,6 +913,42 @@ describe('persistent member playback', () => {
     expand: 'Expand player', minimize: 'Minimize player', move: 'Move player', resize: 'Resize player',
   };
 
+  it('navigates a different thumbnail to its watch page and stops the prior player before resolution', async () => {
+    const {PlaybackProvider} = await import('./PlaybackProvider');
+    state.auth = 'authenticated'; state.access = 'available';
+    const a = {id: 'r1', title: 'First recording', publicId: 'aB_012-xyzQ', packageId};
+    const b = {id: 'r2', title: 'Second recording', publicId: 'bB_012-xyzQ', packageId: 'b'.repeat(32)};
+    list.mockResolvedValue([a, b]);
+    videoApi.upcoming.mockResolvedValue({items: [], nextCursor: null});
+    videoApi.grant.mockResolvedValue({packageId, expiresAt: new Date(Date.now() + 3600000).toISOString()});
+    videoApi.exchange.mockResolvedValue(playbackUrl);
+    function Fixture({route}: {route: 'r1' | 'r2' | 'list'}) {
+      return <PlaybackProvider locale="en" labels={labels}>
+        <MemberVideoZone locale="en" messages={messages} hero={null} view={route === 'list' ? 'list' : 'watch'} recordingId={route === 'list' ? undefined : route}/>
+      </PlaybackProvider>;
+    }
+    const view = render(<Fixture route="r1"/>);
+    await screen.findByLabelText(a.title);
+    const video = view.container.querySelector('video');
+    view.rerender(<Fixture route="list"/>);
+    await screen.findByRole('link', {name: b.title});
+    const thumbnail = view.container.querySelector<HTMLAnchorElement>('a[aria-hidden="true"][href="/video/bB_012-xyzQ"]')!;
+    expect(thumbnail).not.toBeNull();
+    fireEvent.click(thumbnail, {ctrlKey: true});
+    expect(navigate).not.toHaveBeenCalled();
+    expect(videoApi.grant).toHaveBeenCalledTimes(1);
+    fireEvent.click(thumbnail);
+    expect(navigate).toHaveBeenCalledWith('/video/bB_012-xyzQ');
+    await act(async () => {});
+    expect(view.container.querySelector('video')).toBe(video);
+    expect(videoApi.grant).toHaveBeenCalledTimes(1);
+    videoApi.watch.mockImplementation(() => new Promise(() => {}));
+    view.rerender(<Fixture route="r2"/>);
+    await act(async () => {});
+    expect(view.container.querySelector('video')).toBeNull();
+    expect(screen.queryByLabelText(a.title)).toBeNull();
+  });
+
   it.each(['vod', 'live'] as const)('keeps the mounted %s media through route changes and removes it on logout', async (kind) => {
     const {PlaybackProvider} = await import('./PlaybackProvider');
     state.auth = 'authenticated';
@@ -946,8 +995,27 @@ describe('persistent member playback', () => {
       expect(videoApi.clear).toHaveBeenCalledTimes(clears);
       view.rerender(<Fixture watch/>);
       await waitFor(() => expect(video?.closest('[data-presentation]')).toHaveAttribute('data-presentation', 'watch'));
+      expect(videoApi.clear).toHaveBeenCalledTimes(clears);
+      expect(videoApi.grant).toHaveBeenCalledTimes(grants);
       expect(view.container.querySelector('video')).toBe(video);
       expect(view.container.querySelector('audio')).toBe(audio);
+      if (kind === 'vod') {
+        vi.useFakeTimers();
+        let exchanged!: (url: string) => void;
+        videoApi.exchange.mockImplementationOnce(() => new Promise<string>(resolve => { exchanged = resolve; }));
+        videoApi.grant.mockResolvedValue({packageId, expiresAt: new Date(Date.now() + 7200000).toISOString(), audio: {version: 'aac-hls-v1', playlistPath: 'audio/aac-hls-v1/index.m3u8'}});
+        vi.setSystemTime(Date.now() + 45 * 60000);
+        await act(async () => { window.dispatchEvent(new Event('online')); });
+        expect(exchanged).toBeDefined();
+        view.rerender(<Fixture watch={false}/>);
+        view.rerender(<Fixture watch/>);
+        await act(async () => {});
+        await act(async () => { exchanged(playbackUrl); });
+        expect(videoApi.clear).toHaveBeenCalledTimes(clears);
+        expect(view.container.querySelector('video')).toBe(video);
+        expect(view.container.querySelector('audio')).toBe(audio);
+        vi.useRealTimers();
+      }
       state.auth = 'anonymous';
       state.access = 'denied';
       view.rerender(<Fixture watch={false}/>);

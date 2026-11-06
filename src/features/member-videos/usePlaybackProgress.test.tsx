@@ -132,3 +132,36 @@ it('returns control to playback when a progress lookup never settles', async () 
     vi.useRealTimers();
   }
 });
+
+
+it('retains the progress owner and sequence while using the latest route client', async () => {
+  const api = {
+    progress: vi.fn().mockResolvedValue({mediaVersion: version, claimToken: 'token', progress: null}),
+    claimProgress: vi.fn().mockResolvedValue({generation: 'owner', mediaVersion: version, positionSeconds: 0, sequence: 0}),
+    saveProgress: vi.fn().mockResolvedValue({accepted: true, sequence: 1}),
+  };
+  const next = {...api, saveProgress: vi.fn().mockResolvedValue({accepted: true, sequence: 2})};
+  function Player({client}: {client: typeof api}) {
+    const surface = useRef<HTMLDivElement>(null);
+    const media = useRef<HTMLVideoElement>(null);
+    const prepare = usePlaybackProgress(client, 'recording', version, surface, media, true);
+    useEffect(() => { void prepare('resume'); }, [prepare]);
+    return <div ref={surface}><video ref={media}/></div>;
+  }
+  const view = render(<Player client={api}/>);
+  const video = view.container.querySelector('video')!;
+  Object.defineProperties(video, {paused: {value: false}, readyState: {value: 4}});
+  await act(async () => {});
+  await act(async () => { video.dispatchEvent(new Event('playing')); });
+  video.currentTime = 4;
+  await act(async () => { video.dispatchEvent(new Event('seeked')); });
+  const original = api.saveProgress.mock.calls[0][1];
+  view.rerender(<Player client={next}/>);
+  video.currentTime = 8;
+  await act(async () => { video.dispatchEvent(new Event('seeked')); });
+  expect(next.saveProgress).toHaveBeenCalledWith('recording', expect.objectContaining({
+    sessionId: original.sessionId, generation: 'owner', sequence: 2, positionSeconds: 8,
+  }), expect.anything());
+  expect(api.claimProgress).toHaveBeenCalledTimes(1);
+  expect(api.progress).toHaveBeenCalledTimes(1);
+});

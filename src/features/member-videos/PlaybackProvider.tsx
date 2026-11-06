@@ -2,7 +2,6 @@
 
 import {createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode} from 'react';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import {ArrowUpRight, X} from 'lucide-react';
 import {useAccountIdentity, useVideoAccess} from '@/components/layout/AccountControl';
 import {useMediaDocument} from '@/components/layout/MediaDocument';
@@ -14,6 +13,9 @@ type Slot = {key: string; element: HTMLElement};
 type PlaybackControl = {
   activeKey: string | undefined;
   activeHref: string | undefined;
+  resumeDismissed: string | undefined;
+  dismissResume: (generation: string) => void;
+  closedRecording: boolean;
   labels: ContinuityLabels;
   inWatch: boolean;
   start: (playback: Playback, explicit?: boolean) => void;
@@ -25,7 +27,6 @@ type PlaybackControl = {
   registerPlayback: (flush: () => void, time: () => number) => () => void;
   currentTime: () => number;
 };
-const ContinueWatching = dynamic(() => import('./ContinueWatching').then(module => module.ContinueWatching), {ssr: false});
 
 const Context = createContext<PlaybackControl | null>(null);
 export const usePersistentPlayback = () => useContext(Context);
@@ -40,7 +41,7 @@ export function PlaybackProvider({children, locale, labels}: Props) {
   return <MemberPlaybackProvider member={member} locale={locale} labels={labels}>{children}</MemberPlaybackProvider>;
 }
 
-function MemberPlaybackProvider({children, locale, labels, member}: Props & {member: string | null}) {
+function MemberPlaybackProvider({children, labels, member}: Props & {member: string | null}) {
   const [playback, setPlayback] = useState<Playback | null>(null);
   const [slot, setWatchSlot] = useState<Slot | null>(null);
   const [dismissed, dismiss] = useState<string>();
@@ -72,16 +73,17 @@ function MemberPlaybackProvider({children, locale, labels, member}: Props & {mem
     if (!explicit && closed === next.key) return;
     if (previousPlaybackKey && previousPlaybackKey !== next.key) playbackAccess.current?.flush();
     setPlayback(next);
-    if (explicit) setClosed(undefined);
+    if (explicit || next.key !== closed) setClosed(undefined);
   }, [closed, previousPlaybackKey]);
   const setSlot = useCallback((key: string, element: HTMLElement | null) => {
     setWatchSlot(current => element ? {key, element} : current?.key === key ? null : current);
     if (!element) setClosed(current => current === key ? undefined : current);
   }, []);
   const close = useCallback((key: string) => {
+    if (previousPlaybackKey === key) playbackAccess.current?.flush();
     setClosed(key);
     setPlayback(current => current?.key === key ? null : current);
-  }, []);
+  }, [previousPlaybackKey]);
   const registerPlayback = useCallback((flush: () => void, time: () => number) => {
     const value = {flush, time};
     playbackAccess.current = value;
@@ -90,14 +92,13 @@ function MemberPlaybackProvider({children, locale, labels, member}: Props & {mem
   const currentTime = useCallback(() => playbackAccess.current?.time() ?? 0, []);
   const activeKey = playback?.key;
   const activeHref = playback?.href;
-  const closeActive = useCallback(() => { if (activeKey) { playbackAccess.current?.flush(); close(activeKey); } }, [activeKey, close]);
+  const closeActive = useCallback(() => { if (activeKey) close(activeKey); }, [activeKey, close]);
   const watchSlot = playback && slot?.key === playback.key ? slot.element : null;
   const inWatch = Boolean(watchSlot);
-  const controls = useMemo(() => ({activeKey, activeHref, start, setSlot, close, labels, inWatch, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll}), [activeKey, activeHref, start, setSlot, close, labels, inWatch, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll]);
+  const controls = useMemo(() => ({resumeDismissed: dismissed, dismissResume: dismiss, closedRecording: Boolean(closed), activeKey, activeHref, start, setSlot, close, labels, inWatch, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll}), [dismissed, closed, activeKey, activeHref, start, setSlot, close, labels, inWatch, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll]);
 
   return <Context.Provider value={member ? controls : null}>
     {children}
-    {member && !playback && !slot && <ContinueWatching member={member} locale={locale} labels={labels} dismissed={dismissed} dismiss={dismiss}/>}
     {member && playback && <PlaybackHost watchSlot={watchSlot} onClose={closeActive} moveLabel={labels.move} resizeLabel={labels.resize}>
       <div key={playback.key}>{playback.player}</div>
       {!watchSlot && <div className="absolute right-0 top-0 z-10 flex rounded-bl-lg bg-black/80 text-white">

@@ -326,7 +326,7 @@ it.each(['editUnit', 'manageResponsibilities', 'sendNotifications'])('keeps mana
  view.rerender(<OrganizationUnitPage searchQuery="Alice" />)
  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
  expect(screen.queryByRole('button',{name:'Add member'})).not.toBeInTheDocument()
- expect(within(screen.getByRole('table')).queryAllByRole('link')).toHaveLength(0)
+ expect(within(await screen.findByRole('table')).queryAllByRole('link')).toHaveLength(0)
  expect(operationsApi.searchManagedCandidates).toHaveBeenCalledOnce()
  })
 

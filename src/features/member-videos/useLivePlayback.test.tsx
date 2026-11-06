@@ -85,3 +85,20 @@ it('closes as expired at the server replay deadline without a wake event',async(
  }
  expect(onStop).toHaveBeenCalledTimes(1);expect(events).toEqual(['stop','clear']);
 });
+
+it('keeps the live scope, cookie and renewal timer when the route supplies a new API client', async () => {
+ const {api,unmount:dispose}=setup();dispose();
+ const stop=vi.fn();
+ const view=renderHook(({client})=>useLivePlayback(client,id,capture,false,stop),{initialProps:{client:api}});
+ await act(()=>view.result.current.start());
+ const first=view.result.current.playback;
+ const next={liveGrant:vi.fn(api.liveGrant.getMockImplementation()!),exchangeLive:vi.fn(async(g:MemberLivePlayback)=>g.mediaUrl),clearLive:vi.fn().mockResolvedValue(undefined)};
+ view.rerender({client:next});await act(async()=>{});
+ expect(stop).not.toHaveBeenCalled();expect(api.clearLive).not.toHaveBeenCalled();
+ expect(view.result.current.playback).toBe(first);expect(next.liveGrant).not.toHaveBeenCalled();
+ await act(()=>vi.advanceTimersByTimeAsync(240000));
+ expect(next.liveGrant).toHaveBeenCalledTimes(1);
+ expect(next.liveGrant.mock.calls[0][2]).toBe(api.liveGrant.mock.calls[0][2]);
+ view.unmount();await act(async()=>{});
+ expect(next.clearLive).toHaveBeenCalledTimes(1);expect(stop).toHaveBeenCalledTimes(1);
+});

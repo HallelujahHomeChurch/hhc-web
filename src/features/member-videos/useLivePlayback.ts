@@ -1,6 +1,6 @@
 'use client';
 
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {HhcWebApiError, type MemberLivePlayback} from '@hallelujahhomechurch/hhc-web-client';
 import type {createMemberVideoApi} from './api';
 import type {PlayerBookmark} from './live-player';
@@ -9,6 +9,8 @@ type LiveApi=Pick<ReturnType<typeof createMemberVideoApi>,'liveGrant'|'exchangeL
 type Playback={grant:MemberLivePlayback;url:string};
 
 export function useLivePlayback(api:LiveApi,recordingId:string,captureId:string,awaitingMedia=false,onStop?:()=>void){
+ const currentApi = useRef(api);
+ useLayoutEffect(() => { currentApi.current = api; }, [api]);
  const [playback,setPlayback]=useState<Playback|null>(null),[pending,setPending]=useState(false),[error,setError]=useState(false),[closed,setClosed]=useState(false),[expired,setExpired]=useState(false);
  const bookmark=useRef<PlayerBookmark|undefined>(undefined),scope=useRef<string|null>(null);
  const stopPlayback=useRef(onStop);
@@ -25,7 +27,7 @@ export function useLivePlayback(api:LiveApi,recordingId:string,captureId:string,
   const clearCookie=(url:string)=>{
    cookieOperations.current=cookieOperations.current.then(()=>{
     // An expiry during exchange must not delete the renewed same-scope cookie.
-    if(activePlayback.current?.url!==url)return api.clearLive(url);
+    if(activePlayback.current?.url!==url)return currentApi.current.clearLive(url);
    }).catch(()=>{});
   };
   const clear=()=>{
@@ -44,7 +46,7 @@ export function useLivePlayback(api:LiveApi,recordingId:string,captureId:string,
    const requestedAt=Date.now();
    scope.current??=crypto.randomUUID();
    try{
-    const grant=await api.liveGrant(recordingId,captureId,scope.current,controller.signal);
+    const grant=await currentApi.current.liveGrant(recordingId,captureId,scope.current,controller.signal);
     if(controller.signal.aborted)return;
     const server=Date.parse(grant.serverNow),issued=Date.parse(grant.issuedAt),ends=Date.parse(grant.expiresAt);
     const ttl=ends-issued,remaining=ends-server;
@@ -57,7 +59,7 @@ export function useLivePlayback(api:LiveApi,recordingId:string,captureId:string,
     if(Date.now()>=nextExpiry){throw new Error('Live grant expired before exchange');}
     const exchange=cookieOperations.current.then(async()=>{
      if(controller.signal.aborted)return;
-     const url=await api.exchangeLive(grant,controller.signal);
+     const url=await currentApi.current.exchangeLive(grant,controller.signal);
      if(controller.signal.aborted){clearCookie(url);return;}
      if((active&&url!==active.url)||Date.now()>=nextExpiry){stop();clearCookie(url);return;}
      active={grant,url};activePlayback.current=active;expiry=nextExpiry;hardEnd=nextHardEnd;renewAt=expiry-Math.min(60000,ttl*.2);failures=0;
@@ -88,6 +90,6 @@ export function useLivePlayback(api:LiveApi,recordingId:string,captureId:string,
    document.removeEventListener('visibilitychange',wake);window.removeEventListener('pageshow',wake);window.removeEventListener('online',wake);
    if(active){stopPlayback.current?.();const url=active.url;if(activePlayback.current===active)activePlayback.current=null;active=null;clearCookie(url);}
   };
- },[api,recordingId,captureId]);
+ },[recordingId,captureId]);
  return {playback,pending,error,closed,expired,bookmark,remember,start};
 }

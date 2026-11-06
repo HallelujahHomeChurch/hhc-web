@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {HhcWebApiError, type MemberRecording, type MemberRecordingPlayback} from '@hallelujahhomechurch/hhc-web-client';
 import {captureHandledError} from '@/lib/observability';
@@ -25,6 +25,10 @@ type Options = {
 };
 
 export function useVodPlayback({api, identity, locale, messages, selected, recordings, resolveMissing, mediaOrigin, mediaDuration, startAt}: Options) {
+  const currentApi = useRef(api);
+  useLayoutEffect(() => { currentApi.current = api; }, [api]);
+  const currentResolveMissing = useRef(resolveMissing);
+  useLayoutEffect(() => { currentResolveMissing.current = resolveMissing; }, [resolveMissing]);
   const router = useRouter();
   const playerSection = useRef<HTMLDivElement>(null);
   const [vodResume,setVodResume]=useState<PlayerBookmark|undefined>(undefined);
@@ -37,20 +41,20 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
   const diagnostic=useMemo(()=>createPlaybackDiagnostics(),[]),grantGeneration=useRef(0);
   const cookieOperations=useRef(Promise.resolve());
   const clearCookie=useCallback((url:string)=>{
-    cookieOperations.current=cookieOperations.current.then(()=>api.clear(url)).catch(()=>{});
-  },[api]);
+    cookieOperations.current=cookieOperations.current.then(()=>currentApi.current.clear(url)).catch(()=>{});
+  },[]);
   const exchangeCookie=useCallback((grant:MemberRecordingPlayback,signal:AbortSignal)=>{
     const operation=cookieOperations.current.then(async()=>{
       signal.throwIfAborted();
       diagnostic('exchange-start',media.current,grantGeneration.current);
-      const url=await api.exchange(grant,signal);
+      const url=await currentApi.current.exchange(grant,signal);
       diagnostic('exchange-end',media.current,grantGeneration.current);
-      if(signal.aborted){await api.clear(url).catch(()=>{});signal.throwIfAborted();}
+      if(signal.aborted){await currentApi.current.clear(url).catch(()=>{});signal.throwIfAborted();}
       return url;
     });
     cookieOperations.current=operation.then(()=>{},()=>{});
     return operation;
-  },[api,diagnostic]);
+  },[diagnostic]);
   const mediaFailureReported = useRef(false);
   const vodBookmark=useRef<PlayerBookmark|undefined>(undefined), bookmarkFrozen=useRef(false);
   const rememberVod=useCallback((value:PlayerBookmark)=>{if(!bookmarkFrozen.current)vodBookmark.current={...value,mediaOriginSeconds:mediaOrigin??0};},[mediaOrigin]);
@@ -72,7 +76,7 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
     attempt.current?.abort();
     pausePlayback();
     if (playbackRef.current) clearCookie(playbackRef.current.url);
-  }, [api,clearCookie,pausePlayback]);
+  }, [clearCookie,pausePlayback]);
 
   useEffect(()=>{vodBookmark.current=undefined;bookmarkFrozen.current=false;},[identity,selected?.id,selected?.packageId]);
   const stop = useCallback(() => {
@@ -106,7 +110,7 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
       controller.signal.throwIfAborted();
       const initialTime = startAt ?? savedPosition;
       const scopeId = crypto.randomUUID();
-      const grant = await api.grant(selected.id, scopeId, selected.packageId, controller.signal);
+      const grant = await currentApi.current.grant(selected.id, scopeId, selected.packageId, controller.signal);
       const url = await exchangeCookie(grant, controller.signal);
       if (!controller.signal.aborted) {bookmarkFrozen.current=false;diagnostic('accepted',media.current,++grantGeneration.current,(Date.parse(grant.expiresAt)-Date.now())/1000);setVodResume(resume?mapBroadcastBookmark(resume,mediaOrigin,mediaDuration):initialTime!==undefined?{time:Math.min(initialTime,selected.durationSeconds??initialTime),paused:false,rate:1,quality:'auto',intent:'dvr'}:undefined);const accepted={recordingId:selected.id,scopeId,grant,url,backgroundAudio:readyAudio(grant)};playbackRef.current=accepted;setPlayback(accepted);return true;}
     } catch (error) {
@@ -114,18 +118,18 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
         if (error instanceof HhcWebApiError && error.status === 401) {router.replace(`/${locale}`); return;}
         captureHandledError(error, {operation: 'member-videos.playback'});
         if (error instanceof HhcWebApiError && (error.status === 404 || error.status === 409 || error.status === 412)) {
-          try { await resolveMissing(controller.signal); } catch { /* keep the player stopped and offer retry */ }
+          try { await currentResolveMissing.current(controller.signal); } catch { /* keep the player stopped and offer retry */ }
         }
         setPlayError(messages.playError);
       }
     } finally {
       if (!controller.signal.aborted) setPreparing(false);
     }
-  }, [selected, preparing, api, locale, router, resolveMissing, messages.playError,mediaOrigin,mediaDuration,startAt,clearCookie,exchangeCookie,diagnostic,pausePlayback]);
+  }, [selected, preparing, locale, router, messages.playError,mediaOrigin,mediaDuration,startAt,clearCookie,exchangeCookie,diagnostic,pausePlayback]);
 
   const renew = useCallback(async (current: ActivePlayback, signal: AbortSignal) => {
     diagnostic('renew',media.current,grantGeneration.current);
-    const grant = await api.grant(current.recordingId, current.scopeId, current.grant.packageId, signal);
+    const grant = await currentApi.current.grant(current.recordingId, current.scopeId, current.grant.packageId, signal);
     const url = await exchangeCookie(grant, signal);
     if (url !== current.url) throw new Error('Media URL changed during renewal');
     const active=playbackRef.current;
@@ -137,7 +141,7 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
       const next={...active,grant,backgroundAudio};playbackRef.current=next;
       diagnostic('accepted',media.current,++grantGeneration.current,(Date.parse(grant.expiresAt)-Date.now())/1000);setPlayback(next);
     }
-  }, [api,snapshotVod,exchangeCookie,diagnostic,pausePlayback]);
+  }, [snapshotVod,exchangeCookie,diagnostic,pausePlayback]);
 
   const recordingDeadline = recordings?.find(item => item.id === playback?.recordingId)?.expiresAt;
   useEffect(() => {
@@ -174,7 +178,7 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
           clearCookie(playback.url);
           diagnostic('denied',media.current,grantGeneration.current);playbackRef.current=null;setPlayback(null);setPlayError(messages.playError);
           if (error.status === 401) router.replace(`/${locale}`);
-          else try { await resolveMissing(controller.signal); } catch { /* retry remains available */ }
+          else try { await currentResolveMissing.current(controller.signal); } catch { /* retry remains available */ }
         } else if (Date.now() >= expiry) {
           pausePlayback();
           clearCookie(playback.url);
@@ -199,7 +203,7 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
     document.addEventListener('visibilitychange', visible);
     window.addEventListener('online', visible);
     return () => {controller.abort(); window.clearTimeout(timer); window.clearTimeout(expiryTimer); document.removeEventListener('visibilitychange', visible); window.removeEventListener('online', visible);};
-  }, [api, locale, messages.playError, messages.expired, playback, recordingDeadline, renew, resolveMissing, router,clearCookie,diagnostic,pausePlayback]);
+  }, [locale, messages.playError, messages.expired, playback, recordingDeadline, renew, router,clearCookie,diagnostic,pausePlayback]);
 
   useEffect(()=>{
     const section=playerSection.current;if(!section)return;
