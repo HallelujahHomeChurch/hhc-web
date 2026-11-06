@@ -216,9 +216,31 @@ test('About document transport defaults off and rollback restores its captured b
   assert.match(infra, /enableAboutPrivateHttps \? \[\s+{\s+name: 'HHC_WEB_ABOUT_API_BASE_URL'/);
   assert.match(step(deploy, 'Capture current state'), /PREVIOUS_ABOUT_API_BASE_URL=\$previous_about_base/);
   const rollback = step(deploy, 'Roll back failed update');
-  assert.ok(rollback.includes('--remove-env-vars HHC_WEB_ABOUT_API_BASE_URL'));
-  assert.ok(rollback.includes('--set-env-vars "HHC_WEB_ABOUT_API_BASE_URL=$PREVIOUS_ABOUT_API_BASE_URL"'));
+  assert.ok(rollback.includes('remove+=(HHC_WEB_ABOUT_API_BASE_URL)'));
+  assert.ok(rollback.includes('restore+=("HHC_WEB_ABOUT_API_BASE_URL=$PREVIOUS_ABOUT_API_BASE_URL")'));
   assert.ok(rollback.includes('"${binding[@]}"'));
+});
+
+test('News defaults off and restores its captured transport during rollback', () => {
+  const deploy = job('deploy');
+  assert.ok(deploy.includes("HHC_WEB_NEWS_PRIVATE_HTTPS: ${{ vars.HHC_WEB_NEWS_PRIVATE_HTTPS || 'false' }}"));
+  for (const name of ['Preview infrastructure change', 'Deploy']) {
+    assert.ok(step(deploy, name).includes('enableNewsPrivateHttps="$HHC_WEB_NEWS_PRIVATE_HTTPS"'));
+  }
+  const infra = readFileSync(new URL('../infra/main.bicep', import.meta.url), 'utf8');
+  assert.match(infra, /param enableNewsPrivateHttps bool = false/);
+  assert.match(step(deploy, 'Capture current state'), /PREVIOUS_NEWS_API_BASE_URL=\$previous_news_base/);
+  const rollback = step(deploy, 'Roll back failed update');
+  assert.ok(rollback.includes('remove+=(HHC_WEB_NEWS_API_BASE_URL)'));
+  assert.ok(rollback.includes('restore+=("HHC_WEB_NEWS_API_BASE_URL=$PREVIOUS_NEWS_API_BASE_URL")'));
+  const script = rollback.split('        run: |\n')[1].replace(/^          /gm, '');
+  const base = 'https://hhc-web-api.internal.fixture.eastasia.azurecontainerapps.io/api';
+  const result = spawnSync('/bin/bash', ['-e', '-c', 'az() { printf "%s\\n" "$@"; }\n' + script], {
+    env: {...process.env, PREVIOUS_INTERNAL_INGRESS: 'true', PREVIOUS_ABOUT_API_BASE_URL: base, PREVIOUS_NEWS_API_BASE_URL: ''},
+    encoding: 'utf8'
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /--remove-env-vars\nHHC_WEB_NEWS_API_BASE_URL\n--set-env-vars\nHHC_WEB_ABOUT_API_BASE_URL=/);
 });
 
 test('release uses ARM identity and public HTTP without remote execution', () => {

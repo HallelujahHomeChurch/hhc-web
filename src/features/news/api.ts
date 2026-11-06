@@ -1,5 +1,6 @@
 import type {HhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
 import {publicContentClient} from '@/features/content/client';
+import {privateContentBaseUrl} from '@/features/content/config';
 import {formatContentDate, getContentLocaleMetadata} from '@/features/content/locale';
 import type {Locale} from '@/i18n/locales';
 import type {NewsDetail, NewsItem, NewsPage} from './types';
@@ -9,7 +10,11 @@ export async function getNews(locale: Locale, client: HhcWebClient = publicConte
   return values.map((value) => mapNewsItem(value, locale));
 }
 
-export async function getNewsPage(locale: Locale, page: number, pageSize: number, client: HhcWebClient = publicContentClient()): Promise<NewsPage> {
+function newsContentClient() {
+  return publicContentClient(false, privateContentBaseUrl('HHC_WEB_NEWS_API_BASE_URL'));
+}
+
+export async function getNewsPage(locale: Locale, page: number, pageSize: number, client: HhcWebClient = newsContentClient()): Promise<NewsPage> {
   const result = await client.listPublicContentPage('news', locale, {page, pageSize});
   return {items: result.data.map((value) => mapNewsItem(value, locale)), meta: result.meta};
 }
@@ -29,7 +34,7 @@ export function mapNewsItem(value: Awaited<ReturnType<HhcWebClient['listPublicCo
   };
 }
 
-export async function getNewsBySlug(locale: Locale, slug: string, client: HhcWebClient = publicContentClient()): Promise<NewsDetail> {
+export async function getNewsBySlug(locale: Locale, slug: string, client: HhcWebClient = newsContentClient()): Promise<NewsDetail> {
   const value = await client.getNewsBySlug(locale, slug);
   const bodyJson = value.bodyJson;
   const metadata = getContentLocaleMetadata(locale, value);

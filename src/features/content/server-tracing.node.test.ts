@@ -34,10 +34,11 @@ describe('server tracing policy', () => {
     } finally { random.mockRestore(); }
   });
 
-  it('propagates direct CMS tracing only for the exact enabled About paths', () => {
+  it('propagates direct CMS tracing only for enabled published paths', () => {
     const base = 'https://hhc-web-api.internal.example.eastasia.azurecontainerapps.io/api';
     vi.stubEnv('HHC_WEB_HISTORY_API_BASE_URL', base);
     vi.stubEnv('HHC_WEB_ABOUT_API_BASE_URL', base);
+    vi.stubEnv('HHC_WEB_NEWS_API_BASE_URL', base);
     try {
       const {tracePropagationTargets} = contentServerTracing();
       const matches = (url: string) => tracePropagationTargets.some((target) => target.test(url));
@@ -46,7 +47,10 @@ describe('server tracing policy', () => {
       expect(matches(base + '/pages/about/other')).toBe(false);
       expect(matches(base + '/pages/home')).toBe(false);
       expect(matches(base + '/history/other')).toBe(false);
-      expect(matches(base + '/news')).toBe(false);
+      expect(matches(base + '/news?page=2')).toBe(true);
+      expect(matches(base + '/news/one')).toBe(true);
+      expect(matches(base + '/news-extra')).toBe(false);
+      expect(matches(base + '/admin/content/news')).toBe(false);
     } finally {
       vi.unstubAllEnvs();
     }
