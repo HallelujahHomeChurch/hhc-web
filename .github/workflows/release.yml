@@ -280,6 +280,7 @@ jobs:
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       RELEASE_CONFIRMATION: ${{ github.event_name == 'push' && 'deploy-hhc-web-production' || inputs.confirmation }}
       SENTRY_TRACES_SAMPLE_RATE: ${{ vars.SENTRY_TRACES_SAMPLE_RATE || '0.01' }}
+      HHC_WEB_HISTORY_PRIVATE_HTTPS: ${{ vars.HHC_WEB_HISTORY_PRIVATE_HTTPS || 'false' }}
       MEMBER_VIDEO_NAV_ENABLED: ${{ vars.MEMBER_VIDEO_NAV_ENABLED || 'false' }}
       WEEKLY_READER_ENABLED: ${{ vars.WEEKLY_READER_ENABLED || 'false' }}
     steps:
@@ -294,6 +295,7 @@ jobs:
           done
           [[ "$MEMBER_VIDEO_NAV_ENABLED" == false || "$MEMBER_VIDEO_NAV_ENABLED" == true ]]
           [[ "$WEEKLY_READER_ENABLED" == false || "$WEEKLY_READER_ENABLED" == true ]]
+          [[ "$HHC_WEB_HISTORY_PRIVATE_HTTPS" == false || "$HHC_WEB_HISTORY_PRIVATE_HTTPS" == true ]]
       - name: Validate prepared image
         env:
           PREPARED_IMAGE: ${{ needs.prepare_image.outputs.image }}
@@ -364,6 +366,7 @@ jobs:
             --template-file infra/main.bicep \
             --parameters image="$IMAGE_REF" sentryTracesSampleRate="$SENTRY_TRACES_SAMPLE_RATE" \
                          internalGatewayToken="$HHC_WEB_GATEWAY_TOKEN" \
+                         enableHistoryPrivateHttps="$HHC_WEB_HISTORY_PRIVATE_HTTPS" \
             --validation-level Provider \
             --result-format ResourceIdOnly \
             --only-show-errors
@@ -379,6 +382,7 @@ jobs:
             --template-file infra/main.bicep \
             --parameters image="$IMAGE_REF" sentryTracesSampleRate="$SENTRY_TRACES_SAMPLE_RATE" \
                          internalGatewayToken="$HHC_WEB_GATEWAY_TOKEN" \
+                         enableHistoryPrivateHttps="$HHC_WEB_HISTORY_PRIVATE_HTTPS" \
             --only-show-errors --output none
       - name: Wait for revision
         run: python3 scripts/verify-release-runtime.py

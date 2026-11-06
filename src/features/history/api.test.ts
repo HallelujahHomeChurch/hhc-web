@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest';
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import type {HhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
 import {getHistoryTimeline, getHistoryTimelinePage} from './api';
 
@@ -70,3 +70,68 @@ describe('getHistoryTimeline', () => {
 function clientWith(values: Array<Record<string, unknown>>) {
   return {listPublicContentPage: async () => ({data: values, meta: {page: 1, pageSize: 100, total: values.length}})} as unknown as HhcWebClient;
 }
+
+describe('About history transport', () => {
+  const privateBase = 'https://hhc-web-api.internal.example.eastasia.azurecontainerapps.io/api';
+  const daprBase = 'http://127.0.0.1:3500/v1.0/invoke/hhc-web-api/method/api';
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('only sends the full timeline over private HTTPS when configured', async () => {
+    vi.stubEnv('HHC_WEB_API_BASE_URL', daprBase);
+    vi.stubEnv('HHC_WEB_HISTORY_API_BASE_URL', privateBase);
+    const fetch = vi.fn<typeof globalThis.fetch>()
+      .mockImplementationOnce(async () => Response.json({data: [{id: 'one'}], meta: {total: 2}}))
+      .mockImplementationOnce(async () => Response.json({data: [{id: 'two'}], meta: {total: 2}}))
+      .mockImplementationOnce(async () => Response.json({data: [], meta: {total: 0}}));
+    vi.stubGlobal('fetch', fetch);
+
+    const timeout = vi.spyOn(AbortSignal, 'timeout');
+    await expect(getHistoryTimeline('ja')).resolves.toMatchObject({events: [{requestedLocale: 'ja'}, {requestedLocale: 'ja'}]});
+    expect(timeout.mock.calls).toEqual([[10_000]]);
+    await getHistoryTimelinePage('en', 3, 12);
+
+    expect(fetch.mock.calls.map(([request]) => (request as Request).url)).toEqual([
+      privateBase + '/history?locale=ja&page=1&pageSize=100',
+      privateBase + '/history?locale=ja&page=2&pageSize=100',
+      daprBase + '/history?locale=en&page=3&pageSize=12'
+    ]);
+    for (const [request, init] of fetch.mock.calls) {
+      expect((request as Request).headers.get('authorization')).toBeNull();
+      expect(init).toMatchObject({redirect: 'error', next: {revalidate: 60}});
+    }
+  });
+
+  it('defaults to Dapr without an explicit private base', async () => {
+    vi.stubEnv('HHC_WEB_API_BASE_URL', daprBase);
+    vi.stubEnv('HHC_WEB_HISTORY_API_BASE_URL', undefined);
+    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async () => Response.json({data: [], meta: {total: 0}}));
+    vi.stubGlobal('fetch', fetch);
+
+    await getHistoryTimeline('en');
+
+    expect((fetch.mock.calls[0][0] as Request).url).toBe(daprBase + '/history?locale=en&page=1&pageSize=100');
+  });
+
+  it('rejects a configured origin outside internal ACA', async () => {
+    vi.stubEnv('HHC_WEB_HISTORY_API_BASE_URL', 'https://www.alive.org.tw/api');
+    const fetch = vi.fn();
+    vi.stubGlobal('fetch', fetch);
+
+    await expect(getHistoryTimeline('en')).rejects.toThrow('HHC_WEB_HISTORY_API_BASE_URL');
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('surfaces private transport failure without retrying Dapr', async () => {
+    vi.stubEnv('HHC_WEB_HISTORY_API_BASE_URL', privateBase);
+    const fetch = vi.fn<typeof globalThis.fetch>().mockRejectedValue(new Error('private transport failed'));
+    vi.stubGlobal('fetch', fetch);
+
+    await expect(getHistoryTimeline('en')).rejects.toThrow('private transport failed');
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+});

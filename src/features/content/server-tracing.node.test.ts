@@ -34,6 +34,20 @@ describe('server tracing policy', () => {
     } finally { random.mockRestore(); }
   });
 
+  it('propagates direct CMS tracing only for the exact history path', () => {
+    const base = 'https://hhc-web-api.internal.example.eastasia.azurecontainerapps.io/api';
+    vi.stubEnv('HHC_WEB_HISTORY_API_BASE_URL', base);
+    try {
+      const {tracePropagationTargets} = contentServerTracing();
+      const matches = (url: string) => tracePropagationTargets.some((target) => target.test(url));
+      expect(matches(base + '/history?locale=ja')).toBe(true);
+      expect(matches(base + '/history/other')).toBe(false);
+      expect(matches(base + '/news')).toBe(false);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('matches only the configured origin and API path boundary', () => {
     const target = contentTraceTarget('http://127.0.0.1:3500/v1.0/invoke/hhc-web-api/method/api');
     expect(target.test('http://127.0.0.1:3500/v1.0/invoke/hhc-web-api/method/api/locations?locale=en')).toBe(true);
