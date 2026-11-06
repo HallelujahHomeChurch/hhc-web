@@ -123,7 +123,7 @@ async function bindInstallationToAccount(account: ReturnType<typeof useAccountAu
     if (account.status !== 'authenticated') return false;
 
     const installation = installationId();
-    return syncOnce(accountBindingSyncKey, `${installation}:${account.session.user.id}`, async () => {
+    return await syncOnce(accountBindingSyncKey, `${installation}:${account.session.user.id}`, async () => {
       const csrf = await fetch('/api/account/v1/csrf-token', {
         credentials: 'include',
         headers: {Accept: 'application/json'},

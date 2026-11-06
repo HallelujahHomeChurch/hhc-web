@@ -282,6 +282,27 @@ describe('WebPushControl', () => {
     expect(bindingCalls()).toHaveLength(1);
   });
 
+  it('keeps account binding eligible for retry when the request rejects', async () => {
+    account.current = authenticatedAccount();
+    getSubscription.mockResolvedValue(pushSubscription());
+    const error = new TypeError('Network request failed');
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/push/config')) return Response.json({data: {vapidPublicKey: 'AQID'}});
+      if (url.endsWith('/push/subscriptions')) return Response.json({data: {status: 'active'}});
+      if (url.endsWith('/csrf-token')) return Response.json({csrf_token: 'csrf-value'});
+      if (url.endsWith('/push-subscriptions/bind')) throw error;
+      return new Response(null, {status: 404});
+    }));
+
+    render(<WebPushControl locale="en" labels={labels} />);
+    await waitFor(() => expect(screen.getByRole('button', {name: labels.disable}))
+      .toHaveAttribute('data-account-binding', 'retrying'));
+    expect(captureHandledError).toHaveBeenCalledWith(error, {
+      operation: 'push.account_binding', level: 'warning'
+    });
+  });
+
   it('does not repeat successful subscription writes when remounted', async () => {
     account.current = authenticatedAccount();
     const existingSubscription = pushSubscription();
