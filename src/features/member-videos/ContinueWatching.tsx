@@ -13,7 +13,10 @@ import {videoWatchPath} from './share';
 
 export type ContinuityLabels = {resume: string; live: string; close: string; expand: string; minimize: string; move: string; resize: string};
 
-export function ContinueWatching({locale, labels, dismissed, dismiss}: {
+const dismissalKey = "hhc:continue-watching-dismissal";
+
+export function ContinueWatching({member, locale, labels, dismissed, dismiss}: {
+  member: string;
   locale: string;
   labels: ContinuityLabels;
   dismissed?: string;
@@ -40,7 +43,14 @@ export function ContinueWatching({locale, labels, dismissed, dismiss}: {
       lastRequest = performance.now();
       try {
         const {item} = await api.continueWatching(controller.signal);
-        if (!controller.signal.aborted) setItem(item);
+        if (controller.signal.aborted) return;
+        let hidden = false;
+        try {
+          const stored = JSON.parse(sessionStorage.getItem(dismissalKey) ?? 'null');
+          if (stored?.member === member) hidden = stored.generation === item?.generation;
+          else if (stored) sessionStorage.removeItem(dismissalKey);
+        } catch { /* In-memory dismissal remains available. */ }
+        setItem(hidden ? null : item);
       } catch {
         if (!controller.signal.aborted) setItem(null);
       } finally { running = false; }
@@ -57,14 +67,18 @@ export function ContinueWatching({locale, labels, dismissed, dismiss}: {
       window.removeEventListener('focus', refresh);
       window.removeEventListener('online', refresh);
     };
-  }, [api]);
+  }, [api, member]);
   if (!item || dismissed === item.generation) return null;
   const href = videoWatchPath(locale, item.recordingId, item.publicId);
   const minutes = Math.floor(item.positionSeconds / 60);
   const position = `${minutes}:${String(Math.floor(item.positionSeconds % 60)).padStart(2, '0')}`;
   return <aside className={`${styles.resumeCard} fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-30 w-64 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-panel-border bg-panel text-ink shadow-lg`}>
     <button type="button" className="absolute right-0 top-0 z-10 grid size-11 place-items-center rounded-bl-lg bg-black/80 text-white"
-      aria-label={labels.close} onClick={() => dismiss(item.generation)}><X size={20}/></button>
+      aria-label={labels.close} onClick={() => {
+        dismiss(item.generation);
+        try { sessionStorage.setItem(dismissalKey, JSON.stringify({member, generation: item.generation})); }
+        catch { /* In-memory dismissal remains available. */ }
+      }}><X size={20}/></button>
     <Link href={href} prefetch={false} className="block">
       <LiveCoverSurface url={cover} title=""/>
       <div className="p-3">

@@ -97,7 +97,7 @@ function MemberPlaybackProvider({children, locale, labels, member}: Props & {mem
 
   return <Context.Provider value={member ? controls : null}>
     {children}
-    {member && !playback && !slot && <ContinueWatching locale={locale} labels={labels} dismissed={dismissed} dismiss={dismiss}/>}
+    {member && !playback && !slot && <ContinueWatching member={member} locale={locale} labels={labels} dismissed={dismissed} dismiss={dismiss}/>}
     {member && playback && <PlaybackHost watchSlot={watchSlot} onClose={closeActive} moveLabel={labels.move} resizeLabel={labels.resize}>
       <div key={playback.key}>{playback.player}</div>
       {!watchSlot && <div className="absolute right-0 top-0 z-10 flex rounded-bl-lg bg-black/80 text-white">

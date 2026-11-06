@@ -17,14 +17,18 @@ it('shows the saved position without mounting media and dismisses only that gene
     mode: 'vod', mediaVersion: 'vod:package', positionSeconds: 65, generation: 'A',
   }});
   const dismiss = vi.fn();
-  const view = render(<ContinueWatching locale="en" labels={labels} dismiss={dismiss}/>);
+  const view = render(<ContinueWatching member="fixture" locale="en" labels={labels} dismiss={dismiss}/>);
   expect(await screen.findByRole('link', {name: /Continue watching · 1:05.*Synthetic recording/})).toHaveAttribute('href', '/video/aB_012-xyzQ');
   expect(view.container.querySelector('video,audio')).toBeNull();
   fireEvent.click(screen.getByRole('button', {name: 'Close player'}));
   expect(dismiss).toHaveBeenCalledWith('A');
-  view.rerender(<ContinueWatching locale="en" labels={labels} dismissed="A" dismiss={dismiss}/>);
+  view.rerender(<ContinueWatching member="fixture" locale="en" labels={labels} dismissed="A" dismiss={dismiss}/>);
   expect(screen.queryByRole('link')).toBeNull();
-  view.rerender(<ContinueWatching locale="en" labels={labels} dismissed="older" dismiss={dismiss}/>);
+  view.rerender(<ContinueWatching member="fixture" locale="en" labels={labels} dismissed="older" dismiss={dismiss}/>);
   await act(async () => {});
   expect(screen.getByRole('link')).toBeVisible();
+  view.unmount();
+  render(<ContinueWatching member="fixture" locale="en" labels={labels} dismiss={dismiss}/>);
+  await act(async () => {});
+  expect(screen.queryByRole('link')).toBeNull();
 });
