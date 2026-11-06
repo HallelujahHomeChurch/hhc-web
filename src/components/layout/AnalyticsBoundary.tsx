@@ -17,6 +17,7 @@ import {
 import { usePathname, useSearchParams } from 'next/navigation';
 import type { Locale } from '@/i18n/locales';
 import { publicAnalyticsRoute } from '@/lib/analytics-route';
+import {useMediaDocument} from './MediaDocument';
 
 export function AnalyticsBoundary({
   children,
@@ -25,10 +26,11 @@ export function AnalyticsBoundary({
   children: ReactNode;
   locale: Locale;
 }) {
+  const {analyticsAllowed, markAnalyticsStarted} = useMediaDocument();
   const pathname = usePathname();
   const search = useSearchParams();
   const id = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? '';
-  const enabled =
+  const enabled = analyticsAllowed &&
     /^G-[A-Z0-9]{5,20}$/.test(id) &&
     typeof window !== 'undefined' &&
     window.location.hostname === 'www.alive.org.tw';
@@ -63,12 +65,14 @@ export function AnalyticsBoundary({
     const reload = !route && controller.current.requiresDocumentNavigation();
     controller.current.sync(route);
     // Mirror the external script lifecycle before a later route can mount private UI.
-    setStarted(controller.current.requiresDocumentNavigation());
+    const started = controller.current.requiresDocumentNavigation();
+    if (started) markAnalyticsStarted();
+    setStarted(started);
     if (reload)
       window.location.replace(
         `${pathname}${window.location.search}${window.location.hash}`,
       );
-  }, [route, pathname]);
+  }, [route, pathname, enabled, markAnalyticsStarted]);
   useEffect(() => {
     if (!enabled) return;
     const sync = () => {
@@ -80,7 +84,9 @@ export function AnalyticsBoundary({
       );
       const reload = !next && controller.current?.requiresDocumentNavigation();
       controller.current?.sync(next);
-      setStarted(controller.current?.requiresDocumentNavigation() ?? false);
+      const started = controller.current?.requiresDocumentNavigation() ?? false;
+      if (started) markAnalyticsStarted();
+      setStarted(started);
       if (reload) window.location.reload();
     };
     const visible = () => {
@@ -99,12 +105,14 @@ export function AnalyticsBoundary({
       window.removeEventListener('hhc:analytics-choice', sync);
       document.removeEventListener('visibilitychange', visible);
     };
-  }, [enabled]);
+  }, [enabled, markAnalyticsStarted]);
   function choose(next: Exclude<AnalyticsChoice, 'unknown'>) {
     document.cookie = getAnalyticsChoiceCookie(next);
     setChoice(next);
     controller.current?.sync(route);
-    setStarted(controller.current?.requiresDocumentNavigation() ?? false);
+    const started = controller.current?.requiresDocumentNavigation() ?? false;
+    if (started) markAnalyticsStarted();
+    setStarted(started);
     window.dispatchEvent(new Event('hhc:analytics-choice'));
   }
   if (enabled && !route && started) return null;

@@ -9,6 +9,7 @@ import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {isLocale, productLocales, type Locale} from '@/i18n/locales';
 import {AccountControlProvider} from '@/components/layout/AccountControl';
+import {MediaDocumentProvider} from '@/components/layout/MediaDocument';
 import {InitialLoadingBoundary} from '@/components/layout/InitialLoadingBoundary';
 import {StatementProvider} from '@/components/statements/StatementProvider';
 import {TranslationNotice} from '@/components/layout/TranslationNotice';
@@ -65,6 +66,7 @@ export default async function LocaleLayout({children, params}: LocaleLayoutProps
     <NextIntlClientProvider locale={rawLocale} messages={messages}>
       <ReaderServiceWorker/>
       <AccountControlProvider labels={messages.site.account}>
+        <MediaDocumentProvider>
         <LegalRequiredNavigation />
         <InitialLoadingBoundary label={messages.site.loading}>
           <StatementProvider locale={rawLocale} labels={messages.site.statement}>
@@ -74,6 +76,7 @@ export default async function LocaleLayout({children, params}: LocaleLayoutProps
           </div>
           </StatementProvider>
         </InitialLoadingBoundary>
+        </MediaDocumentProvider>
       </AccountControlProvider>
     </NextIntlClientProvider>
   );
