@@ -507,6 +507,7 @@
     "empty": "目前尚未发布周报。"
   },
   "memberVideos": {
+    "continuity": {"resume": "继续观看", "live": "返回直播", "close": "关闭", "expand": "展开播放器", "minimize": "缩小播放器", "move": "移动播放器", "resize": "调整播放器大小"},
     "shareDescription": "此视频仅限具观看权限的会员登录后观看。",
     "theaterMode": "影院模式",
     "exitTheaterMode": "退出影院模式",
