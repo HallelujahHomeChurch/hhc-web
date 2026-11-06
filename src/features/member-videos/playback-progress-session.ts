@@ -130,4 +130,3 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
     },
   };
 }
-
