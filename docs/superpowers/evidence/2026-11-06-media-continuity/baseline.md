@@ -46,3 +46,8 @@ heartbeat-only nor mixed traffic observed a lock waiter in 594 samples per
 interval, and neither recorded a pool wait or a capacity rejection. Progress
 p95/p99 were 8.0/9.5 ms. This sampling cannot exclude lock waits shorter than its
 sampling interval.
+
+## HTTP capacity and production dependencies
+
+- A loopback HTTP test used the production progress PUT handler and repository against disposable PostgreSQL 17, with fixture member identities and the production heartbeat repository. The 100 accounts were staggered 150 ms over one heartbeat-only interval and two mixed intervals. All 300 heartbeats and 200 HTTP writes succeeded. Each progress write was accepted at its expected sequence. Progress HTTP p95/p99 were 17.4/36.7 ms and 11.8/12.8 ms in the two mixed intervals, below the 200 ms local target. Heartbeat p95/p99 were 150.5/196.6 ms for the initial interval, then 32.8/131.7 ms and 19.0/25.6 ms. The initial interval includes cold telemetry state and occurred under variable host load. Pool waits and sampled lock waits were zero. The test does not include Gateway, Account verification, or internet round-trip time.
+- API [production release](https://github.com/HallelujahHomeChurch/hhc-web-api/actions/runs/42199692002) succeeded on `hhc-web-api--0000301` including migration 108. Gateway [production release](https://github.com/HallelujahHomeChurch/api-gateway/actions/runs/42202224242) succeeded on `api-gateway--0000273` with 100% traffic. Anonymous public progress and card routes return 401, while the private progress route returns 404.
