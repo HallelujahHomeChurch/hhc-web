@@ -11,27 +11,25 @@ import {usePrivateCover} from '@/lib/use-private-cover';
 import styles from './mini-player.module.css';
 import {videoWatchPath} from './share';
 import {usePersistentPlayback} from './PlaybackProvider';
+import {dismissResume, isResumeDismissed, isResumeEligible, resumeDismissalKey} from './resume-dismissal';
 
-export type ContinuityLabels = {resume: string; live: string; close: string; expand: string; minimize: string; move: string; resize: string};
+export type ContinuityLabels = {resume: string; live: string; close: string; removeResume: string; expand: string; minimize: string; move: string; resize: string};
 
-const dismissalKey = "hhc:continue-watching-dismissal";
-
-export function ContinueWatching({member, locale, labels, dismissed, dismiss}: {
+export function ContinueWatching({member, locale, labels}: {
   member: string;
   locale: string;
   labels: ContinuityLabels;
-  dismissed?: string;
-  dismiss: (generation: string) => void;
 }) {
   const authorization = useBulletinAuthorization();
   const api = useMemo(() => createMemberVideoApi(authorization), [authorization]);
   const [item, setItem] = useState<RecordingResumeItem | null>(null);
+  const [dismissedHere, setDismissedHere] = useState(false);
   const recordingId = item?.recordingId;
   const captureId = item?.captureId;
   const loadCover = useCallback((signal: AbortSignal) => captureId
     ? api.liveCover(recordingId!, captureId, signal) : api.cover(recordingId!, signal), [api, recordingId, captureId]);
   const cover = usePrivateCover({
-    scope: api, resource: `continue:${item?.mediaVersion}`, enabled: Boolean(item && dismissed !== item.generation),
+    scope: api, resource: `continue:${item?.mediaVersion}`, enabled: Boolean(item && !dismissedHere),
     load: loadCover,
   });
   useEffect(() => {
@@ -45,17 +43,15 @@ export function ContinueWatching({member, locale, labels, dismissed, dismiss}: {
       try {
         const {item} = await api.continueWatching(controller.signal);
         if (controller.signal.aborted) return;
-        let hidden = false;
-        try {
-          const stored = JSON.parse(sessionStorage.getItem(dismissalKey) ?? 'null');
-          if (stored?.member === member) hidden = stored.generation === item?.generation;
-          else if (stored) sessionStorage.removeItem(dismissalKey);
-        } catch { /* In-memory dismissal remains available. */ }
-        setItem(hidden ? null : item);
+        setItem(item && isResumeEligible(item) && !isResumeDismissed(member, item) ? item : null);
       } catch {
         if (!controller.signal.aborted) setItem(null);
       } finally { running = false; }
     };
+    const storage = (event: StorageEvent) => {
+      if (event.key === resumeDismissalKey) setItem(current => current && isResumeDismissed(member, current) ? null : current);
+    };
+    window.addEventListener('storage', storage);
     void refresh();
     const timer = window.setInterval(refresh, 30000);
     document.addEventListener('visibilitychange', refresh);
@@ -63,22 +59,22 @@ export function ContinueWatching({member, locale, labels, dismissed, dismiss}: {
     window.addEventListener('online', refresh);
     return () => {
       controller.abort();
+      window.removeEventListener('storage', storage);
       clearInterval(timer);
       document.removeEventListener('visibilitychange', refresh);
       window.removeEventListener('focus', refresh);
       window.removeEventListener('online', refresh);
     };
   }, [api, member]);
-  if (!item || dismissed === item.generation) return null;
+  if (!item || dismissedHere) return null;
   const href = videoWatchPath(locale, item.recordingId, item.publicId);
   const minutes = Math.floor(item.positionSeconds / 60);
   const position = `${minutes}:${String(Math.floor(item.positionSeconds % 60)).padStart(2, '0')}`;
   return <aside className={`${styles.resumeCard} relative mb-6 w-64 max-w-full overflow-hidden rounded-xl border border-panel-border bg-panel text-ink shadow-lg`}>
     <button type="button" className="absolute right-0 top-0 z-10 grid size-11 place-items-center rounded-bl-lg bg-black/80 text-white"
-      aria-label={labels.close} onClick={() => {
-        dismiss(item.generation);
-        try { sessionStorage.setItem(dismissalKey, JSON.stringify({member, generation: item.generation})); }
-        catch { /* In-memory dismissal remains available. */ }
+      aria-label={labels.removeResume} title={labels.removeResume} onClick={() => {
+        dismissResume(member, item);
+        setDismissedHere(true);
       }}><X size={20}/></button>
     <Link href={href} prefetch={false} className="block">
       <LiveCoverSurface url={cover} title=""/>
@@ -92,7 +88,8 @@ export function ContinueWatching({member, locale, labels, dismissed, dismiss}: {
 
 export function LibraryContinueWatching({member, locale}: {member: string; locale: string}) {
   const playback = usePersistentPlayback();
-  if (!playback || playback.activeKey || playback.closedRecording) return null;
-  return <ContinueWatching member={member} locale={locale} labels={playback.labels}
-    dismissed={playback.resumeDismissed} dismiss={playback.dismissResume}/>;
+  const [hadPlayback, setHadPlayback] = useState(Boolean(playback?.activeKey));
+  if (playback?.activeKey && !hadPlayback) setHadPlayback(true);
+  if (!playback || playback.activeKey || hadPlayback) return null;
+  return <ContinueWatching key={member} member={member} locale={locale} labels={playback.labels}/>;
 }

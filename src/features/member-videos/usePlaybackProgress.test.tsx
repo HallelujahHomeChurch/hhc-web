@@ -165,3 +165,43 @@ it('retains the progress owner and sequence while using the latest route client'
   expect(api.claimProgress).toHaveBeenCalledTimes(1);
   expect(api.progress).toHaveBeenCalledTimes(1);
 });
+
+it('exposes the exact live media version and session while a claim is in flight', async () => {
+  const {createPlaybackProgress} = await import('./playback-progress-session');
+  const controller = new AbortController();
+  const liveVersion = 'live:capture:range-2';
+  let accept!: (value: {generation: string; mediaVersion: string; positionSeconds: number; sequence: number}) => void;
+  const api = {
+    progress: vi.fn().mockResolvedValue({mediaVersion: liveVersion, claimToken: 'token', progress: null}),
+    claimProgress: vi.fn().mockImplementation(() => new Promise(resolve => { accept = resolve; })),
+    saveProgress: vi.fn(),
+  };
+  const sync = createPlaybackProgress(api, 'recording', 'live:capture', controller.signal);
+  await sync.prepare('resume');
+  const claiming = sync.playing(40);
+  const identity = sync.identity();
+  expect(identity.mediaVersion).toBe(liveVersion);
+  expect(identity.sessionId).toBe(api.claimProgress.mock.calls[0][1].sessionId);
+  expect(identity.generation).toBeUndefined();
+  controller.abort();
+  accept({generation: 'late', mediaVersion: liveVersion, positionSeconds: 40, sequence: 0});
+  await claiming;
+  expect(sync.identity().sessionId).toBe(identity.sessionId);
+  expect(sync.identity().generation).toBeUndefined();
+});
+
+it('identifies the observed resume generation until a new playing claim is accepted', async () => {
+  const {createPlaybackProgress} = await import('./playback-progress-session');
+  const controller = new AbortController();
+  const api = {
+    progress: vi.fn().mockResolvedValue({mediaVersion: version, claimToken: 'token', progress: {
+      generation: 'observed', mediaVersion: version, completed: false, mode: 'vod', positionSeconds: 40, updatedAt: '2026-11-06T00:00:00Z',
+    }}),
+    claimProgress: vi.fn(), saveProgress: vi.fn(),
+  };
+  const sync = createPlaybackProgress(api, 'recording', version, controller.signal);
+  await sync.prepare('resume');
+  expect(sync.identity().generation).toBe('observed');
+  expect(api.claimProgress).not.toHaveBeenCalled();
+  controller.abort();
+});

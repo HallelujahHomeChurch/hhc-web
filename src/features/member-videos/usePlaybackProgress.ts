@@ -35,7 +35,7 @@ export function usePlaybackProgress(api: ProgressAPI, id: string | undefined, ve
     const events = ['pause', 'seeked', 'ended'];
     const visibility = () => { if (document.visibilityState === 'hidden') save(true); };
     const pageHide = () => save(true);
-    const unregisterPlayback = registerPlayback?.(pageHide, () => media.current?.currentTime ?? 0);
+    const unregisterPlayback = registerPlayback?.(pageHide, () => media.current?.currentTime ?? 0, current.identity);
     element.addEventListener('playing', playing, true);
     events.forEach(event => element.addEventListener(event, changed, true));
     document.addEventListener('visibilitychange', visibility);
