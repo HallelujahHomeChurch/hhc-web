@@ -1,0 +1,25 @@
+.host {
+  position: fixed;
+}
+
+.host[data-presentation='watch'] {
+  left: var(--watch-left);
+  top: var(--watch-top);
+  width: var(--watch-width);
+  height: var(--watch-height);
+  z-index: 5;
+}
+
+.host[data-presentation='mini'] {
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  width: min(360px, calc(100vw - 32px));
+  aspect-ratio: 16 / 9;
+  z-index: 30;
+}
+
+@media (pointer: coarse) {
+  .host[data-presentation='mini'] {
+    width: min(240px, calc(100vw - 32px));
+  }
+}
