@@ -6,16 +6,21 @@ import Link from 'next/link';
 import {LoadMoreTrigger} from '@hallelujahhomechurch/ui';
 import zoneStyles from './MemberVideoZone.module.css';
 import {LoaderCircle, Play} from 'lucide-react';
-import type {MemberLiveRecording, MemberRecording, MemberRecordingPlayback} from '@hallelujahhomechurch/hhc-web-client';
+import type {MemberLiveRecording, MemberRecording} from '@hallelujahhomechurch/hhc-web-client';
 import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
 import {useAccountAuth, useAccountSignIn, useAccountIdentity, useBulletinAuthorization, useVideoAccess} from '@/components/layout/AccountControl';
+import {useMediaDocument} from '@/components/layout/MediaDocument';
 import {getLocaleCookie, type Locale} from '@/i18n/locales';
 import {captureHandledError} from '@/lib/observability';
 import {createMemberVideoApi} from './api';
 import {videoSearchHref,videoSearchRefreshEvent,type VideoSearchLabels} from './search';
 import {VideoInformation} from './VideoInformation';
 import {VideoInteractions} from './VideoInteractions';
-import {createPlaybackDiagnostics} from './playback-diagnostics';
+import {useVodPlayback} from './useVodPlayback';
+import {PersistentLive} from './PersistentLive';
+import {PersistentVod} from './PersistentVod';
+import {usePersistentPlayback} from './PlaybackProvider';
+import type {PlayerBookmark} from './live-player';
 import {usePlaybackTelemetry} from './usePlaybackTelemetry';
 import {HlsPlayer, type PlayerLabels} from './HlsPlayer';
 
@@ -23,10 +28,8 @@ import {videoWatchPath} from './share';
 import {playerClock} from './PlayerChrome';
 import {LiveRecordingCover,RecordingCover,useRecordingCover} from './RecordingCover';
 import {LiveRecordingPlayer,liveViewerLabel,englishLiveLabels,type LiveLabels} from './LiveRecordingPlayer';
-import type {PlayerBookmark} from './live-player';
 import {useBroadcastWatch} from './useBroadcastWatch';
 import {BroadcastWaitingPanel} from './BroadcastWaitingPanel';
-import {mapBroadcastBookmark} from './broadcast';
 import {liveLibraryItems} from './video-library';
 import {UpcomingBroadcasts} from './UpcomingBroadcasts';
 import {VideoListSkeleton, VideoRecommendationsSkeleton, VideoWatchSkeleton} from './VideoLoading';
@@ -43,9 +46,7 @@ export type Messages = {
   preparing: string; empty: string; loadError: string; playError: string; expired: string;
   retry: string; previous: string; next: string; loadMore?:string; liveStartedDate?:string; uploadedDate: string; description: string;
 } & PlayerLabels;
-type ActivePlayback = {recordingId: string; scopeId: string; grant: MemberRecordingPlayback; url: string; backgroundAudio: boolean};
 const pageSize = 12;
-const readyAudio=(grant:MemberRecordingPlayback)=>grant.audio?.version==='aac-hls-v1'&&grant.audio.playlistPath==='audio/aac-hls-v1/index.m3u8';
 // Default automatic covers belong to the immutable recording package.
 const coverRevision=(recording:MemberRecording|undefined)=>recording?.selectedCoverId||(recording?.packageId?`auto:${recording.packageId}`:undefined);
 type ZoneProps = {publicId?:string;startAt?:number;locale: Locale; messages: Messages; hero: ReactNode; view?: 'list' | 'watch'; recordingId?: string;query?: string;invalidQuery?: boolean};
@@ -66,10 +67,11 @@ export function MemberVideoZone({locale, messages, hero, view = 'watch', recordi
   useEffect(() => { document.cookie = getLocaleCookie(locale); }, [locale]);
   const identity=useAccountIdentity();
   const access = useVideoAccess();
+  const {privateMediaReady} = useMediaDocument();
   useEffect(() => {
     if (!publicId && (auth.status === 'anonymous' || access === 'denied')) router.replace(`/${locale}`);
   }, [access, auth.status, locale, router, publicId]);
-  if (access === 'available') return <AuthorizedVideoZone publicId={publicId} startAt={startAt} key={`${identity}:${publicId ?? recordingId ?? view}:${view==='list'?`${query}:${invalidQuery}`:''}`} locale={locale} messages={messages} hero={hero} view={view} recordingId={recordingId} query={query} invalidQuery={invalidQuery} />;
+  if (access === 'available' && privateMediaReady) return <AuthorizedVideoZone publicId={publicId} startAt={startAt} key={`${identity}:${publicId ?? recordingId ?? view}:${view==='list'?`${query}:${invalidQuery}`:''}`} locale={locale} messages={messages} hero={hero} view={view} recordingId={recordingId} query={query} invalidQuery={invalidQuery} />;
   if (publicId && auth.status === 'anonymous') return <main className="shell py-16"><section className="rounded-2xl border border-panel-border bg-panel p-8 text-center"><h1 className="text-2xl font-semibold">{messages.selectedTitle}</h1><p className="mt-4 text-muted">{messages.shareDescription}</p><button type="button" className="mt-5 min-h-11 rounded-full bg-primary-solid px-5 font-semibold text-primary-foreground" onClick={() => void signIn?.()}>{messages.signIn}</button></section></main>;
   if (publicId && access === 'denied') return <main className="shell py-16" role="alert">{messages.unavailable ?? messages.expired}</main>;
   if (auth.status === 'anonymous' || access === 'denied') return null;
@@ -92,7 +94,6 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   const [recordings, setRecordings] = useState<MemberRecording[] | null>(null);
   const [livestreams,setLivestreams]=useState<MemberLiveRecording[]>([]);
   const [vodChosen,setVodChosen]=useState(false);
-  const [vodResume,setVodResume]=useState<PlayerBookmark|undefined>(undefined);
   const [legacySelectedLive,setSelectedLive]=useState<MemberLiveRecording|null>(null);
   const [retry, setRetry] = useState(0);
   const resolver=useBroadcastWatch(api,publicId ?? internalRecordingId,retry);
@@ -108,47 +109,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   const [nextCursor,setNextCursor]=useState<string|null>(null);
   const [moreLoading,setMoreLoading]=useState(false),[moreError,setMoreError]=useState(false);
   const moreAttempt=useRef<AbortController|null>(null), morePending=useRef(false);
-  const [playback, setPlayback] = useState<ActivePlayback | null>(null);
-  const playbackRef = useRef<ActivePlayback | null>(null);
-  const video = useRef<HTMLVideoElement>(null);
-  const media=useRef<HTMLMediaElement|null>(null);
-  const playbackPause=useRef<(()=>void)|null>(null);
-  const pausePlayback=useCallback(()=>{if(playbackPause.current){playbackPause.current();return;}media.current?.pause();if(video.current!==media.current)video.current?.pause();},[]);
-  const diagnostic=useMemo(()=>createPlaybackDiagnostics(),[]),grantGeneration=useRef(0);
-  const cookieOperations=useRef(Promise.resolve());
-  const clearCookie=useCallback((url:string)=>{
-    cookieOperations.current=cookieOperations.current.then(()=>api.clear(url)).catch(()=>{});
-  },[api]);
-  const exchangeCookie=useCallback((grant:MemberRecordingPlayback,signal:AbortSignal)=>{
-    const operation=cookieOperations.current.then(async()=>{
-      signal.throwIfAborted();
-      diagnostic('exchange-start',media.current,grantGeneration.current);
-      const url=await api.exchange(grant,signal);
-      diagnostic('exchange-end',media.current,grantGeneration.current);
-      if(signal.aborted){await api.clear(url).catch(()=>{});signal.throwIfAborted();}
-      return url;
-    });
-    cookieOperations.current=operation.then(()=>{},()=>{});
-    return operation;
-  },[api,diagnostic]);
-  const mediaFailureReported = useRef(false);
-  const vodBookmark=useRef<PlayerBookmark|undefined>(undefined), bookmarkFrozen=useRef(false);
-  const rememberVod=useCallback((value:PlayerBookmark)=>{if(!bookmarkFrozen.current)vodBookmark.current={...value,mediaOriginSeconds:mediaOrigin??0};},[mediaOrigin]);
-  const [preparing, setPreparing] = useState(false);
-  const [playError, setPlayError] = useState('');
-  const attempt = useRef<AbortController | null>(null);
-  const [audioFailureScope,setAudioFailureScope]=useState<string|null>(null),failedAudioScope=useRef<string|null>(null);
-  const backgroundAudio=Boolean(playback?.backgroundAudio&&audioFailureScope!==playback?.scopeId);
-  useEffect(()=>{bookmarkFrozen.current=false;},[backgroundAudio,playback?.url]);
-  const audioUrl=playback&&backgroundAudio?new URL('audio/aac-hls-v1/index.m3u8',playback.url).href:undefined;
-  const currentResume=useRef(vodResume);
-  useEffect(()=>{currentResume.current=vodResume;},[vodResume]);
-  const snapshotVod=useCallback(()=>{
-    const current=media.current,saved=vodBookmark.current??currentResume.current;
-    return current?{...saved,time:current.readyState?current.currentTime:saved?.time??current.currentTime,rate:current.readyState?current.playbackRate:saved?.rate??current.playbackRate,paused:saved?.paused??current.paused,quality:saved?.quality??'auto',intent:'dvr' as const}:saved;
-  },[]);
   const playerTitle = useRef<HTMLHeadingElement>(null);
-  const playerSection = useRef<HTMLDivElement>(null);
 
   const resolveMissing = useCallback(async (signal: AbortSignal) => {
     try {
@@ -258,26 +219,16 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
     void load();return()=>{controller.abort();window.clearTimeout(timer);};
   },[api,recordingId,retry,view,query,invalidQuery,vodChosen]);
 
-  useEffect(() => {playbackRef.current = playback;}, [playback]);
-  useEffect(() => () => {
-    attempt.current?.abort();
-    pausePlayback();
-    if (playbackRef.current) clearCookie(playbackRef.current.url);
-  }, [api,clearCookie,pausePlayback]);
-
   const selected = resolver.denied ? undefined : recordingId ? watch?.recording??undefined : recordings?.find((recording) => recording.id === selectedId);
-  useEffect(()=>{vodBookmark.current=undefined;bookmarkFrozen.current=false;},[identity,selected?.id,selected?.packageId]);
+  const persistent = usePersistentPlayback();
+  const [archiveBookmark, setArchiveBookmark] = useState<PlayerBookmark>();
+  const {playback, video, media, playbackPause, vodResume, preparing, playError, playerSection,
+    automaticAttempt, vodBookmark, backgroundAudio, audioUrl, rememberVod, mediaError, start, stop} =
+    useVodPlayback({api, identity, locale, messages, selected, recordings, resolveMissing, mediaOrigin, mediaDuration, startAt});
   const poster=useRecordingCover(api,selected?.id,selected?.expiresAt,coverRevision(selected));
   const select = (id: string) => {
     if (id === selectedId) return;
-    attempt.current?.abort();
-    attempt.current = null;
-    setPreparing(false);
-    pausePlayback();
-    if (playbackRef.current) clearCookie(playbackRef.current.url);
-    playbackRef.current = null;
-    setPlayback(null);
-    setPlayError('');
+    stop();
     setSelectedId(id);
     queueMicrotask(() => {
       playerTitle.current?.focus({preventScroll: true});
@@ -285,162 +236,110 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
     });
   };
 
-  const automaticAttempt = useRef<string|null>(null);
-  const start = useCallback(async (resume?:PlayerBookmark) => {
-    if (!selected || preparing) return false;
-    automaticAttempt.current = selected.id;
-    mediaFailureReported.current = false;
-    bookmarkFrozen.current=true;
-    attempt.current?.abort();
-    const controller = new AbortController();
-    attempt.current = controller;
-    if (playbackRef.current) clearCookie(playbackRef.current.url);
-    pausePlayback();
-    playbackRef.current = null;
-    setPlayback(null);
-    setPreparing(true);
-    setPlayError('');
-    try {
-      const scopeId = crypto.randomUUID();
-      const grant = await api.grant(selected.id, scopeId, selected.packageId, controller.signal);
-      const url = await exchangeCookie(grant, controller.signal);
-      if (!controller.signal.aborted) {bookmarkFrozen.current=false;diagnostic('accepted',media.current,++grantGeneration.current,(Date.parse(grant.expiresAt)-Date.now())/1000);setVodResume(resume?mapBroadcastBookmark(resume,mediaOrigin,mediaDuration):startAt!==undefined?{time:Math.min(startAt,selected.durationSeconds??startAt),paused:false,rate:1,quality:'auto',intent:'dvr'}:undefined);setPlayback({recordingId: selected.id, scopeId, grant, url, backgroundAudio:readyAudio(grant)});return true;}
-    } catch (error) {
-      if (!controller.signal.aborted) {
-        if (error instanceof HhcWebApiError && error.status === 401) {router.replace(`/${locale}`); return;}
-        captureHandledError(error, {operation: 'member-videos.playback'});
-        if (error instanceof HhcWebApiError && (error.status === 404 || error.status === 409 || error.status === 412)) {
-          try { await resolveMissing(controller.signal); } catch { /* keep the player stopped and offer retry */ }
-        }
-        setPlayError(messages.playError);
-      }
-    } finally {
-      if (!controller.signal.aborted) setPreparing(false);
-    }
-  }, [selected, preparing, api, locale, router, resolveMissing, messages.playError,mediaOrigin,mediaDuration,startAt,clearCookie,exchangeCookie,diagnostic,pausePlayback]);
-
   useEffect(() => {
-    if (!recordingId || !selected || selectedLive || waitingWatch || resolver.denied || automaticAttempt.current === selected.id) return;
+    if (persistent || !recordingId || !selected || selectedLive || waitingWatch || resolver.denied || automaticAttempt.current === selected.id) return;
     void start();
-  }, [recordingId, selected, selectedLive, waitingWatch, resolver.denied, start]);
-
-  const renew = useCallback(async (current: ActivePlayback, signal: AbortSignal) => {
-    diagnostic('renew',media.current,grantGeneration.current);
-    const grant = await api.grant(current.recordingId, current.scopeId, current.grant.packageId, signal);
-    const url = await exchangeCookie(grant, signal);
-    if (url !== current.url) throw new Error('Media URL changed during renewal');
-    const active=playbackRef.current;
-    if (!signal.aborted&&active?.scopeId===current.scopeId) {
-      const backgroundAudio=active.backgroundAudio&&readyAudio(grant);
-      if(active.backgroundAudio&&!backgroundAudio&&failedAudioScope.current!==active.scopeId){
-        const bookmark=snapshotVod();bookmarkFrozen.current=true;pausePlayback();setVodResume(bookmark);
-      }
-      const next={...active,grant,backgroundAudio};playbackRef.current=next;
-      diagnostic('accepted',media.current,++grantGeneration.current,(Date.parse(grant.expiresAt)-Date.now())/1000);setPlayback(next);
-    }
-  }, [api,snapshotVod,exchangeCookie,diagnostic,pausePlayback]);
-
-  useEffect(() => {
-    if (!playback) return;
-    const controller = new AbortController();
-    const expiry = Date.parse(playback.grant.expiresAt);
-    const deadline = Date.parse(recordings?.find(item => item.id === playback.recordingId)?.expiresAt ?? '');
-    const canRenew = !Number.isFinite(deadline) || expiry < deadline;
-    const renewalAt = Math.min(Date.now() + 45 * 60_000, expiry - 10 * 60_000);
-    let timer = 0;
-    let inFlight = false;
-    const expire = () => {
-      if(playbackRef.current?.grant!==playback.grant)return;
-      diagnostic('expired',media.current,grantGeneration.current);
-      controller.abort();
-      pausePlayback();
-      clearCookie(playback.url);
-      playbackRef.current = null;
-      setPlayback(null);
-      setPlayError(messages.expired);
-    };
-    const expiryTimer = window.setTimeout(expire, Math.max(0,expiry-Date.now()));
-    const run = async () => {
-      if (inFlight || controller.signal.aborted) return;
-      inFlight = true;window.clearTimeout(timer);
-      try {
-        await renew(playback, controller.signal);
-        if (!controller.signal.aborted) setPlayError('');
-      } catch (error) {
-        if (controller.signal.aborted) return;
-        captureHandledError(error, {operation: 'member-videos.renew'});
-        if (error instanceof HhcWebApiError && (error.status === 401 || error.status === 403 || error.status === 404 || error.status === 409 || error.status === 412)) {
-          pausePlayback();
-          clearCookie(playback.url);
-          diagnostic('denied',media.current,grantGeneration.current);playbackRef.current=null;setPlayback(null);setPlayError(messages.playError);
-          if (error.status === 401) router.replace(`/${locale}`);
-          else try { await resolveMissing(controller.signal); } catch { /* retry remains available */ }
-        } else if (Date.now() >= expiry) {
-          pausePlayback();
-          clearCookie(playback.url);
-          playbackRef.current=null;setPlayback(null);
-        } else {
-          timer = window.setTimeout(() => void run(), 60_000);
-        }
-        setPlayError(messages.playError);
-      } finally {
-        inFlight = false;
-      }
-    };
-    if (canRenew) timer = window.setTimeout(() => void run(), Math.max(1_000, renewalAt - Date.now()));
-    const visible = () => {
-      if (document.visibilityState !== 'visible') return;
-      if (Date.now() >= expiry) { expire(); return; }
-      if (canRenew && Date.now() >= renewalAt) {
-        window.clearTimeout(timer);
-        void run();
-      }
-    };
-    document.addEventListener('visibilitychange', visible);
-    window.addEventListener('online', visible);
-    return () => {controller.abort(); window.clearTimeout(timer); window.clearTimeout(expiryTimer); document.removeEventListener('visibilitychange', visible); window.removeEventListener('online', visible);};
-  }, [api, locale, messages.playError, messages.expired, playback, recordings, renew, resolveMissing, router,clearCookie,diagnostic,pausePlayback]);
-
-  useEffect(()=>{
-    const section=playerSection.current;if(!section)return;
-    const events=['loadedmetadata','waiting','stalled','playing','pause','ratechange','seeking','seeked','timeupdate'] as const;
-    // Media events do not bubble; capture lets diagnostics follow the current owner after handoff.
-    const handlers=events.map(event=>{const handler=(value:Event)=>{if(value.target===media.current)diagnostic(event,media.current,grantGeneration.current);};section.addEventListener(event,handler,true);return()=>section.removeEventListener(event,handler,true);});
-    const visible=()=>diagnostic('visibility',media.current,grantGeneration.current);document.addEventListener('visibilitychange',visible);
-    return()=>{for(const remove of handlers)remove();document.removeEventListener('visibilitychange',visible);};
-  },[backgroundAudio,playback?.url,diagnostic]);
-
-  const mediaError = useCallback((bookmark?:PlayerBookmark) => {
-    diagnostic('error',media.current,grantGeneration.current);
-    if(!bookmarkFrozen.current){if(bookmark)vodBookmark.current={...bookmark,mediaOriginSeconds:mediaOrigin??0};bookmarkFrozen.current=true;}
-    pausePlayback();
-    const current=playbackRef.current;
-    if(current?.backgroundAudio&&failedAudioScope.current!==current.scopeId){
-      setVodResume(bookmark??vodBookmark.current);bookmarkFrozen.current=false;
-      // Keep transport fallback separate from authority so in-flight renewal is not aborted.
-      failedAudioScope.current=current.scopeId;setAudioFailureScope(current.scopeId);return;
-    }
-    setPlayError(messages.playError);
-    if (!mediaFailureReported.current) {
-      mediaFailureReported.current = true;
-      captureHandledError(new Error('Member video media playback failed'), {operation: 'member-videos.media'});
-    }
-  }, [messages.playError,mediaOrigin,diagnostic,pausePlayback]);
+  }, [recordingId, selected, selectedLive, waitingWatch, resolver.denied, start, automaticAttempt, persistent]);
 
   const selectedIndex = recordings?.findIndex(item => item.id === selectedId) ?? -1;
   const previousRecording = selectedIndex > 0 ? recordings?.[selectedIndex - 1] : undefined;
   const nextRecording = selectedIndex >= 0 ? recordings?.[selectedIndex + 1] : undefined;
+  const liveLabels=messages.live??englishLiveLabels;
+  const liveKey = selectedLive ? `live:${selectedLive.id}:${selectedLive.captureId}` : undefined;
+  const vodKey = selected ? `vod:${selected.id}:${selected.packageId}` : undefined;
+  const activeKey = liveKey ?? (!waitingWatch ? vodKey : undefined);
+  const startPersistent = persistent?.start;
+  const closePersistent = persistent?.close;
+  const registerPersistentSlot = persistent?.setSlot;
+  const slotRef = useCallback((element: HTMLDivElement | null) => {
+    if (activeKey) registerPersistentSlot?.(activeKey, element);
+  }, [activeKey, registerPersistentSlot]);
+  const selectArchive = useCallback(async (bookmark: PlayerBookmark | undefined) => {
+    setArchiveBookmark(bookmark);
+    setVodChosen(true);
+    setSelectedLive(null);
+    return true;
+  }, []);
+  const refreshAfterFailure = useCallback(async (signal: AbortSignal) => {
+    if (recordingId) await api.watch(recordingId, signal);
+  }, [api, recordingId]);
+  const returnToLibrary = persistent?.returnToLibrary;
+  const takeLibraryScroll = persistent?.takeLibraryScroll;
+  const pendingLibraryScroll = useRef<number | undefined>(undefined);
+  const minimize = useCallback(() => {
+    const fallback = `/${locale}/member-videos`;
+    router.push(returnToLibrary?.(fallback).href ?? fallback, {scroll: false});
+  }, [router, locale, returnToLibrary]);
+  useEffect(() => {
+    if (view !== 'list' || !recordings || livePending) return;
+    const saved = takeLibraryScroll?.();
+    if (saved !== undefined) pendingLibraryScroll.current = saved;
+    const scroll = pendingLibraryScroll.current;
+    if (scroll === undefined) return;
+    const frame = requestAnimationFrame(() => {
+      if (scroll > document.documentElement.scrollHeight - window.innerHeight && nextCursor && !moreError) {
+        if (!moreLoading) void loadMore();
+        return;
+      }
+      pendingLibraryScroll.current = undefined;
+      window.scrollTo({top: scroll});
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [view, recordings, livePending, takeLibraryScroll, nextCursor, moreError, moreLoading, loadMore]);
+  const minimizeLabel = persistent?.labels.minimize;
+  const descriptor = useMemo(() => {
+    if (!recordingId || !activeKey || resolver.denied) return;
+    const item = selectedLive ?? selected;
+    if (!item) return;
+    const href = videoWatchPath(locale, item.id, item.publicId) + (startAt === undefined ? '' : `?t=${startAt}`);
+    const player = selectedLive
+      ? <PersistentLive onMinimize={minimize} api={api} recording={selectedLive} labels={{...messages, minimize: minimizeLabel}}
+          liveLabels={liveLabels} locale={locale} mediaOriginSeconds={mediaOrigin}
+          onVod={selected?.packageId === selectedLive.captureId ? selectArchive : undefined}/>
+      : <PersistentVod onMinimize={minimize} api={api} identity={identity} locale={locale} messages={{...messages, minimize: minimizeLabel}} selected={selected}
+          recordings={selected ? [selected] : null} resolveMissing={refreshAfterFailure}
+          mediaOrigin={mediaOrigin} mediaDuration={mediaDuration} startAt={startAt} initialBookmark={archiveBookmark}
+          previousHref={previousRecording && videoWatchPath(locale, previousRecording.id, previousRecording.publicId)}
+          nextHref={nextRecording && videoWatchPath(locale, nextRecording.id, nextRecording.publicId)}/>;
+    return {key: activeKey, href, title: item.title, player};
+  }, [recordingId, activeKey, resolver.denied, selectedLive, selected, locale, api, messages, liveLabels, mediaOrigin,
+    selectArchive, identity, refreshAfterFailure, mediaDuration, startAt, archiveBookmark, previousRecording, nextRecording, minimize, minimizeLabel]);
+  useEffect(() => { if (descriptor) startPersistent?.(descriptor); }, [descriptor, startPersistent]);
+  const currentPlaybackKey = persistent?.activeKey;
+  const activeHref = persistent?.activeHref;
+  useEffect(() => {
+    if (!resolver.denied || !recordingId || !currentPlaybackKey) return;
+    if (currentPlaybackKey.split(':')[1] === recordingId ||
+      activeHref?.split('?')[0] === videoWatchPath(locale, recordingId, publicId)) closePersistent?.(currentPlaybackKey);
+  }, [resolver.denied, recordingId, currentPlaybackKey, activeHref, locale, publicId, closePersistent]);
   const liveItems = liveLibraryItems(livestreams).filter(item=>item.id!==recordingId);
   const activeLiveIds = new Set(liveItems.map(item=>item.id));
   const otherRecordings = recordings?.filter(item => item.id !== selectedId && !activeLiveIds.has(item.id)&&!upcomingState.ids.includes(item.id)) ?? [];
   const visibleItems = recordingId ? otherRecordings.slice(0, 10) : otherRecordings;
   const recommendationsPending = Boolean(recordingId) && !visibleItems.length && !liveItems.length && (recordings === null && !loadError || livePending);
-  const liveLabels=messages.live??englishLiveLabels;
   const cardLink=(item:{id:string;publicId?:string})=>videoWatchPath(locale,item.id,item.publicId);
   usePlaybackTelemetry(api,selected?.id,media,Boolean(playback&&!selectedLive&&!resolver.denied));
   const searchMode=view==='list'&&Boolean(query||invalidQuery);
   const searchLabels=messages.search??{results:'Results for {query}',empty:'No results for {query}',clear:'Clear search',tooLong:'Search accepts one query of up to 100 characters.'};
   const liveBadge=(item:MemberLiveRecording)=>liveViewerLabel(item.liveState,liveLabels);
+  const rememberLibrary = () => {
+    if (view === 'list') persistent?.rememberLibrary(videoSearchHref(locale, query), window.scrollY);
+  };
+  const chooseThumbnail = (event: {preventDefault: () => void}, item: MemberRecording | MemberLiveRecording) => {
+    rememberLibrary();
+    if (view !== 'list' || !persistent?.activeKey || persistent.inWatch) return;
+    event.preventDefault();
+    const href = cardLink(item);
+    const labels = {...messages, minimize: minimizeLabel};
+    if ('captureId' in item) {
+      persistent.start({key: `live:${item.id}:${item.captureId}`, href, title: item.title,
+        player: <PersistentLive onMinimize={minimize} api={api} recording={item} labels={labels} liveLabels={liveLabels} locale={locale}/>}, true);
+    } else {
+      persistent.start({key: `vod:${item.id}:${item.packageId}`, href, title: item.title,
+        player: <PersistentVod onMinimize={minimize} api={api} identity={identity} locale={locale} messages={labels}
+          selected={item} recordings={[item]} resolveMissing={refreshAfterFailure} mediaOrigin={null} mediaDuration={null}/>}, true);
+    }
+  };
   const inlineRecommendations=Boolean(recordingId&&(selected||selectedLive||waitingWatch)&&!resolver.denied);
   const recommendations=liveItems.length>0||visibleItems.length>0||view==='list'&&!invalidQuery||recordingId&&watch&&!resolver.denied&&(recommendationsPending||loadError||liveError) ? <div className={zoneStyles.results}>
             {recordingId ? <h2 className="sr-only">{messages.otherVideos??messages.listTitle}</h2>:null}
@@ -449,25 +348,25 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
             <div className={recordingId ? zoneStyles.recommendations : searchMode ? zoneStyles.searchList : zoneStyles.grid}>
               {recordingId&&watch&&recommendationsPending?<VideoRecommendationsSkeleton/>:null}
               {liveItems.map(item=><article id={`recording-${item.id}`} key={item.captureId} className={zoneStyles.card}>
-                <Link href={cardLink(item)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
-                  <ThumbnailPreview api={api} recording={item} labels={messages} enabled={view==='list'} activeId={hoveredRecording} onActive={setHoveredRecording}>
+                <Link href={cardLink(item)} onNavigate={event => chooseThumbnail(event, item)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
+                  <ThumbnailPreview api={api} recording={item} labels={messages} enabled={view==='list'&&!persistent?.activeKey} activeId={hoveredRecording} onActive={setHoveredRecording}>
                   <LiveRecordingCover api={api} recording={item}/>
                   </ThumbnailPreview>
                   <span className={`${zoneStyles.badge} ${item.liveState==='live'?zoneStyles.liveBadge:zoneStyles.stateBadge}`}>{liveBadge(item)}</span>
                 </Link>
-                <div className={zoneStyles.info}><h3 className={zoneStyles.title}><Link href={cardLink(item)} aria-label={`${item.title} — ${liveBadge(item)}`}>{item.title}</Link></h3><p className={zoneStyles.date}>{(messages.liveStartedDate??'{date}').replace('{date}',formatDate(item.startedAt??item.createdAt,locale))}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}</div>
+                <div className={zoneStyles.info}><h3 className={zoneStyles.title}><Link href={cardLink(item)} onNavigate={rememberLibrary} aria-label={`${item.title} — ${liveBadge(item)}`}>{item.title}</Link></h3><p className={zoneStyles.date}>{(messages.liveStartedDate??'{date}').replace('{date}',formatDate(item.startedAt??item.createdAt,locale))}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}</div>
               </article>)}
               {view==='list'&&!invalidQuery&&!loadError&&livePending?<VideoListSkeleton label={messages.loading} search={searchMode}/>:null}
               {view==='list'&&!invalidQuery?<UpcomingBroadcasts api={api} locale={locale} onPresenceChange={setUpcomingPresent} query={query} excludeIds={liveItems.map(item=>item.id)} onPageState={setUpcomingState} loadMoreLabel={messages.loadMore??'Load more'} loading={messages.loading} retry={messages.retry}/>:null}
               {view==='list'&&!invalidQuery&&!loadError&&!livePending&&(!recordings||upcomingState.initialState==='loading')?<VideoListSkeleton label={messages.loading} search={searchMode}/>:null}
               {(view!=='list'||upcomingState.complete&&!livePending?visibleItems:[]).map(item=><article id={`recording-${item.id}`} key={item.id} className={zoneStyles.card}>
-                <Link href={cardLink(item)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
-                  <ThumbnailPreview api={api} recording={item} labels={messages} enabled={view==='list'} activeId={hoveredRecording} onActive={setHoveredRecording}>
+                <Link href={cardLink(item)} onNavigate={event => chooseThumbnail(event, item)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
+                  <ThumbnailPreview api={api} recording={item} labels={messages} enabled={view==='list'&&!persistent?.activeKey} activeId={hoveredRecording} onActive={setHoveredRecording}>
                   <RecordingCover api={api} id={item.id} title={item.title} expiresAt={item.expiresAt} revision={coverRevision(item)}/>
                   </ThumbnailPreview>
                   {item.durationSeconds ? <span className={zoneStyles.duration}>{playerClock(item.durationSeconds)}</span>:null}
                 </Link>
-                <div className={zoneStyles.info}><h3 className={zoneStyles.title}>{view==='list'||recordingId ? <Link href={cardLink(item)}>{item.title}</Link>:item.title}</h3><p className={zoneStyles.date}>{formatDate(item.uploadedAt,locale)}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}
+                <div className={zoneStyles.info}><h3 className={zoneStyles.title}>{view==='list'||recordingId ? <Link href={cardLink(item)} onNavigate={rememberLibrary}>{item.title}</Link>:item.title}</h3><p className={zoneStyles.date}>{formatDate(item.uploadedAt,locale)}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}
                   {view!=='list'&&!recordingId ? <button type="button" className="min-h-11 justify-self-start text-primary underline focus-visible:outline-2 focus-visible:outline-primary" onClick={()=>select(item.id)}>{messages.select}</button>:null}
                 </div>
               </article>)}
@@ -487,17 +386,22 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
           {!loadError && !livePending && !liveError && recordings?.length === 0 && nextCursor===null && !livestreams.length && !selectedLive && !watch && (view!=='list'||upcomingState.complete&&upcomingPresent===false) ? <p className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{searchMode ? <>{searchLabels.empty.replace('{query}',query)} <Link href={videoSearchHref(locale,'')} className="underline">{searchLabels.clear}</Link></> : messages.empty}</p> : null}
           {liveError&&!watch?<p role="status" className="text-sm text-muted">{messages.loadError}</p>:null}
           {waitingWatch&&!selectedLive?<BroadcastWaitingPanel recommendations={recommendations} watch={waitingWatch} locale={locale} api={api}/>:null}
-          {recordingId&&selectedLive&&!resolver.denied?<LiveRecordingPlayer recommendations={recommendations} key={selectedLive.captureId} api={api} recording={selectedLive} labels={messages} liveLabels={messages.live??englishLiveLabels} locale={locale} mediaOriginSeconds={mediaOrigin} onVod={selected?.packageId===selectedLive.captureId?async bookmark=>{
+          {recordingId&&selectedLive&&!resolver.denied&&persistent?<div data-video-watch className={zoneStyles.video}>
+            <div ref={slotRef} className="aspect-video bg-neutral-950">{!currentPlaybackKey && descriptor && <button type="button" onClick={() => startPersistent?.(descriptor, true)}>{messages.play}</button>}</div>
+            <h2 className={zoneStyles.watchTitle}>{selectedLive.title}</h2>
+            <VideoInteractions recommendations={recommendations} key={selectedLive.id} api={api} id={selectedLive.id} publicId={selectedLive.publicId} title={selectedLive.title} locale={locale} live={true} description={selectedLive.description} date={selectedLive.startedAt??selectedLive.createdAt} dateKind="live"/>
+          </div>:null}
+          {recordingId&&selectedLive&&!resolver.denied&&!persistent?<LiveRecordingPlayer recommendations={recommendations} key={selectedLive.captureId} api={api} recording={selectedLive} labels={messages} liveLabels={messages.live??englishLiveLabels} locale={locale} mediaOriginSeconds={mediaOrigin} onVod={selected?.packageId===selectedLive.captureId?async bookmark=>{
             if(await start(bookmark)){setVodChosen(true);setSelectedLive(null);return true;}return false;
           }:undefined}/>:null}
           {selected && !selectedLive && !waitingWatch && !resolver.denied ? <div data-video-watch ref={playerSection} className={`${zoneStyles.video} grid min-w-0 scroll-mt-28 gap-4`}>
-            {playback?.recordingId === selected.id ? <HlsPlayer key={`${playback.url}:${backgroundAudio}`} backgroundAudioUrl={audioUrl} playbackMediaRef={media} playbackPauseRef={playbackPause} resume={vodResume} poster={poster} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} previousHref={previousRecording ? cardLink(previousRecording) : undefined} nextHref={nextRecording ? cardLink(nextRecording) : undefined} onError={mediaError} onBookmark={rememberVod}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950">
+            {persistent && descriptor ? <div ref={slotRef} className="aspect-video bg-neutral-950">{!currentPlaybackKey && <button type="button" onClick={() => startPersistent?.(descriptor, true)}>{messages.play}</button>}</div> : playback?.recordingId === selected.id ? <HlsPlayer key={`${playback.url}:${backgroundAudio}`} backgroundAudioUrl={audioUrl} playbackMediaRef={media} playbackPauseRef={playbackPause} resume={vodResume} poster={poster} videoRef={video} playbackUrl={playback.url} availableQualities={(playback.grant.renditions??[]).map(rendition=>rendition.name)} watermark={playback.grant.watermarkCode} title={selected.title} labels={messages} previousHref={previousRecording ? cardLink(previousRecording) : undefined} nextHref={nextRecording ? cardLink(nextRecording) : undefined} onError={mediaError} onBookmark={rememberVod}/> : <div className="relative grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {poster?<img src={poster} alt={selected.title} width={1280} height={720} className="absolute inset-0 h-full w-full object-contain"/>:null}
               {preparing || recordingId && !playError ? <div className="hhc-player-loading" role="status"><LoaderCircle aria-hidden="true"/><span className="sr-only">{messages.preparing}</span></div> : !recordingId ? <button type="button" onClick={() => void start()} className="relative inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground"><Play size={18} aria-hidden="true" />{messages.play}</button> : null}
             </div>}
             <h2 ref={playerTitle} tabIndex={-1} className={`${zoneStyles.watchTitle} outline-none`}>{selected.title}</h2>
-            {recordingId?<VideoInteractions recommendations={recommendations} key={selected.id} api={api} id={selected.id} publicId={selected.publicId} title={selected.title} locale={locale} live={false} currentTime={()=>media.current?.currentTime??0} durationSeconds={selected.durationSeconds??undefined} description={selected.description} date={selected.uploadedAt} dateKind="uploaded"/>:<VideoInformation description={selected.description} date={selected.uploadedAt} metrics={null} locale={locale}/>}
+            {recordingId?<VideoInteractions recommendations={recommendations} key={selected.id} api={api} id={selected.id} publicId={selected.publicId} title={selected.title} locale={locale} live={false} currentTime={persistent?.currentTime ?? (()=>media.current?.currentTime??0)} durationSeconds={selected.durationSeconds??undefined} description={selected.description} date={selected.uploadedAt} dateKind="uploaded"/>:<VideoInformation description={selected.description} date={selected.uploadedAt} metrics={null} locale={locale}/>}
             {playError ? <p role="alert" className="text-sm text-primary">{playError} <button type="button" className="underline" onClick={() => void start(vodBookmark.current)}>{messages.retry}</button></p> : null}
           </div> : null}
           {!inlineRecommendations?recommendations:null}

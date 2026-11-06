@@ -1,0 +1,83 @@
+.host {
+  position: fixed;
+}
+
+.host[data-presentation='watch'] {
+  left: var(--watch-left);
+  top: var(--watch-top);
+  width: var(--watch-width);
+  height: var(--watch-height);
+  z-index: 5;
+}
+
+.host[data-presentation='mini'] {
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  width: min(360px, calc(100vw - 32px));
+  aspect-ratio: 16 / 9;
+  z-index: 30;
+}
+
+@media (pointer: coarse) {
+  .host[data-presentation='mini'] {
+    width: min(240px, calc(100vw - 32px));
+  }
+}
+
+.host[data-presentation='mini'][data-left='true'] {
+  right: auto;
+  left: max(16px, env(safe-area-inset-left));
+}
+
+.host[data-presentation='mini'][data-top='true'] {
+  bottom: auto;
+  top: max(16px, env(safe-area-inset-top));
+}
+
+.move, .resize {
+  position: absolute;
+  z-index: 10;
+  width: 44px;
+  height: 44px;
+  touch-action: none;
+  color: white;
+  background: rgb(0 0 0 / 80%);
+}
+
+.move {
+  top: 0;
+  left: 0;
+  cursor: grab;
+  border-bottom-right-radius: 8px;
+}
+
+.resize {
+  left: 0;
+  bottom: 0;
+  cursor: ew-resize;
+  border-top-right-radius: 8px;
+}
+
+.host[data-left='true'] .resize {
+  left: auto;
+  right: 0;
+}
+
+@media (pointer: coarse) {
+  .resize { display: none; }
+}
+
+:global(body:has([aria-modal='true'], dialog[open])) .host[data-presentation='mini'] {
+  visibility: hidden;
+}
+
+.host[data-presentation='mini'] :global(.hhc-player-skipGroup),
+.host[data-presentation='mini'] :global(.hhc-player-volumeControl),
+.host[data-presentation='mini'] :global(.hhc-player-rightControls) > :not(:last-child),
+.host[data-presentation='mini'] :global(.hhc-player-topControls) {
+  display: none;
+}
+
+:global(body:has([aria-modal='true'], dialog[open])) .resumeCard {
+  visibility: hidden;
+}
