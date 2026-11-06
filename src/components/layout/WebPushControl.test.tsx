@@ -184,8 +184,10 @@ describe('WebPushControl', () => {
     });
   });
 
-  it('binds an existing subscription to the authenticated account without exposing a user id', async () => {
+  it('registers an existing subscription before binding it without exposing a user id', async () => {
     account.current = authenticatedAccount();
+    let finishRegistration!: (response: Response) => void;
+    const registrationResponse = new Promise<Response>((resolve) => { finishRegistration = resolve; });
     const existingSubscription = {
       unsubscribe: vi.fn(),
       toJSON: () => ({
@@ -210,7 +212,7 @@ describe('WebPushControl', () => {
         return new Response(null, {status: 204});
       }
       if (url.endsWith('/push/subscriptions') && init?.method === 'POST') {
-        return new Response(JSON.stringify({data: {status: 'active'}}), {status: 200});
+        return registrationResponse;
       }
       return new Response(null, {status: 404});
     }));
@@ -228,6 +230,10 @@ describe('WebPushControl', () => {
       locale: 'en',
       subscription: existingSubscription.toJSON()
     });
+    expect(vi.mocked(fetch).mock.calls.some(([url]) =>
+      String(url).endsWith('/push-subscriptions/bind')
+    )).toBe(false);
+    await act(async () => finishRegistration(Response.json({data: {status: 'active'}})));
 
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(
       '/api/account/v1/push-subscriptions/bind',
@@ -240,6 +246,61 @@ describe('WebPushControl', () => {
     const bindCall = vi.mocked(fetch).mock.calls.find(([url]) => String(url).endsWith('/push-subscriptions/bind'));
     expect(bindCall?.[1]?.body).not.toContain('private-user-id');
     expect(subscribe).not.toHaveBeenCalled();
+  });
+
+  it('waits for successful registration on retry before binding', async () => {
+    vi.useFakeTimers();
+    account.current = authenticatedAccount();
+    getSubscription.mockResolvedValue(pushSubscription());
+    let registrationAttempts = 0;
+    let finishRegistration!: (response: Response) => void;
+    const registrationResponse = new Promise<Response>((resolve) => { finishRegistration = resolve; });
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/push/config')) return Response.json({data: {vapidPublicKey: 'AQID'}});
+      if (url.endsWith('/csrf-token')) return Response.json({csrf_token: 'csrf-value'});
+      if (url.endsWith('/push-subscriptions/bind')) return new Response(null, {status: 204});
+      if (url.endsWith('/push/subscriptions')) {
+        if (++registrationAttempts === 1) return new Response(null, {status: 503});
+        return registrationResponse;
+      }
+      return new Response(null, {status: 404});
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const bindingCalls = () => fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/push-subscriptions/bind'));
+
+    render(<WebPushControl locale="en" labels={labels} />);
+    await vi.waitFor(() => expect(screen.getByRole('button', {name: labels.disable}))
+      .toHaveAttribute('data-account-binding', 'retrying'));
+    expect(bindingCalls()).toHaveLength(0);
+
+    await act(async () => vi.advanceTimersByTimeAsync(30000));
+    await vi.waitFor(() => expect(registrationAttempts).toBe(2));
+    expect(bindingCalls()).toHaveLength(0);
+
+    await act(async () => finishRegistration(Response.json({data: {status: 'active'}})));
+    expect(bindingCalls()).toHaveLength(1);
+  });
+
+  it('keeps account binding eligible for retry when the request rejects', async () => {
+    account.current = authenticatedAccount();
+    getSubscription.mockResolvedValue(pushSubscription());
+    const error = new TypeError('Network request failed');
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/push/config')) return Response.json({data: {vapidPublicKey: 'AQID'}});
+      if (url.endsWith('/push/subscriptions')) return Response.json({data: {status: 'active'}});
+      if (url.endsWith('/csrf-token')) return Response.json({csrf_token: 'csrf-value'});
+      if (url.endsWith('/push-subscriptions/bind')) throw error;
+      return new Response(null, {status: 404});
+    }));
+
+    render(<WebPushControl locale="en" labels={labels} />);
+    await waitFor(() => expect(screen.getByRole('button', {name: labels.disable}))
+      .toHaveAttribute('data-account-binding', 'retrying'));
+    expect(captureHandledError).toHaveBeenCalledWith(error, {
+      operation: 'push.account_binding', level: 'warning'
+    });
   });
 
   it('does not repeat successful subscription writes when remounted', async () => {
