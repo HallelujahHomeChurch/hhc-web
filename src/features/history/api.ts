@@ -1,11 +1,11 @@
 import type {HhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
 import {publicContentClient} from '@/features/content/client';
-import {historyPrivateContentBaseUrl} from '@/features/content/config';
+import {privateContentBaseUrl} from '@/features/content/config';
 import {formatContentDate, getContentLocaleMetadata} from '@/features/content/locale';
 import type {Locale} from '@/i18n/locales';
 import type {HistoryTimelinePage, HistoryTimelinePayload} from './types';
 
-export async function getHistoryTimeline(locale: Locale, client: HhcWebClient = publicContentClient(false, historyPrivateContentBaseUrl())): Promise<HistoryTimelinePayload> {
+export async function getHistoryTimeline(locale: Locale, client: HhcWebClient = publicContentClient(false, privateContentBaseUrl('HHC_WEB_HISTORY_API_BASE_URL'))): Promise<HistoryTimelinePayload> {
   const values = [] as Awaited<ReturnType<HhcWebClient['listPublicContent']>>;
   const pageSize = 100;
   for (let page = 1; ; page += 1) {

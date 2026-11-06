@@ -2,6 +2,7 @@ import {isLegalSnapshot} from '@hallelujahhomechurch/account-client';
 import type {HhcWebClient, PageContent, PublicEditorialPage} from '@hallelujahhomechurch/hhc-web-client';
 import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
 import {publicContentClient} from '@/features/content/client';
+import {privateContentBaseUrl} from '@/features/content/config';
 import {productLocales, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import {captureHandledError} from '@/lib/observability';
@@ -42,7 +43,7 @@ export async function getHomePage(locale: Locale, client: HhcWebClient = publicC
   return {...result(page, page.content.data), template: 'home.v1'};
 }
 
-export async function getAboutPage(locale: Locale, client: HhcWebClient = publicContentClient()): Promise<PageResult<AboutContent>> {
+export async function getAboutPage(locale: Locale, client: HhcWebClient = publicContentClient(false, privateContentBaseUrl('HHC_WEB_ABOUT_API_BASE_URL'))): Promise<PageResult<AboutContent>> {
   let page: PublicEditorialPage;
   try {
     page = await requestPage('about', locale, client);

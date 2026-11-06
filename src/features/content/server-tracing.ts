@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
-import {historyPrivateContentBaseUrl, publicContentBaseUrl} from './config';
+import {privateContentBaseUrl, publicContentBaseUrl} from './config';
 
 export function contentTraceTarget(baseUrl = publicContentBaseUrl(), exactPath = false) {
   const url = new URL(baseUrl);
@@ -21,7 +21,9 @@ export function serverTraceSampleRate(value = process.env.SENTRY_TRACES_SAMPLE_R
 
 export function contentServerTracing() {
   const targets = [contentTraceTarget()];
-  const privateHistory = historyPrivateContentBaseUrl();
+  const privateHistory = privateContentBaseUrl('HHC_WEB_HISTORY_API_BASE_URL');
+  const privateAbout = privateContentBaseUrl('HHC_WEB_ABOUT_API_BASE_URL');
+  if (privateAbout) targets.push(contentTraceTarget(`${privateAbout}/pages/about`, true));
   if (privateHistory) targets.push(contentTraceTarget(`${privateHistory}/history`, true));
   const rate = serverTraceSampleRate();
   return {

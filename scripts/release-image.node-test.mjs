@@ -190,7 +190,7 @@ test('trace sampling is validated, persisted by both deployment paths, and resto
   assert.match(capture, /PREVIOUS_SENTRY_TRACES_SAMPLE_RATE=\$previous_rate/);
   assert.match(rollback, /sentryTracesSampleRate="\$PREVIOUS_SENTRY_TRACES_SAMPLE_RATE"/);
   assert.match(rollback, /enableInternalIngress=false/);
-  assert.doesNotMatch(rollback, /"\$SENTRY_TRACES_SAMPLE_RATE"|set-env-vars/);
+  assert.doesNotMatch(rollback, /"\$SENTRY_TRACES_SAMPLE_RATE"|set-env-vars[^\n]*SENTRY_TRACES_SAMPLE_RATE/);
 });
 
 
@@ -203,6 +203,22 @@ test('About history HTTPS defaults off and preview uses the deployment setting',
   const infra = readFileSync(new URL('../infra/main.bicep', import.meta.url), 'utf8');
   assert.match(infra, /param enableHistoryPrivateHttps bool = false/);
   assert.match(infra, /enableHistoryPrivateHttps \? \[\s+{\s+name: 'HHC_WEB_HISTORY_API_BASE_URL'/);
+});
+
+test('About document transport defaults off and rollback restores its captured binding', () => {
+  const deploy = job('deploy');
+  assert.ok(deploy.includes("HHC_WEB_ABOUT_PRIVATE_HTTPS: ${{ vars.HHC_WEB_ABOUT_PRIVATE_HTTPS || 'false' }}"));
+  for (const name of ['Preview infrastructure change', 'Deploy']) {
+    assert.ok(step(deploy, name).includes('enableAboutPrivateHttps="$HHC_WEB_ABOUT_PRIVATE_HTTPS"'));
+  }
+  const infra = readFileSync(new URL('../infra/main.bicep', import.meta.url), 'utf8');
+  assert.match(infra, /param enableAboutPrivateHttps bool = false/);
+  assert.match(infra, /enableAboutPrivateHttps \? \[\s+{\s+name: 'HHC_WEB_ABOUT_API_BASE_URL'/);
+  assert.match(step(deploy, 'Capture current state'), /PREVIOUS_ABOUT_API_BASE_URL=\$previous_about_base/);
+  const rollback = step(deploy, 'Roll back failed update');
+  assert.ok(rollback.includes('--remove-env-vars HHC_WEB_ABOUT_API_BASE_URL'));
+  assert.ok(rollback.includes('--set-env-vars "HHC_WEB_ABOUT_API_BASE_URL=$PREVIOUS_ABOUT_API_BASE_URL"'));
+  assert.ok(rollback.includes('"${binding[@]}"'));
 });
 
 test('release uses ARM identity and public HTTP without remote execution', () => {
