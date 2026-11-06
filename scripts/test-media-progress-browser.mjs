@@ -1,7 +1,10 @@
 // Run against two isolated Chromium contexts and a synthetic same-account API.
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
-import {readFile} from 'node:fs/promises';
+import {execFileSync} from 'node:child_process';
+import {mkdtemp, readFile, rmdir, unlink} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {createRequire} from 'node:module';
 import ts from 'typescript';
 
@@ -9,6 +12,16 @@ const require = createRequire(import.meta.url);
 const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const source = await readFile(new URL('../src/features/member-videos/playback-progress-session.ts', import.meta.url), 'utf8');
 const {outputText} = ts.transpileModule(source, {compilerOptions: {target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext}});
+const directory = await mkdtemp(join(tmpdir(), 'hhc-progress-media-'));
+const path = join(directory, 'sample.webm');
+let asset;
+try {
+  execFileSync(process.env.FFMPEG_PATH || 'ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'testsrc2=size=96x64:rate=10', '-t', '75', '-c:v', 'libvpx', '-b:v', '40k', path]);
+  asset = await readFile(path);
+} finally {
+  await unlink(path).catch(error => { if (error.code !== 'ENOENT') throw error; });
+  await rmdir(directory);
+}
 const mediaVersion = 'vod:synthetic';
 let progress = null;
 let rejected = 0;
@@ -17,8 +30,12 @@ const server = createServer(async (req, res) => {
     res.writeHead(200, {'content-type': 'application/javascript'}).end(outputText);
     return;
   }
+  if (req.url === '/sample.webm') {
+    res.writeHead(200, {'content-type': 'video/webm', 'content-length': asset.length}).end(asset);
+    return;
+  }
   if (req.url === '/') {
-    res.writeHead(200, {'content-type': 'text/html'}).end('<canvas width="64" height="64"></canvas><video muted playsinline></video>');
+    res.writeHead(200, {'content-type': 'text/html'}).end('<video muted playsinline></video>');
     return;
   }
   let response, status = 200;
@@ -63,12 +80,15 @@ try {
         saveProgress: (id, input) => request(id, input, 'PUT'),
       }, name, mediaVersion, new AbortController().signal);
       const resume = await sync.prepare('resume');
-      const canvas = document.querySelector('canvas');
-      const context = canvas.getContext('2d');
-      let frame = 0;
-      setInterval(() => { context.fillStyle = frame++ % 2 ? 'blue' : 'green'; context.fillRect(0, 0, 64, 64); }, 30);
       const video = document.querySelector('video');
-      video.srcObject = canvas.captureStream(30);
+      const metadata = new Promise(resolve => video.addEventListener('loadedmetadata', resolve, {once: true}));
+      video.src = '/sample.webm';
+      await metadata;
+      if (resume) {
+        const seeked = new Promise(resolve => video.addEventListener('seeked', resolve, {once: true}));
+        video.currentTime = resume;
+        await seeked;
+      }
       const playing = new Promise(resolve => video.addEventListener('playing', resolve, {once: true}));
       await video.play();
       await playing;
@@ -81,16 +101,22 @@ try {
   const a = await (await browser.newContext()).newPage();
   const b = await (await browser.newContext()).newPage();
   await start(a, 'A');
-  await a.evaluate(() => window.saveProgress(65));
+  const saved = await a.locator('video').evaluate(async video => {
+    video.currentTime = 65;
+    await new Promise(resolve => video.addEventListener('seeked', resolve, {once: true}));
+    await window.saveProgress(video.currentTime);
+    return video.currentTime;
+  });
   const resumed = await start(b, 'B');
-  assert.equal(resumed.resume, 65);
+  assert.ok(Math.abs(resumed.resume - saved) < 0.2);
+  assert.ok(Math.abs(resumed.observed - saved) < 0.3);
   await a.evaluate(() => window.saveProgress(99));
   await a.evaluate(() => window.saveProgress(100));
   assert.equal(rejected, 1);
   assert.equal(progress.positionSeconds, resumed.observed);
   const before = await a.locator('video').evaluate(video => video.currentTime);
   await a.waitForFunction(previous => !document.querySelector('video').paused && document.querySelector('video').currentTime > previous + 0.15, before);
-  console.log('Chromium: B read the saved 65 seconds and claimed only after real playing; stale A stopped writing and its video clock kept advancing.');
+  console.log('Chromium: B sought to the saved position and claimed only after real playing; stale A stopped writing and its video clock kept advancing.');
 } finally {
   await browser?.close();
   server.close();
