@@ -20,6 +20,7 @@ import {useVodPlayback} from './useVodPlayback';
 import {PersistentLive} from './PersistentLive';
 import {PersistentVod} from './PersistentVod';
 import {usePersistentPlayback} from './PlaybackProvider';
+import {LibraryContinueWatching} from './ContinueWatching';
 import type {PlayerBookmark} from './live-player';
 import {usePlaybackTelemetry} from './usePlaybackTelemetry';
 import {HlsPlayer, type PlayerLabels} from './HlsPlayer';
@@ -308,6 +309,13 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   const currentPlaybackKey = persistent?.activeKey;
   const activeHref = persistent?.activeHref;
   useEffect(() => {
+    const requested = publicId ?? internalRecordingId;
+    if (!requested || !currentPlaybackKey) return;
+    const aliases = [currentPlaybackKey.split(':')[1], activeHref?.split('?')[0].split('/').at(-1)];
+    // A committed unknown target must not keep playing the previous recording behind its loading/error page.
+    if (!aliases.includes(requested)) closePersistent?.(currentPlaybackKey);
+  }, [publicId, internalRecordingId, currentPlaybackKey, activeHref, closePersistent]);
+  useEffect(() => {
     if (!resolver.denied || !recordingId || !currentPlaybackKey) return;
     if (currentPlaybackKey.split(':')[1] === recordingId ||
       activeHref?.split('?')[0] === videoWatchPath(locale, recordingId, publicId)) closePersistent?.(currentPlaybackKey);
@@ -325,21 +333,6 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   const rememberLibrary = () => {
     if (view === 'list') persistent?.rememberLibrary(videoSearchHref(locale, query), window.scrollY);
   };
-  const chooseThumbnail = (event: {preventDefault: () => void}, item: MemberRecording | MemberLiveRecording) => {
-    rememberLibrary();
-    if (view !== 'list' || !persistent?.activeKey || persistent.inWatch) return;
-    event.preventDefault();
-    const href = cardLink(item);
-    const labels = {...messages, minimize: minimizeLabel};
-    if ('captureId' in item) {
-      persistent.start({key: `live:${item.id}:${item.captureId}`, href, title: item.title,
-        player: <PersistentLive onMinimize={minimize} api={api} recording={item} labels={labels} liveLabels={liveLabels} locale={locale}/>}, true);
-    } else {
-      persistent.start({key: `vod:${item.id}:${item.packageId}`, href, title: item.title,
-        player: <PersistentVod onMinimize={minimize} api={api} identity={identity} locale={locale} messages={labels}
-          selected={item} recordings={[item]} resolveMissing={refreshAfterFailure} mediaOrigin={null} mediaDuration={null}/>}, true);
-    }
-  };
   const inlineRecommendations=Boolean(recordingId&&(selected||selectedLive||waitingWatch)&&!resolver.denied);
   const recommendations=liveItems.length>0||visibleItems.length>0||view==='list'&&!invalidQuery||recordingId&&watch&&!resolver.denied&&(recommendationsPending||loadError||liveError) ? <div className={zoneStyles.results}>
             {recordingId ? <h2 className="sr-only">{messages.otherVideos??messages.listTitle}</h2>:null}
@@ -348,7 +341,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
             <div className={recordingId ? zoneStyles.recommendations : searchMode ? zoneStyles.searchList : zoneStyles.grid}>
               {recordingId&&watch&&recommendationsPending?<VideoRecommendationsSkeleton/>:null}
               {liveItems.map(item=><article id={`recording-${item.id}`} key={item.captureId} className={zoneStyles.card}>
-                <Link href={cardLink(item)} onNavigate={event => chooseThumbnail(event, item)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
+                <Link href={cardLink(item)} onNavigate={rememberLibrary} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
                   <ThumbnailPreview api={api} recording={item} labels={messages} enabled={view==='list'&&!persistent?.activeKey} activeId={hoveredRecording} onActive={setHoveredRecording}>
                   <LiveRecordingCover api={api} recording={item}/>
                   </ThumbnailPreview>
@@ -360,7 +353,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
               {view==='list'&&!invalidQuery?<UpcomingBroadcasts api={api} locale={locale} onPresenceChange={setUpcomingPresent} query={query} excludeIds={liveItems.map(item=>item.id)} onPageState={setUpcomingState} loadMoreLabel={messages.loadMore??'Load more'} loading={messages.loading} retry={messages.retry}/>:null}
               {view==='list'&&!invalidQuery&&!loadError&&!livePending&&(!recordings||upcomingState.initialState==='loading')?<VideoListSkeleton label={messages.loading} search={searchMode}/>:null}
               {(view!=='list'||upcomingState.complete&&!livePending?visibleItems:[]).map(item=><article id={`recording-${item.id}`} key={item.id} className={zoneStyles.card}>
-                <Link href={cardLink(item)} onNavigate={event => chooseThumbnail(event, item)} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
+                <Link href={cardLink(item)} onNavigate={rememberLibrary} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
                   <ThumbnailPreview api={api} recording={item} labels={messages} enabled={view==='list'&&!persistent?.activeKey} activeId={hoveredRecording} onActive={setHoveredRecording}>
                   <RecordingCover api={api} id={item.id} title={item.title} expiresAt={item.expiresAt} revision={coverRevision(item)}/>
                   </ThumbnailPreview>
@@ -378,6 +371,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
       {!searchMode?hero:null}
       <div className={`${recordingId?'':'bg-[image:var(--hhc-page-gradient)]'} pb-14 ${recordingId ? zoneStyles.watchPage : 'py-10'}`}>
         <section className={`${zoneStyles.zone} ${recordingId ? zoneStyles.watch : searchMode ? zoneStyles.search : zoneStyles.library}`} aria-label={messages.listTitle}>
+          {view === 'list' && identity && <LibraryContinueWatching member={identity} locale={locale}/>}
           {searchMode ? <h1 className={zoneStyles.searchHeading}>{searchLabels.results.replace('{query}',query)}</h1>:null}
           {invalidQuery&&view==='list' ? <div role="alert" className="text-ink">{searchLabels.tooLong} <Link href={videoSearchHref(locale,'')} className="underline">{searchLabels.clear}</Link></div>:null}
           {recordingId && resolver.denied ? <p role="alert" className="text-ink">{messages.unavailable ?? messages.expired}</p> : null}
