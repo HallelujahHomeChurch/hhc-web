@@ -13,6 +13,9 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
   let writing = false;
   let next: {positionSeconds: number; state: RecordingProgressUpdate['state']; keepalive: boolean} | undefined;
   let retryAt = 0;
+  let retryTimer: ReturnType<typeof setTimeout> | undefined;
+  let acknowledged: Pick<RecordingProgressUpdate, 'positionSeconds' | 'state'> | undefined;
+  signal.addEventListener('abort', () => clearTimeout(retryTimer), {once: true});
   let attempt = 0;
   let preparing = false;
   let pendingPosition: number | undefined;
@@ -22,6 +25,7 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
     if (writing || !owner || !next || signal.aborted || Date.now() < retryAt) return;
     const update = next;
     next = undefined;
+    if (acknowledged?.positionSeconds === update.positionSeconds && acknowledged.state === update.state) return;
     writing = true;
     const writingOwner = owner;
     try {
@@ -29,6 +33,7 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
         sessionId, generation: owner.generation, mediaVersion: owner.mediaVersion,
         sequence: ++sequence, positionSeconds: update.positionSeconds, state: update.state,
       }, update.keepalive ? {keepalive: true} : {signal});
+      if (owner === writingOwner) acknowledged = update;
       attempt = 0;
     } catch (error) {
       const status = statusOf(error);
@@ -42,6 +47,8 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
         const delay = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(retryAfter ?? '') - Date.now();
         retryAt = Date.now() + (Number.isFinite(delay) && delay > 0 ? delay : [5000, 10000, 20000, 30000][Math.min(attempt++, 3)]);
         next ??= update;
+        clearTimeout(retryTimer);
+        if (!signal.aborted) retryTimer = setTimeout(() => void drain(), Math.max(0, retryAt - Date.now()));
       }
     } finally {
       writing = false;
@@ -70,6 +77,8 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
         owner = claimed;
         sequence = claimed.sequence;
         next = undefined;
+        acknowledged = undefined;
+        clearTimeout(retryTimer);
         attempt = 0;
         retryAt = 0;
         return;
