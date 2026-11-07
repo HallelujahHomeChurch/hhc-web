@@ -19,11 +19,12 @@ describe('server tracing policy', () => {
     for (const value of ['1', '-1', 'NaN', 'Infinity']) expect(() => serverTraceSampleRate(value)).toThrow('SENTRY_TRACES_SAMPLE_RATE');
   });
 
-  it('keeps the local probability independent of the inbound sampled flags', () => {
+  it('honors the trusted edge parent while retaining the local root probability', () => {
     const sampler = contentServerTracing().tracesSampler;
     for (const parentSampled of [false, true]) {
-      expect(Reflect.apply(sampler, undefined, [{parentSampled, parentSampleRate: 1}])).toBe(0.01);
+      expect(Reflect.apply(sampler, undefined, [{parentSampled, parentSampleRate: 1}])).toBe(parentSampled);
     }
+    expect(sampler({})).toBe(0.01);
     const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
     try {
       for (const flag of ['0', '1']) {
