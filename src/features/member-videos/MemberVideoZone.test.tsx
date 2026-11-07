@@ -95,7 +95,7 @@ it('uses public IDs for VOD and live cards while preserving UUID identity',async
  videoApi.liveList.mockResolvedValue([{id:'r2',publicId:'Ab_012-xyzQ',captureId:packageId,title:'Short live',liveState:'live',createdAt:'2026-10-07T00:00:00Z'}]);
  render(<MemberVideoZone locale="ja" messages={messages} hero={null} view="list"/>);
  expect(await screen.findByRole('link',{name:'Short VOD'})).toHaveAttribute('href','/video/aB_012-xyzQ');
- expect(screen.getByRole('link',{name:/Short live/})).toHaveAttribute('href','/video/Ab_012-xyzQ');
+ expect(screen.getByRole('link',{name:/^Short live/})).toHaveAttribute('href','/video/Ab_012-xyzQ');
  expect(videoApi.grant).not.toHaveBeenCalled();
 });
 
@@ -297,13 +297,13 @@ describe('member video gate', () => {
     list.mockResolvedValue(items.slice(0,12));
     videoApi.listPage.mockResolvedValueOnce({items:items.slice(0,12),nextCursor:'next'}).mockResolvedValueOnce({items:[items[11],...items.slice(12)],nextCursor:null});
     render(<MemberVideoZone locale="en" messages={messages} hero={null} view="list"/>);
-    expect(await screen.findAllByRole('link',{name:/Gathering/})).toHaveLength(12);
+    expect(await screen.findAllByRole('link',{name:/^Gathering/})).toHaveLength(12);
     expect(screen.queryByRole('heading',{name:'Recent recordings'})).toBeNull();
     expect(screen.queryByText(/gatherings/)).toBeNull();
-    expect(screen.getAllByRole('link',{name:/Gathering/})[0]).toHaveAttribute('href','/en/member-videos/r0');
+    expect(screen.getAllByRole('link',{name:/^Gathering/})[0]).toHaveAttribute('href','/en/member-videos/r0');
     expect(screen.queryByRole('button',{name:'Next'})).toBeNull();
     fireEvent.click(screen.getByRole('button',{name:'Load more'}));
-    await waitFor(()=>expect(screen.getAllByRole('link',{name:/Gathering/})).toHaveLength(15));
+    await waitFor(()=>expect(screen.getAllByRole('link',{name:/^Gathering/})).toHaveLength(15));
     expect(screen.queryByRole('button',{name:'Load more'})).toBeNull();
     expect(videoApi.grant).not.toHaveBeenCalled();
   });
@@ -381,7 +381,7 @@ describe('member video gate', () => {
     list.mockResolvedValue(items);
     render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r0"/>);
     await screen.findByRole('heading', {level:2, name:'Gathering 0'});
-    const links=screen.getAllByRole('link', {name:/Gathering/});
+    const links=screen.getAllByRole('link', {name:/^Gathering/});
     expect(links).toHaveLength(10);
     expect(links[0]).toHaveTextContent('Gathering 14');
     expect(links[9]).toHaveTextContent('Gathering 5');
@@ -393,7 +393,7 @@ describe('member video gate', () => {
     list.mockResolvedValue(Array.from({length:13},(_,i)=>({id:`r${i}`,title:`Gathering ${i}`,uploadedAt:`2026-10-${String(i+1).padStart(2,'0')}T00:00:00Z`})));
     render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r0"/>);
     await screen.findByRole('heading',{level:2,name:'Gathering 0'});
-    for(const link of screen.getAllByRole('link',{name:/Gathering/}))expect(link.getAttribute('href')).not.toContain('?');
+    for(const link of screen.getAllByRole('link',{name:/^Gathering/}))expect(link.getAttribute('href')).not.toContain('?');
   });
   it('does not substitute the newest video for an unavailable direct link', async () => {
     state.auth='authenticated'; state.access='available';
@@ -932,8 +932,9 @@ describe('persistent member playback', () => {
     const video = view.container.querySelector('video');
     view.rerender(<Fixture route="list"/>);
     await screen.findByRole('link', {name: b.title});
-    const thumbnail = view.container.querySelector<HTMLAnchorElement>('a[aria-hidden="true"][href="/video/bB_012-xyzQ"]')!;
+    const thumbnail = view.container.querySelector<HTMLAnchorElement>('a[tabindex="-1"][href="/video/bB_012-xyzQ"]')!;
     expect(thumbnail).not.toBeNull();
+    expect(thumbnail).not.toHaveAttribute('aria-hidden','true');
     fireEvent.click(thumbnail, {ctrlKey: true});
     expect(navigate).not.toHaveBeenCalled();
     expect(videoApi.grant).toHaveBeenCalledTimes(1);

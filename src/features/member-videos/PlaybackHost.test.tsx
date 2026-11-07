@@ -91,6 +91,17 @@ it('keeps the close controls inside a short viewport when resizing', () => {
   try {
     render(<PlaybackHost watchSlot={null} moveLabel="Move" resizeLabel="Resize"><video/></PlaybackHost>);
     for(let i=0;i<30;i++)fireEvent.keyDown(screen.getByRole('button',{name:'Resize'}),{key:'ArrowRight'});
-    expect(screen.getByRole('group',{name:'Move'}).style.width).toContain('576px');
+    const width=Number(screen.getByRole('group',{name:'Move'}).style.width.match(/min\(([\d.]+)px/)?.[1]);
+    expect(width*9/16+76+32).toBeLessThanOrEqual(400);
   } finally { Object.defineProperty(window,'innerHeight',{value:original,configurable:true}); }
+});
+
+it.each([0,320])('starts keyboard resizing from the displayed mini width (%s) without replacing media', width => {
+  const view=render(<PlaybackHost watchSlot={null} moveLabel="Move" resizeLabel="Resize"><video data-testid="sized-video"/></PlaybackHost>);
+  const video=screen.getByTestId('sized-video');
+  vi.spyOn(screen.getByRole('group',{name:'Move'}),'getBoundingClientRect').mockReturnValue({width} as DOMRect);
+  fireEvent.keyDown(screen.getByRole('button',{name:'Resize'}),{key:'ArrowRight'});
+  expect(screen.getByRole('group',{name:'Move'}).style.width).toContain(`${(width||400)+16}px`);
+  expect(screen.getByTestId('sized-video')).toBe(video);
+  view.unmount();
 });

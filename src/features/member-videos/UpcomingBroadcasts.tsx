@@ -61,7 +61,7 @@ export function UpcomingBroadcasts({onNavigate,active=true,api,locale,query='',e
  useEffect(()=>{onPageState?.({ids:items.map(item=>item.recordingId),complete:loaded&&cursor===null,initialState:loaded?'ready':error?'error':'loading'});},[items,cursor,loaded,error,onPageState]);
  return <>
   {items.filter(item=>!excludeIds.includes(item.recordingId)).map(item=><article key={item.recordingId} className={styles.card}>
-   <Link onNavigate={onNavigate} href={videoWatchPath(locale,item.recordingId,item.publicId)} className={styles.thumbnail} aria-hidden="true" tabIndex={-1}>
+   <Link onNavigate={onNavigate} href={videoWatchPath(locale,item.recordingId,item.publicId)} className={styles.thumbnail} aria-label={`${labels.upcoming}: ${item.title}`} tabIndex={-1}>
     <BroadcastCover coverMode={item.coverMode} api={api} id={item.recordingId} title={item.title} revision={item.cover?`cover:${item.cover.revision}`:`state:${item.stateRevision}`}/>
     <span className={`${styles.badge} ${styles.stateBadge}`}>{labels.upcoming}</span>
    </Link>

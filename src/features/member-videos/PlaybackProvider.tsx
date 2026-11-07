@@ -183,10 +183,10 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
     </div>}
     {member && playback && <PlaybackHost watchSlot={watchSlot} minimizeOffset={minimizeOffset} onSettled={settled} onClose={closeActive} moveLabel={labels.move} resizeLabel={labels.resize}>
       <div key={playback.key}>{playback.player}</div>
-      {!watchSlot && <div className="absolute right-1 top-1 z-10 rounded-full bg-black/60 text-white">
+      {!watchSlot && <div className={styles.close}>
         <button type="button" aria-label={labels.close} className="grid size-11 place-items-center" onClick={closeActive}><X size={20}/></button>
       </div>}
-      {!watchSlot && <Link href={playback.href} onNavigate={cancelTransition} className={styles.caption}>{playback.title}</Link>}
+      {!watchSlot && <Link href={playback.href} onNavigate={cancelTransition} className={styles.caption}><span className={styles.captionTitle}>{playback.title}</span></Link>}
     </PlaybackHost>}
   </Context.Provider>;
 }
