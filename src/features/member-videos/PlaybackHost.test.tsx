@@ -1,4 +1,4 @@
-import {render, screen, fireEvent} from '@testing-library/react';
+import {act, render, screen, fireEvent} from '@testing-library/react';
 import {expect, it, vi} from 'vitest';
 import {PlaybackHost} from './PlaybackHost';
 
@@ -104,4 +104,14 @@ it.each([0,320])('starts keyboard resizing from the displayed mini width (%s) wi
   expect(screen.getByRole('group',{name:'Move'}).style.width).toContain(`${(width||400)+16}px`);
   expect(screen.getByTestId('sized-video')).toBe(video);
   view.unmount();
+});
+
+it('reveals mini actions for keyboard focus but clears pointer focus residue',()=>{
+ render(<PlaybackHost watchSlot={null} moveLabel="Move"><button>Action</button></PlaybackHost>);
+ const host=screen.getByRole('group',{name:'Move'}),button=screen.getByRole('button',{name:'Action'});
+ act(()=>button.focus());expect(host).toHaveAttribute('data-keyboard-focus','false');
+ act(()=>button.blur());fireEvent.keyDown(document,{key:'Tab'});act(()=>button.focus());
+ expect(host).toHaveAttribute('data-keyboard-focus','true');
+ fireEvent.pointerDown(document.body);
+ expect(document.activeElement).toBe(button);expect(host).toHaveAttribute('data-keyboard-focus','false');
 });

@@ -4,16 +4,16 @@ import {beforeEach, expect, it, vi} from 'vitest';
 import {PlaybackProvider, usePersistentPlayback} from './PlaybackProvider';
 import {clearResumeDismissals, dismissResume, isResumeDismissed} from './resume-dismissal';
 
-const account = vi.hoisted(() => ({status: 'authenticated', access: 'available'}));
+const account = vi.hoisted(() => ({status: 'authenticated', access: 'available', identity:'member'}));
 vi.mock('next/link',()=>({default:({onNavigate,href,children,...props}:import('react').ComponentProps<typeof import('next/link').default>)=><a {...props} href={String(href)} onClick={event=>{event.preventDefault();onNavigate?.({preventDefault:()=>{}});}}>{children}</a>}));
 vi.mock('next/navigation', () => ({useRouter: () => ({push: vi.fn()})}));
-vi.mock('@/components/layout/AccountControl', () => ({useAccountIdentity: () => 'member', useAccountAuth: () => ({status: account.status}), useVideoAccess: () => account.access}));
+vi.mock('@/components/layout/AccountControl', () => ({useAccountIdentity: () => account.identity, useAccountAuth: () => ({status: account.status}), useVideoAccess: () => account.access}));
 vi.mock('@/components/layout/MediaDocument', () => ({useMediaDocument: () => ({privateMediaReady: true})}));
 vi.mock('./ContinueWatching', () => ({ContinueWatching: () => <aside>Historical resume</aside>}));
 const labels = {removeResume: 'Remove from continue watching', resume: 'Resume', live: 'Live', close: 'Close player', expand: 'Expand', minimize: 'Minimize', move: 'Move', resize: 'Resize'};
 const flush = vi.fn();
 const identity = {recordingId: 'recording', mediaVersion: 'vod:package', sessionId: 'pending-session'};
-beforeEach(() => {clearResumeDismissals(); flush.mockReset(); account.status='authenticated'; account.access='available';});
+beforeEach(() => {clearResumeDismissals(); flush.mockReset(); account.status='authenticated'; account.access='available';account.identity='member';});
 const player = <video aria-label="Current recording"/>;
 function Playing() {
   const playback = usePersistentPlayback();
@@ -131,4 +131,48 @@ it('does not reopen a closed mini when its old watch slot reports again',async()
  await act(async()=>{controls?.setSlot('vod:recording:package',slot);});
  expect(screen.getByLabelText('Current recording').closest('[data-presentation]')).toHaveStyle({'--watch-left':'99px'});
  fresh.remove();slot.remove();
+});
+
+it('shows the source list only for an explicit library snapshot and keeps media while toggling it',async()=>{
+ let controls!:ReturnType<typeof usePersistentPlayback>;
+ function Probe(){const value=usePersistentPlayback();useEffect(()=>{controls=value;},[value]);return null;}
+ render(<PlaybackProvider locale="en" labels={labels}><Probe/></PlaybackProvider>);
+ await act(async()=>{
+  controls?.captureSource({sourceHref:'/member-videos?q=test',items:[{id:'recording',href:'/video/A',title:'First'},{id:'other',href:'/video/B',title:'Second'},{id:'other',href:'/video/B',title:'Stale duplicate'}]},'/video/A');
+  controls?.start({key:'vod:recording:package',href:'/video/A',title:'First',player});
+ });
+ const video=screen.getByLabelText('Current recording');
+ expect(screen.getByText('哈利路亞家教會')).toBeInTheDocument();
+ const toggle=screen.getByRole('button',{name:'Expand video list'});
+ expect(toggle).toHaveAttribute('aria-expanded','false');
+ expect(screen.queryByRole('navigation',{name:'Video list'})).toBeNull();
+ fireEvent.click(toggle);
+ expect(screen.getByRole('navigation',{name:'Video list'})).toBeInTheDocument();
+ expect(screen.getByRole('link',{name:'Second'})).toHaveAttribute('href','/video/B');
+ expect(screen.queryByText('Stale duplicate')).toBeNull();
+ expect(screen.getByLabelText('Current recording')).toBe(video);
+ screen.getByRole('link',{name:'Second'}).focus();
+ const collapse=screen.getByRole('button',{name:'Collapse video list'});
+ fireEvent.click(collapse);
+ expect(document.activeElement).toBe(collapse);
+ expect(screen.queryByRole('navigation',{name:'Video list'})).toBeNull();
+ expect(screen.getByLabelText('Current recording')).toBe(video);
+});
+
+it('does not offer a source arrow for direct watch entries',()=>{
+ render(<PlaybackProvider locale="en" labels={labels}><Playing/></PlaybackProvider>);
+ expect(screen.queryByRole('button',{name:'Expand video list'})).toBeNull();
+});
+
+it('clears private source context on account change and rejects old account callbacks',async()=>{
+ let controls!:ReturnType<typeof usePersistentPlayback>;
+ function Probe(){const value=usePersistentPlayback();useEffect(()=>{controls=value;},[value]);return null;}
+ const view=render(<PlaybackProvider locale="en" labels={labels}><Probe/></PlaybackProvider>);
+ const old=controls;
+ await act(async()=>{old?.captureSource({sourceHref:'/videos',items:[{id:'a',href:'/video/A',title:'Private source A'}]},'/video/A');old?.start({key:'a',href:'/video/A',title:'Private source A',player});});
+ account.identity='other';view.rerender(<PlaybackProvider locale="en" labels={labels}><Probe/></PlaybackProvider>);
+ account.identity='member';view.rerender(<PlaybackProvider locale="en" labels={labels}><Probe/></PlaybackProvider>);
+ await act(async()=>{old?.captureSource({sourceHref:'/videos',items:[{id:'a',href:'/video/A',title:'Private source A'}]},'/video/A');old?.start({key:'a',href:'/video/A',title:'Private source A',player});});
+ expect(screen.queryByLabelText('Current recording')).toBeNull();
+ expect(screen.queryByText('Private source A')).toBeNull();
 });
