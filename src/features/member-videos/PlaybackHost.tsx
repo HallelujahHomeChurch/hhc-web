@@ -2,18 +2,27 @@
 
 import {useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode} from 'react';
 import styles from './mini-player.module.css';
+import {miniRect, pullRect, readMiniArea, type MediaRect, type MiniArea} from './mini-geometry';
 
-export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLabel, minimizeOffset = 0, onSettled}: {
+export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLabel, minimizeOffset = 0, tracking = minimizeOffset !== 0, onSettled, onPullCancel, sessionKey}: {
   watchSlot: HTMLElement | null;
   children: ReactNode;
   onClose?: () => void;
   moveLabel?: string;
   resizeLabel?: string;
   minimizeOffset?: number;
+  tracking?: boolean;
   onSettled?: () => void;
+  onPullCancel?: () => void;
+  sessionKey?: string;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const lastBounds = useRef<DOMRect | null>(null);
+  const dragRelease = useRef<MediaRect | null>(null);
+  const lastBounds = useRef<MediaRect | null>(null);
+  const area = useRef<MiniArea | null>(null);
+  const pull = useRef<{start: MediaRect; end: MediaRect; dyLock: number} | null>(null);
+  const invalidPull = useRef(false), geometryGeneration = useRef(0), lastSession = useRef(sessionKey);
+  const arrange = useRef<(reason: 'render' | 'slot' | 'viewport') => void>(() => {});
   const lastWatch = useRef(Boolean(watchSlot));
   const lastCorner = useRef('false:false');
   const transition = useRef<Animation | null>(null);
@@ -21,14 +30,24 @@ export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLab
   const suppressClick = useRef(false);
   const [left, setLeft] = useState(false), [top, setTop] = useState(false);
   const [width, setWidth] = useState<number>();
+  const [wasWatch, setWasWatch] = useState(Boolean(watchSlot));
+  if (wasWatch !== Boolean(watchSlot)) {
+    setWasWatch(Boolean(watchSlot));
+    if (!watchSlot && minimizeOffset > 0) {setLeft(false); setTop(false);}
+  }
   const [offset, setOffset] = useState({x: 0, y: 0});
-  const clampWidth = (value: number) => Math.max(0, Math.min(Math.max(240, value), 640, window.innerWidth - 32, (window.innerHeight - 32 - (window.matchMedia?.('(pointer: coarse)').matches ? 0 : 76)) * 16 / 9));
+  const clampWidth = (value: number) => {
+    const bounds = area.current ?? readMiniArea();
+    const compact = bounds.right - bounds.left < 736;
+    const caption = compact ? 0 : hostRef.current?.querySelector<HTMLElement>('[data-mini-caption]')?.getBoundingClientRect().height || 76;
+    return miniRect(bounds, Math.min(640, Math.max(240, value)), caption, left, top).width;
+  };
   const pointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (watchSlot || hostRef.current?.querySelector('[data-fullscreen]:not([data-fullscreen="inline"])') || !event.isPrimary || event.button !== 0) { drag.current = null; setOffset({x: 0, y: 0}); return; }
     suppressClick.current = false;
     const target = event.target as HTMLElement;
     const resize = Boolean(target.closest('[data-mini-resize]'));
-    if (resize && window.matchMedia?.('(pointer: coarse)').matches) return;
+    if (resize && (area.current ?? readMiniArea()).right - (area.current ?? readMiniArea()).left < 736) return;
     if (!resize && target.closest('button, a, input, select, [role="slider"]') && !target.closest('[data-player-surface]')) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     drag.current = {id: event.pointerId, x: event.clientX, y: event.clientY, width: bounds.width, bounds, resize, moved: false};
@@ -42,15 +61,17 @@ export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLab
     suppressClick.current = true;
     event.currentTarget.setPointerCapture(event.pointerId);
     if (start.resize) setWidth(clampWidth(start.width + (left ? dx : -dx)));
-    else setOffset({x: Math.max(16 - start.bounds.left, Math.min(window.innerWidth - 16 - start.bounds.right, dx)), y: Math.max(16 - start.bounds.top, Math.min(window.innerHeight - 16 - start.bounds.bottom, dy))});
+    else {const bounds = area.current ?? readMiniArea(); setOffset({x: Math.max(bounds.left - start.bounds.left, Math.min(bounds.right - start.bounds.right, dx)), y: Math.max(bounds.top - start.bounds.top, Math.min(bounds.bottom - start.bounds.bottom, dy))});}
   };
   const pointerUp = (event: PointerEvent<HTMLDivElement>) => {
     const start = drag.current;
     if (!start || start.id !== event.pointerId) return;
     drag.current = null;
     if (start.moved && !start.resize) {
-      setLeft(event.clientX < window.innerWidth / 2);
-      setTop(event.clientY < window.innerHeight / 2);
+      dragRelease.current = event.currentTarget.getBoundingClientRect();
+      const bounds = area.current ?? readMiniArea();
+      setLeft(event.clientX < (bounds.left + bounds.right) / 2);
+      setTop(event.clientY < (bounds.top + bounds.bottom) / 2);
     }
     setOffset({x: 0, y: 0});
   };
@@ -69,42 +90,6 @@ export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLab
   useLayoutEffect(() => {
     const host = hostRef.current;
     if (!host || !watchSlot) return;
-    let frame = 0;
-    const measure = () => {
-      frame = 0;
-      if (document.visibilityState === 'hidden') return;
-      const {left, top, width, height} = watchSlot.getBoundingClientRect();
-      host.style.setProperty('--watch-left', `${left}px`);
-      host.style.setProperty('--watch-top', `${top}px`);
-      host.style.setProperty('--watch-width', `${width}px`);
-      host.style.setProperty('--watch-height', `${height}px`);
-      if (lastWatch.current === Boolean(watchSlot)) lastBounds.current = host.getBoundingClientRect();
-    };
-    const queueMeasure = () => {
-      if (!frame && document.visibilityState !== 'hidden') frame = requestAnimationFrame(measure);
-    };
-    measure();
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(queueMeasure);
-    observer?.observe(watchSlot);
-    window.addEventListener('scroll', queueMeasure, {capture: true, passive: true});
-    window.addEventListener('resize', queueMeasure);
-    window.visualViewport?.addEventListener('resize', queueMeasure);
-    window.visualViewport?.addEventListener('scroll', queueMeasure);
-    document.addEventListener('visibilitychange', queueMeasure);
-    return () => {
-      cancelAnimationFrame(frame);
-      observer?.disconnect();
-      window.removeEventListener('scroll', queueMeasure, true);
-      window.removeEventListener('resize', queueMeasure);
-      window.visualViewport?.removeEventListener('resize', queueMeasure);
-      window.visualViewport?.removeEventListener('scroll', queueMeasure);
-      document.removeEventListener('visibilitychange', queueMeasure);
-    };
-  }, [watchSlot]);
-
-  useLayoutEffect(() => {
-    const host = hostRef.current;
-    if (!host || !watchSlot) return;
     const sync = () => {
       const theater = host.querySelector('[data-theater="true"]') !== null;
       if (host.dataset.theater !== String(theater)) host.dataset.theater = String(theater);
@@ -117,30 +102,88 @@ export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLab
   }, [watchSlot]);
 
   useLayoutEffect(() => {
-    const host = hostRef.current;
-    if (!host) return;
-    const corner = `${left}:${top}`;
-    const changed = lastWatch.current !== Boolean(watchSlot) || !watchSlot && lastCorner.current !== corner;
-    if (changed) { transition.current?.cancel(); transition.current = null; }
-    const next = host.getBoundingClientRect(), previous = lastBounds.current;
-    if (changed && previous && previous.width > 0 && next.width > 0 && host.animate &&
-      !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches &&
-      !host.querySelector('[data-fullscreen]:not([data-fullscreen="inline"])')) {
-      transition.current = host.animate([
-        {transformOrigin: 'top left', transform: `translate(${previous.left - next.left}px, ${previous.top - next.top}px) scale(${previous.width / next.width})`},
-        {transformOrigin: 'top left', transform: 'none'},
-      ], {duration: 220, easing: 'cubic-bezier(.22,1,.36,1)'});
-      transition.current.onfinish = () => { transition.current = null; onSettled?.(); };
-    }
-    if (changed && !transition.current) onSettled?.();
-    lastBounds.current = next;
-    lastWatch.current = Boolean(watchSlot);
-    lastCorner.current = corner;
-  }, [watchSlot, minimizeOffset, offset.x, offset.y, width, left, top, onSettled]);
+    arrange.current = reason => {
+      const host = hostRef.current;
+      if (!host) return;
+      area.current ??= readMiniArea();
+      const bounds = area.current, compact = bounds.right - bounds.left < 736;
+      const caption = compact ? 0 : host.querySelector<HTMLElement>('[data-mini-caption]')?.getBoundingClientRect().height || 76;
+      const end = miniRect(bounds, width ?? (compact ? 240 : 400), caption, left, top);
+      const corner = `${left}:${top}`;
+      const newSession = lastSession.current !== sessionKey;
+      if (newSession) {pull.current = null; invalidPull.current = false;}
+      const current = host.getBoundingClientRect();
+      const previous = dragRelease.current ?? (current.width > 0 ? current : lastBounds.current);
+      let changed = Boolean(dragRelease.current) || newSession || lastWatch.current !== Boolean(watchSlot) || !watchSlot && lastCorner.current !== corner;
+      let next: MediaRect = watchSlot ? watchSlot.getBoundingClientRect() : end;
+      dragRelease.current = null;
+      if (watchSlot && pull.current && (reason === 'viewport' || ['left','top','width','height'].some(key=>next[key as keyof MediaRect] !== pull.current!.start[key as keyof MediaRect]))) {
+        invalidPull.current = true; pull.current = null; changed = true; onPullCancel?.();
+      }
+      if (!tracking) invalidPull.current = false;
+      if (watchSlot && tracking && !invalidPull.current) {
+        if (!pull.current) pull.current = {start: next, end: miniRect(bounds, width ?? (compact ? 240 : 400), caption, false, false), dyLock: minimizeOffset};
+        next = pullRect(pull.current.start, pull.current.end, minimizeOffset, pull.current.dyLock);
+      } else if (pull.current) {
+        pull.current = null;
+        if (watchSlot) changed = true;
+      }
+      if (!watchSlot && reason === 'viewport') changed = true;
+      if (changed || watchSlot && tracking) {++geometryGeneration.current; transition.current?.cancel(); transition.current = null;}
+      host.style.left = `${next.left}px`; host.style.top = `${next.top}px`;
+      host.style.width = `${next.width}px`; host.style.height = `${next.height}px`;
+      host.style.right = 'auto'; host.style.bottom = 'auto';
+      host.style.setProperty('--mini-available-height', `${bounds.bottom - bounds.top}px`);
+      host.dataset.compact = String(compact);
+      if (changed && !newSession && previous && previous.width > 0 && previous.height > 0 && next.width > 0 && next.height > 0 && host.animate &&
+        !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches &&
+        !host.querySelector('[data-fullscreen]:not([data-fullscreen="inline"])')) {
+        const generation = geometryGeneration.current;
+        const frame = (rect: MediaRect) => ({left:`${rect.left}px`,top:`${rect.top}px`,width:`${rect.width}px`,height:`${rect.height}px`});
+        const animation = host.animate([frame(previous), frame(next)], {duration: 220, easing: 'cubic-bezier(.22,1,.36,1)'});
+        transition.current = animation;
+        animation.onfinish = () => {if (generation === geometryGeneration.current && transition.current === animation) {transition.current = null; onSettled?.();}};
+      }
+      if (changed && !transition.current) onSettled?.();
+      lastBounds.current = next; lastWatch.current = Boolean(watchSlot); lastCorner.current = corner; lastSession.current = sessionKey;
+    };
+    arrange.current('render');
+  }, [watchSlot, minimizeOffset, width, left, top, offset.x, offset.y, tracking, onSettled, onPullCancel, sessionKey]);
+
+  useLayoutEffect(() => {
+    let frame = 0, viewportChanged = false;
+    const queue = (viewport: boolean) => {
+      viewportChanged ||= viewport;
+      if (!frame && document.visibilityState !== 'hidden') frame = requestAnimationFrame(() => {
+        frame = 0;
+        let reason: 'viewport' | 'slot' = 'slot';
+        if (viewportChanged) {
+          const next = readMiniArea(), previous = area.current;
+          if (!previous || Object.keys(next).some(key=>next[key as keyof MiniArea] !== previous[key as keyof MiniArea])) reason = 'viewport';
+          area.current = next;
+          if (reason === 'viewport' && drag.current) {drag.current = null; setOffset({x:0,y:0});}
+        }
+        viewportChanged = false;
+        arrange.current(reason);
+      });
+    };
+    const viewport = () => queue(true), measure = () => queue(false);
+    const nav = document.querySelector('.site-mobile-tab-bar');
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(entries=>queue(entries.some(entry=>entry.target===nav)));
+    if (nav) observer?.observe(nav);
+    if (watchSlot) observer?.observe(watchSlot);
+    const mutation = nav ? new MutationObserver(viewport) : null;
+    if (nav) mutation?.observe(nav, {attributes:true, attributeFilter:['style','class','data-mobile-hidden']});
+    nav?.addEventListener('transitionend', viewport); nav?.addEventListener('focusin', viewport); nav?.addEventListener('focusout', viewport);
+    window.addEventListener('resize', viewport); window.addEventListener('scroll', measure, {capture:true,passive:true});
+    window.visualViewport?.addEventListener('resize', viewport); window.visualViewport?.addEventListener('scroll', viewport);
+    document.addEventListener('visibilitychange', viewport);
+    return () => {cancelAnimationFrame(frame); nav?.removeEventListener('transitionend', viewport); nav?.removeEventListener('focusin', viewport); nav?.removeEventListener('focusout', viewport); observer?.disconnect(); mutation?.disconnect(); window.removeEventListener('resize', viewport); window.removeEventListener('scroll', measure, true); window.visualViewport?.removeEventListener('resize', viewport); window.visualViewport?.removeEventListener('scroll', viewport); document.removeEventListener('visibilitychange', viewport);};
+  }, [watchSlot]);
   useLayoutEffect(() => () => transition.current?.cancel(), []);
 
   return <div ref={hostRef} className={styles.host} data-presentation={watchSlot ? 'watch' : 'mini'}
-    data-left={left} data-top={top} data-dragging={Boolean(offset.x || offset.y || minimizeOffset)}
+    data-left={left} data-top={top} data-dragging={Boolean(offset.x || offset.y || tracking)}
     aria-keyshortcuts={!watchSlot ? 'ArrowLeft ArrowRight ArrowUp ArrowDown Shift+ArrowLeft Shift+ArrowRight' : undefined}
     role={!watchSlot ? 'group' : undefined} aria-label={!watchSlot ? moveLabel : undefined} tabIndex={!watchSlot ? 0 : undefined}
     onPointerDownCapture={pointerDown} onPointerMoveCapture={pointerMove} onPointerUpCapture={pointerUp} onPointerCancel={pointerCancel}
@@ -149,13 +192,12 @@ export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLab
     onKeyDown={event => {
       if (watchSlot || event.target !== event.currentTarget || !['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)) return;
       event.preventDefault();
-      if (event.shiftKey && window.matchMedia?.('(pointer: coarse)').matches) return;
+      if (event.shiftKey && hostRef.current?.dataset.compact === 'true') return;
       if (event.shiftKey) setWidth(value => clampWidth((value ?? (hostRef.current?.getBoundingClientRect().width || 400)) + (['ArrowRight','ArrowUp'].includes(event.key) ? 16 : -16)));
       else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') setLeft(event.key === 'ArrowLeft');
       else setTop(event.key === 'ArrowUp');
     }}
-    style={{...(!watchSlot && width ? {width: `min(${width}px, calc(100vw - 32px), calc((100dvh - 32px - var(--mini-caption-height)) * 16 / 9))`} : {}),
-      transform: watchSlot ? (minimizeOffset ? `translateY(${minimizeOffset}px) scale(${Math.max(.6, 1 - minimizeOffset / 800)})` : undefined) : (offset.x || offset.y ? `translate(${offset.x}px, ${offset.y}px)` : undefined)}}>
+    style={{transform: !watchSlot && (offset.x || offset.y) ? `translate(${offset.x}px, ${offset.y}px)` : undefined}}>
     {children}
     {!watchSlot && resizeLabel && <button type="button" data-mini-resize className={styles.resize} aria-label={resizeLabel}
       onKeyDown={event => {

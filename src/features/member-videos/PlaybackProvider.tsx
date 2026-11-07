@@ -21,7 +21,7 @@ type PlaybackControl = {
   inWatch: boolean;
   expand: () => void;
   minimize: (navigate: () => void) => void;
-  setMinimizeOffset: (offset: number) => void;
+  setMinimizeOffset: (offset: number, phase?: 'tracking' | 'reset') => void | false;
   start: (playback: Playback, explicit?: boolean) => void;
   setSlot: (key: string, element: HTMLElement | null) => void;
   close: (key: string) => void;
@@ -54,7 +54,16 @@ export function PlaybackProvider({children, locale, labels}: Props) {
 
 function MemberPlaybackProvider({children, labels, member}: Props & {member: string | null}) {
   const router = useRouter();
+  const invalidPull = useRef(false);
   const [minimizeOffset, setMinimizeOffset] = useState(0);
+  const [pullTracking, setPullTracking] = useState(false);
+  const updateMinimizeOffset = useCallback((offset: number, phase?: 'tracking' | 'reset') => {
+    const tracking = phase === 'tracking' || phase !== 'reset' && offset !== 0;
+    if (!tracking) invalidPull.current = false;
+    if (invalidPull.current) return false;
+    setPullTracking(tracking); setMinimizeOffset(offset);
+  }, []);
+  const cancelPull = useCallback(() => {invalidPull.current = true; setPullTracking(false); setMinimizeOffset(0);}, []);
   const [minimizing, setMinimizing] = useState<{id: number; settled: boolean} | null>(null);
   const [slowTransition, setSlowTransition] = useState(0);
   const navigateToLibrary = useRef<(() => void) | null>(null);
@@ -63,12 +72,15 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
   const minimize = useCallback((navigate: () => void) => {
     if (pendingTransition.current) return;
     pendingTransition.current = true;
+    setPullTracking(false);
     const id = ++transitionId.current;
     setMinimizing({id, settled: false});
     navigateToLibrary.current = navigate;
     try { navigate(); } catch { setSlowTransition(id); }
   }, []);
   const cancelTransition = useCallback(() => {
+    invalidPull.current = false;
+    setPullTracking(false);
     pendingTransition.current = false;
     navigateToLibrary.current = null;
     setMinimizing(null);
@@ -99,6 +111,7 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
     setLibrarySurface(null);
     setLibrarySlot(null);
     setLibraryScroll(0);
+    setPullTracking(false);
     setMinimizing(null);
     setMinimizeOffset(0);
   }
@@ -133,7 +146,7 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
     if (element && closedWatchSlots.current.get(element) === key) return;
     if (element) lastWatchSlot.current = {key, element, member};
     setWatchSlot(current => element ? {key, element} : current?.key === key ? null : current);
-    if (!element) setMinimizeOffset(0);
+    if (!element) {setPullTracking(false); setMinimizeOffset(0);}
     if (element) setClosed(current => current === key ? undefined : current);
   }, [member]);
   const close = useCallback((key: string) => {
@@ -169,11 +182,11 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
   const watchSlot = !minimizing && playback && slot?.key === playback.key ? slot.element : null;
   const inWatch = Boolean(watchSlot);
   const expand = useCallback(() => { if (activeHref) { cancelTransition(); router.push(activeHref); } }, [activeHref, router, cancelTransition]);
-  const controls = useMemo(() => ({activeKey, activeHref, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary}), [activeKey, activeHref, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary]);
+  const controls = useMemo(() => ({activeKey, activeHref, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset: updateMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary}), [activeKey, activeHref, start, setSlot, close, labels, inWatch, expand, minimize, updateMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary]);
 
   return <Context.Provider value={member ? controls : null}>
     {children}
-    {member && <RetainedLibrary surface={librarySurface} slot={librarySlot?.element ?? null} visible={minimizeOffset > 0 || Boolean(minimizing)}
+    {member && <RetainedLibrary surface={librarySurface} slot={librarySlot?.element ?? null} visible={pullTracking || Boolean(minimizing)}
       scroll={libraryScroll}/>}
     {member && playback && minimizing && !librarySlot && slowTransition === minimizing.id && <div className={styles.routeNotice}>
       <p role="status">{labels.returningToLibrary ?? 'Returning to videos…'}</p>
@@ -181,12 +194,12 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
         try { navigateToLibrary.current?.(); } catch { /* Keep the same explicit retry; never navigate backwards on a timer. */ }
       }}>{labels.retryNavigation ?? 'Try again'}</button>
     </div>}
-    {member && playback && <PlaybackHost watchSlot={watchSlot} minimizeOffset={minimizeOffset} onSettled={settled} onClose={closeActive} moveLabel={labels.move} resizeLabel={labels.resize}>
+    {member && playback && <PlaybackHost tracking={pullTracking} sessionKey={playback.key} onPullCancel={cancelPull} watchSlot={watchSlot} minimizeOffset={minimizeOffset} onSettled={settled} onClose={closeActive} moveLabel={labels.move} resizeLabel={labels.resize}>
       <div key={playback.key}>{playback.player}</div>
       {!watchSlot && <div className={styles.close}>
         <button type="button" aria-label={labels.close} className="grid size-11 place-items-center" onClick={closeActive}><X size={20}/></button>
       </div>}
-      {!watchSlot && <Link href={playback.href} onNavigate={cancelTransition} className={styles.caption}><span className={styles.captionTitle}>{playback.title}</span></Link>}
+      {!watchSlot && <Link href={playback.href} onNavigate={cancelTransition} className={styles.caption} data-mini-caption><span className={styles.captionTitle}>{playback.title}</span></Link>}
     </PlaybackHost>}
   </Context.Provider>;
 }
