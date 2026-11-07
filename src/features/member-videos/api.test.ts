@@ -54,3 +54,12 @@ it('keeps live and VOD exchanges separate and binds every live path ID',async()=
  await expect(api.exchange({...grant,assetVersionId:captureId})).rejects.toThrow('Invalid media endpoint');
  await api.clearLive(mediaUrl);expect(fetcher).toHaveBeenCalledTimes(2);
 });
+
+
+it.each([10,100])('reads %i card progress values in one private list request',async count=>{
+ const items=Array.from({length:count},(_,index)=>({id:`recording-${index}`,playbackProgress:{mediaVersion:'vod:package',positionSeconds:index,completed:false}}));
+ const fetcher=vi.fn().mockResolvedValue(new Response(JSON.stringify({data:items,meta:{nextCursor:null}}),{headers:{'content-type':'application/json'}}));
+ const page=await createMemberVideoApi(authorization,fetcher).listPage({limit:count});
+ expect(page.items).toEqual(items);expect(fetcher).toHaveBeenCalledOnce();
+ const request=fetcher.mock.calls[0][0] as Request;expect(new URL(request.url).pathname).toBe('/api/member/recordings');expect(request.cache).toBe('no-store');
+});
