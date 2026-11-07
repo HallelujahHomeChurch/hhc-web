@@ -371,7 +371,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
       {!searchMode?hero:null}
       <div className={`${recordingId?'':'bg-[image:var(--hhc-page-gradient)]'} pb-14 ${recordingId ? zoneStyles.watchPage : 'py-10'}`}>
         <section className={`${zoneStyles.zone} ${recordingId ? zoneStyles.watch : searchMode ? zoneStyles.search : zoneStyles.library}`} aria-label={messages.listTitle}>
-          {view === 'list' && identity && <LibraryContinueWatching member={identity} locale={locale}/>}
+          {view === 'list' && identity && <LibraryContinueWatching member={identity} locale={locale} catalogueReady={liveItems.length > 0 || upcomingPresent === true || (!livePending && recordings !== null)}/>}
           {searchMode ? <h1 className={zoneStyles.searchHeading}>{searchLabels.results.replace('{query}',query)}</h1>:null}
           {invalidQuery&&view==='list' ? <div role="alert" className="text-ink">{searchLabels.tooLong} <Link href={videoSearchHref(locale,'')} className="underline">{searchLabels.clear}</Link></div>:null}
           {recordingId && resolver.denied ? <p role="alert" className="text-ink">{messages.unavailable ?? messages.expired}</p> : null}
