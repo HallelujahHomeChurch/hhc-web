@@ -118,7 +118,9 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   const watch=resolver.watch;
   const recordingId=publicId ? watch?.recordingId ?? publicId : internalRecordingId;
   const mediaOrigin=watch?.mediaStartSeconds??null,mediaDuration=watch?.durationSeconds??null;
-  const selectedLive=resolver.denied||vodChosen||recordingId&&!watch?null:watch?watch.live??(['processing','vod'].includes(watch.view)?resolver.lastLive:null):legacySelectedLive;
+  const persistent = usePersistentPlayback();
+  const retainedLive = recordingId && persistent?.activeLive?.id === recordingId ? persistent.activeLive : null;
+  const selectedLive=resolver.denied||vodChosen||recordingId&&!watch?null:watch?watch.live??(['processing','vod'].includes(watch.view)?resolver.lastLive??retainedLive:null):legacySelectedLive;
   const waitingWatch=watch&&!['live','vod'].includes(watch.view)?watch:null;
   const [liveError,setLiveError]=useState(false);
   const [livePending,setLivePending]=useState(true);
@@ -239,7 +241,6 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   },[api,recordingId,retry,view,query,invalidQuery,vodChosen,active]);
 
   const selected = resolver.denied ? undefined : recordingId ? watch?.recording??undefined : recordings?.find((recording) => recording.id === selectedId);
-  const persistent = usePersistentPlayback();
   const [archiveBookmark, setArchiveBookmark] = useState<PlayerBookmark>();
   const {playback, video, media, playbackPause, vodResume, preparing, playError, playerSection,
     automaticAttempt, vodBookmark, backgroundAudio, audioUrl, rememberVod, mediaError, start, stop} =
@@ -322,7 +323,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
           mediaOrigin={mediaOrigin} mediaDuration={mediaDuration} startAt={startAt} initialBookmark={archiveBookmark}
           previousHref={previousRecording && videoWatchPath(locale, previousRecording.id, previousRecording.publicId)}
           nextHref={nextRecording && videoWatchPath(locale, nextRecording.id, nextRecording.publicId)}/>;
-    return {key: activeKey, href, title: item.title, player};
+    return {key: activeKey, href, title: item.title, player, live: selectedLive ?? undefined};
   }, [recordingId, activeKey, resolver.denied, selectedLive, selected, locale, api, messages, liveLabels, mediaOrigin,
     selectArchive, identity, refreshAfterFailure, mediaDuration, startAt, archiveBookmark, previousRecording, nextRecording, minimize, minimizeLabel]);
   useEffect(() => { if (descriptor) startPersistent?.(descriptor); }, [descriptor, startPersistent]);

@@ -3,6 +3,7 @@
 import {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
+import type {MemberLiveRecording} from '@hallelujahhomechurch/hhc-web-client';
 import styles from './mini-player.module.css';
 import {X} from 'lucide-react';
 import {useAccountIdentity, useAccountAuth, useVideoAccess} from '@/components/layout/AccountControl';
@@ -12,10 +13,11 @@ import {PlaybackHost} from './PlaybackHost';
 import {RetainedLibrary, type LibrarySurface} from './RetainedLibrary';
 import {bindResumeDismissalAccount, clearResumeDismissals, dismissResume, type ResumeIdentity} from './resume-dismissal';
 
-type Playback = {key: string; href: string; title: string; player: ReactNode};
+type Playback = {key: string; href: string; title: string; player: ReactNode; live?: MemberLiveRecording};
 type Slot = {key: string; element: HTMLElement};
 type PlaybackControl = {
   activeKey: string | undefined;
+  activeLive: MemberLiveRecording | undefined;
   activeHref: string | undefined;
   labels: ContinuityLabels;
   inWatch: boolean;
@@ -150,6 +152,7 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
   }, []);
   const currentTime = useCallback(() => playbackAccess.current?.time() ?? 0, []);
   const activeKey = playback?.key;
+  const activeLive = playback?.live;
   const activeHref = playback?.href;
   const closeActive = useCallback(() => {
     if (!activeKey) return;
@@ -169,7 +172,7 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
   const watchSlot = !minimizing && playback && slot?.key === playback.key ? slot.element : null;
   const inWatch = Boolean(watchSlot);
   const expand = useCallback(() => { if (activeHref) { cancelTransition(); router.push(activeHref); } }, [activeHref, router, cancelTransition]);
-  const controls = useMemo(() => ({activeKey, activeHref, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary}), [activeKey, activeHref, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary]);
+  const controls = useMemo(() => ({activeKey, activeLive, activeHref, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary}), [activeKey, activeLive, activeHref, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary]);
 
   return <Context.Provider value={member ? controls : null}>
     {children}
