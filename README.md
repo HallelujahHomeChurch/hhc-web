@@ -535,3 +535,9 @@ so an older queued image release cannot restore stale settings.
 `RELEASE` is reserved for immutable artifact provenance and cannot be set or
 removed through this runtime manifest. Ordinary runtime configuration remains
 allowed; this does not introduce additional business-setting restrictions.
+
+Runtime configuration recovery: revert the manifest values in a reviewed PR and
+use the same environment-only release. For an authorized emergency, use this
+repository's existing healthy-revision rollback, then reconcile the manifest
+before the next release. Application images and database migrations keep their
+existing recovery contracts; configuration rollback never down-migrates data.

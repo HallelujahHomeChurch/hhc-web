@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Refresh only desired settings under the release lock; never refresh code."""
+import hashlib
 import importlib.util
 import json
 import os
@@ -28,6 +29,9 @@ def refresh():
     if any(not set(owned) <= set(latest[target]) for target,owned in current.items()):
         raise ValueError('Use null tombstones; do not delete owned keys')
     SOURCE.write_text(text)
+    payload=text.encode()
+    blob=hashlib.sha1(b'blob '+str(len(payload)).encode()+b'\0'+payload).hexdigest()
+    print('Runtime configuration source blob: '+blob)
 
 
 if __name__=='__main__':

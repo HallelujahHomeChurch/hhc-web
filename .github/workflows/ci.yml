@@ -59,7 +59,9 @@ jobs:
       - name: Validate runtime manifest
         run: python3 scripts/runtime-env.py validate
       - name: Test runtime environment routing
-        run: python3 scripts/test-runtime-env.py
+        run: |
+          python3 scripts/test-runtime-env.py
+          python3 scripts/test-restore-runtime-template.py
       - name: Test documentation classification
         run: node --test scripts/classify-ci-docs.node-test.mjs
       - name: Classify documentation-only changes

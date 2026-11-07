@@ -74,9 +74,11 @@ def deploy(env):
     state = json.loads(run('az', 'containerapp', 'show', '-g', 'alive', '-n', APP,
         '-o', 'json', '--only-show-errors'))
     props = state['properties']
-    if not props['latestReadyRevisionName'] or props['latestRevisionName'] != props['latestReadyRevisionName'] or props['configuration']['activeRevisionsMode'] != 'Single':
+    if not props['latestReadyRevisionName'] or props['configuration']['activeRevisionsMode'] != 'Single':
         raise ValueError('Expected one current ready revision')
-    template = copy.deepcopy(props['template'])
+    template = json.loads(run('az', 'containerapp', 'revision', 'show', '-g', 'alive', '-n', APP,
+        '--revision', props['latestReadyRevisionName'], '-o', 'json', '--only-show-errors'))['properties']['template']
+    template = copy.deepcopy(template)
     containers = template['containers']
     if len(containers) != 1 or containers[0]['name'] != APP or not re.fullmatch(r'alive\.azurecr\.io/alive/hhc-web@sha256:[0-9a-f]{64}', containers[0]['image']):
         raise ValueError('Expected an immutable hhc-web image')
@@ -102,8 +104,31 @@ def deploy(env):
     wait_revision(APP + '--' + suffix)
 
 
+def validate_transition(event, base, head):
+    if event not in ('push', 'pull_request') or not all(re.fullmatch('[0-9a-f]{40}', sha) and set(sha) != {'0'} for sha in (base, head)):
+        return
+    changed = subprocess.check_output(['git', 'diff', '--name-only', base, head, '--', 'infra/runtime-env.json'], text=True)
+    if not changed:
+        return
+    def read(sha):
+        result = subprocess.run(['git', 'show', sha + ':infra/runtime-env.json'], capture_output=True, text=True)
+        if result.returncode:
+            if sha == base:
+                return {}
+            raise ValueError('Runtime manifest must remain present')
+        text = result.stdout
+        return {APP: validate(json.loads(text))}
+    before, after = read(base), read(head)
+    if any(not set(owned) <= set(after[target]) for target, owned in before.items()):
+        raise ValueError('Use null tombstones; do not delete owned keys')
+
+
 if __name__ == '__main__':
     if len(sys.argv) == 5 and sys.argv[1] == 'classify':
+        try:
+            validate_transition(*sys.argv[2:])
+        except (ValueError, KeyError, TypeError, OSError, subprocess.SubprocessError):
+            sys.exit('Invalid runtime configuration transition; values withheld')
         try:
             result = config_only(*sys.argv[2:])
         except (ValueError, KeyError, TypeError, OSError, subprocess.SubprocessError):
