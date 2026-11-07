@@ -1,5 +1,6 @@
 import createNextIntlPlugin from 'next-intl/plugin';
 import type {NextConfig} from 'next';
+import {HTML_LIMITED_BOT_UA_RE} from 'next/dist/shared/lib/router/utils/html-bots';
 import {accountProxyRewrites} from './src/lib/account-proxy';
 import {getContentSecurityPolicy} from './src/lib/csp';
 import weeklyTemplate from './public/assets/weekly/v1/manifest.json';
@@ -14,6 +15,8 @@ const uploadSourceMaps = Boolean(
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  // LINE's isolated handoff must retain its video metadata in the initial head.
+  htmlLimitedBots: new RegExp(`${HTML_LIMITED_BOT_UA_RE.source}|\\bLINE/\\d`, HTML_LIMITED_BOT_UA_RE.flags),
   productionBrowserSourceMaps: uploadSourceMaps,
   poweredByHeader: false,
   allowedDevOrigins: ['www.hhc.test'],

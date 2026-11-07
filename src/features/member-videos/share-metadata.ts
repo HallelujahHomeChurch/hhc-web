@@ -25,26 +25,32 @@ export function recordingShareMetadata(locale: Locale, id: string): Promise<Meta
 export function videoShareMetadata(id: string): Promise<Metadata> {
   return shareMetadata('zh-Hant', id, true);
 }
+function previewFailure(reason: 'http_error' | 'malformed' | 'timeout' | 'transport', started: number, status?: number) {
+  console.warn(JSON.stringify({event: 'video_share_preview_failure', reason, status, elapsed_ms: Math.round(performance.now() - started)}));
+}
+
 async function shareMetadata(locale: Locale, id: string, short: boolean): Promise<Metadata> {
   const messages = getMessages(locale);
   let title = messages.memberVideos.selectedTitle;
   let image: string = siteConfig.defaultOgImage;
   const previewPath = `${short ? 'video' : 'recording'}-previews/${id}`;
   if ((short ? videoPublicIdPattern : recordingIdPattern).test(id)) {
+    const started = performance.now();
     try {
       const response = await fetch(`${publicContentBaseUrl().replace(/\/$/, '')}/${previewPath}`, {
         cache: 'no-store', credentials: 'omit', redirect: 'error', signal: AbortSignal.timeout(3000)
       });
       if (response.ok) {
-        const body: unknown = await response.json();
+        const body: unknown = await response.json().catch(() => null);
         if (typeof body === 'object' && body !== null && 'data' in body &&
           typeof body.data === 'object' && body.data !== null && 'title' in body.data &&
           typeof body.data.title === 'string' && body.data.title.trim() && [...body.data.title].length <= 180) {
           title = body.data.title;
           image = `/api/${previewPath}/cover`;
-        }
-      }
-    } catch {
+        } else previewFailure('malformed', started, response.status);
+      } else previewFailure('http_error', started, response.status);
+    } catch (error) {
+      previewFailure(error instanceof Error && ['TimeoutError', 'AbortError'].includes(error.name) ? 'timeout' : 'transport', started);
       // Share-service outages must not prevent the member watch page from loading.
     }
   }
