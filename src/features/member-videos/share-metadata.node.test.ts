@@ -73,3 +73,17 @@ it('accepts only eligible exact relative canonical Link headers for legacy redir
   vi.stubGlobal('fetch',vi.fn().mockResolvedValue(new Response('',{status:404,headers:{Link:'</video/FA0AoBO02uU>; rel="canonical"'}})));
   expect(await legacyVideoPath(id)).toBeUndefined();
 });
+
+it('records bounded failure reasons without retaining source titles or URLs', async () => {
+ const warn=vi.spyOn(console,'warn').mockImplementation(()=>{});
+ try {
+  vi.stubGlobal('fetch',vi.fn().mockResolvedValue(new Response('',{status:503})));
+  await recordingShareMetadata('en',id);
+  expect(JSON.parse(warn.mock.calls[0][0])).toMatchObject({event:'video_share_preview_failure',reason:'http_error',status:503});
+  warn.mockClear();
+  vi.stubGlobal('fetch',vi.fn().mockResolvedValue(Response.json({data:{title:{url:'PRIVATE'}}})));
+  await recordingShareMetadata('en',id);
+  expect(JSON.parse(warn.mock.calls[0][0])).toMatchObject({reason:'malformed'});
+  expect(warn.mock.calls.flat().join('')).not.toMatch(/PRIVATE|https?:|11111111/);
+ } finally {warn.mockRestore();}
+});
