@@ -29,8 +29,8 @@ export function contentServerTracing() {
   if (privateHistory) targets.push(contentTraceTarget(`${privateHistory}/history`, true));
   const rate = serverTraceSampleRate();
   return {
-    // A remote sampled=1 is not authority to increase this service's budget.
-    tracesSampler: () => rate,
+    // Private ingress trusts the Gateway sampling decision; roots retain the local budget.
+    tracesSampler: ({parentSampled}: {parentSampled?: boolean}) => parentSampled ?? rate,
     traceLifecycle: 'stream' as const,
     propagateTraceparent: true,
     tracePropagationTargets: targets,

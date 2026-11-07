@@ -72,5 +72,22 @@ it('uses the same short ID in upcoming title and thumbnail links',async()=>{
  const api={upcoming:vi.fn().mockResolvedValue({items:[{recordingId:'r1',publicId:'aB_012-xyzQ',title:'Short meeting',stateRevision:1}],nextCursor:null}),broadcastCover:vi.fn().mockRejectedValue(new Error('none'))} as unknown as ReturnType<typeof createMemberVideoApi>;
  const {container}=render(<UpcomingBroadcasts api={api} locale="ja" loading="Loading" retry="Retry"/>);
  expect(await screen.findByRole('link',{name:'Short meeting'})).toHaveAttribute('href','/video/aB_012-xyzQ');
- expect(container.querySelector('a[aria-hidden="true"]')).toHaveAttribute('href','/video/aB_012-xyzQ');
+ expect(container.querySelector('a[tabindex="-1"]')).not.toHaveAttribute('aria-hidden','true');
+ expect(container.querySelector('a[tabindex="-1"]')).toHaveAttribute('href','/video/aB_012-xyzQ');
+});
+
+it('finishes pending pagination while retained and can continue after return',async()=>{
+ let finish!:(value:unknown)=>void;
+ const upcoming=vi.fn().mockResolvedValueOnce({items:[{recordingId:'r1',title:'First',stateRevision:1}],nextCursor:'r1'}).mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve})).mockResolvedValue({items:[{recordingId:'r1',title:'First',stateRevision:1},{recordingId:'r2',title:'Second',stateRevision:1}],nextCursor:null});
+ const api={upcoming,broadcastCover:vi.fn().mockRejectedValue(new Error('none'))} as unknown as ReturnType<typeof createMemberVideoApi>;
+ const show=(active:boolean)=><UpcomingBroadcasts active={active} api={api} locale="en" loading="Loading" retry="Retry"/>;
+ const view=render(show(true)); await screen.findByRole('link',{name:'First'});
+ fireEvent.click(screen.getByRole('button',{name:'Load more'}));
+ const signal=upcoming.mock.calls[1][0].signal;
+ view.rerender(show(false));
+ expect(signal.aborted).toBe(false);
+ await act(async()=>finish({items:[{recordingId:'r2',title:'Second',stateRevision:1}],nextCursor:null}));
+ view.rerender(show(true));
+ expect(await screen.findByRole('link',{name:'Second'})).toBeVisible();
+ expect(screen.queryByRole('button',{name:'Loading'})).toBeNull();
 });

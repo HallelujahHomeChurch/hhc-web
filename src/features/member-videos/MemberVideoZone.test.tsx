@@ -4,6 +4,7 @@ vi.mock('./VideoInteractions',async()=>{const {VideoInformation}=await import('.
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {MemberVideoZone} from './MemberVideoZone';
+import {PlaybackProvider} from './PlaybackProvider';
 import {videoSearchRefreshEvent} from './search';
 import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
 import {Blob as NodeBlob} from 'node:buffer';
@@ -15,7 +16,7 @@ const authorization = vi.hoisted(() => ({getAccessToken: async () => 'token', re
 const state = vi.hoisted(() => ({access: 'loading', auth: 'checking'}));
 const signIn = vi.hoisted(() => vi.fn());
 const list = vi.hoisted(() => vi.fn());
-const videoApi = vi.hoisted(() => ({watch:vi.fn(),upcoming:vi.fn(),broadcastCover:vi.fn(),liveCover:vi.fn(),listPage:vi.fn(),liveList:vi.fn().mockResolvedValue([]),cover:vi.fn(),list: vi.fn(), grant: vi.fn(), exchange: vi.fn(), clear: vi.fn().mockResolvedValue(undefined)}));
+const videoApi = vi.hoisted(() => ({continueWatching:vi.fn(),watch:vi.fn(),upcoming:vi.fn(),broadcastCover:vi.fn(),liveCover:vi.fn(),listPage:vi.fn(),liveList:vi.fn().mockResolvedValue([]),cover:vi.fn(),list: vi.fn(), grant: vi.fn(), exchange: vi.fn(), clear: vi.fn().mockResolvedValue(undefined)}));
 const liveSession = vi.hoisted(()=>({playback:null,closed:false,pending:false,error:false,start:vi.fn(),remember:vi.fn(),bookmark:{current:undefined}}));
 vi.mock('./useLivePlayback',()=>({useLivePlayback:()=>liveSession}));
 const router = vi.hoisted(() => ({replace: vi.fn(),push:vi.fn()}));
@@ -95,7 +96,7 @@ it('uses public IDs for VOD and live cards while preserving UUID identity',async
  videoApi.liveList.mockResolvedValue([{id:'r2',publicId:'Ab_012-xyzQ',captureId:packageId,title:'Short live',liveState:'live',createdAt:'2026-10-07T00:00:00Z'}]);
  render(<MemberVideoZone locale="ja" messages={messages} hero={null} view="list"/>);
  expect(await screen.findByRole('link',{name:'Short VOD'})).toHaveAttribute('href','/video/aB_012-xyzQ');
- expect(screen.getByRole('link',{name:/Short live/})).toHaveAttribute('href','/video/Ab_012-xyzQ');
+ expect(screen.getByRole('link',{name:/^Short live/})).toHaveAttribute('href','/video/Ab_012-xyzQ');
  expect(videoApi.grant).not.toHaveBeenCalled();
 });
 
@@ -297,13 +298,13 @@ describe('member video gate', () => {
     list.mockResolvedValue(items.slice(0,12));
     videoApi.listPage.mockResolvedValueOnce({items:items.slice(0,12),nextCursor:'next'}).mockResolvedValueOnce({items:[items[11],...items.slice(12)],nextCursor:null});
     render(<MemberVideoZone locale="en" messages={messages} hero={null} view="list"/>);
-    expect(await screen.findAllByRole('link',{name:/Gathering/})).toHaveLength(12);
+    expect(await screen.findAllByRole('link',{name:/^Gathering/})).toHaveLength(12);
     expect(screen.queryByRole('heading',{name:'Recent recordings'})).toBeNull();
     expect(screen.queryByText(/gatherings/)).toBeNull();
-    expect(screen.getAllByRole('link',{name:/Gathering/})[0]).toHaveAttribute('href','/en/member-videos/r0');
+    expect(screen.getAllByRole('link',{name:/^Gathering/})[0]).toHaveAttribute('href','/en/member-videos/r0');
     expect(screen.queryByRole('button',{name:'Next'})).toBeNull();
     fireEvent.click(screen.getByRole('button',{name:'Load more'}));
-    await waitFor(()=>expect(screen.getAllByRole('link',{name:/Gathering/})).toHaveLength(15));
+    await waitFor(()=>expect(screen.getAllByRole('link',{name:/^Gathering/})).toHaveLength(15));
     expect(screen.queryByRole('button',{name:'Load more'})).toBeNull();
     expect(videoApi.grant).not.toHaveBeenCalled();
   });
@@ -381,7 +382,7 @@ describe('member video gate', () => {
     list.mockResolvedValue(items);
     render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r0"/>);
     await screen.findByRole('heading', {level:2, name:'Gathering 0'});
-    const links=screen.getAllByRole('link', {name:/Gathering/});
+    const links=screen.getAllByRole('link', {name:/^Gathering/});
     expect(links).toHaveLength(10);
     expect(links[0]).toHaveTextContent('Gathering 14');
     expect(links[9]).toHaveTextContent('Gathering 5');
@@ -393,7 +394,7 @@ describe('member video gate', () => {
     list.mockResolvedValue(Array.from({length:13},(_,i)=>({id:`r${i}`,title:`Gathering ${i}`,uploadedAt:`2026-10-${String(i+1).padStart(2,'0')}T00:00:00Z`})));
     render(<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r0"/>);
     await screen.findByRole('heading',{level:2,name:'Gathering 0'});
-    for(const link of screen.getAllByRole('link',{name:/Gathering/}))expect(link.getAttribute('href')).not.toContain('?');
+    for(const link of screen.getAllByRole('link',{name:/^Gathering/}))expect(link.getAttribute('href')).not.toContain('?');
   });
   it('does not substitute the newest video for an unavailable direct link', async () => {
     state.auth='authenticated'; state.access='available';
@@ -932,8 +933,9 @@ describe('persistent member playback', () => {
     const video = view.container.querySelector('video');
     view.rerender(<Fixture route="list"/>);
     await screen.findByRole('link', {name: b.title});
-    const thumbnail = view.container.querySelector<HTMLAnchorElement>('a[aria-hidden="true"][href="/video/bB_012-xyzQ"]')!;
+    const thumbnail = view.container.querySelector<HTMLAnchorElement>('a[tabindex="-1"][href="/video/bB_012-xyzQ"]')!;
     expect(thumbnail).not.toBeNull();
+    expect(thumbnail).not.toHaveAttribute('aria-hidden','true');
     fireEvent.click(thumbnail, {ctrlKey: true});
     expect(navigate).not.toHaveBeenCalled();
     expect(videoApi.grant).toHaveBeenCalledTimes(1);
@@ -1025,4 +1027,79 @@ describe('persistent member playback', () => {
       liveSession.playback = null;
     }
   });
+});
+
+
+it('does not insert resume above interactive live cards while VOD is still loading', async () => {
+  state.auth='authenticated'; state.access='available';
+  videoApi.listPage.mockReturnValue(new Promise(()=>{}));
+  videoApi.liveList.mockResolvedValue([{id:'live-fixture',publicId:'Ab_012-xyzQ',captureId:packageId,title:'Visible live card',liveState:'live',createdAt:'2026-10-07T00:00:00Z'}]);
+  let resolve!: (value: unknown) => void;
+  videoApi.continueWatching.mockReturnValue(new Promise(r=>{resolve=r;}));
+  render(<PlaybackProvider locale="en" labels={{resume:'Resume fixture',live:'Return live',close:'Close',removeResume:'Remove resume',expand:'Expand',minimize:'Minimize',move:'Move',resize:'Resize'}}><MemberVideoZone locale="en" messages={messages} hero={null} view="list"/></PlaybackProvider>);
+  await screen.findByRole('link',{name:/^Visible live card/});
+  await act(async()=>resolve({item:{title:'Late resume',recordingId:'old',publicId:'aB_012-xyzQ',mediaVersion:'vod:fixture',mode:'vod',positionSeconds:65,generation:'A',sessionId:'A',claimedAt:new Date(Date.now()-10000).toISOString(),updatedAt:new Date().toISOString()}}));
+  expect(screen.queryByRole('complementary',{name:'Resume fixture'})).toBeNull();
+});
+
+it('retains loaded search pages and their DOM while visiting and returning from a watch route', async () => {
+  const {PlaybackProvider} = await import('./PlaybackProvider');
+  state.access='available'; state.auth='authenticated';
+  const first={id:'r1',title:'First search result',durationSeconds:60,uploadedAt:'2026-11-01T00:00:00Z',expiresAt:'2099-01-01T00:00:00Z',packageId};
+  const second={...first,id:'r2',title:'Second search page'};
+  videoApi.listPage.mockResolvedValueOnce({items:[first],nextCursor:'page-2'}).mockResolvedValueOnce({items:[second],nextCursor:null});
+  const labels={resume:'Resume',live:'Live',close:'Close',removeResume:'Dismiss',expand:'Expand',minimize:'Minimize',move:'Move',resize:'Resize'};
+  const show=(watch:boolean)=><PlaybackProvider locale="en" labels={labels}><MemberVideoZone locale="en" messages={messages} hero={null} view={watch?'watch':'list'} recordingId={watch?'r1':undefined} query={watch?'':'search'}/></PlaybackProvider>;
+  const view=render(show(false));
+  await screen.findByRole('link',{name:'First search result'});
+  fireEvent.click(await screen.findByRole('button',{name:'Load more'}));
+  const link=await screen.findByRole('link',{name:'Second search page'});
+  const calls=videoApi.listPage.mock.calls.length;
+  view.rerender(show(true));
+  await act(async()=>{});
+  expect(link.isConnected).toBe(true);
+  expect(link.closest('[inert]')).not.toBeNull();
+  view.rerender(show(false));
+  expect(await screen.findByRole('link',{name:'Second search page'})).toBe(link);
+  expect(videoApi.listPage).toHaveBeenCalledTimes(calls);
+});
+
+it('remembers the search and scroll source when opening an upcoming broadcast',async()=>{
+  const {PlaybackProvider,usePersistentPlayback}=await import('./PlaybackProvider');
+  let controls!:ReturnType<typeof usePersistentPlayback>;
+  function Probe(){controls=usePersistentPlayback();return null;}
+  state.auth='authenticated';state.access='available';
+  videoApi.upcoming.mockResolvedValue({items:[{recordingId:'waiting',title:'Next meeting',view:'waiting',stateRevision:1}],nextCursor:null});
+  const labels={resume:'Resume',live:'Live',close:'Close',removeResume:'Dismiss',expand:'Expand',minimize:'Minimize',move:'Move',resize:'Resize'};
+  vi.spyOn(window,'scrollY','get').mockReturnValue(420);
+  render(<PlaybackProvider locale="en" labels={labels}><Probe/><MemberVideoZone locale="en" messages={messages} hero={null} view="list" query="meeting"/></PlaybackProvider>);
+  fireEvent.click(await screen.findByRole('link',{name:'Next meeting'}));
+  expect(controls?.returnToLibrary('/en/member-videos')).toMatchObject({href:'/en/member-videos?q=meeting',scroll:420});
+});
+
+it('replaces a direct watch entry with the internal library when minimizing',async()=>{
+  const {PlaybackProvider}=await import('./PlaybackProvider');
+  state.auth='authenticated';state.access='available';
+  list.mockResolvedValue([{id:'r1',title:'Direct recording',packageId}]);
+  videoApi.grant.mockResolvedValue({packageId,expiresAt:new Date(Date.now()+3600000).toISOString()});
+  videoApi.exchange.mockResolvedValue(playbackUrl);
+  const labels={resume:'Resume',live:'Live',close:'Close',removeResume:'Dismiss',expand:'Expand',minimize:'Minimize player',move:'Move',resize:'Resize'};
+  render(<PlaybackProvider locale="en" labels={labels}><MemberVideoZone locale="en" messages={messages} hero={null} view="watch" recordingId="r1"/></PlaybackProvider>);
+  fireEvent.click(await screen.findByRole('button',{name:'Minimize player'}));
+  expect(router.replace).toHaveBeenCalledWith('/en/member-videos',{scroll:false});
+});
+
+it('keeps pending pagination alive while its real library is retained under watch',async()=>{
+ const {PlaybackProvider}=await import('./PlaybackProvider');
+ state.auth='authenticated';state.access='available';
+ let finish!:(value:unknown)=>void;
+ videoApi.listPage.mockResolvedValueOnce({items:[{id:'r1',title:'First retained page',packageId}],nextCursor:'r1'}).mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve}));
+ const labels={resume:'Resume',live:'Live',close:'Close',removeResume:'Dismiss',expand:'Expand',minimize:'Minimize',move:'Move',resize:'Resize'};
+ const show=(watch:boolean)=><PlaybackProvider locale="en" labels={labels}><MemberVideoZone locale="en" messages={messages} hero={null} view={watch?'watch':'list'} recordingId={watch?'r1':undefined}/></PlaybackProvider>;
+ const view=render(show(false));await screen.findByRole('link',{name:'First retained page'});
+ fireEvent.click(screen.getByRole('button',{name:'Load more'}));
+ const signal=videoApi.listPage.mock.calls[1][0].signal;
+ view.rerender(show(true));expect(signal.aborted).toBe(false);
+ await act(async()=>finish({items:[{id:'r2',title:'Second retained page',packageId}],nextCursor:null}));
+ view.rerender(show(false));expect(await screen.findByRole('link',{name:'Second retained page'})).toBeVisible();
 });
