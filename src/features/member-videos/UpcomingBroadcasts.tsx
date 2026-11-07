@@ -11,12 +11,14 @@ import {BroadcastCover} from './BroadcastWaitingPanel';
 import {broadcastLabels,broadcastPollDelay} from './broadcast';
 import styles from './MemberVideoZone.module.css';
 
-export function UpcomingBroadcasts({api,locale,query='',excludeIds=[],onPageState,loading,retry,loadMoreLabel='Load more',onPresenceChange}:{api:ReturnType<typeof createMemberVideoApi>;locale:Locale;query?:string;excludeIds?:string[];onPageState?:(state:{ids:string[];complete:boolean;initialState:'loading'|'ready'|'error'})=>void;loading:string;retry:string;loadMoreLabel?:string;onPresenceChange?:(present:boolean)=>void}) {
+export function UpcomingBroadcasts({onNavigate,active=true,api,locale,query='',excludeIds=[],onPageState,loading,retry,loadMoreLabel='Load more',onPresenceChange}:{onNavigate?:()=>void;active?:boolean;api:ReturnType<typeof createMemberVideoApi>;locale:Locale;query?:string;excludeIds?:string[];onPageState?:(state:{ids:string[];complete:boolean;initialState:'loading'|'ready'|'error'})=>void;loading:string;retry:string;loadMoreLabel?:string;onPresenceChange?:(present:boolean)=>void}) {
  const [items,setItems]=useState<RecordingWatchView[]>([]),[cursor,setCursor]=useState<string|null>(null);
  const [pending,setPending]=useState(false),[loaded,setLoaded]=useState(false),[error,setError]=useState(false),[refresh,setRefresh]=useState(0);
+ const loadedOnce=useRef(false);
  const more=useRef<AbortController|null>(null),pages=useRef(1),busy=useRef(false);
  const labels=broadcastLabels[locale];
  useEffect(()=>{
+  if(!active && loadedOnce.current)return;
   const controller=new AbortController();let timer=0,inFlight=false,failures=0;
   const load=async()=>{
    if(inFlight)return;
@@ -34,14 +36,15 @@ export function UpcomingBroadcasts({api,locale,query='',excludeIds=[],onPageStat
     if(controller.signal.aborted)return;
     onPresenceChange?.(refreshed.length>0);
     setItems([...new Map(refreshed.map(item=>[item.recordingId,item])).values()]);
-    setCursor(page.nextCursor);setError(false);setLoaded(true);failures=0;
+    setCursor(page.nextCursor);setError(false);setLoaded(true);loadedOnce.current=true;failures=0;
    }catch{if(!controller.signal.aborted){setError(true);failures++;}}
-   finally{inFlight=false;busy.current=false;if(!controller.signal.aborted)timer=window.setTimeout(()=>void load(),broadcastPollDelay('waiting',document.hidden,failures));}
+   finally{inFlight=false;busy.current=false;if(!controller.signal.aborted&&active)timer=window.setTimeout(()=>void load(),broadcastPollDelay('waiting',document.hidden,failures));}
   };
   const foreground=()=>{if(!document.hidden){window.clearTimeout(timer);void load();}};
-  void load();document.addEventListener('visibilitychange',foreground);
-  return()=>{controller.abort();more.current?.abort();window.clearTimeout(timer);document.removeEventListener('visibilitychange',foreground);};
- },[api,query,refresh,onPresenceChange]);
+  void load();if(active)document.addEventListener('visibilitychange',foreground);
+  return()=>{controller.abort();window.clearTimeout(timer);document.removeEventListener('visibilitychange',foreground);};
+ },[api,query,refresh,onPresenceChange,active]);
+ useEffect(()=>()=>more.current?.abort(),[api,query]);
  const loadMore=async()=>{
   if(!cursor||busy.current)return;
   busy.current=true;
@@ -58,15 +61,15 @@ export function UpcomingBroadcasts({api,locale,query='',excludeIds=[],onPageStat
  useEffect(()=>{onPageState?.({ids:items.map(item=>item.recordingId),complete:loaded&&cursor===null,initialState:loaded?'ready':error?'error':'loading'});},[items,cursor,loaded,error,onPageState]);
  return <>
   {items.filter(item=>!excludeIds.includes(item.recordingId)).map(item=><article key={item.recordingId} className={styles.card}>
-   <Link href={videoWatchPath(locale,item.recordingId,item.publicId)} className={styles.thumbnail} aria-hidden="true" tabIndex={-1}>
+   <Link onNavigate={onNavigate} href={videoWatchPath(locale,item.recordingId,item.publicId)} className={styles.thumbnail} aria-hidden="true" tabIndex={-1}>
     <BroadcastCover coverMode={item.coverMode} api={api} id={item.recordingId} title={item.title} revision={item.cover?`cover:${item.cover.revision}`:`state:${item.stateRevision}`}/>
     <span className={`${styles.badge} ${styles.stateBadge}`}>{labels.upcoming}</span>
    </Link>
-   <div className={styles.info}><h3 className={styles.title}><Link href={videoWatchPath(locale,item.recordingId,item.publicId)}>{item.title}</Link></h3>
+   <div className={styles.info}><h3 className={styles.title}><Link onNavigate={onNavigate} href={videoWatchPath(locale,item.recordingId,item.publicId)}>{item.title}</Link></h3>
     {item.scheduledAt?<p className={styles.date}><time dateTime={item.scheduledAt}>{new Intl.DateTimeFormat(locale,{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Taipei'}).format(new Date(item.scheduledAt))}</time></p>:null}
    </div>
   </article>)}
-  {cursor?<div className="col-span-full"><LoadMoreTrigger hasMore loading={pending} error={error} onLoadMore={loadMore} labels={{loadMore:loadMoreLabel,loading,retry}}/></div>:null}
+  {active&&cursor?<div className="col-span-full"><LoadMoreTrigger hasMore loading={pending} error={error} onLoadMore={loadMore} labels={{loadMore:loadMoreLabel,loading,retry}}/></div>:null}
   {error&&!cursor?<button className="col-span-full min-h-11 cursor-pointer text-primary underline" onClick={()=>setRefresh(n=>n+1)}>{retry}</button>:null}
 
  </>;
