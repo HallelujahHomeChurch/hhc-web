@@ -507,7 +507,7 @@
     "empty": "아직 게시된 주보가 없습니다."
   },
   "memberVideos": {
-    "continuity": {"removeResume": "이어서 보기에서 삭제", "resume": "이어서 보기", "live": "라이브로 돌아가기", "close": "닫기", "expand": "플레이어 확대", "minimize": "플레이어 축소", "move": "플레이어 이동", "resize": "플레이어 크기 조절"},
+    "continuity": {"removeResume": "이어서 보기에서 삭제","resume": "이어서 보기","live": "라이브로 돌아가기","close": "닫기","expand": "플레이어 확대","minimize": "플레이어 축소","move": "플레이어 이동","resize": "플레이어 크기 조절","returningToLibrary": "동영상 목록으로 돌아가는 중…","retryNavigation": "다시 시도"},
     "shareDescription": "이 동영상을 시청하려면 시청 권한이 있는 회원으로 로그인해야 합니다.",
     "theaterMode": "영화관 모드",
     "exitTheaterMode": "영화관 모드 종료",

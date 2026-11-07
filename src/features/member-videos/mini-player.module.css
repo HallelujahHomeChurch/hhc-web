@@ -73,3 +73,12 @@
 @media(pointer:coarse) {.caption {display:none;}}
 @media(pointer:fine) {.host[data-presentation='mini'] :global(.hhc-player-player) {border-bottom-left-radius:0;border-bottom-right-radius:0;}}
 @media(pointer:fine) {.host[data-presentation='mini'] > div:first-child > div {border-radius:14px 14px 0 0;}}
+
+.libraryBackdrop {position:fixed;inset:var(--site-top-chrome-height,76px) 0 0;z-index:4;overflow:hidden;pointer-events:none;background:var(--color-canvas,#faf6ed);}
+.libraryBackdrop > div {transform:translateY(calc(-1 * var(--library-scroll,0px)));}
+
+.libraryBackdrop {visibility:hidden;opacity:0;transition:opacity 180ms ease-out,visibility 0s 180ms;}
+.libraryBackdrop[data-visible='true'] {visibility:visible;opacity:1;transition:none;}
+@media(prefers-reduced-motion:reduce) {.libraryBackdrop {transition:none;}}
+
+.routeNotice {position:fixed;top:calc(var(--site-top-chrome-height,76px) + 16px);left:50%;transform:translateX(-50%);z-index:20;max-width:calc(100vw - 32px);padding:12px 20px;border-radius:14px;background:var(--color-panel,#fff);color:var(--color-ink,#171717);box-shadow:0 4px 16px #0002;}
