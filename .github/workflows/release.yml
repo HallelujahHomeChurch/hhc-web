@@ -17,6 +17,7 @@ permissions:
 concurrency:
   group: hhc-web-production
   cancel-in-progress: false
+  queue: max
 
 jobs:
   agent_docs:
@@ -25,12 +26,21 @@ jobs:
       contents: read
     outputs:
       docs_only: ${{ steps.diff.outputs.docs_only }}
+      config_only: ${{ steps.runtime.outputs.config_only }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Classify runtime configuration
+        id: runtime
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: python3 scripts/runtime-env.py classify "$EVENT_NAME" "$BASE_SHA" "$HEAD_SHA" >> "$GITHUB_OUTPUT"
       - name: Test documentation classification
+        if: steps.runtime.outputs.config_only != 'true'
         run: python3 .github/scripts/test-ci-agent-docs.py
       - name: Classify proven human documentation
         id: diff
@@ -42,7 +52,7 @@ jobs:
 
   verify:
     needs: agent_docs
-    if: ${{ needs.agent_docs.result == 'success' && needs.agent_docs.outputs.docs_only != 'true' }}
+    if: ${{ needs.agent_docs.result == 'success' && needs.agent_docs.outputs.docs_only != 'true' && needs.agent_docs.outputs.config_only != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -92,7 +102,7 @@ jobs:
 
   prepare_image:
     needs: agent_docs
-    if: ${{ needs.agent_docs.result == 'success' && needs.agent_docs.outputs.docs_only != 'true' && (github.repository == 'HallelujahHomeChurch/hhc-web' && github.ref == 'refs/heads/main') }}
+    if: ${{ needs.agent_docs.result == 'success' && needs.agent_docs.outputs.docs_only != 'true' && needs.agent_docs.outputs.config_only != 'true' && (github.repository == 'HallelujahHomeChurch/hhc-web' && github.ref == 'refs/heads/main') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production
@@ -116,6 +126,8 @@ jobs:
       WEEKLY_READER_ENABLED: ${{ vars.WEEKLY_READER_ENABLED || 'false' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Validate runtime manifest
+        run: python3 scripts/runtime-env.py validate
       - name: Validate release configuration
         run: |
           [[ "$GITHUB_REF" == "refs/heads/main" ]]
@@ -286,6 +298,8 @@ jobs:
       WEEKLY_READER_ENABLED: ${{ vars.WEEKLY_READER_ENABLED || 'false' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Validate runtime manifest
+        run: python3 scripts/runtime-env.py validate
       - name: Validate release configuration
         run: |
           node -e 'const raw=process.env.SENTRY_TRACES_SAMPLE_RATE; const rate=Number(raw); if (!raw?.trim() || !Number.isFinite(rate) || rate<0 || rate>0.1) throw new Error("SENTRY_TRACES_SAMPLE_RATE must be between 0 and 0.1");'
@@ -520,3 +534,36 @@ jobs:
               jq -e '.ingress == null and ((.secretNames // []) | index("hhc-web-gateway-token") == null)' >/dev/null
           fi
           bash scripts/verify-public-release.sh
+
+  configure_runtime:
+    needs: agent_docs
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.agent_docs.outputs.config_only == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Refresh latest desired runtime settings
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/refresh-runtime-env.py
+      - uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 # v3.0.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Apply runtime environment with the current image
+        env:
+          BASE_SHA: ${{ github.event.before }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          current=$(gh api -H 'Accept: application/vnd.github.raw+json' "repos/$GITHUB_REPOSITORY/contents/infra/runtime-env.json?ref=main" | sha256sum | cut -d' ' -f1)
+          desired=$(sha256sum infra/runtime-env.json | cut -d' ' -f1)
+          if [[ "$current" != "$desired" ]]; then echo 'Newer main owns runtime configuration'; exit 0; fi
+          python3 scripts/runtime-env.py deploy

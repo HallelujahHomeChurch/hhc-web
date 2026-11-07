@@ -1,5 +1,6 @@
 #!/bin/sh
 set -eu
+. ./scripts/test-no-cloud.sh
 python3 scripts/test-release-runtime.py
 api_scale="$(awk '/^resource app / { in_api = 1; next } in_api && /^resource / { exit } in_api { print }' infra/main.bicep)"
 for expected in 'minReplicas: 1' 'maxReplicas: 8' "name: 'cpu-scaler'" "type: 'cpu'" "type: 'Utilization'" "value: '50'" "name: 'http-scaler'" 'http: {' "concurrentRequests: '20'"; do

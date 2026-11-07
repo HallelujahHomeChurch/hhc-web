@@ -1,3 +1,4 @@
+import './test-no-cloud.mjs';
 import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';

@@ -513,3 +513,25 @@ and image responses request noindex and no-store; public fields remain readable
 by bots and sharing services can retain their own cached cards. Playback and
 member APIs still enforce authentication/entitlement. The video library entrance
 is unchanged. Unavailable previews fall back to the generic site card.
+
+## Runtime environment updates
+
+Change only `infra/runtime-env.json` for server runtime configuration. Each entry
+is `{"value":"text"}`, `{"secretRef":"existing-secret-name"}`, or `null`
+to remove a variable. Never commit credential values. Keep owned keys in the file;
+use `null` for removal. Normal releases read the same overrides before deploying.
+
+Manifest-only PRs skip application CI; merges update the serving image's env
+without build, scan, migration, or smoke tests. The Azure update result is the
+completion signal. Mixed source/config changes retain the full workflow.
+`NEXT_PUBLIC_*` and `VITE_*` are build-time inputs and cannot use this path.
+
+Runtime updates and image releases share the production queue. The fast path
+keeps the complete serving template and changes only owned env and revision
+identity; it waits only for Azure provisioning, without an application probe.
+Normal deployment refreshes the latest main runtime manifest under that lock,
+so an older queued image release cannot restore stale settings.
+
+`RELEASE` is reserved for immutable artifact provenance and cannot be set or
+removed through this runtime manifest. Ordinary runtime configuration remains
+allowed; this does not introduce additional business-setting restrictions.
