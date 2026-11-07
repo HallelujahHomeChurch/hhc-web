@@ -52,10 +52,6 @@
   visibility: hidden;
 }
 
-:global(body:has([aria-modal='true'], dialog[open])) .resumeCard {
-  visibility: hidden;
-}
-
 .host {border-radius:14px;transform-origin:top center;transition:transform 180ms ease-out;}
 .host > div:first-child {border-radius:inherit;}
 .host > div:first-child > div {border-radius:inherit;overflow:hidden;}
