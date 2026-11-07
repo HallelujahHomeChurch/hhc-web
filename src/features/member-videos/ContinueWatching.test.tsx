@@ -18,7 +18,7 @@ beforeEach(() => { clearResumeDismissals(); api.continueWatching.mockReset(); })
 it('shows inline saved progress without media and keeps removal across reload', async () => {
   const item = candidate(); api.continueWatching.mockResolvedValue({item});
   const view = render(<ContinueWatching member="fixture" locale="en" labels={labels}/>);
-  expect(await screen.findByRole('link', {name: /Continue watching · 1:05.*Synthetic recording/})).toHaveAttribute('href', '/video/aB_012-xyzQ');
+  expect(await screen.findByRole('link', {name: /Synthetic recording.*Continue watching · 1:05/})).toHaveAttribute('href', '/video/aB_012-xyzQ');
   expect(view.container.querySelector('video,audio')).toBeNull();
   expect(view.container.querySelector('aside')).not.toHaveClass('fixed');
   fireEvent.click(screen.getByRole('button', {name: labels.removeResume}));
@@ -68,4 +68,78 @@ it.each(['zero', 'claim-only', 'expired'])('does not suggest %s progress', async
   render(<ContinueWatching member="fixture" locale="en" labels={labels}/>);
   await act(async () => {});
   expect(screen.queryByRole('link')).toBeNull();
+});
+
+it('formats a long recording with hours and keeps removal outside its watch link', async () => {
+  api.continueWatching.mockResolvedValue({item: {...candidate(), positionSeconds: 4569}});
+  render(<ContinueWatching member="fixture" locale="en" labels={labels}/>);
+  const link = await screen.findByRole('link', {name: /1:16:09/});
+  expect(link).toHaveAttribute('href', '/video/aB_012-xyzQ');
+  expect(link).not.toContainElement(screen.getByRole('button', {name: labels.removeResume}));
+});
+
+it('does not swap to another recording during background refresh', async () => {
+  vi.useFakeTimers();
+  try {
+    api.continueWatching.mockResolvedValue({item: candidate()});
+    render(<ContinueWatching member="fixture" locale="en" labels={labels}/>);
+    await act(async () => {});
+    api.continueWatching.mockResolvedValue({item: {...candidate(), recordingId: 'other', title: 'Other recording'}});
+    await act(() => vi.advanceTimersByTimeAsync(30000));
+    expect(screen.queryByText('Other recording')).toBeNull();
+    expect(screen.queryByText('Synthetic recording')).toBeNull();
+  } finally { vi.useRealTimers(); }
+});
+
+it('does not insert a late resume row after the catalogue is ready', async () => {
+  let resolve!: (value: {item: ReturnType<typeof candidate>}) => void;
+  api.continueWatching.mockReturnValue(new Promise(r => {resolve = r;}));
+  const view = render(<ContinueWatching member="fixture" locale="en" labels={labels} catalogueReady={false}/>);
+  view.rerender(<ContinueWatching member="fixture" locale="en" labels={labels} catalogueReady/>);
+  await act(async () => resolve({item: candidate()}));
+  expect(screen.queryByRole('link')).toBeNull();
+});
+
+it('does not insert a new candidate after an initially empty result', async () => {
+  vi.useFakeTimers();
+  try {
+    api.continueWatching.mockResolvedValue({item: null});
+    render(<ContinueWatching member="fixture" locale="en" labels={labels}/>);
+    await act(async () => {});
+    api.continueWatching.mockResolvedValue({item: candidate()});
+    await act(() => vi.advanceTimersByTimeAsync(30000));
+    expect(screen.queryByRole('link')).toBeNull();
+  } finally { vi.useRealTimers(); }
+});
+
+it('bounds the initial resume lookup without resurrecting a late response', async () => {
+  vi.useFakeTimers();
+  try {
+    let resolve!: (value: {item: ReturnType<typeof candidate>}) => void;
+    api.continueWatching.mockReturnValue(new Promise(r => {resolve = r;}));
+    render(<ContinueWatching member="fixture" locale="en" labels={labels}/>);
+    await act(() => vi.advanceTimersByTimeAsync(1000));
+    await act(async () => resolve({item: candidate()}));
+    expect(screen.queryByRole('link')).toBeNull();
+  } finally { vi.useRealTimers(); }
+});
+
+it('updates the current session progress, with a duration bar only for VOD', async () => {
+  vi.useFakeTimers();
+  try {
+    api.continueWatching.mockResolvedValue({item: {...candidate(), durationSeconds: 130}});
+    render(<ContinueWatching member="fixture" locale="en" labels={labels}/>);
+    await act(async () => {});
+    expect(screen.getByRole('progressbar')).toHaveAttribute('value', '50');
+    api.continueWatching.mockResolvedValue({item: {...candidate(), durationSeconds: 130, positionSeconds: 78}});
+    await act(() => vi.advanceTimersByTimeAsync(30000));
+    expect(screen.getByRole('progressbar')).toHaveAttribute('value', '60');
+  } finally { vi.useRealTimers(); }
+});
+
+it('shows return to live without presenting a duration percentage', async () => {
+  api.continueWatching.mockResolvedValue({item: {...candidate(), mode: 'live', durationSeconds: 130}});
+  render(<ContinueWatching member="fixture" locale="en" labels={labels}/>);
+  expect(await screen.findByRole('link', {name: /Return to live/})).toBeVisible();
+  expect(screen.queryByRole('progressbar')).toBeNull();
 });
