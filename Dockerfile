@@ -41,15 +41,19 @@ COPY --from=build /app/.next/static/ /
 FROM build AS stripped_build
 RUN find .next -type f -name '*.map' -delete
 
-# ponytail: temporary OpenSSL overlay; remove when the upstream runtime passes the image scan.
+# shortcut: temporary OpenSSL/zlib overlay; remove when the upstream runtime passes the image scan.
 FROM debian:trixie-slim@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a AS runtime-patch
 WORKDIR /tmp
-RUN apt-get update && apt-get download libssl3t64=3.5.7-1~deb13u3 \
+RUN apt-get update && apt-get download libssl3t64=3.5.7-1~deb13u3 zlib1g=1:1.3.dfsg+really1.3.1-1+deb13u1 \
   && dpkg-deb --extract libssl3t64_*.deb /patched \
   && mkdir -p /patched/var/lib/dpkg/status.d \
   && dpkg-deb --field libssl3t64_*.deb > /patched/var/lib/dpkg/status.d/libssl3t64 \
   && dpkg-deb --control libssl3t64_*.deb /control \
-  && cp /control/md5sums /patched/var/lib/dpkg/status.d/libssl3t64.md5sums
+  && cp /control/md5sums /patched/var/lib/dpkg/status.d/libssl3t64.md5sums \
+  && dpkg-deb --extract zlib1g_*.deb /patched \
+  && dpkg-deb --field zlib1g_*.deb > /patched/var/lib/dpkg/status.d/zlib1g \
+  && dpkg-deb --control zlib1g_*.deb /zlib-control \
+  && cp /zlib-control/md5sums /patched/var/lib/dpkg/status.d/zlib1g.md5sums
 
 FROM gcr.io/distroless/nodejs22-debian13@sha256:6f5d43e96551e0240e604d3b2068fd0584d9f58b64ff868cbf14fa7abc3521b4 AS runtime
 
