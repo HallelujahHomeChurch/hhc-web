@@ -22,7 +22,7 @@ export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLab
   const [left, setLeft] = useState(false), [top, setTop] = useState(false);
   const [width, setWidth] = useState<number>();
   const [offset, setOffset] = useState({x: 0, y: 0});
-  const clampWidth = (value: number) => Math.max(0, Math.min(Math.max(240, value), 640, window.innerWidth - 32, (window.innerHeight - 32 - (window.matchMedia?.('(pointer: coarse)').matches ? 0 : 44)) * 16 / 9));
+  const clampWidth = (value: number) => Math.max(0, Math.min(Math.max(240, value), 640, window.innerWidth - 32, (window.innerHeight - 32 - (window.matchMedia?.('(pointer: coarse)').matches ? 0 : 76)) * 16 / 9));
   const pointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (watchSlot || hostRef.current?.querySelector('[data-fullscreen]:not([data-fullscreen="inline"])') || !event.isPrimary || event.button !== 0) { drag.current = null; setOffset({x: 0, y: 0}); return; }
     suppressClick.current = false;
@@ -150,7 +150,7 @@ export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLab
       if (watchSlot || event.target !== event.currentTarget || !['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)) return;
       event.preventDefault();
       if (event.shiftKey && window.matchMedia?.('(pointer: coarse)').matches) return;
-      if (event.shiftKey) setWidth(value => clampWidth((value ?? 360) + (['ArrowRight','ArrowUp'].includes(event.key) ? 16 : -16)));
+      if (event.shiftKey) setWidth(value => clampWidth((value ?? (hostRef.current?.getBoundingClientRect().width || 400)) + (['ArrowRight','ArrowUp'].includes(event.key) ? 16 : -16)));
       else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') setLeft(event.key === 'ArrowLeft');
       else setTop(event.key === 'ArrowUp');
     }}
@@ -161,7 +161,7 @@ export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLab
       onKeyDown={event => {
         if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
         event.preventDefault();
-        setWidth(value => clampWidth((value ?? 360) + (event.key === 'ArrowRight' ? 16 : -16)));
+        setWidth(value => clampWidth((value ?? (hostRef.current?.getBoundingClientRect().width || 400)) + (event.key === 'ArrowRight' ? 16 : -16)));
       }}/>}
   </div>;
 }

@@ -361,7 +361,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
             <div className={recordingId ? zoneStyles.recommendations : searchMode ? zoneStyles.searchList : zoneStyles.grid}>
               {recordingId&&watch&&recommendationsPending?<VideoRecommendationsSkeleton/>:null}
               {liveItems.map(item=><article id={`recording-${item.id}`} key={item.captureId} className={zoneStyles.card}>
-                <Link href={cardLink(item)} onNavigate={rememberLibrary} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
+                <Link href={cardLink(item)} onNavigate={rememberLibrary} className={zoneStyles.thumbnail} tabIndex={-1} aria-label={`${messages.select}: ${item.title}`}>
                   <ThumbnailPreview api={api} recording={item} labels={messages} enabled={active&&view==='list'&&!persistent?.activeKey} activeId={hoveredRecording} onActive={setHoveredRecording}>
                   <LiveRecordingCover api={api} recording={item}/>
                   </ThumbnailPreview>
@@ -373,7 +373,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
               {view==='list'&&!invalidQuery?<UpcomingBroadcasts onNavigate={rememberLibrary} active={active} api={api} locale={locale} onPresenceChange={setUpcomingPresent} query={query} excludeIds={liveItems.map(item=>item.id)} onPageState={setUpcomingState} loadMoreLabel={messages.loadMore??'Load more'} loading={messages.loading} retry={messages.retry}/>:null}
               {view==='list'&&!invalidQuery&&!loadError&&!livePending&&(!recordings||upcomingState.initialState==='loading')?<VideoListSkeleton label={messages.loading} search={searchMode}/>:null}
               {(view!=='list'||upcomingState.complete&&!livePending?visibleItems:[]).map(item=><article id={`recording-${item.id}`} key={item.id} className={zoneStyles.card}>
-                <Link href={cardLink(item)} onNavigate={rememberLibrary} className={zoneStyles.thumbnail} tabIndex={-1} aria-hidden="true">
+                <Link href={cardLink(item)} onNavigate={rememberLibrary} className={zoneStyles.thumbnail} tabIndex={-1} aria-label={`${messages.select}: ${item.title}`}>
                   <ThumbnailPreview api={api} recording={item} labels={messages} enabled={active&&view==='list'&&!persistent?.activeKey} activeId={hoveredRecording} onActive={setHoveredRecording}>
                   <RecordingCover api={api} id={item.id} title={item.title} expiresAt={item.expiresAt} revision={coverRevision(item)}/>
                   </ThumbnailPreview>
