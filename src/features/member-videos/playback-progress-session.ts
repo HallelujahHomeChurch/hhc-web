@@ -118,6 +118,7 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
   }
 
   return {
+    ownsProgress: () => Boolean(owner),
     identity: () => ({recordingId: id, mediaVersion: currentVersion, sessionId, generation: owner?.generation ?? observedGeneration}),
     async prepare(kind: Intent['kind'], startSignal: AbortSignal = signal) {
       const revision = ++intentRevision;

@@ -1120,3 +1120,23 @@ it('merges new card progress on focus without replacing the existing card or pol
  await waitFor(()=>expect(screen.getByRole('progressbar')).toHaveAttribute('value','50'));
  expect(screen.getByRole('link',{name:'Focus progress'})).toBe(link);expect(videoApi.listPage).toHaveBeenCalledTimes(2);
 });
+
+it('serializes a delayed focus refresh before load-more and keeps both pages',async()=>{
+ state.auth='authenticated';state.access='available';const first={id:'r1',title:'Refresh first',packageId},second={id:'r2',title:'Refresh second',packageId};
+ let finish!:(value:unknown)=>void;
+ videoApi.listPage.mockResolvedValueOnce({items:[first],nextCursor:'C'}).mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve})).mockResolvedValue({items:[second],nextCursor:null});
+ render(<MemberVideoZone locale="en" messages={messages} hero={null} view="list"/>);await screen.findByRole('link',{name:'Refresh first'});
+ const more=screen.getByRole('button',{name:'Load more'});fireEvent(window,new Event('focus'));fireEvent.click(more);
+ expect(videoApi.listPage).toHaveBeenCalledTimes(2);
+ await act(async()=>finish({items:[first],nextCursor:'C'}));fireEvent.click(screen.getByRole('button',{name:'Load more'}));
+ expect(await screen.findByRole('link',{name:'Refresh second'})).toBeVisible();expect(screen.getByRole('link',{name:'Refresh first'})).toBeVisible();
+});
+
+it('cancels an older load-more when focus refresh takes the list generation',async()=>{
+ state.auth='authenticated';state.access='available';const first={id:'r1',title:'Race first',packageId},second={id:'r2',title:'Race second',packageId};
+ let finish!:(value:unknown)=>void;
+ videoApi.listPage.mockResolvedValueOnce({items:[first],nextCursor:'C'}).mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve})).mockResolvedValueOnce({items:[first],nextCursor:'C'}).mockResolvedValue({items:[second],nextCursor:null});
+ render(<MemberVideoZone locale="en" messages={messages} hero={null} view="list"/>);await screen.findByRole('link',{name:'Race first'});fireEvent.click(screen.getByRole('button',{name:'Load more'}));const signal=videoApi.listPage.mock.calls[1][0].signal;
+ fireEvent(window,new Event('focus'));await waitFor(()=>expect(screen.getByRole('button',{name:'Load more'})).toBeEnabled());expect(signal.aborted).toBe(true);
+ await act(async()=>finish({items:[second],nextCursor:null}));expect(screen.queryByRole('link',{name:'Race second'})).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Load more'}));expect(await screen.findByRole('link',{name:'Race second'})).toBeVisible();expect(screen.getByRole('link',{name:'Race first'})).toBeVisible();
+});

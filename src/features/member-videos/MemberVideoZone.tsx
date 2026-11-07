@@ -34,6 +34,7 @@ import {liveLibraryItems} from './video-library';
 import {UpcomingBroadcasts} from './UpcomingBroadcasts';
 import {VideoListSkeleton, VideoRecommendationsSkeleton, VideoWatchSkeleton} from './VideoLoading';
 import {LoadingStatus} from '@/components/ui/ContentLoading';
+import {RecordingCardProgress} from './RecordingCardProgress';
 import {ThumbnailPreview} from './ThumbnailPreview';
 
 export type Messages = {
@@ -174,10 +175,10 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   const loadMore=useCallback(async()=>{
     if(nextCursor===null||morePending.current)return;
     morePending.current=true;setMoreLoading(true);setMoreError(false);
-    const controller=new AbortController();moreAttempt.current=controller;
+    const controller=new AbortController();moreAttempt.current=controller;const generation=listGeneration.current;
     try {
       const page=await api.listPage({limit:pageSize,cursor:nextCursor,q:query||undefined,signal:controller.signal});
-      if(controller.signal.aborted)return;
+      if(controller.signal.aborted||generation!==listGeneration.current)return;
       if(page.nextCursor===nextCursor)throw new Error('Recording cursor did not advance');
       setRecordings(current=>{const items=new Map((current??[]).map(item=>[item.id,item]));for(const item of page.items)items.set(item.id,item);return [...items.values()];});
       setNextCursor(page.nextCursor);batchesRef.current+=1;
@@ -195,8 +196,8 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
       if (loadedList.current?.api !== api || loadedList.current.retry !== retry || !batchesRef.current || controller || document.visibilityState !== 'visible') return;
       controller = new AbortController();
       const signal = controller.signal, generation = ++listGeneration.current, pages = batchesRef.current;
-      moreAttempt.current?.abort(); morePending.current = false;
-      setMoreLoading(false);
+      moreAttempt.current?.abort(); moreAttempt.current = controller; morePending.current = true;
+      setMoreLoading(true);
       try {
         let cursor: string | undefined;
         const items = new Map<string, MemberRecordingCard>();
@@ -216,12 +217,12 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
         if (signal.aborted || generation !== listGeneration.current) return;
         if (error instanceof HhcWebApiError && error.status === 401) {router.replace(`/${locale}`); return;}
         captureHandledError(error, {operation: 'member-videos.refresh'});
-      } finally {controller = null;}
+      } finally {if (moreAttempt.current === controller) {moreAttempt.current = null; morePending.current = false; if (!signal.aborted) setMoreLoading(false);} controller = null;}
     };
     void refresh();
     window.addEventListener('focus', refresh);
     document.addEventListener('visibilitychange', refresh);
-    return () => {controller?.abort(); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh);};
+    return () => {controller?.abort(); if (controller && moreAttempt.current === controller) {moreAttempt.current = null; morePending.current = false;} window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh);};
   }, [api, view, active, invalidQuery, query, locale, router, retry]);
 
   useEffect(()=>{
@@ -412,9 +413,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
                   <ThumbnailPreview api={api} recording={item} labels={messages} enabled={active&&view==='list'&&!persistent?.activeKey} activeId={hoveredRecording} onActive={setHoveredRecording}>
                   <RecordingCover api={api} id={item.id} title={item.title} expiresAt={item.expiresAt} revision={coverRevision(item)}/>
                   </ThumbnailPreview>
-                  {item.playbackProgress && item.durationSeconds && item.durationSeconds > 0 && Number.isFinite(item.playbackProgress.positionSeconds) ? <progress className={zoneStyles.cardProgress} max={100}
-                    value={item.playbackProgress.completed ? 100 : Math.max(0, Math.min(100, item.playbackProgress.positionSeconds / item.durationSeconds * 100))}
-                    aria-label={`${item.title} — ${messages.seek}`} aria-valuetext={`${playerClock(item.playbackProgress.completed ? item.durationSeconds : item.playbackProgress.positionSeconds)} / ${playerClock(item.durationSeconds)}`}/> : null}
+                  <RecordingCardProgress item={item} label={messages.seek}/>
                   {item.durationSeconds ? <span className={zoneStyles.duration}>{playerClock(item.durationSeconds)}</span>:null}
                 </Link>
                 <div className={zoneStyles.info}><h3 className={zoneStyles.title}>{view==='list'||recordingId ? <Link href={cardLink(item)} onNavigate={rememberLibrary}>{item.title}</Link>:item.title}</h3><p className={zoneStyles.date}>{formatDate(item.uploadedAt,locale)}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}
