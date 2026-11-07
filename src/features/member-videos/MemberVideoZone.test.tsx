@@ -4,6 +4,7 @@ vi.mock('./VideoInteractions',async()=>{const {VideoInformation}=await import('.
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {MemberVideoZone} from './MemberVideoZone';
+import {PlaybackProvider} from './PlaybackProvider';
 import {videoSearchRefreshEvent} from './search';
 import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
 import {Blob as NodeBlob} from 'node:buffer';
@@ -15,7 +16,7 @@ const authorization = vi.hoisted(() => ({getAccessToken: async () => 'token', re
 const state = vi.hoisted(() => ({access: 'loading', auth: 'checking'}));
 const signIn = vi.hoisted(() => vi.fn());
 const list = vi.hoisted(() => vi.fn());
-const videoApi = vi.hoisted(() => ({watch:vi.fn(),upcoming:vi.fn(),broadcastCover:vi.fn(),liveCover:vi.fn(),listPage:vi.fn(),liveList:vi.fn().mockResolvedValue([]),cover:vi.fn(),list: vi.fn(), grant: vi.fn(), exchange: vi.fn(), clear: vi.fn().mockResolvedValue(undefined)}));
+const videoApi = vi.hoisted(() => ({continueWatching:vi.fn(),watch:vi.fn(),upcoming:vi.fn(),broadcastCover:vi.fn(),liveCover:vi.fn(),listPage:vi.fn(),liveList:vi.fn().mockResolvedValue([]),cover:vi.fn(),list: vi.fn(), grant: vi.fn(), exchange: vi.fn(), clear: vi.fn().mockResolvedValue(undefined)}));
 const liveSession = vi.hoisted(()=>({playback:null,closed:false,pending:false,error:false,start:vi.fn(),remember:vi.fn(),bookmark:{current:undefined}}));
 vi.mock('./useLivePlayback',()=>({useLivePlayback:()=>liveSession}));
 const router = vi.hoisted(() => ({replace: vi.fn(),push:vi.fn()}));
@@ -1026,6 +1027,19 @@ describe('persistent member playback', () => {
       liveSession.playback = null;
     }
   });
+});
+
+
+it('does not insert resume above interactive live cards while VOD is still loading', async () => {
+  state.auth='authenticated'; state.access='available';
+  videoApi.listPage.mockReturnValue(new Promise(()=>{}));
+  videoApi.liveList.mockResolvedValue([{id:'live-fixture',publicId:'Ab_012-xyzQ',captureId:packageId,title:'Visible live card',liveState:'live',createdAt:'2026-10-07T00:00:00Z'}]);
+  let resolve!: (value: unknown) => void;
+  videoApi.continueWatching.mockReturnValue(new Promise(r=>{resolve=r;}));
+  render(<PlaybackProvider locale="en" labels={{resume:'Resume fixture',live:'Return live',close:'Close',removeResume:'Remove resume',expand:'Expand',minimize:'Minimize',move:'Move',resize:'Resize'}}><MemberVideoZone locale="en" messages={messages} hero={null} view="list"/></PlaybackProvider>);
+  await screen.findByRole('link',{name:/Visible live card/});
+  await act(async()=>resolve({item:{title:'Late resume',recordingId:'old',publicId:'aB_012-xyzQ',mediaVersion:'vod:fixture',mode:'vod',positionSeconds:65,generation:'A',sessionId:'A',claimedAt:new Date(Date.now()-10000).toISOString(),updatedAt:new Date().toISOString()}}));
+  expect(screen.queryByRole('complementary',{name:'Resume fixture'})).toBeNull();
 });
 
 it('retains loaded search pages and their DOM while visiting and returning from a watch route', async () => {
