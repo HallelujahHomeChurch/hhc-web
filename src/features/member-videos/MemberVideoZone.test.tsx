@@ -1037,7 +1037,7 @@ it('does not insert resume above interactive live cards while VOD is still loadi
   let resolve!: (value: unknown) => void;
   videoApi.continueWatching.mockReturnValue(new Promise(r=>{resolve=r;}));
   render(<PlaybackProvider locale="en" labels={{resume:'Resume fixture',live:'Return live',close:'Close',removeResume:'Remove resume',expand:'Expand',minimize:'Minimize',move:'Move',resize:'Resize'}}><MemberVideoZone locale="en" messages={messages} hero={null} view="list"/></PlaybackProvider>);
-  await screen.findByRole('link',{name:/Visible live card/});
+  await screen.findByRole('link',{name:/^Visible live card/});
   await act(async()=>resolve({item:{title:'Late resume',recordingId:'old',publicId:'aB_012-xyzQ',mediaVersion:'vod:fixture',mode:'vod',positionSeconds:65,generation:'A',sessionId:'A',claimedAt:new Date(Date.now()-10000).toISOString(),updatedAt:new Date().toISOString()}}));
   expect(screen.queryByRole('complementary',{name:'Resume fixture'})).toBeNull();
 });
