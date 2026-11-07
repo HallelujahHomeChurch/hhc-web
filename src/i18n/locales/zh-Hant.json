@@ -507,7 +507,7 @@
     "empty": "目前尚未發布週報。"
   },
   "memberVideos": {
-    "continuity": {"removeResume": "從續看移除", "resume": "繼續觀看", "live": "返回直播", "close": "關閉", "expand": "展開播放器", "minimize": "縮小播放器", "move": "移動播放器", "resize": "調整播放器大小"},
+    "continuity": {"removeResume": "從續看移除","resume": "繼續觀看","live": "返回直播","close": "關閉","expand": "展開播放器","minimize": "縮小播放器","move": "移動播放器","resize": "調整播放器大小","returningToLibrary": "正在返回影音專區…","retryNavigation": "重試"},
     "shareDescription": "此影片僅限具觀看權限的會員登入後觀看。",
     "theaterMode": "劇院模式",
     "exitTheaterMode": "結束劇院模式",
