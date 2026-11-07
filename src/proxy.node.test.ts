@@ -50,7 +50,7 @@ describe('LINE browser routing', () => {
     expect(getRewrittenUrl(proxy(new NextRequest('https://www.alive.org.tw/video/FA0AoBO02uU', {headers:{'accept-language':language}})))).toContain(`/${locale}/video/`);
   });
   it('keeps the LINE browser isolated and lets its crawler read metadata', () => {
-    expect(getRewrittenUrl(proxy(new NextRequest('https://www.alive.org.tw/video/FA0AoBO02uU?t=9', {headers:{'user-agent':line,'accept-language':'ko'}})))).toBe('https://www.alive.org.tw/line-browser/ko?t=9');
+    expect(getRewrittenUrl(proxy(new NextRequest('https://www.alive.org.tw/video/FA0AoBO02uU?t=9', {headers:{'user-agent':line,'accept-language':'ko'}})))).toBe('https://www.alive.org.tw/line-browser/ko/video/FA0AoBO02uU?t=9');
     expect(getRewrittenUrl(proxy(new NextRequest('https://www.alive.org.tw/video/FA0AoBO02uU', {headers:{'user-agent':'line-poker/1.0'}})))).toContain('/zh-Hant/video/');
   });
   it('preserves old locale intent for the redirect', () => {
@@ -59,3 +59,15 @@ describe('LINE browser routing', () => {
 
   });
  });
+
+it('retains the validated public video identity in the LINE handoff route', () => {
+  const response=proxy(new NextRequest('https://www.alive.org.tw/video/_Ab-012xy9Z?t=9&videoId=forged',{headers:{'user-agent':line}}));
+  expect(getRewrittenUrl(response)).toBe('https://www.alive.org.tw/line-browser/zh-Hant/video/_Ab-012xy9Z?t=9&videoId=forged');
+});
+
+it('retains a legacy recording identity without accepting arbitrary handoff targets', () => {
+  const response=proxy(new NextRequest('https://www.alive.org.tw/en/member-videos/11111111-1111-1111-1111-111111111111',{headers:{'user-agent':line}}));
+  expect(getRewrittenUrl(response)).toBe('https://www.alive.org.tw/line-browser/en/recording/11111111-1111-1111-1111-111111111111');
+  const invalid=proxy(new NextRequest('https://www.alive.org.tw/video/not-an-id?target=https://outside.test',{headers:{'user-agent':line}}));
+  expect(getRewrittenUrl(invalid)).toBe('https://www.alive.org.tw/line-browser/zh-Hant?target=https://outside.test');
+});

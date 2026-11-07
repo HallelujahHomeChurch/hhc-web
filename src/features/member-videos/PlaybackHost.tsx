@@ -3,13 +3,14 @@
 import {useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode} from 'react';
 import styles from './mini-player.module.css';
 
-export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLabel, minimizeOffset = 0}: {
+export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLabel, minimizeOffset = 0, onSettled}: {
   watchSlot: HTMLElement | null;
   children: ReactNode;
   onClose?: () => void;
   moveLabel?: string;
   resizeLabel?: string;
   minimizeOffset?: number;
+  onSettled?: () => void;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const lastBounds = useRef<DOMRect | null>(null);
@@ -120,7 +121,7 @@ export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLab
     if (!host) return;
     const corner = `${left}:${top}`;
     const changed = lastWatch.current !== Boolean(watchSlot) || !watchSlot && lastCorner.current !== corner;
-    if (changed) transition.current?.cancel();
+    if (changed) { transition.current?.cancel(); transition.current = null; }
     const next = host.getBoundingClientRect(), previous = lastBounds.current;
     if (changed && previous && previous.width > 0 && next.width > 0 && host.animate &&
       !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches &&
@@ -129,11 +130,13 @@ export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLab
         {transformOrigin: 'top left', transform: `translate(${previous.left - next.left}px, ${previous.top - next.top}px) scale(${previous.width / next.width})`},
         {transformOrigin: 'top left', transform: 'none'},
       ], {duration: 220, easing: 'cubic-bezier(.22,1,.36,1)'});
+      transition.current.onfinish = () => { transition.current = null; onSettled?.(); };
     }
+    if (changed && !transition.current) onSettled?.();
     lastBounds.current = next;
     lastWatch.current = Boolean(watchSlot);
     lastCorner.current = corner;
-  }, [watchSlot, minimizeOffset, offset.x, offset.y, width, left, top]);
+  }, [watchSlot, minimizeOffset, offset.x, offset.y, width, left, top, onSettled]);
   useLayoutEffect(() => () => transition.current?.cancel(), []);
 
   return <div ref={hostRef} className={styles.host} data-presentation={watchSlot ? 'watch' : 'mini'}

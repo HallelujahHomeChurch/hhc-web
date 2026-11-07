@@ -14,7 +14,7 @@ import {videoWatchPath} from './share';
 import {usePersistentPlayback} from './PlaybackProvider';
 import {dismissResume, isResumeDismissed, isResumeEligible, resumeDismissalKey} from './resume-dismissal';
 
-export type ContinuityLabels = {resume: string; live: string; close: string; removeResume: string; expand: string; minimize: string; move: string; resize: string};
+export type ContinuityLabels = {returningToLibrary?: string; retryNavigation?: string; resume: string; live: string; close: string; removeResume: string; expand: string; minimize: string; move: string; resize: string};
 
 export function ContinueWatching({member, locale, labels, catalogueReady = false}: {
   member: string;
