@@ -112,10 +112,12 @@ it('locks at the watch rect then follows the same diagonal mini path',()=>{
  Object.defineProperties(window,{innerWidth:{configurable:true,value:390},innerHeight:{configurable:true,value:844}});
  try{
   const slot=document.createElement('div');vi.spyOn(slot,'getBoundingClientRect').mockReturnValue({left:0,top:80,width:390,height:219.375} as DOMRect);
-  const show=(dy:number)=><PlaybackHost watchSlot={slot} minimizeOffset={dy}><video data-testid="diagonal"/></PlaybackHost>;
+  const show=(dy:number,tracking?:boolean)=><PlaybackHost watchSlot={slot} minimizeOffset={dy} tracking={tracking}><video data-testid="diagonal"/></PlaybackHost>;
   const view=render(show(0)),video=screen.getByTestId('diagonal'),host=video.parentElement!;
   view.rerender(show(16));expect(host.style.left).toBe('0px');expect(host.style.top).toBe('80px');expect(host.style.width).toBe('390px');expect(host.style.height).toBe('219.375px');
   view.rerender(show(322.5));expect(host.style.left).toBe('67px');expect(host.style.top).toBe('386.5px');expect(host.style.width).toBe('315px');expect(host.style.height).toBe('177.1875px');
+  view.rerender(show(0,true));expect(host.style.left).toBe('0px');expect(host.style.top).toBe('80px');
+  view.rerender(show(322.5,true));expect(host.style.left).toBe('67px');expect(host.style.top).toBe('386.5px');
   expect(host.style.transform).toBe('');expect(screen.getByTestId('diagonal')).toBe(video);
  }finally{Object.defineProperties(window,{innerWidth:{configurable:true,value:oldWidth},innerHeight:{configurable:true,value:oldHeight}});}
 });
