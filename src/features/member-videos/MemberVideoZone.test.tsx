@@ -953,6 +953,42 @@ describe('persistent member playback', () => {
     expect(screen.queryByLabelText(a.title)).toBeNull();
   });
 
+  it('retains the active live media when a fresh watch resolver now reports VOD', async()=>{
+    state.auth='authenticated';state.access='available';
+    const captureId='b'.repeat(32),title='Archived live owner';
+    const live={id:'r1',title,captureId,liveState:'live',createdAt:new Date().toISOString(),progress:{lastSequence:8,mediaEndSeconds:130}};
+    videoApi.liveList.mockResolvedValue([live]);list.mockResolvedValue([]);
+    videoApi.watch.mockResolvedValue({recordingId:'r1',view:'live',recording:null,live,serverNow:new Date().toISOString(),stateRevision:1});
+    Object.assign(liveSession,{playback:{url:playbackUrl,grant:{liveState:'live',progress:live.progress,expiresAt:new Date(Date.now()+3600000).toISOString()}}});
+    function Fixture({watch}:{watch:boolean}){return <PlaybackProvider locale="en" labels={labels}>{watch?<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>:<main>Other route</main>}</PlaybackProvider>;}
+    try{
+      const view=render(<Fixture watch/>);await screen.findByLabelText(title);
+      const video=view.container.querySelector('video')!;const audio=view.container.querySelector('audio');
+      video.currentTime=70;video.playbackRate=1.5;Object.defineProperty(video,'paused',{configurable:true,value:false});fireEvent.playing(video);
+      view.rerender(<Fixture watch={false}/>);
+      const vod={id:'r1',title,packageId:captureId,durationSeconds:120};
+      list.mockResolvedValue([vod]);videoApi.liveList.mockResolvedValue([]);
+      videoApi.watch.mockResolvedValue({recordingId:'r1',view:'vod',recording:vod,live:null,mediaStartSeconds:20,durationSeconds:120,serverNow:new Date().toISOString(),stateRevision:2});
+      view.rerender(<Fixture watch/>);await act(async()=>{});
+      expect(view.container.querySelector('video')).toBe(video);expect(view.container.querySelector('audio')).toBe(audio);
+      expect(video.currentTime).toBe(70);expect(video.playbackRate).toBe(1.5);
+      expect(video.closest('[data-presentation]')).toHaveAttribute('data-presentation','watch');
+      expect(videoApi.grant).not.toHaveBeenCalled();
+      liveSession.bookmark.current={time:70,paused:true,rate:1.5,mediaOriginSeconds:0} as never;
+      videoApi.grant.mockRejectedValueOnce(new Error('Temporary grant failure')).mockResolvedValue({packageId:captureId,expiresAt:new Date(Date.now()+3600000).toISOString()});
+      videoApi.exchange.mockResolvedValue(playbackUrl.replace(packageId,captureId));
+      fireEvent.click(screen.getByRole('button',{name:'Continue with the published recording'}));
+      await screen.findByRole('button',{name:'Retry'});
+      fireEvent.click(screen.getByRole('button',{name:'Retry'}));
+      await waitFor(()=>expect(videoApi.grant).toHaveBeenCalledTimes(2));
+      await waitFor(()=>expect(view.container.querySelector('video')).not.toBe(video));
+      const archive=view.container.querySelector('video')!;
+      Object.defineProperties(archive,{duration:{configurable:true,value:120},readyState:{configurable:true,value:4}});
+      fireEvent.loadedMetadata(archive);
+      expect(archive.currentTime).toBe(50);expect(archive.playbackRate).toBe(1.5);
+    }finally{Object.assign(liveSession,{playback:null});}
+  });
+
   it.each(['vod', 'live'] as const)('keeps the mounted %s media through route changes and removes it on logout', async (kind) => {
     const {PlaybackProvider} = await import('./PlaybackProvider');
     state.auth = 'authenticated';
