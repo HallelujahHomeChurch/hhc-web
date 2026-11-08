@@ -498,7 +498,7 @@
     "empty": "No weekly papers have been published yet."
   },
   "memberVideos": {
-    "continuity": {"removeResume": "Remove from continue watching","resume": "Continue watching","live": "Return to live","close": "Close","expand": "Expand player","minimize": "Minimize player","move": "Move player","resize": "Resize player","returningToLibrary": "Returning to videos…","retryNavigation": "Try again"},
+    "continuity": {"expandSource": "Expand video list","collapseSource": "Collapse video list","sourceList": "Video list","removeResume": "Remove from continue watching","resume": "Continue watching","live": "Return to live","close": "Close","expand": "Expand player","minimize": "Minimize player","move": "Move player","resize": "Resize player","returningToLibrary": "Returning to videos…","retryNavigation": "Try again"},
     "shareDescription": "Sign in with an eligible membership to watch this video.",
     "theaterMode": "Theater mode",
     "exitTheaterMode": "Exit theater mode",

@@ -1,7 +1,7 @@
 'use client';
 import {videoWatchPath} from './share';
 
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import Link from 'next/link';
 import {LoadMoreTrigger} from '@hallelujahhomechurch/ui';
 import type {RecordingWatchView} from '@hallelujahhomechurch/hhc-web-client';
@@ -11,8 +11,11 @@ import {BroadcastCover} from './BroadcastWaitingPanel';
 import {broadcastLabels,broadcastPollDelay} from './broadcast';
 import styles from './MemberVideoZone.module.css';
 
-export function UpcomingBroadcasts({onNavigate,active=true,api,locale,query='',excludeIds=[],onPageState,loading,retry,loadMoreLabel='Load more',onPresenceChange}:{onNavigate?:(href:string)=>void;active?:boolean;api:ReturnType<typeof createMemberVideoApi>;locale:Locale;query?:string;excludeIds?:string[];onPageState?:(state:{ids:string[];complete:boolean;initialState:'loading'|'ready'|'error'})=>void;loading:string;retry:string;loadMoreLabel?:string;onPresenceChange?:(present:boolean)=>void}) {
+export function UpcomingBroadcasts({onSourceItems,onNavigate,active=true,api,locale,query='',excludeIds=[],onPageState,loading,retry,loadMoreLabel='Load more',onPresenceChange}:{onSourceItems?:(items:import('./PlaybackProvider').SourceItem[])=>void;onNavigate?:(href:string)=>void;active?:boolean;api:ReturnType<typeof createMemberVideoApi>;locale:Locale;query?:string;excludeIds?:string[];onPageState?:(state:{ids:string[];complete:boolean;initialState:'loading'|'ready'|'error'})=>void;loading:string;retry:string;loadMoreLabel?:string;onPresenceChange?:(present:boolean)=>void}) {
  const [items,setItems]=useState<RecordingWatchView[]>([]),[cursor,setCursor]=useState<string|null>(null);
+ const excludedKey=excludeIds.join(',');
+ const visibleItems=useMemo(()=>{const excluded=new Set(excludedKey.split(','));return items.filter(item=>!excluded.has(item.recordingId));},[items,excludedKey]);
+ useEffect(()=>{onSourceItems?.(visibleItems.map(item=>({id:item.recordingId,href:videoWatchPath(locale,item.recordingId,item.publicId),title:item.title})));},[visibleItems,locale,onSourceItems]);
  const [pending,setPending]=useState(false),[loaded,setLoaded]=useState(false),[error,setError]=useState(false),[refresh,setRefresh]=useState(0);
  const loadedOnce=useRef(false);
  const more=useRef<AbortController|null>(null),pages=useRef(1),busy=useRef(false);
@@ -60,7 +63,7 @@ export function UpcomingBroadcasts({onNavigate,active=true,api,locale,query='',e
  };
  useEffect(()=>{onPageState?.({ids:items.map(item=>item.recordingId),complete:loaded&&cursor===null,initialState:loaded?'ready':error?'error':'loading'});},[items,cursor,loaded,error,onPageState]);
  return <>
-  {items.filter(item=>!excludeIds.includes(item.recordingId)).map(item=><article key={item.recordingId} className={styles.card}>
+  {visibleItems.map(item=><article key={item.recordingId} className={styles.card}>
    <Link onNavigate={()=>onNavigate?.(videoWatchPath(locale,item.recordingId,item.publicId))} href={videoWatchPath(locale,item.recordingId,item.publicId)} className={styles.thumbnail} aria-label={`${labels.upcoming}: ${item.title}`} tabIndex={-1}>
     <BroadcastCover coverMode={item.coverMode} api={api} id={item.recordingId} title={item.title} revision={item.cover?`cover:${item.cover.revision}`:`state:${item.stateRevision}`}/>
     <span className={`${styles.badge} ${styles.stateBadge}`}>{labels.upcoming}</span>

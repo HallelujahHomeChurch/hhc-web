@@ -1,1 +1,1 @@
-export type ContinuityLabels = {returningToLibrary?: string; retryNavigation?: string; resume: string; live: string; close: string; removeResume: string; expand: string; minimize: string; move: string; resize: string};
+export type ContinuityLabels = {expandSource?: string; collapseSource?: string; sourceList?: string; returningToLibrary?: string; retryNavigation?: string; resume: string; live: string; close: string; removeResume: string; expand: string; minimize: string; move: string; resize: string};

@@ -107,6 +107,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   const loadedList = useRef<{api: ReturnType<typeof createMemberVideoApi>; retry: number} | null>(null);
   const api = useMemo(() => createMemberVideoApi(authorization), [authorization]);
   const [upcomingPresent,setUpcomingPresent]=useState<boolean|null>(null);
+  const [upcomingSources,setUpcomingSources]=useState<import('./PlaybackProvider').SourceItem[]>([]);
   const [hoveredRecording,setHoveredRecording]=useState<string|null>(null);
  const [upcomingState,setUpcomingState]=useState<{ids:string[];complete:boolean;initialState:'loading'|'ready'|'error'}>({ids:[],complete:false,initialState:'loading'});
   const [recordings, setRecordings] = useState<MemberRecordingCard[] | null>(null);
@@ -391,7 +392,14 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   const searchLabels=messages.search??{results:'Results for {query}',empty:'No results for {query}',clear:'Clear search',tooLong:'Search accepts one query of up to 100 characters.'};
   const liveBadge=(item:MemberLiveRecording)=>liveViewerLabel(item.liveState,liveLabels);
   const rememberLibrary = (watchHref?: string) => {
-    if (view === 'list') persistent?.rememberLibrary(videoSearchHref(locale, query), window.scrollY, watchHref);
+    if (view !== 'list') return;
+    const sourceHref = videoSearchHref(locale, query);
+    persistent?.rememberLibrary(sourceHref, window.scrollY, watchHref);
+    if (watchHref) persistent?.captureSource({sourceHref, items: [
+      ...liveItems.map(item=>({id:item.id,href:cardLink(item),title:item.title})),
+      ...upcomingSources,
+      ...(upcomingState.complete&&!livePending ? visibleItems : []).map(item=>({id:item.id,href:cardLink(item),title:item.title})),
+    ]}, watchHref);
   };
   const inlineRecommendations=Boolean(recordingId&&(selected||selectedLive||waitingWatch)&&!resolver.denied);
   const recommendations=liveItems.length>0||visibleItems.length>0||view==='list'&&!invalidQuery||recordingId&&watch&&!resolver.denied&&(recommendationsPending||loadError||liveError) ? <div className={zoneStyles.results}>
@@ -410,7 +418,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
                 <div className={zoneStyles.info}><h3 className={zoneStyles.title}><Link href={cardLink(item)} onNavigate={()=>rememberLibrary(cardLink(item))} aria-label={`${item.title} — ${liveBadge(item)}`}>{item.title}</Link></h3><p className={zoneStyles.date}>{(messages.liveStartedDate??'{date}').replace('{date}',formatDate(item.startedAt??item.createdAt,locale))}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}</div>
               </article>)}
               {view==='list'&&!invalidQuery&&!loadError&&livePending?<VideoListSkeleton label={messages.loading} search={searchMode}/>:null}
-              {view==='list'&&!invalidQuery?<UpcomingBroadcasts onNavigate={rememberLibrary} active={active} api={api} locale={locale} onPresenceChange={setUpcomingPresent} query={query} excludeIds={liveItems.map(item=>item.id)} onPageState={setUpcomingState} loadMoreLabel={messages.loadMore??'Load more'} loading={messages.loading} retry={messages.retry}/>:null}
+              {view==='list'&&!invalidQuery?<UpcomingBroadcasts onSourceItems={setUpcomingSources} onNavigate={rememberLibrary} active={active} api={api} locale={locale} onPresenceChange={setUpcomingPresent} query={query} excludeIds={liveItems.map(item=>item.id)} onPageState={setUpcomingState} loadMoreLabel={messages.loadMore??'Load more'} loading={messages.loading} retry={messages.retry}/>:null}
               {view==='list'&&!invalidQuery&&!loadError&&!livePending&&(!recordings||upcomingState.initialState==='loading')?<VideoListSkeleton label={messages.loading} search={searchMode}/>:null}
               {(view!=='list'||upcomingState.complete&&!livePending?visibleItems:[]).map(item=><article id={`recording-${item.id}`} key={item.id} className={zoneStyles.card}>
                 <Link href={cardLink(item)} onNavigate={()=>rememberLibrary(cardLink(item))} className={zoneStyles.thumbnail} tabIndex={-1} aria-label={`${messages.select}: ${item.title}`}>

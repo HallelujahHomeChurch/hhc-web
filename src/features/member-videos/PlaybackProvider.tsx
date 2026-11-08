@@ -1,11 +1,11 @@
 'use client';
 
-import {Suspense, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
+import {Suspense, createContext, useCallback, useContext, useEffect, useLayoutEffect, useId, useMemo, useRef, useState, type ReactNode} from 'react';
 import {usePathname, useSearchParams, useRouter} from 'next/navigation';
 import Link from 'next/link';
 import type {MemberLiveRecording} from '@hallelujahhomechurch/hhc-web-client';
 import styles from './mini-player.module.css';
-import {X} from 'lucide-react';
+import {X, ChevronUp, ChevronDown} from 'lucide-react';
 import {useAccountIdentity, useAccountAuth, useVideoAccess} from '@/components/layout/AccountControl';
 import {useMediaDocument} from '@/components/layout/MediaDocument';
 import type {ContinuityLabels} from './ContinueWatching';
@@ -15,11 +15,14 @@ import {PlaybackHost} from './PlaybackHost';
 import {RetainedLibrary, type LibrarySurface} from './RetainedLibrary';
 import {bindResumeDismissalAccount, clearResumeDismissals, dismissResume, type ResumeIdentity} from './resume-dismissal';
 
-type Playback = {key: string; href: string; title: string; player: ReactNode; live?: MemberLiveRecording; hasStarted?: boolean};
+export type SourceItem = {id: string; href: string; title: string};
+type SourceSnapshot = {sourceHref: string; items: SourceItem[]; generation: number};
+type Playback = {key: string; href: string; title: string; player: ReactNode; source?: SourceSnapshot; live?: MemberLiveRecording; hasStarted?: boolean};
 type Slot = {key: string; element: HTMLElement};
 type PlaybackControl = {
   cardProgress: ReturnType<typeof createCardProgressStore>;
   activeKey: string | undefined;
+  captureSource: (source: Omit<SourceSnapshot, 'generation'>, targetHref: string) => void;
   activeLive: MemberLiveRecording | undefined;
   markStarted: (key: string) => void;
   activeHref: string | undefined;
@@ -66,7 +69,20 @@ function PlaybackHistoryObserver({navigation}: {navigation: ReturnType<typeof cr
 
 function MemberPlaybackProvider({children, labels, member}: Props & {member: string | null}) {
   const router = useRouter();
-  const [owner, setOwner] = useState(() => ({member, cardProgress: createCardProgressStore()}));
+  const [owner, setOwner] = useState(() => ({member, generation: 0, cardProgress: createCardProgressStore()}));
+  const currentOwner = useRef(owner);
+  const sourceGeneration = useRef(0);
+  const pendingSource = useRef<(SourceSnapshot & {member: string | null; targetHref: string}) | null>(null);
+  useLayoutEffect(() => { currentOwner.current = owner; pendingSource.current = null; }, [owner]);
+  const [sourceExpanded, setSourceExpanded] = useState(false);
+  const sourcePanelId = useId();
+  const sourceToggle = useRef<HTMLButtonElement>(null);
+  const captureSource = useCallback((source: Omit<SourceSnapshot, 'generation'>, targetHref: string) => {
+    if (currentOwner.current !== owner) return;
+    const ids = new Set<string>();
+    const items = source.items.filter(item=>{if(ids.has(item.id))return false;ids.add(item.id);return true;});
+    pendingSource.current = member && items.some(item=>item.href===targetHref) ? {...source, items, member, targetHref, generation: ++sourceGeneration.current} : null;
+  }, [member, owner]);
   const cardProgress = owner.cardProgress;
   const [navigation] = useState(() => createPlaybackHistory(
     () => ({href: window.location.pathname + window.location.search + window.location.hash, length: window.history.length, tag: window.history.state?.hhcMediaEntry}),
@@ -119,7 +135,8 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
     return () => window.clearTimeout(timer);
   }, [minimizing, librarySlot]);
   if (member !== owner.member) {
-    setOwner({member, cardProgress: createCardProgressStore()});
+    setOwner({member, generation: owner.generation + 1, cardProgress: createCardProgressStore()});
+    setSourceExpanded(false);
     setPlayback(null);
     setWatchSlot(null);
     setClosed(undefined);
@@ -153,12 +170,17 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
   const playbackAccess = useRef<{flush: () => void; time: () => number; identity: () => ResumeIdentity} | null>(null);
   const previousPlaybackKey = playback?.key;
   const start = useCallback((next: Playback, explicit = false) => {
+    if (currentOwner.current !== owner) return;
     if (!explicit && closed === next.key) return;
     if (previousPlaybackKey && previousPlaybackKey !== next.key) playbackAccess.current?.flush();
     if (previousPlaybackKey !== next.key) cancelTransition();
-    setPlayback(current => ({...next, hasStarted: current?.key === next.key && current.hasStarted}));
+    const source = pendingSource.current;
+    const matching = source?.member === member && source?.targetHref === next.href ? source : undefined;
+    if (source) pendingSource.current = null;
+    setPlayback(current => ({...next, hasStarted: current?.key === next.key && current.hasStarted, source: matching ?? (current?.key === next.key ? current.source : undefined)}));
+    if (previousPlaybackKey !== next.key || matching) setSourceExpanded(false);
     if (explicit || next.key !== closed) setClosed(undefined);
-  }, [closed, previousPlaybackKey, cancelTransition]);
+  }, [closed, previousPlaybackKey, cancelTransition, member, owner]);
   const markStarted = useCallback((key: string) => {
     setPlayback(current => current?.key === key && !current.hasStarted ? {...current, hasStarted: true} : current);
   }, []);
@@ -173,12 +195,15 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
     if (element) setClosed(current => current === key ? undefined : current);
   }, [member]);
   const close = useCallback((key: string) => {
+    if (currentOwner.current !== owner) return;
     cancelTransition();
+    setSourceExpanded(false);
+    pendingSource.current = null;
     if (previousPlaybackKey === key) playbackAccess.current?.flush();
     if (lastWatchSlot.current?.key === key && lastWatchSlot.current.member === member) closedWatchSlots.current.set(lastWatchSlot.current.element, key);
     setClosed(key);
     setPlayback(current => current?.key === key ? null : current);
-  }, [previousPlaybackKey, cancelTransition, member]);
+  }, [previousPlaybackKey, cancelTransition, member, owner]);
   const registerPlayback = useCallback((flush: () => void, time: () => number, identity: () => ResumeIdentity) => {
     const value = {flush, time, identity};
     playbackAccess.current = value;
@@ -205,9 +230,10 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
   }
   const watchSlot = !minimizing && playback && slot?.key === playback.key ? slot.element : null;
   const inWatch = Boolean(watchSlot);
+  if (inWatch && sourceExpanded) setSourceExpanded(false);
   const expand = useCallback(() => { if (activeHref) { cancelTransition(); const method = navigation.expand(activeHref);
       if (method === 'forward') router.forward(); else router[method](activeHref);  } }, [activeHref, router, cancelTransition, navigation]);
-  const controls = useMemo(() => ({cardProgress, activeKey, activeLive, activeHref, markStarted, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary}), [cardProgress, activeKey, activeLive, activeHref, markStarted, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary]);
+  const controls = useMemo(() => ({cardProgress, activeKey, activeLive, activeHref, captureSource, markStarted, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary}), [cardProgress, activeKey, activeLive, activeHref, captureSource, markStarted, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary]);
 
   return <Context.Provider value={member ? controls : null}>
     <Suspense fallback={null}><PlaybackHistoryObserver navigation={navigation}/></Suspense>
@@ -225,7 +251,21 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
       {!watchSlot && <div className={styles.close}>
         <button type="button" aria-label={labels.close} className="grid size-11 place-items-center" onClick={closeActive}><X size={20}/></button>
       </div>}
-      {!watchSlot && <Link href={playback.href} onNavigate={event=>{event.preventDefault();expand();}} className={styles.caption}><span className={styles.captionTitle}>{playback.title}</span></Link>}
+      {!watchSlot && <>
+        <div className={styles.caption} data-mini-caption>
+          <Link href={playback.href} aria-label={playback.title} onNavigate={event=>{event.preventDefault();expand();}} className={styles.captionLink}>
+            <span className={styles.captionTitle}>{playback.title}</span><span className={styles.captionBrand}>哈利路亞家教會</span>
+          </Link>
+          {playback.source?.items.length ? <button ref={sourceToggle} type="button" className={styles.sourceToggle}
+            aria-expanded={sourceExpanded} aria-controls={sourcePanelId} aria-label={sourceExpanded ? labels.collapseSource ?? 'Collapse video list' : labels.expandSource ?? 'Expand video list'}
+            onClick={()=>{if(sourceExpanded && document.getElementById(sourcePanelId)?.contains(document.activeElement)) sourceToggle.current?.focus({preventScroll:true});setSourceExpanded(value=>!value);}}>{sourceExpanded ? <ChevronDown size={20}/> : <ChevronUp size={20}/>}</button> : null}
+        </div>
+        {playback.source && <nav id={sourcePanelId} className={styles.sourcePanel} hidden={!sourceExpanded} aria-label={labels.sourceList ?? 'Video list'}>
+          <p className={styles.sourceHeading}>{labels.sourceList ?? 'Video list'}</p>
+          <ol>{playback.source.items.map(item=><li key={item.id}><Link href={item.href} aria-current={item.href===playback.href ? 'true' : undefined}
+            onNavigate={event=>{setSourceExpanded(false);cancelTransition();if(item.href===playback.href){event.preventDefault();expand();}else if(playback.source)captureSource(playback.source,item.href);}}>{item.title}</Link></li>)}</ol>
+        </nav>}
+      </>}
     </PlaybackHost>}
   </Context.Provider>;
 }

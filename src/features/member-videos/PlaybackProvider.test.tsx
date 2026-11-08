@@ -133,6 +133,50 @@ it('does not reopen a closed mini when its old watch slot reports again',async()
  fresh.remove();slot.remove();
 });
 
+it('shows the source list only for an explicit library snapshot and keeps media while toggling it',async()=>{
+ let controls!:ReturnType<typeof usePersistentPlayback>;
+ function Probe(){const value=usePersistentPlayback();useEffect(()=>{controls=value;},[value]);return null;}
+ render(<PlaybackProvider locale="en" labels={labels}><Probe/></PlaybackProvider>);
+ await act(async()=>{
+  controls?.captureSource({sourceHref:'/member-videos?q=test',items:[{id:'recording',href:'/video/A',title:'First'},{id:'other',href:'/video/B',title:'Second'},{id:'other',href:'/video/B',title:'Stale duplicate'}]},'/video/A');
+  controls?.start({key:'vod:recording:package',href:'/video/A',title:'First',player});controls?.markStarted('vod:recording:package');
+ });
+ const video=screen.getByLabelText('Current recording');
+ expect(screen.getByText('哈利路亞家教會')).toBeInTheDocument();
+ const toggle=screen.getByRole('button',{name:'Expand video list'});
+ expect(toggle).toHaveAttribute('aria-expanded','false');
+ expect(screen.queryByRole('navigation',{name:'Video list'})).toBeNull();
+ fireEvent.click(toggle);
+ expect(screen.getByRole('navigation',{name:'Video list'})).toBeInTheDocument();
+ expect(screen.getByRole('link',{name:'Second'})).toHaveAttribute('href','/video/B');
+ expect(screen.queryByText('Stale duplicate')).toBeNull();
+ expect(screen.getByLabelText('Current recording')).toBe(video);
+ screen.getByRole('link',{name:'Second'}).focus();
+ const collapse=screen.getByRole('button',{name:'Collapse video list'});
+ fireEvent.click(collapse);
+ expect(document.activeElement).toBe(collapse);
+ expect(screen.queryByRole('navigation',{name:'Video list'})).toBeNull();
+ expect(screen.getByLabelText('Current recording')).toBe(video);
+});
+
+it('does not offer a source arrow for direct watch entries',()=>{
+ render(<PlaybackProvider locale="en" labels={labels}><Playing/></PlaybackProvider>);
+ expect(screen.queryByRole('button',{name:'Expand video list'})).toBeNull();
+});
+
+it('clears private source context on account change and rejects old account callbacks',async()=>{
+ let controls!:ReturnType<typeof usePersistentPlayback>;
+ function Probe(){const value=usePersistentPlayback();useEffect(()=>{controls=value;},[value]);return null;}
+ const view=render(<PlaybackProvider locale="en" labels={labels}><Probe/></PlaybackProvider>);
+ const old=controls;
+ await act(async()=>{old?.captureSource({sourceHref:'/videos',items:[{id:'a',href:'/video/A',title:'Private source A'}]},'/video/A');old?.start({key:'a',href:'/video/A',title:'Private source A',player});});
+ account.identity='other';view.rerender(<PlaybackProvider locale="en" labels={labels}><Probe/></PlaybackProvider>);
+ account.identity='member';view.rerender(<PlaybackProvider locale="en" labels={labels}><Probe/></PlaybackProvider>);
+ await act(async()=>{old?.captureSource({sourceHref:'/videos',items:[{id:'a',href:'/video/A',title:'Private source A'}]},'/video/A');old?.start({key:'a',href:'/video/A',title:'Private source A',player});});
+ expect(screen.queryByLabelText('Current recording')).toBeNull();
+ expect(screen.queryByText('Private source A')).toBeNull();
+});
+
 
 it('gives a returning account a new local-progress store rather than reviving its old writer',()=>{
  const stores:Array<NonNullable<ReturnType<typeof usePersistentPlayback>>['cardProgress']>=[];
