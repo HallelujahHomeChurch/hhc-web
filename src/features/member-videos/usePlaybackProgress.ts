@@ -8,8 +8,11 @@ export function usePlaybackProgress(api: ProgressAPI, id: string | undefined, ve
   surface: RefObject<HTMLDivElement | null>, media: RefObject<HTMLMediaElement | null>, enabled: boolean) {
   const currentApi = useRef(api);
   useLayoutEffect(() => { currentApi.current = api; }, [api]);
-  const playback = usePersistentPlayback();
-  const registerPlayback = playback?.registerPlayback, cardProgress = playback?.cardProgress;
+  const persistent = usePersistentPlayback();
+  const registerPlayback = persistent?.registerPlayback;
+  const markStarted = persistent?.markStarted;
+  const sessionKey = persistent?.activeKey;
+  const cardProgress = persistent?.cardProgress;
   const sync = useRef<ReturnType<typeof createPlaybackProgress> | undefined>(undefined);
   useEffect(() => {
     if (!id || !version || !enabled || !surface.current) return;
@@ -35,7 +38,10 @@ export function usePlaybackProgress(api: ProgressAPI, id: string | undefined, ve
     };
     const playing = (event: Event) => {
       const active = media.current;
-      if (active && event.target === active && !active.paused) void current.playing(active.currentTime).then(publish);
+      if (active && event.target === active && !active.paused) {
+        if (sessionKey?.split(':')[1] === id) markStarted?.(sessionKey);
+        void current.playing(active.currentTime).then(publish);
+      }
     };
     const changed = (event: Event) => { if (event.target === media.current) save(); };
     const events = ['pause', 'seeked', 'ended'];
@@ -61,6 +67,6 @@ export function usePlaybackProgress(api: ProgressAPI, id: string | undefined, ve
       element.removeEventListener('playing', playing, true);
       events.forEach(event => element.removeEventListener(event, changed, true));
     };
-  }, [id, version, surface, media, enabled, registerPlayback, cardProgress]);
+  }, [id, version, surface, media, enabled, registerPlayback, cardProgress, markStarted, sessionKey]);
   return useCallback((kind: Parameters<ReturnType<typeof createPlaybackProgress>['prepare']>[0], signal?: AbortSignal) => sync.current?.prepare(kind, signal), []);
 }

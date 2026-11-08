@@ -11,7 +11,7 @@ import {BroadcastCover} from './BroadcastWaitingPanel';
 import {broadcastLabels,broadcastPollDelay} from './broadcast';
 import styles from './MemberVideoZone.module.css';
 
-export function UpcomingBroadcasts({onNavigate,active=true,api,locale,query='',excludeIds=[],onPageState,loading,retry,loadMoreLabel='Load more',onPresenceChange}:{onNavigate?:()=>void;active?:boolean;api:ReturnType<typeof createMemberVideoApi>;locale:Locale;query?:string;excludeIds?:string[];onPageState?:(state:{ids:string[];complete:boolean;initialState:'loading'|'ready'|'error'})=>void;loading:string;retry:string;loadMoreLabel?:string;onPresenceChange?:(present:boolean)=>void}) {
+export function UpcomingBroadcasts({onNavigate,active=true,api,locale,query='',excludeIds=[],onPageState,loading,retry,loadMoreLabel='Load more',onPresenceChange}:{onNavigate?:(href:string)=>void;active?:boolean;api:ReturnType<typeof createMemberVideoApi>;locale:Locale;query?:string;excludeIds?:string[];onPageState?:(state:{ids:string[];complete:boolean;initialState:'loading'|'ready'|'error'})=>void;loading:string;retry:string;loadMoreLabel?:string;onPresenceChange?:(present:boolean)=>void}) {
  const [items,setItems]=useState<RecordingWatchView[]>([]),[cursor,setCursor]=useState<string|null>(null);
  const [pending,setPending]=useState(false),[loaded,setLoaded]=useState(false),[error,setError]=useState(false),[refresh,setRefresh]=useState(0);
  const loadedOnce=useRef(false);
@@ -61,11 +61,11 @@ export function UpcomingBroadcasts({onNavigate,active=true,api,locale,query='',e
  useEffect(()=>{onPageState?.({ids:items.map(item=>item.recordingId),complete:loaded&&cursor===null,initialState:loaded?'ready':error?'error':'loading'});},[items,cursor,loaded,error,onPageState]);
  return <>
   {items.filter(item=>!excludeIds.includes(item.recordingId)).map(item=><article key={item.recordingId} className={styles.card}>
-   <Link onNavigate={onNavigate} href={videoWatchPath(locale,item.recordingId,item.publicId)} className={styles.thumbnail} aria-label={`${labels.upcoming}: ${item.title}`} tabIndex={-1}>
+   <Link onNavigate={()=>onNavigate?.(videoWatchPath(locale,item.recordingId,item.publicId))} href={videoWatchPath(locale,item.recordingId,item.publicId)} className={styles.thumbnail} aria-label={`${labels.upcoming}: ${item.title}`} tabIndex={-1}>
     <BroadcastCover coverMode={item.coverMode} api={api} id={item.recordingId} title={item.title} revision={item.cover?`cover:${item.cover.revision}`:`state:${item.stateRevision}`}/>
     <span className={`${styles.badge} ${styles.stateBadge}`}>{labels.upcoming}</span>
    </Link>
-   <div className={styles.info}><h3 className={styles.title}><Link onNavigate={onNavigate} href={videoWatchPath(locale,item.recordingId,item.publicId)}>{item.title}</Link></h3>
+   <div className={styles.info}><h3 className={styles.title}><Link onNavigate={()=>onNavigate?.(videoWatchPath(locale,item.recordingId,item.publicId))} href={videoWatchPath(locale,item.recordingId,item.publicId)}>{item.title}</Link></h3>
     {item.scheduledAt?<p className={styles.date}><time dateTime={item.scheduledAt}>{new Intl.DateTimeFormat(locale,{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Taipei'}).format(new Date(item.scheduledAt))}</time></p>:null}
    </div>
   </article>)}

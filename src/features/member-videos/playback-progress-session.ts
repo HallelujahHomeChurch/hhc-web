@@ -42,11 +42,12 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
   signal.addEventListener('abort', () => clearTimeout(retryTimer), {once: true});
   let attempt = 0;
   let preparing = false;
+  let claiming = false;
   let pendingPosition: number | undefined;
   let intentRevision = 0;
 
   const drain = async () => {
-    if (writing || !owner || !next || signal.aborted || Date.now() < retryAt) return;
+    if (writing || claiming || !owner || !next || signal.aborted || Date.now() < retryAt) return;
     const update = next;
     next = undefined;
     if (acknowledged?.positionSeconds === update.positionSeconds && acknowledged.state === update.state) return;
@@ -87,33 +88,42 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
     const {snapshot, kind} = intent;
     const revision = intentRevision;
     intent = undefined;
+    claiming = true;
+    owner = undefined;
+    next = undefined;
     const claim = {
       sessionId, claimId: crypto.randomUUID(), expectedGeneration: snapshot.progress?.generation ?? null,
       claimToken: snapshot.claimToken, mediaVersion: snapshot.mediaVersion, startKind: kind, observedPositionSeconds: position,
     };
-    for (const delay of [0, 5000, 10000, 20000]) {
-      if (delay) await new Promise(resolve => setTimeout(resolve, delay));
-      if (revision !== intentRevision || signal.aborted || (delay && !navigator.onLine)) return;
-      const timeout = deadline([signal], 4000);
-      try {
-        const claimed = await Promise.race([api.claimProgress(id, claim, timeout.signal), timeout.canceled]);
-        if (!claimed) {
-          if (timeout.timedOut()) continue;
+    try {
+      for (const delay of [0, 5000, 10000, 20000]) {
+        if (delay) await new Promise(resolve => setTimeout(resolve, delay));
+        if (revision !== intentRevision || signal.aborted || (delay && !navigator.onLine)) return;
+        const timeout = deadline([signal], 4000);
+        try {
+          const claimed = await Promise.race([api.claimProgress(id, claim, timeout.signal), timeout.canceled]);
+          if (!claimed) {
+            if (timeout.timedOut()) continue;
+            return;
+          }
+          if (revision !== intentRevision || signal.aborted) return;
+          owner = claimed;
+          sequence = claimed.sequence;
+          acknowledged = undefined;
+          clearTimeout(retryTimer);
+          attempt = 0;
+          retryAt = 0;
           return;
-        }
-        if (revision !== intentRevision || signal.aborted) return;
-        owner = claimed;
-        sequence = claimed.sequence;
-        next = undefined;
-        acknowledged = undefined;
-        clearTimeout(retryTimer);
-        attempt = 0;
-        retryAt = 0;
-        return;
-      } catch {
-        // A timeout can hide an accepted claim. Replay only the original intent.
-        if (!timeout.timedOut()) return;
-      } finally { timeout.dispose(); }
+        } catch {
+          // A timeout can hide an accepted claim. Replay only the original intent.
+          if (!timeout.timedOut()) return;
+        } finally { timeout.dispose(); }
+      }
+    } finally {
+      if (revision === intentRevision) {
+        claiming = false;
+        if (!signal.aborted) void drain();
+      }
     }
   }
 
@@ -123,6 +133,8 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
     async prepare(kind: Intent['kind'], startSignal: AbortSignal = signal) {
       const revision = ++intentRevision;
       intent = undefined;
+      claiming = false;
+      next = undefined;
       pendingPosition = undefined;
       preparing = true;
       const timeout = deadline([signal, startSignal], 1500);
@@ -145,7 +157,7 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
     },
     playing,
     save(positionSeconds: number, state: RecordingProgressUpdate['state']) {
-      if (!owner || !Number.isFinite(positionSeconds) || positionSeconds < 0) return;
+      if ((!owner && !claiming) || signal.aborted || !Number.isFinite(positionSeconds) || positionSeconds < 0) return;
       next = {positionSeconds, state};
       return drain();
     },
