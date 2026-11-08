@@ -14,6 +14,7 @@ param enableNewsPrivateHttps bool = false
 param internalGatewayToken string = ''
 @description('Server trace probability; release validates 0 through 0.1. Zero disables trace export.')
 param sentryTracesSampleRate string = '0.01'
+param runtimeEnv object = loadJsonContent('runtime-env.json').resources['hhc-web']
 
 resource environment 'Microsoft.App/managedEnvironments@2024-03-01' existing = {
   name: containerAppEnvironmentName
@@ -26,6 +27,47 @@ resource registry 'Microsoft.ContainerRegistry/registries@2023-07-01' existing =
 resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
   name: 'hhc-web-identity'
 }
+
+var defaultRuntimeEnv = [
+  {
+    name: 'SENTRY_TRACES_SAMPLE_RATE'
+    value: sentryTracesSampleRate
+  }
+  {
+    name: 'HHC_WEB_API_BASE_URL'
+    value: enableDapr
+      ? 'http://127.0.0.1:3500/v1.0/invoke/hhc-web-api/method/api'
+      : 'https://hhc-web-api.internal.${environment.properties.defaultDomain}/api'
+  }
+  ...(enableHistoryPrivateHttps ? [
+    {
+      name: 'HHC_WEB_HISTORY_API_BASE_URL'
+      value: 'https://hhc-web-api.internal.${environment.properties.defaultDomain}/api'
+    }
+  ] : [])
+  ...(enableAboutPrivateHttps ? [
+    {
+      name: 'HHC_WEB_ABOUT_API_BASE_URL'
+      value: 'https://hhc-web-api.internal.${environment.properties.defaultDomain}/api'
+    }
+  ] : [])
+  ...(enableNewsPrivateHttps ? [
+    {
+      name: 'HHC_WEB_NEWS_API_BASE_URL'
+      value: 'https://hhc-web-api.internal.${environment.properties.defaultDomain}/api'
+    }
+  ] : [])
+  ...(enableInternalIngress ? [
+    {
+      name: 'HHC_WEB_INGRESS_AUTH'
+      value: 'true'
+    }
+    {
+      name: 'HHC_WEB_GATEWAY_TOKEN'
+      secretRef: 'hhc-web-gateway-token'
+    }
+  ] : [])
+]
 
 resource app 'Microsoft.App/containerApps@2025-01-01' = {
   name: 'hhc-web'
@@ -72,46 +114,7 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
         {
           name: 'hhc-web'
           image: image
-          env: [
-            {
-              name: 'SENTRY_TRACES_SAMPLE_RATE'
-              value: sentryTracesSampleRate
-            }
-            {
-              name: 'HHC_WEB_API_BASE_URL'
-              value: enableDapr
-                ? 'http://127.0.0.1:3500/v1.0/invoke/hhc-web-api/method/api'
-                : 'https://hhc-web-api.internal.${environment.properties.defaultDomain}/api'
-            }
-            ...(enableHistoryPrivateHttps ? [
-              {
-                name: 'HHC_WEB_HISTORY_API_BASE_URL'
-                value: 'https://hhc-web-api.internal.${environment.properties.defaultDomain}/api'
-              }
-            ] : [])
-            ...(enableAboutPrivateHttps ? [
-              {
-                name: 'HHC_WEB_ABOUT_API_BASE_URL'
-                value: 'https://hhc-web-api.internal.${environment.properties.defaultDomain}/api'
-              }
-            ] : [])
-            ...(enableNewsPrivateHttps ? [
-              {
-                name: 'HHC_WEB_NEWS_API_BASE_URL'
-                value: 'https://hhc-web-api.internal.${environment.properties.defaultDomain}/api'
-              }
-            ] : [])
-            ...(enableInternalIngress ? [
-              {
-                name: 'HHC_WEB_INGRESS_AUTH'
-                value: 'true'
-              }
-              {
-                name: 'HHC_WEB_GATEWAY_TOKEN'
-                secretRef: 'hhc-web-gateway-token'
-              }
-            ] : [])
-          ]
+          env: concat(filter(defaultRuntimeEnv, entry => !contains(runtimeEnv, entry.name)), map(filter(items(runtimeEnv), entry => entry.value != null), entry => union({ name: entry.key }, entry.value)))
           resources: {
             cpu: json('0.5')
             memory: '1Gi'

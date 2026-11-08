@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import test_no_cloud  # Block real Azure in every child process.
 import importlib.util
 import json
 import os

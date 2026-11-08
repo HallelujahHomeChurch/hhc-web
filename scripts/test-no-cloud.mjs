@@ -1,0 +1,11 @@
+import {mkdtempSync, mkdirSync, writeFileSync, chmodSync, rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+const folder = mkdtempSync(join(tmpdir(), 'hhc-no-cloud-'));
+mkdirSync(join(folder, 'config'));
+writeFileSync(join(folder, 'az'), '#!/bin/sh\necho "Unexpected Azure invocation blocked by test harness" >&2\nexit 97\n');
+chmodSync(join(folder, 'az'), 0o755);
+process.env.PATH = folder + ':' + process.env.PATH;
+process.env.AZURE_CONFIG_DIR = join(folder, 'config');
+process.env.AZ_BIN = join(folder, 'az');
+process.on('exit', () => rmSync(folder, {recursive: true, force: true}));
