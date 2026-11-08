@@ -7,8 +7,11 @@ import styles from './MemberVideoZone.module.css';
 export function RecordingCardProgress({item,label}:{item:MemberRecordingCard;label:string}) {
  const store = usePersistentPlayback()?.cardProgress;
  // Only the list can supply the current authoritative package/range version.
- const local = useSyncExternalStore(store?.subscribe ?? (()=>()=>{}),()=>store?.get(item.id,item.playbackProgress?.mediaVersion) ?? null,()=>null);
- const progress = local ?? item.playbackProgress, duration = item.durationSeconds;
+ const version = 'playbackMediaVersion' in item
+  ? typeof item.playbackMediaVersion === 'string' ? item.playbackMediaVersion : undefined
+  : item.playbackProgress?.mediaVersion;
+ const local = useSyncExternalStore(store?.subscribe ?? (()=>()=>{}),()=>store?.get(item.id,version) ?? null,()=>null);
+ const progress = local ?? (item.playbackProgress?.mediaVersion === version ? item.playbackProgress : null), duration = item.durationSeconds;
  if (!progress || !duration || duration <= 0 || !Number.isFinite(progress.positionSeconds)) return null;
  return <progress className={styles.cardProgress} max={100}
    value={progress.completed ? 100 : Math.max(0,Math.min(100,progress.positionSeconds/duration*100))}
