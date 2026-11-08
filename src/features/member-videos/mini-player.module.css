@@ -119,3 +119,14 @@
 .host:has(.sourcePanel:not([hidden])) .caption {border-bottom-left-radius:0;border-bottom-right-radius:0;}
 
 @media(pointer:fine) {.host[data-presentation='mini'] {--hhc-mini-actions-opacity:0;--hhc-mini-actions-pointer-events:none;}.host[data-presentation='mini']:is(:hover,[data-keyboard-focus='true']) {--hhc-mini-actions-opacity:1;--hhc-mini-actions-pointer-events:auto;}}
+
+.host[data-compact='true'] .sourcePanel {display:none;}
+.host[data-compact='false'] .sourcePanel:not([hidden]) {display:block;}
+.host[data-presentation='mini'] .sourcePanel {max-height:var(--mini-source-height,0px);}
+.host[data-presentation='mini'][data-compact='true'] {--hhc-mini-actions-opacity:1;--hhc-mini-actions-pointer-events:auto;}
+.host[data-presentation='mini'][data-compact='false'] {--hhc-mini-actions-opacity:0;--hhc-mini-actions-pointer-events:none;}
+.host[data-presentation='mini'][data-compact='false']:is(:hover,[data-keyboard-focus='true']) {--hhc-mini-actions-opacity:1;--hhc-mini-actions-pointer-events:auto;}
+.host[data-presentation='mini'][data-compact='true'] :global(.hhc-player-player),
+.host[data-presentation='mini'][data-compact='true'] > div:first-child > div {border-radius:14px;}
+.host[data-presentation='mini'][data-compact='false'] :global(.hhc-player-player),
+.host[data-presentation='mini'][data-compact='false'] > div:first-child > div {border-radius:14px 14px 0 0;}

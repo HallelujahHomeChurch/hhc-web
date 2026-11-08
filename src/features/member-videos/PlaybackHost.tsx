@@ -4,7 +4,7 @@ import {useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode} fr
 import styles from './mini-player.module.css';
 import {miniRect, pullRect, readMiniArea, type MediaRect, type MiniArea} from './mini-geometry';
 
-export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLabel, minimizeOffset = 0, tracking = minimizeOffset !== 0, onSettled, onPullCancel, sessionKey}: {
+export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLabel, minimizeOffset = 0, tracking = minimizeOffset !== 0, onSettled, onPullCancel, sessionKey, onCompactChange}: {
   watchSlot: HTMLElement | null;
   children: ReactNode;
   onClose?: () => void;
@@ -15,6 +15,7 @@ export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLab
   onSettled?: () => void;
   onPullCancel?: () => void;
   sessionKey?: string;
+  onCompactChange?: (compact: boolean) => void;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const dragRelease = useRef<MediaRect | null>(null);
@@ -63,11 +64,18 @@ export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLab
     if (!watchSlot && minimizeOffset > 0) {setLeft(false); setTop(false);}
   }
   const [offset, setOffset] = useState({x: 0, y: 0});
+  const miniBounds = (bounds: MiniArea, preferred: number, left: boolean, top: boolean) => {
+    const host = hostRef.current, compact = bounds.right - bounds.left < 736;
+    const caption = compact ? 0 : host?.querySelector<HTMLElement>('[data-mini-caption]')?.getBoundingClientRect().height || 76;
+    const panel = compact ? null : host?.querySelector<HTMLElement>('[data-mini-source]:not([hidden])');
+    const video = miniRect(bounds, preferred, caption + (panel ? 44 : 0), left, top);
+    const sourceHeight = panel ? Math.min(Math.max(44, panel.scrollHeight), 240, Math.max(0, bounds.bottom - bounds.top - caption - video.width * 9 / 16)) : 0;
+    host?.style.setProperty('--mini-source-height', `${sourceHeight}px`);
+    return miniRect(bounds, video.width, caption + sourceHeight, left, top);
+  };
   const clampWidth = (value: number) => {
     const bounds = area.current ?? readMiniArea();
-    const compact = bounds.right - bounds.left < 736;
-    const caption = compact ? 0 : hostRef.current?.querySelector<HTMLElement>('[data-mini-caption]')?.getBoundingClientRect().height || 76;
-    return miniRect(bounds, Math.min(640, Math.max(240, value)), caption, left, top).width;
+    return miniBounds(bounds, Math.min(640, Math.max(240, value)), left, top).width;
   };
   const pointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (watchSlot || hostRef.current?.querySelector('[data-fullscreen]:not([data-fullscreen="inline"])') || !event.isPrimary || event.button !== 0) { drag.current = null; setOffset({x: 0, y: 0}); return; }
@@ -107,7 +115,7 @@ export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLab
     const host = hostRef.current;
     const caption = host?.querySelector<HTMLElement>('[data-mini-caption]');
     if (watchSlot || !host || !caption) return;
-    const measure = () => host.style.setProperty('--mini-caption-height', `${caption.getBoundingClientRect().height}px`);
+    const measure = () => {host.style.setProperty('--mini-caption-height', `${caption.getBoundingClientRect().height}px`); arrange.current('slot');};
     measure();
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
     observer?.observe(caption);
@@ -144,8 +152,9 @@ export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLab
       if (!host) return;
       area.current ??= readMiniArea();
       const bounds = area.current, compact = bounds.right - bounds.left < 736;
-      const caption = compact ? 0 : host.querySelector<HTMLElement>('[data-mini-caption]')?.getBoundingClientRect().height || 76;
-      const end = miniRect(bounds, width ?? (compact ? 240 : 400), caption, left, top);
+      host.dataset.compact = String(compact);
+      onCompactChange?.(compact);
+      const end = miniBounds(bounds, width ?? (compact ? 240 : 400), left, top);
       const corner = `${left}:${top}`;
       const newSession = lastSession.current !== sessionKey;
       if (newSession) {pull.current = null; invalidPull.current = false;}
@@ -159,7 +168,7 @@ export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLab
       }
       if (!tracking) invalidPull.current = false;
       if (watchSlot && tracking && !invalidPull.current) {
-        if (!pull.current) pull.current = {start: next, end: miniRect(bounds, width ?? (compact ? 240 : 400), caption, false, false), dyLock: minimizeOffset};
+        if (!pull.current) pull.current = {start: next, end: miniBounds(bounds, width ?? (compact ? 240 : 400), false, false), dyLock: minimizeOffset};
         next = pullRect(pull.current.start, pull.current.end, minimizeOffset, pull.current.dyLock);
       } else if (pull.current) {
         pull.current = null;
@@ -185,7 +194,7 @@ export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLab
       lastBounds.current = next; lastWatch.current = Boolean(watchSlot); lastCorner.current = corner; lastSession.current = sessionKey;
     };
     arrange.current('render');
-  }, [watchSlot, minimizeOffset, width, left, top, offset.x, offset.y, tracking, onSettled, onPullCancel, sessionKey]);
+  });
 
   useLayoutEffect(() => {
     let frame = 0, viewportChanged = false;

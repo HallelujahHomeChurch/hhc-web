@@ -28,6 +28,7 @@ type PlaybackControl = {
   activeHref: string | undefined;
   labels: ContinuityLabels;
   inWatch: boolean;
+  miniCompact: boolean;
   expand: () => void;
   minimize: (navigate: () => void) => void;
   setMinimizeOffset: (offset: number, phase?: 'tracking' | 'reset') => void | false;
@@ -99,6 +100,7 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
     return () => window.removeEventListener('popstate', pop);
   }, [navigation]);
   useEffect(() => { navigation.reset(); }, [member, navigation]);
+  const [miniCompact, setMiniCompact] = useState(false);
   const [minimizeOffset, setMinimizeOffset] = useState(0);
   const [pullTracking, setPullTracking] = useState(false);
   const updateMinimizeOffset = useCallback((offset: number, phase?: 'tracking' | 'reset') => {
@@ -246,7 +248,7 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
   if (inWatch && sourceExpanded) setSourceExpanded(false);
   const expand = useCallback(() => { if (activeHref) { cancelTransition(); const method = navigation.expand(activeHref);
       if (method === 'forward') router.forward(); else router[method](activeHref);  } }, [activeHref, router, cancelTransition, navigation]);
-  const controls = useMemo(() => ({cardProgress, activeKey, activeLive, activeHref, captureSource, markStarted, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset: updateMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary}), [cardProgress, activeKey, activeLive, activeHref, captureSource, markStarted, start, setSlot, close, labels, inWatch, expand, minimize, updateMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary]);
+  const controls = useMemo(() => ({cardProgress, activeKey, activeLive, activeHref, captureSource, markStarted, start, setSlot, close, labels, inWatch, miniCompact, expand, minimize, setMinimizeOffset: updateMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary}), [cardProgress, activeKey, activeLive, activeHref, captureSource, markStarted, start, setSlot, close, labels, inWatch, miniCompact, expand, minimize, updateMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary]);
 
   return <Context.Provider value={member ? controls : null}>
     <Suspense fallback={null}><PlaybackHistoryObserver navigation={navigation}/></Suspense>
@@ -259,7 +261,7 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
         try { navigateToLibrary.current?.(); } catch { /* Keep the same explicit retry; never navigate backwards on a timer. */ }
       }}>{labels.retryNavigation ?? 'Try again'}</button>
     </div>}
-    {member && playback && (watchSlot || playback.hasStarted) && <PlaybackHost tracking={pullTracking} sessionKey={playback.key} onPullCancel={cancelPull} watchSlot={watchSlot} minimizeOffset={minimizeOffset} onSettled={settled} onClose={closeActive} moveLabel={labels.move} resizeLabel={labels.resize}>
+    {member && playback && (watchSlot || playback.hasStarted) && <PlaybackHost onCompactChange={setMiniCompact} tracking={pullTracking} sessionKey={playback.key} onPullCancel={cancelPull} watchSlot={watchSlot} minimizeOffset={minimizeOffset} onSettled={settled} onClose={closeActive} moveLabel={labels.move} resizeLabel={labels.resize}>
       <div key={playback.key}>{playback.player}</div>
       {!watchSlot && <div className={styles.close}>
         <button type="button" aria-label={labels.close} className="grid size-11 place-items-center" onClick={closeActive}><X size={20}/></button>
@@ -273,7 +275,7 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
             aria-expanded={sourceExpanded} aria-controls={sourcePanelId} aria-label={sourceExpanded ? labels.collapseSource ?? 'Collapse video list' : labels.expandSource ?? 'Expand video list'}
             onClick={()=>{if(sourceExpanded && document.getElementById(sourcePanelId)?.contains(document.activeElement)) sourceToggle.current?.focus({preventScroll:true});setSourceExpanded(value=>!value);}}>{sourceExpanded ? <ChevronDown size={20}/> : <ChevronUp size={20}/>}</button> : null}
         </div>
-        {playback.source && <nav id={sourcePanelId} className={styles.sourcePanel} hidden={!sourceExpanded} aria-label={labels.sourceList ?? 'Video list'}>
+        {playback.source && <nav data-mini-source id={sourcePanelId} className={styles.sourcePanel} hidden={!sourceExpanded} aria-label={labels.sourceList ?? 'Video list'}>
           <p className={styles.sourceHeading}>{labels.sourceList ?? 'Video list'}</p>
           <ol>{playback.source.items.map(item=><li key={item.id}><Link href={item.href} aria-current={item.href===playback.href ? 'true' : undefined}
             onNavigate={event=>{setSourceExpanded(false);cancelTransition();if(item.href===playback.href){event.preventDefault();expand();}else if(playback.source)captureSource(playback.source,item.href);}}>{item.title}</Link></li>)}</ol>

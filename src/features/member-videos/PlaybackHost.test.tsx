@@ -1,7 +1,4 @@
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
-});
-
-import {act, render, screen, fireEvent} from '@testing-library/react';
+import {act, render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {expect, it, vi} from 'vitest';
 import {PlaybackHost} from './PlaybackHost';
 
@@ -184,4 +181,30 @@ it('reveals mini actions for keyboard focus but clears pointer focus residue',()
  expect(host).toHaveAttribute('data-keyboard-focus','true');
  fireEvent.pointerDown(document.body);
  expect(document.activeElement).toBe(button);expect(host).toHaveAttribute('data-keyboard-focus','false');
+});
+
+
+it('reports compact layout from the same available rectangle and preserves media across rotation',async()=>{
+ const original=window.innerWidth,onCompactChange=vi.fn();
+ Object.defineProperty(window,'innerWidth',{configurable:true,value:390});
+ try{
+  render(<PlaybackHost watchSlot={null} onCompactChange={onCompactChange}><video data-testid="layout-owner"/></PlaybackHost>);
+  const video=screen.getByTestId('layout-owner');expect(onCompactChange).toHaveBeenLastCalledWith(true);
+  Object.defineProperty(window,'innerWidth',{configurable:true,value:1024});fireEvent(window,new Event('resize'));
+  await waitFor(()=>expect(onCompactChange).toHaveBeenLastCalledWith(false));expect(screen.getByTestId('layout-owner')).toBe(video);
+ }finally{Object.defineProperty(window,'innerWidth',{configurable:true,value:original});}
+});
+
+it('fits expanded source content into the available height without moving its video offscreen',()=>{
+ const original=window.innerHeight;Object.defineProperty(window,'innerHeight',{configurable:true,value:260});
+ try{
+  const show=(expanded:boolean)=><PlaybackHost watchSlot={null}><div><video data-testid="queue-video"/></div><div data-mini-caption>Title</div><nav data-mini-source hidden={!expanded}>Source</nav></PlaybackHost>;
+  const view=render(show(false)),video=screen.getByTestId('queue-video'),host=video.parentElement!.parentElement!;
+  view.rerender(show(true));
+  expect(parseFloat(host.style.getPropertyValue('--mini-source-height'))).toBeGreaterThanOrEqual(44);
+  expect(parseFloat(host.style.height)).toBeLessThanOrEqual(228);
+  expect(parseFloat(host.style.top)).toBeGreaterThanOrEqual(16);
+  expect(parseFloat(host.style.width)*9/16+76+parseFloat(host.style.getPropertyValue('--mini-source-height'))).toBeCloseTo(parseFloat(host.style.height));
+  expect(screen.getByTestId('queue-video')).toBe(video);
+ }finally{Object.defineProperty(window,'innerHeight',{configurable:true,value:original});}
 });

@@ -38,6 +38,8 @@ export function PersistentVod({previousHref, nextHref, initialBookmark, onMinimi
   }, [selected, automaticAttempt, start, initialBookmark, prepareProgress]);
   usePlaybackTelemetry(api, selected?.id, media, Boolean(playback));
 
+  // shortcut: compact requires UI #224; publish and pin that package before merging this consumer.
+  const mini = controls && !controls.inWatch ? {onExpand: controls.expand, expandLabel: controls.labels.expand, compact: controls.miniCompact} : undefined;
   return <div ref={playerSection}>
     {selected && playback?.recordingId === selected.id
       ? <HlsPlayer key={`${playback.url}:${session.backgroundAudio}`} backgroundAudioUrl={session.audioUrl}
@@ -46,7 +48,7 @@ export function PersistentVod({previousHref, nextHref, initialBookmark, onMinimi
           availableQualities={(playback.grant.renditions ?? []).map(rendition => rendition.name)}
           watermark={playback.grant.watermarkCode} title={selected.title} labels={messages}
           previousHref={previousHref} nextHref={nextHref} onMinimize={onMinimize} onMinimizeMove={controls?.setMinimizeOffset}
-          mini={controls && !controls.inWatch ? {onExpand: controls.expand, expandLabel: controls.labels.expand} : undefined} onPlayIntent={kind=>{void prepareProgress(kind);}} onError={session.mediaError} onBookmark={session.rememberVod}/>
+          mini={mini} onPlayIntent={kind=>{void prepareProgress(kind);}} onError={session.mediaError} onBookmark={session.rememberVod}/>
       : <div className="grid aspect-video place-items-center bg-neutral-950 text-white">
           {session.playError
             ? <button type="button" onClick={() => void start(session.vodBookmark.current, prepareProgress)}>{messages.retry}</button>
