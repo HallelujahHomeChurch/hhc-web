@@ -4,16 +4,16 @@ import {beforeEach, expect, it, vi} from 'vitest';
 import {PlaybackProvider, usePersistentPlayback} from './PlaybackProvider';
 import {clearResumeDismissals, dismissResume, isResumeDismissed} from './resume-dismissal';
 
-const account = vi.hoisted(() => ({status: 'authenticated', access: 'available'}));
+const account = vi.hoisted(() => ({status: 'authenticated', access: 'available',identity:'member'}));
 vi.mock('next/link',()=>({default:({onNavigate,href,children,...props}:import('react').ComponentProps<typeof import('next/link').default>)=><a {...props} href={String(href)} onClick={event=>{event.preventDefault();onNavigate?.({preventDefault:()=>{}});}}>{children}</a>}));
 vi.mock('next/navigation', () => ({usePathname:()=>'/video/test',useSearchParams:()=>new URLSearchParams(),useRouter: () => ({push: vi.fn()})}));
-vi.mock('@/components/layout/AccountControl', () => ({useAccountIdentity: () => 'member', useAccountAuth: () => ({status: account.status}), useVideoAccess: () => account.access}));
+vi.mock('@/components/layout/AccountControl', () => ({useAccountIdentity: () => account.identity, useAccountAuth: () => ({status: account.status}), useVideoAccess: () => account.access}));
 vi.mock('@/components/layout/MediaDocument', () => ({useMediaDocument: () => ({privateMediaReady: true})}));
 vi.mock('./ContinueWatching', () => ({ContinueWatching: () => <aside>Historical resume</aside>}));
 const labels = {removeResume: 'Remove from continue watching', resume: 'Resume', live: 'Live', close: 'Close player', expand: 'Expand', minimize: 'Minimize', move: 'Move', resize: 'Resize'};
 const flush = vi.fn();
 const identity = {recordingId: 'recording', mediaVersion: 'vod:package', sessionId: 'pending-session'};
-beforeEach(() => {clearResumeDismissals(); flush.mockReset(); account.status='authenticated'; account.access='available';});
+beforeEach(() => {clearResumeDismissals(); flush.mockReset(); account.status='authenticated'; account.access='available'; account.identity='member';});
 const player = <video aria-label="Current recording"/>;
 function Playing() {
   const playback = usePersistentPlayback();
@@ -131,6 +131,17 @@ it('does not reopen a closed mini when its old watch slot reports again',async()
  await act(async()=>{controls?.setSlot('vod:recording:package',slot);});
  expect(screen.getByLabelText('Current recording').closest('[data-presentation]')).toHaveStyle({'--watch-left':'99px'});
  fresh.remove();slot.remove();
+});
+
+
+it('gives a returning account a new local-progress store rather than reviving its old writer',()=>{
+ const stores:Array<NonNullable<ReturnType<typeof usePersistentPlayback>>['cardProgress']>=[];
+ function Capture(){const store=usePersistentPlayback()?.cardProgress;useEffect(()=>{if(store)stores.push(store);},[store]);return null;}
+ const show=()=> <PlaybackProvider locale="en" labels={labels}><Capture/></PlaybackProvider>;
+ const view=render(show()),first=stores[0],writer=first.bind();
+ writer.publish({recordingId:'r1',mediaVersion:'vod:package:1',positionSeconds:40,completed:false});
+ account.identity='other';view.rerender(show());account.identity='member';view.rerender(show());
+ expect(stores).toHaveLength(3);expect(stores[2]).not.toBe(first);writer.publish({recordingId:'r1',mediaVersion:'vod:package:1',positionSeconds:99,completed:false});expect(stores[2].get('r1','vod:package:1')).toBeNull();
 });
 
 it('does not retain a never-started watch after leaving, even after a late playing callback',async()=>{

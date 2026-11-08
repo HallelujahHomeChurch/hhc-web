@@ -9,6 +9,7 @@ import {X} from 'lucide-react';
 import {useAccountIdentity, useAccountAuth, useVideoAccess} from '@/components/layout/AccountControl';
 import {useMediaDocument} from '@/components/layout/MediaDocument';
 import type {ContinuityLabels} from './ContinueWatching';
+import {createCardProgressStore} from './card-progress';
 import {createPlaybackHistory} from './playback-history';
 import {PlaybackHost} from './PlaybackHost';
 import {RetainedLibrary, type LibrarySurface} from './RetainedLibrary';
@@ -17,6 +18,7 @@ import {bindResumeDismissalAccount, clearResumeDismissals, dismissResume, type R
 type Playback = {key: string; href: string; title: string; player: ReactNode; live?: MemberLiveRecording; hasStarted?: boolean};
 type Slot = {key: string; element: HTMLElement};
 type PlaybackControl = {
+  cardProgress: ReturnType<typeof createCardProgressStore>;
   activeKey: string | undefined;
   activeLive: MemberLiveRecording | undefined;
   markStarted: (key: string) => void;
@@ -64,6 +66,8 @@ function PlaybackHistoryObserver({navigation}: {navigation: ReturnType<typeof cr
 
 function MemberPlaybackProvider({children, labels, member}: Props & {member: string | null}) {
   const router = useRouter();
+  const [owner, setOwner] = useState(() => ({member, cardProgress: createCardProgressStore()}));
+  const cardProgress = owner.cardProgress;
   const [navigation] = useState(() => createPlaybackHistory(
     () => ({href: window.location.pathname + window.location.search + window.location.hash, length: window.history.length, tag: window.history.state?.hhcMediaEntry}),
     () => {
@@ -114,9 +118,8 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
     const timer = window.setTimeout(() => setSlowTransition(minimizing.id), 2000);
     return () => window.clearTimeout(timer);
   }, [minimizing, librarySlot]);
-  const [owner, setOwner] = useState(member);
-  if (member !== owner) {
-    setOwner(member);
+  if (member !== owner.member) {
+    setOwner({member, cardProgress: createCardProgressStore()});
     setPlayback(null);
     setWatchSlot(null);
     setClosed(undefined);
@@ -204,7 +207,7 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
   const inWatch = Boolean(watchSlot);
   const expand = useCallback(() => { if (activeHref) { cancelTransition(); const method = navigation.expand(activeHref);
       if (method === 'forward') router.forward(); else router[method](activeHref);  } }, [activeHref, router, cancelTransition, navigation]);
-  const controls = useMemo(() => ({activeKey, activeLive, activeHref, markStarted, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary}), [activeKey, activeLive, activeHref, markStarted, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary]);
+  const controls = useMemo(() => ({cardProgress, activeKey, activeLive, activeHref, markStarted, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary}), [cardProgress, activeKey, activeLive, activeHref, markStarted, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary]);
 
   return <Context.Provider value={member ? controls : null}>
     <Suspense fallback={null}><PlaybackHistoryObserver navigation={navigation}/></Suspense>
