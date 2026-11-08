@@ -1,6 +1,7 @@
 import {createHhcWebClient} from '@hallelujahhomechurch/hhc-web-client';
 import {startSpan} from '@sentry/nextjs';
 import {publicContentBaseUrl} from './config';
+import {contentRequestObservation} from './request-diagnostics';
 
 // Bounds one SSR content resolution (including a legacy-projection retry).
 // Public projection reads are p99.9 < 0.5s in production (7-day hhc-web-api
@@ -12,38 +13,57 @@ function contentFetch(fresh: boolean): typeof fetch {
   // One resolution may try a legacy projection; it shares the original budget.
   let deadline: AbortSignal | undefined;
   return async (input, init) => {
+    const observation = contentRequestObservation();
+    const finishHeaders = observation.start('fetch_headers');
+    const progress: {phase: 'fetch_headers' | 'fetch_body'} = {phase: 'fetch_headers'};
+    let failed = false;
     deadline ??= AbortSignal.timeout(contentTimeoutMs);
     const signals = [deadline];
     if (input instanceof Request) signals.push(input.signal);
     if (init?.signal) signals.push(init.signal);
     const signal = AbortSignal.any(signals);
-    signal.throwIfAborted();
-    const noStore = fresh || (init?.cache ?? (input instanceof Request ? input.cache : undefined)) === 'no-store';
-    // Next can detach cache revalidation from the caller's signal. Bound our
-    // wait independently, including the public JSON body, without disabling ISR.
-    return startSpan({
-      name: 'public-content.read', op: 'content.read',
-      attributes: {'content.cache_policy': noStore ? 'no-store' : 'revalidate'}
-    }, () => new Promise<Response>((resolve, reject) => {
-      const abort = () => {
-        signal.removeEventListener('abort', abort);
-        reject(signal.reason);
-      };
-      signal.addEventListener('abort', abort, {once: true});
-      const read = async () => {
-        const response = await fetch(input, {
-          ...init,
-          signal,
-          redirect: 'error',
-          ...(noStore ? {cache: 'no-store'} : {next: {revalidate: 60}})
-        } as RequestInit & {next?: {revalidate: number}});
-        const body = response.body === null ? null : await response.arrayBuffer();
-        return new Response(body, {
-          status: response.status, statusText: response.statusText, headers: response.headers
-        });
-      };
-      void read().then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
-    }));
+    try {
+      signal.throwIfAborted();
+      const noStore = fresh || (init?.cache ?? (input instanceof Request ? input.cache : undefined)) === 'no-store';
+      // Next can detach cache revalidation from the caller's signal. Bound our
+      // wait independently, including the public JSON body, without disabling ISR.
+      return await startSpan({
+        name: 'public-content.read', op: 'content.read',
+        attributes: {'content.cache_policy': noStore ? 'no-store' : 'revalidate'}
+      }, () => new Promise<Response>((resolve, reject) => {
+        const abort = () => {
+          signal.removeEventListener('abort', abort);
+          reject(signal.reason);
+        };
+        signal.addEventListener('abort', abort, {once: true});
+        const read = async () => {
+          const response = await fetch(input, {
+            ...init,
+            signal,
+            redirect: 'error',
+            ...(noStore ? {cache: 'no-store'} : {next: {revalidate: 60}})
+          } as RequestInit & {next?: {revalidate: number}});
+          finishHeaders(!response.ok);
+          if (!response.ok) observation.fail('downstream_http_error');
+          progress.phase = 'fetch_body';
+          const finishBody = observation.start('fetch_body');
+          let body: ArrayBuffer | null;
+          let bodyFailed = true;
+          try {
+            body = response.body === null ? null : await response.arrayBuffer();
+            bodyFailed = false;
+          } finally { finishBody(bodyFailed); }
+          return new Response(body, {
+            status: response.status, statusText: response.statusText, headers: response.headers
+          });
+        };
+        void read().then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
+      }));
+    } catch (error) {
+      failed = true;
+      observation.fail(deadline.aborted ? 'local_deadline' : signal.aborted ? 'caller_canceled' : progress.phase === 'fetch_body' ? 'fetch_body_error' : 'fetch_headers_error');
+      throw error;
+    } finally { finishHeaders(failed); }
   };
 }
 

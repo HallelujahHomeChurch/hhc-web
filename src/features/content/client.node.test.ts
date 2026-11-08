@@ -2,8 +2,15 @@ import {createServer} from 'node:http';
 import {createPatchedFetcher} from 'next/dist/server/lib/patch-fetch';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {publicContentClient} from './client';
+import {contentRequestObservation} from './request-diagnostics';
 
 const constructor = vi.hoisted(() => vi.fn());
+const requestCache = vi.hoisted(() => new Map<() => unknown, unknown>());
+// Unit fixture for React's request scope; the real built-image test verifies it.
+vi.mock('react', async original => ({...await original<typeof import('react')>(), cache: (fn: () => unknown) => () => {
+  if (!requestCache.has(fn)) requestCache.set(fn, fn());
+  return requestCache.get(fn);
+}}));
 vi.mock('@hallelujahhomechurch/hhc-web-client', () => ({createHhcWebClient: constructor}));
 
 function fetcher(fresh = false): typeof fetch {
@@ -11,9 +18,56 @@ function fetcher(fresh = false): typeof fetch {
   return constructor.mock.lastCall![0].fetcher;
 }
 
-afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); constructor.mockClear(); });
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); constructor.mockClear(); requestCache.clear(); });
 
 describe('public content transport', () => {
+  it('accumulates repeated sub250 reads through the actual wrapper and emits once', async () => {
+    let now = 0;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
+    const output = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const observation = contentRequestObservation(); observation.activate();
+    vi.stubGlobal('fetch', vi.fn(async () => { now += 210; return new Response('{}'); }));
+    const read = fetcher();
+    for (let i = 0; i < 6; i++) await read('http://content.test/private?token=secret');
+    observation.finish(); observation.finish();
+    expect(output).toHaveBeenCalledTimes(1);
+    const value = JSON.parse(output.mock.calls[0][0]);
+    expect(value.phase_totals.fetch_headers).toMatchObject({count: 6, total_ms: 1260, max_ms: 210});
+    expect(value.phase_totals.fetch_body.count).toBe(6);
+    expect(output.mock.calls[0][0]).not.toContain('secret');
+  });
+
+  it('retains an unchanged body error in the bounded diagnostic without the raw message', async () => {
+    const output = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const observation = contentRequestObservation(); observation.activate();
+    const error = new Error('private-url?token=private-token');
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(new ReadableStream({start(controller) { controller.error(error); }}))));
+    await expect(fetcher()('http://content.test')).rejects.toBe(error);
+    observation.finish();
+    const value = JSON.parse(output.mock.calls[0][0]);
+    expect(value.failure_reason).toBe('fetch_body_error');
+    expect(value.phase_totals.fetch_body).toMatchObject({count: 1, failures: 1, in_flight: 0});
+    expect(output.mock.calls[0][0]).not.toContain(error.message);
+  });
+
+  it.each(['caller_canceled', 'local_deadline'] as const)('classifies real wrapper %s without replacing cancellation', async reason => {
+    const output = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const observation = contentRequestObservation(); observation.activate();
+    const caller = new AbortController(), deadline = new AbortController();
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValue(deadline.signal);
+    vi.stubGlobal('fetch', vi.fn((_input, init) => new Promise((_resolve, reject) => {
+      init.signal.addEventListener('abort', () => reject(init.signal.reason), {once: true});
+    })));
+    const result = fetcher()('http://content.test', {signal: caller.signal});
+    const error = new DOMException('private abort detail', reason === 'local_deadline' ? 'TimeoutError' : 'AbortError');
+    (reason === 'local_deadline' ? deadline : caller).abort(error);
+    await expect(result).rejects.toBe(error);
+    observation.finish();
+    const value = JSON.parse(output.mock.calls[0][0]);
+    expect(value.failure_reason).toBe(reason);
+    expect(value.phase_totals.fetch_headers).toMatchObject({count: 1, failures: 1, in_flight: 0});
+    expect(output.mock.calls[0][0]).not.toContain(error.message);
+  });
   it.each([false, true])('preserves the cache policy (fresh=%s) without retries', async (fresh) => {
     const transport = vi.fn().mockResolvedValue(new Response('{}'));
     vi.stubGlobal('fetch', transport);

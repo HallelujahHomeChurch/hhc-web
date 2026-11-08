@@ -1,3 +1,4 @@
+vi.mock('next/server', async original => ({...await original<typeof import('next/server')>(), after: vi.fn()}));
 import {render, screen} from '@testing-library/react';
 import {NextIntlClientProvider} from 'next-intl';
 import {describe, expect, it, vi} from 'vitest';

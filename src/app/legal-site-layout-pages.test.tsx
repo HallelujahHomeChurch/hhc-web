@@ -1,3 +1,4 @@
+vi.mock('next/server', async original => ({...await original<typeof import('next/server')>(), after: vi.fn()}));
 import type {SiteLayout} from '@/features/site-layout/types';
 import {render, screen, within} from '@testing-library/react';
 import {NextIntlClientProvider} from 'next-intl';
