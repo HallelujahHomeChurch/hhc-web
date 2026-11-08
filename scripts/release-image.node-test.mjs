@@ -1,3 +1,4 @@
+import './test-no-cloud.mjs';
 import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -123,7 +124,7 @@ test('runtime changes stay after verify/image preparation with existing preview 
   }
   assert.match(deploy, /--parameters image="\$IMAGE_REF" sentryTracesSampleRate="\$SENTRY_TRACES_SAMPLE_RATE"/);
   assert.doesNotMatch(deploy, /provisionPermissions|PROVISION_PERMISSIONS/);
-  assert.match(deploy, /--image "\$PREVIOUS_IMAGE_REF"/);
+  assert.match(deploy, /restore-runtime-template.py.*"\$PREVIOUS_IMAGE_REF"/);
 });
 
 
@@ -185,11 +186,11 @@ test('trace sampling is validated, persisted by both deployment paths, and resto
   assert.match(infra, /param sentryTracesSampleRate string = '0.01'/);
   assert.match(infra, /name: 'SENTRY_TRACES_SAMPLE_RATE'\s+value: sentryTracesSampleRate/);
   const rollback = step(deploy, 'Roll back failed update');
-  assert.ok(rollback.includes('--from-revision "$PREVIOUS_READY_REVISION"'));
+  assert.ok(rollback.includes('restore-runtime-template.py "$APP_NAME" "$PREVIOUS_READY_REVISION" "$PREVIOUS_IMAGE_REF"'));
   const capture = step(deploy, 'Capture current state');
   assert.match(capture, /PREVIOUS_SENTRY_TRACES_SAMPLE_RATE=\$previous_rate/);
-  assert.match(rollback, /sentryTracesSampleRate="\$PREVIOUS_SENTRY_TRACES_SAMPLE_RATE"/);
-  assert.match(rollback, /enableInternalIngress="\$PREVIOUS_INTERNAL_INGRESS"/);
+  assert.doesNotMatch(rollback, /deployment group create|runtime-env.json/);
+  assert.ok(rollback.includes('"$PREVIOUS_INTERNAL_INGRESS" "$PREVIOUS_DAPR"'));
   assert.doesNotMatch(rollback, /"\$SENTRY_TRACES_SAMPLE_RATE"|set-env-vars[^\n]*SENTRY_TRACES_SAMPLE_RATE/);
 });
 
@@ -216,9 +217,9 @@ test('About document transport defaults off and rollback restores its captured b
   assert.match(infra, /enableAboutPrivateHttps \? \[\s+{\s+name: 'HHC_WEB_ABOUT_API_BASE_URL'/);
   assert.match(step(deploy, 'Capture current state'), /PREVIOUS_ABOUT_API_BASE_URL=\$previous_about_base/);
   const rollback = step(deploy, 'Roll back failed update');
-  assert.ok(rollback.includes('remove+=(HHC_WEB_ABOUT_API_BASE_URL)'));
-  assert.ok(rollback.includes('restore+=("HHC_WEB_ABOUT_API_BASE_URL=$PREVIOUS_ABOUT_API_BASE_URL")'));
-  assert.ok(rollback.includes('"${binding[@]}"'));
+  assert.ok(rollback.includes('restore-runtime-template.py'));
+  assert.doesNotMatch(rollback, /set-env-vars|remove-env-vars/);
+  assert.doesNotMatch(rollback, /revision copy/);
 });
 
 test('News defaults off and restores its captured transport during rollback', () => {
@@ -231,16 +232,16 @@ test('News defaults off and restores its captured transport during rollback', ()
   assert.match(infra, /param enableNewsPrivateHttps bool = false/);
   assert.match(step(deploy, 'Capture current state'), /PREVIOUS_NEWS_API_BASE_URL=\$previous_news_base/);
   const rollback = step(deploy, 'Roll back failed update');
-  assert.ok(rollback.includes('remove+=(HHC_WEB_NEWS_API_BASE_URL)'));
-  assert.ok(rollback.includes('restore+=("HHC_WEB_NEWS_API_BASE_URL=$PREVIOUS_NEWS_API_BASE_URL")'));
+  assert.ok(rollback.includes('restore-runtime-template.py'));
+  assert.doesNotMatch(rollback, /set-env-vars|remove-env-vars/);
   const script = rollback.split('        run: |\n')[1].replace(/^          /gm, '');
   const base = 'https://hhc-web-api.internal.fixture.eastasia.azurecontainerapps.io/api';
-  const result = spawnSync('/bin/bash', ['-e', '-c', 'az() { printf "%s\\n" "$@"; }\n' + script], {
+  const result = spawnSync('/bin/bash', ['-e', '-c', 'python3() { printf "%s\\n" "$@"; }\n' + script], {
     env: {...process.env, PREVIOUS_INTERNAL_INGRESS: 'true', PREVIOUS_DAPR: 'false', PREVIOUS_ABOUT_API_BASE_URL: base, PREVIOUS_NEWS_API_BASE_URL: '', PREVIOUS_HISTORY_API_BASE_URL: base},
     encoding: 'utf8'
   });
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /--remove-env-vars\nHHC_WEB_NEWS_API_BASE_URL\n--set-env-vars\nHHC_WEB_ABOUT_API_BASE_URL=.*\nHHC_WEB_HISTORY_API_BASE_URL=/);
+  assert.match(result.stdout, /restore-runtime-template.py[\s\S]*true\nfalse/);
 });
 
 test('the existing owner CD switches both transports and can restore app-level Dapr', () => {
@@ -255,16 +256,16 @@ test('the existing owner CD switches both transports and can restore app-level D
   assert.match(infra, /name: 'HHC_WEB_API_BASE_URL'\s+value: enableDapr[\s\S]*?: 'https:\/\/hhc-web-api\.internal\./);
   assert.match(step(deploy, 'Capture current state'), /PREVIOUS_DAPR=\$previous_dapr/);
   const rollback = step(deploy, 'Roll back failed update').split('        run: |\n')[1].replace(/^          /gm, '');
-  const result = spawnSync('/bin/bash', ['-e', '-c', 'az() { printf "%s\\n" "$@"; }\n' + rollback], {
+  const result = spawnSync('/bin/bash', ['-e', '-c', 'python3() { printf "%s\\n" "$@"; }\n' + rollback], {
     env: {...process.env, PREVIOUS_INTERNAL_INGRESS: 'true', PREVIOUS_DAPR: 'true',
       HHC_WEB_GATEWAY_TOKEN: 'a'.repeat(64), PREVIOUS_HISTORY_API_BASE_URL: 'https://fixture/api',
       PREVIOUS_ABOUT_API_BASE_URL: '', PREVIOUS_NEWS_API_BASE_URL: 'https://fixture/api'},
     encoding: 'utf8'
   });
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /deployment\ngroup\ncreate/);
-  assert.match(result.stdout, /enableInternalIngress=true\nenableDapr=true/);
-  assert.match(result.stdout, /enableHistoryPrivateHttps=true\nenableAboutPrivateHttps=false\nenableNewsPrivateHttps=true/);
+  assert.match(result.stdout, /restore-runtime-template.py/);
+  assert.match(result.stdout, /true\ntrue/);
+  assert.doesNotMatch(result.stdout, /deployment|set-env-vars/);
   assert.match(step(deploy, 'Verify private ingress configuration'), /\.dapr.enabled == false/);
 });
 
