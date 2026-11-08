@@ -129,7 +129,7 @@ it('does not reopen a closed mini when its old watch slot reports again',async()
  await act(async()=>{controls?.setSlot('vod:recording:package',fresh);});
  expect(screen.getByLabelText('Current recording')).toBeInTheDocument();
  await act(async()=>{controls?.setSlot('vod:recording:package',slot);});
- expect(screen.getByLabelText('Current recording').closest('[data-presentation]')).toHaveStyle({'--watch-left':'99px'});
+ expect(screen.getByLabelText('Current recording').closest('[data-presentation]')).toHaveStyle({left:'99px'});
  fresh.remove();slot.remove();
 });
 

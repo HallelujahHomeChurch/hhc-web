@@ -28,9 +28,10 @@ type PlaybackControl = {
   activeHref: string | undefined;
   labels: ContinuityLabels;
   inWatch: boolean;
+  miniCompact: boolean;
   expand: () => void;
   minimize: (navigate: () => void) => void;
-  setMinimizeOffset: (offset: number) => void;
+  setMinimizeOffset: (offset: number, phase?: 'tracking' | 'reset') => void | false;
   start: (playback: Playback, explicit?: boolean) => void;
   setSlot: (key: string, element: HTMLElement | null) => void;
   close: (key: string) => void;
@@ -69,6 +70,7 @@ function PlaybackHistoryObserver({navigation}: {navigation: ReturnType<typeof cr
 
 function MemberPlaybackProvider({children, labels, member}: Props & {member: string | null}) {
   const router = useRouter();
+  const invalidPull = useRef(false);
   const [owner, setOwner] = useState(() => ({member, generation: 0, cardProgress: createCardProgressStore()}));
   const currentOwner = useRef(owner);
   const sourceGeneration = useRef(0);
@@ -98,7 +100,16 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
     return () => window.removeEventListener('popstate', pop);
   }, [navigation]);
   useEffect(() => { navigation.reset(); }, [member, navigation]);
+  const [miniCompact, setMiniCompact] = useState(false);
   const [minimizeOffset, setMinimizeOffset] = useState(0);
+  const [pullTracking, setPullTracking] = useState(false);
+  const updateMinimizeOffset = useCallback((offset: number, phase?: 'tracking' | 'reset') => {
+    const tracking = phase === 'tracking' || phase !== 'reset' && offset !== 0;
+    if (!tracking) invalidPull.current = false;
+    if (invalidPull.current) return false;
+    setPullTracking(tracking); setMinimizeOffset(offset);
+  }, []);
+  const cancelPull = useCallback(() => {invalidPull.current = true; setPullTracking(false); setMinimizeOffset(0);}, []);
   const [minimizing, setMinimizing] = useState<{id: number; settled: boolean} | null>(null);
   const [slowTransition, setSlowTransition] = useState(0);
   const navigateToLibrary = useRef<(() => void) | null>(null);
@@ -107,12 +118,15 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
   const minimize = useCallback((navigate: () => void) => {
     if (pendingTransition.current) return;
     pendingTransition.current = true;
+    setPullTracking(false);
     const id = ++transitionId.current;
     setMinimizing({id, settled: false});
     navigateToLibrary.current = navigate;
     try { navigate(); } catch { setSlowTransition(id); }
   }, []);
   const cancelTransition = useCallback(() => {
+    invalidPull.current = false;
+    setPullTracking(false);
     pendingTransition.current = false;
     navigateToLibrary.current = null;
     setMinimizing(null);
@@ -143,6 +157,7 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
     setLibrarySurface(null);
     setLibrarySlot(null);
     setLibraryScroll(0);
+    setPullTracking(false);
     setMinimizing(null);
     setMinimizeOffset(0);
   }
@@ -189,7 +204,7 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
     if (element) lastWatchSlot.current = {key, element, member};
     setWatchSlot(current => element ? {key, element} : current?.key === key ? null : current);
     if (!element) {
-      setMinimizeOffset(0);
+      setPullTracking(false); setMinimizeOffset(0);
       setPlayback(current => current?.key === key && !current.hasStarted ? null : current);
     }
     if (element) setClosed(current => current === key ? undefined : current);
@@ -233,12 +248,12 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
   if (inWatch && sourceExpanded) setSourceExpanded(false);
   const expand = useCallback(() => { if (activeHref) { cancelTransition(); const method = navigation.expand(activeHref);
       if (method === 'forward') router.forward(); else router[method](activeHref);  } }, [activeHref, router, cancelTransition, navigation]);
-  const controls = useMemo(() => ({cardProgress, activeKey, activeLive, activeHref, captureSource, markStarted, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary}), [cardProgress, activeKey, activeLive, activeHref, captureSource, markStarted, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary]);
+  const controls = useMemo(() => ({cardProgress, activeKey, activeLive, activeHref, captureSource, markStarted, start, setSlot, close, labels, inWatch, miniCompact, expand, minimize, setMinimizeOffset: updateMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary}), [cardProgress, activeKey, activeLive, activeHref, captureSource, markStarted, start, setSlot, close, labels, inWatch, miniCompact, expand, minimize, updateMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary]);
 
   return <Context.Provider value={member ? controls : null}>
     <Suspense fallback={null}><PlaybackHistoryObserver navigation={navigation}/></Suspense>
     {children}
-    {member && <RetainedLibrary surface={librarySurface} slot={librarySlot?.element ?? null} visible={minimizeOffset > 0 || Boolean(minimizing)}
+    {member && <RetainedLibrary surface={librarySurface} slot={librarySlot?.element ?? null} visible={pullTracking || Boolean(minimizing)}
       scroll={libraryScroll}/>}
     {member && playback && minimizing && !librarySlot && slowTransition === minimizing.id && <div className={styles.routeNotice}>
       <p role="status">{labels.returningToLibrary ?? 'Returning to videos…'}</p>
@@ -246,7 +261,7 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
         try { navigateToLibrary.current?.(); } catch { /* Keep the same explicit retry; never navigate backwards on a timer. */ }
       }}>{labels.retryNavigation ?? 'Try again'}</button>
     </div>}
-    {member && playback && (watchSlot || playback.hasStarted) && <PlaybackHost watchSlot={watchSlot} minimizeOffset={minimizeOffset} onSettled={settled} onClose={closeActive} moveLabel={labels.move} resizeLabel={labels.resize}>
+    {member && playback && (watchSlot || playback.hasStarted) && <PlaybackHost onCompactChange={setMiniCompact} tracking={pullTracking} sessionKey={playback.key} onPullCancel={cancelPull} watchSlot={watchSlot} minimizeOffset={minimizeOffset} onSettled={settled} onClose={closeActive} moveLabel={labels.move} resizeLabel={labels.resize}>
       <div key={playback.key}>{playback.player}</div>
       {!watchSlot && <div className={styles.close}>
         <button type="button" aria-label={labels.close} className="grid size-11 place-items-center" onClick={closeActive}><X size={20}/></button>
@@ -260,7 +275,7 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
             aria-expanded={sourceExpanded} aria-controls={sourcePanelId} aria-label={sourceExpanded ? labels.collapseSource ?? 'Collapse video list' : labels.expandSource ?? 'Expand video list'}
             onClick={()=>{if(sourceExpanded && document.getElementById(sourcePanelId)?.contains(document.activeElement)) sourceToggle.current?.focus({preventScroll:true});setSourceExpanded(value=>!value);}}>{sourceExpanded ? <ChevronDown size={20}/> : <ChevronUp size={20}/>}</button> : null}
         </div>
-        {playback.source && <nav id={sourcePanelId} className={styles.sourcePanel} hidden={!sourceExpanded} aria-label={labels.sourceList ?? 'Video list'}>
+        {playback.source && <nav data-mini-source id={sourcePanelId} className={styles.sourcePanel} hidden={!sourceExpanded} aria-label={labels.sourceList ?? 'Video list'}>
           <p className={styles.sourceHeading}>{labels.sourceList ?? 'Video list'}</p>
           <ol>{playback.source.items.map(item=><li key={item.id}><Link href={item.href} aria-current={item.href===playback.href ? 'true' : undefined}
             onNavigate={event=>{setSourceExpanded(false);cancelTransition();if(item.href===playback.href){event.preventDefault();expand();}else if(playback.source)captureSource(playback.source,item.href);}}>{item.title}</Link></li>)}</ol>

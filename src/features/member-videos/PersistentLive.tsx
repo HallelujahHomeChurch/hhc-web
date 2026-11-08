@@ -15,8 +15,9 @@ export function PersistentLive(props: ComponentProps<typeof LiveRecordingPlayer>
     if (id && denied && key) close?.(key);
   }, [id, denied, key, close]);
   const latest = id && watch?.live?.captureId === props.recording.captureId ? watch.live : undefined;
+  const mini = playback && !playback.inWatch ? {onExpand: playback.expand, expandLabel: playback.labels.expand, compact: playback.miniCompact} : undefined;
   return <LiveRecordingPlayer {...props} surfaceOnly onMinimizeMove={playback?.setMinimizeOffset}
-    mini={playback && !playback.inWatch ? {onExpand: playback.expand, expandLabel: playback.labels.expand} : undefined} recording={latest ?? props.recording}
+    mini={mini} recording={latest ?? props.recording}
     mediaOriginSeconds={latest ? watch?.mediaStartSeconds ?? props.mediaOriginSeconds : props.mediaOriginSeconds}
     onVod={id ? undefined : props.onVod}/>;
 }
