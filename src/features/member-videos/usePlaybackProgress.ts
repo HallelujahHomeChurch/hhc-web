@@ -8,7 +8,10 @@ export function usePlaybackProgress(api: ProgressAPI, id: string | undefined, ve
   surface: RefObject<HTMLDivElement | null>, media: RefObject<HTMLMediaElement | null>, enabled: boolean) {
   const currentApi = useRef(api);
   useLayoutEffect(() => { currentApi.current = api; }, [api]);
-  const registerPlayback = usePersistentPlayback()?.registerPlayback;
+  const persistent = usePersistentPlayback();
+  const registerPlayback = persistent?.registerPlayback;
+  const markStarted = persistent?.markStarted;
+  const sessionKey = persistent?.activeKey;
   const sync = useRef<ReturnType<typeof createPlaybackProgress> | undefined>(undefined);
   useEffect(() => {
     if (!id || !version || !enabled || !surface.current) return;
@@ -29,7 +32,10 @@ export function usePlaybackProgress(api: ProgressAPI, id: string | undefined, ve
     };
     const playing = (event: Event) => {
       const active = media.current;
-      if (active && event.target === active && !active.paused) void current.playing(active.currentTime);
+      if (active && event.target === active && !active.paused) {
+        if (sessionKey?.split(':')[1] === id) markStarted?.(sessionKey);
+        void current.playing(active.currentTime);
+      }
     };
     const changed = (event: Event) => { if (event.target === media.current) save(); };
     const events = ['pause', 'seeked', 'ended'];
@@ -51,6 +57,6 @@ export function usePlaybackProgress(api: ProgressAPI, id: string | undefined, ve
       element.removeEventListener('playing', playing, true);
       events.forEach(event => element.removeEventListener(event, changed, true));
     };
-  }, [id, version, surface, media, enabled, registerPlayback]);
+  }, [id, version, surface, media, enabled, registerPlayback, markStarted, sessionKey]);
   return useCallback((kind: Parameters<ReturnType<typeof createPlaybackProgress>['prepare']>[0], signal?: AbortSignal) => sync.current?.prepare(kind, signal), []);
 }

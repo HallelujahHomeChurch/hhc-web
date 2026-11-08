@@ -37,7 +37,7 @@ const captureHandledError = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/observability', () => ({captureHandledError}));
 const packageId = 'a'.repeat(32);
 const playbackUrl = `https://media.alive.org.tw/videos/r1/packages/${packageId}/sessions/scope/master.m3u8`;
-vi.mock('next/navigation', () => ({useRouter: () => router}));
+vi.mock('next/navigation', () => ({usePathname:()=>'/video/test',useSearchParams:()=>new URLSearchParams(),useRouter: () => router}));
 vi.mock('@/components/layout/AccountControl', () => ({
   useAccountSignIn: () => signIn,
   useAccountIdentity: () => 'member',
@@ -930,7 +930,9 @@ describe('persistent member playback', () => {
     }
     const view = render(<Fixture route="r1"/>);
     await screen.findByLabelText(a.title);
-    const video = view.container.querySelector('video');
+    const video = view.container.querySelector('video')!;
+    Object.defineProperty(video,'paused',{configurable:true,value:false});
+    fireEvent.playing(video);
     view.rerender(<Fixture route="list"/>);
     await screen.findByRole('link', {name: b.title});
     const thumbnail = view.container.querySelector<HTMLAnchorElement>('a[tabindex="-1"][href="/video/bB_012-xyzQ"]')!;
@@ -1023,6 +1025,8 @@ describe('persistent member playback', () => {
       expect(video).not.toBeNull();
       expect(audio).not.toBeNull();
       expect(video?.closest('[data-presentation]')).toHaveAttribute('data-presentation', 'watch');
+      Object.defineProperty(video!,'paused',{configurable:true,value:false});
+      fireEvent.playing(video!);
       const grants = videoApi.grant.mock.calls.length;
       const clears = videoApi.clear.mock.calls.length;
       view.rerender(<Fixture watch={false}/>);

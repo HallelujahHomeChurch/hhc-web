@@ -6,7 +6,7 @@ import {clearResumeDismissals, dismissResume, isResumeDismissed} from './resume-
 
 const account = vi.hoisted(() => ({status: 'authenticated', access: 'available'}));
 vi.mock('next/link',()=>({default:({onNavigate,href,children,...props}:import('react').ComponentProps<typeof import('next/link').default>)=><a {...props} href={String(href)} onClick={event=>{event.preventDefault();onNavigate?.({preventDefault:()=>{}});}}>{children}</a>}));
-vi.mock('next/navigation', () => ({useRouter: () => ({push: vi.fn()})}));
+vi.mock('next/navigation', () => ({usePathname:()=>'/video/test',useSearchParams:()=>new URLSearchParams(),useRouter: () => ({push: vi.fn()})}));
 vi.mock('@/components/layout/AccountControl', () => ({useAccountIdentity: () => 'member', useAccountAuth: () => ({status: account.status}), useVideoAccess: () => account.access}));
 vi.mock('@/components/layout/MediaDocument', () => ({useMediaDocument: () => ({privateMediaReady: true})}));
 vi.mock('./ContinueWatching', () => ({ContinueWatching: () => <aside>Historical resume</aside>}));
@@ -17,9 +17,9 @@ beforeEach(() => {clearResumeDismissals(); flush.mockReset(); account.status='au
 const player = <video aria-label="Current recording"/>;
 function Playing() {
   const playback = usePersistentPlayback();
-  const start = playback?.start, register = playback?.registerPlayback;
+  const start = playback?.start, register = playback?.registerPlayback, markStarted = playback?.markStarted;
   useEffect(() => register?.(flush, () => 5, () => identity), [register]);
-  useEffect(() => { start?.({key: 'vod:recording:package', href: '/video/aB_012-xyzQ', title: 'Recording', player}); }, [start]);
+  useEffect(() => { start?.({key: 'vod:recording:package', href: '/video/aB_012-xyzQ', title: 'Recording', player}); markStarted?.('vod:recording:package'); }, [start, markStarted]);
   return null;
 }
 
@@ -131,4 +131,19 @@ it('does not reopen a closed mini when its old watch slot reports again',async()
  await act(async()=>{controls?.setSlot('vod:recording:package',slot);});
  expect(screen.getByLabelText('Current recording').closest('[data-presentation]')).toHaveStyle({'--watch-left':'99px'});
  fresh.remove();slot.remove();
+});
+
+it('does not retain a never-started watch after leaving, even after a late playing callback',async()=>{
+ let controls!:ReturnType<typeof usePersistentPlayback>;
+ function Probe(){const value=usePersistentPlayback();useEffect(()=>{controls=value;},[value]);return null;}
+ render(<PlaybackProvider locale="en" labels={labels}><Probe/></PlaybackProvider>);
+ const slot=document.createElement('div');document.body.append(slot);
+ await act(async()=>{controls?.setSlot('vod:recording:package',slot);controls?.start({key:'vod:recording:package',href:'/video/test',title:'Unstarted',player});});
+ expect(screen.getByLabelText('Current recording')).toBeInTheDocument();
+ await act(async()=>{controls?.setSlot('vod:recording:package',null);});
+ expect(screen.queryByLabelText('Current recording')).toBeNull();
+ expect(controls?.activeKey).toBeUndefined();
+ await act(async()=>{controls?.markStarted('vod:recording:package');});
+ expect(screen.queryByLabelText('Current recording')).toBeNull();
+ slot.remove();
 });
