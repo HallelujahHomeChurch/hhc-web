@@ -6,6 +6,7 @@ import {getSiteLayout} from '@/features/site-layout/api';
 import {isLocale, type Locale} from '@/i18n/locales';
 import {getMessages} from '@/i18n/messages';
 import {onDemandLocaleParams} from '@/lib/on-demand-locale-params';
+import {observeMaintenance} from '@/features/content/request-diagnostics';
 
 type MaintenancePageProps = {
   params: Promise<{locale: string}>;
@@ -22,6 +23,7 @@ async function getLocale(params: MaintenancePageProps['params']): Promise<Locale
 }
 
 export async function generateMetadata({params}: MaintenancePageProps): Promise<Metadata> {
+  observeMaintenance();
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);
@@ -35,6 +37,7 @@ export async function generateMetadata({params}: MaintenancePageProps): Promise<
 }
 
 export default async function MaintenancePage({params}: MaintenancePageProps) {
+  observeMaintenance();
   const locale = await getLocale(params);
   setRequestLocale(locale);
   const messages = getMessages(locale);

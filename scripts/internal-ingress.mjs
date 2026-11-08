@@ -47,6 +47,9 @@ export async function startInternalIngress() {
     }
     const started = performance.now();
     const requestId = req.headers['x-hhc-request-id'];
+    const path = req.url.split('?', 1)[0];
+    const routeId = path === '/_next/image' ? 'website.image'
+      : /^\/(?:zh-Hant|zh-Hans|en|ja|ko)\/maintenance\/?$/.test(path) ? 'website.maintenance' : undefined;
     let upstreamStatus = null;
     let headerMs = null;
     let upstreamError = false;
@@ -75,20 +78,32 @@ export async function startInternalIngress() {
     });
     req.on('aborted', () => upstream.destroy());
     req.on('error', () => upstream.destroy());
-    res.on('close', () => {
+    res.once('close', () => {
       if (!res.writableFinished) upstream.destroy();
       if (probe || typeof requestId !== 'string' || !/^[a-f0-9]{32}$/.test(requestId)) return;
-      if (res.writableFinished && res.statusCode < 500) return;
+      const elapsedMs = Math.round(performance.now() - started);
+      const legacyFailure = !res.writableFinished || res.statusCode >= 500;
+      if (!legacyFailure && (!routeId || (res.statusCode < 400 && elapsedMs < 1000))) return;
       const trace = /^00-([a-f0-9]{32})-[a-f0-9]{16}-0[01]$/.exec(req.headers.traceparent ?? '');
       console.error(JSON.stringify({
-        event: 'hhc_web_internal_ingress_failure',
+        event: legacyFailure ? 'hhc_web_internal_ingress_failure' : 'hhc_web_request_observation',
         request_id: requestId,
         trace_id: trace?.[1],
+        sampled: trace ? req.headers.traceparent.endsWith('-01') : undefined,
+        route_id: routeId ?? 'other',
         outcome: upstreamError ? 'upstream_error' : res.writableFinished ? 'upstream_response' : 'downstream_closed',
+        failure_reason: upstreamError ? 'upstream_error' : !res.writableFinished ? 'downstream_closed' : res.statusCode >= 400 ? 'http_error' : 'none',
         status: res.headersSent ? res.statusCode : null,
         upstream_status: upstreamStatus,
         header_ms: headerMs,
-        elapsed_ms: Math.round(performance.now() - started),
+        body_ms: headerMs === null ? null : Math.max(0, elapsedMs - headerMs),
+        elapsed_ms: elapsedMs,
+        phase_totals: {
+          next_headers: {count: headerMs === null ? 0 : 1, total_ms: headerMs ?? 0, max_ms: headerMs ?? 0},
+          response_body: {count: headerMs === null ? 0 : 1, total_ms: headerMs === null ? 0 : Math.max(0, elapsedMs - headerMs), max_ms: headerMs === null ? 0 : Math.max(0, elapsedMs - headerMs)},
+        },
+        loopback_connection_reused: upstream.reusedSocket,
+        timing_semantics: 'listener_wall_time_includes_loopback_and_next; image_inner_work_unmeasured',
       }));
     });
     req.pipe(upstream);

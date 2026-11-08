@@ -11,6 +11,65 @@ const current = 'a'.repeat(64);
 const next = 'b'.repeat(64);
 const modulePath = new URL('./internal-ingress.mjs', import.meta.url).pathname;
 
+test('known slow and failed handlers retain unsampled bounded evidence once without changing streaming', {timeout: 10000}, async t => {
+  const upstream = createServer((req, res) => {
+    const kind = new URL(req.url, 'http://fixture').searchParams.get('kind');
+    if (kind === 'slow') return setTimeout(() => res.end('unchanged'), 1050);
+    if (kind === 'error') { res.writeHead(409); res.end('unchanged'); return; }
+    res.writeHead(200); res.write('first');
+    if (kind === 'broken') return setTimeout(() => res.destroy(), 20);
+    if (kind === 'cancel') return;
+    res.end('last');
+  });
+  await new Promise(resolve => upstream.listen(0, '127.0.0.1', resolve));
+  t.after(() => { upstream.closeAllConnections(); upstream.close(); });
+  const reserve = createServer();
+  await new Promise(resolve => reserve.listen(0, '127.0.0.1', resolve));
+  const port = reserve.address().port;
+  await new Promise(resolve => reserve.close(resolve));
+  const child = spawn(process.execPath, ['--input-type=module', '-e', `import {startInternalIngress} from ${JSON.stringify(modulePath)}; await startInternalIngress();`], {
+    env: {...process.env, HHC_WEB_INGRESS_AUTH: 'true', HHC_WEB_GATEWAY_TOKEN: current,
+      HHC_WEB_INGRESS_PORT: String(port), PORT: String(upstream.address().port)}, stdio: ['ignore', 'ignore', 'pipe'],
+  });
+  t.after(() => child.kill('SIGTERM'));
+  let output = '';
+  child.stderr.on('data', chunk => { output += chunk; });
+  const origin = `http://127.0.0.1:${port}`;
+  for (let i = 0; i < 50; i++) {
+    try { await (await fetch(origin + '/health')).arrayBuffer(); break; } catch { await delay(20); }
+  }
+  const headers = id => ({'x-hhc-web-gateway-token': current, 'x-hhc-request-id': id.repeat(32), traceparent: `00-${id.repeat(32)}-1234567890123456-00`, cookie: 'private-cookie'});
+  const slow = await fetch(origin + '/_next/image?kind=slow&url=private-image&token=private-query', {headers: headers('1')});
+  assert.equal(await slow.text(), 'unchanged');
+  const error = await fetch(origin + '/en/maintenance?kind=error', {headers: headers('2')});
+  assert.equal(error.status, 409); assert.equal(await error.text(), 'unchanged');
+  const broken = await fetch(origin + '/_next/image?kind=broken', {headers: headers('3')});
+  await assert.rejects(broken.arrayBuffer());
+  const controller = new AbortController();
+  const canceled = await fetch(origin + '/en/maintenance?kind=cancel', {headers: headers('4'), signal: controller.signal});
+  assert.equal(new TextDecoder().decode((await canceled.body.getReader().read()).value), 'first');
+  controller.abort();
+  await (await fetch(origin + '/en/maintenance', {headers: headers('5')})).arrayBuffer();
+  for (let i = 0; i < 50 && output.trim().split('\n').length < 4; i++) await delay(20);
+  const events = output.trim().split('\n').filter(Boolean).map(line => JSON.parse(line));
+  assert.equal(events.length, 4, 'one summary per slow/failing request; short success stays quiet');
+  for (const [index, id] of ['1', '2', '3', '4'].entries()) {
+    const rows = events.filter(e => e.request_id === id.repeat(32));
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].trace_id, id.repeat(32)); assert.equal(rows[0].sampled, false);
+    assert.equal(rows[0].route_id, index % 2 === 0 ? 'website.image' : 'website.maintenance');
+    assert.equal(rows[0].phase_totals.next_headers.count, 1);
+    assert.equal(rows[0].phase_totals.next_headers.total_ms, rows[0].header_ms);
+    assert.equal(rows[0].phase_totals.response_body.total_ms, rows[0].body_ms);
+  }
+  assert.ok(events.some(e => e.elapsed_ms >= 1000 && e.status === 200 && e.failure_reason === 'none'));
+  assert.ok(events.some(e => e.failure_reason === 'http_error' && e.status === 409));
+  assert.ok(events.some(e => e.failure_reason === 'upstream_error'));
+  assert.ok(events.some(e => e.failure_reason === 'downstream_closed'));
+  assert.ok(events.some(e => e.loopback_connection_reused === true));
+  for (const marker of ['private-cookie', 'private-image', 'private-query', current, '/_next/image', '/en/maintenance']) assert.ok(!output.includes(marker));
+});
+
 test('internal ingress preserves wire contracts and rejects untrusted credentials', {timeout: 15000}, async t => {
   let received;
   let cancelled;

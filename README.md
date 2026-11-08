@@ -103,6 +103,23 @@ without the URL, headers, credentials or raw error.
 Use a reviewed producer ingress/credential preview and verify both listener and
 Dapr paths before switching any Gateway route.
 
+Known image-optimizer and localized maintenance requests also emit a bounded
+summary on failure or at one second. These measure listener-to-response wall
+time, including loopback and Next; headers/body are separate, and framework image
+cache/read/transform internals remain unmeasured. Existing failure events remain
+one event per request. Sampling does not control these summaries.
+
+Maintenance server rendering uses React's request cache and `after` for one
+fixed-size cumulative content headers/body summary after completion. The existing
+public JSON buffering, ISR, cancellation and deadline behavior are preserved.
+Fetch timing includes Next's Data Cache wait; parallel work totals are not wall
+time. In-flight phases are explicit, and late completion cannot emit again.
+Numeric HTTP status counts distinguish projection fallback from service failures;
+transport/body failures take precedence over a generic HTTP error, with
+cancellation/deadline retained above both. Counts contain no per-call details.
+Render and listener observations correlate by the existing trace context;
+without a trace, the render has its own bounded technical observation ID.
+
 The runtime serves `GET /health` on port `10000`.
 
 CI and release run the full tests and lint, then compile Next.js inside the runtime

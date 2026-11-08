@@ -1,3 +1,4 @@
+vi.mock('next/server', async original => ({...await original<typeof import('next/server')>(), after: vi.fn()}));
 import type {SiteLayout} from '@/features/site-layout/types';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 

@@ -43,14 +43,16 @@ const api = createServer((request, response) => {
   if (url.pathname.endsWith('/news')) {
     response.end(JSON.stringify({data: [], meta: {page: Number(url.searchParams.get('page') ?? 1), pageSize: 12, total: 0}}));
   } else if (url.pathname.endsWith('/site-layout')) {
-    response.end(JSON.stringify({data: {
+    const body = JSON.stringify({data: {
       locale, siteName: 'Fixture', englishName: 'Fixture', copyrightHolder: 'Fixture', allRightsReserved: 'Fixture',
       seoTitleSuffix: 'Fixture', seoDescriptionFallback: 'Fixture', header: [], legal: [],
       links: {churchYoutube: 'https://fixture.invalid/youtube', churchFacebook: 'https://fixture.invalid/facebook', musicYoutube: 'https://fixture.invalid/music'}, version: 1, publishedAt: '2026-01-01T00:00:00Z'
-    }}));
+    }});
+    if (locale === 'zh-Hans') setTimeout(() => response.end(body), 1050);
+    else response.end(body);
   } else {
-    response.statusCode = 404;
-    response.end('{"code":"not_found","message":"fixture"}');
+    response.statusCode = locale === 'zh-Hans' ? 503 : 404;
+    response.end(JSON.stringify({code: locale === 'zh-Hans' ? 'unavailable' : 'not_found', message: 'fixture'}));
   }
 });
 await new Promise((resolve) => api.listen(0, '127.0.0.1', resolve));
@@ -74,14 +76,14 @@ const child = spawn(process.execPath, ['--import', 'data:text/javascript,Math.ra
     HHC_WEB_API_BASE_URL: `http://127.0.0.1:${apiPort}/producer/api`,
     SENTRY_DSN: `http://fixture@127.0.0.1:${apiPort}/1`, NEXT_PUBLIC_SENTRY_DSN: `http://fixture@127.0.0.1:${apiPort}/1`, SENTRY_TRACES_SAMPLE_RATE: '0.1'}
 });
-child.stdout.on('data', (data) => { output = (output + data).slice(-6000); });
-child.stderr.on('data', (data) => { output = (output + data).slice(-6000); });
+child.stdout.on('data', (data) => { output = (output + data).slice(-16000); });
+child.stderr.on('data', (data) => { output = (output + data).slice(-16000); });
 const origin = `http://127.0.0.1:${ingressPort}`;
 const daprOrigin = `http://127.0.0.1:${port}`;
-async function visit(locale, trace, page = 1, sampled = '1', bridge = true) {
-  const response = await fetch(`${trace ? origin : daprOrigin}/${locale}/news?page=${page}&token=wire-secret-token&email=wire-person@example.invalid`, {
+async function visit(locale, trace, page = 1, sampled = '1', bridge = true, route = 'news') {
+  const response = await fetch(`${trace ? origin : daprOrigin}/${locale}/${route}?page=${page}&token=wire-secret-token&email=wire-person@example.invalid`, {
     // Gateway derives the Sentry compatibility header from validated W3C only.
-    headers: trace ? {'x-hhc-web-gateway-token': gatewayToken, traceparent: `00-${trace}-1234567890123456-0${sampled}`, ...(bridge ? {'sentry-trace': `${trace}-1234567890123456-${sampled}`} : {}), authorization: 'Bearer wire-secret-auth', cookie: 'fixture=wire-secret-cookie'} : {'dapr-api-token': sidecarToken}, signal: AbortSignal.timeout(15000)
+    headers: trace ? {'x-hhc-web-gateway-token': gatewayToken, 'x-hhc-request-id': trace, traceparent: `00-${trace}-1234567890123456-0${sampled}`, ...(bridge ? {'sentry-trace': `${trace}-1234567890123456-${sampled}`} : {}), authorization: 'Bearer wire-secret-auth', cookie: 'fixture=wire-secret-cookie'} : {'dapr-api-token': sidecarToken}, signal: AbortSignal.timeout(15000)
   });
   await response.arrayBuffer();
   assert.equal(response.status, 200, 'SSR fixture must render');
@@ -128,6 +130,35 @@ try {
   const fallback = calls.find((call) => call.path.endsWith('/news') && call.locale === 'zh-Hant');
   assert.match(fallback?.headers.traceparent ?? '', /^00-[a-f0-9]{32}-[a-f0-9]{16}-0[01]$/);
   assert.notEqual(fallback.headers.traceparent.split('-')[1], unbridged, 'Pinned SDK starts a new trace until the Gateway bridge is present');
+  const maintenanceTrace = '55555555555555555555555555555555';
+  const concurrentMaintenanceTrace = '66666666666666666666666666666666';
+  await Promise.all([
+    visit('zh-Hans', maintenanceTrace, 1, '0', true, 'maintenance'),
+    visit('ja', concurrentMaintenanceTrace, 1, '0', true, 'maintenance'),
+  ]);
+  const hasRender = trace => output.split('\n').some(line => line.startsWith('{"event":"hhc_web_render_observation"') && line.includes(`"trace_id":"${trace}"`));
+  for (let i = 0; i < 50 && ![maintenanceTrace, concurrentMaintenanceTrace].every(hasRender); i++) await delay(20);
+  const observations = output.split('\n').filter(line => line.startsWith('{') && line.includes('hhc_web_')).map(line => JSON.parse(line));
+  const renders = observations.filter(e => e.event === 'hhc_web_render_observation' && e.trace_id === maintenanceTrace);
+  assert.equal(renders.length, 1, 'parallel metadata/layout/page must finish the render observation once');
+  assert.equal(renders[0].sampled, false, 'diagnostics cannot depend on span recording');
+  assert.equal(renders[0].route_id, 'website.maintenance');
+  assert.ok(renders[0].phase_totals.fetch_headers.count >= 2, 'existing wrapper calls accumulate');
+  assert.ok(renders[0].phase_totals.fetch_headers.max_ms >= 1000, 'local slow API headers are attributed');
+  assert.ok(renders[0].http_status_counts['503'] >= 1, 'service failure survives successful legacy fallback');
+  const concurrentRenders = observations.filter(e => e.event === 'hhc_web_render_observation' && e.trace_id === concurrentMaintenanceTrace);
+  assert.equal(concurrentRenders.length, 1, 'a concurrent request has its own once-only observation');
+  assert.equal(concurrentRenders[0].sampled, false);
+  assert.ok(concurrentRenders[0].http_status_counts['404'] >= 1, 'normal projection fallback stays distinguishable');
+  assert.notEqual(concurrentRenders[0].observation_id, renders[0].observation_id);
+  const handlers = observations.filter(e => e.event === 'hhc_web_request_observation' && e.request_id === maintenanceTrace);
+  assert.equal(handlers.length, 1, 'server response observation once');
+  assert.equal(handlers[0].trace_id, renders[0].trace_id);
+  assert.equal(handlers[0].sampled, false);
+  for (const event of [...renders, ...handlers]) {
+    const serialized = JSON.stringify(event);
+    for (const marker of ['wire-secret', 'wire-person', 'producer/api', 'http:', 'token=', gatewayToken, sidecarToken]) assert.ok(!serialized.includes(marker), `Diagnostic leaked ${marker}`);
+  }
   // The SDK flushes streamed batches periodically; inspect its actual HTTP envelope.
   for (let i = 0; i < 80 && !spanPayloads.some((span) => span.name === 'public-content.read'); i++) await delay(100);
   if (envelopeError) throw envelopeError;
