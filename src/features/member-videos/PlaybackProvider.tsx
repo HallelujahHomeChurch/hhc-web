@@ -12,10 +12,11 @@ import {PlaybackHost} from './PlaybackHost';
 import {RetainedLibrary, type LibrarySurface} from './RetainedLibrary';
 import {bindResumeDismissalAccount, clearResumeDismissals, dismissResume, type ResumeIdentity} from './resume-dismissal';
 
-type Playback = {key: string; href: string; title: string; player: ReactNode};
+type Playback = {key: string; href: string; title: string; player: ReactNode; hasStarted?: boolean};
 type Slot = {key: string; element: HTMLElement};
 type PlaybackControl = {
   activeKey: string | undefined;
+  markStarted: (key: string) => void;
   activeHref: string | undefined;
   labels: ContinuityLabels;
   inWatch: boolean;
@@ -126,14 +127,20 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
     if (!explicit && closed === next.key) return;
     if (previousPlaybackKey && previousPlaybackKey !== next.key) playbackAccess.current?.flush();
     if (previousPlaybackKey !== next.key) cancelTransition();
-    setPlayback(next);
+    setPlayback(current => ({...next, hasStarted: current?.key === next.key && current.hasStarted}));
     if (explicit || next.key !== closed) setClosed(undefined);
   }, [closed, previousPlaybackKey, cancelTransition]);
+  const markStarted = useCallback((key: string) => {
+    setPlayback(current => current?.key === key && !current.hasStarted ? {...current, hasStarted: true} : current);
+  }, []);
   const setSlot = useCallback((key: string, element: HTMLElement | null) => {
     if (element && closedWatchSlots.current.get(element) === key) return;
     if (element) lastWatchSlot.current = {key, element, member};
     setWatchSlot(current => element ? {key, element} : current?.key === key ? null : current);
-    if (!element) setMinimizeOffset(0);
+    if (!element) {
+      setMinimizeOffset(0);
+      setPlayback(current => current?.key === key && !current.hasStarted ? null : current);
+    }
     if (element) setClosed(current => current === key ? undefined : current);
   }, [member]);
   const close = useCallback((key: string) => {
@@ -169,7 +176,7 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
   const watchSlot = !minimizing && playback && slot?.key === playback.key ? slot.element : null;
   const inWatch = Boolean(watchSlot);
   const expand = useCallback(() => { if (activeHref) { cancelTransition(); router.push(activeHref); } }, [activeHref, router, cancelTransition]);
-  const controls = useMemo(() => ({activeKey, activeHref, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary}), [activeKey, activeHref, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary]);
+  const controls = useMemo(() => ({activeKey, activeHref, markStarted, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary}), [activeKey, activeHref, markStarted, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary]);
 
   return <Context.Provider value={member ? controls : null}>
     {children}
@@ -181,7 +188,7 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
         try { navigateToLibrary.current?.(); } catch { /* Keep the same explicit retry; never navigate backwards on a timer. */ }
       }}>{labels.retryNavigation ?? 'Try again'}</button>
     </div>}
-    {member && playback && <PlaybackHost watchSlot={watchSlot} minimizeOffset={minimizeOffset} onSettled={settled} onClose={closeActive} moveLabel={labels.move} resizeLabel={labels.resize}>
+    {member && playback && (watchSlot || playback.hasStarted) && <PlaybackHost watchSlot={watchSlot} minimizeOffset={minimizeOffset} onSettled={settled} onClose={closeActive} moveLabel={labels.move} resizeLabel={labels.resize}>
       <div key={playback.key}>{playback.player}</div>
       {!watchSlot && <div className={styles.close}>
         <button type="button" aria-label={labels.close} className="grid size-11 place-items-center" onClick={closeActive}><X size={20}/></button>

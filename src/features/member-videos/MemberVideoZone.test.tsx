@@ -930,7 +930,9 @@ describe('persistent member playback', () => {
     }
     const view = render(<Fixture route="r1"/>);
     await screen.findByLabelText(a.title);
-    const video = view.container.querySelector('video');
+    const video = view.container.querySelector('video')!;
+    Object.defineProperty(video,'paused',{configurable:true,value:false});
+    fireEvent.playing(video);
     view.rerender(<Fixture route="list"/>);
     await screen.findByRole('link', {name: b.title});
     const thumbnail = view.container.querySelector<HTMLAnchorElement>('a[tabindex="-1"][href="/video/bB_012-xyzQ"]')!;
@@ -987,6 +989,8 @@ describe('persistent member playback', () => {
       expect(video).not.toBeNull();
       expect(audio).not.toBeNull();
       expect(video?.closest('[data-presentation]')).toHaveAttribute('data-presentation', 'watch');
+      Object.defineProperty(video!,'paused',{configurable:true,value:false});
+      fireEvent.playing(video!);
       const grants = videoApi.grant.mock.calls.length;
       const clears = videoApi.clear.mock.calls.length;
       view.rerender(<Fixture watch={false}/>);
