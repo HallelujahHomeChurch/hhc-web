@@ -126,6 +126,8 @@
 .host[data-presentation='mini'][data-compact='true'] {--hhc-mini-actions-opacity:1;--hhc-mini-actions-pointer-events:auto;}
 .host[data-presentation='mini'][data-compact='false'] {--hhc-mini-actions-opacity:0;--hhc-mini-actions-pointer-events:none;}
 .host[data-presentation='mini'][data-compact='false']:is(:hover,[data-keyboard-focus='true']) {--hhc-mini-actions-opacity:1;--hhc-mini-actions-pointer-events:auto;}
+.host[data-presentation='mini'] .close {opacity:var(--hhc-mini-actions-opacity,1);pointer-events:var(--hhc-mini-actions-pointer-events,auto);background:transparent;}
+.host[data-presentation='mini'][data-compact='true'] .close {background:rgb(0 0 0 / 60%);}
 .host[data-presentation='mini'][data-compact='true'] :global(.hhc-player-player),
 .host[data-presentation='mini'][data-compact='true'] > div:first-child > div {border-radius:14px;}
 .host[data-presentation='mini'][data-compact='false'] :global(.hhc-player-player),
