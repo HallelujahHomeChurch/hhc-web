@@ -139,7 +139,7 @@ it('shows the source list only for an explicit library snapshot and keeps media 
  render(<PlaybackProvider locale="en" labels={labels}><Probe/></PlaybackProvider>);
  await act(async()=>{
   controls?.captureSource({sourceHref:'/member-videos?q=test',items:[{id:'recording',href:'/video/A',title:'First'},{id:'other',href:'/video/B',title:'Second'},{id:'other',href:'/video/B',title:'Stale duplicate'}]},'/video/A');
-  controls?.start({key:'vod:recording:package',href:'/video/A',title:'First',player});
+  controls?.start({key:'vod:recording:package',href:'/video/A',title:'First',player});controls?.markStarted('vod:recording:package');
  });
  const video=screen.getByLabelText('Current recording');
  expect(screen.getByText('哈利路亞家教會')).toBeInTheDocument();

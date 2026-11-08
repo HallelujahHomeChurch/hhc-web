@@ -964,7 +964,7 @@ describe('persistent member playback', () => {
     try{
       const view=render(<Fixture watch/>);await screen.findByLabelText(title);
       const video=view.container.querySelector('video')!;const audio=view.container.querySelector('audio');
-      video.currentTime=70;video.playbackRate=1.5;
+      video.currentTime=70;video.playbackRate=1.5;Object.defineProperty(video,'paused',{configurable:true,value:false});fireEvent.playing(video);
       view.rerender(<Fixture watch={false}/>);
       const vod={id:'r1',title,packageId:captureId,durationSeconds:120};
       list.mockResolvedValue([vod]);videoApi.liveList.mockResolvedValue([]);
