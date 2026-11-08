@@ -6,7 +6,7 @@ import {clearResumeDismissals, dismissResume, isResumeDismissed} from './resume-
 
 const account = vi.hoisted(() => ({status: 'authenticated', access: 'available'}));
 vi.mock('next/link',()=>({default:({onNavigate,href,children,...props}:import('react').ComponentProps<typeof import('next/link').default>)=><a {...props} href={String(href)} onClick={event=>{event.preventDefault();onNavigate?.({preventDefault:()=>{}});}}>{children}</a>}));
-vi.mock('next/navigation', () => ({useRouter: () => ({push: vi.fn()})}));
+vi.mock('next/navigation', () => ({usePathname:()=>'/video/test',useSearchParams:()=>new URLSearchParams(),useRouter: () => ({push: vi.fn()})}));
 vi.mock('@/components/layout/AccountControl', () => ({useAccountIdentity: () => 'member', useAccountAuth: () => ({status: account.status}), useVideoAccess: () => account.access}));
 vi.mock('@/components/layout/MediaDocument', () => ({useMediaDocument: () => ({privateMediaReady: true})}));
 vi.mock('./ContinueWatching', () => ({ContinueWatching: () => <aside>Historical resume</aside>}));

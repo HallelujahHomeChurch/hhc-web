@@ -288,7 +288,10 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   const commitMinimize = persistent?.minimize;
   const minimize = useCallback(() => {
     const fallback = `/${locale}/member-videos`;
-    const navigate = () => router.replace(returnToLibrary?.(fallback).href ?? fallback, {scroll: false});
+    const navigate = () => {
+      const target = returnToLibrary?.(fallback);
+      if (target?.method === 'back') router.back(); else router.replace(target?.href ?? fallback, {scroll: false});
+    };
     if (commitMinimize) commitMinimize(navigate); else navigate();
   }, [router, locale, returnToLibrary, commitMinimize]);
   useEffect(() => {
@@ -350,8 +353,8 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   const searchMode=view==='list'&&Boolean(query||invalidQuery);
   const searchLabels=messages.search??{results:'Results for {query}',empty:'No results for {query}',clear:'Clear search',tooLong:'Search accepts one query of up to 100 characters.'};
   const liveBadge=(item:MemberLiveRecording)=>liveViewerLabel(item.liveState,liveLabels);
-  const rememberLibrary = () => {
-    if (view === 'list') persistent?.rememberLibrary(videoSearchHref(locale, query), window.scrollY);
+  const rememberLibrary = (watchHref?: string) => {
+    if (view === 'list') persistent?.rememberLibrary(videoSearchHref(locale, query), window.scrollY, watchHref);
   };
   const inlineRecommendations=Boolean(recordingId&&(selected||selectedLive||waitingWatch)&&!resolver.denied);
   const recommendations=liveItems.length>0||visibleItems.length>0||view==='list'&&!invalidQuery||recordingId&&watch&&!resolver.denied&&(recommendationsPending||loadError||liveError) ? <div className={zoneStyles.results}>
@@ -361,25 +364,25 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
             <div className={recordingId ? zoneStyles.recommendations : searchMode ? zoneStyles.searchList : zoneStyles.grid}>
               {recordingId&&watch&&recommendationsPending?<VideoRecommendationsSkeleton/>:null}
               {liveItems.map(item=><article id={`recording-${item.id}`} key={item.captureId} className={zoneStyles.card}>
-                <Link href={cardLink(item)} onNavigate={rememberLibrary} className={zoneStyles.thumbnail} tabIndex={-1} aria-label={`${messages.select}: ${item.title}`}>
+                <Link href={cardLink(item)} onNavigate={()=>rememberLibrary(cardLink(item))} className={zoneStyles.thumbnail} tabIndex={-1} aria-label={`${messages.select}: ${item.title}`}>
                   <ThumbnailPreview api={api} recording={item} labels={messages} enabled={active&&view==='list'&&!persistent?.activeKey} activeId={hoveredRecording} onActive={setHoveredRecording}>
                   <LiveRecordingCover api={api} recording={item}/>
                   </ThumbnailPreview>
                   <span className={`${zoneStyles.badge} ${item.liveState==='live'?zoneStyles.liveBadge:zoneStyles.stateBadge}`}>{liveBadge(item)}</span>
                 </Link>
-                <div className={zoneStyles.info}><h3 className={zoneStyles.title}><Link href={cardLink(item)} onNavigate={rememberLibrary} aria-label={`${item.title} — ${liveBadge(item)}`}>{item.title}</Link></h3><p className={zoneStyles.date}>{(messages.liveStartedDate??'{date}').replace('{date}',formatDate(item.startedAt??item.createdAt,locale))}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}</div>
+                <div className={zoneStyles.info}><h3 className={zoneStyles.title}><Link href={cardLink(item)} onNavigate={()=>rememberLibrary(cardLink(item))} aria-label={`${item.title} — ${liveBadge(item)}`}>{item.title}</Link></h3><p className={zoneStyles.date}>{(messages.liveStartedDate??'{date}').replace('{date}',formatDate(item.startedAt??item.createdAt,locale))}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}</div>
               </article>)}
               {view==='list'&&!invalidQuery&&!loadError&&livePending?<VideoListSkeleton label={messages.loading} search={searchMode}/>:null}
               {view==='list'&&!invalidQuery?<UpcomingBroadcasts onNavigate={rememberLibrary} active={active} api={api} locale={locale} onPresenceChange={setUpcomingPresent} query={query} excludeIds={liveItems.map(item=>item.id)} onPageState={setUpcomingState} loadMoreLabel={messages.loadMore??'Load more'} loading={messages.loading} retry={messages.retry}/>:null}
               {view==='list'&&!invalidQuery&&!loadError&&!livePending&&(!recordings||upcomingState.initialState==='loading')?<VideoListSkeleton label={messages.loading} search={searchMode}/>:null}
               {(view!=='list'||upcomingState.complete&&!livePending?visibleItems:[]).map(item=><article id={`recording-${item.id}`} key={item.id} className={zoneStyles.card}>
-                <Link href={cardLink(item)} onNavigate={rememberLibrary} className={zoneStyles.thumbnail} tabIndex={-1} aria-label={`${messages.select}: ${item.title}`}>
+                <Link href={cardLink(item)} onNavigate={()=>rememberLibrary(cardLink(item))} className={zoneStyles.thumbnail} tabIndex={-1} aria-label={`${messages.select}: ${item.title}`}>
                   <ThumbnailPreview api={api} recording={item} labels={messages} enabled={active&&view==='list'&&!persistent?.activeKey} activeId={hoveredRecording} onActive={setHoveredRecording}>
                   <RecordingCover api={api} id={item.id} title={item.title} expiresAt={item.expiresAt} revision={coverRevision(item)}/>
                   </ThumbnailPreview>
                   {item.durationSeconds ? <span className={zoneStyles.duration}>{playerClock(item.durationSeconds)}</span>:null}
                 </Link>
-                <div className={zoneStyles.info}><h3 className={zoneStyles.title}>{view==='list'||recordingId ? <Link href={cardLink(item)} onNavigate={rememberLibrary}>{item.title}</Link>:item.title}</h3><p className={zoneStyles.date}>{formatDate(item.uploadedAt,locale)}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}
+                <div className={zoneStyles.info}><h3 className={zoneStyles.title}>{view==='list'||recordingId ? <Link href={cardLink(item)} onNavigate={()=>rememberLibrary(cardLink(item))}>{item.title}</Link>:item.title}</h3><p className={zoneStyles.date}>{formatDate(item.uploadedAt,locale)}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}
                   {view!=='list'&&!recordingId ? <button type="button" className="min-h-11 justify-self-start text-primary underline focus-visible:outline-2 focus-visible:outline-primary" onClick={()=>select(item.id)}>{messages.select}</button>:null}
                 </div>
               </article>)}

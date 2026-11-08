@@ -1,13 +1,14 @@
 'use client';
 
-import {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
-import {useRouter} from 'next/navigation';
+import {Suspense, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
+import {usePathname, useSearchParams, useRouter} from 'next/navigation';
 import Link from 'next/link';
 import styles from './mini-player.module.css';
 import {X} from 'lucide-react';
 import {useAccountIdentity, useAccountAuth, useVideoAccess} from '@/components/layout/AccountControl';
 import {useMediaDocument} from '@/components/layout/MediaDocument';
 import type {ContinuityLabels} from './ContinueWatching';
+import {createPlaybackHistory} from './playback-history';
 import {PlaybackHost} from './PlaybackHost';
 import {RetainedLibrary, type LibrarySurface} from './RetainedLibrary';
 import {bindResumeDismissalAccount, clearResumeDismissals, dismissResume, type ResumeIdentity} from './resume-dismissal';
@@ -26,10 +27,10 @@ type PlaybackControl = {
   start: (playback: Playback, explicit?: boolean) => void;
   setSlot: (key: string, element: HTMLElement | null) => void;
   close: (key: string) => void;
-  rememberLibrary: (href: string, scroll: number) => void;
+  rememberLibrary: (href: string, scroll: number, watchHref?: string) => void;
   retainLibrary: (surface: LibrarySurface, element: HTMLElement | null) => void;
   prepareLibrary: (surface: LibrarySurface) => void;
-  returnToLibrary: (fallback: string) => {href: string; scroll: number};
+  returnToLibrary: (fallback: string) => {href: string; scroll: number; method: 'back' | 'replace'};
   takeLibraryScroll: () => number | undefined;
   registerPlayback: (flush: () => void, time: () => number, identity: () => ResumeIdentity) => () => void;
   currentTime: () => number;
@@ -53,8 +54,28 @@ export function PlaybackProvider({children, locale, labels}: Props) {
   return <MemberPlaybackProvider member={member} locale={locale} labels={labels}>{children}</MemberPlaybackProvider>;
 }
 
+function PlaybackHistoryObserver({navigation}: {navigation: ReturnType<typeof createPlaybackHistory>}) {
+  const pathname = usePathname(), search = useSearchParams()?.toString() ?? '';
+  useEffect(() => { navigation.arrived(); }, [navigation, pathname, search]);
+  return null;
+}
+
 function MemberPlaybackProvider({children, labels, member}: Props & {member: string | null}) {
   const router = useRouter();
+  const [navigation] = useState(() => createPlaybackHistory(
+    () => ({href: window.location.pathname + window.location.search + window.location.hash, length: window.history.length, tag: window.history.state?.hhcMediaEntry}),
+    () => {
+      const tag = crypto.randomUUID();
+      window.history.replaceState({...window.history.state, hhcMediaEntry: tag}, '');
+      return tag;
+    },
+  ));
+  useEffect(() => {
+    const pop = () => navigation.arrived();
+    window.addEventListener('popstate', pop);
+    return () => window.removeEventListener('popstate', pop);
+  }, [navigation]);
+  useEffect(() => { navigation.reset(); }, [member, navigation]);
   const [minimizeOffset, setMinimizeOffset] = useState(0);
   const [minimizing, setMinimizing] = useState<{id: number; settled: boolean} | null>(null);
   const [slowTransition, setSlowTransition] = useState(0);
@@ -110,12 +131,15 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
     setLibrarySlot(current => element ? {key: surface.key, element} : current?.key === surface.key ? null : current);
   }, []);
   const prepareLibrary = useCallback((surface: LibrarySurface) => { setLibrarySurface(current => current ?? surface); }, []);
-  const rememberLibrary = useCallback((href: string, scroll: number) => { library.current = {member, href, scroll}; setLibraryScroll(scroll); }, [member]);
+  const rememberLibrary = useCallback((href: string, scroll: number, watchHref?: string) => {
+    library.current = {member, href, scroll}; setLibraryScroll(scroll);
+    if (watchHref) navigation.remember(href, watchHref); else navigation.reset();
+  }, [member, navigation]);
   const returnToLibrary = useCallback((fallback: string) => {
     const target = library.current?.member === member ? library.current : {href: fallback, scroll: 0};
     restoreScroll.current = target.scroll;
-    return target;
-  }, [member]);
+    return {...target, method: navigation.minimize(target.href, playback?.href ?? '')};
+  }, [member, navigation, playback?.href]);
   const takeLibraryScroll = useCallback(() => {
     const value = restoreScroll.current;
     restoreScroll.current = undefined;
@@ -175,10 +199,12 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
   }
   const watchSlot = !minimizing && playback && slot?.key === playback.key ? slot.element : null;
   const inWatch = Boolean(watchSlot);
-  const expand = useCallback(() => { if (activeHref) { cancelTransition(); router.push(activeHref); } }, [activeHref, router, cancelTransition]);
+  const expand = useCallback(() => { if (activeHref) { cancelTransition(); const method = navigation.expand(activeHref);
+      if (method === 'forward') router.forward(); else router[method](activeHref);  } }, [activeHref, router, cancelTransition, navigation]);
   const controls = useMemo(() => ({activeKey, activeHref, markStarted, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary}), [activeKey, activeHref, markStarted, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary]);
 
   return <Context.Provider value={member ? controls : null}>
+    <Suspense fallback={null}><PlaybackHistoryObserver navigation={navigation}/></Suspense>
     {children}
     {member && <RetainedLibrary surface={librarySurface} slot={librarySlot?.element ?? null} visible={minimizeOffset > 0 || Boolean(minimizing)}
       scroll={libraryScroll}/>}
@@ -193,7 +219,7 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
       {!watchSlot && <div className={styles.close}>
         <button type="button" aria-label={labels.close} className="grid size-11 place-items-center" onClick={closeActive}><X size={20}/></button>
       </div>}
-      {!watchSlot && <Link href={playback.href} onNavigate={cancelTransition} className={styles.caption}><span className={styles.captionTitle}>{playback.title}</span></Link>}
+      {!watchSlot && <Link href={playback.href} onNavigate={event=>{event.preventDefault();expand();}} className={styles.caption}><span className={styles.captionTitle}>{playback.title}</span></Link>}
     </PlaybackHost>}
   </Context.Provider>;
 }

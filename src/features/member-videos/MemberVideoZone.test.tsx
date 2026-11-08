@@ -37,7 +37,7 @@ const captureHandledError = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/observability', () => ({captureHandledError}));
 const packageId = 'a'.repeat(32);
 const playbackUrl = `https://media.alive.org.tw/videos/r1/packages/${packageId}/sessions/scope/master.m3u8`;
-vi.mock('next/navigation', () => ({useRouter: () => router}));
+vi.mock('next/navigation', () => ({usePathname:()=>'/video/test',useSearchParams:()=>new URLSearchParams(),useRouter: () => router}));
 vi.mock('@/components/layout/AccountControl', () => ({
   useAccountSignIn: () => signIn,
   useAccountIdentity: () => 'member',
