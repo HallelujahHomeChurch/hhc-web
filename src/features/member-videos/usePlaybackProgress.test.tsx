@@ -183,11 +183,15 @@ it('exposes the exact live media version and session while a claim is in flight'
   expect(identity.mediaVersion).toBe(liveVersion);
   expect(identity.sessionId).toBe(api.claimProgress.mock.calls[0][1].sessionId);
   expect(identity.generation).toBeUndefined();
+  await sync.save(42, 'ended');
+  sync.flush(42, 'ended');
   controller.abort();
   accept({generation: 'late', mediaVersion: liveVersion, positionSeconds: 40, sequence: 0});
   await claiming;
   expect(sync.identity().sessionId).toBe(identity.sessionId);
   expect(sync.identity().generation).toBeUndefined();
+  expect(api.saveProgress).not.toHaveBeenCalled();
+  expect(api.claimProgress).toHaveBeenCalledTimes(1);
 });
 
 it('identifies the observed resume generation until a new playing claim is accepted', async () => {
@@ -203,5 +207,27 @@ it('identifies the observed resume generation until a new playing claim is accep
   await sync.prepare('resume');
   expect(sync.identity().generation).toBe('observed');
   expect(api.claimProgress).not.toHaveBeenCalled();
+  controller.abort();
+});
+
+it.each(['paused', 'ended'] as const)('preserves a %s update received while the playing claim is pending', async state => {
+  const {createPlaybackProgress} = await import('./playback-progress-session');
+  const controller = new AbortController();
+  let accept!: (value: {generation: string; mediaVersion: string; positionSeconds: number; sequence: number}) => void;
+  const api = {
+    progress: vi.fn().mockResolvedValue({mediaVersion: version, claimToken: 'token', progress: null}),
+    claimProgress: vi.fn().mockImplementation(() => new Promise(resolve => { accept = resolve; })),
+    saveProgress: vi.fn().mockResolvedValue({accepted: true, sequence: 1}),
+  };
+  const sync = createPlaybackProgress(api, 'recording', version, controller.signal);
+  await sync.prepare('resume');
+  const claiming = sync.playing(40);
+  await sync.save(41, 'playing');
+  await sync.save(42, state);
+  accept({generation: 'owner', mediaVersion: version, positionSeconds: 40, sequence: 0});
+  await claiming;
+  expect(api.saveProgress).toHaveBeenCalledTimes(1);
+  expect(api.saveProgress).toHaveBeenCalledWith('recording', expect.objectContaining({positionSeconds: 42, state, generation: 'owner', sequence: 1}), expect.anything());
+  expect(api.claimProgress).toHaveBeenCalledTimes(1);
   controller.abort();
 });
