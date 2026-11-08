@@ -5,13 +5,14 @@ import type {MemberRecordingCard} from '@hallelujahhomechurch/hhc-web-client';
 import {createCardProgressStore} from './card-progress';
 import {RecordingCardProgress} from './RecordingCardProgress';
 import {usePlaybackProgress} from './usePlaybackProgress';
+const recording:MemberRecordingCard={id:'r1',title:'Fixture',durationSeconds:120,uploadedAt:null,expiresAt:null,featured:false,hidden:false,status:'published',version:1};
 const context=vi.hoisted(()=>({cardProgress:null as unknown as ReturnType<typeof createCardProgressStore>,registerPlayback:vi.fn(()=>()=>{})}));
 vi.mock('./PlaybackProvider',()=>({usePersistentPlayback:()=>context}));
 beforeEach(()=>{context.cardProgress=createCardProgressStore();});
 it('updates only a matching owned VOD card and falls back after a takeover denial while media keeps playing',async()=>{
  const version='vod:package:1',api={progress:vi.fn().mockResolvedValue({mediaVersion:version,claimToken:'fixture',progress:null}),claimProgress:vi.fn().mockResolvedValue({generation:'A',mediaVersion:version,positionSeconds:60,sequence:0}),saveProgress:vi.fn().mockRejectedValue({status:409})};
  function Media(){const surface=useRef<HTMLDivElement>(null),media=useRef<HTMLVideoElement>(null);const prepare=usePlaybackProgress(api,'r1','vod:package',surface,media,true);useEffect(()=>{void prepare('resume');},[prepare]);return <div ref={surface}><video ref={media} aria-label="Owned video"/></div>;}
- const item=(id:string,title:string,mediaVersion:string)=>({id,title,durationSeconds:120,playbackProgress:{mediaVersion,positionSeconds:30,completed:false}} as MemberRecordingCard);
+ const item=(id:string,title:string,mediaVersion:string)=>({...recording,id,title,playbackProgress:{mediaVersion,positionSeconds:30,completed:false}});
  render(<><Media/><RecordingCardProgress item={item('r1','One',version)} label="Progress"/><RecordingCardProgress item={item('r2','Other',version)} label="Progress"/><RecordingCardProgress item={item('r1','New range','vod:package:2')} label="Progress"/></>);
  const bar=screen.getByRole('progressbar',{name:'One — Progress'}),video=screen.getByLabelText('Owned video') as HTMLVideoElement;
  Object.defineProperties(video,{paused:{configurable:true,value:false},readyState:{configurable:true,value:4}});video.currentTime=60;
@@ -26,7 +27,7 @@ it('updates only a matching owned VOD card and falls back after a takeover denia
 it.each([undefined,null])('uses the independent authority version for a first watch with %s history',async(history)=>{
  const version='vod:package:7',api={progress:vi.fn().mockResolvedValue({mediaVersion:version,claimToken:'fixture',progress:null}),claimProgress:vi.fn().mockResolvedValue({generation:'A',mediaVersion:version,positionSeconds:0,sequence:0}),saveProgress:vi.fn().mockResolvedValue({accepted:true,sequence:1})};
  function Media(){const surface=useRef<HTMLDivElement>(null),media=useRef<HTMLVideoElement>(null);const prepare=usePlaybackProgress(api,'r1','vod:package',surface,media,true);useEffect(()=>{void prepare('resume');},[prepare]);return <div ref={surface}><video ref={media} aria-label="First watch"/></div>;}
- const item={id:'r1',title:'First',durationSeconds:120,playbackMediaVersion:version,playbackProgress:history} as MemberRecordingCard;
+ const item={...recording,title:'First',playbackMediaVersion:version,playbackProgress:history};
  const unknown={...item,id:'r1',title:'Unknown',playbackMediaVersion:null};
  const changed={...item,title:'New range',playbackMediaVersion:'vod:package:8'};
  render(<><Media/><RecordingCardProgress item={item} label="Progress"/><RecordingCardProgress item={unknown} label="Progress"/><RecordingCardProgress item={changed} label="Progress"/></>);
@@ -40,8 +41,8 @@ it.each([undefined,null])('uses the independent authority version for a first wa
 });
 
 it('does not reuse saved history when an explicit authority version changed or was withdrawn',()=>{
- const base={id:'r1',title:'Old',durationSeconds:120,playbackProgress:{mediaVersion:'vod:package:7',positionSeconds:30,completed:false}};
- const changed={...base,playbackMediaVersion:'vod:package:8'} as MemberRecordingCard,withdrawn={...base,playbackMediaVersion:null} as MemberRecordingCard;
+ const base={...recording,title:'Old',playbackProgress:{mediaVersion:'vod:package:7',positionSeconds:30,completed:false}};
+ const changed={...base,playbackMediaVersion:'vod:package:8'},withdrawn={...base,playbackMediaVersion:null};
  render(<><RecordingCardProgress item={changed} label="Progress"/><RecordingCardProgress item={withdrawn} label="Progress"/></>);
  expect(screen.queryByRole('progressbar')).toBeNull();
 });
