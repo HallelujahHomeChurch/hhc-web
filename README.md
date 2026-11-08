@@ -114,6 +114,9 @@ fixed-size cumulative content headers/body summary after completion. The existin
 public JSON buffering, ISR, cancellation and deadline behavior are preserved.
 Fetch timing includes Next's Data Cache wait; parallel work totals are not wall
 time. In-flight phases are explicit, and late completion cannot emit again.
+Numeric HTTP status counts distinguish projection fallback from service failures;
+transport/body failures take precedence over a generic HTTP error, with
+cancellation/deadline retained above both. Counts contain no per-call details.
 Render and listener observations correlate by the existing trace context;
 without a trace, the render has its own bounded technical observation ID.
 

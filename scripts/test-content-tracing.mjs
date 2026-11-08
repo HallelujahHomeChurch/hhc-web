@@ -51,8 +51,8 @@ const api = createServer((request, response) => {
     if (locale === 'zh-Hans') setTimeout(() => response.end(body), 1050);
     else response.end(body);
   } else {
-    response.statusCode = 404;
-    response.end('{"code":"not_found","message":"fixture"}');
+    response.statusCode = locale === 'zh-Hans' ? 503 : 404;
+    response.end(JSON.stringify({code: locale === 'zh-Hans' ? 'unavailable' : 'not_found', message: 'fixture'}));
   }
 });
 await new Promise((resolve) => api.listen(0, '127.0.0.1', resolve));
@@ -145,9 +145,11 @@ try {
   assert.equal(renders[0].route_id, 'website.maintenance');
   assert.ok(renders[0].phase_totals.fetch_headers.count >= 2, 'existing wrapper calls accumulate');
   assert.ok(renders[0].phase_totals.fetch_headers.max_ms >= 1000, 'local slow API headers are attributed');
+  assert.ok(renders[0].http_status_counts['503'] >= 1, 'service failure survives successful legacy fallback');
   const concurrentRenders = observations.filter(e => e.event === 'hhc_web_render_observation' && e.trace_id === concurrentMaintenanceTrace);
   assert.equal(concurrentRenders.length, 1, 'a concurrent request has its own once-only observation');
   assert.equal(concurrentRenders[0].sampled, false);
+  assert.ok(concurrentRenders[0].http_status_counts['404'] >= 1, 'normal projection fallback stays distinguishable');
   assert.notEqual(concurrentRenders[0].observation_id, renders[0].observation_id);
   const handlers = observations.filter(e => e.event === 'hhc_web_request_observation' && e.request_id === maintenanceTrace);
   assert.equal(handlers.length, 1, 'server response observation once');

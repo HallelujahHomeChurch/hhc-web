@@ -4,6 +4,18 @@ import {ContentRequestObservation} from './request-diagnostics';
 afterEach(() => vi.restoreAllMocks());
 
 describe('maintenance render diagnostics', () => {
+  it('bounds status keys to the numeric HTTP domain and excludes invalid correlation', () => {
+    const output = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const observation = new ContentRequestObservation({traceId: 'https://private.example', spanId: 'private-member', traceFlags: 0});
+    observation.activate(); observation.fail('downstream_http_error');
+    for (const status of [200, 404, 404, 503, 599]) observation.recordStatus(status);
+    for (const status of [-1, 600, 1000, 1.5, NaN, Infinity]) observation.recordStatus(status);
+    observation.finish();
+    const value = JSON.parse(output.mock.calls[0][0]);
+    expect(value.http_status_counts).toEqual({'200': 1, '404': 2, '503': 1, '599': 1});
+    expect(value.trace_id).toBeUndefined(); expect(value.span_id).toBeUndefined();
+    expect(output.mock.calls[0][0]).not.toContain('private');
+  });
   it('records cumulative sub250 work once without sampling or sensitive values', () => {
     let now = 0;
     vi.spyOn(performance, 'now').mockImplementation(() => now);

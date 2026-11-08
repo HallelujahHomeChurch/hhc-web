@@ -43,8 +43,9 @@ function contentFetch(fresh: boolean): typeof fetch {
             redirect: 'error',
             ...(noStore ? {cache: 'no-store'} : {next: {revalidate: 60}})
           } as RequestInit & {next?: {revalidate: number}});
-          finishHeaders(!response.ok);
-          if (!response.ok) observation.fail('downstream_http_error');
+          observation.recordStatus(response.status);
+          finishHeaders(response.status >= 400);
+          if (response.status >= 400) observation.fail('downstream_http_error');
           progress.phase = 'fetch_body';
           const finishBody = observation.start('fetch_body');
           let body: ArrayBuffer | null;

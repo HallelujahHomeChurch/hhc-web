@@ -4,6 +4,10 @@ import {getActiveSpan} from '@sentry/nextjs';
 
 type Correlation = {traceId: string; spanId?: string; traceFlags: number};
 type Failure = 'caller_canceled' | 'local_deadline' | 'fetch_body_error' | 'fetch_headers_error' | 'downstream_http_error';
+const failurePriority: Record<Failure, number> = {
+  downstream_http_error: 1, fetch_headers_error: 2, fetch_body_error: 2,
+  caller_canceled: 3, local_deadline: 3,
+};
 
 export class ContentRequestObservation {
   private readonly started = performance.now();
@@ -15,6 +19,7 @@ export class ContentRequestObservation {
   private active = false;
   private closed = false;
   private failure?: Failure;
+  private readonly httpStatuses: Record<number, number> = {};
   constructor(private readonly correlation?: Correlation) {}
 
   activate() {
@@ -41,7 +46,13 @@ export class ContentRequestObservation {
 
   fail(reason: Failure) {
     if (this.closed) return;
-    if (!this.failure || reason === 'local_deadline' || reason === 'caller_canceled') this.failure = reason;
+    if (!this.failure || failurePriority[reason] > failurePriority[this.failure]) this.failure = reason;
+  }
+
+  recordStatus(status: number) {
+    // HTTP's numeric domain bounds this histogram to 600 slots, not per-call records.
+    if (this.closed || !Number.isInteger(status) || status < 0 || status >= 600) return;
+    this.httpStatuses[status] = (this.httpStatuses[status] ?? 0) + 1;
   }
 
   finish() {
@@ -58,6 +69,7 @@ export class ContentRequestObservation {
       sampled: traceId ? Boolean(context!.traceFlags & 1) : undefined,
       elapsed_ms: Math.round(elapsed), failure_reason: this.failure ?? 'none',
       phase_totals: this.phases,
+      http_status_counts: this.httpStatuses,
       timing_semantics: 'render_work_since_first_observation; overlapping_phases_not_wall_time; fetch_includes_next_cache',
     }));
   }

@@ -21,6 +21,47 @@ function fetcher(fresh = false): typeof fetch {
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); constructor.mockClear(); requestCache.clear(); });
 
 describe('public content transport', () => {
+  it.each(['headers', 'body'] as const)('keeps a later %s failure visible after a projection404 fallback', async stage => {
+    const output = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const observation = contentRequestObservation(); observation.activate();
+    const error = new Error('private legacy endpoint and credential');
+    const transport = vi.fn().mockResolvedValueOnce(new Response('{}', {status: 404}));
+    if (stage === 'headers') transport.mockRejectedValueOnce(error);
+    else transport.mockResolvedValueOnce(new Response(new ReadableStream({start(controller) { controller.error(error); }})));
+    vi.stubGlobal('fetch', transport);
+    const read = fetcher();
+    await read('http://content.test/projection?token=private');
+    await expect(read('http://content.test/legacy')).rejects.toBe(error);
+    observation.finish(); observation.finish();
+    expect(output).toHaveBeenCalledTimes(1);
+    const value = JSON.parse(output.mock.calls[0][0]);
+    expect(value.failure_reason).toBe(stage === 'headers' ? 'fetch_headers_error' : 'fetch_body_error');
+    expect(value.phase_totals.fetch_headers.failures).toBe(stage === 'headers' ? 2 : 1);
+    expect(value.phase_totals.fetch_body.failures).toBe(stage === 'body' ? 1 : 0);
+    expect(value.http_status_counts).toEqual(stage === 'headers' ? {'404': 1} : {'200': 1, '404': 1});
+    for (const marker of ['http:', 'token=', 'credential', 'private']) expect(output.mock.calls[0][0]).not.toContain(marker);
+  });
+
+  it.each([404, 503])('retains downstream status%s even when the legacy read succeeds', async status => {
+    const output = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const observation = contentRequestObservation(); observation.activate();
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(new Response('{}', {status})).mockResolvedValueOnce(new Response('{}')));
+    const read = fetcher();
+    await read('http://content.test/projection'); await read('http://content.test/legacy');
+    observation.finish();
+    const value = JSON.parse(output.mock.calls[0][0]);
+    expect(value.http_status_counts).toEqual({'200': 1, [String(status)]: 1});
+  });
+
+  it('does not diagnose a preserved304 response as a downstream HTTP failure', async () => {
+    const output = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const observation = contentRequestObservation(); observation.activate();
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, {status: 304})));
+    const response = await fetcher()('http://content.test/conditional');
+    expect(response.status).toBe(304); expect(response.body).toBeNull();
+    observation.finish();
+    expect(output).not.toHaveBeenCalled();
+  });
   it('accumulates repeated sub250 reads through the actual wrapper and emits once', async () => {
     let now = 0;
     vi.spyOn(performance, 'now').mockImplementation(() => now);
