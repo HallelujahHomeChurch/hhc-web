@@ -15,7 +15,6 @@ export function PersistentLive(props: ComponentProps<typeof LiveRecordingPlayer>
     if (id && denied && key) close?.(key);
   }, [id, denied, key, close]);
   const latest = id && watch?.live?.captureId === props.recording.captureId ? watch.live : undefined;
-  // shortcut: compact requires UI #224; publish and pin that package before merging this consumer.
   const mini = playback && !playback.inWatch ? {onExpand: playback.expand, expandLabel: playback.labels.expand, compact: playback.miniCompact} : undefined;
   return <LiveRecordingPlayer {...props} surfaceOnly onMinimizeMove={playback?.setMinimizeOffset}
     mini={mini} recording={latest ?? props.recording}

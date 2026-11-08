@@ -38,7 +38,6 @@ export function PersistentVod({previousHref, nextHref, initialBookmark, onMinimi
   }, [selected, automaticAttempt, start, initialBookmark, prepareProgress]);
   usePlaybackTelemetry(api, selected?.id, media, Boolean(playback));
 
-  // shortcut: compact requires UI #224; publish and pin that package before merging this consumer.
   const mini = controls && !controls.inWatch ? {onExpand: controls.expand, expandLabel: controls.labels.expand, compact: controls.miniCompact} : undefined;
   return <div ref={playerSection}>
     {selected && playback?.recordingId === selected.id
