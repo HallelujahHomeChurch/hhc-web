@@ -507,7 +507,7 @@
     "empty": "公開済みの週報はまだありません。"
   },
   "memberVideos": {
-    "continuity": {"removeResume": "続きを見るから削除","resume": "続きを見る","live": "ライブに戻る","close": "閉じる","expand": "プレーヤーを拡大","minimize": "プレーヤーを縮小","move": "プレーヤーを移動","resize": "プレーヤーのサイズを変更","returningToLibrary": "動画一覧に戻っています…","retryNavigation": "再試行"},
+    "continuity": {"expandSource": "動画一覧を展開","collapseSource": "動画一覧を折りたたむ","sourceList": "動画一覧","removeResume": "続きを見るから削除","resume": "続きを見る","live": "ライブに戻る","close": "閉じる","expand": "プレーヤーを拡大","minimize": "プレーヤーを縮小","move": "プレーヤーを移動","resize": "プレーヤーのサイズを変更","returningToLibrary": "動画一覧に戻っています…","retryNavigation": "再試行"},
     "shareDescription": "この動画の視聴には、視聴権限のある会員としてログインが必要です。",
     "theaterMode": "シアターモード",
     "exitTheaterMode": "シアターモードを終了",

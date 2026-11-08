@@ -91,3 +91,12 @@ it('finishes pending pagination while retained and can continue after return',as
  expect(await screen.findByRole('link',{name:'Second'})).toBeVisible();
  expect(screen.queryByRole('button',{name:'Loading'})).toBeNull();
 });
+
+it('captures only upcoming cards actually rendered after live exclusions',async()=>{
+ const upcoming=vi.fn().mockResolvedValue({items:[{recordingId:'r1',title:'Already live',stateRevision:1},{recordingId:'r2',title:'Waiting',stateRevision:1}],nextCursor:null});
+ const api={upcoming,broadcastCover:vi.fn().mockRejectedValue(new Error('none'))} as unknown as ReturnType<typeof createMemberVideoApi>;
+ const sources=vi.fn();render(<UpcomingBroadcasts api={api} locale="en" excludeIds={['r1']} onSourceItems={sources} loading="Loading" retry="Retry"/>);
+ await screen.findByRole('link',{name:'Waiting'});
+ expect(screen.queryByRole('link',{name:'Already live'})).toBeNull();
+ expect(sources).toHaveBeenLastCalledWith([{id:'r2',href:'/en/member-videos/r2',title:'Waiting'}]);
+});

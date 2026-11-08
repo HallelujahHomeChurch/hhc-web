@@ -28,6 +28,33 @@ export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLab
   const transition = useRef<Animation | null>(null);
   const drag = useRef<{id: number; x: number; y: number; width: number; bounds: DOMRect; resize: boolean; moved: boolean} | null>(null);
   const suppressClick = useRef(false);
+  const keyboardIntent = useRef(false);
+  const [keyboardFocus, setKeyboardFocus] = useState(false);
+  useLayoutEffect(() => {
+    const key = (event: KeyboardEvent) => {
+      if (event.altKey || event.ctrlKey || event.metaKey) return;
+      if (event.key === 'Tab' || hostRef.current?.contains(event.target as Node)) {
+        keyboardIntent.current = true;
+        if (hostRef.current?.contains(document.activeElement)) setKeyboardFocus(true);
+      }
+    };
+    const pointer = () => { keyboardIntent.current = false; setKeyboardFocus(false); };
+    const focus = (event: FocusEvent) => {
+      const within = Boolean(hostRef.current?.contains(event.target as Node));
+      const fromHost = Boolean(hostRef.current?.contains(event.relatedTarget instanceof Node ? event.relatedTarget : null));
+      const keyboard = keyboardIntent.current;
+      keyboardIntent.current = false;
+      setKeyboardFocus(current => within && (keyboard || current && fromHost));
+    };
+    const blur = (event: FocusEvent) => {
+      if (hostRef.current?.contains(event.target as Node) && !hostRef.current.contains(event.relatedTarget instanceof Node ? event.relatedTarget : null)) setKeyboardFocus(false);
+    };
+    document.addEventListener('keydown', key, true);
+    document.addEventListener('pointerdown', pointer, true);
+    document.addEventListener('focusin', focus, true);
+    document.addEventListener('focusout', blur, true);
+    return () => { document.removeEventListener('keydown', key, true); document.removeEventListener('pointerdown', pointer, true); document.removeEventListener('focusin', focus, true); document.removeEventListener('focusout', blur, true); };
+  }, []);
   const [left, setLeft] = useState(false), [top, setTop] = useState(false);
   const [width, setWidth] = useState<number>();
   const [wasWatch, setWasWatch] = useState(Boolean(watchSlot));
@@ -76,6 +103,16 @@ export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLab
     setOffset({x: 0, y: 0});
   };
   const pointerCancel = () => { if (drag.current?.moved) suppressClick.current = true; drag.current = null; setOffset({x: 0, y: 0}); };
+  useLayoutEffect(() => {
+    const host = hostRef.current;
+    const caption = host?.querySelector<HTMLElement>('[data-mini-caption]');
+    if (watchSlot || !host || !caption) return;
+    const measure = () => host.style.setProperty('--mini-caption-height', `${caption.getBoundingClientRect().height}px`);
+    measure();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    observer?.observe(caption);
+    return () => { observer?.disconnect(); host.style.removeProperty('--mini-caption-height'); };
+  }, [watchSlot]);
   useLayoutEffect(() => {
     if (watchSlot || !onClose) return;
     const escape = (event: KeyboardEvent) => {
@@ -183,7 +220,7 @@ export function PlaybackHost({watchSlot, children, onClose, moveLabel, resizeLab
   useLayoutEffect(() => () => transition.current?.cancel(), []);
 
   return <div ref={hostRef} className={styles.host} data-presentation={watchSlot ? 'watch' : 'mini'}
-    data-left={left} data-top={top} data-dragging={Boolean(offset.x || offset.y || tracking)}
+    data-keyboard-focus={keyboardFocus} data-left={left} data-top={top} data-dragging={Boolean(offset.x || offset.y || tracking)}
     aria-keyshortcuts={!watchSlot ? 'ArrowLeft ArrowRight ArrowUp ArrowDown Shift+ArrowLeft Shift+ArrowRight' : undefined}
     role={!watchSlot ? 'group' : undefined} aria-label={!watchSlot ? moveLabel : undefined} tabIndex={!watchSlot ? 0 : undefined}
     onPointerDownCapture={pointerDown} onPointerMoveCapture={pointerMove} onPointerUpCapture={pointerUp} onPointerCancel={pointerCancel}

@@ -1,4 +1,7 @@
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+});
+
+import {act, render, screen, fireEvent} from '@testing-library/react';
 import {expect, it, vi} from 'vitest';
 import {PlaybackHost} from './PlaybackHost';
 
@@ -171,4 +174,14 @@ it('commits a pull to right-bottom after the old mini was moved to left-top',()=
  fireEvent.keyDown(host,{key:'ArrowLeft'});fireEvent.keyDown(host,{key:'ArrowUp'});expect(host).toHaveAttribute('data-left','true');expect(host).toHaveAttribute('data-top','true');
  view.rerender(show(slot,0,false));view.rerender(show(slot,16,true));view.rerender(show(slot,120,true));view.rerender(show(null,120,false));
  expect(host).toHaveAttribute('data-left','false');expect(host).toHaveAttribute('data-top','false');expect(parseFloat(host.style.left)+parseFloat(host.style.width)).toBe(window.innerWidth-16);expect(parseFloat(host.style.top)+parseFloat(host.style.height)).toBe(window.innerHeight-16);
+});
+
+it('reveals mini actions for keyboard focus but clears pointer focus residue',()=>{
+ render(<PlaybackHost watchSlot={null} moveLabel="Move"><button>Action</button></PlaybackHost>);
+ const host=screen.getByRole('group',{name:'Move'}),button=screen.getByRole('button',{name:'Action'});
+ act(()=>button.focus());expect(host).toHaveAttribute('data-keyboard-focus','false');
+ act(()=>button.blur());fireEvent.keyDown(document,{key:'Tab'});act(()=>button.focus());
+ expect(host).toHaveAttribute('data-keyboard-focus','true');
+ fireEvent.pointerDown(document.body);
+ expect(document.activeElement).toBe(button);expect(host).toHaveAttribute('data-keyboard-focus','false');
 });

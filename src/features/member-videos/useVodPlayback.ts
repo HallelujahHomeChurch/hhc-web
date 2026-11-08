@@ -93,6 +93,7 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
   const automaticAttempt = useRef<string|null>(null);
   const start = useCallback(async (resume?:PlayerBookmark, prepareProgress?: (kind: "resume" | "at", signal: AbortSignal) => Promise<number | undefined> | undefined) => {
     if (!selected || preparing) return false;
+    if (resume) vodBookmark.current = resume;
     automaticAttempt.current = selected.id;
     mediaFailureReported.current = false;
     bookmarkFrozen.current=true;
