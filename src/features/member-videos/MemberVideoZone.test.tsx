@@ -16,7 +16,7 @@ const authorization = vi.hoisted(() => ({getAccessToken: async () => 'token', re
 const state = vi.hoisted(() => ({access: 'loading', auth: 'checking'}));
 const signIn = vi.hoisted(() => vi.fn());
 const list = vi.hoisted(() => vi.fn());
-const videoApi = vi.hoisted(() => ({continueWatching:vi.fn(),watch:vi.fn(),upcoming:vi.fn(),broadcastCover:vi.fn(),liveCover:vi.fn(),listPage:vi.fn(),liveList:vi.fn().mockResolvedValue([]),cover:vi.fn(),list: vi.fn(), grant: vi.fn(), exchange: vi.fn(), clear: vi.fn().mockResolvedValue(undefined)}));
+const videoApi = vi.hoisted(() => ({continueWatching:vi.fn(),watch:vi.fn(),upcoming:vi.fn(),broadcastCover:vi.fn(),liveCover:vi.fn(),listPage:vi.fn(),progress:vi.fn(),liveList:vi.fn().mockResolvedValue([]),cover:vi.fn(),list: vi.fn(), grant: vi.fn(), exchange: vi.fn(), clear: vi.fn().mockResolvedValue(undefined)}));
 const liveSession = vi.hoisted(()=>({playback:null,closed:false,pending:false,error:false,start:vi.fn(),remember:vi.fn(),bookmark:{current:undefined}}));
 vi.mock('./useLivePlayback',()=>({useLivePlayback:()=>liveSession}));
 const router = vi.hoisted(() => ({replace: vi.fn(),push:vi.fn()}));
@@ -37,7 +37,7 @@ const captureHandledError = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/observability', () => ({captureHandledError}));
 const packageId = 'a'.repeat(32);
 const playbackUrl = `https://media.alive.org.tw/videos/r1/packages/${packageId}/sessions/scope/master.m3u8`;
-vi.mock('next/navigation', () => ({useRouter: () => router}));
+vi.mock('next/navigation', () => ({usePathname:()=>'/video/test',useSearchParams:()=>new URLSearchParams(),useRouter: () => router}));
 vi.mock('@/components/layout/AccountControl', () => ({
   useAccountSignIn: () => signIn,
   useAccountIdentity: () => 'member',
@@ -930,7 +930,9 @@ describe('persistent member playback', () => {
     }
     const view = render(<Fixture route="r1"/>);
     await screen.findByLabelText(a.title);
-    const video = view.container.querySelector('video');
+    const video = view.container.querySelector('video')!;
+    Object.defineProperty(video,'paused',{configurable:true,value:false});
+    fireEvent.playing(video);
     view.rerender(<Fixture route="list"/>);
     await screen.findByRole('link', {name: b.title});
     const thumbnail = view.container.querySelector<HTMLAnchorElement>('a[tabindex="-1"][href="/video/bB_012-xyzQ"]')!;
@@ -949,6 +951,42 @@ describe('persistent member playback', () => {
     await act(async () => {});
     expect(view.container.querySelector('video')).toBeNull();
     expect(screen.queryByLabelText(a.title)).toBeNull();
+  });
+
+  it('retains the active live media when a fresh watch resolver now reports VOD', async()=>{
+    state.auth='authenticated';state.access='available';
+    const captureId='b'.repeat(32),title='Archived live owner';
+    const live={id:'r1',title,captureId,liveState:'live',createdAt:new Date().toISOString(),progress:{lastSequence:8,mediaEndSeconds:130}};
+    videoApi.liveList.mockResolvedValue([live]);list.mockResolvedValue([]);
+    videoApi.watch.mockResolvedValue({recordingId:'r1',view:'live',recording:null,live,serverNow:new Date().toISOString(),stateRevision:1});
+    Object.assign(liveSession,{playback:{url:playbackUrl,grant:{liveState:'live',progress:live.progress,expiresAt:new Date(Date.now()+3600000).toISOString()}}});
+    function Fixture({watch}:{watch:boolean}){return <PlaybackProvider locale="en" labels={labels}>{watch?<MemberVideoZone locale="en" messages={messages} hero={null} recordingId="r1"/>:<main>Other route</main>}</PlaybackProvider>;}
+    try{
+      const view=render(<Fixture watch/>);await screen.findByLabelText(title);
+      const video=view.container.querySelector('video')!;const audio=view.container.querySelector('audio');
+      video.currentTime=70;video.playbackRate=1.5;Object.defineProperty(video,'paused',{configurable:true,value:false});fireEvent.playing(video);
+      view.rerender(<Fixture watch={false}/>);
+      const vod={id:'r1',title,packageId:captureId,durationSeconds:120};
+      list.mockResolvedValue([vod]);videoApi.liveList.mockResolvedValue([]);
+      videoApi.watch.mockResolvedValue({recordingId:'r1',view:'vod',recording:vod,live:null,mediaStartSeconds:20,durationSeconds:120,serverNow:new Date().toISOString(),stateRevision:2});
+      view.rerender(<Fixture watch/>);await act(async()=>{});
+      expect(view.container.querySelector('video')).toBe(video);expect(view.container.querySelector('audio')).toBe(audio);
+      expect(video.currentTime).toBe(70);expect(video.playbackRate).toBe(1.5);
+      expect(video.closest('[data-presentation]')).toHaveAttribute('data-presentation','watch');
+      expect(videoApi.grant).not.toHaveBeenCalled();
+      liveSession.bookmark.current={time:70,paused:true,rate:1.5,mediaOriginSeconds:0} as never;
+      videoApi.grant.mockRejectedValueOnce(new Error('Temporary grant failure')).mockResolvedValue({packageId:captureId,expiresAt:new Date(Date.now()+3600000).toISOString()});
+      videoApi.exchange.mockResolvedValue(playbackUrl.replace(packageId,captureId));
+      fireEvent.click(screen.getByRole('button',{name:'Continue with the published recording'}));
+      await screen.findByRole('button',{name:'Retry'});
+      fireEvent.click(screen.getByRole('button',{name:'Retry'}));
+      await waitFor(()=>expect(videoApi.grant).toHaveBeenCalledTimes(2));
+      await waitFor(()=>expect(view.container.querySelector('video')).not.toBe(video));
+      const archive=view.container.querySelector('video')!;
+      Object.defineProperties(archive,{duration:{configurable:true,value:120},readyState:{configurable:true,value:4}});
+      fireEvent.loadedMetadata(archive);
+      expect(archive.currentTime).toBe(50);expect(archive.playbackRate).toBe(1.5);
+    }finally{Object.assign(liveSession,{playback:null});}
   });
 
   it.each(['vod', 'live'] as const)('keeps the mounted %s media through route changes and removes it on logout', async (kind) => {
@@ -987,6 +1025,8 @@ describe('persistent member playback', () => {
       expect(video).not.toBeNull();
       expect(audio).not.toBeNull();
       expect(video?.closest('[data-presentation]')).toHaveAttribute('data-presentation', 'watch');
+      Object.defineProperty(video!,'paused',{configurable:true,value:false});
+      fireEvent.playing(video!);
       const grants = videoApi.grant.mock.calls.length;
       const clears = videoApi.clear.mock.calls.length;
       view.rerender(<Fixture watch={false}/>);
@@ -1030,18 +1070,6 @@ describe('persistent member playback', () => {
 });
 
 
-it('does not insert resume above interactive live cards while VOD is still loading', async () => {
-  state.auth='authenticated'; state.access='available';
-  videoApi.listPage.mockReturnValue(new Promise(()=>{}));
-  videoApi.liveList.mockResolvedValue([{id:'live-fixture',publicId:'Ab_012-xyzQ',captureId:packageId,title:'Visible live card',liveState:'live',createdAt:'2026-10-07T00:00:00Z'}]);
-  let resolve!: (value: unknown) => void;
-  videoApi.continueWatching.mockReturnValue(new Promise(r=>{resolve=r;}));
-  render(<PlaybackProvider locale="en" labels={{resume:'Resume fixture',live:'Return live',close:'Close',removeResume:'Remove resume',expand:'Expand',minimize:'Minimize',move:'Move',resize:'Resize'}}><MemberVideoZone locale="en" messages={messages} hero={null} view="list"/></PlaybackProvider>);
-  await screen.findByRole('link',{name:/^Visible live card/});
-  await act(async()=>resolve({item:{title:'Late resume',recordingId:'old',publicId:'aB_012-xyzQ',mediaVersion:'vod:fixture',mode:'vod',positionSeconds:65,generation:'A',sessionId:'A',claimedAt:new Date(Date.now()-10000).toISOString(),updatedAt:new Date().toISOString()}}));
-  expect(screen.queryByRole('complementary',{name:'Resume fixture'})).toBeNull();
-});
-
 it('retains loaded search pages and their DOM while visiting and returning from a watch route', async () => {
   const {PlaybackProvider} = await import('./PlaybackProvider');
   state.access='available'; state.auth='authenticated';
@@ -1055,13 +1083,14 @@ it('retains loaded search pages and their DOM while visiting and returning from 
   fireEvent.click(await screen.findByRole('button',{name:'Load more'}));
   const link=await screen.findByRole('link',{name:'Second search page'});
   const calls=videoApi.listPage.mock.calls.length;
+  videoApi.listPage.mockResolvedValueOnce({items:[first],nextCursor:'page-2'}).mockResolvedValueOnce({items:[second],nextCursor:null});
   view.rerender(show(true));
   await act(async()=>{});
   expect(link.isConnected).toBe(true);
   expect(link.closest('[inert]')).not.toBeNull();
   view.rerender(show(false));
   expect(await screen.findByRole('link',{name:'Second search page'})).toBe(link);
-  expect(videoApi.listPage).toHaveBeenCalledTimes(calls);
+  await waitFor(()=>expect(videoApi.listPage).toHaveBeenCalledTimes(calls+2));
 });
 
 it('remembers the search and scroll source when opening an upcoming broadcast',async()=>{
@@ -1101,5 +1130,53 @@ it('keeps pending pagination alive while its real library is retained under watc
  const signal=videoApi.listPage.mock.calls[1][0].signal;
  view.rerender(show(true));expect(signal.aborted).toBe(false);
  await act(async()=>finish({items:[{id:'r2',title:'Second retained page',packageId}],nextCursor:null}));
+ videoApi.listPage.mockResolvedValueOnce({items:[{id:'r1',title:'First retained page',packageId}],nextCursor:'r1'}).mockResolvedValueOnce({items:[{id:'r2',title:'Second retained page',packageId}],nextCursor:null});
  view.rerender(show(false));expect(await screen.findByRole('link',{name:'Second retained page'})).toBeVisible();
+});
+
+
+it.each([10,100])('shows batched progress on %i ordinary cards without resume or per-card requests',async count=>{
+ state.auth='authenticated';state.access='available';videoApi.continueWatching.mockReset();videoApi.progress.mockReset();
+ const items=Array.from({length:count},(_,index)=>({id:`card-${index}`,title:`Card ${index}`,packageId,durationSeconds:120,uploadedAt:'2026-11-01T00:00:00Z',playbackProgress:index===0?{mediaVersion:`vod:${packageId}`,positionSeconds:30,completed:false}:index===1?{mediaVersion:`vod:${packageId}`,positionSeconds:114,completed:true}:index===2?null:undefined}));
+ videoApi.listPage.mockResolvedValue({items,nextCursor:null});
+ const view=render(<PlaybackProvider locale="en" labels={{resume:'Historical resume',live:'Live',close:'Close',removeResume:'Remove',expand:'Expand',minimize:'Minimize',move:'Move',resize:'Resize'}}><MemberVideoZone locale="en" messages={messages} hero={null} view="list"/></PlaybackProvider>);
+ await screen.findByRole('link',{name:'Card 0'});
+ const progress=screen.getAllByRole('progressbar');expect(progress).toHaveLength(2);
+ expect(screen.getByRole('progressbar',{name:'Card 0 — Playback position'})).toHaveAttribute('value','25');expect(screen.getByRole('progressbar',{name:'Card 0 — Playback position'})).toHaveAttribute('aria-valuetext','0:30 / 2:00');
+ expect(screen.getByRole('progressbar',{name:'Card 1 — Playback position'})).toHaveAttribute('value','100');
+ expect(view.container.querySelectorAll('article[id^="recording-"]')).toHaveLength(count);
+ expect(screen.queryByRole('complementary',{name:'Historical resume'})).toBeNull();
+ expect(videoApi.listPage).toHaveBeenCalledOnce();expect(videoApi.continueWatching).not.toHaveBeenCalled();expect(videoApi.progress).not.toHaveBeenCalled();expect(videoApi.grant).not.toHaveBeenCalled();expect(view.container.querySelector('video, audio')).toBeNull();
+});
+
+it('merges new card progress on focus without replacing the existing card or polling',async()=>{
+ state.auth='authenticated';state.access='available';
+ const item={id:'r1',title:'Focus progress',packageId,durationSeconds:120,uploadedAt:'2026-11-01T00:00:00Z',playbackProgress:{mediaVersion:`vod:${packageId}`,positionSeconds:30,completed:false}};
+ videoApi.listPage.mockResolvedValue({items:[item],nextCursor:null});
+ render(<MemberVideoZone locale="en" messages={messages} hero={null} view="list"/>);
+ const link=await screen.findByRole('link',{name:'Focus progress'});expect(screen.getByRole('progressbar')).toHaveAttribute('value','25');
+ videoApi.listPage.mockResolvedValue({items:[{...item,playbackProgress:{...item.playbackProgress,positionSeconds:60}}],nextCursor:null});
+ fireEvent(window,new Event('focus'));
+ await waitFor(()=>expect(screen.getByRole('progressbar')).toHaveAttribute('value','50'));
+ expect(screen.getByRole('link',{name:'Focus progress'})).toBe(link);expect(videoApi.listPage).toHaveBeenCalledTimes(2);
+});
+
+it('serializes a delayed focus refresh before load-more and keeps both pages',async()=>{
+ state.auth='authenticated';state.access='available';const first={id:'r1',title:'Refresh first',packageId},second={id:'r2',title:'Refresh second',packageId};
+ let finish!:(value:unknown)=>void;
+ videoApi.listPage.mockResolvedValueOnce({items:[first],nextCursor:'C'}).mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve})).mockResolvedValue({items:[second],nextCursor:null});
+ render(<MemberVideoZone locale="en" messages={messages} hero={null} view="list"/>);await screen.findByRole('link',{name:'Refresh first'});
+ const more=screen.getByRole('button',{name:'Load more'});fireEvent(window,new Event('focus'));fireEvent.click(more);
+ expect(videoApi.listPage).toHaveBeenCalledTimes(2);
+ await act(async()=>finish({items:[first],nextCursor:'C'}));fireEvent.click(screen.getByRole('button',{name:'Load more'}));
+ expect(await screen.findByRole('link',{name:'Refresh second'})).toBeVisible();expect(screen.getByRole('link',{name:'Refresh first'})).toBeVisible();
+});
+
+it('cancels an older load-more when focus refresh takes the list generation',async()=>{
+ state.auth='authenticated';state.access='available';const first={id:'r1',title:'Race first',packageId},second={id:'r2',title:'Race second',packageId};
+ let finish!:(value:unknown)=>void;
+ videoApi.listPage.mockResolvedValueOnce({items:[first],nextCursor:'C'}).mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve})).mockResolvedValueOnce({items:[first],nextCursor:'C'}).mockResolvedValue({items:[second],nextCursor:null});
+ render(<MemberVideoZone locale="en" messages={messages} hero={null} view="list"/>);await screen.findByRole('link',{name:'Race first'});fireEvent.click(screen.getByRole('button',{name:'Load more'}));const signal=videoApi.listPage.mock.calls[1][0].signal;
+ fireEvent(window,new Event('focus'));await waitFor(()=>expect(screen.getByRole('button',{name:'Load more'})).toBeEnabled());expect(signal.aborted).toBe(true);
+ await act(async()=>finish({items:[second],nextCursor:null}));expect(screen.queryByRole('link',{name:'Race second'})).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Load more'}));expect(await screen.findByRole('link',{name:'Race second'})).toBeVisible();expect(screen.getByRole('link',{name:'Race first'})).toBeVisible();
 });

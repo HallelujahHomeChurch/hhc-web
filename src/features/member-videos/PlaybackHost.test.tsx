@@ -1,4 +1,4 @@
-import {render, screen, fireEvent} from '@testing-library/react';
+import {act, render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {expect, it, vi} from 'vitest';
 import {PlaybackHost} from './PlaybackHost';
 
@@ -48,7 +48,7 @@ it('keeps media mounted during watch drag feedback and ignores control drags', (
   const slot=document.createElement('div');
   const view=render(<PlaybackHost watchSlot={slot} minimizeOffset={40}><video data-testid="drag-video"/></PlaybackHost>);
   const video=screen.getByTestId('drag-video'),host=video.parentElement!;
-  expect(host.style.transform).toContain('40px');
+  expect(host.style.transform).toBe('');
   view.rerender(<PlaybackHost watchSlot={slot} minimizeOffset={0}><video data-testid="drag-video"/></PlaybackHost>);
   expect(screen.getByTestId('drag-video')).toBe(video);
   expect(host.style.transform).toBe('');
@@ -75,13 +75,14 @@ it('ignores capture transfer from a child and never drags a fullscreen surface',
 
 it('animates the same media surface from the watch bounds into mini bounds', () => {
   const slot=document.createElement('div');
+  vi.spyOn(slot,'getBoundingClientRect').mockReturnValue({left:100,top:80,width:800,height:450} as DOMRect);
   const view=render(<PlaybackHost watchSlot={slot}><video data-testid="transition-video"/></PlaybackHost>);
   const video=screen.getByTestId('transition-video'),host=video.parentElement!;
   const cancel=vi.fn(),animate=vi.fn(()=>({cancel}) as unknown as Animation);host.animate=animate;
-  vi.spyOn(host,'getBoundingClientRect').mockImplementation(()=>host.dataset.presentation==='watch'?({left:100,top:80,width:800,height:450} as DOMRect):({left:600,top:400,width:360,height:203} as DOMRect));
+  vi.spyOn(host,'getBoundingClientRect').mockImplementation(()=>({left:parseFloat(host.style.left),top:parseFloat(host.style.top),width:parseFloat(host.style.width),height:parseFloat(host.style.height)} as DOMRect));
   view.rerender(<PlaybackHost watchSlot={slot} minimizeOffset={40}><video data-testid="transition-video"/></PlaybackHost>);
   view.rerender(<PlaybackHost watchSlot={null}><video data-testid="transition-video"/></PlaybackHost>);
-  expect(animate).toHaveBeenCalledWith([expect.objectContaining({transform:expect.stringContaining('translate(-500px, -320px)')}),expect.objectContaining({transform:'none'})],expect.objectContaining({duration:220}));
+  expect(animate).toHaveBeenCalledWith([{left:'100px',top:'80px',width:'800px',height:'450px'}, {left:host.style.left,top:host.style.top,width:host.style.width,height:host.style.height}],expect.objectContaining({duration:220}));
   expect(screen.getByTestId('transition-video')).toBe(video);
 });
 
@@ -91,7 +92,7 @@ it('keeps the close controls inside a short viewport when resizing', () => {
   try {
     render(<PlaybackHost watchSlot={null} moveLabel="Move" resizeLabel="Resize"><video/></PlaybackHost>);
     for(let i=0;i<30;i++)fireEvent.keyDown(screen.getByRole('button',{name:'Resize'}),{key:'ArrowRight'});
-    const width=Number(screen.getByRole('group',{name:'Move'}).style.width.match(/min\(([\d.]+)px/)?.[1]);
+    const width=parseFloat(screen.getByRole('group',{name:'Move'}).style.width);
     expect(width*9/16+76+32).toBeLessThanOrEqual(400);
   } finally { Object.defineProperty(window,'innerHeight',{value:original,configurable:true}); }
 });
@@ -104,4 +105,106 @@ it.each([0,320])('starts keyboard resizing from the displayed mini width (%s) wi
   expect(screen.getByRole('group',{name:'Move'}).style.width).toContain(`${(width||400)+16}px`);
   expect(screen.getByTestId('sized-video')).toBe(video);
   view.unmount();
+});
+
+it('locks at the watch rect then follows the same diagonal mini path',()=>{
+ const oldWidth=window.innerWidth,oldHeight=window.innerHeight;
+ Object.defineProperties(window,{innerWidth:{configurable:true,value:390},innerHeight:{configurable:true,value:844}});
+ try{
+  const slot=document.createElement('div');vi.spyOn(slot,'getBoundingClientRect').mockReturnValue({left:0,top:80,width:390,height:219.375} as DOMRect);
+  const show=(dy:number,tracking?:boolean)=><PlaybackHost watchSlot={slot} minimizeOffset={dy} tracking={tracking}><video data-testid="diagonal"/></PlaybackHost>;
+  const view=render(show(0)),video=screen.getByTestId('diagonal'),host=video.parentElement!;
+  view.rerender(show(16));expect(host.style.left).toBe('0px');expect(host.style.top).toBe('80px');expect(host.style.width).toBe('390px');expect(host.style.height).toBe('219.375px');
+  view.rerender(show(322.5));expect(host.style.left).toBe('67px');expect(host.style.top).toBe('386.5px');expect(host.style.width).toBe('315px');expect(host.style.height).toBe('177.1875px');
+  view.rerender(show(0,true));expect(host.style.left).toBe('0px');expect(host.style.top).toBe('80px');
+  view.rerender(show(322.5,true));expect(host.style.left).toBe('67px');expect(host.style.top).toBe('386.5px');
+  expect(host.style.transform).toBe('');expect(screen.getByTestId('diagonal')).toBe(video);
+ }finally{Object.defineProperties(window,{innerWidth:{configurable:true,value:oldWidth},innerHeight:{configurable:true,value:oldHeight}});}
+});
+
+it('cancels before commit on viewport changes but keeps committed mini intent',async()=>{
+ const cancel=vi.fn(),slot=document.createElement('div');vi.spyOn(slot,'getBoundingClientRect').mockReturnValue({left:0,top:80,width:390,height:219.375} as DOMRect);
+ const view=render(<PlaybackHost watchSlot={slot} minimizeOffset={16} onPullCancel={cancel}><video data-testid="rotate"/></PlaybackHost>);
+ const video=screen.getByTestId('rotate'),host=video.parentElement!;
+ const height=window.innerHeight;Object.defineProperty(window,'innerHeight',{configurable:true,value:height-24});
+ fireEvent(window,new Event('resize'));await waitFor(()=>expect(cancel).toHaveBeenCalledOnce());
+ view.rerender(<PlaybackHost watchSlot={null} minimizeOffset={16} onPullCancel={cancel}><video data-testid="rotate"/></PlaybackHost>);
+ fireEvent(window,new Event('resize'));await waitFor(()=>expect(cancel).toHaveBeenCalledOnce());expect(host).toHaveAttribute('data-presentation','mini');expect(screen.getByTestId('rotate')).toBe(video);
+ Object.defineProperty(window,'innerHeight',{configurable:true,value:height});
+});
+
+it('hands the visible pull rect to settling once and fences old rotation callbacks',async()=>{
+ const slot=document.createElement('div');vi.spyOn(slot,'getBoundingClientRect').mockReturnValue({left:0,top:80,width:390,height:219.375} as DOMRect);
+ const settled=vi.fn(),show=(watch:HTMLElement|null,dy:number)=><PlaybackHost watchSlot={watch} minimizeOffset={dy} onSettled={settled}><video data-testid="handoff"/></PlaybackHost>;
+ const view=render(show(slot,16)),video=screen.getByTestId('handoff'),host=video.parentElement!;
+ const animations:Array<{cancel:ReturnType<typeof vi.fn>;onfinish:((event:AnimationPlaybackEvent)=>void)|null}>=[];
+ host.animate=vi.fn(()=>{const result={cancel:vi.fn(),onfinish:null};animations.push(result);return result as unknown as Animation;});
+ const bounds=()=>({left:parseFloat(host.style.left),top:parseFloat(host.style.top),width:parseFloat(host.style.width),height:parseFloat(host.style.height)} as DOMRect);
+ const measure=vi.spyOn(host,'getBoundingClientRect').mockImplementation(bounds);
+ view.rerender(show(slot,120));const released={left:host.style.left,top:host.style.top,width:host.style.width,height:host.style.height};
+ view.rerender(show(null,120));expect(host.animate).toHaveBeenCalledOnce();expect(host.animate).toHaveBeenNthCalledWith(1,[released,expect.anything()],expect.anything());
+ view.rerender(show(null,0));expect(host.animate).toHaveBeenCalledOnce();
+ const visible={left:200,top:300,width:280,height:157.5};measure.mockReturnValueOnce(visible as DOMRect);
+ const original=window.innerHeight;Object.defineProperty(window,'innerHeight',{configurable:true,value:original-100});
+ try{
+  fireEvent(window,new Event('resize'));await waitFor(()=>expect(animations).toHaveLength(2));
+  expect(animations[0].cancel).toHaveBeenCalledOnce();expect(host.animate).toHaveBeenNthCalledWith(2,[{left:'200px',top:'300px',width:'280px',height:'157.5px'},expect.anything()],expect.anything());
+  animations[0].onfinish?.({} as AnimationPlaybackEvent);expect(settled).not.toHaveBeenCalled();
+  animations[1].onfinish?.({} as AnimationPlaybackEvent);expect(settled).toHaveBeenCalledOnce();expect(screen.getByTestId('handoff')).toBe(video);
+ }finally{Object.defineProperty(window,'innerHeight',{configurable:true,value:original});}
+});
+
+it('rebounds an uncommitted pull from its current rect to watch without replacing media',()=>{
+ const slot=document.createElement('div');vi.spyOn(slot,'getBoundingClientRect').mockReturnValue({left:0,top:80,width:390,height:219.375} as DOMRect);
+ const show=(dy:number)=><PlaybackHost watchSlot={slot} minimizeOffset={dy}><video data-testid="rebound"/></PlaybackHost>;
+ const view=render(show(16)),video=screen.getByTestId('rebound'),host=video.parentElement!;
+ vi.spyOn(host,'getBoundingClientRect').mockImplementation(()=>({left:parseFloat(host.style.left),top:parseFloat(host.style.top),width:parseFloat(host.style.width),height:parseFloat(host.style.height)} as DOMRect));
+ host.animate=vi.fn(()=>({cancel:vi.fn()}) as unknown as Animation);
+ view.rerender(show(120));const released={left:host.style.left,top:host.style.top,width:host.style.width,height:host.style.height};
+ view.rerender(show(0));expect(host.animate).toHaveBeenCalledWith([released,{left:'0px',top:'80px',width:'390px',height:'219.375px'}],expect.objectContaining({duration:220}));expect(screen.getByTestId('rebound')).toBe(video);expect(host).toHaveAttribute('data-presentation','watch');
+});
+
+it('commits a pull to right-bottom after the old mini was moved to left-top',()=>{
+ const slot=document.createElement('div');vi.spyOn(slot,'getBoundingClientRect').mockReturnValue({left:0,top:80,width:390,height:219.375} as DOMRect);
+ const show=(watch:HTMLElement|null,dy:number,tracking:boolean)=><PlaybackHost watchSlot={watch} minimizeOffset={dy} tracking={tracking} moveLabel="Move"><video data-testid="corner-pull"/></PlaybackHost>;
+ const view=render(show(null,0,false)),host=screen.getByRole('group',{name:'Move'});
+ fireEvent.keyDown(host,{key:'ArrowLeft'});fireEvent.keyDown(host,{key:'ArrowUp'});expect(host).toHaveAttribute('data-left','true');expect(host).toHaveAttribute('data-top','true');
+ view.rerender(show(slot,0,false));view.rerender(show(slot,16,true));view.rerender(show(slot,120,true));view.rerender(show(null,120,false));
+ expect(host).toHaveAttribute('data-left','false');expect(host).toHaveAttribute('data-top','false');expect(parseFloat(host.style.left)+parseFloat(host.style.width)).toBe(window.innerWidth-16);expect(parseFloat(host.style.top)+parseFloat(host.style.height)).toBe(window.innerHeight-16);
+});
+
+it('reveals mini actions for keyboard focus but clears pointer focus residue',()=>{
+ render(<PlaybackHost watchSlot={null} moveLabel="Move"><button>Action</button></PlaybackHost>);
+ const host=screen.getByRole('group',{name:'Move'}),button=screen.getByRole('button',{name:'Action'});
+ act(()=>button.focus());expect(host).toHaveAttribute('data-keyboard-focus','false');
+ act(()=>button.blur());fireEvent.keyDown(document,{key:'Tab'});act(()=>button.focus());
+ expect(host).toHaveAttribute('data-keyboard-focus','true');
+ fireEvent.pointerDown(document.body);
+ expect(document.activeElement).toBe(button);expect(host).toHaveAttribute('data-keyboard-focus','false');
+});
+
+
+it('reports compact layout from the same available rectangle and preserves media across rotation',async()=>{
+ const original=window.innerWidth,onCompactChange=vi.fn();
+ Object.defineProperty(window,'innerWidth',{configurable:true,value:390});
+ try{
+  render(<PlaybackHost watchSlot={null} onCompactChange={onCompactChange}><video data-testid="layout-owner"/></PlaybackHost>);
+  const video=screen.getByTestId('layout-owner');expect(onCompactChange).toHaveBeenLastCalledWith(true);
+  Object.defineProperty(window,'innerWidth',{configurable:true,value:1024});fireEvent(window,new Event('resize'));
+  await waitFor(()=>expect(onCompactChange).toHaveBeenLastCalledWith(false));expect(screen.getByTestId('layout-owner')).toBe(video);
+ }finally{Object.defineProperty(window,'innerWidth',{configurable:true,value:original});}
+});
+
+it('fits expanded source content into the available height without moving its video offscreen',()=>{
+ const original=window.innerHeight;Object.defineProperty(window,'innerHeight',{configurable:true,value:260});
+ try{
+  const show=(expanded:boolean)=><PlaybackHost watchSlot={null}><div><video data-testid="queue-video"/></div><div data-mini-caption>Title</div><nav data-mini-source hidden={!expanded}>Source</nav></PlaybackHost>;
+  const view=render(show(false)),video=screen.getByTestId('queue-video'),host=video.parentElement!.parentElement!;
+  view.rerender(show(true));
+  expect(parseFloat(host.style.getPropertyValue('--mini-source-height'))).toBeGreaterThanOrEqual(44);
+  expect(parseFloat(host.style.height)).toBeLessThanOrEqual(228);
+  expect(parseFloat(host.style.top)).toBeGreaterThanOrEqual(16);
+  expect(parseFloat(host.style.width)*9/16+76+parseFloat(host.style.getPropertyValue('--mini-source-height'))).toBeCloseTo(parseFloat(host.style.height));
+  expect(screen.getByTestId('queue-video')).toBe(video);
+ }finally{Object.defineProperty(window,'innerHeight',{configurable:true,value:original});}
 });

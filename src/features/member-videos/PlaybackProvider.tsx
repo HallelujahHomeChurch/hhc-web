@@ -1,34 +1,44 @@
 'use client';
 
-import {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
-import {useRouter} from 'next/navigation';
+import {Suspense, createContext, useCallback, useContext, useEffect, useLayoutEffect, useId, useMemo, useRef, useState, type ReactNode} from 'react';
+import {usePathname, useSearchParams, useRouter} from 'next/navigation';
 import Link from 'next/link';
+import type {MemberLiveRecording} from '@hallelujahhomechurch/hhc-web-client';
 import styles from './mini-player.module.css';
-import {X} from 'lucide-react';
+import {X, ChevronUp, ChevronDown} from 'lucide-react';
 import {useAccountIdentity, useAccountAuth, useVideoAccess} from '@/components/layout/AccountControl';
 import {useMediaDocument} from '@/components/layout/MediaDocument';
 import type {ContinuityLabels} from './ContinueWatching';
+import {createCardProgressStore} from './card-progress';
+import {createPlaybackHistory} from './playback-history';
 import {PlaybackHost} from './PlaybackHost';
 import {RetainedLibrary, type LibrarySurface} from './RetainedLibrary';
 import {bindResumeDismissalAccount, clearResumeDismissals, dismissResume, type ResumeIdentity} from './resume-dismissal';
 
-type Playback = {key: string; href: string; title: string; player: ReactNode};
+export type SourceItem = {id: string; href: string; title: string};
+type SourceSnapshot = {sourceHref: string; items: SourceItem[]; generation: number};
+type Playback = {key: string; href: string; title: string; player: ReactNode; source?: SourceSnapshot; live?: MemberLiveRecording; hasStarted?: boolean};
 type Slot = {key: string; element: HTMLElement};
 type PlaybackControl = {
+  cardProgress: ReturnType<typeof createCardProgressStore>;
   activeKey: string | undefined;
+  captureSource: (source: Omit<SourceSnapshot, 'generation'>, targetHref: string) => void;
+  activeLive: MemberLiveRecording | undefined;
+  markStarted: (key: string) => void;
   activeHref: string | undefined;
   labels: ContinuityLabels;
   inWatch: boolean;
+  miniCompact: boolean;
   expand: () => void;
   minimize: (navigate: () => void) => void;
-  setMinimizeOffset: (offset: number) => void;
+  setMinimizeOffset: (offset: number, phase?: 'tracking' | 'reset') => void | false;
   start: (playback: Playback, explicit?: boolean) => void;
   setSlot: (key: string, element: HTMLElement | null) => void;
   close: (key: string) => void;
-  rememberLibrary: (href: string, scroll: number) => void;
+  rememberLibrary: (href: string, scroll: number, watchHref?: string) => void;
   retainLibrary: (surface: LibrarySurface, element: HTMLElement | null) => void;
   prepareLibrary: (surface: LibrarySurface) => void;
-  returnToLibrary: (fallback: string) => {href: string; scroll: number};
+  returnToLibrary: (fallback: string) => {href: string; scroll: number; method: 'back' | 'replace'};
   takeLibraryScroll: () => number | undefined;
   registerPlayback: (flush: () => void, time: () => number, identity: () => ResumeIdentity) => () => void;
   currentTime: () => number;
@@ -52,9 +62,54 @@ export function PlaybackProvider({children, locale, labels}: Props) {
   return <MemberPlaybackProvider member={member} locale={locale} labels={labels}>{children}</MemberPlaybackProvider>;
 }
 
+function PlaybackHistoryObserver({navigation}: {navigation: ReturnType<typeof createPlaybackHistory>}) {
+  const pathname = usePathname(), search = useSearchParams()?.toString() ?? '';
+  useEffect(() => { navigation.arrived(); }, [navigation, pathname, search]);
+  return null;
+}
+
 function MemberPlaybackProvider({children, labels, member}: Props & {member: string | null}) {
   const router = useRouter();
+  const invalidPull = useRef(false);
+  const [owner, setOwner] = useState(() => ({member, generation: 0, cardProgress: createCardProgressStore()}));
+  const currentOwner = useRef(owner);
+  const sourceGeneration = useRef(0);
+  const pendingSource = useRef<(SourceSnapshot & {member: string | null; targetHref: string}) | null>(null);
+  useLayoutEffect(() => { currentOwner.current = owner; pendingSource.current = null; }, [owner]);
+  const [sourceExpanded, setSourceExpanded] = useState(false);
+  const sourcePanelId = useId();
+  const sourceToggle = useRef<HTMLButtonElement>(null);
+  const captureSource = useCallback((source: Omit<SourceSnapshot, 'generation'>, targetHref: string) => {
+    if (currentOwner.current !== owner) return;
+    const ids = new Set<string>();
+    const items = source.items.filter(item=>{if(ids.has(item.id))return false;ids.add(item.id);return true;});
+    pendingSource.current = member && items.some(item=>item.href===targetHref) ? {...source, items, member, targetHref, generation: ++sourceGeneration.current} : null;
+  }, [member, owner]);
+  const cardProgress = owner.cardProgress;
+  const [navigation] = useState(() => createPlaybackHistory(
+    () => ({href: window.location.pathname + window.location.search + window.location.hash, length: window.history.length, tag: window.history.state?.hhcMediaEntry}),
+    () => {
+      const tag = crypto.randomUUID();
+      window.history.replaceState({...window.history.state, hhcMediaEntry: tag}, '');
+      return tag;
+    },
+  ));
+  useEffect(() => {
+    const pop = () => navigation.arrived();
+    window.addEventListener('popstate', pop);
+    return () => window.removeEventListener('popstate', pop);
+  }, [navigation]);
+  useEffect(() => { navigation.reset(); }, [member, navigation]);
+  const [miniCompact, setMiniCompact] = useState(false);
   const [minimizeOffset, setMinimizeOffset] = useState(0);
+  const [pullTracking, setPullTracking] = useState(false);
+  const updateMinimizeOffset = useCallback((offset: number, phase?: 'tracking' | 'reset') => {
+    const tracking = phase === 'tracking' || phase !== 'reset' && offset !== 0;
+    if (!tracking) invalidPull.current = false;
+    if (invalidPull.current) return false;
+    setPullTracking(tracking); setMinimizeOffset(offset);
+  }, []);
+  const cancelPull = useCallback(() => {invalidPull.current = true; setPullTracking(false); setMinimizeOffset(0);}, []);
   const [minimizing, setMinimizing] = useState<{id: number; settled: boolean} | null>(null);
   const [slowTransition, setSlowTransition] = useState(0);
   const navigateToLibrary = useRef<(() => void) | null>(null);
@@ -63,12 +118,15 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
   const minimize = useCallback((navigate: () => void) => {
     if (pendingTransition.current) return;
     pendingTransition.current = true;
+    setPullTracking(false);
     const id = ++transitionId.current;
     setMinimizing({id, settled: false});
     navigateToLibrary.current = navigate;
     try { navigate(); } catch { setSlowTransition(id); }
   }, []);
   const cancelTransition = useCallback(() => {
+    invalidPull.current = false;
+    setPullTracking(false);
     pendingTransition.current = false;
     navigateToLibrary.current = null;
     setMinimizing(null);
@@ -90,15 +148,16 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
     const timer = window.setTimeout(() => setSlowTransition(minimizing.id), 2000);
     return () => window.clearTimeout(timer);
   }, [minimizing, librarySlot]);
-  const [owner, setOwner] = useState(member);
-  if (member !== owner) {
-    setOwner(member);
+  if (member !== owner.member) {
+    setOwner({member, generation: owner.generation + 1, cardProgress: createCardProgressStore()});
+    setSourceExpanded(false);
     setPlayback(null);
     setWatchSlot(null);
     setClosed(undefined);
     setLibrarySurface(null);
     setLibrarySlot(null);
     setLibraryScroll(0);
+    setPullTracking(false);
     setMinimizing(null);
     setMinimizeOffset(0);
   }
@@ -109,12 +168,15 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
     setLibrarySlot(current => element ? {key: surface.key, element} : current?.key === surface.key ? null : current);
   }, []);
   const prepareLibrary = useCallback((surface: LibrarySurface) => { setLibrarySurface(current => current ?? surface); }, []);
-  const rememberLibrary = useCallback((href: string, scroll: number) => { library.current = {member, href, scroll}; setLibraryScroll(scroll); }, [member]);
+  const rememberLibrary = useCallback((href: string, scroll: number, watchHref?: string) => {
+    library.current = {member, href, scroll}; setLibraryScroll(scroll);
+    if (watchHref) navigation.remember(href, watchHref); else navigation.reset();
+  }, [member, navigation]);
   const returnToLibrary = useCallback((fallback: string) => {
     const target = library.current?.member === member ? library.current : {href: fallback, scroll: 0};
     restoreScroll.current = target.scroll;
-    return target;
-  }, [member]);
+    return {...target, method: navigation.minimize(target.href, playback?.href ?? '')};
+  }, [member, navigation, playback?.href]);
   const takeLibraryScroll = useCallback(() => {
     const value = restoreScroll.current;
     restoreScroll.current = undefined;
@@ -123,26 +185,40 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
   const playbackAccess = useRef<{flush: () => void; time: () => number; identity: () => ResumeIdentity} | null>(null);
   const previousPlaybackKey = playback?.key;
   const start = useCallback((next: Playback, explicit = false) => {
+    if (currentOwner.current !== owner) return;
     if (!explicit && closed === next.key) return;
     if (previousPlaybackKey && previousPlaybackKey !== next.key) playbackAccess.current?.flush();
     if (previousPlaybackKey !== next.key) cancelTransition();
-    setPlayback(next);
+    const source = pendingSource.current;
+    const matching = source?.member === member && source?.targetHref === next.href ? source : undefined;
+    if (source) pendingSource.current = null;
+    setPlayback(current => ({...next, hasStarted: current?.key === next.key && current.hasStarted, source: matching ?? (current?.key === next.key ? current.source : undefined)}));
+    if (previousPlaybackKey !== next.key || matching) setSourceExpanded(false);
     if (explicit || next.key !== closed) setClosed(undefined);
-  }, [closed, previousPlaybackKey, cancelTransition]);
+  }, [closed, previousPlaybackKey, cancelTransition, member, owner]);
+  const markStarted = useCallback((key: string) => {
+    setPlayback(current => current?.key === key && !current.hasStarted ? {...current, hasStarted: true} : current);
+  }, []);
   const setSlot = useCallback((key: string, element: HTMLElement | null) => {
     if (element && closedWatchSlots.current.get(element) === key) return;
     if (element) lastWatchSlot.current = {key, element, member};
     setWatchSlot(current => element ? {key, element} : current?.key === key ? null : current);
-    if (!element) setMinimizeOffset(0);
+    if (!element) {
+      setPullTracking(false); setMinimizeOffset(0);
+      setPlayback(current => current?.key === key && !current.hasStarted ? null : current);
+    }
     if (element) setClosed(current => current === key ? undefined : current);
   }, [member]);
   const close = useCallback((key: string) => {
+    if (currentOwner.current !== owner) return;
     cancelTransition();
+    setSourceExpanded(false);
+    pendingSource.current = null;
     if (previousPlaybackKey === key) playbackAccess.current?.flush();
     if (lastWatchSlot.current?.key === key && lastWatchSlot.current.member === member) closedWatchSlots.current.set(lastWatchSlot.current.element, key);
     setClosed(key);
     setPlayback(current => current?.key === key ? null : current);
-  }, [previousPlaybackKey, cancelTransition, member]);
+  }, [previousPlaybackKey, cancelTransition, member, owner]);
   const registerPlayback = useCallback((flush: () => void, time: () => number, identity: () => ResumeIdentity) => {
     const value = {flush, time, identity};
     playbackAccess.current = value;
@@ -150,6 +226,7 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
   }, []);
   const currentTime = useCallback(() => playbackAccess.current?.time() ?? 0, []);
   const activeKey = playback?.key;
+  const activeLive = playback?.live;
   const activeHref = playback?.href;
   const closeActive = useCallback(() => {
     if (!activeKey) return;
@@ -168,12 +245,15 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
   }
   const watchSlot = !minimizing && playback && slot?.key === playback.key ? slot.element : null;
   const inWatch = Boolean(watchSlot);
-  const expand = useCallback(() => { if (activeHref) { cancelTransition(); router.push(activeHref); } }, [activeHref, router, cancelTransition]);
-  const controls = useMemo(() => ({activeKey, activeHref, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary}), [activeKey, activeHref, start, setSlot, close, labels, inWatch, expand, minimize, setMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary]);
+  if (inWatch && sourceExpanded) setSourceExpanded(false);
+  const expand = useCallback(() => { if (activeHref) { cancelTransition(); const method = navigation.expand(activeHref);
+      if (method === 'forward') router.forward(); else router[method](activeHref);  } }, [activeHref, router, cancelTransition, navigation]);
+  const controls = useMemo(() => ({cardProgress, activeKey, activeLive, activeHref, captureSource, markStarted, start, setSlot, close, labels, inWatch, miniCompact, expand, minimize, setMinimizeOffset: updateMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary}), [cardProgress, activeKey, activeLive, activeHref, captureSource, markStarted, start, setSlot, close, labels, inWatch, miniCompact, expand, minimize, updateMinimizeOffset, registerPlayback, currentTime, rememberLibrary, returnToLibrary, takeLibraryScroll, retainLibrary, prepareLibrary]);
 
   return <Context.Provider value={member ? controls : null}>
+    <Suspense fallback={null}><PlaybackHistoryObserver navigation={navigation}/></Suspense>
     {children}
-    {member && <RetainedLibrary surface={librarySurface} slot={librarySlot?.element ?? null} visible={minimizeOffset > 0 || Boolean(minimizing)}
+    {member && <RetainedLibrary surface={librarySurface} slot={librarySlot?.element ?? null} visible={pullTracking || Boolean(minimizing)}
       scroll={libraryScroll}/>}
     {member && playback && minimizing && !librarySlot && slowTransition === minimizing.id && <div className={styles.routeNotice}>
       <p role="status">{labels.returningToLibrary ?? 'Returning to videos…'}</p>
@@ -181,12 +261,26 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
         try { navigateToLibrary.current?.(); } catch { /* Keep the same explicit retry; never navigate backwards on a timer. */ }
       }}>{labels.retryNavigation ?? 'Try again'}</button>
     </div>}
-    {member && playback && <PlaybackHost watchSlot={watchSlot} minimizeOffset={minimizeOffset} onSettled={settled} onClose={closeActive} moveLabel={labels.move} resizeLabel={labels.resize}>
+    {member && playback && (watchSlot || playback.hasStarted) && <PlaybackHost onCompactChange={setMiniCompact} tracking={pullTracking} sessionKey={playback.key} onPullCancel={cancelPull} watchSlot={watchSlot} minimizeOffset={minimizeOffset} onSettled={settled} onClose={closeActive} moveLabel={labels.move} resizeLabel={labels.resize}>
       <div key={playback.key}>{playback.player}</div>
       {!watchSlot && <div className={styles.close}>
         <button type="button" aria-label={labels.close} className="grid size-11 place-items-center" onClick={closeActive}><X size={20}/></button>
       </div>}
-      {!watchSlot && <Link href={playback.href} onNavigate={cancelTransition} className={styles.caption}><span className={styles.captionTitle}>{playback.title}</span></Link>}
+      {!watchSlot && <>
+        <div className={styles.caption} data-mini-caption>
+          <Link href={playback.href} aria-label={playback.title} onNavigate={event=>{event.preventDefault();expand();}} className={styles.captionLink}>
+            <span className={styles.captionTitle}>{playback.title}</span><span className={styles.captionBrand}>哈利路亞家教會</span>
+          </Link>
+          {playback.source?.items.length ? <button ref={sourceToggle} type="button" className={styles.sourceToggle}
+            aria-expanded={sourceExpanded} aria-controls={sourcePanelId} aria-label={sourceExpanded ? labels.collapseSource ?? 'Collapse video list' : labels.expandSource ?? 'Expand video list'}
+            onClick={()=>{if(sourceExpanded && document.getElementById(sourcePanelId)?.contains(document.activeElement)) sourceToggle.current?.focus({preventScroll:true});setSourceExpanded(value=>!value);}}>{sourceExpanded ? <ChevronDown size={20}/> : <ChevronUp size={20}/>}</button> : null}
+        </div>
+        {playback.source && <nav data-mini-source id={sourcePanelId} className={styles.sourcePanel} hidden={!sourceExpanded} aria-label={labels.sourceList ?? 'Video list'}>
+          <p className={styles.sourceHeading}>{labels.sourceList ?? 'Video list'}</p>
+          <ol>{playback.source.items.map(item=><li key={item.id}><Link href={item.href} aria-current={item.href===playback.href ? 'true' : undefined}
+            onNavigate={event=>{setSourceExpanded(false);cancelTransition();if(item.href===playback.href){event.preventDefault();expand();}else if(playback.source)captureSource(playback.source,item.href);}}>{item.title}</Link></li>)}</ol>
+        </nav>}
+      </>}
     </PlaybackHost>}
   </Context.Provider>;
 }

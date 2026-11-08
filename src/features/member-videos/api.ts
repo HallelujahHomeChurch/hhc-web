@@ -47,7 +47,6 @@ export function createMemberVideoApi(authorization: Authorization, fetcher: Fetc
     progress: client.getRecordingProgress,
     claimProgress: client.claimRecordingProgress,
     saveProgress: client.updateRecordingProgress,
-    continueWatching: client.getContinueWatching,
     metrics: client.getMemberRecordingMetrics,
     watch:(id:string,signal?:AbortSignal)=>/^[A-Za-z0-9_-]{11}$/.test(id) ? client.resolveVideoWatch(id,signal) : client.resolveRecordingWatch(id,signal),
     upcoming:(options:{cursor?:string;limit?:number;q?:string;signal?:AbortSignal}={})=>client.listMemberBroadcasts(options),
