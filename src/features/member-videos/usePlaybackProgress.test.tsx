@@ -183,11 +183,15 @@ it('exposes the exact live media version and session while a claim is in flight'
   expect(identity.mediaVersion).toBe(liveVersion);
   expect(identity.sessionId).toBe(api.claimProgress.mock.calls[0][1].sessionId);
   expect(identity.generation).toBeUndefined();
+  await sync.save(42, 'ended');
+  sync.flush(42, 'ended');
   controller.abort();
   accept({generation: 'late', mediaVersion: liveVersion, positionSeconds: 40, sequence: 0});
   await claiming;
   expect(sync.identity().sessionId).toBe(identity.sessionId);
   expect(sync.identity().generation).toBeUndefined();
+  expect(api.saveProgress).not.toHaveBeenCalled();
+  expect(api.claimProgress).toHaveBeenCalledTimes(1);
 });
 
 it('identifies the observed resume generation until a new playing claim is accepted', async () => {
@@ -204,4 +208,65 @@ it('identifies the observed resume generation until a new playing claim is accep
   expect(sync.identity().generation).toBe('observed');
   expect(api.claimProgress).not.toHaveBeenCalled();
   controller.abort();
+});
+
+it.each(['paused', 'ended'] as const)('preserves a %s update received while the playing claim is pending', async state => {
+  const {createPlaybackProgress} = await import('./playback-progress-session');
+  const controller = new AbortController();
+  let accept!: (value: {generation: string; mediaVersion: string; positionSeconds: number; sequence: number}) => void;
+  const api = {
+    progress: vi.fn().mockResolvedValue({mediaVersion: version, claimToken: 'token', progress: null}),
+    claimProgress: vi.fn().mockImplementation(() => new Promise(resolve => { accept = resolve; })),
+    saveProgress: vi.fn().mockResolvedValue({accepted: true, sequence: 1}),
+  };
+  const sync = createPlaybackProgress(api, 'recording', version, controller.signal);
+  await sync.prepare('resume');
+  const claiming = sync.playing(40);
+  await sync.save(41, 'playing');
+  await sync.save(42, state);
+  accept({generation: 'owner', mediaVersion: version, positionSeconds: 40, sequence: 0});
+  await claiming;
+  expect(api.saveProgress).toHaveBeenCalledTimes(1);
+  expect(api.saveProgress).toHaveBeenCalledWith('recording', expect.objectContaining({positionSeconds: 42, state, generation: 'owner', sequence: 1}), expect.anything());
+  expect(api.claimProgress).toHaveBeenCalledTimes(1);
+  controller.abort();
+});
+
+it('does not revive a progress owner or write a terminal sample after an aborted claim',async()=>{
+ const {createPlaybackProgress}=await import('./playback-progress-session');const abort=new AbortController();let accept!:(value:unknown)=>void;
+ const api={progress:vi.fn().mockResolvedValue({mediaVersion:version,claimToken:'fixture',progress:null}),claimProgress:vi.fn().mockImplementation(()=>new Promise(resolve=>{accept=resolve})),saveProgress:vi.fn()};
+ const sync=createPlaybackProgress(api,'recording',version,abort.signal);await sync.prepare('resume');const pending=sync.playing(40);await sync.save(42,'ended');abort.abort();accept({generation:'late',mediaVersion:version,positionSeconds:40,sequence:0});await pending;
+ expect(sync.identity().generation).toBeUndefined();expect(api.saveProgress).not.toHaveBeenCalled();expect(api.claimProgress).toHaveBeenCalledOnce();
+});
+
+it('fences a superseded prepare and drains only the newest claim generation',async()=>{
+ const {createPlaybackProgress}=await import('./playback-progress-session');const abort=new AbortController();let first!:(value:unknown)=>void;
+ const api={progress:vi.fn().mockResolvedValue({mediaVersion:version,claimToken:'fixture',progress:null}),claimProgress:vi.fn().mockImplementationOnce(()=>new Promise(resolve=>{first=resolve})).mockResolvedValue({generation:'new',mediaVersion:version,positionSeconds:80,sequence:0}),saveProgress:vi.fn().mockResolvedValue({accepted:true,sequence:1})};
+ const sync=createPlaybackProgress(api,'recording',version,abort.signal);await sync.prepare('resume');const old=sync.playing(40);await sync.save(42,'paused');await sync.prepare('at');await sync.playing(80);await sync.save(82,'paused');first({generation:'old',mediaVersion:version,positionSeconds:40,sequence:0});await old;
+ expect(sync.identity().generation).toBe('new');expect(api.saveProgress).toHaveBeenCalledOnce();expect(api.saveProgress).toHaveBeenCalledWith('recording',expect.objectContaining({generation:'new',positionSeconds:82,sequence:1}),expect.anything());abort.abort();
+});
+
+it('keeps a new owner when an older in-flight write is later rejected',async()=>{
+ const {createPlaybackProgress}=await import('./playback-progress-session');const abort=new AbortController();let reject!:(value:unknown)=>void;
+ const api={progress:vi.fn().mockResolvedValue({mediaVersion:version,claimToken:'fixture',progress:null}),claimProgress:vi.fn().mockResolvedValueOnce({generation:'old',mediaVersion:version,positionSeconds:10,sequence:0}).mockResolvedValue({generation:'new',mediaVersion:version,positionSeconds:40,sequence:0}),saveProgress:vi.fn().mockImplementationOnce(()=>new Promise((_resolve,fail)=>{reject=fail})).mockResolvedValue({accepted:true,sequence:1})};
+ const sync=createPlaybackProgress(api,'recording',version,abort.signal);await sync.prepare('resume');await sync.playing(10);const write=sync.save(12,'playing');await sync.prepare('at');await sync.playing(40);await sync.save(42,'paused');reject({status:409});await write;await Promise.resolve();
+ expect(sync.identity().generation).toBe('new');expect(api.saveProgress).toHaveBeenLastCalledWith('recording',expect.objectContaining({generation:'new',positionSeconds:42,sequence:1}),expect.anything());abort.abort();
+});
+
+it('replays the same timed-out claim before draining its latest terminal position',async()=>{
+ const {createPlaybackProgress}=await import('./playback-progress-session');vi.useFakeTimers();const abort=new AbortController();
+ try{
+  const api={progress:vi.fn().mockResolvedValue({mediaVersion:version,claimToken:'fixture',progress:null}),claimProgress:vi.fn().mockImplementationOnce(()=>new Promise(()=>{})).mockResolvedValue({generation:'accepted',mediaVersion:version,positionSeconds:40,sequence:0}),saveProgress:vi.fn().mockResolvedValue({accepted:true,sequence:1})};
+  const sync=createPlaybackProgress(api,'recording',version,abort.signal);await sync.prepare('resume');const claim=sync.playing(40);await sync.save(42,'paused');await vi.advanceTimersByTimeAsync(9000);await claim;
+  expect(api.claimProgress).toHaveBeenCalledTimes(2);expect(api.claimProgress.mock.calls[1][1]).toEqual(api.claimProgress.mock.calls[0][1]);expect(api.saveProgress).toHaveBeenCalledOnce();expect(api.saveProgress).toHaveBeenLastCalledWith('recording',expect.objectContaining({positionSeconds:42,generation:'accepted',sequence:1}),expect.anything());
+ }finally{abort.abort();vi.useRealTimers();}
+});
+
+it('stores the active audio clock while ignoring inactive foreground video events',async()=>{
+ let accept!:(value:unknown)=>void;const api={progress:vi.fn().mockResolvedValue({mediaVersion:version,claimToken:'fixture',progress:null}),claimProgress:vi.fn().mockImplementation(()=>new Promise(resolve=>{accept=resolve})),saveProgress:vi.fn().mockResolvedValue({accepted:true,sequence:1})};
+ function Device(){const surface=useRef<HTMLDivElement>(null),audio=useRef<HTMLAudioElement>(null);const prepare=usePlaybackProgress(api,'recording',version,surface,audio,true);useEffect(()=>{void prepare('resume');},[prepare]);return <div ref={surface}><video aria-label="Standby video"/><audio ref={audio} aria-label="Active audio"/></div>;}
+ const view=render(<Device/>),video=view.getByLabelText('Standby video') as HTMLVideoElement,audio=view.getByLabelText('Active audio') as HTMLAudioElement;Object.defineProperties(audio,{readyState:{value:4,configurable:true},paused:{value:false,configurable:true}});await act(async()=>{});
+ await act(async()=>{video.currentTime=100;video.dispatchEvent(new Event('playing'));});expect(api.claimProgress).not.toHaveBeenCalled();
+ await act(async()=>{audio.currentTime=40;audio.dispatchEvent(new Event('playing'));});await act(async()=>{audio.currentTime=42;Object.defineProperty(audio,'paused',{value:true});audio.dispatchEvent(new Event('pause'));video.dispatchEvent(new Event('ended'));});
+ await act(async()=>accept({generation:'audio-owner',mediaVersion:version,positionSeconds:40,sequence:0}));expect(api.saveProgress).toHaveBeenCalledOnce();expect(api.saveProgress).toHaveBeenCalledWith('recording',expect.objectContaining({positionSeconds:42,state:'paused',generation:'audio-owner'}),expect.anything());
 });

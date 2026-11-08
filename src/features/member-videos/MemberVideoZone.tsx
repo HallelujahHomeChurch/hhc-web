@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {LoadMoreTrigger} from '@hallelujahhomechurch/ui';
 import zoneStyles from './MemberVideoZone.module.css';
 import {LoaderCircle, Play} from 'lucide-react';
-import type {MemberLiveRecording, MemberRecording} from '@hallelujahhomechurch/hhc-web-client';
+import type {MemberLiveRecording, MemberRecording, MemberRecordingCard} from '@hallelujahhomechurch/hhc-web-client';
 import {HhcWebApiError} from '@hallelujahhomechurch/hhc-web-client';
 import {useAccountAuth, useAccountSignIn, useAccountIdentity, useBulletinAuthorization, useVideoAccess} from '@/components/layout/AccountControl';
 import {useMediaDocument} from '@/components/layout/MediaDocument';
@@ -20,7 +20,6 @@ import {useVodPlayback} from './useVodPlayback';
 import {PersistentLive} from './PersistentLive';
 import {PersistentVod} from './PersistentVod';
 import {usePersistentPlayback} from './PlaybackProvider';
-import {LibraryContinueWatching} from './ContinueWatching';
 import type {PlayerBookmark} from './live-player';
 import {usePlaybackTelemetry} from './usePlaybackTelemetry';
 import {HlsPlayer, type PlayerLabels} from './HlsPlayer';
@@ -35,6 +34,7 @@ import {liveLibraryItems} from './video-library';
 import {UpcomingBroadcasts} from './UpcomingBroadcasts';
 import {VideoListSkeleton, VideoRecommendationsSkeleton, VideoWatchSkeleton} from './VideoLoading';
 import {LoadingStatus} from '@/components/ui/ContentLoading';
+import {RecordingCardProgress} from './RecordingCardProgress';
 import {ThumbnailPreview} from './ThumbnailPreview';
 
 export type Messages = {
@@ -52,7 +52,7 @@ const pageSize = 12;
 const coverRevision=(recording:MemberRecording|undefined)=>recording?.selectedCoverId||(recording?.packageId?`auto:${recording.packageId}`:undefined);
 type ZoneProps = {active?: boolean;publicId?:string;startAt?:number;locale: Locale; messages: Messages; hero: ReactNode; view?: 'list' | 'watch'; recordingId?: string;query?: string;invalidQuery?: boolean};
 
-function newestFirst(items: MemberRecording[]) {
+function newestFirst<T extends MemberRecording>(items: T[]) {
   return [...items].sort((a, b) => (b.uploadedAt ?? '').localeCompare(a.uploadedAt ?? '') || b.id.localeCompare(a.id));
 }
 
@@ -110,7 +110,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   const [upcomingSources,setUpcomingSources]=useState<import('./PlaybackProvider').SourceItem[]>([]);
   const [hoveredRecording,setHoveredRecording]=useState<string|null>(null);
  const [upcomingState,setUpcomingState]=useState<{ids:string[];complete:boolean;initialState:'loading'|'ready'|'error'}>({ids:[],complete:false,initialState:'loading'});
-  const [recordings, setRecordings] = useState<MemberRecording[] | null>(null);
+  const [recordings, setRecordings] = useState<MemberRecordingCard[] | null>(null);
   const [livestreams,setLivestreams]=useState<MemberLiveRecording[]>([]);
   const [vodChosen,setVodChosen]=useState(false);
   const [legacySelectedLive,setSelectedLive]=useState<MemberLiveRecording|null>(null);
@@ -119,7 +119,9 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   const watch=resolver.watch;
   const recordingId=publicId ? watch?.recordingId ?? publicId : internalRecordingId;
   const mediaOrigin=watch?.mediaStartSeconds??null,mediaDuration=watch?.durationSeconds??null;
-  const selectedLive=resolver.denied||vodChosen||recordingId&&!watch?null:watch?watch.live??(['processing','vod'].includes(watch.view)?resolver.lastLive:null):legacySelectedLive;
+  const persistent = usePersistentPlayback();
+  const retainedLive = recordingId && persistent?.activeLive?.id === recordingId ? persistent.activeLive : null;
+  const selectedLive=resolver.denied||vodChosen||recordingId&&!watch?null:watch?watch.live??(['processing','vod'].includes(watch.view)?resolver.lastLive??retainedLive:null):legacySelectedLive;
   const waitingWatch=watch&&!['live','vod'].includes(watch.view)?watch:null;
   const [liveError,setLiveError]=useState(false);
   const [livePending,setLivePending]=useState(true);
@@ -176,10 +178,10 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   const loadMore=useCallback(async()=>{
     if(nextCursor===null||morePending.current)return;
     morePending.current=true;setMoreLoading(true);setMoreError(false);
-    const controller=new AbortController();moreAttempt.current=controller;
+    const controller=new AbortController();moreAttempt.current=controller;const generation=listGeneration.current;
     try {
       const page=await api.listPage({limit:pageSize,cursor:nextCursor,q:query||undefined,signal:controller.signal});
-      if(controller.signal.aborted)return;
+      if(controller.signal.aborted||generation!==listGeneration.current)return;
       if(page.nextCursor===nextCursor)throw new Error('Recording cursor did not advance');
       setRecordings(current=>{const items=new Map((current??[]).map(item=>[item.id,item]));for(const item of page.items)items.set(item.id,item);return [...items.values()];});
       setNextCursor(page.nextCursor);batchesRef.current+=1;
@@ -189,6 +191,42 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
       captureHandledError(error,{operation:'member-videos.load-more'});setMoreError(true);
     } finally {if(!controller.signal.aborted){morePending.current=false;setMoreLoading(false);}}
   },[api,nextCursor,locale,router,query]);
+
+  useEffect(() => {
+    if (view !== 'list' || !active || invalidQuery) return;
+    let controller: AbortController | null = null;
+    const refresh = async () => {
+      if (loadedList.current?.api !== api || loadedList.current.retry !== retry || !batchesRef.current || controller || document.visibilityState !== 'visible') return;
+      controller = new AbortController();
+      const signal = controller.signal, generation = ++listGeneration.current, pages = batchesRef.current;
+      moreAttempt.current?.abort(); moreAttempt.current = controller; morePending.current = true;
+      setMoreLoading(true);
+      try {
+        let cursor: string | undefined;
+        const items = new Map<string, MemberRecordingCard>();
+        let next: string | null = null;
+        for (let page = 0; page < pages; page++) {
+          const result = await api.listPage({limit: pageSize, cursor, q: query || undefined, signal});
+          if (signal.aborted || generation !== listGeneration.current) return;
+          for (const item of result.items) items.set(item.id, item);
+          next = result.nextCursor;
+          if (next === null) break;
+          if (next === cursor) throw new Error('Recording cursor did not advance');
+          cursor = next;
+        }
+        setRecordings(newestFirst([...items.values()]));
+        setNextCursor(next); setLoadError(false);
+      } catch (error) {
+        if (signal.aborted || generation !== listGeneration.current) return;
+        if (error instanceof HhcWebApiError && error.status === 401) {router.replace(`/${locale}`); return;}
+        captureHandledError(error, {operation: 'member-videos.refresh'});
+      } finally {if (moreAttempt.current === controller) {moreAttempt.current = null; morePending.current = false; if (!signal.aborted) setMoreLoading(false);} controller = null;}
+    };
+    void refresh();
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {controller?.abort(); if (controller && moreAttempt.current === controller) {moreAttempt.current = null; morePending.current = false;} window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh);};
+  }, [api, view, active, invalidQuery, query, locale, router, retry]);
 
   useEffect(()=>{
     if(view!=='list'||!active)return;
@@ -240,7 +278,6 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   },[api,recordingId,retry,view,query,invalidQuery,vodChosen,active]);
 
   const selected = resolver.denied ? undefined : recordingId ? watch?.recording??undefined : recordings?.find((recording) => recording.id === selectedId);
-  const persistent = usePersistentPlayback();
   const [archiveBookmark, setArchiveBookmark] = useState<PlayerBookmark>();
   const {playback, video, media, playbackPause, vodResume, preparing, playError, playerSection,
     automaticAttempt, vodBookmark, backgroundAudio, audioUrl, rememberVod, mediaError, start, stop} =
@@ -289,7 +326,10 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   const commitMinimize = persistent?.minimize;
   const minimize = useCallback(() => {
     const fallback = `/${locale}/member-videos`;
-    const navigate = () => router.replace(returnToLibrary?.(fallback).href ?? fallback, {scroll: false});
+    const navigate = () => {
+      const target = returnToLibrary?.(fallback);
+      if (target?.method === 'back') router.back(); else router.replace(target?.href ?? fallback, {scroll: false});
+    };
     if (commitMinimize) commitMinimize(navigate); else navigate();
   }, [router, locale, returnToLibrary, commitMinimize]);
   useEffect(() => {
@@ -323,7 +363,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
           mediaOrigin={mediaOrigin} mediaDuration={mediaDuration} startAt={startAt} initialBookmark={archiveBookmark}
           previousHref={previousRecording && videoWatchPath(locale, previousRecording.id, previousRecording.publicId)}
           nextHref={nextRecording && videoWatchPath(locale, nextRecording.id, nextRecording.publicId)}/>;
-    return {key: activeKey, href, title: item.title, player};
+    return {key: activeKey, href, title: item.title, player, live: selectedLive ?? undefined};
   }, [recordingId, activeKey, resolver.denied, selectedLive, selected, locale, api, messages, liveLabels, mediaOrigin,
     selectArchive, identity, refreshAfterFailure, mediaDuration, startAt, archiveBookmark, previousRecording, nextRecording, minimize, minimizeLabel]);
   useEffect(() => { if (descriptor) startPersistent?.(descriptor); }, [descriptor, startPersistent]);
@@ -354,7 +394,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
   const rememberLibrary = (watchHref?: string) => {
     if (view !== 'list') return;
     const sourceHref = videoSearchHref(locale, query);
-    persistent?.rememberLibrary(sourceHref, window.scrollY);
+    persistent?.rememberLibrary(sourceHref, window.scrollY, watchHref);
     if (watchHref) persistent?.captureSource({sourceHref, items: [
       ...liveItems.map(item=>({id:item.id,href:cardLink(item),title:item.title})),
       ...upcomingSources,
@@ -385,6 +425,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
                   <ThumbnailPreview api={api} recording={item} labels={messages} enabled={active&&view==='list'&&!persistent?.activeKey} activeId={hoveredRecording} onActive={setHoveredRecording}>
                   <RecordingCover api={api} id={item.id} title={item.title} expiresAt={item.expiresAt} revision={coverRevision(item)}/>
                   </ThumbnailPreview>
+                  <RecordingCardProgress item={item} label={messages.seek}/>
                   {item.durationSeconds ? <span className={zoneStyles.duration}>{playerClock(item.durationSeconds)}</span>:null}
                 </Link>
                 <div className={zoneStyles.info}><h3 className={zoneStyles.title}>{view==='list'||recordingId ? <Link href={cardLink(item)} onNavigate={()=>rememberLibrary(cardLink(item))}>{item.title}</Link>:item.title}</h3><p className={zoneStyles.date}>{formatDate(item.uploadedAt,locale)}</p>{searchMode&&item.description?<p className={zoneStyles.summary}>{item.description}</p>:null}
@@ -399,7 +440,6 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
       {!searchMode?hero:null}
       <div className={`${recordingId?'':'bg-[image:var(--hhc-page-gradient)]'} pb-14 ${recordingId ? zoneStyles.watchPage : 'py-10'}`}>
         <section className={`${zoneStyles.zone} ${recordingId ? zoneStyles.watch : searchMode ? zoneStyles.search : zoneStyles.library}`} aria-label={messages.listTitle}>
-          {active && view === 'list' && identity && <LibraryContinueWatching member={identity} locale={locale} catalogueReady={livestreams.length > 0 || upcomingPresent === true || (!livePending && recordings !== null)}/>}
           {searchMode ? <h1 className={zoneStyles.searchHeading}>{searchLabels.results.replace('{query}',query)}</h1>:null}
           {invalidQuery&&view==='list' ? <div role="alert" className="text-ink">{searchLabels.tooLong} <Link href={videoSearchHref(locale,'')} className="underline">{searchLabels.clear}</Link></div>:null}
           {recordingId && resolver.denied ? <p role="alert" className="text-ink">{messages.unavailable ?? messages.expired}</p> : null}

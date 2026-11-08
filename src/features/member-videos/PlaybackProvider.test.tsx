@@ -4,22 +4,22 @@ import {beforeEach, expect, it, vi} from 'vitest';
 import {PlaybackProvider, usePersistentPlayback} from './PlaybackProvider';
 import {clearResumeDismissals, dismissResume, isResumeDismissed} from './resume-dismissal';
 
-const account = vi.hoisted(() => ({status: 'authenticated', access: 'available', identity:'member'}));
+const account = vi.hoisted(() => ({status: 'authenticated', access: 'available',identity:'member'}));
 vi.mock('next/link',()=>({default:({onNavigate,href,children,...props}:import('react').ComponentProps<typeof import('next/link').default>)=><a {...props} href={String(href)} onClick={event=>{event.preventDefault();onNavigate?.({preventDefault:()=>{}});}}>{children}</a>}));
-vi.mock('next/navigation', () => ({useRouter: () => ({push: vi.fn()})}));
+vi.mock('next/navigation', () => ({usePathname:()=>'/video/test',useSearchParams:()=>new URLSearchParams(),useRouter: () => ({push: vi.fn()})}));
 vi.mock('@/components/layout/AccountControl', () => ({useAccountIdentity: () => account.identity, useAccountAuth: () => ({status: account.status}), useVideoAccess: () => account.access}));
 vi.mock('@/components/layout/MediaDocument', () => ({useMediaDocument: () => ({privateMediaReady: true})}));
 vi.mock('./ContinueWatching', () => ({ContinueWatching: () => <aside>Historical resume</aside>}));
 const labels = {removeResume: 'Remove from continue watching', resume: 'Resume', live: 'Live', close: 'Close player', expand: 'Expand', minimize: 'Minimize', move: 'Move', resize: 'Resize'};
 const flush = vi.fn();
 const identity = {recordingId: 'recording', mediaVersion: 'vod:package', sessionId: 'pending-session'};
-beforeEach(() => {clearResumeDismissals(); flush.mockReset(); account.status='authenticated'; account.access='available';account.identity='member';});
+beforeEach(() => {clearResumeDismissals(); flush.mockReset(); account.status='authenticated'; account.access='available'; account.identity='member';});
 const player = <video aria-label="Current recording"/>;
 function Playing() {
   const playback = usePersistentPlayback();
-  const start = playback?.start, register = playback?.registerPlayback;
+  const start = playback?.start, register = playback?.registerPlayback, markStarted = playback?.markStarted;
   useEffect(() => register?.(flush, () => 5, () => identity), [register]);
-  useEffect(() => { start?.({key: 'vod:recording:package', href: '/video/aB_012-xyzQ', title: 'Recording', player}); }, [start]);
+  useEffect(() => { start?.({key: 'vod:recording:package', href: '/video/aB_012-xyzQ', title: 'Recording', player}); markStarted?.('vod:recording:package'); }, [start, markStarted]);
   return null;
 }
 
@@ -175,4 +175,30 @@ it('clears private source context on account change and rejects old account call
  await act(async()=>{old?.captureSource({sourceHref:'/videos',items:[{id:'a',href:'/video/A',title:'Private source A'}]},'/video/A');old?.start({key:'a',href:'/video/A',title:'Private source A',player});});
  expect(screen.queryByLabelText('Current recording')).toBeNull();
  expect(screen.queryByText('Private source A')).toBeNull();
+});
+
+
+it('gives a returning account a new local-progress store rather than reviving its old writer',()=>{
+ const stores:Array<NonNullable<ReturnType<typeof usePersistentPlayback>>['cardProgress']>=[];
+ function Capture(){const store=usePersistentPlayback()?.cardProgress;useEffect(()=>{if(store)stores.push(store);},[store]);return null;}
+ const show=()=> <PlaybackProvider locale="en" labels={labels}><Capture/></PlaybackProvider>;
+ const view=render(show()),first=stores[0],writer=first.bind();
+ writer.publish({recordingId:'r1',mediaVersion:'vod:package:1',positionSeconds:40,completed:false});
+ account.identity='other';view.rerender(show());account.identity='member';view.rerender(show());
+ expect(stores).toHaveLength(3);expect(stores[2]).not.toBe(first);writer.publish({recordingId:'r1',mediaVersion:'vod:package:1',positionSeconds:99,completed:false});expect(stores[2].get('r1','vod:package:1')).toBeNull();
+});
+
+it('does not retain a never-started watch after leaving, even after a late playing callback',async()=>{
+ let controls!:ReturnType<typeof usePersistentPlayback>;
+ function Probe(){const value=usePersistentPlayback();useEffect(()=>{controls=value;},[value]);return null;}
+ render(<PlaybackProvider locale="en" labels={labels}><Probe/></PlaybackProvider>);
+ const slot=document.createElement('div');document.body.append(slot);
+ await act(async()=>{controls?.setSlot('vod:recording:package',slot);controls?.start({key:'vod:recording:package',href:'/video/test',title:'Unstarted',player});});
+ expect(screen.getByLabelText('Current recording')).toBeInTheDocument();
+ await act(async()=>{controls?.setSlot('vod:recording:package',null);});
+ expect(screen.queryByLabelText('Current recording')).toBeNull();
+ expect(controls?.activeKey).toBeUndefined();
+ await act(async()=>{controls?.markStarted('vod:recording:package');});
+ expect(screen.queryByLabelText('Current recording')).toBeNull();
+ slot.remove();
 });
