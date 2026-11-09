@@ -13,7 +13,7 @@
 - **會員查看**：首版僅適用於台北家教會。已登入且具台北家教會有效 ChurchMembership 者可查看該 Church 的服事；其他 Church 不參與本功能。會員可切換清單／月曆，預設清單。
 - **聚會設定**：沿用 operations-api 的 Meeting 作為聚會名稱與定義；服事崗位關聯至既有 Meeting。
 - **場次與指派**：沿用 operations-api 的 MeetingOccurrence 作為日期及起訖時間來源；Meeting 可採既有 once／weekly 模式。服事編輯者需逐 occurrence 指派一位或多位既有有效會員到相應崗位；每週 Meeting 產生新 occurrence 時，不自動複製前一週的服事指派。
-- **管理權限**：台北家教會管理者可指派／撤銷台北家教會範圍的「服事表編輯者」權限。編輯者可新增、修改、取消／封存該 Church 的服事崗位、場次及指派。
+- **管理權限**：台北家教會的 Church Membership Manager（本 Spec 所稱「台北家教會管理者」）本身具有該 Church 的服事表編輯權，並可指派／撤銷台北家教會範圍內其他「服事表編輯者」的權限。這是 Operations 的教會範圍權限，不需 Account 管理者逐一授予；一般 OrgResponsibility 或 Meeting 編輯權不會自動取得服事表編輯權。編輯者可新增、修改、取消／封存該 Church 的服事崗位、場次及指派。
 - **管理篩選**：編輯者可依聚會及週次篩選場次，檢視每週崗位與服事者。
 - **Checklist**：部分崗位可選擇 checklist 範本；編輯者可維護範本。指派會員到有範本的崗位時，每位會員建立自己的 checklist 實例；服事者只能完成自己的項目，編輯者可查看各服事者完成狀態。範本日後修改不變更既有 checklist。
 - **Email 通知**：發布已排妥的場次時立即通知該場次的服事者；已發布場次的指派變更只通知受該次變更影響的人。已發布的 MeetingOccurrence 若改時間或取消，通知該場次所有受影響服事者。Email 連至登入後該服事者自己的 checklist（崗位有 checklist 時），否則連至場次資料。沒有自動定時提醒。
@@ -43,7 +43,7 @@
    UI 證據：既有場次選取、崗位指派、有效時間顯示及驗證。程式碼／API 證據：occurrence 與 meeting/position/member 的關聯，以及建立新 occurrence 時不複製先前 assignments。
 
 4. **發布與操作權限**：編輯者可先保存未發布場次，僅台北家教會的編輯者可見且不寄通知；完成指派後明確發布，發布後才對台北家教會會員可見並觸發首封 Email。未獲台北家教會服事編輯權者直接呼叫管理 API 建立、修改、刪除或發布均被拒絕且資料不變。
-   UI 證據：草稿／發布狀態與操作入口。程式碼／API 證據：Account 管理者指派的全教會 `ministry.schedule.manage` 權限、服務端授權與發布狀態轉換。
+   UI 證據：台北家教會管理者可進入管理功能並指派／撤銷其他編輯者；草稿／發布狀態與操作入口依有效權限顯示。程式碼／API 證據：台北家教會 Church Membership Manager 本身具編輯權，Operations API 只接受台北 Church 範圍的管理者或受委派編輯者；`ministry.schedule.manage` 不作為需由 Account 管理者逐一授予的全域 staff permission。服務端授權與發布狀態轉換均須驗證。
 
 5. **清單與月曆檢視**：會員首次進入顯示依日期、開始時間排序並按聚會分組的清單；可切換月曆及日期／月份，檢視相同的已發布資料，同日多場皆可查看。
    UI 證據：清單／月曆切換、日期導覽及同日多場。程式碼證據：兩檢視共用同一已授權資料來源與日期範圍。
@@ -74,6 +74,7 @@
 | 決定 | 理由 | 捨棄方案 |
 | --- | --- | --- |
 | 首版只支援台北家教會；僅其有效 ChurchMembership 會員可查看，編輯權也限於台北家教會。其他 Church 不參與。 | 使用者確認排班管理者屬於台北家教會，其他 Church 不參與首版。 | 同時支援平台所有 Church 或跨 Church 共用一張班表。 |
+| 台北家教會的 Church Membership Manager 本身具有服事表編輯權，並可在台北家教會範圍指派／撤銷其他服事表編輯者；此能力由 Operations 以教會範圍權限執行。 | 使用者確認台北家教會管理者具有服事表編輯權；保留首版已定義的編輯者委派流程，並符合系統將 Account staff RBAC 與 Operations 教會範圍角色分開管理的邊界。 | 由 Account 管理者逐一授予全域 `ministry.schedule.manage` staff permission，或將編輯權擴及其他 Church。 |
 | 所有服事日期／時間、不可服事時段、週次篩選與通知顯示均採 `Asia/Taipei`。 | 使用者確認時間一律依 Taipei 時區。 | 各 Church 個別設定時區或使用執行環境本機時區。 |
 | 聚會名稱與 occurrence 沿用 operations-api 的 Meeting／MeetingOccurrence；服事崗位與指派附加於既有 Meeting／Occurrence 識別。 | 使用者確認沿用既有模型；平台架構已把 Meeting、occurrence 與會員資料歸 operations-api，避免在 hhc-web-api 重建聚會日程。 | 服事表另外建立 Meeting／Occurrence 主檔並產生兩套名稱與時間資料。 |
 | 沿用 Meeting 的 once／weekly occurrence；每一 occurrence 的服事指派分開建立，不把前次指派當成週期模板。 | 使用者確認使用既有 weekly Meeting，同時逐 occurrence assign；保留不自動複製服事安排的原意。 | 服事功能建立第二套週期聚會；weekly occurrence 自動複製服事指派。 |
@@ -102,6 +103,7 @@
 
 - 擁有既有 Meeting、MeetingOccurrence 與 Member/ChurchMembership；新增服事崗位、Occurrence 指派、Checklist template／個人實例、不可服事時段、統計查詢、發布狀態及服事授權。
 - 提供 OpenAPI 與 hhc-web 前端所需 Operations API 路由；會員識別引用既有 `member_id`，服務端驗證會籍有效與獨立服事編輯權限。
+- 將台北家教會 Church Membership Manager 的既有教會範圍角色映射為服事表編輯權，並由 Operations 管理其委派的台北教會範圍編輯者；日常指派／撤銷不要求 Account 管理者介入。
 - 發布場次及已發布指派變更由 operations-api 建立冪等通知命令，再以內部服務授權呼叫 notification-api；通知服務不決定誰該收到信或何時觸發。
 - 記錄管理者資料異動、發布及通知命令狀態。已發布場次取消／封存及崗位封存均保留穩定識別、稽核與歷史關聯；取消場次不計數，封存崗位保留既有完成指派的統計歷史且不可再用於新指派。
 
@@ -110,6 +112,7 @@
 實際路徑與 schema 沿用 operations-api 現有 Meeting／Occurrence API 慣例，OpenAPI 必須覆蓋下列行為，不可省略資料或授權責任：
 
 - 服事崗位設定：依既有 Meeting 列出／新增／更新／刪除服事崗位與可選 checklist template；不另建聚會名稱主檔；僅 `ministry.schedule.manage` 可變更服事資料。
+- 編輯權委派：台北家教會管理者可指派／撤銷其他台北教會編輯者；授權以 Operations 的 Church 範圍資料為準，不以 Account 全域 staff permission 代替。
 - 聚會場次：依 `from`、`to`、選用 `meetingId` 查詢既有 once／weekly MeetingOccurrence 並附上服事指派；Meeting 的建立及 occurrence 週期行為沿用既有 Operations API。
 - 服事發布：儲存／更新 occurrence 的服事指派；依發布狀態使會員可讀；會員讀取只包含已發布有效服事安排。
 - 指派：將有效 `memberId` 指派到特定 `occurrenceId` 與 `positionId`；更新已發布場次時產生只送給異動相關會員的通知事件。
