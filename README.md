@@ -562,3 +562,9 @@ existing recovery contracts; configuration rollback never down-migrates data.
 Pure Markdown-only changes (`**/*.md`) do not trigger automatic release workflows.
 Non-Markdown configuration and mixed source changes retain their existing gates.
 PRs retain the required `verify` check; Markdown-only PRs use classification only.
+
+## Operations SDK candidate integration
+
+This Draft adopts the generated managed-member page type while preserving API validation and email visibility guards. It requires frontend-platform candidate `d27e9ea0a265f477ed42dae3d4b321b5ca4a546e` (Operations tarball SHA-256 `a4f0cb5742058bfe4df6b8f1817a613ae15cadac8596c329f0d63b75ebac49cf`). Candidate tests use only a disposable package installation.
+
+The committed registry pin remains the previously published version: the new package is not published. Do not merge until the coordinated F1 release exists, the exact registry pin/lockfile and its locale dependency fixture are updated, and full required CI plus render smoke pass against that published artifact. No local/file/branch dependency is a release input. Old producers may continue omitting scoped email; the existing privacy guard remains authoritative for presentation.
