@@ -563,8 +563,8 @@ Pure Markdown-only changes (`**/*.md`) do not trigger automatic release workflow
 Non-Markdown configuration and mixed source changes retain their existing gates.
 PRs retain the required `verify` check; Markdown-only PRs use classification only.
 
-## Operations SDK candidate integration
+## Operations SDK integration
 
-This Draft adopts the generated managed-member page type while preserving API validation and email visibility guards. It requires frontend-platform candidate `d27e9ea0a265f477ed42dae3d4b321b5ca4a546e` (Operations tarball SHA-256 `a4f0cb5742058bfe4df6b8f1817a613ae15cadac8596c329f0d63b75ebac49cf`). Candidate tests use only a disposable package installation.
+Managed-member pages use the generated type from the official `@hallelujahhomechurch/operations-client` 1.1.35 package while preserving API validation and email visibility guards. The package was published by [frontend-platform release 42758270490](https://github.com/HallelujahHomeChurch/frontend-platform/actions/runs/42758270490) from commit `258c1275e3d8f9e20e76e957f04734bc51686d93`; its registry tarball SHA-256 is `34717710a1a2acbffb8b0f9f61aac96c5b2c1acfdb118ca4c9a2c44d63881b74`.
 
-The committed registry pin remains the previously published version: the new package is not published. Do not merge until the coordinated F1 release exists, the exact registry pin/lockfile and its locale dependency fixture are updated, and full required CI plus render smoke pass against that published artifact. No local/file/branch dependency is a release input. Old producers may continue omitting scoped email; the existing privacy guard remains authoritative for presentation.
+The manifest, lockfile and locale dependency fixture pin that published artifact. Consumer CI and render regressions must pass before merge; production release and authenticated organization-page acceptance remain separate. Old producers may continue omitting scoped email; the existing privacy guard remains authoritative for presentation. No local/file/branch dependency is a release input.
