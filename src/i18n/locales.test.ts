@@ -39,7 +39,7 @@ describe('locales', () => {
     expect(Object.fromEntries(Object.entries(packageJson.dependencies).filter(([name]) => name.startsWith('@hallelujahhomechurch/')))).toEqual({
       '@hallelujahhomechurch/account-client': '1.0.67',
       '@hallelujahhomechurch/hhc-web-client': '1.1.32',
-      '@hallelujahhomechurch/operations-client': '1.0.37',
+      '@hallelujahhomechurch/operations-client': '1.1.35',
       '@hallelujahhomechurch/preferences': '1.0.47',
       '@hallelujahhomechurch/ui': '1.1.33'
     });
