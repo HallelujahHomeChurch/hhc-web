@@ -512,6 +512,7 @@
     "description": "Video description",
     "live": {
       "liveNow": "Live",
+      "waitingSignal": "Waiting for the live signal",
       "watchRecording": "Continue with the published recording",
       "starting": "Preparing live video",
       "live": "Live · estimated delay {delay}",

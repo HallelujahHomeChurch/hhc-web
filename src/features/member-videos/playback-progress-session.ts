@@ -137,23 +137,34 @@ export function createPlaybackProgress(api: ProgressAPI, id: string, version: st
       next = undefined;
       pendingPosition = undefined;
       preparing = true;
-      const timeout = deadline([signal, startSignal], 1500);
-      try {
-        const snapshot = await Promise.race([api.progress(id, timeout.signal), timeout.canceled]);
-        if (!snapshot || revision !== intentRevision || signal.aborted || startSignal.aborted ||
-          (snapshot.mediaVersion !== version && !snapshot.mediaVersion.startsWith(`${version}:`))) return;
-        currentVersion = snapshot.mediaVersion;
-        observedGeneration = snapshot.progress?.mediaVersion === snapshot.mediaVersion ? snapshot.progress.generation : undefined;
-        intent = {snapshot, kind};
-        if (kind === 'resume' && !snapshot.progress?.completed && version.startsWith('vod:')) return snapshot.progress?.positionSeconds;
-      } catch { /* Playback authorization remains independent of progress availability. */ }
-      finally {
-        timeout.dispose();
-        if (revision === intentRevision) {
-          preparing = false;
-          if (pendingPosition !== undefined) void playing(pendingPosition);
+      // Stop waiting to start the video after 1.5s, but let this original read
+      // finish within a separate deadline. A late response must never seek.
+      const signals = [signal, startSignal];
+      const foreground = deadline(signals, 1500);
+      const request = deadline(signals, 8000);
+      const read = async () => {
+        try {
+          const snapshot = await Promise.race([api.progress(id, request.signal), request.canceled]);
+          if (!snapshot || revision !== intentRevision || signal.aborted || startSignal.aborted ||
+            (snapshot.mediaVersion !== version && !snapshot.mediaVersion.startsWith(`${version}:`))) return;
+          const generation = snapshot.progress?.mediaVersion === snapshot.mediaVersion ? snapshot.progress.generation : undefined;
+          // A different device may have claimed the row since playback started.
+          if (foreground.timedOut() && generation && generation !== observedGeneration) return;
+          currentVersion = snapshot.mediaVersion;
+          observedGeneration = generation;
+          intent = {snapshot, kind};
+          if (kind === 'resume' && !snapshot.progress?.completed && version.startsWith('vod:')) return snapshot.progress?.positionSeconds;
+        } catch { /* Playback remains available while progress is offline. */ }
+        finally {
+          request.dispose();
+          if (revision === intentRevision) {
+            preparing = false;
+            if (pendingPosition !== undefined) void playing(pendingPosition);
+          }
         }
-      }
+      };
+      try { return await Promise.race([read(), foreground.canceled]); }
+      finally { foreground.dispose(); }
     },
     playing,
     save(positionSeconds: number, state: RecordingProgressUpdate['state']) {

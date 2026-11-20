@@ -15,13 +15,13 @@ export function BroadcastCover({api,id,title,revision,coverMode}:{api:ReturnType
  const url=usePrivateCover({scope:api,resource:`broadcast:${id}:${coverMode??'unknown'}`,revision:String(revision),keepPrevious:true,retry:true,load});
  return <LiveCoverSurface url={url??(coverMode==='auto'?'/assets/brand/church-live-v1.jpg':undefined)} title={title}/>;
 }
-export function BroadcastWaitingPanel({watch,locale,api,recommendations}:{recommendations?:ReactNode;watch:RecordingWatchView;locale:Locale;api:ReturnType<typeof createMemberVideoApi>}) {
+export function BroadcastWaitingPanel({watch,locale,api,recommendations,expiredLabel}:{expiredLabel?:string;recommendations?:ReactNode;watch:RecordingWatchView;locale:Locale;api:ReturnType<typeof createMemberVideoApi>}) {
  const labels=broadcastLabels[locale];
  const [elapsed,setElapsed]=useState({serverNow:watch.serverNow,seconds:0});
  useEffect(()=>{const start=performance.now();const timer=window.setInterval(()=>setElapsed({serverNow:watch.serverNow,seconds:(performance.now()-start)/1000}),1000);return()=>window.clearInterval(timer);},[watch.serverNow]);
  const seconds=countdownSeconds(watch.scheduledAt,watch.serverNow,elapsed.serverNow===watch.serverNow?elapsed.seconds:0);
  const clock=[Math.floor(seconds/3600),Math.floor(seconds%3600/60),seconds%60].map(v=>String(v).padStart(2,'0')).join(':');
- const message=watch.view==='waiting'?(seconds>0?labels.startsIn.replace('{time}',clock):labels.waiting):watch.view==='processing'?labels.processing:watch.view==='cancelled'?labels.cancelled:labels.unavailable;
+ const message=watch.view==='waiting'?(seconds>0?labels.startsIn.replace('{time}',clock):labels.waiting):watch.view==='processing'?labels.processing:watch.view==='cancelled'?labels.cancelled:watch.view==='expired'?expiredLabel??labels.unavailable:labels.unavailable;
  return <div data-video-watch className={`${zoneStyles.video} grid min-w-0 gap-4`}>
   <div className="relative isolate grid aspect-video place-items-center overflow-hidden rounded-[14px] bg-neutral-950 text-white">
    <div className="absolute inset-0 -z-10" aria-hidden="true"><BroadcastCover key={watch.recordingId} coverMode={watch.coverMode} api={api} id={watch.recordingId} title={watch.title} revision={watch.cover?`cover:${watch.cover.revision}`:`state:${watch.stateRevision}`}/></div>

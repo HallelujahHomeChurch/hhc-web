@@ -15,7 +15,7 @@ type Options = {
   api: ReturnType<typeof createMemberVideoApi>;
   identity: ReturnType<typeof import('@/components/layout/AccountControl').useAccountIdentity>;
   locale: Locale;
-  messages: {playError: string; expired: string};
+  messages: {playError: string; expired: string; unavailable?:string};
   selected?: MemberRecording;
   recordings: MemberRecording[] | null;
   resolveMissing: (signal: AbortSignal) => Promise<void>;
@@ -23,6 +23,12 @@ type Options = {
   mediaDuration: number | null;
   startAt?: number;
 };
+
+function permanentFailure(error:unknown,expired:string,unavailable:string){
+  if(!(error instanceof HhcWebApiError))return;
+  if(error.status===410)return expired;
+  if(error.status===403)return unavailable;
+}
 
 export function useVodPlayback({api, identity, locale, messages, selected, recordings, resolveMissing, mediaOrigin, mediaDuration, startAt}: Options) {
   const currentApi = useRef(api);
@@ -60,6 +66,8 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
   const rememberVod=useCallback((value:PlayerBookmark)=>{if(!bookmarkFrozen.current)vodBookmark.current={...value,mediaOriginSeconds:mediaOrigin??0};},[mediaOrigin]);
   const [preparing, setPreparing] = useState(false);
   const [playError, setPlayError] = useState('');
+  const [fatalScope,setFatalScope]=useState<string|null>(null);
+  const [terminal,setTerminal]=useState(false);
   const attempt = useRef<AbortController | null>(null);
   const [audioFailureScope,setAudioFailureScope]=useState<string|null>(null),failedAudioScope=useRef<string|null>(null);
   const backgroundAudio=Boolean(playback?.backgroundAudio&&audioFailureScope!==playback?.scopeId);
@@ -95,6 +103,7 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
     if (!selected || preparing) return false;
     if (resume) vodBookmark.current = resume;
     automaticAttempt.current = selected.id;
+    setFatalScope(null);setTerminal(false);
     mediaFailureReported.current = false;
     bookmarkFrozen.current=true;
     attempt.current?.abort();
@@ -121,12 +130,14 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
         if (error instanceof HhcWebApiError && (error.status === 404 || error.status === 409 || error.status === 412)) {
           try { await currentResolveMissing.current(controller.signal); } catch { /* keep the player stopped and offer retry */ }
         }
-        setPlayError(messages.playError);
+        const permanent=permanentFailure(error,messages.expired,messages.unavailable??messages.playError);
+        setTerminal(Boolean(permanent));
+        setPlayError(permanent??messages.playError);
       }
     } finally {
       if (!controller.signal.aborted) setPreparing(false);
     }
-  }, [selected, preparing, locale, router, messages.playError,mediaOrigin,mediaDuration,startAt,clearCookie,exchangeCookie,diagnostic,pausePlayback]);
+  }, [selected, preparing, locale, router, messages.playError,messages.expired,messages.unavailable,mediaOrigin,mediaDuration,startAt,clearCookie,exchangeCookie,diagnostic,pausePlayback]);
 
   const renew = useCallback(async (current: ActivePlayback, signal: AbortSignal) => {
     diagnostic('renew',media.current,grantGeneration.current);
@@ -162,6 +173,7 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
       clearCookie(playback.url);
       playbackRef.current = null;
       setPlayback(null);
+      setTerminal(Number.isFinite(deadline)&&Date.now()>=deadline);
       setPlayError(messages.expired);
     };
     const expiryTimer = window.setTimeout(expire, Math.max(0,expiry-Date.now()));
@@ -174,7 +186,8 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
       } catch (error) {
         if (controller.signal.aborted) return;
         captureHandledError(error, {operation: 'member-videos.renew'});
-        if (error instanceof HhcWebApiError && (error.status === 401 || error.status === 403 || error.status === 404 || error.status === 409 || error.status === 412)) {
+        if (error instanceof HhcWebApiError && (error.status === 401 || error.status === 403 || error.status === 404 || error.status === 409 || error.status === 410 || error.status === 412)) {
+          setTerminal(error.status===403||error.status===410);
           pausePlayback();
           clearCookie(playback.url);
           diagnostic('denied',media.current,grantGeneration.current);playbackRef.current=null;setPlayback(null);setPlayError(messages.playError);
@@ -187,7 +200,7 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
         } else {
           timer = window.setTimeout(() => void run(), 60_000);
         }
-        setPlayError(messages.playError);
+        setPlayError(permanentFailure(error,messages.expired,messages.unavailable??messages.playError)??messages.playError);
       } finally {
         inFlight = false;
       }
@@ -204,7 +217,7 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
     document.addEventListener('visibilitychange', visible);
     window.addEventListener('online', visible);
     return () => {controller.abort(); window.clearTimeout(timer); window.clearTimeout(expiryTimer); document.removeEventListener('visibilitychange', visible); window.removeEventListener('online', visible);};
-  }, [locale, messages.playError, messages.expired, playback, recordingDeadline, renew, router,clearCookie,diagnostic,pausePlayback]);
+  }, [locale, messages.playError, messages.expired, messages.unavailable, playback, recordingDeadline, renew, router,clearCookie,diagnostic,pausePlayback]);
 
   useEffect(()=>{
     const section=playerSection.current;if(!section)return;
@@ -225,6 +238,7 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
       // Keep transport fallback separate from authority so in-flight renewal is not aborted.
       failedAudioScope.current=current.scopeId;setAudioFailureScope(current.scopeId);return;
     }
+    setFatalScope(current?.scopeId??null);
     setPlayError(messages.playError);
     if (!mediaFailureReported.current) {
       mediaFailureReported.current = true;
@@ -233,5 +247,5 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
   }, [messages.playError,mediaOrigin,diagnostic,pausePlayback]);
 
   return {playback, video, media, playbackPause, vodResume, preparing, playError,
-    playerSection, automaticAttempt, vodBookmark, backgroundAudio, audioUrl, rememberVod, mediaError, start, stop};
+    playerSection, automaticAttempt, vodBookmark, fatalMedia:Boolean(playback&&fatalScope===playback.scopeId),terminal,backgroundAudio, audioUrl, rememberVod, mediaError, start, stop};
 }

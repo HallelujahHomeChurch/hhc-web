@@ -521,6 +521,7 @@
     "description": "動画の説明",
     "live": {
       "liveNow": "ライブ配信中",
+      "waitingSignal": "ライブ配信の信号を待っています",
       "watchRecording": "公開された録画で視聴を続ける",
       "starting": "ライブ準備中",
       "live": "ライブ配信中・推定遅延 {delay}",

@@ -270,3 +270,19 @@ it('stores the active audio clock while ignoring inactive foreground video event
  await act(async()=>{audio.currentTime=40;audio.dispatchEvent(new Event('playing'));});await act(async()=>{audio.currentTime=42;Object.defineProperty(audio,'paused',{value:true});audio.dispatchEvent(new Event('pause'));video.dispatchEvent(new Event('ended'));});
  await act(async()=>accept({generation:'audio-owner',mediaVersion:version,positionSeconds:40,sequence:0}));expect(api.saveProgress).toHaveBeenCalledOnce();expect(api.saveProgress).toHaveBeenCalledWith('recording',expect.objectContaining({positionSeconds:42,state:'paused',generation:'audio-owner'}),expect.anything());
 });
+
+it.each([false,true])('accepts a slow initial progress response after playing without displacing a new device owner=%s',async otherOwner=>{
+ const {createPlaybackProgress}=await import('./playback-progress-session');
+ vi.useFakeTimers();const abort=new AbortController();
+ try{
+  let release!:(value:unknown)=>void;
+  const api={progress:vi.fn().mockImplementation(()=>new Promise(resolve=>{release=resolve;})),claimProgress:vi.fn().mockResolvedValue({generation:'owner',mediaVersion:version,positionSeconds:9,sequence:0}),saveProgress:vi.fn()};
+  const sync=createPlaybackProgress(api,'recording',version,abort.signal);
+  const prepare=sync.prepare('resume');await vi.advanceTimersByTimeAsync(1500);expect(await prepare).toBeUndefined();
+  await sync.playing(9);
+  release({mediaVersion:version,claimToken:'fixture',progress:otherOwner?{generation:'other',mediaVersion:version,positionSeconds:45}:null});
+  await vi.advanceTimersByTimeAsync(1);
+  expect(api.claimProgress).toHaveBeenCalledTimes(otherOwner?0:1);
+  if(!otherOwner)expect(api.claimProgress.mock.calls[0][1]).toMatchObject({observedPositionSeconds:9,expectedGeneration:null});
+ }finally{abort.abort();vi.useRealTimers();}
+});
