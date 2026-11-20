@@ -1180,3 +1180,30 @@ it('cancels an older load-more when focus refresh takes the list generation',asy
  fireEvent(window,new Event('focus'));await waitFor(()=>expect(screen.getByRole('button',{name:'Load more'})).toBeEnabled());expect(signal.aborted).toBe(true);
  await act(async()=>finish({items:[second],nextCursor:null}));expect(screen.queryByRole('link',{name:'Race second'})).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Load more'}));expect(await screen.findByRole('link',{name:'Race second'})).toBeVisible();expect(screen.getByRole('link',{name:'Race first'})).toBeVisible();
 });
+
+it.each([false,true])('offers an in-page retry at the saved VOD position after prior audio fallback=%s',async withAudio=>{
+ state.auth='authenticated';state.access='available';
+ const recording={id:'r1',title:'Recoverable VOD',packageId,durationSeconds:200};
+ list.mockResolvedValue([recording]);videoApi.watch.mockResolvedValue({recordingId:'r1',view:'vod',recording,live:null});
+ videoApi.grant.mockResolvedValue({packageId,audio:withAudio?{version:'aac-hls-v1',playlistPath:'audio/aac-hls-v1/index.m3u8'}:undefined,expiresAt:new Date(Date.now()+3600000).toISOString()});videoApi.exchange.mockResolvedValue(playbackUrl);
+ const labels={resume:'Resume',live:'Live',close:'Close',removeResume:'Dismiss',expand:'Expand',minimize:'Minimize',move:'Move',resize:'Resize'};
+ const view=render(<PlaybackProvider locale="en" labels={labels}><MemberVideoZone locale="en" messages={messages} hero={null} view="watch" recordingId="r1"/></PlaybackProvider>);
+ const first=await screen.findByLabelText('Recoverable VOD',{selector:'video'});
+ await waitFor(()=>expect(first).toHaveAttribute('src',playbackUrl));
+ if(withAudio){
+  const audio=view.container.querySelector('audio')!;fireEvent.error(audio);
+  await waitFor(()=>expect(view.container.querySelector('audio')).toBeNull());
+  expect(screen.queryByRole('alert')).toBeNull();
+ }
+ const video=view.container.querySelector('video')!;
+ await waitFor(()=>expect(video).toHaveAttribute('src',playbackUrl));
+ Object.defineProperties(video,{readyState:{configurable:true,value:4},error:{configurable:true,value:{code:3}}});
+ video.currentTime=65;fireEvent.timeUpdate(video);fireEvent.error(video);
+ expect(await screen.findByRole('alert')).toHaveTextContent('Cannot play');
+ fireEvent.click(screen.getByRole('button',{name:'Retry'}));
+ await waitFor(()=>expect(videoApi.grant).toHaveBeenCalledTimes(2));
+ const rebuilt=await screen.findByLabelText('Recoverable VOD',{selector:'video'}) as HTMLVideoElement;
+ expect(rebuilt).not.toBe(video);fireEvent.loadedMetadata(rebuilt);
+ expect(rebuilt.currentTime).toBe(65);
+ view.unmount();
+});

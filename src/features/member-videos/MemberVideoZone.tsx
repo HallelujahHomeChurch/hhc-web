@@ -279,7 +279,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
 
   const selected = resolver.denied ? undefined : recordingId ? watch?.recording??undefined : recordings?.find((recording) => recording.id === selectedId);
   const [archiveBookmark, setArchiveBookmark] = useState<PlayerBookmark>();
-  const {playback, video, media, playbackPause, vodResume, preparing, playError, playerSection,
+  const {playback, video, media, playbackPause, vodResume, preparing, playError, terminal, playerSection,
     automaticAttempt, vodBookmark, backgroundAudio, audioUrl, rememberVod, mediaError, start, stop} =
     useVodPlayback({api, identity, locale, messages, selected, recordings, resolveMissing, mediaOrigin, mediaDuration, startAt});
   const poster=useRecordingCover(api,selected?.id,selected?.expiresAt,coverRevision(selected));
@@ -377,10 +377,10 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
     if (!aliases.includes(requested)) closePersistent?.(currentPlaybackKey);
   }, [publicId, internalRecordingId, currentPlaybackKey, activeHref, closePersistent]);
   useEffect(() => {
-    if (!resolver.denied || !recordingId || !currentPlaybackKey) return;
+    if (!resolver.playbackEnded || !recordingId || !currentPlaybackKey) return;
     if (currentPlaybackKey.split(':')[1] === recordingId ||
       activeHref?.split('?')[0] === videoWatchPath(locale, recordingId, publicId)) closePersistent?.(currentPlaybackKey);
-  }, [resolver.denied, recordingId, currentPlaybackKey, activeHref, locale, publicId, closePersistent]);
+  }, [resolver.playbackEnded, recordingId, currentPlaybackKey, activeHref, locale, publicId, closePersistent]);
   const liveItems = liveLibraryItems(livestreams).filter(item=>item.id!==recordingId);
   const activeLiveIds = new Set(liveItems.map(item=>item.id));
   const otherRecordings = recordings?.filter(item => item.id !== selectedId && !activeLiveIds.has(item.id)&&!upcomingState.ids.includes(item.id)) ?? [];
@@ -447,7 +447,8 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
           {recordingId && !loadError && !resolver.error && !resolver.denied && !watch ? <VideoWatchSkeleton label={messages.loading} recommendations={recommendationsPending}/> : null}
           {!loadError && !livePending && !liveError && recordings?.length === 0 && nextCursor===null && !livestreams.length && !selectedLive && !watch && (view!=='list'||upcomingState.complete&&upcomingPresent===false) ? <p className="rounded-[14px] border border-panel-border bg-panel p-8 text-center text-muted">{searchMode ? <>{searchLabels.empty.replace('{query}',query)} <Link href={videoSearchHref(locale,'')} className="underline">{searchLabels.clear}</Link></> : messages.empty}</p> : null}
           {liveError&&!watch?<p role="status" className="text-sm text-muted">{messages.loadError}</p>:null}
-          {waitingWatch&&!selectedLive?<BroadcastWaitingPanel recommendations={recommendations} watch={waitingWatch} locale={locale} api={api}/>:null}
+          {recordingId&&(resolver.denied||waitingWatch&&!selectedLive)?<Link href={`/${locale}/member-videos`} className="inline-flex min-h-11 items-center underline">{messages.backToList??messages.listTitle}</Link>:null}
+          {waitingWatch&&!selectedLive?<BroadcastWaitingPanel expiredLabel={messages.expired} recommendations={recommendations} watch={waitingWatch} locale={locale} api={api}/>:null}
           {recordingId&&selectedLive&&!resolver.denied&&persistent?<div data-video-watch className={zoneStyles.video}>
             <div ref={slotRef} className={`${zoneStyles.watchSlot} aspect-video bg-neutral-950`}>{!currentPlaybackKey && descriptor && <button type="button" onClick={() => startPersistent?.(descriptor, true)}>{messages.play}</button>}</div>
             <h2 className={zoneStyles.watchTitle}>{selectedLive.title}</h2>
@@ -464,7 +465,7 @@ function AuthorizedVideoZone({locale, messages, hero, view, recordingId: interna
             </div>}
             <h2 ref={playerTitle} tabIndex={-1} className={`${zoneStyles.watchTitle} outline-none`}>{selected.title}</h2>
             {recordingId?<VideoInteractions recommendations={recommendations} key={selected.id} api={api} id={selected.id} publicId={selected.publicId} title={selected.title} locale={locale} live={false} currentTime={persistent?.currentTime ?? (()=>media.current?.currentTime??0)} durationSeconds={selected.durationSeconds??undefined} description={selected.description} date={selected.uploadedAt} dateKind="uploaded"/>:<VideoInformation description={selected.description} date={selected.uploadedAt} metrics={null} locale={locale}/>}
-            {playError ? <p role="alert" className="text-sm text-primary">{playError} <button type="button" className="underline" onClick={() => void start(vodBookmark.current)}>{messages.retry}</button></p> : null}
+            {playError ? <p role="alert" className="text-sm text-primary">{playError} {terminal?<Link href={`/${locale}/member-videos`} className="underline">{messages.backToList??messages.listTitle}</Link>:<button type="button" className="underline" onClick={() => void start(vodBookmark.current)}>{messages.retry}</button>}</p> : null}
           </div> : null}
           {!inlineRecommendations?recommendations:null}
         </section>

@@ -9,7 +9,7 @@ const player=vi.hoisted(()=>({props:null as HlsPlayerProps|null}));
 vi.mock('./HlsPlayer',()=>({HlsPlayer:(props:HlsPlayerProps)=>{player.props=props;return <div data-testid="live-video"/>;}}));
 const id='11111111-1111-4111-8111-111111111111',capture='a'.repeat(32);
 function setup(state='live'){
- const api={liveGrant:vi.fn(async(_id:string,_capture:string,scope:string):Promise<MemberLivePlayback>=>{const now=Date.now();return({recordingId:id,captureId:capture,playbackScopeId:scope,mediaUrl:`https://media.alive.org.tw/videos/${id}/captures/${capture}/sessions/${scope}/master.m3u8`,exchangeCredential:'test',serverNow:new Date(now).toISOString(),issuedAt:new Date(now).toISOString(),expiresAt:new Date(now+300000).toISOString(),captureExpiresAt:new Date(now+86400000).toISOString(),replayUntil:null,stopAcceptedAt:null,terminalReason:null,liveState:'live',progress:{revision:3,firstSequence:0,lastSequence:2,mediaEndSeconds:90,lastAdvancedAt:null,endedAt:null,ended:false},watermarkCode:'trace'});}),exchangeLive:vi.fn(async(g:MemberLivePlayback)=>g.mediaUrl),clearLive:vi.fn().mockResolvedValue(undefined)};
+ const api={liveGrant:vi.fn(async(_id:string,_capture:string,scope:string,signal?:AbortSignal):Promise<MemberLivePlayback>=>{signal?.throwIfAborted();const now=Date.now();return({recordingId:id,captureId:capture,playbackScopeId:scope,mediaUrl:`https://media.alive.org.tw/videos/${id}/captures/${capture}/sessions/${scope}/master.m3u8`,exchangeCredential:'test',serverNow:new Date(now).toISOString(),issuedAt:new Date(now).toISOString(),expiresAt:new Date(now+300000).toISOString(),captureExpiresAt:new Date(now+86400000).toISOString(),replayUntil:null,stopAcceptedAt:null,terminalReason:null,liveState:'live',progress:{revision:3,firstSequence:0,lastSequence:2,mediaEndSeconds:90,lastAdvancedAt:null,endedAt:null,ended:false},watermarkCode:'trace'});}),exchangeLive:vi.fn(async(g:MemberLivePlayback)=>g.mediaUrl),clearLive:vi.fn().mockResolvedValue(undefined)};
  const props={api,recording:{id,captureId:capture,title:'Live gathering',liveState:state,progress:{lastSequence:state==='starting'?0:2,mediaEndSeconds:90}},labels:{play:'Play',retry:'Retry',playError:'Error',loading:'Loading'},liveLabels:englishLiveLabels,locale:'en'} as unknown as ComponentProps<typeof LiveRecordingPlayer>;
  return {api,props};
 }
@@ -31,6 +31,7 @@ it('prepares once when a starting capture becomes ready after bounded retries ar
  const view=render(<LiveRecordingPlayer {...props}/>);await act(()=>vi.advanceTimersByTimeAsync(240000));
  expect(api.liveGrant.mock.calls.length).toBeGreaterThan(1);expect(api.liveGrant.mock.calls.length).toBeLessThan(8);
  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+ expect(screen.getByRole('button',{name:'Retry'})).toBeEnabled();
  const calls=api.liveGrant.mock.calls.length;await act(()=>vi.advanceTimersByTimeAsync(120000));expect(api.liveGrant).toHaveBeenCalledTimes(calls);
  api.liveGrant.mockImplementation(grant);
  view.rerender(<LiveRecordingPlayer {...props} recording={{...props.recording,liveState:'live',progress:{...props.recording.progress,lastSequence:2}}}/>);
@@ -62,4 +63,68 @@ it('stops through the shared authority command when a live renewal is revoked',a
  api.liveGrant.mockRejectedValue(new HhcWebApiError(403,'forbidden','Denied'));
  await act(()=>vi.advanceTimersByTimeAsync(240000));
  expect(stop).toHaveBeenCalledTimes(1);expect(screen.queryByTestId('live-video')).toBeNull();
+});
+
+it('rebuilds a stuck unlock once after a fresh exchange and leaves a second error for explicit recovery',async()=>{
+ const {api,props}=setup();render(<LiveRecordingPlayer {...props}/>);await screen.findByTestId('live-video');
+ const bookmark={time:20,paused:false,rate:1.5,quality:'720p' as const,intent:'dvr' as const};
+ act(()=>player.props!.onError(bookmark,'foreground-return'));
+ await waitFor(()=>expect(api.exchangeLive).toHaveBeenCalledTimes(2));
+ expect(player.props?.recoverForeground).toBe(true);expect(player.props?.resume).toMatchObject(bookmark);
+ act(()=>player.props!.onError(bookmark,'foreground-rebuild'));
+ expect(await screen.findByRole('button',{name:'Retry'})).toBeVisible();expect(api.exchangeLive).toHaveBeenCalledTimes(2);
+});
+
+it('waits at the published end and retries the same capture when output advances',async()=>{
+ const {api,props}=setup();
+ const input={...props,liveLabels:{...props.liveLabels,waitingSignal:'Waiting for output'}};
+ const view=render(<LiveRecordingPlayer {...input}/>);await screen.findByTestId('live-video');
+ act(()=>player.props!.onError({time:90,paused:false,rate:1,quality:'auto',intent:'followLive'},'foreground-return'));
+ expect(screen.getByRole('status')).toHaveTextContent('Waiting for output');expect(api.exchangeLive).toHaveBeenCalledTimes(1);
+ view.rerender(<LiveRecordingPlayer {...input} recording={{...props.recording,progress:{...props.recording.progress,mediaEndSeconds:100}}}/>);
+ await waitFor(()=>expect(api.exchangeLive).toHaveBeenCalledTimes(2));
+ expect(screen.queryByText('Waiting for output')).not.toBeInTheDocument();
+});
+
+it('withholds the previous player while an unavailable projection rechecks the same viewer scope',async()=>{
+ const {api,props}=setup();const view=render(<LiveRecordingPlayer {...props}/>);await screen.findByTestId('live-video');
+ const issue=api.liveGrant.getMockImplementation()!;
+ let finish!:()=>void;
+ api.liveGrant.mockImplementationOnce(async(...args)=>{await new Promise<void>(resolve=>{finish=resolve;});return issue(...args);});
+ view.rerender(<LiveRecordingPlayer {...props} verifyRevision={7}/>);
+ expect(screen.queryByTestId('live-video')).toBeNull();
+ await act(async()=>finish());expect(await screen.findByTestId('live-video')).toBeVisible();
+ expect(api.liveGrant.mock.calls[0][2]).toEqual(api.liveGrant.mock.calls[1][2]);
+});
+
+it('restores the player after revalidation initially fails and a background renewal succeeds',async()=>{
+ vi.useFakeTimers();const {api,props}=setup();const view=render(<LiveRecordingPlayer {...props}/>);await act(async()=>{});
+ api.liveGrant.mockRejectedValueOnce(new Error('offline'));
+ view.rerender(<LiveRecordingPlayer {...props} verifyRevision={8}/>);await act(async()=>{});
+ expect(screen.queryByTestId('live-video')).toBeNull();
+ await act(()=>vi.advanceTimersByTimeAsync(5000));
+ expect(screen.getByTestId('live-video')).toBeVisible();
+});
+
+it('offers retry when the live grant request stalls before the player is mounted',async()=>{
+ vi.useFakeTimers();const {api,props}=setup();
+ api.liveGrant.mockImplementationOnce((_id,_capture,_scope,signal)=>new Promise((_resolve,reject)=>{
+  signal!.addEventListener('abort',()=>reject(new Error('Request aborted')),{once:true});
+ }));
+ render(<LiveRecordingPlayer {...props}/>);await act(()=>vi.advanceTimersByTimeAsync(15000));
+ expect(screen.getByRole('button',{name:'Retry'})).toBeEnabled();expect(screen.queryByTestId('live-video')).toBeNull();
+ await act(async()=>screen.getByRole('button',{name:'Retry'}).click());
+ expect(screen.getByTestId('live-video')).toBeVisible();
+});
+
+it('requires a grant issued after the ambiguous watch response even if a renewal was already in flight',async()=>{
+ vi.useFakeTimers();const {api,props}=setup();const view=render(<LiveRecordingPlayer {...props}/>);await act(async()=>{});
+ const issue=api.liveGrant.getMockImplementation()!;
+ let finishOld!:()=>void,finishFresh!:()=>void;
+ api.liveGrant.mockImplementationOnce(async(...args)=>{await new Promise<void>(resolve=>{finishOld=resolve;});return issue(...args);});
+ api.liveGrant.mockImplementationOnce(async(...args)=>{await new Promise<void>(resolve=>{finishFresh=resolve;});return issue(...args);});
+ await act(()=>vi.advanceTimersByTimeAsync(240000));
+ view.rerender(<LiveRecordingPlayer {...props} verifyRevision={9}/>);
+ await act(async()=>finishOld());expect(screen.queryByTestId('live-video')).toBeNull();
+ await act(async()=>finishFresh());expect(screen.getByTestId('live-video')).toBeVisible();
 });

@@ -521,6 +521,7 @@
     "description": "视频说明",
     "live": {
       "liveNow": "直播中",
+      "waitingSignal": "等待直播信号",
       "watchRecording": "接续观看会后影片",
       "starting": "直播准备中",
       "live": "直播中，预计延迟 {delay}",

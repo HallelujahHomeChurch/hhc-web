@@ -25,5 +25,5 @@ export function useBroadcastWatch(api:ReturnType<typeof createMemberVideoApi>,id
   void load();document.addEventListener('visibilitychange',foreground);window.addEventListener('online',foreground);
   return()=>{controller.abort();window.clearTimeout(timer);document.removeEventListener('visibilitychange',foreground);window.removeEventListener('online',foreground);};
  },[api,id,retry]);
- return {watch,lastLive,error,denied};
+ return {watch,lastLive,error,denied,playbackEnded:denied||watch?.view==='expired'||watch?.view==='cancelled'};
 }

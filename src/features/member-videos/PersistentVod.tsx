@@ -1,6 +1,7 @@
 'use client';
 
 import {useEffect} from 'react';
+import Link from 'next/link';
 import {usePersistentPlayback} from './PlaybackProvider';
 import {useBroadcastWatch} from './useBroadcastWatch';
 import {useVodPlayback} from './useVodPlayback';
@@ -11,7 +12,7 @@ import type {PlayerBookmark} from './live-player';
 import {useRecordingCover} from './RecordingCover';
 
 type Props = Parameters<typeof useVodPlayback>[0] & {
-  messages: PlayerLabels & {playError: string; expired: string; preparing: string; retry: string};
+  messages: PlayerLabels & {playError: string; expired: string; preparing: string; retry: string; listTitle:string; backToList?:string};
   onMinimize?: () => void;
   initialBookmark?: PlayerBookmark;
   previousHref?: string;
@@ -39,8 +40,14 @@ export function PersistentVod({previousHref, nextHref, initialBookmark, onMinimi
   usePlaybackTelemetry(api, selected?.id, media, Boolean(playback));
 
   const mini = controls && !controls.inWatch ? {onExpand: controls.expand, expandLabel: controls.labels.expand, compact: controls.miniCompact} : undefined;
+  const error=session.fatalMedia?messages.playError:!playback?session.playError:'';
   return <div ref={playerSection}>
-    {selected && playback?.recordingId === selected.id
+    {error ? <div role="alert" className="grid aspect-video place-content-center justify-items-center gap-2 bg-neutral-950 p-3 text-center text-white">
+      <p>{error}</p>
+      {session.terminal
+        ? <Link className="underline" href={`/${options.locale}/member-videos`}>{messages.backToList??messages.listTitle}</Link>
+        : <button type="button" className="min-h-11 underline" disabled={session.preparing} onClick={()=>void start(session.vodBookmark.current,prepareProgress)}>{messages.retry}</button>}
+    </div> : selected && playback?.recordingId === selected.id
       ? <HlsPlayer key={`${playback.url}:${session.backgroundAudio}`} backgroundAudioUrl={session.audioUrl}
           playbackMediaRef={media} playbackPauseRef={session.playbackPause} resume={session.vodResume}
           poster={poster} videoRef={session.video} playbackUrl={playback.url}
@@ -48,10 +55,6 @@ export function PersistentVod({previousHref, nextHref, initialBookmark, onMinimi
           watermark={playback.grant.watermarkCode} title={selected.title} labels={messages}
           previousHref={previousHref} nextHref={nextHref} onMinimize={onMinimize} onMinimizeMove={controls?.setMinimizeOffset}
           mini={mini} onPlayIntent={kind=>{void prepareProgress(kind);}} onError={session.mediaError} onBookmark={session.rememberVod}/>
-      : <div className="grid aspect-video place-items-center bg-neutral-950 text-white">
-          {session.playError
-            ? <button type="button" onClick={() => void start(session.vodBookmark.current, prepareProgress)}>{messages.retry}</button>
-            : <span role="status">{messages.preparing}</span>}
-        </div>}
+      : <div className="grid aspect-video place-items-center bg-neutral-950 text-white"><span role="status">{messages.preparing}</span></div>}
   </div>;
 }
