@@ -100,6 +100,68 @@ it('uses public IDs for VOD and live cards while preserving UUID identity',async
  expect(videoApi.grant).not.toHaveBeenCalled();
 });
 
+function progressWatch(recordingId = "r1") {
+ const labels={resume:'Resume',live:'Live',close:'Close',removeResume:'Dismiss',expand:'Expand',minimize:'Minimize',move:'Move',resize:'Resize'};
+ return <PlaybackProvider locale="en" labels={labels}><MemberVideoZone locale="en" messages={messages} hero={null} view="watch" recordingId={recordingId}/></PlaybackProvider>;
+}
+
+it('requests the VOD grant during the resume read and waits for both before exchanging',async()=>{
+ state.auth='authenticated';state.access='available';
+ list.mockResolvedValue([{id:'r1',title:'Resume test',packageId}]);
+ let finish!:()=>void;
+ videoApi.progress.mockImplementationOnce(()=>new Promise<void>(resolve=>{finish=resolve;}));
+ videoApi.grant.mockResolvedValue({packageId,expiresAt:new Date(Date.now()+3600000).toISOString()});
+ videoApi.exchange.mockResolvedValue(playbackUrl);
+ const view=render(progressWatch());
+ await waitFor(()=>expect(videoApi.progress).toHaveBeenCalled());
+ expect(videoApi.grant).toHaveBeenCalledOnce();expect(videoApi.exchange).not.toHaveBeenCalled();
+ expect(view.container.querySelector('video')).toBeNull();
+ await act(async()=>finish());
+ await waitFor(()=>expect(view.container.querySelector('video')).not.toBeNull());
+});
+
+it('cancels the pending resume read on a denied grant without exchanging or mounting media',async()=>{
+ state.auth='authenticated';state.access='available';
+ list.mockResolvedValue([{id:'r1',title:'Denied recording',packageId}]);
+ let reading:AbortSignal|undefined;
+ videoApi.progress.mockImplementationOnce((_id:string,signal:AbortSignal)=>{reading=signal;return new Promise(()=>{});});
+ videoApi.grant.mockRejectedValue(new HhcWebApiError(403,'forbidden','Denied'));
+ const view=render(progressWatch());
+ await screen.findByRole('alert');
+ expect(reading?.aborted).toBe(true);expect(videoApi.exchange).not.toHaveBeenCalled();
+ expect(view.container.querySelector('video')).toBeNull();
+});
+
+it('ignores a late first grant when the viewer switches recordings during start',async()=>{
+ state.auth='authenticated';state.access='available';
+ const records=[{id:'r1',title:'First',packageId},{id:'r2',title:'Second',packageId:'b'.repeat(32)}];
+ list.mockResolvedValue(records);
+ videoApi.watch.mockImplementation(async(id:string)=>({recordingId:id,view:'vod',recording:records.find(r=>r.id===id),live:null}));
+ let finishFirst!:()=>void;
+ const firstGrant={packageId,expiresAt:new Date(Date.now()+3600000).toISOString()};
+ const secondGrant={...firstGrant,packageId:records[1].packageId};
+ videoApi.grant.mockImplementation((id:string)=>id==='r1'?new Promise(resolve=>{finishFirst=()=>resolve(firstGrant);}):Promise.resolve(secondGrant));
+ videoApi.exchange.mockResolvedValue(playbackUrl.replace('r1','r2').replace(packageId,secondGrant.packageId));
+ const view=render(progressWatch());
+ await waitFor(()=>expect(videoApi.grant).toHaveBeenCalledOnce());
+ const firstSignal=videoApi.grant.mock.calls[0][3];
+ view.rerender(progressWatch('r2'));
+ await screen.findByLabelText('Second',{selector:'video'});
+ expect(firstSignal.aborted).toBe(true);
+ await act(async()=>finishFirst());
+ expect(videoApi.exchange).toHaveBeenCalledOnce();expect(videoApi.exchange.mock.calls[0][0]).toBe(secondGrant);
+ expect(screen.queryByLabelText('First',{selector:'video'})).toBeNull();
+});
+
+it('rejects a playback grant for a different package before cookie exchange',async()=>{
+ state.auth='authenticated';state.access='available';
+ list.mockResolvedValue([{id:'r1',title:'Replaced package',packageId}]);
+ videoApi.grant.mockResolvedValue({packageId:'b'.repeat(32),expiresAt:new Date(Date.now()+3600000).toISOString()});
+ const view=render(progressWatch());
+ await screen.findByRole('alert');
+ expect(videoApi.exchange).not.toHaveBeenCalled();expect(view.container.querySelector('video')).toBeNull();
+});
+
 it.each(['pending','ready',undefined])('keeps the original player UI without audio operations: %s',async audioState=>{
  state.auth='authenticated';state.access='available';list.mockResolvedValue([{id:'r1',title:'Unchanged controls',packageId}]);
  videoApi.grant.mockResolvedValue({packageId,expiresAt:new Date(Date.now()+3600000).toISOString(),audioState,audio:audioState==='ready'?{version:'aac-hls-v1',playlistPath:'audio/aac-hls-v1/index.m3u8'}:undefined});videoApi.exchange.mockResolvedValue(playbackUrl);
