@@ -116,11 +116,16 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
     setPreparing(true);
     setPlayError('');
     try {
-      const savedPosition = await prepareProgress?.(startAt !== undefined || resume ? "at" : "resume", controller.signal);
-      controller.signal.throwIfAborted();
-      const initialTime = startAt ?? savedPosition;
       const scopeId = crypto.randomUUID();
-      const grant = await currentApi.current.grant(selected.id, scopeId, selected.packageId, controller.signal);
+      const [savedPosition, grant] = await Promise.all([
+        prepareProgress?.(startAt !== undefined || resume ? "at" : "resume", controller.signal),
+        currentApi.current.grant(selected.id, scopeId, selected.packageId, controller.signal),
+      ]);
+      controller.signal.throwIfAborted();
+      if (grant.packageId && selected.packageId && grant.packageId !== selected.packageId) {
+        throw new Error('Playback grant package changed');
+      }
+      const initialTime = startAt ?? savedPosition;
       const url = await exchangeCookie(grant, controller.signal);
       if (!controller.signal.aborted) {bookmarkFrozen.current=false;diagnostic('accepted',media.current,++grantGeneration.current,(Date.parse(grant.expiresAt)-Date.now())/1000);setVodResume(resume?mapBroadcastBookmark(resume,mediaOrigin,mediaDuration):initialTime!==undefined?{time:Math.min(initialTime,selected.durationSeconds??initialTime),paused:false,rate:1,quality:'auto',intent:'dvr'}:undefined);const accepted={recordingId:selected.id,scopeId,grant,url,backgroundAudio:readyAudio(grant)};playbackRef.current=accepted;setPlayback(accepted);return true;}
     } catch (error) {
@@ -129,13 +134,18 @@ export function useVodPlayback({api, identity, locale, messages, selected, recor
         captureHandledError(error, {operation: 'member-videos.playback'});
         if (error instanceof HhcWebApiError && (error.status === 404 || error.status === 409 || error.status === 412)) {
           try { await currentResolveMissing.current(controller.signal); } catch { /* keep the player stopped and offer retry */ }
+          if (controller.signal.aborted) return false;
         }
         const permanent=permanentFailure(error,messages.expired,messages.unavailable??messages.playError);
         setTerminal(Boolean(permanent));
         setPlayError(permanent??messages.playError);
       }
     } finally {
-      if (!controller.signal.aborted) setPreparing(false);
+      if (!controller.signal.aborted) {
+        setPreparing(false);
+        // A failed start can still have a progress read running past its foreground deadline.
+        if (!playbackRef.current) controller.abort();
+      }
     }
   }, [selected, preparing, locale, router, messages.playError,messages.expired,messages.unavailable,mediaOrigin,mediaDuration,startAt,clearCookie,exchangeCookie,diagnostic,pausePlayback]);
 
