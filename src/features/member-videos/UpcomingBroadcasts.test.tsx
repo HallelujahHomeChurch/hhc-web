@@ -98,5 +98,5 @@ it('captures only upcoming cards actually rendered after live exclusions',async(
  const sources=vi.fn();render(<UpcomingBroadcasts api={api} locale="en" excludeIds={['r1']} onSourceItems={sources} loading="Loading" retry="Retry"/>);
  await screen.findByRole('link',{name:'Waiting'});
  expect(screen.queryByRole('link',{name:'Already live'})).toBeNull();
- expect(sources).toHaveBeenLastCalledWith([{id:'r2',href:'/en/member-videos/r2',title:'Waiting'}]);
+ await waitFor(()=>expect(sources).toHaveBeenLastCalledWith([{id:'r2',href:'/en/member-videos/r2',title:'Waiting'}]));
 });
