@@ -6,15 +6,19 @@ export type SectionAnchor = {kind: 'sentence' | 'component'; id: string};
 const text = (block: Block) => block.sentences.flatMap(sentence => sentence.spans.map(span => span.text)).join('').trim();
 const nameKey = (name: string) => name.trim().replace(/\s+/gu, ' ');
 
-export function bulletinSectionIndex(document: BulletinRenderableDocument) {
+export function bulletinSectionIndex(document: BulletinRenderableDocument & {topicBlockIds?: readonly string[]}) {
   const speakers = new Map<string, {name: string; anchor?: SectionAnchor}>();
   const sections: {id: string; title: string; names: string[]; anchor?: SectionAnchor}[] = [];
+  const topics = new Set(document.topicBlockIds);
+  const placed = new Set(document.layoutManifest.pages.flatMap(page => page.slots.flatMap(slot => slot.fragments.map(fragment => fragment.sentenceId))));
+  function startOf(block: Block): SectionAnchor | undefined {
+    const sentence = block.sentences.find(entry => entry.spans.some(span => span.text.trim()));
+    return sentence && placed.has(sentence.id) ? {kind: 'sentence', id: sentence.id} : undefined;
+  }
   for (const component of document.components) {
     if (component.type !== 'bodySection') continue;
     const body = component.bodySection;
-    const sentence = body.title.sentences.find(sentence => sentence.spans.some(span => span.text.trim()));
-    const located = sentence && document.layoutManifest.pages.some(page => page.slots.some(slot => slot.fragments.some(fragment => fragment.sentenceId === sentence.id)));
-    const anchor: SectionAnchor | undefined = located ? {kind: 'sentence', id: sentence.id} : undefined;
+    const anchor = startOf(body.title);
     const inline = (body.contributors ?? []).filter(person => person.role === 'speaker').map(person => text(person.name)).filter(Boolean);
     const header = (body.header?.contributors ?? []).filter(person => person.role === 'speaker');
     // Member payloads intentionally omit PDF coordinates. The producer verifies
@@ -31,6 +35,9 @@ export function bulletinSectionIndex(document: BulletinRenderableDocument) {
       else if (!previous.anchor && anchor) previous.anchor = anchor;
     }
     sections.push({id: component.id, title: text(body.title), names, anchor});
+    for (const block of body.blocks) {
+      if (topics.has(block.id)) sections.push({id: block.id, title: text(block), names: [], anchor: startOf(block)});
+    }
   }
   return {sections, speakers: [...speakers.values()]};
 }
