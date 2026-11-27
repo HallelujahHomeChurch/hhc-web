@@ -49,3 +49,12 @@ it('uses the source-verified start after member source coordinates are redacted'
  delete member.headerSpeakerStartComponentId;
  expect(bulletinSectionIndex(member).sections[0].names).toEqual([]);
 });
+
+it('places an internal topic after its article and preserves the single speaker entry', () => {
+  const {document} = fixture();
+  document.layoutManifest.pages[1].slots[0].fragments.push({sentenceId: 'first-body-sentence', start: 0, end: 4});
+  const index = bulletinSectionIndex({...document, topicBlockIds: ['first-body']});
+  expect(index.sections.slice(0, 3).map(section => section.id)).toEqual(['first', 'first-body', 'second']);
+  expect(index.sections[1].anchor).toEqual({kind: 'sentence', id: 'first-body-sentence'});
+  expect(index.speakers.filter(speaker => speaker.name === 'Alpha')).toHaveLength(1);
+});
