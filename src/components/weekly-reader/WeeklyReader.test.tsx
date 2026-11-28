@@ -1263,7 +1263,7 @@ describe('protected weekly reader', () => {
     const cloud = (await state.privateState()).state;
     state.privateState.mockResolvedValue({state: {...cloud, notes: [{id: 'back-note', sentenceIds: ['s3'], text: 'Note', quote: '內容3。', version: 1, deleted: false, createdAt: '', updatedAt: ''}]}});
     const {container} = render(<WeeklyReader {...props}/>);
-    await screen.findByText('Private weekly');
+    await screen.findByRole('heading', {level: 1, name: 'Private weekly'});
     await waitFor(() => expect(container.querySelector('[data-chapter="cover"]')).not.toBeNull());
     expect(container.querySelector('.reader-paper-with-notes')).not.toHaveAttribute('data-has-notes');
     expect(screen.queryByRole('button', {name: props.messages.previous})).not.toBeInTheDocument();
