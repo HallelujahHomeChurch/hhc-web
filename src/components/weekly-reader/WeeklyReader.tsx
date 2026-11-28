@@ -3,7 +3,7 @@
 import {useCallback, useEffect, useEffectEvent, useLayoutEffect, useSyncExternalStore, useMemo, useRef, useState, type ReactNode} from 'react';
 import {flushSync} from 'react-dom';
 import {NotebookPen, Search, ALargeSmall, ArrowUp, ArrowDown, X, ChevronsUpDown, ChevronsLeftRight, ChevronLeft, ChevronRight, PanelLeft, Moon, Sun} from 'lucide-react';
-import {useScrollChrome} from '@/components/layout/useScrollChrome';
+import {mobileBarRef, useScrollChrome} from '@/components/layout/useScrollChrome';
 import {isIPhoneDevice, isStandaloneWebApp} from '@/lib/pwa-capabilities';
 import {ReaderTypography, readTypography, type Typography} from './ReaderTypography';
 import {useReaderTheme} from './useReaderTheme';
@@ -58,7 +58,7 @@ import '@hallelujahhomechurch/ui/bulletin-paper-v7.css';
 import '@hallelujahhomechurch/ui/bulletin-ebook.css';
 import './reader.css';
 
-type Props = {locale: Locale; issueNumber: number; series: BulletinSeries; contentLocale: BulletinLocale; messages: ReaderMessages};
+type Props = {offlineShell?: boolean; locale: Locale; issueNumber: number; series: BulletinSeries; contentLocale: BulletinLocale; messages: ReaderMessages};
 const subscribeStandalone = () => () => undefined;
 const iphoneStandaloneSnapshot = () => isIPhoneDevice() && isStandaloneWebApp();
 const serverStandaloneSnapshot = () => false;
@@ -112,7 +112,7 @@ function AuthorizedReader(props: Props & {accountId: string; readerTheme: Return
     <div onClickCapture={guard} onKeyDownCapture={guard} onPointerDownCapture={guard} onCopyCapture={guard}>
     {session.offline ? <p role="status">{m.offlineNotice}</p> : null}
     {session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}
-    <ReaderDocument readerTheme={props.readerTheme} key={`${session.value.document.documentId}:${session.value.document.revision}`} value={session.value} selector={selector} messages={m} api={api} offline={session.offline} allowAction={session.allowAction} onFailure={session.privateFailure} onUpdated={session.acceptSaved} suspended={false} backHref={`/${props.locale}/literature-ministry`} offlineControl={<OfflineControl api={api} value={session.value} selector={selector} locale={props.locale} messages={m} onSaved={session.acceptSaved} onFailure={session.privateFailure}/>}/>
+    <ReaderDocument readerTheme={props.readerTheme} key={`${session.value.document.documentId}:${session.value.document.revision}`} value={session.value} selector={selector} messages={m} api={api} documentNavigation={props.offlineShell || session.offline} offline={session.offline} allowAction={session.allowAction} onFailure={session.privateFailure} onUpdated={session.acceptSaved} suspended={false} backHref={`/${props.locale}/literature-ministry`} offlineControl={<OfflineControl api={api} value={session.value} selector={selector} locale={props.locale} messages={m} onSaved={session.acceptSaved} onFailure={session.privateFailure}/>}/>
   </div></>;
   return <ReaderSessionStatus props={props} session={session} signIn={signIn}/>;
 }
@@ -134,10 +134,10 @@ function ReaderExitDialog({exit, theme}: {exit: ReturnType<typeof useReaderExitG
 function ReaderSessionStatus({props, session, signIn}: {props: Props & {accountId: string; readerTheme: ReturnType<typeof useReaderTheme>}; session: ReturnType<typeof useReaderSession>; signIn: ReturnType<typeof useAccountSignIn>}) {
   const m = props.messages;
   const exit = useReaderExitGuard({hasUnsavedNote: () => false, beforeLeave: async () => true, messages: m});
-  return <><ReaderTabs accountId={props.accountId} locale={props.locale} current={props} messages={m} beforeLeave={() => exit.confirmLeave('home')}/>{session.error ? <section className="reader-status" role="alert"><h1>{m.title}</h1><p>{m[session.error]}</p>{session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}<button type="button" onClick={session.retry}>{m.retry}</button></section> : <ReaderLoading label={m.loading}/>}<ReaderExitDialog exit={exit} theme={props.readerTheme.theme}/></>;
+  return <><ReaderTabs documentNavigation={props.offlineShell || session.offline} accountId={props.accountId} locale={props.locale} current={props} messages={m} beforeLeave={() => exit.confirmLeave('home')}/>{session.error ? <section className="reader-status" role="alert"><h1>{m.title}</h1><p>{m[session.error]}</p>{session.loginRequired ? <button type="button" onClick={() => void signIn?.()}>{m.signIn}</button> : null}<button type="button" onClick={session.retry}>{m.retry}</button></section> : <ReaderLoading label={m.loading}/>}<ReaderExitDialog exit={exit} theme={props.readerTheme.theme}/></>;
 }
 
-function ReaderDocument({value, selector, messages: m, api, offline, allowAction, onFailure, onUpdated, suspended, backHref, offlineControl, readerTheme}: {readerTheme: ReturnType<typeof useReaderTheme>; value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages; api: ReturnType<typeof createReaderApi>; offline: boolean; allowAction: () => boolean; onFailure: (error: unknown) => void; onUpdated: (value: OnlineBulletinAccess) => void; suspended: boolean; backHref: string; offlineControl: ReactNode}) {
+function ReaderDocument({value, selector, messages: m, api, offline, documentNavigation, allowAction, onFailure, onUpdated, suspended, backHref, offlineControl, readerTheme}: {readerTheme: ReturnType<typeof useReaderTheme>; value: OnlineBulletinAccess; selector: ReaderSelector; messages: ReaderMessages; api: ReturnType<typeof createReaderApi>; offline: boolean; documentNavigation?: boolean; allowAction: () => boolean; onFailure: (error: unknown) => void; onUpdated: (value: OnlineBulletinAccess) => void; suspended: boolean; backHref: string; offlineControl: ReactNode}) {
   const {theme, toggle: toggleTheme} = readerTheme;
   const [returned] = useState(() => readReaderReturn({accountId: selector.accountId, documentId: value.document.documentId}));
   const document = useMemo(() => verifyReaderAccess(value, selector), [value, selector]);
@@ -817,7 +817,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
 
     <div ref={chromeRef} className="reader-chrome">
       <div className="reader-chrome-controls" inert={!!panel}>
-      <ReaderTabs headerRef={readerHeader} accountId={selector.accountId} locale={backHref.split('/')[1] as Locale} current={selector} title={value.document.canonicalMetadata.title} messages={m} beforeLeave={() => exit.confirmLeave('home')} beforeNavigate={async () => {
+      <ReaderTabs documentNavigation={documentNavigation} headerRef={readerHeader} accountId={selector.accountId} locale={backHref.split('/')[1] as Locale} current={selector} title={value.document.canonicalMetadata.title} messages={m} beforeLeave={() => exit.confirmLeave('home')} beforeNavigate={async () => {
         if (!allowAction() || notes && !await closeNotes()) return false;
         if (Object.keys(recoveryDrafts).length && !await confirmNote('discard')) return false;
         const beforeFlush = generation.current;
@@ -827,7 +827,7 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
         flushSync(() => setRecoveryDrafts({}));
         return true;
       }} search={<IconButton variant="ghost" aria-label={m.search} title={m.search} aria-expanded={panel === 'search'} onPress={event => {void openPanel('search', event.target);}} icon={<Search size={20} aria-hidden="true"/>}/>}/>
-      <header className={mobile ? "reader-topbar site-mobile-tab-bar" : "reader-topbar"} data-mobile-hidden={!chromeVisible} data-iphone-standalone={iphoneStandalone || undefined} aria-label={m.title}>
+      <header ref={mobile ? mobileBarRef : undefined} className={mobile ? "reader-topbar site-mobile-tab-bar" : "reader-topbar"} data-mobile-hidden={!chromeVisible} data-iphone-standalone={iphoneStandalone || undefined} aria-label={m.title}>
         <IconButton variant="ghost" aria-label={mobile ? m.contents : m.thumbnails} title={mobile ? m.contents : m.thumbnails} aria-expanded={panel === 'pages'} onPress={event => {void openPanel('pages', event.target);}} icon={<PanelLeft size={20} aria-hidden="true"/>}/>
         <IconButton variant="ghost" aria-label={m.typography} aria-expanded={panel === 'type'} onPress={event => {void openPanel('type', event.target);}} icon={<ALargeSmall size={20} aria-hidden="true"/>}/>
         <IconButton variant="ghost" aria-label={theme === 'dark' ? m.lightMode : m.darkMode} title={theme === 'dark' ? m.lightMode : m.darkMode} aria-pressed={theme === 'dark'} onPress={toggleTheme} icon={theme === 'dark' ? <Sun size={20} aria-hidden="true"/> : <Moon size={20} aria-hidden="true"/>}/>
@@ -840,12 +840,12 @@ function ReaderDocument({value, selector, messages: m, api, offline, allowAction
       </header>
       </div>
       {panel && (!mobile || panel === 'search') ? <div className="reader-panel-backdrop" aria-hidden="true" onClick={() => closePanel()}/> : null}
-      {!mobile ? <aside className="reader-navigation-panel" role="dialog" aria-modal="true" data-panel={panel} hidden={mobile || !panel || panel === 'search'} aria-label={panel === 'pages' ? mobile ? m.contents : m.thumbnails : m.typography}>
+      {!mobile ? <aside className="reader-navigation-panel" role="dialog" aria-modal={Boolean(!mobile && panel && panel !== 'search') || undefined} data-panel={panel} hidden={mobile || !panel || panel === 'search'} aria-label={panel === 'pages' ? mobile ? m.contents : m.thumbnails : m.typography}>
         <header><h2>{panel === 'pages' ? mobile ? m.contents : m.thumbnails : m.typography}</h2><IconButton variant="ghost" aria-label={m.close} onPress={() => closePanel()} icon={<X size={20} aria-hidden="true"/>}/></header>
         {navigationBody}
       </aside> : null}
       {mobile ? <ReaderPrivateState compact={panel === 'type'} isOpen={panel === 'pages' || panel === 'type'} wide={false} title={panel === 'pages' ? m.contents : m.typography} headerRef={readerHeader} theme={theme} messages={m} onClose={() => closePanel()} suspended={suspended}>{panel === 'pages' || panel === 'type' ? navigationBody : null}</ReaderPrivateState> : null}
-      <aside className="reader-navigation-panel reader-search-panel" role="dialog" aria-modal="true" data-panel="search" hidden={panel !== 'search'} inert={panel !== 'search'} aria-label={m.search}>
+      <aside className="reader-navigation-panel reader-search-panel" role="dialog" aria-modal={panel === 'search' || undefined} data-panel="search" hidden={panel !== 'search'} inert={panel !== 'search'} aria-label={m.search}>
         <ReaderSearch document={value.document} mobile={reflow} onJump={jumpFromSearch} messages={m} closeControl={<IconButton variant="ghost" aria-label={m.close} onPress={() => closePanel()} icon={<ChevronLeft size={22} aria-hidden="true"/>}/>}/>
       </aside>
     </div>

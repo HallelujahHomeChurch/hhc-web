@@ -202,3 +202,23 @@ it('does not retain a never-started watch after leaving, even after a late playi
  expect(screen.queryByLabelText('Current recording')).toBeNull();
  slot.remove();
 });
+
+it('keeps the edge handle across page changes and removes it with recording access', () => {
+  vi.stubGlobal('innerWidth',390);
+  const translated = {...labels, dock:{hide:'Stow',show:'Restore'}};
+  const page = (reader:boolean) => <PlaybackProvider locale="en" labels={translated}>
+    {reader ? <main>Reader</main> : <Playing/>}
+  </PlaybackProvider>;
+  try {
+    const view = render(page(false));
+    const video = screen.getByLabelText('Current recording');
+    fireEvent.click(screen.getByRole('button',{name:'Stow'}));
+    view.rerender(page(true));
+    expect(screen.getByRole('button',{name:'Restore'})).toBeInTheDocument();
+    expect(screen.getByLabelText('Current recording')).toBe(video);
+    account.access = 'denied';
+    view.rerender(page(true));
+    expect(screen.queryByLabelText('Current recording')).toBeNull();
+    expect(screen.queryByRole('button',{name:'Restore'})).toBeNull();
+  } finally {vi.unstubAllGlobals();}
+});

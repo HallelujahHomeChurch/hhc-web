@@ -132,3 +132,14 @@
 .host[data-presentation='mini'][data-compact='true'] > div:first-child > div {border-radius:14px;}
 .host[data-presentation='mini'][data-compact='false'] :global(.hhc-player-player),
 .host[data-presentation='mini'][data-compact='false'] > div:first-child > div {border-radius:14px 14px 0 0;}
+
+.stow,.edgeHandle {background:#202529;color:white;cursor:pointer;font:600 26px/1 system-ui;}
+.stow {display:none;position:absolute;right:4px;bottom:4px;width:44px;height:44px;border-radius:50%;z-index:10;background:rgb(0 0 0 / 65%);}
+.host[data-compact='true']:not(:has([data-fullscreen]:not([data-fullscreen='inline']))) .stow {display:block;}
+.edgeHandle {position:fixed;z-index:30;width:44px;height:60px;border-radius:0 12px 12px 0;}
+.edgeHandle[data-edge='right'] {border-radius:12px 0 0 12px;}
+:global(body:has([aria-modal='true'], dialog[open])) .edgeHandle {visibility:hidden;}
+@media(prefers-reduced-motion:no-preference) {
+  .edgeHandle {animation:edgeReveal 160ms ease-out 65ms backwards;}
+  @keyframes edgeReveal {from {opacity:0;transform:scale(.85);} to {opacity:1;transform:scale(1);}}
+}

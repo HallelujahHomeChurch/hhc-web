@@ -1,6 +1,14 @@
 'use client';
 import {useEffect, useEffectEvent, useRef, useState, type RefObject} from 'react';
 
+export const mobileBarChanged = 'hhc:mobile-bar-changed';
+export function mobileBarRef(node: HTMLElement | null) {
+  if (!node) return;
+  const notify = () => window.dispatchEvent(new Event(mobileBarChanged));
+  notify();
+  return () => {notify();};
+}
+
 /** Shared website/reader chrome policy; root omitted means document scrolling. */
 export function useScrollChrome({root, blocked = false, resetKey}: {root?: RefObject<HTMLElement | null>; blocked?: boolean; resetKey?: string} = {}) {
   const [state, setState] = useState({key: resetKey, visible: true});

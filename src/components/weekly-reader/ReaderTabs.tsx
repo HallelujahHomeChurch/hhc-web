@@ -1,18 +1,21 @@
-import {useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject} from 'react';
+import {useEffect, useLayoutEffect, useRef, useState, useTransition, type ReactNode, type RefObject} from 'react';
 import {ReaderIconButton as IconButton} from './ReaderIconButton';
+import {useRouter} from 'next/navigation';
 import {Home, X} from 'lucide-react';
 import {addTab, closeTab, readTabs, writeTabs, tabHref, tabKey, type ReaderTab} from '@/features/weekly-reader/workspace';
 import type {Locale} from '@/i18n/locales';
 import type {ReaderMessages} from './ReaderToolbar';
 
-export function ReaderTabs({accountId, locale, current, title, messages: m, beforeNavigate, beforeLeave, search, headerRef}: {accountId: string; locale: Locale; current: ReaderTab; title?: string; messages: ReaderMessages; beforeNavigate?: () => Promise<boolean>; beforeLeave?: () => Promise<boolean>; search?: ReactNode; headerRef?: RefObject<HTMLElement | null>}) {
+export function ReaderTabs({documentNavigation, accountId, locale, current, title, messages: m, beforeNavigate, beforeLeave, search, headerRef}: {documentNavigation?: boolean; accountId: string; locale: Locale; current: ReaderTab; title?: string; messages: ReaderMessages; beforeNavigate?: () => Promise<boolean>; beforeLeave?: () => Promise<boolean>; search?: ReactNode; headerRef?: RefObject<HTMLElement | null>}) {
+  const router = useRouter();
+  const [routing,startNavigation] = useTransition();
   const [tabs, setTabs] = useState<ReaderTab[]>([current]);
   const [busyBinding, setBusyBinding] = useState<string | null>(null);
   const navigationGeneration = useRef(0);
   const tabList = useRef<HTMLElement>(null);
   const pendingReveal = useRef(true);
   const key = tabKey(current);
-  const binding = `${accountId}:${key}`, busy = busyBinding === binding;
+  const binding = `${accountId}:${key}`, busy = routing || busyBinding === binding;
   useEffect(() => () => {navigationGeneration.current++;}, [accountId, key]);
   const {issueNumber, series, contentLocale} = current;
   useEffect(() => {
@@ -46,7 +49,8 @@ export function ReaderTabs({accountId, locale, current, title, messages: m, befo
       if (guard && !await guard()) return;
       if (generation !== navigationGeneration.current) return;
       if (next) {writeTabs(accountId, next); setTabs(next);}
-      window.location.assign(href);
+      if (documentNavigation || !navigator.onLine) window.location.assign(href);
+      else startNavigation(() => router.push(href));
     } finally {if (generation === navigationGeneration.current) setBusyBinding(null);}
   }
   return <header ref={headerRef} className="reader-tabbar">

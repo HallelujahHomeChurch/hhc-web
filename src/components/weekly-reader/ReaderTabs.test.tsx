@@ -3,10 +3,13 @@ import {afterEach, beforeEach, expect, it, vi} from 'vitest';
 import {ReaderTabs} from './ReaderTabs';
 import {writeTabs, readTabs} from '@/features/weekly-reader/workspace';
 import {getMessages} from '@/i18n/messages';
+const {pushReader} = vi.hoisted(() => ({pushReader: vi.fn()}));
+vi.mock('next/navigation', () => ({useRouter: () => ({push: pushReader})}));
 const first = {title: 'First title', issueNumber: 1739, series: 'general' as const, contentLocale: 'zh-Hant' as const};
 const second = {...first, title: 'Second title', issueNumber: 1740};
 const props = {accountId: 'a', locale: 'en' as const, current: second, title: second.title, messages: getMessages('en').weeklyReader};
 beforeEach(() => {
+  pushReader.mockClear();
   sessionStorage.clear();
   vi.useFakeTimers({toFake: ['requestAnimationFrame', 'cancelAnimationFrame']});
 });
@@ -98,4 +101,19 @@ it('does not change tabs when a navigation guard completes after unmount', async
   await waitFor(() => expect(beforeNavigate).toHaveBeenCalledOnce());
   unmount(); await act(async () => finish(true));
   expect(readTabs('a')).toEqual([first, second]);
+});
+
+it('uses the shared app document after confirming return to the online archive', async () => {
+  renderTabs({beforeLeave: async () => true});
+  fireEvent.click(screen.getByRole('button', {name: props.messages.home}));
+  await waitFor(() => expect(pushReader).toHaveBeenCalledWith('/en/literature-ministry?mode=online'));
+});
+
+it('keeps offline shell navigation eligible for service-worker document fallback', async () => {
+  const allowed = vi.fn().mockResolvedValue(true);
+  renderTabs({documentNavigation:true, beforeLeave:allowed});
+  fireEvent.click(screen.getByRole('button',{name:props.messages.home}));
+  await act(async () => {});
+  expect(allowed).toHaveBeenCalledOnce();
+  expect(pushReader).not.toHaveBeenCalled();
 });

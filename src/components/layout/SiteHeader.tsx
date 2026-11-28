@@ -1,7 +1,7 @@
 'use client';
 
 import {useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties} from 'react';
-import {useScrollChrome} from './useScrollChrome';
+import {mobileBarRef, useScrollChrome} from './useScrollChrome';
 import Link from 'next/link';
 import {NavigationPendingIndicator} from '@/components/ui/NavigationPendingIndicator';
 import Image from 'next/image';
@@ -171,7 +171,7 @@ function SiteHeaderContent({layout, locale, pathname, showNavigation = true, sea
         </header>
         <StatementStrip />
       </div>
-      {showNavigation ? <nav className="site-mobile-tab-bar" style={{gridTemplateColumns: `repeat(${mobileNavItems.length + 1}, minmax(0, 1fr))`}} aria-label={t('nav.menu')} data-mobile-hidden={!mobileChromeVisible} data-iphone-standalone={iphoneStandalone || undefined}>
+      {showNavigation ? <nav ref={mobileBarRef} className="site-mobile-tab-bar" style={{gridTemplateColumns: `repeat(${mobileNavItems.length + 1}, minmax(0, 1fr))`}} aria-label={t('nav.menu')} data-mobile-hidden={!mobileChromeVisible} data-iphone-standalone={iphoneStandalone || undefined}>
         {mobileNavItems.map((item, index) => {
           const Icon = item.icon;
           const active = isActive(item.href);

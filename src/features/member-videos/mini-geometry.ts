@@ -35,3 +35,18 @@ export function readMiniArea():MiniArea {
  const navRect=nav&&navStyle?.display!=='none'&&navStyle?.visibility!=='hidden'?nav.getBoundingClientRect():null;
  return availableMiniRect({left:viewport?.offsetLeft??0,top:viewport?.offsetTop??0,width:viewport?.width??window.innerWidth,height:viewport?.height??window.innerHeight},safe,navRect);
 }
+
+export type DockEdge = 'left' | 'right';
+
+export function releaseDockEdge({left, width, dx, dy, pointerX, velocity, viewportLeft, viewportRight}: {
+  left: number; width: number; dx: number; dy: number; pointerX: number; velocity: number;
+  viewportLeft: number; viewportRight: number;
+}): DockEdge | null {
+  const horizontalFlick = Math.abs(dx) > 18 && Math.abs(dx) > Math.abs(dy) * 1.25;
+  if (dx < -12 && (left < viewportLeft - 16 || pointerX < viewportLeft + 14 ||
+    (horizontalFlick && velocity < -0.4 && left + velocity * 150 < viewportLeft + 10))) return 'left';
+  const right = left + width;
+  if (dx > 12 && (right > viewportRight + 16 || pointerX > viewportRight - 14 ||
+    (horizontalFlick && velocity > 0.4 && right + velocity * 150 > viewportRight - 10))) return 'right';
+  return null;
+}
