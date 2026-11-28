@@ -208,3 +208,19 @@ it('fits expanded source content into the available height without moving its vi
   expect(screen.getByTestId('queue-video')).toBe(video);
  }finally{Object.defineProperty(window,'innerHeight',{configurable:true,value:original});}
 });
+
+it('stows a compact recording and restores the same video from the edge', () => {
+  vi.stubGlobal('innerWidth', 390);
+  try {
+    render(<PlaybackHost watchSlot={null} dockLabels={{hide:'Stow',show:'Restore'}}><video data-testid="recording"/></PlaybackHost>);
+    const video=screen.getByTestId('recording');
+    fireEvent.click(screen.getByRole('button',{name:'Stow'}));
+    expect(video.closest('[inert]')).not.toBeNull();
+    const restore=screen.getByRole('button',{name:'Restore'});
+    expect(restore).toHaveFocus();
+    fireEvent.click(restore);
+    expect(screen.getByTestId('recording')).toBe(video);
+    expect(video.closest('[inert]')).toBeNull();
+    expect(video.parentElement).toHaveFocus();
+  } finally { vi.unstubAllGlobals(); }
+});

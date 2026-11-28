@@ -16,6 +16,7 @@ import {writeTabs, readTabs} from '@/features/weekly-reader/workspace';
 const bulletinCss = ['bulletin-paper.css', 'bulletin-paper-v2.css', 'bulletin-paper-v7.css', 'bulletin-ebook.css'].map(file => readFileSync(new URL(import.meta.resolve(`@hallelujahhomechurch/ui/${file}`)), 'utf8')).join('\n');
 
 const state = vi.hoisted(() => ({accountId: 'account-a' as string | null, status: 'authenticated', open: vi.fn(), renew: vi.fn(), signIn: vi.fn(), privateState: vi.fn(), current: vi.fn(), mutate: vi.fn()}));
+vi.mock('next/navigation', () => ({useRouter: () => ({push: vi.fn()})}));
 vi.mock('@/components/layout/AccountControl', () => ({
   useAccountIdentity: () => state.accountId, useAccountAuth: () => ({status: state.status}),
   useAccountSignIn: () => state.signIn,
@@ -1127,6 +1128,7 @@ describe('protected weekly reader', () => {
     const {container} = render(<WeeklyReader {...props}/>);
     await screen.findByText('Private weekly');
     const trigger = screen.getByRole('button', {name: 'Search this bulletin'});
+    expect(container.querySelector('[hidden][aria-modal="true"]')).toBeNull();
     fireEvent.click(trigger);
     expect(screen.getByRole('dialog', {name: 'Search this bulletin'})).toHaveAttribute('aria-modal', 'true');
     expect(container.querySelector('.reader-stage')).toHaveAttribute('inert');

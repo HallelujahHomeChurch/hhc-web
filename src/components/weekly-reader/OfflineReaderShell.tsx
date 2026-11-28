@@ -18,5 +18,5 @@ export function OfflineReaderShell({locale, messages, seriesLabels}: {locale: Lo
   const edition = match && match[1] === locale ? bulletinEditions.find(edition => edition.series === match[3] && edition.locale === match[4]) : null;
   if (path === null) return <main className="weekly-reader"><ReaderLoading label={messages.loading} showHeader/></main>;
   if (!match || !edition) return <main className="weekly-reader" role="status"><h1>{messages.title}</h1><p>{messages.unavailable}</p><a href={`/${locale}/literature-ministry/offline`}>{messages.offlineContent}</a></main>;
-  return <WeeklyReader locale={locale} issueNumber={Number(match[2])} series={edition.series} contentLocale={edition.locale} messages={messages}/>;
+  return <WeeklyReader offlineShell locale={locale} issueNumber={Number(match[2])} series={edition.series} contentLocale={edition.locale} messages={messages}/>;
 }

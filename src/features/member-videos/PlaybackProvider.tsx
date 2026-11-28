@@ -261,7 +261,7 @@ function MemberPlaybackProvider({children, labels, member}: Props & {member: str
         try { navigateToLibrary.current?.(); } catch { /* Keep the same explicit retry; never navigate backwards on a timer. */ }
       }}>{labels.retryNavigation ?? 'Try again'}</button>
     </div>}
-    {member && playback && (watchSlot || playback.hasStarted) && <PlaybackHost onCompactChange={setMiniCompact} tracking={pullTracking} sessionKey={playback.key} onPullCancel={cancelPull} watchSlot={watchSlot} minimizeOffset={minimizeOffset} onSettled={settled} onClose={closeActive} moveLabel={labels.move} resizeLabel={labels.resize}>
+    {member && playback && (watchSlot || playback.hasStarted) && <PlaybackHost dockLabels={!playback.live ? labels.dock : undefined} onCompactChange={setMiniCompact} tracking={pullTracking} sessionKey={playback.key} onPullCancel={cancelPull} watchSlot={watchSlot} minimizeOffset={minimizeOffset} onSettled={settled} onClose={closeActive} moveLabel={labels.move} resizeLabel={labels.resize}>
       <div key={playback.key}>{playback.player}</div>
       {!watchSlot && <div className={styles.close}>
         <button type="button" aria-label={labels.close} className="grid size-11 place-items-center" onClick={closeActive}><X size={20}/></button>

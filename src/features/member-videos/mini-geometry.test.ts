@@ -1,5 +1,5 @@
 import {expect,it} from 'vitest';
-import {availableMiniRect,miniRect,pullRect} from './mini-geometry';
+import {availableMiniRect,miniRect,pullRect,releaseDockEdge} from './mini-geometry';
 const zero={top:0,right:0,bottom:0,left:0};
 it('reserves the visible navigation and four safe edges',()=>{
  expect(availableMiniRect({left:0,top:0,width:390,height:844},{...zero,top:47,bottom:34},{left:0,top:748,width:390,height:96})).toEqual({left:16,top:47,right:374,bottom:732});
@@ -15,4 +15,13 @@ it('starts without a lock jump, then follows a fixed diagonal path at a fixed pr
  expect(pullRect(start,end,291.5,16)).toEqual({left:67,top:355.5,width:315,height:177.1875});
  expect(pullRect(start,end,999,16)).toEqual(end);
  expect(pullRect(start,end,8,16)).toEqual(start);
+});
+
+it('uses the viewport edge for outward slow drags and projects only horizontal flicks', () => {
+ const release = {left:24,width:180,dx:-24,dy:2,pointerX:90,velocity:-0.6,viewportLeft:0,viewportRight:390};
+ expect(releaseDockEdge(release)).toBe('left');
+ expect(releaseDockEdge({...release,velocity:0})).toBeNull();
+ expect(releaseDockEdge({...release,dy:48})).toBeNull();
+ expect(releaseDockEdge({...release,left:208,dx:24,velocity:0.7})).toBe('right');
+ expect(releaseDockEdge({...release,left:-20,velocity:0})).toBe('left');
 });
